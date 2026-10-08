@@ -1,0 +1,766 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "barovia",
+  "coverage": "complete",
+  "introduction": "The Realm of Barovia follows the village's distress through lost Lightbringers, a forged family letter, a cottage ambush, nine scattered trinkets, Doru's heart and Mad Mary's missing daughter. Native deliveries record their exact outcomes; narrated liberation, learned lore and personal kills need separate evidence. Player progress requires active, ready accounting.",
+  "orientation": [
+    "The Road of the Dead in Bloodstone connects to the southern Svalich Woods road. The Weary Horse Inn messenger points toward Barovia. Village buildings describe barricades, but their actual door states and keys determine access; an accepted briefing does not spawn the threats.",
+    "Ashlyn describes Thendrick and Mathilda and seeks the Sunsword. Bring the exact bloody brooch from Mathilda's equipment in the church containment cell for Ashlyn's bracelet. Her thanks name Thendrick, but do not restore either companion or award the separate Lightbringer achievement.",
+    "Danovich carries the brittle key for the secret church trapdoor. The hidden containment wall leads to Doru, Thendrick and Mathilda as independently placed enemies. The church, cemetery tunnel and cottage kitchen have falling hazards; be prepared before entering or acting there.",
+    "Danovich's bible has pages about the Tome of Strahd, Ireena's adoption and his use of the Liber Blaspheme. Ashlyn's Pelor journal explains the companions' expedition. These are optional clues, without a durable examined-page or learned-topic objective.",
+    "Kolyan's body holds the first note. Give it to Ismark for 200,000 copper and the cottage lead; it is consumed despite the narrated toss-back. Ireena can first return it with directions, but that guidance is optional and creates a replacement object.",
+    "Push the wrecked cart north of the mansion for the hillside route to the cottage. Hossa and his ambush party are already waiting in the cellar. His different note and ambush plan earns Ismark's green gloves without requiring a prior forged-letter receipt.",
+    "Bildrath needs all nine exact trinkets together: hair pin, compass locket, silver spoon, golden wrench, silver horse shoe, gold chalice, engraved electrum coin, engagement ring and blue bell. The reward is the time warp mask; a pile of one kind or wallet currency cannot replace the set.",
+    "Parriwimple's five-platinum list is an optional paid clue unavailable under active accounting. The nine physical items have ordinary declared sources around the village and cottage, including the church altar and ghoul grave. Bildrath's delivery does not reopen a defined shop or require clearing every zombie.",
+    "Push Mihail's loose grave marker for the cemetery passage to the ghoul grave. One ghast there carries the blue bell. The declared chalice, bible and first note are nested in the altar or body; inventory readiness requires taking offering items out of their containers.",
+    "Doru carries the heart of blaspheme for Ephon in the northern lookout post. Ephon awards a brittle Barovia gate key and disappears. The key opens the northern village gates, and a hidden-glen gateway also uses it. One copy may break after one use; the receipt does not stop future zombie resets.",
+    "Beyond the northern gates is continued Barovia, where Madam Eva's relic exchange offers the outer Castle Ravenloft gate key. Megosh offers another key exchange at the castle's outer gate. Both contracts belong to continued Barovia despite Megosh's foreign placement. Possession, hints and a local receipt do not award foreign-area discovery.",
+    "Enter the hidden bramble opening for the glen. Its two side gateways lead to dimensional corridors returning toward the northern village road and Castle Ravenloft. Their keys differ; the Castle gate key is not Ephon's Barovia key.",
+    "Gertruda is a quest object placed in Castle Ravenloft's dark bedchamber. Bring that exact object to Mad Mary for the grim visage of a MaDWoMaN. Mary disappears; the narrated reunion is represented by this delivery, without a separate NPC escort or moved mother-and-daughter pair.",
+    "The existing You Strahd Me At Hello achievement is an ordered Doru, Chernovog, Castle Strahd kill campaign with its own legacy tags and eligible nearby group credit. Incomplete tags are cleared at login. Catacomb Strahd forms and skull deliveries are different; the zone journal does not infer this campaign from donated proof.",
+    "Directly carry every offering outside equipment and containers. Optional access and earlier receipts guide the intended journey without excluding gifts. Readiness and journal reads award nothing. Four repeatable story/request groups are potential dailies; services and mode-zero retiring contacts remain excluded."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 91000,
+      "name": "a Vistani messenger",
+      "keyword": "human",
+      "description": "The Vistani messenger at the Weary Horse Inn points toward the village and explains the burgomaster's call for heroes. His letter story grants no physical invitation.",
+      "topics": [
+        "hi",
+        "barovia",
+        "strahd"
+      ]
+    },
+    {
+      "mob_vnum": 91001,
+      "name": "a quiet and tired inn patron",
+      "keyword": "quiet",
+      "description": "The tired inn patron provides a warning about the Vistani without a terminal quest delivery.",
+      "topics": [
+        "hi",
+        "vistani"
+      ]
+    },
+    {
+      "mob_vnum": 91002,
+      "name": "the bartender",
+      "keyword": "bartender",
+      "description": "The Weary Horse bartender offers brief village atmosphere and greeting. No local replenishing shop is defined.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 91006,
+      "name": "Ashlyn, the undead hunter",
+      "keyword": "ashlyn",
+      "description": "Ashlyn guards the southern village post and describes her missing companions and the Sunsword. The accepted brooch is equipped by Mathilda despite the response naming Thendrick; her bracelet is not the legacy Lightbringer achievement.",
+      "topics": [
+        "hi",
+        "companions",
+        "zombies",
+        "strahd",
+        "sunsword"
+      ]
+    },
+    {
+      "mob_vnum": 91007,
+      "name": "Bildrath",
+      "keyword": "bildrath",
+      "description": "Bildrath accepts nine distinct trinkets for the time warp mask. His closed-store story does not implement a shop reopening or a zombie-clear prerequisite.",
+      "topics": [
+        "vistani",
+        "hi",
+        "items"
+      ]
+    },
+    {
+      "mob_vnum": 91010,
+      "name": "Arik the barkeep",
+      "keyword": "arik",
+      "description": "Arik in the Blood of the Vine Tavern explains Ismark, Strahd and the Vistani. His drink response pours a narrated beer without a native item reward.",
+      "topics": [
+        "hi",
+        "drink",
+        "vistani",
+        "strahd",
+        "ismark"
+      ]
+    },
+    {
+      "mob_vnum": 91011,
+      "name": "Ismark the lesser",
+      "keyword": "ismark",
+      "description": "Ismark in the tavern lounge accepts two different notes independently: the forged letter pays cash and supplies a cottage lead; the ambush plan awards gloves. Neither requires a prior Ireena delivery.",
+      "topics": [
+        "hi",
+        "vistani",
+        "zombies",
+        "madam",
+        "symbol",
+        "sister"
+      ]
+    },
+    {
+      "mob_vnum": 91012,
+      "name": "Ireena Kolyana",
+      "keyword": "ireena",
+      "description": "Ireena stays with Kolyan's body in the mansion. She explains the stolen Ravenkind symbol and returns either note with directions to Ismark. These are guidance services, not separate rescue or escort achievements.",
+      "topics": [
+        "hi",
+        "father",
+        "strahd",
+        "symbol",
+        "wise"
+      ]
+    },
+    {
+      "mob_vnum": 91018,
+      "name": "Parriwimple",
+      "keyword": "parriwimple",
+      "description": "Parriwimple names Bildrath's collection for a five-platinum wallet offering, currently unavailable under active accounting. The physical collection does not require the paid clue.",
+      "topics": [
+        "hi",
+        "strahd",
+        "vistani",
+        "collection"
+      ]
+    },
+    {
+      "mob_vnum": 91021,
+      "name": "a terrified gate guard",
+      "keyword": "terrified",
+      "description": "The frightened southern gate guard gives one addressable warning family. The boarded guardhouse description is scenery rather than a tracked rescue.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 91030,
+      "name": "Danovich the Fallen Priest",
+      "keyword": "danovich",
+      "description": "Danovich carries the brittle secret-trapdoor key. His bible contains three lore pages, while the Liber Blaspheme is described in the story without a reviewed local resurrection procedure.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 91041,
+      "name": "a tall, shifty-eyed Vistani",
+      "keyword": "tall",
+      "description": "The shifty-eyed Vistani at the tavern points toward Madam Eva and warns against speaking of Strahd and Ireena. Keywords record no accepted-lore stage.",
+      "topics": [
+        "hi",
+        "strahd"
+      ]
+    },
+    {
+      "mob_vnum": 91050,
+      "name": "Ephon Arbury the guard",
+      "keyword": "ephon",
+      "description": "Ephon waits in the northern lookout post and accepts Doru's exact heart for a brittle gate key, then retires. This does not stop ordinary undead population or prove a personal kill.",
+      "topics": [
+        "proof",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 91052,
+      "name": "Mad Mary",
+      "keyword": "mad",
+      "description": "Mad Mary waits in her townhouse loft. Deliver the exact Gertruda item from Castle Ravenloft for her grim-visage reward; her departure and reunion are narrated.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 91031,
+      "name": "Doru, the infectious blaspheme",
+      "keyword": "doru",
+      "description": "Doru carries Ephon's heart proof in the church containment cell. His kill can start the separate legacy Doru → Chernovog → Castle Strahd achievement; a donated heart does not establish that ordered kill history.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91032,
+      "name": "Thendrick the baneguard",
+      "keyword": "thendrick",
+      "description": "Thendrick is independently loaded as a baneguard following Doru. His holy-avenger equipment is distinct from Mathilda's brooch; no local restoration or escort contract is attached.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91033,
+      "name": "Mathilda the deathlock",
+      "keyword": "mathilda",
+      "description": "Mathilda is independently loaded as a deathlock following Doru and equips Ashlyn's exact brooch. Her condition is source stock, not a recorded player-caused transformation.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91046,
+      "name": "Hossa the Ambush Leader",
+      "keyword": "hossa",
+      "description": "Hossa carries Ismark's ambush plan in the cottage cellar. The ambush party exists independently of accepting Ismark's first letter briefing.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91048,
+      "name": "Valesta the Vistani Saboteur",
+      "keyword": "valesta",
+      "description": "Valesta equips Bildrath's exact hair pin at the cottage well, alongside the ground electrum coin. The two separate materials are needed together.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91024,
+      "name": "the zombie of Stram Etush",
+      "keyword": "zombie",
+      "description": "Stram Etush's zombie carries the golden wrench in the general store.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91026,
+      "name": "the zombie of Elax Berak",
+      "keyword": "zombie",
+      "description": "Elax Berak's zombie carries the silver spoon in the bakery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91035,
+      "name": "a stinking ghast",
+      "keyword": "stinking",
+      "description": "One stocked stinking ghast in the ghoul grave carries the blue bell. The other same-kind ghasts do not necessarily carry it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91013,
+      "name": "Orbitian the mystic",
+      "keyword": "orbitian",
+      "description": "Orbitian occupies the chamber of arcana with chance-limited equipment. His shop and family descriptions do not supply a local Q quest or a defined shop service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 91056,
+      "name": "Keldar SouthBreeze, the fallen hero",
+      "keyword": "keldar",
+      "description": "Keldar SouthBreeze is a rare-area fallen hero with a dispersal route and an exitless trap branch. His equipment and Medievia history have no local terminal delivery.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "ashlyns-lost-companions",
+      "title": "Ashlyn's Lost Companions",
+      "category": "story",
+      "summary": "Bring Ashlyn the small bloody holy symbol brooch for a lightbringer bracelet of Pelor. The brooch is equipped by Mathilda in Doru's containment cell, although Ashlyn's response names Thendrick. Delivery neither proves a personal kill nor ends the Sunsword search.",
+      "contracts": [
+        {
+          "giver_vnum": 91006,
+          "completion_key": "give=I:91021;receive=I:91020;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-91002",
+          "kind": "carried_item",
+          "item_vnums": [
+            91002
+          ],
+          "count": 1,
+          "text": "Optional: carry Danovich's small dirty key",
+          "hint": "Danovich carries this brittle key in the church. It fits the secret basement trapdoor, with a 100 break chance. A supplied brooch skips this access preparation.",
+          "optional": true
+        },
+        {
+          "id": "item-91021",
+          "kind": "carried_item",
+          "item_vnums": [
+            91021
+          ],
+          "count": 1,
+          "text": "Carry the small bloody holy symbol brooch",
+          "hint": "The exact brooch is equipped by Mathilda the deathlock in Doru's hidden containment cell beneath the church. Thendrick is a separate creature there and does not carry this brooch."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91006,
+              "completion_key": "give=I:91021;receive=I:91020;disappear=0"
+            }
+          ],
+          "text": "Return the brooch to Ashlyn",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. Ashlyn remains available and awards the bracelet. This is different from the foreign Holy Symbol of Ravenkind and from the legacy Lightbringer achievement. No companion restoration, escort or Sunsword output follows."
+        }
+      ]
+    },
+    {
+      "id": "bildraths-nine-trinkets",
+      "title": "Bildrath's Nine Trinkets",
+      "category": "story",
+      "summary": "Bring Bildrath nine different exact trinkets together for the time warp mask. Nine copies of one item do not qualify. Parriwimple's paid clue is optional, and completion does not reopen a working shop or prove the village is free of zombies.",
+      "contracts": [
+        {
+          "giver_vnum": 91007,
+          "completion_key": "give=I:91015,I:91018,I:91026,I:91027,I:91042,I:91043,I:91044,I:91045,I:91046;receive=I:91047;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "collection-clue",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91018,
+              "completion_key": "give=C:5000;receive=;disappear=0"
+            }
+          ],
+          "text": "Optional: hear Parriwimple's collection list",
+          "hint": "His five-platinum wallet offering is unavailable under active accounting. Knowing or receiving the complete set does not require this earlier receipt.",
+          "optional": true
+        },
+        {
+          "id": "item-91002",
+          "kind": "carried_item",
+          "item_vnums": [
+            91002
+          ],
+          "count": 1,
+          "text": "Optional: carry Danovich's small dirty key",
+          "hint": "The key fits the church's secret trapdoor for the deeper village route. The chalice itself is in the altar above; a supplied set skips access preparation.",
+          "optional": true
+        },
+        {
+          "id": "item-91045",
+          "kind": "carried_item",
+          "item_vnums": [
+            91045
+          ],
+          "count": 1,
+          "text": "Carry the thin adamantium hair pin",
+          "hint": "Valesta the Vistani Saboteur equips the pin by the cottage well. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91043",
+          "kind": "carried_item",
+          "item_vnums": [
+            91043
+          ],
+          "count": 1,
+          "text": "Carry the golden compass locket",
+          "hint": "The locket is ground stock in the bedroom loft above Bildrath's Mercantile. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91046",
+          "kind": "carried_item",
+          "item_vnums": [
+            91046
+          ],
+          "count": 1,
+          "text": "Carry the silver spoon",
+          "hint": "The zombie of Elax Berak carries the spoon in the bakery. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91042",
+          "kind": "carried_item",
+          "item_vnums": [
+            91042
+          ],
+          "count": 1,
+          "text": "Carry the golden wrench",
+          "hint": "The zombie of Stram Etush carries the wrench in the general store. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91015",
+          "kind": "carried_item",
+          "item_vnums": [
+            91015
+          ],
+          "count": 1,
+          "text": "Carry the silver horse shoe",
+          "hint": "The horse shoe is ground stock in the stables. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91018",
+          "kind": "carried_item",
+          "item_vnums": [
+            91018
+          ],
+          "count": 1,
+          "text": "Carry the gold chalice",
+          "hint": "The chalice is declared inside the church altar, alongside Danovich's bible and salve. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91026",
+          "kind": "carried_item",
+          "item_vnums": [
+            91026
+          ],
+          "count": 1,
+          "text": "Carry the engraved electrum coin",
+          "hint": "The coin is ground stock by the cottage well, where Valesta carries the hair pin. It is a collection item, not wallet currency. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91027",
+          "kind": "carried_item",
+          "item_vnums": [
+            91027
+          ],
+          "count": 1,
+          "text": "Carry the diamond engagement ring",
+          "hint": "The ring is ground stock inside the windmill, occupied by a banshee spectre. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "item-91044",
+          "kind": "carried_item",
+          "item_vnums": [
+            91044
+          ],
+          "count": 1,
+          "text": "Carry the small delicate bell",
+          "hint": "A stinking ghast in the northern ghoul grave carries the blue bell. Push the grave marker to reveal the cemetery route. All nine kinds must be directly carried together."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91007,
+              "completion_key": "give=I:91015,I:91018,I:91026,I:91027,I:91042,I:91043,I:91044,I:91045,I:91046;receive=I:91047;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete nine-trinket set to Bildrath",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The reward is the time warp mask. The electrum coin and hair pin remain exact item offerings. The paid clue, personal gathering, all-zombie purge and opening Bildrath's store are not giving prerequisites."
+        }
+      ]
+    },
+    {
+      "id": "kolyans-forged-letter",
+      "title": "Kolyan's Forged Letter",
+      "category": "request",
+      "summary": "Bring Ismark the note presented as Kolyan's letter for 200,000 copper and his lead to a cottage north of the mansion. The actual exchange consumes the note, despite the narrated toss-back, and accepts supplied letters without proof of searching the body.",
+      "contracts": [
+        {
+          "giver_vnum": 91011,
+          "completion_key": "give=I:91022;receive=C:200000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ireena-direction",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91012,
+              "completion_key": "give=I:91022;receive=I:91022;disappear=0"
+            }
+          ],
+          "text": "Optional: show the first note to Ireena",
+          "hint": "She returns the same item kind and directs you to Ismark. This optional guidance neither proves recovery nor substitutes for the current note.",
+          "optional": true
+        },
+        {
+          "id": "item-91022",
+          "kind": "carried_item",
+          "item_vnums": [
+            91022
+          ],
+          "count": 1,
+          "text": "Carry the note from Kolyan Indirovich",
+          "hint": "The note is declared inside Kolyan's dead body in the mansion with Ireena. It is different from Hossa's later ambush plan."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91011,
+              "completion_key": "give=I:91022;receive=C:200000;disappear=0"
+            }
+          ],
+          "text": "Present the first note to Ismark",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The supported cash payout is a reward, not a wallet fee. Ismark stays available. His instruction to investigate gives the next lead, without spawning an ambush, moving Ireena or recording travel."
+        }
+      ]
+    },
+    {
+      "id": "hossas-ambush-plan",
+      "title": "Hossa's Ambush Plan",
+      "category": "story",
+      "summary": "Bring Ismark Hossa's note and ambush plan for the hazy green gloves. The cottage ambush and the forged-letter briefing are the intended route; a supplied exact plan qualifies without an earlier letter delivery or a personal ambush kill.",
+      "contracts": [
+        {
+          "giver_vnum": 91011,
+          "completion_key": "give=I:91038;receive=I:91039;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "investigation-briefing",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91011,
+              "completion_key": "give=I:91022;receive=C:200000;disappear=0"
+            }
+          ],
+          "text": "Optional: receive Ismark's cottage lead",
+          "hint": "The first note supplies the narrated investigation and cash. It is optional history; the final plan exchange is independent.",
+          "optional": true
+        },
+        {
+          "id": "ireena-direction",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91012,
+              "completion_key": "give=I:91038;receive=I:91038;disappear=0"
+            }
+          ],
+          "text": "Optional: show the ambush plan to Ireena",
+          "hint": "She returns the plan kind and directs you to Ismark without another quest achievement.",
+          "optional": true
+        },
+        {
+          "id": "item-91038",
+          "kind": "carried_item",
+          "item_vnums": [
+            91038
+          ],
+          "count": 1,
+          "text": "Carry the note and ambush plan",
+          "hint": "Hossa carries this exact plan in the cottage wine cellar. Push the wrecked cart to uncover the hillside route north of the mansion. The kitchen above the cellar has a falling hazard."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91011,
+              "completion_key": "give=I:91038;receive=I:91039;disappear=0"
+            }
+          ],
+          "text": "Report the ambush plan to Ismark",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The plan is consumed and Ismark awards the gloves. His gratitude and family welcome are narration; the exchange does not alter Ireena's state, create family membership or prove the threat permanently removed."
+        }
+      ]
+    },
+    {
+      "id": "ireenas-first-letter-guidance",
+      "title": "Ireena's First Letter Guidance",
+      "category": "service",
+      "summary": "Show Ireena the exact note for directions to Ismark in the Blood of the Vine Tavern. This meaningful returned-item guidance is a service without another achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 91012,
+          "completion_key": "give=I:91022;receive=I:91022;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-91022",
+          "kind": "carried_item",
+          "item_vnums": [
+            91022
+          ],
+          "count": 1,
+          "text": "Carry the first letter",
+          "hint": "The first letter is in Kolyan's body; Hossa carries a different ambush plan. Each note has its own Ismark outcome."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91012,
+              "completion_key": "give=I:91022;receive=I:91022;disappear=0"
+            }
+          ],
+          "text": "Show the note to Ireena",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The exchange consumes the offered object and creates a replacement of the same kind. It does not preserve object identity, escort Ireena or complete Ismark's own delivery."
+        }
+      ]
+    },
+    {
+      "id": "ireenas-ambush-plan-guidance",
+      "title": "Ireena's Ambush Plan Guidance",
+      "category": "service",
+      "summary": "Show Ireena the exact note for directions to Ismark in the Blood of the Vine Tavern. This meaningful returned-item guidance is a service without another achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 91012,
+          "completion_key": "give=I:91038;receive=I:91038;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-91038",
+          "kind": "carried_item",
+          "item_vnums": [
+            91038
+          ],
+          "count": 1,
+          "text": "Carry the ambush plan",
+          "hint": "The first letter is in Kolyan's body; Hossa carries a different ambush plan. Each note has its own Ismark outcome."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91012,
+              "completion_key": "give=I:91038;receive=I:91038;disappear=0"
+            }
+          ],
+          "text": "Show the note to Ireena",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The exchange consumes the offered object and creates a replacement of the same kind. It does not preserve object identity, escort Ireena or complete Ismark's own delivery."
+        }
+      ]
+    },
+    {
+      "id": "parriwimples-collection-clue",
+      "title": "Parriwimple's Collection Clue",
+      "category": "service",
+      "summary": "Parriwimple asks five platinum, exactly 5,000 copper, to name Bildrath's nine collection items. This wallet-only offering remains unavailable under active accounting. The clue is optional guidance without a quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 91018,
+          "completion_key": "give=C:5000;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91018,
+              "completion_key": "give=C:5000;receive=;disappear=0"
+            }
+          ],
+          "text": "Hear Parriwimple's collection list",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The native response lists nine trinkets but grants no item and changes no shop state. Supplied sets can complete Bildrath's independent collection without this paid receipt."
+        }
+      ]
+    },
+    {
+      "id": "ephons-gate-key",
+      "title": "Ephon's Gate Key",
+      "category": "story",
+      "summary": "Bring Ephon Arbury the heart of blaspheme for Barovia's gate key, then he disappears. The exact heart is carried by Doru beneath the church. This delivery records proof accepted; it does not prove your personal kill or stop the village's ordinary zombie resets.",
+      "contracts": [
+        {
+          "giver_vnum": 91050,
+          "completion_key": "give=I:91036;receive=I:91037;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-91002",
+          "kind": "carried_item",
+          "item_vnums": [
+            91002
+          ],
+          "count": 1,
+          "text": "Optional: carry Danovich's small dirty key",
+          "hint": "Danovich carries the brittle key for the secret church trapdoor. Use and entry are separate access actions; a supplied heart skips this preparation.",
+          "optional": true
+        },
+        {
+          "id": "item-91036",
+          "kind": "carried_item",
+          "item_vnums": [
+            91036
+          ],
+          "count": 1,
+          "text": "Carry the heart of blaspheme",
+          "hint": "Doru carries this exact heart in the hidden containment cell with Thendrick and Mathilda. It is ordinary stocked proof, not automatically created lineage from a personal kill."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91050,
+              "completion_key": "give=I:91036;receive=I:91037;disappear=1"
+            }
+          ],
+          "text": "Bring Doru's heart to Ephon",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. Ephon is in the northern lookout post. His gate key fits the northern village gates and a hidden-glen gateway; its 100 break chance means using one copy does not guarantee a second unlock. His narrated aid to villagers is not a separate healing outcome."
+        }
+      ]
+    },
+    {
+      "id": "gertruda-and-mad-mary",
+      "title": "Gertruda and Mad Mary",
+      "category": "story",
+      "summary": "Recover the exact Gertruda quest object from Strahd's bedchamber in Castle Ravenloft and deliver it to Mad Mary for the grim visage of a MaDWoMaN. Mary disappears. The native rescue uses an item representation of Gertruda, without a tracked NPC escort or personal rescue history.",
+      "contracts": [
+        {
+          "giver_vnum": 91052,
+          "completion_key": "give=I:58412;receive=I:91065;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "north-gate-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91050,
+              "completion_key": "give=I:91036;receive=I:91037;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Ephon's northern gate key",
+          "hint": "This is optional preparation for the intended village-to-castle route. Supplied Gertruda objects qualify without this receipt.",
+          "optional": true
+        },
+        {
+          "id": "item-91037",
+          "kind": "carried_item",
+          "item_vnums": [
+            91037
+          ],
+          "count": 1,
+          "text": "Optional: carry Barovia's gate key",
+          "hint": "This brittle key opens the northern village route. It is distinct from the Castle Ravenloft key, and a prior key receipt does not replace a consumed key.",
+          "optional": true
+        },
+        {
+          "id": "item-58826",
+          "kind": "carried_item",
+          "item_vnums": [
+            58826
+          ],
+          "count": 1,
+          "text": "Optional: carry the outer Ravenloft gate key",
+          "hint": "Madam Eva's foreign relic exchange or Megosh's devil-heart exchange can award this key. It also opens a hidden-glen gateway, with a 100 break chance. This guidance does not award discovery of either foreign area.",
+          "optional": true
+        },
+        {
+          "id": "item-58412",
+          "kind": "carried_item",
+          "item_vnums": [
+            58412
+          ],
+          "count": 1,
+          "text": "Carry the exact Gertruda quest object",
+          "hint": "Gertruda is represented by a treasure object placed in Castle Ravenloft's dark bedchamber. A different NPC, corpse, letter or keepsake does not qualify. A supplied exact object is accepted."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 91052,
+              "completion_key": "give=I:58412;receive=I:91065;disappear=1"
+            }
+          ],
+          "text": "Bring Gertruda to Mad Mary",
+          "hint": "Carry the exact offering directly, outside equipment and containers. Supplied materials qualify without personal recovery or kill history. The girl object is consumed and Mary retires while awarding her mask. The narrated departure does not move an independently tracked daughter or create a reunited NPC pair. This is different from Bildrath's time warp mask."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

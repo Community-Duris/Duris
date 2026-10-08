@@ -1,0 +1,256 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "thetis",
+  "coverage": "complete",
+  "introduction": "Follow the hermit crab’s stolen gems, the littlest mermaid’s lost earring and Burgadan’s lead to sunken treasure. Explore the ruined court, prison and forbidden city along the way.",
+  "orientation": [
+    "Thetis’s Realm begins on a sandy beach reached from the Great Forest of Aravne. The hermit crab is at the shallow tidal pool, while Burgadan waits at the calm intersection farther into the water.",
+    "Ask the hermit crab gem, blue or stone. Red starfish are declared carrying his blue gems; other gems are declared in locked chests. Give one exact gem loose for a blue potion. A supplied gem also fits, and the crab leaves afterward.",
+    "The blue gem and the blue potion both use the potion mechanic for a brief waterbreathing spell. Quaffing the gem consumes an item needed by the crab. Prepare suitable breathing for the deeper waters and use the sandbars and air pockets for rest.",
+    "The guard before the courtyard carries the iron key for its door. An eligible character can also attempt to pick that lock. Passing through the courtyard leads toward the mermaids, prison and royal chambers.",
+    "Ask the small mermaid earring at her home. Her exact coral earring is declared inside the locked treasure chest in the sunken ship. The medium octopus there carries the red key. Return the earring loose for a flowered headband; she then leaves.",
+    "Burgadan accepts the torn treasure map from the Jade Mini Zones. A pirate in the Lacedon’s lower corridor is the declared source. Burgadan gives a deep-sea spade and returns the map, leaving another use for it.",
+    "Hordine Scorn in Storm Port Stronghold independently accepts that torn map for a treasure key. Speak to Burgadan first if you want his spade before giving the map to Hordine. Matching supplied materials also fit each request.",
+    "The sunken treasure lies on the ocean floor in the Jade Mini Zones. Its silt passage uses the spade as a key: find the passage, unlock it and open it. Ordinary DIG does not use this spade there. The chest beyond uses Hordine’s separate treasure key.",
+    "Several keys, including the spade and treasure key, have a 100 percent break roll after a successful keyed unlock. A replacement may be needed for another lock or a later reset. Holding a key, opening a passage and recovering treasure are separate parts of the route.",
+    "The dungeon guard carries the golden key for the cells and the gem chest in one cell. The captain before the throne carries the skeleton key for the secret throne-room door. A moray eel in Salty’s basement carries the green key for the iron chest.",
+    "Salty serves the outcasts in the forbidden city. Captives, whispering clams and ruined royal rooms explain the wider story of the king’s vengeance. Their descriptions provide context alongside the three item requests.",
+    "The crab and mermaid requests are potential daily candidates. Burgadan’s returned-map exchange stays a story achievement and is excluded from dailies. Completing his exchange records that exchange; later key delivery and treasure recovery belong to their own steps and zones.",
+    "Reset declarations are leads rather than guaranteed stock. Daily rollover does not replenish materials. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 38015,
+      "name": "a hermit crab",
+      "keyword": "hermit",
+      "description": "At the shallow tidal pool; ask gem, blue or stone. Return one exact blue gem for a blue potion; the crab leaves.",
+      "topics": [
+        "gem",
+        "blue",
+        "stone"
+      ]
+    },
+    {
+      "mob_vnum": 38004,
+      "name": "a red starfish",
+      "keyword": "red",
+      "description": "Red starfish are declared carrying blue gems in the deeper waters, bright paths and Starfish Lane.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38025,
+      "name": "a small mermaid",
+      "keyword": "small",
+      "description": "At the Mermaid’s Home; ask earring. Return the exact coral earring for a flowered headband; she swims away.",
+      "topics": [
+        "earring"
+      ]
+    },
+    {
+      "mob_vnum": 38006,
+      "name": "a medium octopus",
+      "keyword": "medium",
+      "description": "In the sunken ship; declared holder of the red key for the treasure chest containing the earring.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38037,
+      "name": "Burgadan",
+      "keyword": "burgadan",
+      "description": "At the calm intersection; bring the torn treasure map for a deep-sea spade and a returned map. He remains.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77219,
+      "name": "a pirate",
+      "keyword": "sly",
+      "description": "A pirate on the Lacedon’s lower corridor in the Jade Mini Zones is declared carrying the torn treasure map.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22626,
+      "name": "Hordine Scorn",
+      "keyword": "hordine",
+      "description": "On the juggernaught bridge in Storm Port Stronghold; independently exchanges the torn map for the sunken chest’s key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38036,
+      "name": "a sharkman guard",
+      "keyword": "guard",
+      "description": "The guard before the courtyard is declared carrying the iron key for the courtyard door.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38018,
+      "name": "a sharkman guard",
+      "keyword": "sharkman",
+      "description": "A dungeon-corridor guard is declared carrying the golden key for the cells and the chest in one cell.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38019,
+      "name": "a sharkman captain",
+      "keyword": "captain",
+      "description": "In the barren room before the throne; declared holder of the skeleton key for the secret throne-room door.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38010,
+      "name": "a moray eel",
+      "keyword": "moray",
+      "description": "A moray eel in Salty’s basement is declared carrying the green key for the iron chest there.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38033,
+      "name": "Salty",
+      "keyword": "salty",
+      "description": "In the general store in the forbidden city; sells ordinary supplies. The basement has a separate locked chest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38013,
+      "name": "a mage prisoner",
+      "keyword": "mage",
+      "description": "A mage prisoner in a dungeon cell, with a purple potion and a mask. His plight is part of the realm’s story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38022,
+      "name": "a human slave",
+      "keyword": "slave",
+      "description": "A human captive in the sirens’ cave, wearing a translucent mask. The cave describes his enchantment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38016,
+      "name": "King Thetis",
+      "keyword": "thetis",
+      "description": "In the throne room; the king’s anger over his queen’s death shapes the realm’s ruined court and forbidden city.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38012,
+      "name": "Celsin",
+      "keyword": "celsin",
+      "description": "The royal advisor beside the king in the throne room, declared holding a staff of globe and eel-skin spellbook.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "stolen-blue-gem",
+      "title": "Return a blue gem to the hermit crab",
+      "category": "story",
+      "summary": "Return one exact blue gem for a blue potion; the hermit crab leaves.",
+      "contracts": [
+        {
+          "giver_vnum": 38015,
+          "completion_key": "give=I:38018;receive=I:38028;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-38018",
+          "text": "Carry one exact blue gem loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            38018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Red starfish and locked chests are declared sources. A supplied gem fits too. Quaffing it consumes the gem; a blue potion is a different prototype."
+        },
+        {
+          "id": "return",
+          "text": "Return a blue gem to the hermit crab",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38015,
+              "completion_key": "give=I:38018;receive=I:38028;disappear=1"
+            }
+          ],
+          "hint": "Give the exact requested gem loose. Current possession and potion use are separate from the accepted return."
+        }
+      ]
+    },
+    {
+      "id": "lost-coral-earring",
+      "title": "Return the mermaid’s coral earring",
+      "category": "story",
+      "summary": "Return the exact coral earring for a flowered headband; the small mermaid leaves.",
+      "contracts": [
+        {
+          "giver_vnum": 38025,
+          "completion_key": "give=I:38001;receive=I:38013;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-38001",
+          "text": "Carry the exact coral earring loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            38001
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The earring is declared inside the sunken ship’s locked chest. The medium octopus carries its red key. Unequip the earring before giving it; supplied copies fit too."
+        },
+        {
+          "id": "return",
+          "text": "Return the mermaid’s coral earring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38025,
+              "completion_key": "give=I:38001;receive=I:38013;disappear=1"
+            }
+          ],
+          "hint": "Give the exact requested earring loose. A necklace, key, opened chest or headband does not replace the accepted earring return."
+        }
+      ]
+    },
+    {
+      "id": "burgadans-treasure-lead",
+      "title": "Bring the torn treasure map to Burgadan",
+      "category": "story",
+      "summary": "Burgadan exchanges the torn map for a deep-sea spade and another map; he remains.",
+      "contracts": [
+        {
+          "giver_vnum": 38037,
+          "completion_key": "give=I:77209;receive=I:38037,I:77209;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77209",
+          "text": "Carry the exact torn treasure map loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            77209
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The map is declared on a pirate in the Jade Mini Zones; a supplied exact map fits. Hordine’s sea maps are different. Hordine consumes this torn map in his separate key exchange."
+        },
+        {
+          "id": "return",
+          "text": "Bring the torn treasure map to Burgadan",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38037,
+              "completion_key": "give=I:77209;receive=I:38037,I:77209;disappear=0"
+            }
+          ],
+          "hint": "Give Burgadan the exact torn map loose. His spade and returned map mark this exchange; obtaining Hordine’s key, opening silt and collecting treasure are later, separate outcomes."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

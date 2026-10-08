@@ -6337,7 +6337,8 @@ bool native_quest_frozen_reward_read(MYSQL *connection, native_quest_publication
 		pending_rewards.begin(), pending_rewards.end(), [&](const auto &record)
 		{ return record.offering_operation.bytes == state.command->operation_id.bytes; });
 	if (found == pending_rewards.end() ||
-	    found->continuation != state.payload.continuation.data || found->terms.version != 5 ||
+	    found->continuation != state.payload.continuation.data ||
+	    (found->terms.version != 5 && !quest_reward_has_daily_context(found->terms)) ||
 	    found->terms.player_pid != state.player_pid)
 		return false;
 	state.reward = *found;

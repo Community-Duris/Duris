@@ -1,0 +1,853 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "cosmic",
+  "coverage": "complete",
+  "introduction": "Explore Ultarium and its mountain camp: seven independent story outcomes, including recoveries, offerings and a four-soul seal, plus eight optional support-service rows. Active, ready accounting is required.",
+  "orientation": [
+    "Loaded Surface Realm approaches reach the sky-city road and the mountain camp on Darkstone Island. They discover one shared area, while each contact still needs an encounter. The stories have a useful suggested order without a mandatory campaign sequence.",
+    "The foreman's blueprint clue leads to papers nested in a wounded-runner container in the mine. Enter the cave at the mountain crevice; its ladder has falling hazards. Remove the papers into top-level carrying and return them to the construction engineer. No living-runner rescue is implemented.",
+    "The elderly engineer's separate request uses siege-golem plans nested in a skeleton in the harpy settlement. The local blueprint return is independent and cannot substitute. Supplied exact plans satisfy either native request without a personal recovery history.",
+    "The recovered planetary study and its onward delivery copy have identical names but distinct object kinds. The local scholar records the first exchange; Xavier in Myrabolus owns the later delivery receipt. Possessing either output alone records neither quest.",
+    "Fortress progression uses three exact keys: Grudat's sunstone key opens the outer gates, an antechamber carrier has the oblong stair key, and a parapet carrier has the council key. The smuggler needs a separate security key. Current key checks are optional guidance, not proof of historical access.",
+    "The four council members carry four different souls. The director pays a halo only for Zeenium's soul; his other three independent offerings consume their soul without declared rewards. Any donation competes with the box's simultaneous four-soul collection and does not establish permanent council defeat.",
+    "Touch the oracle orb to reach the immaterial prison and its NPC box; north returns to the oracle. The box has a 50-percent reset declaration. Acceptance of all four distinct souls grants bracers, robes, gloves and an Ultarium memory. Reward use and world liberation need separate accepted events.",
+    "The raw and wearable wisps of living wind share a name. Raw proof comes from a covenant windkin with a 33-percent reset declaration. The windwalker accepts it for the wearable counterpart. Neither possession nor the companion-loss text proves a personally recorded kill.",
+    "The dwarven camp offers six independent trapper barters and a hydra-scale gorget service. Foreign trophies have exact sources, caps and possible holding/dispersal routes. The trapper's emblem is a reward for the heart, without an enforced trust prerequisite for other trades.",
+    "Two pushable boulders open opposite sides of a secret blocked cliff passage. The warp platform uses stomp to return to the city entrance. These actions, the magical fountain, epic stone, class teachers and griffon services have their own mechanics and no new journal milestones without accepted evidence.",
+    "Paid rename, pet purchase/rental/claim and epic skill purchases remain guarded while accounting is active. Native item offerings remain available subject to supported settlement. Exact gifts are valid for delivery without manufacturing personal acquisition, learned topics, travel, faction or full-stage completion."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 76008,
+      "name": "Deathium",
+      "keyword": "deathium",
+      "description": "Starts on the road below the observatory and can roam. Ask hello about specialization; his actual teacher properties support class development. The table-driven Infuse Magical Device purchase remains unavailable while accounting is active.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 76013,
+      "name": "Grudat",
+      "keyword": "grudat",
+      "description": "Grudat's black-market shop: exact fortress and security keys, lockpicks, wards and disguise supplies. Ask service for the rename lead; paid renaming is guarded while accounting is active.",
+      "topics": [
+        "service"
+      ]
+    },
+    {
+      "mob_vnum": 76019,
+      "name": "a gnomish engineer",
+      "keyword": "engineer",
+      "description": "Construction-lane cliffside workshop: return the second-draft blueprints for the silk cape.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76022,
+      "name": "Anaeus",
+      "keyword": "anaeus",
+      "description": "Griffon aviary: the adjoining pet catalog holds a tame griffon. Buying, renting and claiming pets are guarded while accounting is active; aviary lore is not a transport quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76027,
+      "name": "Selaraim",
+      "keyword": "selaraim",
+      "description": "Moonshade covenant cavern: Zeenium's soul gives a halo; the other three soul donations have no declared rewards. Every offering consumes proof needed by the box.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76029,
+      "name": "Rigid",
+      "keyword": "rigid",
+      "description": "Cliff-side dwelling: return the recovered study for a distinct delivery copy. Onward delivery belongs to a foreign recipient.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76036,
+      "name": "the construction foreman",
+      "keyword": "foreman",
+      "description": "Tower of Winds: ask blueprints about the approved second draft and missing runner. This clue grants no keyword achievement.",
+      "topics": [
+        "blueprints"
+      ]
+    },
+    {
+      "mob_vnum": 76038,
+      "name": "Zeenium",
+      "keyword": "zeenium",
+      "description": "Council chambers: carries Zeenium's soul, one of four different proofs required by the box.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76042,
+      "name": "Adaruen",
+      "keyword": "adaruen",
+      "description": "Sacred glen: a druid specialization teacher through actual properties. Storm pilgrimage and instruction prose do not add a quest receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76045,
+      "name": "a mountain slink",
+      "keyword": "mountain",
+      "description": "Starts in the cliff-side alley and can roam: carries exact slink fur for the camp trapper.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76047,
+      "name": "pandora's box",
+      "keyword": "pandoras",
+      "description": "Immaterial prison reached through the oracle orb: accepts four distinct souls together. This box is an NPC rather than a storage container.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76048,
+      "name": "an imprisoned smuggler",
+      "keyword": "imprisoned",
+      "description": "Fortress prison cells: accepts the security key for cash and retires only that smuggler appearance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76049,
+      "name": "an elderly engineer",
+      "keyword": "elderly",
+      "description": "Starts in a cliff-side dwelling and can roam: ask friend or golem about the distant plans; accepts the actual siege-golem plans.",
+      "topics": [
+        "friend",
+        "golem"
+      ]
+    },
+    {
+      "mob_vnum": 76050,
+      "name": "Strata",
+      "keyword": "strata",
+      "description": "Inner council chamber: carries Strata's exact soul.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76052,
+      "name": "Omoona",
+      "keyword": "omoona",
+      "description": "Northern council chamber: carries Omoona's exact soul.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76054,
+      "name": "a windwalker",
+      "keyword": "windwalker",
+      "description": "Starts in the Star Circle and can roam: accepts raw living wind for its wearable counterpart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76058,
+      "name": "Ignor",
+      "keyword": "ignor",
+      "description": "Council chambers: carries Ignor's exact soul.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76065,
+      "name": "Plume Meteorhand",
+      "keyword": "plume",
+      "description": "Fortress parapet: carries the council entrance key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76071,
+      "name": "a lieutenant",
+      "keyword": "lieutenant",
+      "description": "Fortress antechamber: carries the oblong second-floor stair key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76072,
+      "name": "the high warden",
+      "keyword": "high",
+      "description": "Eastern prison cells: carries the recovered planetary study, not its later delivery copy.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76075,
+      "name": "a windwalker",
+      "keyword": "windwalker",
+      "description": "Covenant beast cage: carries raw living wind; a 33-percent reset declaration limits its starting availability.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76243,
+      "name": "a dwarven trapper",
+      "keyword": "dwarven",
+      "description": "Mountain-camp trapper hut: ask hello about six separate trophy barters. None requires the other trades or proves a personal hunt.",
+      "topics": [
+        "hi",
+        "furst",
+        "stuff",
+        "hello",
+        "howdy",
+        "hey"
+      ]
+    },
+    {
+      "mob_vnum": 76244,
+      "name": "a dwarven craftsman",
+      "keyword": "dwarven",
+      "description": "Mountain-camp workshop: accepts the exact hydra scale for a gorget.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "second-draft-blueprints",
+      "title": "The missing second draft",
+      "category": "story",
+      "summary": "Recover or obtain the approved second-draft papers and return them to the construction engineer for a cape. The foreman's clue explains the missing runner; the native contract records the papers, without requiring earlier dialogue or rescuing a living runner.",
+      "contracts": [
+        {
+          "giver_vnum": 76019,
+          "completion_key": "give=I:76027;receive=I:76058;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76027",
+          "text": "Carry the second-draft blueprints",
+          "kind": "carried_item",
+          "item_vnums": [
+            76027
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The wounded runner is a container object in the unused mining tunnel, with one second-draft blueprint nested inside. Remove the actual papers into top-level carrying. Asking the foreman blueprints supplies a lead without an enforced prior receipt or a recorded rescue."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76019,
+              "completion_key": "give=I:76027;receive=I:76058;disappear=1"
+            }
+          ],
+          "hint": "The engineer starts at the cliffside workshop in the construction lane. Acceptance grants the cape of fine silk and retires his appearance. The runner is a container object in the mine rather than an escortable NPC."
+        }
+      ]
+    },
+    {
+      "id": "zeeniums-soul-offering",
+      "title": "Zeenium's soul offering",
+      "category": "story",
+      "summary": "The covenant director accepts Zeenium's soul for a pure-sunstone halo. This single offering is independent of the four-soul seal and consumes one of its required proofs. It does not establish the rebirth or defeat of the entire council.",
+      "contracts": [
+        {
+          "giver_vnum": 76027,
+          "completion_key": "give=I:76038;receive=I:76066;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76038",
+          "text": "Carry the soul of Zeenium",
+          "kind": "carried_item",
+          "item_vnums": [
+            76038
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zeenium carries this exact soul in the council chambers, with cap one. A supplied soul qualifies. Giving it to the covenant director consumes proof also needed by the four-soul box; the delivery does not prove personal victory or lasting council defeat."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76027,
+              "completion_key": "give=I:76038;receive=I:76066;disappear=0"
+            }
+          ],
+          "hint": "The director starts in the covenant cavern and remains after acceptance. Only the Zeenium branch declares the halo; his three other soul offerings are support services without declared rewards."
+        }
+      ]
+    },
+    {
+      "id": "recovered-planetary-study",
+      "title": "The recovered planetary study",
+      "category": "story",
+      "summary": "Return the recovered study to the elderly scholar for a new delivery copy. He asks that the copy be delivered to Xavier in another area. This journal records the local recovery; the onward delivery has its own foreign receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 76029,
+          "completion_key": "give=I:76068;receive=I:76069;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76068",
+          "text": "Carry the recovered planetary study",
+          "kind": "carried_item",
+          "item_vnums": [
+            76068
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The high warden in the eastern prison cells carries the recovered study, with cap one. Its accepted return creates a different study object with the same name. The new delivery copy cannot substitute for the original proof."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76029,
+              "completion_key": "give=I:76068;receive=I:76069;disappear=0"
+            }
+          ],
+          "hint": "The scholar starts at a cliff-side dwelling. Acceptance creates delivery copy 76069 and leaves him present. Xavier in Myrabolus accepts that copy for bantar horns. Both study objects share a name; possession of the copy alone does not prove either delivery."
+        }
+      ]
+    },
+    {
+      "id": "four-soul-seal",
+      "title": "The four-soul seal",
+      "category": "story",
+      "summary": "Bring one soul of each of the four council members together to the immaterial box. The accepted collection grants four declared rewards and retires that box appearance. The council's lasting defeat, faction standing and earlier offerings are not additional recorded stages.",
+      "contracts": [
+        {
+          "giver_vnum": 76047,
+          "completion_key": "give=I:76038,I:76039,I:76040,I:76041;receive=I:55174,I:76032,I:76050,I:76051;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortress-key",
+          "text": "Optional access: carry the sunstone gate key",
+          "kind": "carried_item",
+          "item_vnums": [
+            76011
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grudat stocks this exact key for the locked, pickproof outer fortress gates. An already opened gate or another valid route does not require current key possession."
+        },
+        {
+          "id": "stair-key",
+          "text": "Optional access: carry the oblong stair key",
+          "kind": "carried_item",
+          "item_vnums": [
+            76049
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The fortress antechamber key bearer carries this exact key for the locked, pickproof stairs to the second floor. It is distinct from the smuggler's security key."
+        },
+        {
+          "id": "council-key",
+          "text": "Optional access: carry the council key",
+          "kind": "carried_item",
+          "item_vnums": [
+            76045
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A fortress parapet key bearer carries this key for the locked, pickproof council entrance. The reverse council door has key zero; qualify the actual directional access."
+        },
+        {
+          "id": "supply-76038",
+          "text": "Carry the soul of Zeenium",
+          "kind": "carried_item",
+          "item_vnums": [
+            76038
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zeenium carries this exact soul in the council chambers, with cap one. A supplied soul qualifies. Giving it to the covenant director consumes proof also needed by the four-soul box; the delivery does not prove personal victory or lasting council defeat."
+        },
+        {
+          "id": "supply-76039",
+          "text": "Carry the soul of Ignor",
+          "kind": "carried_item",
+          "item_vnums": [
+            76039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ignor carries this exact soul beside Zeenium, with cap one. The director consumes it without a declared reward; retaining it supports the competing four-soul collection. A supplied soul qualifies."
+        },
+        {
+          "id": "supply-76040",
+          "text": "Carry the soul of Strata",
+          "kind": "carried_item",
+          "item_vnums": [
+            76040
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Strata carries this exact soul in the inner council chamber, with cap one. The director consumes it without a declared reward; the box requires a separate currently carried soul of each council member."
+        },
+        {
+          "id": "supply-76041",
+          "text": "Carry the soul of Omoona",
+          "kind": "carried_item",
+          "item_vnums": [
+            76041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Omoona carries this exact soul in the northern council chamber, with cap one. The director consumes it without a declared reward. Her robes, the soul and a completed council campaign are different evidence."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76047,
+              "completion_key": "give=I:76038,I:76039,I:76040,I:76041;receive=I:55174,I:76032,I:76050,I:76051;disappear=1"
+            }
+          ],
+          "hint": "Touch the oracle orb in the tower to reach the immaterial prison; its north exit returns to the oracle. The box has a 50-percent reset declaration. It consumes all four different souls together and grants whirlwind bracers, council robes, sentient gloves and an Ultarium memory. Holding or tapping a reward does not replace this receipt."
+        }
+      ]
+    },
+    {
+      "id": "smugglers-security-key",
+      "title": "The smuggler's escape key",
+      "category": "story",
+      "summary": "Bring the security key to an imprisoned smuggler for one hundred platinum. The recipient departs after acceptance. The exchange records key delivery, without an escort route or a lasting prison-release campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 76048,
+          "completion_key": "give=I:76028;receive=C:100000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "stair-key",
+          "text": "Optional access: carry the oblong stair key",
+          "kind": "carried_item",
+          "item_vnums": [
+            76049
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The fortress antechamber key bearer carries this exact key for the locked, pickproof stairs to the second floor. It is distinct from the smuggler's security key."
+        },
+        {
+          "id": "supply-76028",
+          "text": "Carry the security key",
+          "kind": "carried_item",
+          "item_vnums": [
+            76028
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grudat stocks the security key at his black-market shop. It is the actual smuggler input; the fortress sunstone key, oblong stair key and council key are different kinds. Supplied keys qualify without a personal purchase receipt."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76048,
+              "completion_key": "give=I:76028;receive=C:100000;disappear=1"
+            }
+          ],
+          "hint": "Smugglers start in the fortress prison cells, with three appearances sharing a cap of three. Acceptance pays 100,000 copper and retires the recipient appearance; another smuggler can remain."
+        }
+      ]
+    },
+    {
+      "id": "siege-golem-plans",
+      "title": "The engineer's old golem plans",
+      "category": "story",
+      "summary": "Return the harpy-settlement siege-golem plans to the elderly engineer for the head of his older model. His friend and proposed masterpiece explain the request, while acceptance requires only the actual plans.",
+      "contracts": [
+        {
+          "giver_vnum": 76049,
+          "completion_key": "give=I:31115;receive=I:76059;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-31115",
+          "text": "Carry the siege-golem plans",
+          "kind": "carried_item",
+          "item_vnums": [
+            31115
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The plans are nested in a small skeleton in the ancient storage chamber of the harpy settlement, with cap one. Remove the papers into top-level carrying. The return does not require escorting the engineer's friend or building another golem."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76049,
+              "completion_key": "give=I:31115;receive=I:76059;disappear=1"
+            }
+          ],
+          "hint": "The elderly engineer starts in a cliff-side dwelling and can roam. Acceptance grants the siege-golem head and retires his appearance; it does not escort his friend, construct a golem or require the blueprint commission."
+        }
+      ]
+    },
+    {
+      "id": "windwalkers-companion",
+      "title": "The windwalker's lost companion",
+      "category": "story",
+      "summary": "Return the raw wisp of living wind to the wandering windwalker. Acceptance grants a wearable wisp and retires the windwalker. Raw proof and wearable reward share a name but have different object kinds.",
+      "contracts": [
+        {
+          "giver_vnum": 76054,
+          "completion_key": "give=I:76064;receive=I:76065;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76064",
+          "text": "Carry the raw living wind",
+          "kind": "carried_item",
+          "item_vnums": [
+            76064
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "An imprisoned windkin carries the raw living wind in a covenant beast cage. The creature has a 33-percent reset declaration and the proof has cap one. The wearable reward has the same name but another object kind; it cannot replace raw proof."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76054,
+              "completion_key": "give=I:76064;receive=I:76065;disappear=1"
+            }
+          ],
+          "hint": "The windwalker starts in the Star Circle and can roam. Recover or obtain raw proof from the covenant windkin cage. Companion-loss text is the accepted exchange's narrative, without a personal kill or historical rescue predicate."
+        }
+      ]
+    },
+    {
+      "id": "other-soul-offerings",
+      "title": "Other covenant soul offerings",
+      "category": "service",
+      "summary": "The director accepts an Ignor, Strata or Omoona soul independently, consumes it and declares no reward. These three optional offerings add no quest achievement or daily and compete with the four-soul seal. Confirm the intended donation policy before changing the native terms.",
+      "contracts": [
+        {
+          "giver_vnum": 76027,
+          "completion_key": "give=I:76039;receive=;disappear=0"
+        },
+        {
+          "giver_vnum": 76027,
+          "completion_key": "give=I:76040;receive=;disappear=0"
+        },
+        {
+          "giver_vnum": 76027,
+          "completion_key": "give=I:76041;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering-proof",
+          "text": "Optional: carry one other council soul",
+          "kind": "carried_item",
+          "item_vnums": [
+            76039,
+            76040,
+            76041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Each listed soul is a separate accepted branch, with cap one on its council carrier. Give one only if you intend the unrewarded offering; three earlier receipts do not replace current four-soul proof."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Make an accepted optional offering",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76027,
+              "completion_key": "give=I:76039;receive=;disappear=0"
+            },
+            {
+              "giver_vnum": 76027,
+              "completion_key": "give=I:76040;receive=;disappear=0"
+            },
+            {
+              "giver_vnum": 76027,
+              "completion_key": "give=I:76041;receive=;disappear=0"
+            }
+          ],
+          "hint": "The director remains. A receipt records only the selected consumed soul; the three branches have no declared items, money or XP."
+        }
+      ]
+    },
+    {
+      "id": "trapper-slink-fur",
+      "title": "Trapper barter: slink fur",
+      "category": "service",
+      "summary": "The camp trapper takes slink fur for three pieces of inferior iron ore. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:76031;receive=I:196,I:196,I:196;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76031",
+          "text": "Carry slink fur",
+          "kind": "carried_item",
+          "item_vnums": [
+            76031
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A slink starts in the cliff-side alley carrying fur, with cap one. Supplied fur is accepted; acquiring or handing in the fur does not prove personal trapping."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:76031;receive=I:196,I:196,I:196;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "trapper-falcon-skull",
+      "title": "Trapper barter: an ethereal falcon skull",
+      "category": "service",
+      "summary": "The camp trapper takes an ethereal falcon skull for 150 platinum. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:40731;receive=C:150000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-40731",
+          "text": "Carry an ethereal falcon skull",
+          "kind": "carried_item",
+          "item_vnums": [
+            40731
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ethereal falcons carry skulls in a rare-load room in the Home of the Divine, sharing cap three. Their onward mist/holding routes need active availability qualification. Keep the exact skull for the barter; another animal trophy cannot substitute."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:40731;receive=C:150000;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "trapper-shade-tiger-claw",
+      "title": "Trapper barter: a shade tiger claw",
+      "category": "service",
+      "summary": "The camp trapper takes a shade tiger claw for a declared 150,000 XP award, subject to native caps. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:40733;receive=E:150000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-40733",
+          "text": "Carry a shade tiger claw",
+          "kind": "carried_item",
+          "item_vnums": [
+            40733
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A shade tiger carries its claw in the same rare-load source, with cap one. Actual mist/holding movement needs qualification. This claw has item-use properties, but consuming it is separate from handing it in."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:40733;receive=E:150000;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "trapper-gigasaur-tail",
+      "title": "Trapper barter: a gigasaur tail",
+      "category": "service",
+      "summary": "The camp trapper takes a gigasaur tail for two pieces of inferior copper ore. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:31117;receive=I:202,I:202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-31117",
+          "text": "Carry a gigasaur tail",
+          "kind": "carried_item",
+          "item_vnums": [
+            31117
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A hulking gigasaur carries this tail in the Valley of the Lizards at the harpy settlement, with cap one. Supplied tails qualify without a personally recorded kill."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:31117;receive=I:202,I:202;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "trapper-su-monster-pelt",
+      "title": "Trapper barter: a su-monster pelt",
+      "category": "service",
+      "summary": "The camp trapper takes a su-monster pelt for a declared 100,000 XP award, subject to native caps. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:82561;receive=E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-82561",
+          "text": "Carry a su-monster pelt",
+          "kind": "carried_item",
+          "item_vnums": [
+            82561
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A huge su-monster carries this pelt at its nest in Myrabolus, with cap one. This is one exact trophy, not a tally of slain su-monsters."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:82561;receive=E:100000;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "trapper-abbadon-heart",
+      "title": "Trapper barter: the heart of Abbadon",
+      "category": "service",
+      "summary": "The camp trapper takes the heart of Abbadon for an emblem of trust. This independent trophy barter adds no story achievement or daily; supplied exact proof is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 76243,
+          "completion_key": "give=I:13366;receive=I:76243;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-13366",
+          "text": "Carry the heart of Abbadon",
+          "kind": "carried_item",
+          "item_vnums": [
+            13366
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Abbadon carries his heart in the Throne Room of the Hunt, with cap one. The trapper praises a kill, but a legitimate supplied heart satisfies the actual barter without proving who killed the demon."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76243,
+              "completion_key": "give=I:13366;receive=I:76243;disappear=0"
+            }
+          ],
+          "hint": "The trapper starts in his mountain-camp hut and remains after every barter. Ask hello for the complete trophy list. His demon-kill praise does not establish personal source history."
+        }
+      ]
+    },
+    {
+      "id": "hydra-scale-craft",
+      "title": "Hydra-scale gorget service",
+      "category": "service",
+      "summary": "The mountain-camp craftsman consumes one hydra scale for a hydra-scale gorget. This equipment service adds no story achievement or daily and does not require the trapper's emblem, another barter or a personal hydra kill.",
+      "contracts": [
+        {
+          "giver_vnum": 76244,
+          "completion_key": "give=I:76631;receive=I:76244;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply-76631",
+          "text": "Carry a hydra scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            76631
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The swamp hydra carries this scale in a hidden marsh lair in the Jade Empire, with cap one. The craftsman accepts this exact kind for a gorget; the trophy description is a clue rather than a personally recorded hunt."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76244,
+              "completion_key": "give=I:76631;receive=I:76244;disappear=0"
+            }
+          ],
+          "hint": "The craftsman starts in the small workshop in the dwarven camp and remains after acceptance. His short description supplies little guidance; the exact scale has a crafting clue."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

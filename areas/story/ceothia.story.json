@@ -1,0 +1,558 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "ceothia",
+  "coverage": "complete",
+  "introduction": "Choose one surviving thief guild, earn Lord Lenbrea’s trust, and follow his time-portal and vault rewards. Keep the merchant’s paired crate delivery and the captain’s legacy scroll exchange distinct from actual travel, stat gains and epic training.",
+  "orientation": [
+    "Enter from the Surface forest onto the paved road at Ceothia’s southern edge. Cyraes Way connects the town north to south; Trenathal and Asahtoan Ways lead around the merchant square. Ordinary shops, inns and clerks do not grant quest achievements just by being visited.",
+    "Ask Lord Lenbrea about hello, legacy, service or town, then task. He wants one thief guild to remain. Choose a surviving leader before collecting the other three different badges; each leader wears their own badge, while ordinary guild thieves do not. Supplied badges skip personal kills and the native exchanges do not enforce a permanent faction choice.",
+    "Moonstone waits at the damp alley’s far end, jade wyrm at the lightless alley’s far end. Search and open the secret eastern door in the dim alley for red shadow, or the secret northern door in the smelly alley for violet death. Native closed doors and secret discovery still apply.",
+    "All four bargains give the same Ceothian thief-guild badge, with different gifts: moonstone’s platinum eyepatch, jade wyrm’s amethyst bracelet, red shadow’s ruby-buckle belt or violet death’s gold-lined boots. The chosen giver leaves. One accepted bargain completes the shared journal card; its four alternatives are not four required campaign stages.",
+    "Give Lenbrea the common badge for the bluestone key and 500,000 copper. Unlock and open the western audience-chamber door to the storeroom; the door is pickproof and the key breaks when used. ENTER the shimmering portal goes to past Ceothia. An open door or supplied later proof bypasses earlier personal history.",
+    "Lenbrea separately accepts future Ceothia’s flickering dragon horn for the demonic ogre-warlord sword and 500,000 copper, or the Chronomancer’s thread of time for a glowing vault key. The huge beholder supplies the horn. The return portal in future Ceothia leads back to the present audience chamber. Exact supplied proofs need no personal timeline journey.",
+    "The glowing key unlocks the pickproof northern vault door and breaks when used. The vault’s imported glowing pool has its own DRINK agility effect, level requirement and shared two-day pool cooldown. A denied or capped drink is not a positive stat gain; obtaining the key is not proof of entering or using the pool. A dormant skill-beacon table mentioning this room does not place a beacon here.",
+    "Two exact oaken crates lie inside the closed, locked wagon on the southern cobblestone road. One of the three bored guards beside it carries the tiny iron key, which may break on use. Get two separate crates and bring them to the merchant guard waiting in the Steel Mug taproom for 200,000 copper. The crates are other-type quest items rather than containers; the fixed wagon need not be picked up.",
+    "The captain’s legacy recipe asks for Bel’s heart, the orb of unmaking and the mystic runed tablet for a Dexterity scroll. No current fresh tablet source or bound scroll-learning effect was found. The captain also teaches epic Dexterity and the butcher teaches Toughness through separate PRACTICE purchases, which remain unavailable while economic accounting is active.",
+    "The General Store is the only shop definition in this area; other shop descriptions are not proof of shopping support. Five rooms have explicit inn bindings. The Golden Cat taproom offers separate ship crew services. The local level potion also has foreign and procedural sources, without becoming a Ceothian quest hand-in.",
+    "Guild survival, earning trust, entering the past, returning future proofs and using the vault form a story in the lore. Their exact native exchanges remain independent, without an enforced all-stage campaign or proof that the timeline has changed. New campaign, source, access, custom effect and renewal credit requires admitted events and recovery qualification.",
+    "Discovery has its own achievement, and meeting the terminal givers reveals the relevant journal cards. Dialogue, current loose materials and exact accepted outcomes stay distinct. Active, ready accounting is required for all new discovery, encounter, journal, achievement and daily credit; frozen reward recovery is separate."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 80801,
+      "name": "the leader of the moonstone thieves",
+      "keyword": "moonstone",
+      "description": "At the end of the south-eastern damp alley. Bring the jade wyrm, red shadow and violet death badges; gives the common badge and platinum eyepatch, then leaves.",
+      "topics": [
+        "hello",
+        "hi",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 80802,
+      "name": "the leader of the jade wyrm thieves",
+      "keyword": "jade",
+      "description": "At the end of the northern lightless alley. Bring moonstone, red shadow and violet death badges; gives the common badge and amethyst bracelet, then leaves.",
+      "topics": [
+        "hello",
+        "hi",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 80803,
+      "name": "Lord Lenbrea",
+      "keyword": "lenbrea",
+      "description": "In the manor audience chamber. Ask hello, legacy, service or town, then task. The common badge, flickering horn and thread of time each have their own exact reward. Earlier personal dialogue and travel are not required by those recipes.",
+      "topics": [
+        "hello",
+        "hi",
+        "howdy",
+        "legacy",
+        "service",
+        "town",
+        "task"
+      ]
+    },
+    {
+      "mob_vnum": 80807,
+      "name": "the leader of the red shadow thieves",
+      "keyword": "shadow",
+      "description": "Behind the secret eastern door in the north-eastern dim alley. Bring violet death, moonstone and jade wyrm badges; gives the common badge and ruby-buckle belt, then leaves.",
+      "topics": [
+        "hello",
+        "hi",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 80808,
+      "name": "the leader of the violet death thieves",
+      "keyword": "violet",
+      "description": "In the meeting hall beyond the secret northern door in the south-western smelly alley. Bring moonstone, jade wyrm and red shadow badges; gives the common badge and gold-lined boots, then leaves.",
+      "topics": [
+        "hi",
+        "hello",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 80875,
+      "name": "a merchant guard",
+      "keyword": "merchant",
+      "description": "Waiting in the Steel Mug taproom. Ask hello, hi or howdy. Accepts two exact oaken crates for 200,000 copper; other merchant-guard prototypes do not own this request.",
+      "topics": [
+        "hello",
+        "hi",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 80907,
+      "name": "the captain of the Ceothian Guard",
+      "keyword": "captain",
+      "description": "In the Ceothian Guard barracks. Owns the legacy three-item scroll exchange and separately teaches epic Dexterity through PRACTICE. His qc_action lines are timed room messages, not addressed topics or command numbers.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80862,
+      "name": "a bloody butcher",
+      "keyword": "butcher",
+      "description": "In the butcher shop north of the merchant square. Separately teaches Toughness through the computed epic-teacher table; ordinary carcass prose does not make every corpse a quest item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80872,
+      "name": "a bored merchant guard",
+      "keyword": "bored",
+      "description": "Three instances stand beside the southern merchant wagon; only the middle reset carries the tiny iron key. The recipient waiting in the Steel Mug is a different merchant guard.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80861,
+      "name": "a homely woman",
+      "keyword": "homely",
+      "description": "Keeps the General Store north of the merchant square. The area has one actual shop definition; the many other described shops do not acquire shopping or quest handlers from their names.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80909,
+      "name": "a Ceothian vault guard",
+      "keyword": "vault",
+      "description": "The vault guard starts inside Lenbrea’s locked northern vault. The glowing key gives access; defeating this guard is not a native requirement for Lenbrea’s thread hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80888,
+      "name": "a beautiful young barmaid",
+      "keyword": "beautiful",
+      "description": "At the Golden Cat taproom. LIST/HIRE is bound to the room as a ship crew service, requiring ship ownership and its normal eligibility. Hiring and inn services are separate from local quest outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80850,
+      "name": "a Du'Maathe castle guard",
+      "keyword": "castle",
+      "description": "The visiting Du’Maathe castle messenger starts in the manor waiting room. His report and Lenbrea’s warning connect the lore without adding a local dialogue, delivery or castle-restoration requirement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 81429,
+      "name": "a huge beholder",
+      "keyword": "beholder",
+      "description": "The huge beholder in future Ceothia starts with the exact flickering horn in the rare-load dispersal room. Its actual presence and location may change; no personal source kill is required for an exact supplied horn.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 81454,
+      "name": "The Chronomancer",
+      "keyword": "chronomancer",
+      "description": "In future Ceothia’s Vortex of Time. Starts carrying the exact thread requested by present-day Lenbrea. Reaching or defeating this actor alone is not the accepted hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 32420,
+      "name": "Bel, the lord of the First",
+      "keyword": "bel",
+      "description": "Bel, lord of the First, in the Blood Citadel starts carrying the exact heart requested by the captain and other recipients. The heart has a handling trap; source recovery remains separate from delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26642,
+      "name": "the Dark",
+      "keyword": "dark",
+      "description": "The Dark in the Negative Material Plane wears the exact orb of unmaking. Ownership, removal and choosing a recipient are separate from Ceothia’s accepted legacy exchange.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "choose-surviving-thief-guild",
+      "title": "Choose the surviving thief guild",
+      "category": "story",
+      "summary": "Choose one of four leaders. Bring that leader the three other exact guild badges for the common Ceothian badge and the branch’s own gift: moonstone gives the platinum eyepatch, jade wyrm the amethyst bracelet, red shadow the ruby-buckle belt, violet death the gold-lined boots. The chosen giver leaves after acceptance. This is one journal outcome with four alternatives, not a demand to eliminate every leader or personally complete all four deals.",
+      "contracts": [
+        {
+          "giver_vnum": 80801,
+          "completion_key": "give=I:80806,I:80810,I:80811;receive=I:80803,I:80813;disappear=1"
+        },
+        {
+          "giver_vnum": 80802,
+          "completion_key": "give=I:80805,I:80810,I:80811;receive=I:80813,I:80814;disappear=1"
+        },
+        {
+          "giver_vnum": 80807,
+          "completion_key": "give=I:80805,I:80806,I:80811;receive=I:80813,I:80817;disappear=1"
+        },
+        {
+          "giver_vnum": 80808,
+          "completion_key": "give=I:80805,I:80806,I:80810;receive=I:80813,I:80818;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "badge-80805",
+          "text": "Optional choice material: carry the moonstone leader badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            80805
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The moonstone leader in the damp alley wears this exact badge. Choose one surviving leader and bring the other three different guild badges together; the chosen leader does not ask for their own badge. Three copies of one badge do not replace that branch’s exact set. Other guild members do not carry these leader badges. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "badge-80806",
+          "text": "Optional choice material: carry the jade wyrm leader badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            80806
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The jade wyrm leader at the end of the lightless alley wears this exact badge. Choose one surviving leader and bring the other three different guild badges together; the chosen leader does not ask for their own badge. Three copies of one badge do not replace that branch’s exact set. Other guild members do not carry these leader badges. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "badge-80810",
+          "text": "Optional choice material: carry the red shadow leader badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            80810
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The red shadow leader behind the secret eastern alley door wears this exact badge. Choose one surviving leader and bring the other three different guild badges together; the chosen leader does not ask for their own badge. Three copies of one badge do not replace that branch’s exact set. Other guild members do not carry these leader badges. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "badge-80811",
+          "text": "Optional choice material: carry the violet death leader badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            80811
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The violet death leader beyond the secret northern alley door wears this exact badge. Choose one surviving leader and bring the other three different guild badges together; the chosen leader does not ask for their own badge. Three copies of one badge do not replace that branch’s exact set. Other guild members do not carry these leader badges. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80801,
+              "completion_key": "give=I:80806,I:80810,I:80811;receive=I:80803,I:80813;disappear=1"
+            },
+            {
+              "giver_vnum": 80802,
+              "completion_key": "give=I:80805,I:80810,I:80811;receive=I:80813,I:80814;disappear=1"
+            },
+            {
+              "giver_vnum": 80807,
+              "completion_key": "give=I:80805,I:80806,I:80811;receive=I:80813,I:80817;disappear=1"
+            },
+            {
+              "giver_vnum": 80808,
+              "completion_key": "give=I:80805,I:80806,I:80810;receive=I:80813,I:80818;disappear=1"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "lenbrea-ceothian-badge",
+      "title": "Lenbrea: earn trust and open the past",
+      "category": "story",
+      "summary": "Bring Lord Lenbrea the common Ceothian thief-guild badge for a bluestone key and 500,000 copper. Ask hello, legacy, service or town, then task for the story. The exact supplied badge qualifies without your own earlier guild bargain. The key provides access rather than proof that the past has been cleansed.",
+      "contracts": [
+        {
+          "giver_vnum": 80803,
+          "completion_key": "give=I:80813;receive=C:500000,I:80815;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-route",
+          "text": "Optional earlier route: choose a surviving thief guild",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80801,
+              "completion_key": "give=I:80806,I:80810,I:80811;receive=I:80803,I:80813;disappear=1"
+            },
+            {
+              "giver_vnum": 80802,
+              "completion_key": "give=I:80805,I:80810,I:80811;receive=I:80813,I:80814;disappear=1"
+            },
+            {
+              "giver_vnum": 80807,
+              "completion_key": "give=I:80805,I:80806,I:80811;receive=I:80813,I:80817;disappear=1"
+            },
+            {
+              "giver_vnum": 80808,
+              "completion_key": "give=I:80805,I:80806,I:80810;receive=I:80813,I:80818;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Any one of the four leader exchanges grants the common badge. Their distinct leader badges are different materials. Supplied common badges skip this earlier receipt."
+        },
+        {
+          "id": "common-badge",
+          "text": "Carry the common Ceothian thief-guild badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            80813
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One successful bargain with any surviving guild leader grants this exact common badge. The moonstone, jade wyrm, red shadow and violet death leader badges are not accepted by Lenbrea here. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80803,
+              "completion_key": "give=I:80813;receive=C:500000,I:80815;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "lenbrea-flickering-dragon-horn",
+      "title": "Lenbrea: return the flickering dragon horn",
+      "category": "story",
+      "summary": "Bring Lenbrea the exact flickering dragon horn from future Ceothia for the demonic sword of the ogre warlords and 500,000 copper. The horn is carried by a huge beholder, rather than supplied by every dragon. This delivery does not prove your own travels or a restored timeline, and remains independent of the thread offering.",
+      "contracts": [
+        {
+          "giver_vnum": 80803,
+          "completion_key": "give=I:81410;receive=C:500000,I:80830;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-route",
+          "text": "Optional earlier route: earn Lenbrea’s trust",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80803,
+              "completion_key": "give=I:80813;receive=C:500000,I:80815;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "The Ceothian badge exchange supplies access to the past through the manor’s western portal. Supplied future proof bypasses personal badge, key and travel history. A receipt never restores a missing or broken key."
+        },
+        {
+          "id": "portal-key",
+          "text": "Optional access: carry the bluestone time-portal key",
+          "kind": "carried_item",
+          "item_vnums": [
+            80815
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Lenbrea’s Ceothian badge exchange grants this real key. It opens the locked, pickproof west door from his audience chamber to the time-portal storeroom. It breaks on successful ordinary unlocking; an already open route or supplied future proof skips key history. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "dragon-horn",
+          "text": "Carry the flickering dragon horn",
+          "kind": "carried_item",
+          "item_vnums": [
+            81410
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The huge beholder in future Ceothia starts carrying this exact horn in a dispersal room marked for its rare vault appearance. The horn is a staff by item type, with its own magic separate from this delivery. A generic dragon horn or Ceothia’s ordinary bluestone sword does not substitute. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80803,
+              "completion_key": "give=I:81410;receive=C:500000,I:80830;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "lenbrea-thread-of-time",
+      "title": "Lenbrea: return a thread of time",
+      "category": "story",
+      "summary": "Bring Lenbrea the exact thread of time carried by the Chronomancer in future Ceothia for the glowing vault key. The key opens the locked, pickproof northern vault door and breaks on successful ordinary unlocking. Vault entry, drinking its agility pool and timeline restoration are separate from this accepted hand-in.",
+      "contracts": [
+        {
+          "giver_vnum": 80803,
+          "completion_key": "give=I:81423;receive=I:80832;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-route",
+          "text": "Optional earlier route: earn Lenbrea’s trust",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80803,
+              "completion_key": "give=I:80813;receive=C:500000,I:80815;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "The Ceothian badge exchange supplies access to the past through the manor’s western portal. Supplied future proof bypasses personal badge, key and travel history. A receipt never restores a missing or broken key."
+        },
+        {
+          "id": "portal-key",
+          "text": "Optional access: carry the bluestone time-portal key",
+          "kind": "carried_item",
+          "item_vnums": [
+            80815
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Lenbrea’s Ceothian badge exchange grants this real key. It opens the locked, pickproof west door from his audience chamber to the time-portal storeroom. It breaks on successful ordinary unlocking; an already open route or supplied future proof skips key history. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "time-thread",
+          "text": "Carry a thread of time",
+          "kind": "carried_item",
+          "item_vnums": [
+            81423
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Chronomancer in future Ceothia’s Vortex of Time starts carrying this exact item. Another thread, the shared Ceothian badge and the dragon horn do not substitute. No personal earlier horn offering is required. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80803,
+              "completion_key": "give=I:81423;receive=I:80832;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "merchant-two-oaken-crates",
+      "title": "Merchant guard: deliver two oaken crates",
+      "category": "story",
+      "summary": "Bring the merchant guard waiting in the Steel Mug taproom two separate exact oaken crates together for 200,000 copper. The crates start inside the locked merchant wagon on the southern cobblestone road. This is independent of the thief-guild choice and Lenbrea’s missions; other merchant guards are different actors.",
+      "contracts": [
+        {
+          "giver_vnum": 80875,
+          "completion_key": "give=I:80826,I:80826;receive=C:200000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "wagon-key",
+          "text": "Optional access: carry the tiny iron wagon key",
+          "kind": "carried_item",
+          "item_vnums": [
+            80827
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The middle of three bored merchant-guard resets beside the wagon carries this exact key. The wagon is fixed, closed and locked; ordinary lockpicking or knock attempts are possible. Unlock and open it before getting the two crates; its key has a chance to break. Supplied crates need no wagon history. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "crates",
+          "text": "Carry two separate oaken crates",
+          "kind": "carried_item",
+          "item_vnums": [
+            80826
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Two P resets place two copies of this exact crate inside the merchant wagon. Each weighs fifty; the wagon itself need not be picked up. The crate is an other-type quest item, not a storage container. One copy or an unrelated crate does not satisfy the pair. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80875,
+              "completion_key": "give=I:80826,I:80826;receive=C:200000;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "captain-legacy-dexterity-scroll",
+      "title": "Captain: exchange the legacy dexterity materials",
+      "category": "story",
+      "summary": "The guard captain’s legacy item exchange requires Bel’s exact still-beating heart, the exact orb of unmaking and the mystic runed stone tablet together for the scroll of Dexterity. This records an item exchange, not epic skill learning. Current PRACTICE purchases and the butcher’s Toughness teaching are separate; epic skill purchases are unavailable while accounting is active. No active source for a fresh tablet or bound learning effect for this trash-type scroll was found; supplied exact materials still describe the native recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 80907,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:404;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "bel-heart",
+          "text": "Carry Bel’s still-beating heart",
+          "kind": "carried_item",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Bel in the Blood Citadel starts carrying this exact heart; its prototype includes a handling trap. Other devil hearts do not substitute. This item also participates in other zones’ requests. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "orb",
+          "text": "Carry the orb of unmaking",
+          "kind": "carried_item",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Dark in the Negative Material Plane wears this exact orb. Remove it before offering. Choosing this exchange consumes a material requested by other recipients; another orb or any arbitrary artifact does not replace the native exact kind. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "tablet",
+          "text": "Carry the mystic runed stone tablet",
+          "kind": "carried_item",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This legacy tablet exists as a prototype, but the reviewed active resets, recipes and source code supply no current fresh issuance path. Its prose mentions any artifact; the captain’s exact recipe still needs this tablet. Do not expect current epic PRACTICE to issue it. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80907,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:404;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted exchange records this outcome. Dialogue, material readiness, travel, stat gains and economic settlement are separate facts. Alternative bindings mean any one accepted branch; recipient and fresh supply still govern daily availability."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

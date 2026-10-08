@@ -1,0 +1,204 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mansion",
+  "coverage": "complete",
+  "introduction": "Discover the Englehardt family's history, return the pianist's missing music and the handmaid's rattle, and bring Lord Englehardt both demon proofs for his vault key. These are three independent accepted requests. Clues and shared doors explain the route; exact loose materials prepare a turn-in. New progress requires active, ready accounting.",
+  "orientation": [
+    "The Forgotten Mansion leads from an abandoned garden and house into haunted caverns, a cathedral, demon chambers and a guarded vault. Discovery records arrival. It does not guarantee safe access to every room, a present giver or available supplies.",
+    "ASK gardener about key, door, family, name or secrets. The gardener points toward a desk and the family-name clue. The gate and front-door plaque name Englehardt. These leads help explain the house; individual ASK keywords do not award achievements or become required personal history.",
+    "A small jodani key is declared inside the closed wooden desk in the dusty basement. It fits the front door and can break on use. Both this desk and the elegant bedroom desk are closed containers without native locks. Opening a shared desk is access, and carrying a supplied exact item also fits a request.",
+    "ASK pianist about piano, music, phoenix or rise. The old musical paper is inside the elegant desk in the southeast corner of the master bedroom. Return it for a black opal ring and a diary entry about the family's experiments. The response explains how the library leads below; reading a reward or owning a ring does not itself prove the request was accepted.",
+    "In the dark library, SAY englehardt to unlock and reveal the eastern stone door, then open it to enter the cavern. This is an actual shared magic-word door. Another player's prior opening may provide access. Your own discovery of the written name, pianist turn-in or SAY history is not an extra native requirement for the later quests.",
+    "ASK handmaid about baby, crying, child or cry. The exact rattle is declared in a pouch on a humanoid skeleton in the cavern tunnel. This skeleton is a container rather than a live child or a freshly created corpse. Return the rattle for platinum wristwear. The response describes quieting the child; the native room descriptions still contain crying, so the journal records the accepted return without claiming a permanent world-state change.",
+    "ASK englehardt about life, experiment, quest, offer, strong, vault, gaultair or tyrlos. Bring the bloody head of Gaultair AND the horn of Tyrlos together. Gaultair and Tyrlos declare these exact proof objects; supplied proofs also fit. Lord Englehardt rewards the complete bundle with his golden vault key and experience. One proof alone, a similarly named trophy or his key alone is not acceptance.",
+    "The route below has locked and hidden doors, lava passages and falls. An obsidian key leads into the cathedral; a key in the podium leads toward Gaultair; Gaultair's living-magma key fits a hidden northwest passage toward Tyrlos. Current access and the normal movement, search and door rules matter. The journal does not require a personal sequence of key pickups, kills or unlocks.",
+    "Englehardt's key opens the first local vault door. The red and gold dragons declare different keys for the later golden and platinum doors. A separate Winterhaven passage enters the treasure room from outside this local chain. Arrival at the treasure room therefore does not prove that you completed Englehardt's request or personally opened every vault door.",
+    "The treasure room declares an epic runestone and a dragon-carried memory of The Forgotten Mansion. The stone has its own eligible group reward and committed zone-touch process. The memory can be offered to the Mansion ambassador in Winterhaven for that city's reward. Those are separate outcomes; neither substitutes for a local quest receipt or proves that every demon was personally defeated.",
+    "Tyrlos also declares a green vapor with its own shield, curse and equipment behavior. Its effects do not remove the house's curse or complete Englehardt's offering. Current loose custody prepares each request; worn, held, nested, spent or handed-away supplies do not. Three accepted stories contribute three achievements and potential dailies. Fresh stock, giver availability and active, ready accounting govern new progress."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 3504,
+      "name": "an elderly gardener",
+      "keyword": "gardener",
+      "description": "The gardener offers leads about the desk, family name and haunted manor.",
+      "topics": [
+        "adventurers",
+        "luck",
+        "secrets",
+        "secret",
+        "manor",
+        "key",
+        "door",
+        "family",
+        "name"
+      ]
+    },
+    {
+      "mob_vnum": 3505,
+      "name": "a faint corporeal image",
+      "keyword": "pianist",
+      "description": "The pianist accepts the missing musical paper for a ring and diary entry.",
+      "topics": [
+        "piano",
+        "music",
+        "phoenix",
+        "rise"
+      ]
+    },
+    {
+      "mob_vnum": 3506,
+      "name": "the spectre of a handmaid",
+      "keyword": "handmaid",
+      "description": "The handmaid accepts the exact rattle for platinum wristwear.",
+      "topics": [
+        "baby",
+        "crying",
+        "child",
+        "cry"
+      ]
+    },
+    {
+      "mob_vnum": 3518,
+      "name": "the spectre of Lord Englehardt",
+      "keyword": "englehardt",
+      "description": "Lord Englehardt accepts both exact demon proofs together for his key and experience.",
+      "topics": [
+        "life",
+        "experiment",
+        "quest",
+        "offer",
+        "strong",
+        "vault",
+        "gaultair",
+        "tyrlos"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "pianist-phoenix-rise",
+      "title": "Pianist: Rise of the Phoenix",
+      "category": "story",
+      "summary": "Return the exact musical paper for the black opal ring and diary entry.",
+      "contracts": [
+        {
+          "giver_vnum": 3505,
+          "completion_key": "give=I:3505;receive=I:3511,I:3512;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "carry-3505",
+          "text": "Carry 1 × an old piece of paper loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            3505
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elegant desk in the southeast corner of the master bedroom declares the exact music paper. Open the closed, unlocked desk. A supplied exact paper also fits; learning or naming the song is a clue rather than a required receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Pianist: Rise of the Phoenix",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 3505,
+              "completion_key": "give=I:3505;receive=I:3511,I:3512;disappear=0"
+            }
+          ],
+          "hint": "Return the exact musical paper for the black opal ring and diary entry. Exact acceptance records the outcome; present materials, reward custody and clues do not. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "handmaid-missing-rattle",
+      "title": "Handmaid: the missing rattle",
+      "category": "story",
+      "summary": "Return the exact rattle for the platinum circlet worn at the wrist.",
+      "contracts": [
+        {
+          "giver_vnum": 3506,
+          "completion_key": "give=I:3509;receive=I:3513;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "carry-3509",
+          "text": "Carry 1 × a simple rattle loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            3509
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cavern tunnel declares a humanoid skeleton container holding this exact rattle. Recover it from the pouch or carry a matching supplied rattle. This is an item return, not a live rescue or corpse-birth achievement."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Handmaid: the missing rattle",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 3506,
+              "completion_key": "give=I:3509;receive=I:3513;disappear=0"
+            }
+          ],
+          "hint": "Return the exact rattle for the platinum circlet worn at the wrist. Exact acceptance records the outcome; present materials, reward custody and clues do not. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "englehardt-two-proofs",
+      "title": "Englehardt: the two demon proofs",
+      "category": "story",
+      "summary": "Offer the exact head and horn together for the Englehardt vault key and experience.",
+      "contracts": [
+        {
+          "giver_vnum": 3518,
+          "completion_key": "give=I:3529,I:3539;receive=E:250000,I:3540;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "carry-3529",
+          "text": "Carry 1 × the bloody head of Gaultair loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            3529
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gaultair declares this exact bloody head in his chamber. Bring it together with Tyrlos's horn. The native proof is a reset item; custody can be supplied and does not establish your personal kill."
+        },
+        {
+          "id": "carry-3539",
+          "text": "Carry 1 × the horn of Tyrlos loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            3539
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tyrlos declares this exact horn, separately from the green vapor and other equipment. Bring it together with Gaultair's head. A supplied horn fits without personal boss, key or spoken-password history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Englehardt: the two demon proofs",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 3518,
+              "completion_key": "give=I:3529,I:3539;receive=E:250000,I:3540;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact head and horn together for the Englehardt vault key and experience. Exact acceptance records the outcome; present materials, reward custody and clues do not. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

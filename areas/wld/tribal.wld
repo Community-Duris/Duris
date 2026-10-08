@@ -124,7 +124,7 @@ A dark forest continues to the south.
 ~
 0 0 42201
 D3
-A dark forest continues to the south.
+A dark forest continues to the west.
 ~
 ~
 0 0 42203
@@ -834,7 +834,7 @@ A tiny path leads east into a very dark forest.
 ~
 0 0 42230
 D3
-A tiny path leads east into a dense forest.
+A tiny path leads west into a dense forest.
 ~
 ~
 0 0 42232
@@ -1556,7 +1556,7 @@ A hut for young women stands there.
 door~
 1 0 42266
 D2
-A village square continues to the west.
+A village square continues to the south.
 ~
 ~
 0 0 42260

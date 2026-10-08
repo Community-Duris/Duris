@@ -1,0 +1,454 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "caves_skelenak",
+  "coverage": "complete",
+  "introduction": "Follow Goortok’s tests and the blind monk’s requests through the caves and beyond. Each accepted return has its own journal card. Their dialogue suggests an order, but the returns are accepted independently. Discovery is separate. New progress requires active, ready accounting.",
+  "orientation": [
+    "ASK GOORTOK about moralon to learn about the mountain’s name. His tests ask for a silver disc, a platinum disc and a strange vial. Each offering is accepted on its own and gives a response rather than an item or coin reward. Hearing an answer does not complete an offering.",
+    "The silver disc is declared inside a skeletal corpse in the deep cave beyond the trapper. The exact platinum disc and strange vial have prototypes, but this source review found no active declared producer for either. Existing matching supplied items can fit. Similar names and other discs or vials cannot substitute.",
+    "The Moralon clue appears in a tree inscription in the northern wilderness and in golden-flecked cave writing that points toward a Calim desert oasis. Goortok’s final test asks you to find a name on an ancient monolith. Follow the inscriptions for the answer. Hearing his response and learning the name remain separate from accepted offering history.",
+    "Goortok carries the stone key for the locked downward passage beside him. The boulder approach is an ordinary closed door in the current world. Key possession, unlocking, opening and passage differ, and existing shared access can change which keys you need.",
+    "The blind monk is declared at the mountain top. ASK MONK about greetings, solace, tyrrany, eyes, help, task or glass for his native leads and aliases. The large rock on the mountain path is the declared travel object, but its configured verb differs from the current climb command. Ordinary access needs builder qualification; climbing skill alone is not proof of arriving at the monk.",
+    "The monk accepts the goblin king’s bronze scepter together with the orc chief’s engraved bracelet for a copper mask. He separately accepts the flaming shield from the warlord of fire for frozen leggings. The first pair requires both exact items loose together; defeating the leaders is not a separate journal prerequisite. The suggested task sequence is tribal leaders, pyrohydra, warlord, then troll king; the game accepts each return independently.",
+    "The false marble eye is declared inside a stone desk in Pine Hollow, where opening the locked, pickable desk has a room-wide acid trap. The glass eye is declared inside the pile of skulls in the elven tomb. The monk accepts each eye independently for coins. These artificial eyes fill the monk’s empty sockets and improve his appearance; the native responses do not promise restored vision or persist that cosmetic change.",
+    "The pyrohydra declares both a polished silver bracelet and an amber bracelet. Bring that exact pair loose together for the monk’s ogrebone armplates. The nearby cryohydra is hazard context and does not replace either bracelet or create another accepted return.",
+    "The troll king declares the crystal sphere in the swamp. The monk accepts it for a trollhide belt and then departs. That return can be accepted before his other requests, so complete the returns you want while he is available. Departure and narrated liberation do not prove that all tyrants were defeated or the settlement was rescued.",
+    "These nine accepted returns preserve nine achievements and nine potential dailies under the current reset classification. Material rows show current loose inventory; accepted history survives after items are spent. Matching supplied stock is valid, without first recovery or personal kill proof. Daily eligibility and reset timing do not guarantee fresh items: new reset issuance is gated while accounting is active. New discovery, encounters and progress require active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 4009,
+      "name": "the orc chief",
+      "keyword": "chief",
+      "description": "The orc chief declares the engraved bracelet for one of the monk’s paired returns. Encountering the source does not reveal or complete the monk’s requests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4019,
+      "name": "the goblin king",
+      "keyword": "king",
+      "description": "The goblin king declares the bronze scepter. Defeat, recovery and the monk’s accepted pair are separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4026,
+      "name": "a piercer",
+      "keyword": "piercer",
+      "description": "The local piercer is cave hazard context. Its ordinary encounter adds no accepted return or inferred ambush milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4027,
+      "name": "Goortok",
+      "keyword": "goortok",
+      "description": "Goortok accepts three independent rewardless offerings and answers Moralon. His final test points toward the name written on an ancient monolith; discovering that answer is a separate lore lead.",
+      "topics": [
+        "moralon"
+      ]
+    },
+    {
+      "mob_vnum": 4032,
+      "name": "a large trapper",
+      "keyword": "trapper",
+      "description": "The trapper is nearby cave danger on the silver-disc lead. Its defeat is not required for the accepted disc return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4034,
+      "name": "a nine-headed pyrohydra",
+      "keyword": "pyrohydra",
+      "description": "The pyrohydra declares the exact silver and amber bracelet pair. Encounter and material recovery are distinct from the monk’s acceptance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4037,
+      "name": "a seven-headed cryohydra",
+      "keyword": "cryohydra",
+      "description": "The cryohydra is adjacent hazard context, without another accepted request or substitute for the pyrohydra’s bracelets.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4038,
+      "name": "a blind monk",
+      "keyword": "monk",
+      "description": "The blind monk accepts six independent returns. His sphere reward makes him depart. His dialogue order, sight and liberation are narration without separate persisted milestones.",
+      "topics": [
+        "greetings",
+        "hello",
+        "hi",
+        "solace",
+        "rock",
+        "tyrrany",
+        "warlord",
+        "quest",
+        "eyes",
+        "blind",
+        "eye",
+        "help",
+        "task",
+        "glass",
+        "eyeball",
+        "eyeballs"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "goortok-silver-disc",
+      "title": "Goortok’s silver-disc test",
+      "category": "story",
+      "summary": "Return the exact silver disc for Goortok’s next clue. The native exchange consumes the disc and grants no item or coin reward.",
+      "contracts": [
+        {
+          "giver_vnum": 4027,
+          "completion_key": "give=I:4021;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-4021",
+          "text": "Carry the small silver disc loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4021
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared inside skeletal corpse4020 in room4107. The container, trapper, battleaxe, other disc or a held/nested item does not prepare this row."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4027,
+              "completion_key": "give=I:4021;receive=;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "goortok-platinum-disc",
+      "title": "Goortok’s platinum-disc test",
+      "category": "story",
+      "summary": "Return the exact platinum disc for another clue. No active declared producer was found; this request does not enforce the earlier silver-disc test.",
+      "contracts": [
+        {
+          "giver_vnum": 4027,
+          "completion_key": "give=I:4022;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-4022",
+          "text": "Carry the exact platinum disc loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4022
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "No active reset or native reward producer was found for this exact kind. Existing matching supplied stock fits; another platinum disc with a different identity does not."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4027,
+              "completion_key": "give=I:4022;receive=;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "goortok-strange-vial",
+      "title": "Goortok’s strange-vial test",
+      "category": "story",
+      "summary": "Return the exact strange vial for Goortok’s final name lead. No active declared producer was found; earlier offerings are not enforced prerequisites.",
+      "contracts": [
+        {
+          "giver_vnum": 4027,
+          "completion_key": "give=I:4023;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-4023",
+          "text": "Carry the exact strange vial loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4023
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "No active declared producer was found for this exact vial. A different vial or potion does not substitute; prior disc returns are not enforced."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4027,
+              "completion_key": "give=I:4023;receive=;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-tribal-leaders",
+      "title": "Proof from the tribal leaders",
+      "category": "story",
+      "summary": "Return the bronze scepter and engraved bone bracelet together for a copper mask. The two exact materials form one accepted exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:4005,I:4025;receive=I:4030;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-4005",
+          "text": "Carry the bronze scepter loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4005
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The goblin king declares this exact wielded scepter. Keep it loose together with the engraved bracelet; personal defeat is not required."
+        },
+        {
+          "id": "item-4025",
+          "text": "Carry the engraved bone bracelet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4025
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The orc chief declares this exact wrist item. Keep it loose together with the bronze scepter. Another bone bracelet or the mask reward does not substitute."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:4005,I:4025;receive=I:4030;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-warlord-shield",
+      "title": "The warlord’s flaming shield",
+      "category": "story",
+      "summary": "Return the exact flaming shield for frozen leggings. The warlord’s foreign barrier effect is separate from this local return.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:26438;receive=I:4029;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26438",
+          "text": "Carry the flaming shield loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26438
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The warlord of fire in Myrloch Vale declares this exact shield. Supplied matching stock fits. His death can affect a foreign barrier; that outcome is separate from this return."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:26438;receive=I:4029;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-marble-eye",
+      "title": "A marble eye for the monk",
+      "category": "story",
+      "summary": "Return the exact false marble eye for 100000 coins. The desk’s acid trap and the monk’s cosmetic eye replacement are separate from accepted history.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:16071;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-16071",
+          "text": "Carry the false marble eye loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            16071
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared inside stone desk16072 in Pine Hollow. The desk is locked and pickable, with an acid trap on opening. Another eye, the desk itself or held/nested custody is insufficient."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:16071;receive=C:100000;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-glass-eye",
+      "title": "A glass eye for the monk",
+      "category": "story",
+      "summary": "Return the exact glass eye for 150000 coins. This eye request is independent of the marble eye.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:20604;receive=C:150000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-20604",
+          "text": "Carry the glass eye loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            20604
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared inside skull pile20603 in the elven tomb. It is a separate exact return from the marble eye; the skull pile and similar eyes do not substitute."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:20604;receive=C:150000;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-pyrohydra-bracelets",
+      "title": "The pyrohydra’s two bracelets",
+      "category": "story",
+      "summary": "Return both the polished silver bracelet and amber bracelet for ogrebone armplates. Either bracelet alone is insufficient.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:4016,I:4017;receive=I:4028;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-4016",
+          "text": "Carry the polished silver bracelet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4016
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The pyrohydra declares this bracelet and the amber bracelet. Keep both exact kinds loose together; two copies of one kind are not the requested pair."
+        },
+        {
+          "id": "item-4017",
+          "text": "Carry the amber bracelet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The pyrohydra declares this exact amber bracelet. Pair it with the polished silver bracelet; the nearby cryohydra is context, without a separate receipt."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:4016,I:4017;receive=I:4028;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "monk-troll-king-sphere",
+      "title": "The troll king’s crystal sphere",
+      "category": "story",
+      "summary": "Return the exact crystal sphere for a trollhide belt. The monk departs after accepting it, even if earlier narrated requests remain unfinished.",
+      "contracts": [
+        {
+          "giver_vnum": 4038,
+          "completion_key": "give=I:26013;receive=I:4031;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26013",
+          "text": "Carry the troll king’s crystal sphere loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26013
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The swamp troll king declares this exact sphere. The monk accepts it independently and departs. A different sphere or trollhide belt reward does not substitute."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4038,
+              "completion_key": "give=I:26013;receive=I:4031;disappear=1"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose items fit. New credit requires active, ready accounting. Dialogue order, knowledge, personal kills, cures and liberation need separate evidence. The monk departs after this return."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

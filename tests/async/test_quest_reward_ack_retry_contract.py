@@ -6,6 +6,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class QuestRewardAckRetryContractTest(unittest.TestCase):
+    def test_daily_v6_ack_does_not_require_fee_action_identity(self):
+        repository = (ROOT / "src/persistence/quest_reward_obligation_repository.c").read_text()
+        pipeline = (ROOT / "src/persistence/quest_reward_obligation_pipeline.c").read_text()
+        self.assertIn("quest_reward_is_fee_only(candidate) &&", repository)
+        self.assertNotIn("candidate.version == 6 &&", repository)
+        self.assertIn("quest_reward_is_fee_only(terms)", pipeline)
+        self.assertNotIn("terms.version == 6", pipeline)
+
     def test_waits_for_group_xp_receipts_then_retries_ack(self):
         repository = (ROOT / "src/persistence/quest_reward_obligation_repository.c").read_text()
         pipeline = (ROOT / "src/persistence/quest_reward_obligation_pipeline.c").read_text()

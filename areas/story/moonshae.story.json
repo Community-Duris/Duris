@@ -1,0 +1,211 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "moonshae",
+  "coverage": "complete",
+  "introduction": "Follow the suggested moonwell-to-sword story while keeping two independent accepted returns, current access and shared availability distinct.",
+  "orientation": [
+    "Tristan Kendrick and Brigit are loaded together in the royal bedroom. Ask Tristan about the lost sword of Cymrych Hugh and Brigit about the thieves, firbolgs or onyx orb. Hearing a topic provides context rather than an achievement or proof of recovery.",
+    "Brigit accepts the exact robe of ether as proof from the evil spirit at the cursed moonwell. The spirit can carry that robe. The accepted return grants an onyx orb, and Brigit departs. Another robe, a visit to a moonwell or an account of a battle does not replace her proof.",
+    "The onyx orb fits the stone door between the hidden cave and the forest road. Search, unlocking and shared access follow the actual door state. The foreman also stocks this same orb, so Brigit's accepted return is a suggested source rather than a mandatory personal-history gate.",
+    "The firbolg foreman in the high foreman's room can carry the lost sword of Cymrych Hugh. Return that exact sword to Tristan for a scarlet ring and 99,000 experience. His exchange is independent of Brigit's return; supplied proof can fit the recipe without recording your own victory or first recovery.",
+    "A legacy sword reset also exists in an outside armory, but its chance-20 O entry is disabled by the current ordinary reset path unless forced. It is not a reliable promised alternate source. Shared stock caps and current availability apply to the local foreman's sword as well.",
+    "The onyx orb used for the forest door, the orb of granite, orb of thought and orb of defined onyx have different identities. The shimmering key instead fits the king's secret room; it is offered by a separate outside exchange with Abal. Neither key creates a local accepted receipt by possession alone.",
+    "Silver, sphere and synnoria appear as magic-door keywords. The speech helper acts only on a currently locked negative-key door. The reset silver doors are closed but unlocked, and the sphere and Synnoria doors are open. Do not infer mandatory password or conversation steps from their descriptions.",
+    "The sister knights can call other sisters to help in combat. This shared hunt behavior is separate from Brigit's request, an ally achievement or a requirement to defeat every sister. The moonwell lore also does not establish a recorded permanent purification of the room.",
+    "Pawldo's food shop and the harbor receptionist's ticket shop are registered services. Existing accounting purchase restrictions apply. The old passenger ticket route has missing and stale ship references and no active ticket-taker binding; holding a ticket does not guarantee passage.",
+    "Current outside connections lead through the surface, Llyrath, the underworld shaft and Myrloch Vale. An incoming waterfall in the Vale uses ENTER to reach the sister camp. The port's two retired overworld destinations are removed by the loader; they are not additional required journeys.",
+    "The fine fishing pole is recognized by the fishing command. Fishing needs the actual skill, water and successful item grant. It produces its own catch outcomes rather than either local quest receipt. Old fisher and necklace chatter handlers have no active binding in the reviewed inventory.",
+    "Carry the exact robe or sword loose for current readiness. Worn, nested or similarly named items do not replace these checks. Recorded acceptance survives spent ingredients. The optional loose-orb check is preparation; native door lookup can also accept a held orb. All new journal and quest credit requires active, ready accounting. Both returns are potential dailies; daily rollover does not restock shared loot or respawn Brigit."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 26208,
+      "name": "Tristan Kendrick",
+      "keyword": "tristan",
+      "description": "Ask Tristan about the lost sword, Cymrych Hugh or the king. He accepts the exact lost sword for a scarlet ring and 99,000 experience; an earlier Brigit return is not required.",
+      "topics": [
+        "hi",
+        "hello",
+        "sword",
+        "cymrych",
+        "hugh",
+        "lost",
+        "king",
+        "byron"
+      ]
+    },
+    {
+      "mob_vnum": 26221,
+      "name": "Brigit, the sister knight of synnoria",
+      "keyword": "brigit",
+      "description": "Ask Brigit about the sword, thieves, firbolgs or onyx orb. She accepts the robe of ether from the evil spirit as proof, grants the onyx orb and departs.",
+      "topics": [
+        "sword",
+        "thieves",
+        "firbolg",
+        "firbolgs",
+        "orb",
+        "onyx"
+      ]
+    },
+    {
+      "mob_vnum": 26204,
+      "name": "an evil spirit",
+      "keyword": "spirit",
+      "description": "The evil spirit at the cursed moonwell carries the robe of ether. Current robe possession, personal victory, source recovery and permanent moonwell state are distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26214,
+      "name": "the firbolg foreman",
+      "keyword": "foreman",
+      "description": "The firbolg foreman stocks the lost sword and the same onyx orb rewarded by Brigit. His granite orb and other loot have separate identities.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26207,
+      "name": "Keen the high mage",
+      "keyword": "keen",
+      "description": "Keen occupies the high tower. Its glowing-sphere exit is an ordinary magic-key door, not a local teleport object or another native return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26225,
+      "name": "the master druid Robyn",
+      "keyword": "robyn",
+      "description": "Robyn and the Earthmother's grove provide local lore. Visiting the sacred moonwell does not record Brigit's proof return or a permanent purification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26218,
+      "name": "a sister knight of synnoria",
+      "keyword": "sister",
+      "description": "This sister knight at the camp shares the sisters' combat-help callback. Meeting or fighting her does not establish Brigit's accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26219,
+      "name": "a sister knight of synnoria",
+      "keyword": "sister",
+      "description": "This sister at the camp can answer another sister's combat call. Shared hunting and current equipment are separate from quest acceptance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26220,
+      "name": "a sister knight of synnoria",
+      "keyword": "sister",
+      "description": "This sister at the camp has the shared combat-help callback. Her ivory sword is not Tristan's lost sword of Cymrych Hugh.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26222,
+      "name": "a sister knight of synnoria",
+      "keyword": "sister",
+      "description": "Sister knights guard the camp and approaches. Their shared help behavior is not an invented ordered victory campaign.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26203,
+      "name": "Pawldo",
+      "keyword": "pawldo",
+      "description": "Pawldo's registered shop stocks food and drink at the festival. Shopping is separate from either native quest receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26233,
+      "name": "the passenger receptionist",
+      "keyword": "receptionist",
+      "description": "The registered harbor shop stocks tickets. The retired ticket-taker route lacks an active binding and has stale ship references; a ticket is not proof of travel.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "return-lost-sword",
+      "title": "Return the lost sword to Tristan",
+      "category": "request",
+      "summary": "Return the exact lost sword of Cymrych Hugh for a scarlet ring and 99,000 experience. Brigit's orb offers a suggested access route, but her earlier return is not required by this recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 26208,
+          "completion_key": "give=I:26233;receive=E:99000,I:26235;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26233",
+          "text": "Carry 1 × the lost sword of Cymrych Hugh loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26233
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested proof and similar names are separate. Supplied proof can fit the return without recording your own first source recovery or victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26208,
+              "completion_key": "give=I:26233;receive=E:99000,I:26235;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted native exchange after its proof is spent. Conversation, personal victory, first recovery, shared access and another reward copy remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "moonwell-proof-for-brigit",
+      "title": "Bring moonwell proof to Brigit",
+      "category": "request",
+      "summary": "Bring the robe of ether from the evil spirit to Brigit for an onyx orb. She departs after acceptance. This receipt is separate from current orb possession, permanent moonwell purification and Tristan's sword return.",
+      "contracts": [
+        {
+          "giver_vnum": 26221,
+          "completion_key": "give=I:26212;receive=I:26209;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26212",
+          "text": "Carry 1 × a robe of ether loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26212
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested proof and similar names are separate. Supplied proof can fit the return without recording your own first source recovery or victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26221,
+              "completion_key": "give=I:26212;receive=I:26209;disappear=1"
+            }
+          ],
+          "hint": "Records the exact accepted native exchange after its proof is spent. Conversation, personal victory, first recovery, shared access and another reward copy remain separate. New credit requires active, ready accounting."
+        },
+        {
+          "id": "onyx-orb-now",
+          "text": "Carry 1 × an onyx orb loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26209
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional loose-orb preparation for the forest door. The foreman or another player can supply the same orb without recording this return. Native key lookup also accepts a held orb; this row checks loose inventory. A spent or stored orb does not erase acceptance."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

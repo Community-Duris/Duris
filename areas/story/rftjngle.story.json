@@ -1,0 +1,1505 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "rftjngle",
+  "coverage": "complete",
+  "introduction": "Explore the Rift Valley Jungle floor, canopy, bullywug village, lizardman caves, Moonhollow and elemental cages. Twelve story outcomes and twelve supply services classify all twenty-eight exchanges, with three non-credit referrals or rejections. Active, ready accounting is required. Current possession does not prove personal recovery; dialogue, access, effects and combined campaigns need separate accepted events.",
+  "orientation": [
+    "The three Woodseer approaches enter the western jungle; the southeastern trail connects to the current surface. Climb the actual tree routes for canopy sources. Connected load rooms seed wandering actors; a declared load location is not a guaranteed current position. River currents, falls, closed routes and actual movement rules remain relevant. Some exact proofs are secret items: search the source room or opened source container as appropriate. Revealing an item, acquiring it, and handing it in are different events.",
+    "Meet recipients before asking addressed words. Dialogue topics explain requests but do not award keyword achievements. Twelve flagged contacts receive generic class-sensitive teacher level guidance; the schoolteacher's name alone does not confer that runtime role. The two bartenders also offer separate procedural world quests.",
+    "For the elderly couatl, recover three eggs of the same exact kind from the scattered placement sites, plus the drow hunter's wrist guard. Offer all four loose items together for a burnished bracer. The young couatl returns an egg kind and refers you to the elder; that optional referral earns no separate credit and does not prove the same physical egg survived.",
+    "Reiwiggy offers three paid services: two giant-alligator skins for a tunic, two red-alligator skins for armor, or two ordinary tiger skins for tiger armor, each with ten platinum. These mixed payments are currently guarded with accounting active. He refuses white skin; the cave leather-worker accepts it for boots without requiring the refusal first.",
+    "Enter the lizardman caves through their actual hidden closed routes. Soft bark becomes a blanket service; canopy red petals finish the painter's pigment request; the strange parchment supplies the engineer. The plans actually load in Moonhollow guard quarters despite his cave clue. No mural or city construction is recorded by delivery.",
+    "The cave leather-worker also needs three red-alligator and three giant-alligator skins together for three azurian-hide pieces. Its reward name does not mean azurian hide is an input. The tribal shaman turns leaves into a green potion and dartfrog skin into poison; these services do not prove healing or poisoning a target.",
+    "The chief's dialogue asks for Summerstorm's head but accepts his silver amulet, which has a forty-percent load roll. The scout asks for the chief's head but accepts his golden rod, which has a thirty-percent equip roll, and rejects the actual mangled head. The opposing requests are independent; no allegiance lock, raid, kill history or peace finale is enforced.",
+    "Recover the crystal-headed staff from the Moonhollow lieutenant and bring it to the woodcarver at his unfinished carving for the crystalline bow. The crystal dragon has an equivalent recipient contract but no active appearance or transformation. Use the reachable woodcarver branch; neither two deliveries nor a recorded transformation is required.",
+    "The elemental ranger carries four distinct amulets and can wander out of his connected load room toward the jungle or the separate fire, water, air and earth planes. Recover the actual proofs; his equipped flaming javelin is different from the required flaming medallion. Do not assume he remains in the staging room.",
+    "The jungle brazier at 80061 leads UP to the fire cage; the water bowl at 80072 leads UP to water; the mud bowl at 80071 leads UP to earth. Each cage has its DOWN return portal. ENTER the plane of light at 80060 for air, and ENTER its paired plane to return. Portal arrival and survival are not current story steps.",
+    "Each elemental accepts its own amulet, gives its own reward and leaves: fire javelin, water drums, air cloak, earth mask. These are four independent outcomes. No recorded relocation to its home plane or combined four-rescue finale is implemented. The decorative iron amulet's four compartments have no native opening recipe.",
+    "Teglaron offers four five-platinum services: elder hide → armor; young hide → boots and eyepatch; rare mithril ore → hammer; giant-turtle shell → plate armor. All four mixed payments are currently guarded with accounting active. Killing the elder for hide is not a prerequisite to helping him recover eggs.",
+    "The elderly weaver needs five green, five yellow and five red quetzel feathers together for her cloak. Green and yellow stock is on different bright-quetzel instances; red comes from red quetzels. Fifteen loose items exceed the current exchange limit of fourteen, so this story is guarded and has no daily candidate until the complete batch can settle safely.",
+    "Recover the ancient silver sword from the chieftain's aid and bring it to wandering Mistwalker for Orcslayer and twenty-five platinum. His ghostly reunion is native narrative; recipient departure does not record a spawned ghost, escort or actual effect. Supplied exact sword fits without personal acquisition history.",
+    "Moonhollow's tavern memorial, bereaved villagers, school, songs, Windstrider recipes and Teglaron's fused wall axe explain the world without native quest endpoints. Ordinary shop stock, trophy keys and loot remain separate. Five route descriptions now match their actual exits in a separate repair; ambiguous plot or stock decisions remain pending.",
+    "Seventeen native recipes retain potential daily shape; classifying services and the staff alternatives leaves eleven authored story candidates. The feather batch and seven mixed payments remain guarded. Repeat availability depends on real encounters, access, stock, retiring recipients, reset mode two and active, ready accounting. No first-source recovery, learned word or whole-jungle campaign is inferred."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 80070,
+      "name": "an elderly couatl",
+      "keyword": "elderly",
+      "description": "Elder at canopy room 80180 needs three eggs and the drow wrist guard together. His own hide is a separate Teglaron material, not an egg-return prerequisite.",
+      "topics": [
+        "sorrow",
+        "woe",
+        "sad",
+        "egg",
+        "eggs",
+        "hunters",
+        "hunter"
+      ]
+    },
+    {
+      "mob_vnum": 80071,
+      "name": "a young couatl",
+      "keyword": "young",
+      "description": "Young couatls start at 80136, 80138 and a connected floor load. Egg hand-in returns the same kind and refers you to the elder, with no separate achievement.",
+      "topics": [
+        "hello",
+        "hi",
+        "hunting",
+        "hunt",
+        "egg",
+        "eggs"
+      ]
+    },
+    {
+      "mob_vnum": 80080,
+      "name": "Reiwiggy",
+      "keyword": "reiwiggy",
+      "description": "Reiwiggy in the bullywug village offers three paid skin crafts, each currently guarded with accounting active. White-tiger skin is refused and returned; ask hello or armor.",
+      "topics": [
+        "hello",
+        "armor",
+        "hide",
+        "hides"
+      ]
+    },
+    {
+      "mob_vnum": 80134,
+      "name": "an old lizardman woman",
+      "keyword": "old",
+      "description": "Old woman in the lizardman communal cavern weaves soft bark into blankets. No addressed keyword, rescue or independent story finale is attached.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80136,
+      "name": "the lizardman painter",
+      "keyword": "painter",
+      "description": "Painter in the lizardman cavern needs canopy red petals for pigment. Ask paint or painting; hand-in records the warmask exchange and departure, not a mural update.",
+      "topics": [
+        "paint",
+        "painting"
+      ]
+    },
+    {
+      "mob_vnum": 80147,
+      "name": "the lizardman engineer",
+      "keyword": "engineer",
+      "description": "Engineer in the cave system seeks mathematical plans. Ask caves or plans. Actual parchment source is elven guard quarters, not another declared cave source.",
+      "topics": [
+        "caves",
+        "building",
+        "design",
+        "plans",
+        "parchment"
+      ]
+    },
+    {
+      "mob_vnum": 80148,
+      "name": "a leather-worker",
+      "keyword": "worker",
+      "description": "Cave leather-worker offers six-skin armor and white-tiger boots services. Ask armor or alligator; red and giant-alligator kinds stay distinct.",
+      "topics": [
+        "armor",
+        "leather",
+        "alligator",
+        "alligatorskin"
+      ]
+    },
+    {
+      "mob_vnum": 80149,
+      "name": "the tribal shaman",
+      "keyword": "shaman",
+      "description": "Tribal shaman makes a green potion from crumpled leaves and poison from a dartfrog skin. No addressed question or target-effect finale was found.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80155,
+      "name": "the chieftain",
+      "keyword": "chieftain",
+      "description": "Lizardman chief at the throne room asks for Summerstorm's head but accepts his silver amulet. His golden rod instead supplies the angry scout; his mangled head is rejected there.",
+      "topics": [
+        "elf",
+        "elves",
+        "summerstorm",
+        "leader"
+      ]
+    },
+    {
+      "mob_vnum": 80156,
+      "name": "an unassuming woodcarver",
+      "keyword": "woodcarver",
+      "description": "Woodcarver at the unfinished tree carving is the reachable staff-return recipient. Ask carving, why, world or staff. His reward is the crystalline bow; no actual transformation was found.",
+      "topics": [
+        "carving",
+        "carve",
+        "why",
+        "world",
+        "trapped",
+        "staff",
+        "naked",
+        "clothes",
+        "nail",
+        "fingernail",
+        "finger"
+      ]
+    },
+    {
+      "mob_vnum": 80157,
+      "name": "the crystal dragon",
+      "keyword": "crystal",
+      "description": "Crystal dragon is an alternative native staff recipient with the same reward. It has no active appearance or known transformation; encounter is not guaranteed.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80158,
+      "name": "a fire elemental",
+      "keyword": "fire",
+      "description": "Fire elemental in the flame cage accepts the flaming medallion. UP at the jungle brazier enters; DOWN in the cage returns. No addressed words are declared.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80159,
+      "name": "a water elemental",
+      "keyword": "water",
+      "description": "Water elemental in the water cage accepts the watery amulet. UP at the water bowl enters; DOWN returns. Hand-in and passage are separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80160,
+      "name": "an air elemental",
+      "keyword": "whirlwind",
+      "description": "Air elemental in the air cage accepts the swirling-air amulet. ENTER the plane of light and its paired return; no combined rescue receipt is implied.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80161,
+      "name": "an earth elemental",
+      "keyword": "earth",
+      "description": "Earth elemental in the mud cage accepts the earthen amulet. UP at the mud bowl enters; DOWN returns. Departing recipient does not certify its destination.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80175,
+      "name": "Teglaron",
+      "keyword": "ancient",
+      "description": "Teglaron at the forge offers four five-platinum crafts, currently guarded with accounting active. Ask challenge, elf or mithril; his generic teacher level guidance is separate.",
+      "topics": [
+        "challenge",
+        "forge",
+        "elf",
+        "elves",
+        "metal",
+        "metals",
+        "mithril",
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80209,
+      "name": "an elderly woman",
+      "keyword": "weaving",
+      "description": "Elderly weaver near the canopy needs five feathers of each color to finish a cloak. Ask feathers or weaving. The complete set of fifteen feathers exceeds the current fourteen-item hand-in limit.",
+      "topics": [
+        "feathers",
+        "feather",
+        "weaving"
+      ]
+    },
+    {
+      "mob_vnum": 80210,
+      "name": "Mistwalker",
+      "keyword": "stoop",
+      "description": "Mistwalker starts in a connected staging room and wanders the jungle. Ask elf or language; exact ancient silver sword yields Orcslayer and twenty-five platinum. Generic teacher level guidance is separate.",
+      "topics": [
+        "elf",
+        "elven",
+        "language",
+        "writing",
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80211,
+      "name": "an angry elven scout",
+      "keyword": "ranger",
+      "description": "Angry scout starts in a connected jungle staging room. Ask angry, family or village. The chief's golden rod is accepted; the bloody head is refused and earns no separate credit.",
+      "topics": [
+        "angry",
+        "mad",
+        "rage",
+        "search",
+        "searching",
+        "family",
+        "elf",
+        "village",
+        "battle",
+        "lizardman",
+        "lizardmen"
+      ]
+    },
+    {
+      "mob_vnum": 80072,
+      "name": "a drow hunter",
+      "keyword": "hunter",
+      "description": "Drow hunter starts in a connected jungle load wearing the elder's exact wrist-guard proof. Its origin is not a promised current position or a personal kill receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80053,
+      "name": "the bright quetzel",
+      "keyword": "quetzel",
+      "description": "Bright quetzels start in the connected canopy load. Some instances hold green feathers and other instances yellow; shared bird appearance does not identify their stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80054,
+      "name": "a red quetzel",
+      "keyword": "quetzel",
+      "description": "Red quetzels in the connected canopy load hold the red feathers. Five of each color requires renewed supply and correct distinct kinds.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80034,
+      "name": "the white tiger",
+      "keyword": "cat",
+      "description": "The white tiger starts in a connected jungle-floor load with the rare white skin. Reiwiggy refuses that kind; the cave leather-worker accepts it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80077,
+      "name": "a vicious red alligator",
+      "keyword": "alligator",
+      "description": "Vicious red alligators supply red-alligator skins in the river; they differ from giant-alligator skins despite common aliases.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80079,
+      "name": "a giant alligator",
+      "keyword": "giant",
+      "description": "Giant alligators supply the giant-alligator skin kind used in the tunic and mixed-skin armor services.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80076,
+      "name": "a giant turtle",
+      "keyword": "giant",
+      "description": "Giant turtle in the river supplies Teglaron's shell material. Turtle soup is unrelated.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80069,
+      "name": "a dart frog",
+      "keyword": "dart",
+      "description": "Dart frogs in canopy loads hold poisonous skins for the tribal shaman's conversion service. No first-recovery or poisoning-target credit exists.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80173,
+      "name": "a lieutenant",
+      "keyword": "lieutenant",
+      "description": "Moonhollow lieutenant starting at 80323 holds the crystal-headed staff needed by the woodcarver. Mere presence or ordinary combat is not the staff return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80154,
+      "name": "the chieftain's aid",
+      "keyword": "guard",
+      "description": "The chieftain's aid wears the ancient silver sword for Mistwalker. Other guards do not share that exact declared equipment source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80212,
+      "name": "the elemental ranger",
+      "keyword": "explorer",
+      "description": "Elemental ranger starts in connected room 80444 carrying all four distinct amulets. He can wander between the jungle and four foreign elemental planes; inspect actual custody and location.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80189,
+      "name": "a drunken warrior",
+      "keyword": "drunk",
+      "description": "Drunken warrior in Moonhollow talks about the memorial names, battle and village. This is historical lore, without keyword achievements.",
+      "topics": [
+        "names",
+        "battle",
+        "village"
+      ]
+    },
+    {
+      "mob_vnum": 80191,
+      "name": "a young warrior",
+      "keyword": "warrior",
+      "description": "Young warrior in the tavern talks about the memorial names, battle and village. No present battle-victory endpoint is attached.",
+      "topics": [
+        "names",
+        "battle",
+        "village"
+      ]
+    },
+    {
+      "mob_vnum": 80192,
+      "name": "a young woman",
+      "keyword": "woman",
+      "description": "Tavern woman explains names, wall, message, village, lizardmen and halflings. These describe the settlement's history, not a new rescue contract.",
+      "topics": [
+        "names",
+        "wall",
+        "message",
+        "village",
+        "lizardmen",
+        "halflings"
+      ]
+    },
+    {
+      "mob_vnum": 80194,
+      "name": "an elderly bartender",
+      "keyword": "bartender",
+      "description": "Moonhollow bartender answers native names/wall lore and also hosts procedural world quests via quest, map, abandon and resign. Generated assignments retain their own identity and do not become static zone-story recipes.",
+      "topics": [
+        "names",
+        "wall",
+        "quest",
+        "map",
+        "abandon",
+        "resign"
+      ]
+    },
+    {
+      "mob_vnum": 80195,
+      "name": "the one-armed bard",
+      "keyword": "bard",
+      "description": "One-armed bard explains names, wall, village and message; also has generic teacher level guidance. Songs and memorial history are not keyword achievements.",
+      "topics": [
+        "names",
+        "wall",
+        "village",
+        "message",
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80196,
+      "name": "Summerstorm",
+      "keyword": "summerstorm",
+      "description": "Summerstorm in the temple explains memorial history and halfling aid. His forty-percent amulet load supplies the chief's independent request; generic teacher level guidance is separate.",
+      "topics": [
+        "names",
+        "wall",
+        "village",
+        "message",
+        "halflings",
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80123,
+      "name": "a bullywug bartender",
+      "keyword": "bartender",
+      "description": "Bullywug bartender is a procedural world-quest host and ordinary shopkeeper. Ask quest, map, abandon or resign; these assignments are separate from local authored story outcomes.",
+      "topics": [
+        "quest",
+        "map",
+        "abandon",
+        "resign"
+      ]
+    },
+    {
+      "mob_vnum": 80111,
+      "name": "Uiiggie",
+      "keyword": "uiiggie",
+      "description": "Uiiggie sells ordinary fish and food in the bullywug village. Purchases do not complete a story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80174,
+      "name": "an elven shopkeeper",
+      "keyword": "shopkeeper",
+      "description": "Teglaron's apprentice sells ordinary armory stock. His shop is separate from the master's guarded custom crafts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80186,
+      "name": "Brokenmoon",
+      "keyword": "elf",
+      "description": "Brokenmoon sells provisions and receives generic teacher guidance. Commerce and asking level are separate from story credit.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80188,
+      "name": "a young waiter",
+      "keyword": "elf",
+      "description": "Windstrider's waiter sells ordinary prepared food. The restaurant's old recipes do not create an ingredient quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80197,
+      "name": "an elven mage",
+      "keyword": "mage",
+      "description": "Elven mage supplies ordinary potions and generic teacher guidance. Reach his home via the northern door from the narrow branch.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80201,
+      "name": "a human merchant",
+      "keyword": "merchant",
+      "description": "Human merchant supplies ordinary jewelry; her declared shop stock is not an authored delivery request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80170,
+      "name": "Moonstone",
+      "keyword": "guard",
+      "description": "Moonstone in her office receives generic teacher level guidance. The actual return to the guardroom is west.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80176,
+      "name": "an elven woman",
+      "keyword": "woman",
+      "description": "Flower-smelling elven woman receives generic teacher level guidance; no collecting-flowers quest is attached.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80187,
+      "name": "Windstrider",
+      "keyword": "woman",
+      "description": "Windstrider receives generic teacher guidance. Recipe and cookbook prose has no ingredient-delivery or cooking endpoint.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80198,
+      "name": "an elven mage",
+      "keyword": "mage",
+      "description": "Solitary elven mage receives generic teacher guidance; pondering the universe is lore without a discovery achievement.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80199,
+      "name": "an elven bard",
+      "keyword": "bard",
+      "description": "Elven bard receives generic teacher guidance; instrument practice is not a journal contract.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 80205,
+      "name": "a scarred elf",
+      "keyword": "woman",
+      "description": "Scarred singer folding laundry receives generic teacher guidance; singing and folding are scenery, not native outcomes.",
+      "topics": [
+        "level"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "couatl-stolen-eggs",
+      "title": "Return the couatl eggs",
+      "category": "story",
+      "summary": "Bring three couatl eggs and the drow hunter's wrist guard together for a burnished couatl-hide bracer. The young couatl can refer you to the elder; supplied eggs and guard fit without personal referral or hunter-kill history.",
+      "contracts": [
+        {
+          "giver_vnum": 80070,
+          "completion_key": "give=I:80065,I:80067,I:80067,I:80067;receive=I:80066;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-65",
+          "text": "Earlier young-couatl referral recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80071,
+              "completion_key": "give=I:80067;receive=I:80067;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional earlier exchange only. Supplied exact proof fits without this personal history. The referral or refusal earns no separate achievement or daily credit and does not preserve the original physical item."
+        },
+        {
+          "id": "material-80067",
+          "text": "Carry 3 copies of an elongated couatl egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            80067
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Five egg placement sites have separate reset rolls: the rotten-tree canopy burrow, jungle floor, woodcarver clearing, muddy azurian burrow and hidden thieves treasure. Three eggs of this one kind are needed; the recipe does not require three different sites. The young couatl returns the same egg kind and refers you to the elder. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "material-80065",
+          "text": "Carry a couatl-hide wrist guard",
+          "kind": "carried_item",
+          "item_vnums": [
+            80065
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The drow hunter starts in a connected jungle staging room wearing the couatl-hide wrist guard. Recover the exact guard loose; his ordinary drow blade is not the proof. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80070,
+              "completion_key": "give=I:80065,I:80067,I:80067,I:80067;receive=I:80066;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "rei-giant-alligator",
+      "title": "Reiwiggy: giant-alligator tunic",
+      "category": "service",
+      "summary": "Two giant-alligator skins and ten platinum produce a tunic. This paid crafting service is guarded with accounting active and earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80080,
+          "completion_key": "give=C:10000,I:80078,I:80078;receive=I:80079;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80078",
+          "text": "Carry 2 copies of skin of a giant alligator",
+          "kind": "carried_item",
+          "item_vnums": [
+            80078
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Giant alligators hold this giant-alligator skin kind in the river. It differs from red-alligator skin; extra copies of one kind do not replace the other. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80080,
+              "completion_key": "give=C:10000,I:80078,I:80078;receive=I:80079;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "rei-red-alligator",
+      "title": "Reiwiggy: red-alligator armor",
+      "category": "service",
+      "summary": "Two red-alligator skins and ten platinum produce red-alligatorskin armor. Giant-alligator skins are different. This guarded paid service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80080,
+          "completion_key": "give=C:10000,I:80077,I:80077;receive=I:80080;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80077",
+          "text": "Carry 2 copies of the skin of a red alligator",
+          "kind": "carried_item",
+          "item_vnums": [
+            80077
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Vicious red alligators hold this red-alligator skin kind in the river. It differs from giant-alligator skin even though both share skin/alligator aliases. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80080,
+              "completion_key": "give=C:10000,I:80077,I:80077;receive=I:80080;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "rei-tiger",
+      "title": "Reiwiggy: tiger armor",
+      "category": "service",
+      "summary": "Two ordinary tiger skins and ten platinum produce tigerskin armor. White-tiger skin is explicitly refused here. This guarded paid service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80080,
+          "completion_key": "give=C:10000,I:80021,I:80021;receive=I:80023;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80021",
+          "text": "Carry 2 copies of a tiger skin",
+          "kind": "carried_item",
+          "item_vnums": [
+            80021
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Striped tigers receive this ordinary tiger-skin kind in their jungle-floor loads. It is different from the white-tiger skin. Actual current custody and supply matter. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80080,
+              "completion_key": "give=C:10000,I:80021,I:80021;receive=I:80023;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "bark-blanket",
+      "title": "Weave a bark blanket",
+      "category": "service",
+      "summary": "The old lizardman woman silently weaves thin soft bark into a blanket. This ordinary crafting service earns no separate story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80134,
+          "completion_key": "give=I:80134;receive=I:80135;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80134",
+          "text": "Carry some thin, soft bark",
+          "kind": "carried_item",
+          "item_vnums": [
+            80134
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Thin soft bark is declared on the jungle floor at 80046. It is already a loose item; nearby decorative trees and bark prose do not implement a stripping action. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80134,
+              "completion_key": "give=I:80134;receive=I:80135;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "painter-red-pigment",
+      "title": "Red pigment for the painter",
+      "category": "story",
+      "summary": "Recover the exact bright red flower petals from the canopy for the cave painter, who gives a red warmask and leaves. Delivery does not certify a changed mural or finished painting.",
+      "contracts": [
+        {
+          "giver_vnum": 80136,
+          "completion_key": "give=I:80137;receive=I:80138;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80137",
+          "text": "Carry some bright red flower petals",
+          "kind": "carried_item",
+          "item_vnums": [
+            80137
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact red flower petals are declared in canopy room 80220. Other red flowers and petals in scenery do not substitute for this item kind; reach the canopy before recovery. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80136,
+              "completion_key": "give=I:80137;receive=I:80138;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "engineer-lost-plans",
+      "title": "Recover the engineer's plans",
+      "category": "story",
+      "summary": "Return the strange parchment for an odd brass tool. Its active source is Moonhollow guard quarters, despite the engineer's cave clue. Delivery does not construct a new cavern or city.",
+      "contracts": [
+        {
+          "giver_vnum": 80147,
+          "completion_key": "give=I:80144;receive=I:80145;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80144",
+          "text": "Carry a strange parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            80144
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The actual strange parchment is declared in Moonhollow guard quarters 80333. The engineer says he dropped plans somewhere in the caves. The active placement is in the elven village; no additional local cave source or theft event was found. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80147,
+              "completion_key": "give=I:80144;receive=I:80145;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "leather-mixed-skins",
+      "title": "Cave leather-worker: two skin kinds",
+      "category": "service",
+      "summary": "Three red-alligator skins and three giant-alligator skins together yield azurian-hide armor, sleeves and leggings. The recipe uses alligator inputs despite the reward's azurian name. This service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80148,
+          "completion_key": "give=I:80077,I:80077,I:80077,I:80078,I:80078,I:80078;receive=I:80139,I:80140,I:80141;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80077",
+          "text": "Carry 3 copies of the skin of a red alligator",
+          "kind": "carried_item",
+          "item_vnums": [
+            80077
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Vicious red alligators hold this red-alligator skin kind in the river. It differs from giant-alligator skin even though both share skin/alligator aliases. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "material-80078",
+          "text": "Carry 3 copies of skin of a giant alligator",
+          "kind": "carried_item",
+          "item_vnums": [
+            80078
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Giant alligators hold this giant-alligator skin kind in the river. It differs from red-alligator skin; extra copies of one kind do not replace the other. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80148,
+              "completion_key": "give=I:80077,I:80077,I:80077,I:80078,I:80078,I:80078;receive=I:80139,I:80140,I:80141;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "leather-white-tiger",
+      "title": "Cave leather-worker: white-tiger boots",
+      "category": "service",
+      "summary": "Bring the exact white-tiger skin for boots. Reiwiggy's refusal is optional history, not a prerequisite. This service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80148,
+          "completion_key": "give=I:80024;receive=I:80025;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-125",
+          "text": "Earlier Reiwiggy refusal recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80080,
+              "completion_key": "give=I:80024;receive=I:80024;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional earlier exchange only. Supplied exact proof fits without this personal history. The referral or refusal earns no separate achievement or daily credit and does not preserve the original physical item."
+        },
+        {
+          "id": "material-80024",
+          "text": "Carry skin of a white tiger",
+          "kind": "carried_item",
+          "item_vnums": [
+            80024
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The white tiger starts in a connected jungle-floor staging room with this exact skin. Reiwiggy refuses it and returns the same kind; the cave leather-worker instead makes white-tigerskin boots. You do not need the refusal first. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80148,
+              "completion_key": "give=I:80024;receive=I:80025;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "shaman-green-potion",
+      "title": "Tribal shaman: green potion",
+      "category": "service",
+      "summary": "Crumpled green leaves produce a green potion. This supply service does not record healing a tribesman or earn story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80149,
+          "completion_key": "give=I:80142;receive=I:80143;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80142",
+          "text": "Carry some crumpled green leaves",
+          "kind": "carried_item",
+          "item_vnums": [
+            80142
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Crumpled green leaves have a thirty-percent reset placement at jungle-floor room 80023, with a global kind cap of one. Availability is not guaranteed every visit. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80149,
+              "completion_key": "give=I:80142;receive=I:80143;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "shaman-dart-poison",
+      "title": "Tribal shaman: dartfrog poison",
+      "category": "service",
+      "summary": "Bring the exact dartfrog skin for a vial of poison. This service does not record applying poison or affecting a target and earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80149,
+          "completion_key": "give=I:80058;receive=I:80059;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80058",
+          "text": "Carry the poisonous skin of a dartfrog",
+          "kind": "carried_item",
+          "item_vnums": [
+            80058
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Dart frogs in the connected canopy load receive this exact skin. Skin recovery is separate from poison extraction and any subsequent application to a target. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80149,
+              "completion_key": "give=I:80058;receive=I:80059;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient stays; supply, encounter, access and active, ready accounting govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "chief-summerstorm-proof",
+      "title": "The chief's proof against Summerstorm",
+      "category": "story",
+      "summary": "The chief accepts Summerstorm's silver amulet for a couatl-hide mask, then leaves. Native dialogue asks for a head, but the actual recipe takes the amulet. This is independent of the scout's opposing request; no raid or personal defeat is recorded.",
+      "contracts": [
+        {
+          "giver_vnum": 80155,
+          "completion_key": "give=I:80154;receive=I:80155;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80154",
+          "text": "Carry Summerstorm's silver amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            80154
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Summerstorm in Moonhollow has a forty-percent reset roll for this silver amulet. The chief dialogue asks for his head, but the actual accepted proof is the amulet, not a head item or a recorded kill. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80155,
+              "completion_key": "give=I:80154;receive=I:80155;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "dragon-crystal-staff",
+      "title": "Return the crystal-headed staff",
+      "category": "story",
+      "summary": "Recover the staff from the Moonhollow lieutenant and return it to the woodcarver for a crystalline bow. The unspawned crystal-dragon recipient is a native alternative for the same outcome. The hand-in does not record a dragon transformation or return to another world.",
+      "contracts": [
+        {
+          "giver_vnum": 80156,
+          "completion_key": "give=I:80157;receive=I:80196;disappear=1"
+        },
+        {
+          "giver_vnum": 80157,
+          "completion_key": "give=I:80157;receive=I:80196;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80157",
+          "text": "Carry a large, twisted staff with a crystal head",
+          "kind": "carried_item",
+          "item_vnums": [
+            80157
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A Moonhollow guard lieutenant starting at 80323 holds the crystal-headed staff. The woodcarver starts at 80152. A crystal-dragon alternative has the same staff/reward contract but no active appearance or transformation was found. The ordinary broken staff is a different item. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80156,
+              "completion_key": "give=I:80157;receive=I:80196;disappear=1"
+            },
+            {
+              "giver_vnum": 80157,
+              "completion_key": "give=I:80157;receive=I:80196;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available. Either recipient completes this one story; no second delivery is required."
+        }
+      ]
+    },
+    {
+      "id": "release-fire",
+      "title": "The fire elemental's amulet",
+      "category": "story",
+      "summary": "Bring the flaming medallion from the elemental ranger to the fire elemental for a flaming javelin; the recipient leaves. Use the brazier's up/down portal pair. Departure does not prove arrival on the Plane of Fire.",
+      "contracts": [
+        {
+          "giver_vnum": 80158,
+          "completion_key": "give=I:80172;receive=I:80173;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80172",
+          "text": "Carry a flaming medallion",
+          "kind": "carried_item",
+          "item_vnums": [
+            80172
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elemental ranger receives this flaming medallion along with the other elemental proofs. The fire cage is reached through the brazier route; his equipped flaming javelin is ordinary loot, not this required proof. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80158,
+              "completion_key": "give=I:80172;receive=I:80173;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "release-water",
+      "title": "The water elemental's amulet",
+      "category": "story",
+      "summary": "Bring the ranger's watery amulet to the water elemental for water drums; the recipient leaves. Use the water bowl's up/down portal pair. Other elemental proofs cannot substitute.",
+      "contracts": [
+        {
+          "giver_vnum": 80159,
+          "completion_key": "give=I:80170;receive=I:80171;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80170",
+          "text": "Carry a watery amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            80170
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elemental ranger receives the water amulet along with the other three elemental proofs. The water cage is reached by the bowl route; the watery amulet, not a water mask, is the offering. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80159,
+              "completion_key": "give=I:80170;receive=I:80171;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "release-air",
+      "title": "The air elemental's amulet",
+      "category": "story",
+      "summary": "Bring the ranger's swirling-air amulet to the air elemental for a light and windy cloak; the recipient leaves. Enter the plane of light and use its paired return. This is one of four independent outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 80160,
+          "completion_key": "give=I:80166;receive=I:80167;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80166",
+          "text": "Carry a strange amulet of swirling air",
+          "kind": "carried_item",
+          "item_vnums": [
+            80166
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elemental ranger receives the air amulet in connected staging room 80444. He can wander out through the four planar exits or back toward the jungle; his declared load origin is not a guaranteed current location. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80160,
+              "completion_key": "give=I:80166;receive=I:80167;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "release-earth",
+      "title": "The earth elemental's amulet",
+      "category": "story",
+      "summary": "Bring the ranger's earthen amulet to the earth elemental for an earth-and-stone mask; the recipient leaves. Use the mud bowl's up/down portal pair. No combined four-element rescue endpoint is implemented.",
+      "contracts": [
+        {
+          "giver_vnum": 80161,
+          "completion_key": "give=I:80168;receive=I:80169;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80168",
+          "text": "Carry an earthen amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            80168
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elemental ranger receives the earth amulet along with the other three elemental proofs. Find his actual instance and recover this exact amulet; the other elemental kinds cannot substitute. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80161,
+              "completion_key": "give=I:80168;receive=I:80169;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "teglaron-elder-hide",
+      "title": "Teglaron: elder-couatl armor",
+      "category": "service",
+      "summary": "Elder-couatl hide and five platinum produce couatl-hide armor. This guarded paid service is separate from helping the elder recover eggs and earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80175,
+          "completion_key": "give=C:5000,I:80060;receive=I:80061;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80060",
+          "text": "Carry the thick hide of an elder couatl",
+          "kind": "carried_item",
+          "item_vnums": [
+            80060
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elderly couatl holds this elder-hide kind. Obtaining it conflicts with keeping that same live recipient available for the egg return. It is a separate paid armor service, not a required step of helping the couatl. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80175,
+              "completion_key": "give=C:5000,I:80060;receive=I:80061;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "teglaron-young-hide",
+      "title": "Teglaron: young-couatl pieces",
+      "category": "service",
+      "summary": "Young-couatl hide and five platinum produce boots and an eyepatch. This guarded paid service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80175,
+          "completion_key": "give=C:5000,I:80062;receive=I:80063,I:80064;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80062",
+          "text": "Carry hide of a young couatl",
+          "kind": "carried_item",
+          "item_vnums": [
+            80062
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One connected jungle-floor load of a young couatl carries this young-hide kind. Other matching couatl instances are not guaranteed to carry it. This paid crafting branch is separate from the egg referral. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80175,
+              "completion_key": "give=C:5000,I:80062;receive=I:80063,I:80064;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "teglaron-mithril",
+      "title": "Teglaron: mithril hammer",
+      "category": "service",
+      "summary": "The rare chunk of mithril ore and five platinum produce a small mithril hammer. This guarded paid service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80175,
+          "completion_key": "give=C:5000,I:80028;receive=I:80199;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80028",
+          "text": "Carry a chunk of mithril ore",
+          "kind": "carried_item",
+          "item_vnums": [
+            80028
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A chunk of mithril ore has a ten-percent placement roll in the cozy canopy burrow 80201, capped at one. Mere glitter in the scenery does not create more ore. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80175,
+              "completion_key": "give=C:5000,I:80028;receive=I:80199;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "teglaron-turtle",
+      "title": "Teglaron: turtle-shell plate",
+      "category": "service",
+      "summary": "A giant-turtle shell and five platinum produce turtle-shell plate armor. This guarded paid service earns no story or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80175,
+          "completion_key": "give=C:5000,I:80075;receive=I:80076;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80075",
+          "text": "Carry the shell of a giant turtle",
+          "kind": "carried_item",
+          "item_vnums": [
+            80075
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The giant turtle in the river holds this shell. Its exact shell and five platinum pay Teglaron for plate armor; soup and other turtle scenery are unrelated. Possession does not distinguish your own source recovery from a player handoff. This is a secret item. Search the source room or an opened source container as appropriate before recovery; a successful reveal is separate from acquiring it."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80175,
+              "completion_key": "give=C:5000,I:80075;receive=I:80076;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. This item-and-coin recipe is currently guarded with accounting active; item readiness does not pay its fee or promise acceptance."
+        }
+      ]
+    },
+    {
+      "id": "weaver-quetzel-cloak",
+      "title": "Finish the quetzel feather cloak",
+      "category": "story",
+      "summary": "Bring five green, five yellow and five red quetzel feathers together for a cloak. These are three distinct kinds, not fifteen interchangeable feathers. The fifteen-item recipe is currently guarded under active accounting; the complete exchange must be supported before it becomes available as a daily quest.",
+      "contracts": [
+        {
+          "giver_vnum": 80209,
+          "completion_key": "give=I:80053,I:80053,I:80053,I:80053,I:80053,I:80054,I:80054,I:80054,I:80054,I:80054,I:80055,I:80055,I:80055,I:80055,I:80055;receive=I:80057;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80053",
+          "text": "Carry 5 copies of green quetzel feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            80053
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Green quetzel feathers are given to three of the bright-quetzel loads in the connected canopy staging room. The long descriptions and green alias distinguish the otherwise identically named feathers. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "material-80054",
+          "text": "Carry 5 copies of yellow quetzel feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            80054
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Yellow quetzel feathers are given to two bright-quetzel loads in the connected canopy staging room. Green and yellow come from different instances of the same bird prototype, not every bird. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "material-80055",
+          "text": "Carry 5 copies of red quetzel feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            80055
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Red quetzel feathers are given to the red-quetzel loads in the connected canopy staging room. Five red, five green and five yellow loose items are required together: fifteen roots exceed the current exchange limit of fourteen. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80209,
+              "completion_key": "give=I:80053,I:80053,I:80053,I:80053,I:80053,I:80054,I:80054,I:80054,I:80054,I:80054,I:80055,I:80055,I:80055,I:80055,I:80055;receive=I:80057;disappear=0"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The fifteen-item batch is currently guarded by the fourteen-item exchange limit; the journal does not split or reduce the native recipe."
+        }
+      ]
+    },
+    {
+      "id": "mistwalker-ancient-sword",
+      "title": "Mistwalker's ancient elven sword",
+      "category": "story",
+      "summary": "Recover the ancient silver sword worn by the chieftain's aid and bring it to wandering Mistwalker for Orcslayer and twenty-five platinum. His story describes a ghostly reunion, but the accepted exchange proves delivery and his departure, not a spawned ghost or completed escort.",
+      "contracts": [
+        {
+          "giver_vnum": 80210,
+          "completion_key": "give=I:80149;receive=C:25000,I:80177;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80149",
+          "text": "Carry an ancient, silver sword",
+          "kind": "carried_item",
+          "item_vnums": [
+            80149
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chieftain's aid wears this ancient silver sword in the lizardman throne room. Recover it loose and bring it to wandering Mistwalker. Other silver, green or named swords do not substitute. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80210,
+              "completion_key": "give=I:80149;receive=C:25000,I:80177;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    },
+    {
+      "id": "scout-chief-proof",
+      "title": "The angry scout's proof",
+      "category": "story",
+      "summary": "Bring the lizardman chief's golden rod for a gold leaf; the scout leaves. His dialogue asks for a head but explicitly rejects the mangled head and returns that same kind. The rod is the actual proof, independent of the chief's opposing request.",
+      "contracts": [
+        {
+          "giver_vnum": 80211,
+          "completion_key": "give=I:80150;receive=I:80203;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-80150",
+          "text": "Carry golden rod of the lizardman chieftain",
+          "kind": "carried_item",
+          "item_vnums": [
+            80150
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lizardman chief has a thirty-percent equip roll for this golden rod. The angry scout asks for a head, but accepts this rod. The separate bloody, mangled head is explicitly rejected and returned. Possession does not distinguish your own source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80211,
+              "completion_key": "give=I:80150;receive=I:80203;disappear=1"
+            }
+          ],
+          "hint": "Completion records the successful exchange. Carrying the materials does not complete it or prove finding them yourself. The recipient leaves after the exchange. Repeating it depends on the recipient and fresh supplies becoming available."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Young-couatl referral returns the same egg kind. It is guidance for the elder, not a separate achievement or daily quest.",
+      "contracts": [
+        {
+          "giver_vnum": 80071,
+          "completion_key": "give=I:80067;receive=I:80067;disappear=0"
+        }
+      ]
+    },
+    {
+      "reason": "Reiwiggy explicitly refuses white-tiger skin and returns the same kind. Refusal is not a completed craft or a story achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 80080,
+          "completion_key": "give=I:80024;receive=I:80024;disappear=0"
+        }
+      ]
+    },
+    {
+      "reason": "The angry scout refuses the mangled head and returns the same kind. The golden rod is the distinct accepted story proof; rejection earns no credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80211,
+          "completion_key": "give=I:80153;receive=I:80153;disappear=0"
+        }
+      ]
+    }
+  ]
+}

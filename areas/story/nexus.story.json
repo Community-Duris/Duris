@@ -1,0 +1,709 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "nexus",
+  "coverage": "complete",
+  "introduction": "Explore the Mountain of Peril Peaks through Mugnork, the beast-filled undermountain and the dark citadel. Ten independent accepted deliveries explain three linked errands and four separate exchanges. Active, ready accounting is required. Exact supplied proof fits without personal producer history; kills, first recovery, learned words, access, travel, healing and companion fate need separately qualified events.",
+  "orientation": [
+    "Meet each recipient before asking their addressed words. Each keyword reveals a clue rather than awarding an achievement. The hunter spirit's quest/hi answers introduce three different beast-part outcomes, not a required dialogue checklist.",
+    "Deliver the dwarven miner's exact silver bag to the underground foreman for a silver stud, then independently offer that stud to Roxon at the Gray Owl Ale House for a tribal bracelet. The stud's usable item keyword is earring. Optional shipment history does not restore a spent stud.",
+    "The hunter spirit wants three distinct reptile trophies together: python scale, serpent scale and the anaconda pair. The pair is one object. He separately accepts a plant tentacle plus a kraken tentacle, or one pair of fire-draco eyes. These are independent hunting exchanges; duplicate parts cannot replace another required kind.",
+    "The tribal barbarian accepts snow-bear fur for five thousand experience independently of his sasquach task. Meat is a dialogue keyword, not a requested food item. Bring the sasquach's right arm for parchment, then offer that parchment to Gooran in the Gray Owl Ale House for the actual prayer book. Native dialogue and the parchment promise a ring; that content discrepancy remains pending.",
+    "Bring the ancient twisted skeleton's head from the Forest of Death to the one-eyed troll for a troll eye. Offer the eye to the injured human beside the stream for the silver rune medallion. Exact supplied eye proof fits without personally completing the head exchange. Narrated recovery does not record healing or rescue.",
+    "The traveler asks about his companions after giving the medallion, but there is no further native quest contract. Five displaced companions have active placements in a connected load room and can wander independently. Finding them, their current fate and returning a report need a builder-authored continuation and qualified events.",
+    "The medallion is a persistent key for the white-washed gates. Use it to unlock the gates, then open them; receiving the key does not record passage. Defeating the ghost gardener or ghost librarian releases that ghost's emerald into the room, where it can be touched. The gardener's emerald clears the blocked north courtyard route, and the librarian's different same-named emerald clears the blocked north tower route. Another NPC's carried object does not dispatch the switch. These controls clear blocks without awarding journal credit.",
+    "Look at the magical twilight in the oval tower chamber to travel to the observatory, then touch the silver sphere there to return. Enter the black gate in the western tower access or the snow covered tent by the hot spring for their declared destinations. There are separate unused cave/oval portal prototypes; do not assume they are present or usable.",
+    "The tower's elemental paths contain false turns back to the aether hazard, while the high snowy cliffs have falling routes and the underground river has current and water hazards. Follow observed exits and controls. A delivery does not certify walking the maze, defeating its guardians or arriving safely.",
+    "Bridge, defense-tower and council-cell gates use different keys. The bear chief's persistent stone key opens the locked pickproof wooden chest; the council-cell key is displayed as silver but has stone-key aliases. A small iron key is named on already-open non-door exits and has no active source; this is a builder-review finding, not proof the tower is inaccessible.",
+    "Declared stocks and wandering can limit current proof. One hunter outcome consumes three different scale kinds, and plant/kraken tentacles are distinct from the reward tentacle. Recover carried proof loose; worn eyes, a worn troll eye or material left in a corpse or container does not count as current carried readiness.",
+    "All ten recipients stay after acceptance, and all ten native contracts retain potential daily shape. Source supply, access, recipient survival and active accounting still govern actual attempts. Each receipt records its own delivery rather than every earlier stage, companion investigation, narrated world change or a completed mountain campaign."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 57548,
+      "name": "a silver mine foreman",
+      "keyword": "foreman",
+      "description": "Silver foreman in the underground mining hut; gives a stud for the missing silver bag.",
+      "topics": [
+        "silver",
+        "bag",
+        "mine",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 57562,
+      "name": "a spirit of a barbarian hunter",
+      "keyword": "hunter",
+      "description": "Spirit of a failed barbarian hunter in the underground jungle; three independent beast-part outcomes.",
+      "topics": [
+        "quest",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 57569,
+      "name": "a tribal barbarian",
+      "keyword": "tribal",
+      "description": "Tribal barbarian on the snowy forest trail; independent bear-fur and sasquach-arm requests.",
+      "topics": [
+        "tribal",
+        "hi",
+        "quest",
+        "town",
+        "barbarian",
+        "meat",
+        "sasquach",
+        "task",
+        "kill",
+        "return",
+        "prize",
+        "father"
+      ]
+    },
+    {
+      "mob_vnum": 57574,
+      "name": "Gooran",
+      "keyword": "gooran",
+      "description": "Gooran at the Gray Owl Ale House accepts the parchment for the actual prayer-book reward.",
+      "topics": [
+        "son",
+        "parchment",
+        "hi",
+        "quest",
+        "gooran"
+      ]
+    },
+    {
+      "mob_vnum": 57579,
+      "name": "a one-eyed troll",
+      "keyword": "troll",
+      "description": "One-eyed troll under the bridge; asks about the forest and regeneration, then exchanges an exact head for an eye.",
+      "topics": [
+        "troll",
+        "head",
+        "one",
+        "eyed",
+        "hi",
+        "eye-ed",
+        "regenerate"
+      ]
+    },
+    {
+      "mob_vnum": 57598,
+      "name": "Roxon",
+      "keyword": "roxon",
+      "description": "Roxon at the Gray Owl Ale House accepts the foreman's silver stud for a tribal bracelet.",
+      "topics": [
+        "hi",
+        "women"
+      ]
+    },
+    {
+      "mob_vnum": 57614,
+      "name": "a terrified human",
+      "keyword": "human",
+      "description": "Injured human beside the forest stream accepts a troll eye; his later companion-fate request has no recorded endpoint.",
+      "topics": [
+        "hi",
+        "terrified",
+        "forest",
+        "woods",
+        "dark",
+        "mountains"
+      ]
+    },
+    {
+      "mob_vnum": 57544,
+      "name": "a barbarian miner",
+      "keyword": "miner",
+      "description": "Wandering dwarven miner carries the exact silver bag; its reset origin is not a guaranteed current location.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57549,
+      "name": "a giant anaconda",
+      "keyword": "anaconda",
+      "description": "Gigantic anaconda carries the exact pair of scales in the underground jungle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57546,
+      "name": "a giant python",
+      "keyword": "python",
+      "description": "Great python carries the distinct python scale in the underground jungle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57545,
+      "name": "a huge serpent",
+      "keyword": "serpent",
+      "description": "Huge serpent carries the distinct serpent scale and can wander within the zone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57520,
+      "name": "a swirling tentacled mass",
+      "keyword": "plant",
+      "description": "Carnivorous plant carries the exact plant tentacle beneath the mountain.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57531,
+      "name": "the Kraken",
+      "keyword": "kraken",
+      "description": "Mighty kraken carries the exact kraken tentacle in its watery lair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57521,
+      "name": "a fire draco",
+      "keyword": "draco",
+      "description": "Fire draco carries the exact pair of eyes as one object.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57570,
+      "name": "a snow covered bear",
+      "keyword": "bear",
+      "description": "Snow covered bear has declared quest fur; shared global stock caps affect which instance receives it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57573,
+      "name": "a gigantic sasquach",
+      "keyword": "sasquach",
+      "description": "Gigantic sasquach carries the right arm required by the tribal barbarian.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57586,
+      "name": "an ancient twisted skeleton",
+      "keyword": "skeleton",
+      "description": "Ancient twisted skeleton carries the exact head wanted by the one-eyed troll.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57527,
+      "name": "a ghost gardener",
+      "keyword": "gardener",
+      "description": "Ghost gardener holds the courtyard emerald. Defeating this ghost releases its contents into the room, where the exposed switch can be touched; another NPC's carried objects are not directly dispatched.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57528,
+      "name": "a ghost librarian",
+      "keyword": "librarian",
+      "description": "Ghost librarian holds the tower emerald. Defeating this ghost exposes the switch in the room. It shares the gardener emerald's name but controls a different blocked route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57553,
+      "name": "a bear clan chief",
+      "keyword": "chief",
+      "description": "Bear clan chief carries the persistent stone key for the locked pickproof wooden chest in the tower.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57541,
+      "name": "a barbarian shaman",
+      "keyword": "shaman",
+      "description": "Barbarian shaman carries the bridge gate key; its break chance differs from the persistent medallion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57556,
+      "name": "Wong",
+      "keyword": "wong",
+      "description": "Wong carries the council-cell key. Its displayed name is silver key, but its actual item keywords are stone key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57551,
+      "name": "a barbarian tribe sentry",
+      "keyword": "sentry",
+      "description": "Barbarian tribe sentry carries the scarce key for the defense-tower gate; another key cannot substitute.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57513,
+      "name": "a human female",
+      "keyword": "female",
+      "description": "Displaced female human starts in a connected load room and can wander; meeting her does not complete the traveler's unimplemented companion investigation.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57515,
+      "name": "a human man",
+      "keyword": "male",
+      "description": "Displaced male human shares the connected load room and can wander independently.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57512,
+      "name": "an elven woman",
+      "keyword": "elven",
+      "description": "Displaced elven woman shares the connected load room; she has no native quest contract despite an empty qst section.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57510,
+      "name": "a tattooed human",
+      "keyword": "tattooed",
+      "description": "Displaced tattooed human shares the connected load room and can wander independently.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 57514,
+      "name": "an old magician",
+      "keyword": "magician",
+      "description": "Displaced old magician shares the connected load room; ordinary wandering may cross zone boundaries.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "foreman-silver-bag",
+      "title": "Deliver the missing silver shipment",
+      "category": "story",
+      "summary": "Bring the miner's silver bag to the foreman for a silver stud. Roxon independently consumes that stud for a tribal bracelet.",
+      "contracts": [
+        {
+          "giver_vnum": 57548,
+          "completion_key": "give=I:57522;receive=I:57523;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57522",
+          "text": "Carry a bag full of silver",
+          "kind": "carried_item",
+          "item_vnums": [
+            57522
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A dwarven miner in the underground mine carries the exact silver bag. The foreman accepts the bag rather than loose coins or generic ore. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57548,
+              "completion_key": "give=I:57522;receive=I:57523;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "roxon-silver-stud",
+      "title": "A silver stud for Roxon",
+      "category": "story",
+      "summary": "Offer the exact silver stud, whose item keyword is earring, for a tribal bracelet. The foreman's shipment is an optional supply route.",
+      "contracts": [
+        {
+          "giver_vnum": 57598,
+          "completion_key": "give=I:57523;receive=I:57583;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-12",
+          "text": "Earlier silver shipment recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57548,
+              "completion_key": "give=I:57522;receive=I:57523;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without it. This receipt does not restore a spent item, require a personal hunt or certify every earlier stage."
+        },
+        {
+          "id": "material-57523",
+          "text": "Carry a silver stud",
+          "kind": "carried_item",
+          "item_vnums": [
+            57523
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The silver foreman gives this exact silver stud for the silver bag. Its usable item keyword is earring. Supplied matching studs fit Roxon without personal mining history. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57598,
+              "completion_key": "give=I:57523;receive=I:57583;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "hunter-three-reptile-scales",
+      "title": "The hunter spirit's reptile trophies",
+      "category": "story",
+      "summary": "Bring one python scale, one serpent scale and one anaconda pair together for reptilian snakescales. Three copies of one kind do not fit.",
+      "contracts": [
+        {
+          "giver_vnum": 57562,
+          "completion_key": "give=I:57534,I:57535,I:57536;receive=I:57537;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57535",
+          "text": "Carry a python scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            57535
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The great python in the underground jungle has this exact scale. It is distinct from the serpent scale and anaconda pair. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "material-57536",
+          "text": "Carry a serpent scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            57536
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The huge serpent in the underground jungle has this exact scale. Its similar description does not make it interchangeable with the python scale. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "material-57534",
+          "text": "Carry a pair of slimy scales of an anaconda",
+          "kind": "carried_item",
+          "item_vnums": [
+            57534
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The gigantic anaconda in the underground jungle has the pair of slimy scales as one object. This is one required kind, not two separate scale objects. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57562,
+              "completion_key": "give=I:57534,I:57535,I:57536;receive=I:57537;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "hunter-two-tentacles",
+      "title": "The hunter spirit's two beasts",
+      "category": "story",
+      "summary": "Bring the distinct plant and kraken tentacles for the enchanted slimy tentacle reward. Two tentacles from either one beast do not fit.",
+      "contracts": [
+        {
+          "giver_vnum": 57562,
+          "completion_key": "give=I:57555,I:57566;receive=I:57519;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57555",
+          "text": "Carry a slimy tentacle from a carniverous plant",
+          "kind": "carried_item",
+          "item_vnums": [
+            57555
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The carnivorous plant beneath the mountain has this exact plant tentacle. The kraken tentacle is a different required kind. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "material-57566",
+          "text": "Carry a slimy tentacle from a kraken",
+          "kind": "carried_item",
+          "item_vnums": [
+            57566
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mighty kraken in the watery underground lair has this exact tentacle. Its usable keyword is tentacly; carry this kind together with the plant tentacle. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57562,
+              "completion_key": "give=I:57555,I:57566;receive=I:57519;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "hunter-draco-eyes",
+      "title": "The hunter spirit's fire-draco trophy",
+      "category": "story",
+      "summary": "Bring one exact pair of fire-draco eyes for a bracelet of flaming draco eyes. The pair is one object, and wearing it is separate from carrying it.",
+      "contracts": [
+        {
+          "giver_vnum": 57562,
+          "completion_key": "give=I:57540;receive=I:57569;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57540",
+          "text": "Carry a pair of fiery dragon eyes",
+          "kind": "carried_item",
+          "item_vnums": [
+            57540
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The fire draco in the cavern has the exact pair of eyes as one object. Recover it loose; worn eyes do not satisfy current carried proof. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57562,
+              "completion_key": "give=I:57540;receive=I:57569;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "barbarian-snow-bear-fur",
+      "title": "Fur for the tribal barbarian",
+      "category": "story",
+      "summary": "Offer the exact snow-bear fur for five thousand experience. This independent request does not require the sasquach arm and is not a meat delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 57569,
+          "completion_key": "give=I:57545;receive=E:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57545",
+          "text": "Carry some fur from a snow bear",
+          "kind": "carried_item",
+          "item_vnums": [
+            57545
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Snow covered bears in the mountain forest have declared fur. The tribal barbarian accepts fur for five thousand experience; the meat keyword is dialogue, not a meat delivery. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57569,
+              "completion_key": "give=I:57545;receive=E:5000;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "barbarian-sasquach-arm",
+      "title": "A sasquach trophy and a letter",
+      "category": "story",
+      "summary": "Bring the gigantic sasquach's right arm for a parchment addressed to Gooran. The sasquach head does not fit, and no personal kill is inferred.",
+      "contracts": [
+        {
+          "giver_vnum": 57569,
+          "completion_key": "give=I:57561;receive=I:57548;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57561",
+          "text": "Carry the right arm of a sasquach",
+          "kind": "carried_item",
+          "item_vnums": [
+            57561
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The gigantic sasquach in the snowy forest carries its right arm. Its head is a different prototype and does not fit this delivery. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57569,
+              "completion_key": "give=I:57561;receive=I:57548;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "gooran-parchment",
+      "title": "Deliver Gooran's parchment",
+      "category": "story",
+      "summary": "Deliver the tribal barbarian's parchment to Gooran at the Gray Owl Ale House for the ancestral prayer book of wisdom. The native ring promise is a pending builder decision; this delivery does not grant a ring.",
+      "contracts": [
+        {
+          "giver_vnum": 57574,
+          "completion_key": "give=I:57548;receive=I:57511;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-104",
+          "text": "Earlier sasquach-arm delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57569,
+              "completion_key": "give=I:57561;receive=I:57548;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without it. This receipt does not restore a spent item, require a personal hunt or certify every earlier stage."
+        },
+        {
+          "id": "material-57548",
+          "text": "Carry a parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            57548
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The tribal barbarian gives this parchment for the exact sasquach arm. Supplied parchment also fits Gooran. Dialogue and parchment promise a ring, but the current reward is a prayer book. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57574,
+              "completion_key": "give=I:57548;receive=I:57511;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "troll-skeleton-head",
+      "title": "The one-eyed troll's revenge",
+      "category": "story",
+      "summary": "Bring the ancient twisted skeleton's head for a troll eyeball. The injured human uses that exact eye in a separate delivery; the troll's own regeneration is not recorded.",
+      "contracts": [
+        {
+          "giver_vnum": 57579,
+          "completion_key": "give=I:57554;receive=I:57549;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-57554",
+          "text": "Carry an ancient twisted skeleton head",
+          "kind": "carried_item",
+          "item_vnums": [
+            57554
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The ancient twisted skeleton in the Forest of Death carries this exact head. Generic skeleton heads and the sasquach head do not fit. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57579,
+              "completion_key": "give=I:57554;receive=I:57549;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    },
+    {
+      "id": "human-troll-eye",
+      "title": "Help the injured traveler",
+      "category": "story",
+      "summary": "Bring the exact troll eye for a silver rune medallion. It is a persistent key for the white-washed gates. The traveler's companion-fate request has no native completion contract.",
+      "contracts": [
+        {
+          "giver_vnum": 57614,
+          "completion_key": "give=I:57549;receive=I:57504;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-184",
+          "text": "Earlier skeleton-head exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57579,
+              "completion_key": "give=I:57554;receive=I:57549;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without it. This receipt does not restore a spent item, require a personal hunt or certify every earlier stage."
+        },
+        {
+          "id": "material-57549",
+          "text": "Carry an eyeball of a troll",
+          "kind": "carried_item",
+          "item_vnums": [
+            57549
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The one-eyed troll gives this eye for the ancient twisted skeleton head. The injured human accepts it; the eye can also be worn, which does not count as carried proof. Offer loose proof in inventory. Current possession does not distinguish a personal recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 57614,
+              "completion_key": "give=I:57549;receive=I:57504;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. The recipient remains after acceptance. Only this accepted delivery is recorded; questions, personal kills or first recovery, access, healing, companion fate and reward use require separate accepted endpoints."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

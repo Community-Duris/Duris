@@ -1,0 +1,545 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "snogres",
+  "coverage": "complete",
+  "introduction": "Trace the glacier lich's three distinct shards and independent swamp trophies, then prepare Leppts' armor commission. Active, ready accounting is required. Current material and accepted deliveries remain separate from personal kills, first recovery, learned words, access and actual transformations. Missing stalk supply, scarce hides and guarded mixed payment remain open.",
+  "orientation": [
+    "Enter the valley from the surface, descend into the swamp and follow the lake's upward stair to the tower. Its lich accepts seven independent exact-item outcomes and stays after delivery. Asking his native words reveals lore rather than awarding a learned-keyword milestone.",
+    "The tribal chieftain's reverse-running hourglass gives the green shard; the astereater's bleeding eye gives yellow; the enslaver's writhing tentacle gives blue. Their three distinct shards give a prismatic pyramid. Personal producer histories are optional, so supplied matching shards fit. Three copies of one color do not fit.",
+    "The lich also accepts the ice hydra's severed head, a mutated sundew stalk and a swamp-dragon scale through separate rewards. Their success text mentions kills, reagents and transformation, but only exact delivery is recorded. The stalk has no reviewed active producer; its source repair remains pending.",
+    "The astereater, illithid, hydra and swamp dragon have thirty-five, twenty, fifteen and five percent reset declarations respectively. The giant sundew has fifteen percent, without a declared stalk. These probabilities explain rare sources without guaranteeing stock or inventing personal kills.",
+    "At the bloody grotto, push rock to clear the west exit's blocked state. The exit remains secret and closed: search for the passage and open it. A separately rare pit fiend blocks ordinary westward movement while present. No key is required. Actual control, passage and safe return need their own evidence.",
+    "The grotto tube leads west to a shaft with two one-hundred-percent falling rooms above the tribe. The preceding slope's twenty-percent declaration lacks a down exit and is cleared by the loader. The lake also has a downward route to the lava tubes; it avoids that shaft, while tribal guards still affect travel.",
+    "The underground death knight blocks ordinary northward passage and supplies two distinct cold-iron weapons. The tribal chieftain carries the hourglass. The astereater's moor passage is secret and closed but unlocked; reveal and open it rather than searching for an invented key.",
+    "The lich refuses one remorhaz hide and refers you to Leppts. Native settlement consumes the offered hide and issues another of the same kind; this is not an unchanged item identity, new supply, producer milestone or achievement. The referral is optional for the commission.",
+    "Leppts is supplied from a surface dispersal room and wanders. His commission belongs to the Snow Ogres journal even when met on the surface; physical area discovery and journal ownership are separate. After discovering the valley, open its journal explicitly for this service.",
+    "Bring six exact remorhaz hides, one cold-iron claymore and one cold-iron greatsword, plus 2,500 platinum. Four remorhaz declarations provide only three hides with cap three. Sufficient accepted supply and renewal are pending, and the item-and-coin exchange remains guarded. Material checks cannot prove payment or availability. The vambrace commission gives no achievement or daily credit.",
+    "The tower's flesh golems, magical weapons and skull-knee leggings have effects beyond item delivery. Those effects do not award an additional journal milestone. Material checks explain what you carry; they cannot certify a safe fight, successful equipment change or use of a reward.",
+    "The war chief's crude note, searching party, lich phylactery and narrated transformation provide lore without an additional quest finale. Asking questions and exploring these clues does not complete another delivery or record a personal reunion, teaching lesson or transformation."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 87700,
+      "name": "an insane snow ogre berserker",
+      "keyword": "berserker",
+      "description": "Tribal berserker. His combat lore provides context; fighting him does not complete an additional delivery or throwing objective.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87704,
+      "name": "a snow ogre death knight",
+      "keyword": "knight",
+      "description": "Underground corridor death knight. Blocks ordinary northward passage and supplies both distinct cold-iron weapons for Leppts: the worn claymore and carried greatsword.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87712,
+      "name": "a mutated sundew plant",
+      "keyword": "sundew",
+      "description": "Ordinary mutated sundew in the swamp. No declared stalk source was found; killing this prototype is not evidence that the reagent was issued.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87715,
+      "name": "an ancient swamp dragon",
+      "keyword": "dragon",
+      "description": "Ancient swamp dragon, rarely declared in the swamp. Carries the exact scale whose item name says elder swamp dragon; the lich accepts it for his robe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87724,
+      "name": "a deadly remorhaz",
+      "keyword": "remorhaz",
+      "description": "Polar worm in the underground tunnels. Four declared instances supply only three hides, capped at three, against Leppts' six-hide recipe. Sufficient available stock remains unverified.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87725,
+      "name": "an angered astereater",
+      "keyword": "astereater",
+      "description": "Rare moor astereater behind a secret, closed, unlocked door. Carries the bleeding eye for the lich's yellow shard; source probability does not guarantee current availability.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87726,
+      "name": "a snow ogre war chief",
+      "keyword": "chief",
+      "description": "War chief in the chieftain's entourage. Carries a crude note; its search-party lore has no reviewed native delivery consumer or rescue/reunion terminal.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87729,
+      "name": "a snow ogre tribal chieftain",
+      "keyword": "chieftain",
+      "description": "Tribal hall chieftain. Carries the lich's reverse-running hourglass. The guarded grotto route and alternate lake descent explain access without granting a personal recovery milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87733,
+      "name": "Lrethlamn Soel, the glacier lich",
+      "keyword": "lich",
+      "description": "Tower lich. Ask hi, hello, time, negative or hourglass. Accepts seven independent trophy/shard outcomes. One hide only elicits a referral to Leppts, with no achievement. No additional teaching milestone is defined.",
+      "topics": [
+        "hi",
+        "hello",
+        "time",
+        "negative",
+        "hourglass"
+      ]
+    },
+    {
+      "mob_vnum": 87734,
+      "name": "a four-armed decaying flesh golem",
+      "keyword": "golem",
+      "description": "Large lich companion and cadaver-pit golem. Fighting it, summoned companions or its regeneration does not complete an additional journal objective.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87735,
+      "name": "a gigantic mutated sundew plant",
+      "keyword": "sundew",
+      "description": "Gigantic mutated sundew with a rare swamp declaration. No carried stalk is declared here either; intended reagent production requires a separate builder-selected repair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87736,
+      "name": "a skulking illithid enslaver",
+      "keyword": "illithid",
+      "description": "Rare enslaver in the dense swamp. Carries the writhing illithid tentacle for the blue shard. Its worn roper-tentacle whip has a combat effect and is different proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87737,
+      "name": "an ice hydra",
+      "keyword": "hydra",
+      "description": "Rare swamp ice hydra. Carries the severed hydra head. The head-on-chain reward is another item kind; native delivery does not require your personal killing blow.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87741,
+      "name": "a nefarious pit fiend from Avernus",
+      "keyword": "fiend",
+      "description": "Rare pit fiend at the bloody grotto blocks ordinary westward movement when present. Push the rock to clear the separate blocked-wall state, then reveal/open the secret door; neither action is an achievement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87742,
+      "name": "Leppts, the tinker",
+      "keyword": "leppts",
+      "description": "Tinker supplied from a surface dispersal source rather than a local valley reset; he can wander. Ask hi, hello, lrethlamn, soel, lich, yes, sent, find, remorhaz, ice or worm. Open the discovered Snow Ogres journal for his six-hide/two-weapon/2,500-platinum commission; physical surface discovery is separate.",
+      "topics": [
+        "hi",
+        "hello",
+        "lrethlamn",
+        "soel",
+        "lich",
+        "yes",
+        "sent",
+        "find",
+        "remorhaz",
+        "ice",
+        "worm"
+      ]
+    },
+    {
+      "mob_vnum": 87743,
+      "name": "a four-armed decaying flesh golem",
+      "keyword": "golem",
+      "description": "Smaller flesh golem shares the large golem's short name but is a different creature. Its presence does not establish a completed guardian or summoning objective.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "lich-reverse-hourglass",
+      "title": "Return the lich's reverse-running hourglass",
+      "category": "story",
+      "summary": "Recover the tribal chieftain's exact hourglass for the green crystal shard. The lich's information introduces two further shard deliveries, without requiring a personal extermination event.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87706;receive=I:87713;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87706",
+          "text": "Carry an intricate hourglass running in reverse",
+          "kind": "carried_item",
+          "item_vnums": [
+            87706
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The tribal chieftain in the underground tribal hall carries the reverse-running hourglass. The grotto rock and tribal guards affect that route; a lake descent is an alternative to the falling shaft. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87706;receive=I:87713;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-astereater-eye",
+      "title": "An astereater eye for the yellow shard",
+      "category": "story",
+      "summary": "Bring the exact bleeding eye to the lich for the yellow shard. The astereater's rare source and secret passage affect availability; the native exchange accepts supplied proof without a personal kill.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87715;receive=I:87730;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87715",
+          "text": "Carry the bleeding eye of an astereater",
+          "kind": "carried_item",
+          "item_vnums": [
+            87715
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The astereater has a thirty-five percent reset declaration behind a secret, closed but unlocked passage in the moor. Its carried bleeding eye is the exact proof. Encounter probability does not guarantee current stock. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87715;receive=I:87730;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-illithid-tentacle",
+      "title": "An illithid tentacle for the blue shard",
+      "category": "story",
+      "summary": "Bring the writhing illithid tentacle to the lich for the blue shard. The enslaver's roper-tentacle whip is a different object. This stays an independent trophy delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87717;receive=I:87731;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87717",
+          "text": "Carry a long, writhing illithid tentacle",
+          "kind": "carried_item",
+          "item_vnums": [
+            87717
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The skulking illithid enslaver has a twenty percent declaration in the dense swamp and carries this tentacle. Its worn whip of severed roper tentacles is a different item and does not fit. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87717;receive=I:87731;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-three-shards",
+      "title": "Three distinct shards for the prismatic pyramid",
+      "category": "story",
+      "summary": "Offer one green, one yellow and one blue shard together for the prismatic pyramid. The three producer histories are optional: matching supplied shards fit. The described ritual gives an item reward without an additional recorded incantation or campaign finale.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87713,I:87730,I:87731;receive=I:87732;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "green-producer-history",
+          "text": "Green shard producer recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87706;receive=I:87713;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this shard. Supplied exact shards fit without it; history cannot restore spent proof or establish a required all-stage campaign."
+        },
+        {
+          "id": "yellow-producer-history",
+          "text": "Yellow shard producer recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87715;receive=I:87730;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this shard. Supplied exact shards fit without it; history cannot restore spent proof or establish a required all-stage campaign."
+        },
+        {
+          "id": "blue-producer-history",
+          "text": "Blue shard producer recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87717;receive=I:87731;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this shard. Supplied exact shards fit without it; history cannot restore spent proof or establish a required all-stage campaign."
+        },
+        {
+          "id": "material-87713",
+          "text": "Carry a green shard of crystal",
+          "kind": "carried_item",
+          "item_vnums": [
+            87713
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lich gives the green shard for the exact reverse-running hourglass. Earlier personal delivery history is optional; supplied matching shards also fit. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "material-87730",
+          "text": "Carry a yellow shard of crystal",
+          "kind": "carried_item",
+          "item_vnums": [
+            87730
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lich gives the yellow shard for the astereater's bleeding eye. It is different from the green and blue shards, even when three copies of one color are carried. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "material-87731",
+          "text": "Carry a blue shard of crystal",
+          "kind": "carried_item",
+          "item_vnums": [
+            87731
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lich gives the blue shard for the writhing illithid tentacle. A producer receipt cannot replace a spent shard. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87713,I:87730,I:87731;receive=I:87732;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-hydra-head",
+      "title": "An ice hydra head for the lich",
+      "category": "request",
+      "summary": "Offer the exact severed hydra head for a shrunken halfling head on a platinum chain. The rare hydra source needs qualification; different severed heads do not fit.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87716;receive=I:87729;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87716",
+          "text": "Carry a severed head from an ice hydra",
+          "kind": "carried_item",
+          "item_vnums": [
+            87716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The ice hydra has a fifteen percent declaration in the swamp and carries this severed hydra head. The shrunken halfling head on a chain is the reward, not substitute proof. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87716;receive=I:87729;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-sundew-stalk",
+      "title": "The lich's sundew reagent request",
+      "category": "request",
+      "summary": "The native contract exchanges a mutated sundew stalk for an emerald bone disc, but no active material producer was found. Source restoration is pending. A matching supplied stalk fits; journal coverage does not promise that one can currently be recovered.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87719;receive=I:87727;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87719",
+          "text": "Carry a chunk of stalk from a mutated sundew",
+          "kind": "carried_item",
+          "item_vnums": [
+            87719
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A stalk prototype exists, but no active reset or native quest producer was found. Neither ordinary nor gigantic sundew has a declared stalk. Intended source restoration remains pending; do not assume killing or harvesting any plant supplies it. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87719;receive=I:87727;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "lich-swamp-scale",
+      "title": "A swamp-dragon scale for the old robe",
+      "category": "story",
+      "summary": "Offer the exact elder-swamp-dragon scale carried by the ancient swamp dragon for the gold-trimmed robe. The narrated entropic transformation does not change the lich's actual entity or create a separate effect objective.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87718;receive=I:87714;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87718",
+          "text": "Carry a scale from an elder swamp dragon",
+          "kind": "carried_item",
+          "item_vnums": [
+            87718
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The ancient swamp dragon has a five percent declaration and carries the exact scale named for an elder swamp dragon. Its current presence and accessible material need qualification. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87733,
+              "completion_key": "give=I:87718;receive=I:87714;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent receipt does not prove learned dialogue, a personal kill, first recovery, access or an actual transformation."
+        }
+      ]
+    },
+    {
+      "id": "leppts-remorhaz-armor",
+      "title": "Leppts' remorhaz armor commission",
+      "category": "service",
+      "summary": "Find wandering Leppts on the surface. His support recipe requires six remorhaz hides, the exact cold-iron claymore and greatsword, plus 2,500 platinum, for remorhaz hide vambraces. Mixed payment and sufficient source stock need qualification. No achievement or daily credit is attached.",
+      "contracts": [
+        {
+          "giver_vnum": 87742,
+          "completion_key": "give=C:2500000,I:87710,I:87711,I:87725,I:87725,I:87725,I:87725,I:87725,I:87725;receive=I:87728;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87725",
+          "text": "Carry 6 copies of a substantial chunk of remorhaz hide",
+          "kind": "carried_item",
+          "item_vnums": [
+            87725
+          ],
+          "count": 6,
+          "optional": true,
+          "hint": "Three hide declarations accompany four remorhaz instances, with a live prototype cap of three, while this recipe needs six. Stock, accepted renewal and supplied historical copies require qualification. The lich's one-hide refusal is not additional supply. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "material-87710",
+          "text": "Carry an onyx-hilted cold-iron claymore",
+          "kind": "carried_item",
+          "item_vnums": [
+            87710
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The death knight in the underground corridor wears this exact cold-iron claymore and blocks ordinary northward passage. It is distinct from his carried greatsword. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "material-87711",
+          "text": "Carry an onyx-hilted cold-iron greatsword",
+          "kind": "carried_item",
+          "item_vnums": [
+            87711
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The same death knight carries this exact cold-iron greatsword. Two claymores or other cold-iron weapons do not replace one of each of these two kinds. Offer proof loose in inventory, rather than worn or inside a container. Current proof does not establish personal first recovery or a kill."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted armor commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87742,
+              "completion_key": "give=C:2500000,I:87710,I:87711,I:87725,I:87725,I:87725,I:87725,I:87725,I:87725;receive=I:87728;disappear=0"
+            }
+          ],
+          "hint": "Leppts requires six hides, one exact claymore, one exact greatsword and 2,500 platinum (2,500,000 native gold units) together. Combined item-and-coin offering is currently guarded. Material readiness cannot confirm payment or service availability. This support service gives no achievement or daily credit."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "The lich rejects one remorhaz hide and refers the player to Leppts. The same-kind replacement is a refusal, not a quest achievement, new material supply or a required personal step in the armor commission.",
+      "contracts": [
+        {
+          "giver_vnum": 87733,
+          "completion_key": "give=I:87725;receive=I:87725;disappear=0"
+        }
+      ]
+    }
+  ]
+}

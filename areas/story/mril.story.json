@@ -1,0 +1,246 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mril",
+  "coverage": "complete",
+  "introduction": "Choose between two frozen-heart rewards or prepare Falga's five-salmon feast. The hidden stump also holds an outside skull lead. Each accepted return keeps its own history.",
+  "orientation": [
+    "Choose among three independent returns: a frozen heart for the hooded figure's cloak of sorrow, another frozen heart for Uduku's cloak of jubilation, or five exact salmon for Falga's lost book of Magic. A single heart prepares either heart request; spending it on one reward leaves the other return unfinished.",
+    "Address the hooded figure or Uduku with hi, forbidden, forest, unknown, yeti, frost, giant or abominable. Ask Falga salmon, food, wul or hi. These are aliases for three conversations; repeated keywords and room listeners do not create separate quest achievements.",
+    "The hooded figure waits on the icy bridge between the village and forest. Uduku waits inside the magical igloo beyond the forest. The igloo has an ordinary closed door; its magical description does not add a spell, belt or key prerequisite. Falga waits inside the elder's hut, whose door also starts closed and unlocked.",
+    "The abominable frost giant is the native frozen-heart source on the Arctic plain. His source reset has a chance and a population cap, so finding him and a stocked heart depends on the live world. The exact heart starts hidden; successful SEARCH of a relevant visible corpse can reveal it after combat. Personal victory and recovery are separate from bringing a supplied heart.",
+    "Carry the visible exact frozen heart loose for either heart return. Another item called a heart, a held or nested heart, the pet wul and the giant himself do not substitute that material. Each accepted return consumes a heart and keeps its own history. The reward dialogue does not permanently remove every frost giant from the world.",
+    "Falga wants five separate exact freshly killed salmon items together. Six river salmon source placements carry that food item in the native reset data. General fishing, another fish or a salmon mobile does not by itself prove those five materials. Supplied exact copies fit the offering without personal catch or source history.",
+    "Falga's pet wul follows him in the native stock data. Delivering the five salmon earns the lost book of Magic; it does not record that the pet actually ate them. The native return does not require a living pet, a feeding action or a freshness timer. The item's freshly killed name and rotting extra description need builder text review.",
+    "The raging river can sweep eligible characters south and resist upstream movement. Flight, levitation, actual exit state and other movement eligibility affect the outcome. The icy bridge gives a separate forest approach; entering the river is not a required step for a heart exchange.",
+    "The forbidden forest blocks distant sight. A hidden, closed stump hatch leads down toward Gorlon's underground hideout and may need SEARCH and opening. Narrow stump and tree passages have falling hazards. Reaching a room does not record your own search, opening, climb or safe crossing.",
+    "Gorlon carries an imported strange crystal skull. Its whisper points to Qin in the Drifting Realm, where one each of five distinct skulls forms a separate exchange. Several skulls look alike. This is an outside quest lead, not a fourth Miaeril return or a prerequisite for its heart and salmon requests.",
+    "The crystal skull starts hidden and has no-drop and no-rent flags. Ordinary transfer and the accepted quest offering use different paths; its ownership and death warning does not establish a timer. Builder qualification is needed for actual recovery, transfer, rent and accepted Qin outcomes under active accounting.",
+    "Gordo offers survival supplies such as milk, meat and nuts. Mordat's spiritual journey, Tarik's helpful scouting, nomadic family stories, mount stock and the lyre are exploration leads. Their descriptions do not establish extra teaching, escort, rescue, music or purchase achievements.",
+    "Falga's reward is a spellbook with 300 pages in its native data. Receiving it does not prove learning a spell or that it already contains ancient spells. Some Chaos starter equipment can also use local reward or equipment prototypes; owning a reward does not complete its quest.",
+    "All three accepting givers remain after a successful return. Repeatability and daily eligibility still depend on a live eligible giver and available materials; a day rollover does not replenish stock. Exact loose materials prepare a return, while accepted history survives spent materials. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 33700,
+      "name": "a strange hooded figure",
+      "keyword": "figure",
+      "description": "Ask hi or the forest and giant aliases at the icy bridge. One exact visible loose frozen heart earns the cloak of sorrow. That history remains distinct from Uduku's return.",
+      "topics": [
+        "hi",
+        "forbidden",
+        "forest",
+        "unknown",
+        "yeti",
+        "frost",
+        "giant",
+        "abominable"
+      ]
+    },
+    {
+      "mob_vnum": 33701,
+      "name": "Uduku, a renown mystic magus",
+      "keyword": "uduku",
+      "description": "Ask hi or the forest and giant aliases inside the igloo. One exact visible loose frozen heart earns the cloak of jubilation. The closed igloo door is ordinary access; the other heart reward has a separate history.",
+      "topics": [
+        "hi",
+        "forbidden",
+        "forest",
+        "unknown",
+        "yeti",
+        "frost",
+        "giant",
+        "abominable"
+      ]
+    },
+    {
+      "mob_vnum": 33711,
+      "name": "Falga, the village elder",
+      "keyword": "falga",
+      "description": "Ask salmon, food, wul or hi. Five exact loose salmon earn the lost book of Magic together. Delivering them does not record actual pet feeding.",
+      "topics": [
+        "salmon",
+        "food",
+        "wul",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 33720,
+      "name": "an abominable frost giant",
+      "keyword": "abominable",
+      "description": "The frost giant is the native hidden-heart source on the Arctic plain. Live spawn chance, stock, actual defeat, SEARCH, recovery and each accepted return are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33718,
+      "name": "a bruised salmon",
+      "keyword": "salmon",
+      "description": "River salmon source placements carry the exact food item requested by Falga. Personal catching or defeating a salmon is separate from offering five owned items.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33710,
+      "name": "a guard wul",
+      "keyword": "wul",
+      "description": "The guard wul follows Falga. Its presence supplies story context, while the five-salmon return does not require or record actual feeding.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33704,
+      "name": "Gorlon, the faceless beast",
+      "keyword": "gorlon",
+      "description": "Gorlon carries an imported crystal skull below the hidden stump. The Qin lead is an outside five-distinct-skull exchange, separate from all three Miaeril returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33705,
+      "name": "Tarik, a black bird humanoid",
+      "keyword": "tarik",
+      "description": "Tarik perches above the tree canopy and offers helpful scouting lore. His description does not define a native rescue or escort exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33714,
+      "name": "Gordo, the trusted merchant",
+      "keyword": "gordo",
+      "description": "Gordo sells local survival supplies. Listed food stock and asking about supplies are service leads; a purchase needs its own committed service outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33712,
+      "name": "Mordat, a proud priest",
+      "keyword": "mordat",
+      "description": "Mordat offers spiritual-journey lore and holds a crystalline lyre. Neither his priestly description nor the instrument creates a native music or teaching quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33716,
+      "name": "a nomadic youth",
+      "keyword": "youth",
+      "description": "The nomadic youth provides family hunting and trap-setting lore. The native family placements do not establish a player escort, trap action or rescue receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33708,
+      "name": "a black theezak",
+      "keyword": "theezak",
+      "description": "The black theezaks supply a mount lead at the stable. Current mount eligibility, travel and recovering the mane are separate from quest completion.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "hooded-heart",
+      "title": "Bring the hooded figure a frozen heart",
+      "category": "request",
+      "summary": "One exact visible loose frozen heart earns the cloak of sorrow. The heart starts hidden on the frost giant. Spending it leaves Uduku's separate return unfinished; supplied proof fits without personal victory or SEARCH history.",
+      "contracts": [
+        {
+          "giver_vnum": 33700,
+          "completion_key": "give=I:33710;receive=I:33702;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "heart",
+          "text": "Carry the exact visible frozen heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            33710
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal recovery, combat or catch history; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 33700,
+              "completion_key": "give=I:33710;receive=I:33702;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver stays; other returns and contextual actions keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "uduku-heart",
+      "title": "Bring Uduku a frozen heart",
+      "category": "request",
+      "summary": "One exact visible loose frozen heart earns the cloak of jubilation. The heart starts hidden on the frost giant. Spending it leaves the hooded figure's separate return unfinished; supplied proof fits without personal victory or SEARCH history.",
+      "contracts": [
+        {
+          "giver_vnum": 33701,
+          "completion_key": "give=I:33710;receive=I:33713;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "heart",
+          "text": "Carry the exact visible frozen heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            33710
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal recovery, combat or catch history; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 33701,
+              "completion_key": "give=I:33710;receive=I:33713;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver stays; other returns and contextual actions keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "salmon-feast",
+      "title": "Bring Falga five salmon",
+      "category": "request",
+      "summary": "Five exact loose freshly killed salmon earn the lost book of Magic together. Supplied fish fit without personal catch history. Delivery does not record actual pet feeding; the spellbook has 300 pages in its data, not a guaranteed learned spell.",
+      "contracts": [
+        {
+          "giver_vnum": 33711,
+          "completion_key": "give=I:33709,I:33709,I:33709,I:33709,I:33709;receive=I:33711;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "salmon",
+          "text": "Carry five exact salmon loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            33709
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal recovery, combat or catch history; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 33711,
+              "completion_key": "give=I:33709,I:33709,I:33709,I:33709,I:33709;receive=I:33711;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver stays; other returns and contextual actions keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

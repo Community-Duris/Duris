@@ -1,0 +1,422 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "seakngdm",
+  "coverage": "complete",
+  "introduction": "Explore the Sea Kingdom’s coral halls and haunted Ultranos, return the frightened fisherman’s silver amulet half, and follow the kingdom’s longer puzzle, crew, artifact, deep-treasure and broken-moonstone stories.",
+  "orientation": [
+    "Arrive in the Sea Kingdom to discover it. Meet the creatures and sailors you find to reveal their stories as you explore the coral halls, deep waters and Ultranos.",
+    "The frightened fisherman points to a silver amulet half when asked. His greetings and clues share one response; they do not each complete a different quest.",
+    "Bring one exact half silver amulet loose in your inventory for the fisherman. He offers a sapphire eye. Carrying the eye, packing the amulet or holding it as equipment does not satisfy this preparation.",
+    "The morkoth is the declared source of the silver half. You can recover it or use an exact copy supplied by another player. A supplied copy does not claim personal recovery, and the request does not ask you to assemble another half.",
+    "The fisherman vanishes when his native exchange is accepted. That exchange remains recorded after the amulet is spent or the eye is gone. A lasting rescue or destination is a longer story.",
+    "Nightstone, shrine, red and bottom-vortex keys lead through different parts of the kingdom. Finding a key, unlocking a door, opening a route and safely passing it are separate actions.",
+    "Inscriptions, prayer, coral gates, a blue orb and ancient tablets hint at hidden ways. Understand the clues and watch what actually changes; a repeated command or an already open way does not prove a new discovery.",
+    "Pools, shafts, bubbles and portals have different ways of entry. Some passages are hidden. Reaching a place, surviving there and finding a way back are distinct parts of exploration.",
+    "The downward currents and whirlpool can lead far from the entrance. Prepare for the actual water, breathing and movement conditions. An air bubble or calm description does not promise a permanent safe refuge.",
+    "The Ultranos has both haunted and living reaches. Its hull, treasury, decks and masts have different routes and dangers. Seeing both ships does not by itself restore their voyage.",
+    "The living captain, sailors and lookouts face the Sea Horde. Their story needs useful help and surviving people; defeating or looting a crew member does not record that person as rescued.",
+    "Poseidon’s treasures include a trident and a necklace with distinct powers. Possession, permitted use and a useful result for a particular person are separate from the fisherman’s turn-in.",
+    "The bottom-of-ocean vault gathers lost valuables and has restrictive magical conditions. Recovering your own property, receiving someone else’s item and returning safely have different histories.",
+    "A broken moonstone connects an automaton, the deep sea, pirates and Erzul’s work in Sarmiz’Duul. Its two ordinary fragments and core form a larger story with alternative rewards. Those custom stages need further integration before the journal can record them as completions."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 31500,
+      "name": "the deep spawn",
+      "keyword": "deep",
+      "description": "This ferocious creature is a large sphereical mass covered with several openned toothy maws.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31501,
+      "name": "a deep blue eel",
+      "keyword": "deep",
+      "description": "This deep blue eel swims with uncanny speed.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31502,
+      "name": "a large water snake",
+      "keyword": "snake",
+      "description": "This snake swims in the same fashion it would slither on land.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31503,
+      "name": "the morkoth",
+      "keyword": "morkoth",
+      "description": "The morkoth haunts its coral hall and is the declared source of the fisherman’s silver amulet half. An exact copy supplied by another player can also fit the soul’s request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31504,
+      "name": "a water elemental",
+      "keyword": "water",
+      "description": "This being is made of pure water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31505,
+      "name": "a huge water elemental",
+      "keyword": "water",
+      "description": "This being is made of pure water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31506,
+      "name": "a large octopus",
+      "keyword": "large",
+      "description": "This large squid-like creature has a large pale yellow beak.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31507,
+      "name": "the coral golem",
+      "keyword": "coral",
+      "description": "This large imposing golem is made out of hundreds of stalks of beautiful, twisted coral.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31508,
+      "name": "the coral golem's right arm",
+      "keyword": "right",
+      "description": "This arm is simply an extension of the coral golem's body.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31509,
+      "name": "the coral golem's left arm",
+      "keyword": "left",
+      "description": "This arm is simply an extension of the coral golem's body.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31510,
+      "name": "the whirlpool demon",
+      "keyword": "whirlpool",
+      "description": "This large demon is a light blue in color.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31511,
+      "name": "an evil shadow fish",
+      "keyword": "evil",
+      "description": "This greater shadow fish swims through the area with uncanny speed.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31512,
+      "name": "a lesser shadow fish",
+      "keyword": "lesser",
+      "description": "Although smaller then the greater shadow fish, this one is still quite large and can definately pose a formidable fight in the underwater conditions of the shadow lake.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31513,
+      "name": "an eerie sea sage",
+      "keyword": "sea",
+      "description": "This eerie figure floats through the waters expressionlessly.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31514,
+      "name": "a water mephit",
+      "keyword": "water",
+      "description": "This small figure of water drifts past totally unrecognized.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31515,
+      "name": "a sapphire eye of the deep",
+      "keyword": "eye",
+      "description": "This creature is a large spherical body, covered with gills and tiny, spiked tendrils.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31516,
+      "name": "an azure eye of the deep",
+      "keyword": "eye",
+      "description": "Nearly identical to the saphire eye of the deep except for one aspect; this eye of the deep is much lighter in color.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31517,
+      "name": "an aquatic beast",
+      "keyword": "aquatic",
+      "description": "This beast resembles an enormous, hairless lion with the head of a dog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31518,
+      "name": "a psionic eel",
+      "keyword": "psionic",
+      "description": "This shadow eel looks like any other encountered eel in the realms, except that its body is made of the same shadow filling this lake, enabling it materialize anywhere.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31519,
+      "name": "the manta ray",
+      "keyword": "manta",
+      "description": "This sea creature resembles a near cousin of the ixitxachitl.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31520,
+      "name": "an eerie sea minion",
+      "keyword": "eerie",
+      "description": "This projection of some sort of stealthy fighter takes shape into this sea minion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31521,
+      "name": "a sea spirit",
+      "keyword": "sea",
+      "description": "This looks like any type of hundred's of sailors, who have fallen to the seas.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31522,
+      "name": "an ixitxachitl priest",
+      "keyword": "ixitxachitl",
+      "description": "This is very strange how such a creature, native to only shallow, subteranean waters, is in this secret chamber of worship.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31523,
+      "name": "an ixitxachitl",
+      "keyword": "ixitxachitl",
+      "description": "A strange paradox how the deceitful fish, native to natural shallow subteranean waters is living here within the sea kingdom of water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31524,
+      "name": "a black tentacle",
+      "keyword": "black",
+      "description": "This large, black tenticle surfaces from deep below into the bowels of the water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31525,
+      "name": "a red-tooth piranha",
+      "keyword": "piranha",
+      "description": "A dark, red body of what seems to be an average piranha in all features - except its inhuman size.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31526,
+      "name": "a cloud of dark sea mist",
+      "keyword": "cloud",
+      "description": "This cloud of mist is very peculiar.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31527,
+      "name": "a daemonite imp",
+      "keyword": "daemonite",
+      "description": "This pesky, naked creature is several feet shorter then the whirlpool demon that it so nobley stands by.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31528,
+      "name": "Poseidon",
+      "keyword": "poseidon",
+      "description": "Poseidon rules the sea kingdom and commands its waters. His encounter, final treasures, the fisherman’s accepted exchange and any lasting rescue have distinct outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31529,
+      "name": "a needled blow fish",
+      "keyword": "needled",
+      "description": "This fish enlarges to about six times its own size until it is relatively as large as a massive boulder.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31530,
+      "name": "a whirlpool minion",
+      "keyword": "whirlpool",
+      "description": "As the whirlpool twists in its devestatingly strong pattern, a vicious humanoid-shaped minion of pure water forms out of the rips in the water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31531,
+      "name": "the soul of a fisherman",
+      "keyword": "soul",
+      "description": "The frightened fisherman silently points to a silver amulet half when asked. Offer one exact half for a sapphire eye; his accepted exchange stays recorded after the items are gone. His disappearance is separate from a lasting destination.",
+      "topics": [
+        "hello",
+        "hi",
+        "poseidon",
+        "help",
+        "fish",
+        "fisherman"
+      ]
+    },
+    {
+      "mob_vnum": 31532,
+      "name": "a giant razor serpent",
+      "keyword": "giant",
+      "description": "This serpent is the size and shape of a large jodani wood tree, as seen throughout Duris.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31533,
+      "name": "a phantasmal force",
+      "keyword": "phantasmal",
+      "description": "This strange looking phantasmal force has the arms and torso of a man, but no legs at all, just a faint trail behind it cut off at the waist.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31534,
+      "name": "a reef demon",
+      "keyword": "reef",
+      "description": "This demon is made out of what appears to be some sort of vibrant white coral.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31535,
+      "name": "a writhing tendril",
+      "keyword": "writhing",
+      "description": "This long, slimy looking red tendril reaches out of the morkoth with a life of its own.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31536,
+      "name": "a stone golem",
+      "keyword": "stone",
+      "description": "This golem is made of a very black type of nightstone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31537,
+      "name": "a human treasurey guardian",
+      "keyword": "human",
+      "description": "This burly human is wearing fine silk seafaring garments and a triangular shaped hat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31538,
+      "name": "a human swashbuckler",
+      "keyword": "human",
+      "description": "This human swashbuckler is wearing very garish colored, puffed out silk garments.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31539,
+      "name": "Dante",
+      "keyword": "dante",
+      "description": "Dante waits aboard the living Ultranos and holds the red key. The key’s current custody, the opened route and a useful outcome for the besieged crew are separate actions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31540,
+      "name": "the first mate",
+      "keyword": "first",
+      "description": "This human's garb is just as dirty as the rest, but he is still very fit and extremely well put together.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31541,
+      "name": "a human lookout",
+      "keyword": "human",
+      "description": "This human, much smaller then the others, has only been trained to report to the Captain anything dangerous over the horizon.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31542,
+      "name": "a noble crew member",
+      "keyword": "noble",
+      "description": "This crew member is wearing bright green garments, with dark red gloves and boots.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31543,
+      "name": "a human guard",
+      "keyword": "human",
+      "description": "This human guardian wears a thick, spiked leather vest over top of a puffy-armed shirt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31544,
+      "name": "a phantasmal dragon",
+      "keyword": "phantasmal",
+      "description": "This vicious phantasmal dragon phases in and out of visability.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31545,
+      "name": "an azure drake",
+      "keyword": "azure",
+      "description": "This lesser dragon is a deep blue in color.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31546,
+      "name": "an large azure drake",
+      "keyword": "large",
+      "description": "This dragon is a deep blue in color.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31547,
+      "name": "a white dragon",
+      "keyword": "white",
+      "description": "This white dragon looks to be of some sort of crystal.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31548,
+      "name": "a wave berserker",
+      "keyword": "wave",
+      "description": "This water elemental seems much more vicious then a normal water elemental.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31549,
+      "name": "a water Oni",
+      "keyword": "terrifying",
+      "description": "This water elemental demon is basically a massive water elemental, in the shape of a vicious unwinged demon.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "return-the-fishermans-amulet",
+      "title": "Return the fisherman’s silver amulet half",
+      "category": "request",
+      "summary": "The fisherman accepts one exact half silver amulet for a sapphire eye and then vanishes. Recovered or supplied halves fit. Current preparation, accepted return and lasting freedom have distinct evidence.",
+      "contracts": [
+        {
+          "giver_vnum": 31531,
+          "completion_key": "give=I:31529;receive=I:31531;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-silver-half",
+          "kind": "carried_item",
+          "text": "Carry the fisherman’s silver amulet half",
+          "hint": "Bring one exact half silver amulet loose in your inventory. Recovered or supplied copies fit. Holding or packing it does not satisfy this preparation, and this row does not claim a personal morkoth kill or first source recovery.",
+          "item_vnums": [
+            31529
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-amulet-return",
+          "kind": "completion",
+          "text": "Complete the fisherman’s amulet return",
+          "hint": "Offer the exact half to the fisherman when he can accept it. His accepted exchange remains recorded after the amulet is spent or the sapphire eye is gone. His disappearance and a lasting safe destination are separate outcomes.",
+          "contracts": [
+            {
+              "giver_vnum": 31531,
+              "completion_key": "give=I:31529;receive=I:31531;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

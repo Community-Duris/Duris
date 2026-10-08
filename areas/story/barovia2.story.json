@@ -1,0 +1,296 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "barovia2",
+  "coverage": "complete",
+  "introduction": "Explore the Barovian valley, its witches, Vistani camps, dragon lairs and Kashtrakis. Five independent hand-ins connect this wilderness to Castle Ravenloft and the wider Barovian story. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Follow the road north from the village through the valley toward Lysaga Hill and Castle Ravenloft. Sir Urik waits at the crossroads gallows; Madam Eva starts in her inner sanctum at the mountain encampment; Mirkodesiuska lives in a cluttered mountain cave; the outer Megosh starts at the castle gates in the adjoining castle area. Contacts can move or depart. ASK listed topics for their native replies; each keyword is not a separate achievement.",
+    "Madam Eva has two separate requests. For the Ravenkind symbol and the castle outer-gate key, bring Baba Zelenna's tiny locket and the Drowned Lady's cloudy glass eye together. Zelenna starts atop Lysaga Hill; the Drowned Lady dwells in the deep Ivlis Marsh. Beware the native terrain and guardians. Exact supplied relics fit without personal earlier kills or source history.",
+    "Eva's Vistani exchange instead accepts a badge of the Vistani and the mark of the saboteur together. An overseer in the mountain encampment carries the badge; a special saboteur in the hidden Vistani den carries the mark. The reward is a blood-red bandana and a returned mark. The reply welcomes you to the Vistani, but the exchange does not record a faction change or prove stealthy recovery. Keep this path separate from the witch relics.",
+    "The two Madam Eva chambers are different places. Her active initial placement is in the inner sanctum at the mountain camp, not in the secret private chamber. The tiny key she carries fits the private chamber's locked door and storage chest. The hidden den also has an active portal back to the mountain camp. Access and custody remain subject to the native game rules.",
+    "Mirkodesiuska asks for proof against the red dragon. The accepted proof is the exact fire dragon egg from the red dragon's damp cave; the reward is a shimmering crystal dragon scale. An egg supplied by someone else fits the hand-in without your own kill. The crystal dragon departs after acceptance; this does not spawn a scout or record a later meeting.",
+    "Urik wants news of Perganan, who hides in Castle Ravenloft. Perganan's separate Lenience delivery supplies the hastily-written note. Bring that exact loose note to Urik for Moonfriend, a silver ring; Urik departs after acceptance. Reading the note, possessing the ring or hearing an escape promise does not prove either delivery.",
+    "The outer Megosh wants Chernovog's black heart for the castle outer-gate key. Baba Zelenna's books and clothing conceal an onward tower route: PUSH books to reveal the passage, then explore the pentagram leading into Kashtrakis. Its guardians, gates, scrolls and exit route have their own hazards. Chernovog carries the heart and a shard of hellfire for the locked upper route. Supplied heart proof fits without earlier personal travel, combat or puzzle history.",
+    "Two burning scrolls have the same visible name but different effects. The scroll associated with the Kashtrakis gates opens the blocked gate when used there; the other affects the distant marilith route. Examine the native clues and use TOUCH with the actual relevant object. The lore about a devil's touch does not currently enforce a devil race requirement. Shared-open passages remain usable without personally operating a control.",
+    "Eva's witch-relic reward and Megosh's heart reward are alternative sources of the same black outer-gate key, with independent receipts. The holy Ravenkind symbol is a different item with a reactive combat effect. It is neither the key nor a guaranteed victory over Strahd. The inner castle Megosh has a separate two-relic request; these independently placed contacts do not form a spawned escort or transformation chain.",
+    "The crystal ball in Eva's inner sanctum has an onward exchange with Rahadin in the Ravenloft Catacombs. The Catacombs also have another entrance to Kashtrakis. Those contacts, onward deliveries and discovery are separate. The existing ordered Doru–Chernovog–Strahd kill achievement is distinct from the heart and relic deliveries.",
+    "Carry the complete chosen offering loose and together. Held, worn, nested, consumed or handed-away items are not current preparation; owning a reward does not prove acceptance. Exact supplied stock fits without prior questions, source custody, kills or gate history. Only the witch-relic exchange is a potential local daily; scarce stock, mode-zero resets and departing contacts do not promise daily availability. New credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 58804,
+      "name": "Sir Urik",
+      "keyword": "urik",
+      "description": "Sir Urik starts at the crossroads gallows. Ask about vistani or perganan for his missing companion and note delivery.",
+      "topics": [
+        "hi",
+        "hello",
+        "vistani",
+        "perganan"
+      ]
+    },
+    {
+      "mob_vnum": 58812,
+      "name": "Madam Eva",
+      "keyword": "eva",
+      "description": "Madam Eva starts in the mountain camp inner sanctum. Ask about witches for the relic exchange, or vistani and stealth for her separate badge exchange.",
+      "topics": [
+        "hi",
+        "hello",
+        "fortune",
+        "strahd",
+        "castle",
+        "ravenloft",
+        "barovia",
+        "village",
+        "sunsword",
+        "symbol",
+        "ravenkind",
+        "witches",
+        "zelena",
+        "baba",
+        "drowned",
+        "lady",
+        "vistani",
+        "stealth"
+      ]
+    },
+    {
+      "mob_vnum": 58822,
+      "name": "Mirkodesiuska the Crystal Dragon",
+      "keyword": "mirkodesiuska",
+      "description": "Mirkodesiuska starts in a cluttered cave in the mountain range. Ask about mount or ravenloft for the red dragon proof.",
+      "topics": [
+        "hi",
+        "hello",
+        "mount",
+        "ravenloft"
+      ]
+    },
+    {
+      "mob_vnum": 58846,
+      "name": "Megosh the Thief",
+      "keyword": "megosh",
+      "description": "The outer Megosh starts at the adjoining Castle Ravenloft gates. Ask about witches or devil for Chernovog proof; the inner castle Megosh is a separate contact.",
+      "topics": [
+        "hi",
+        "hello",
+        "treasure",
+        "vistani",
+        "witches",
+        "devil"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "urik-perganan-note",
+      "title": "Urik: news of Perganan",
+      "category": "story",
+      "summary": "Bring Perganan's hastily-written note for the silver ring Moonfriend. This onward delivery is separate from Perganan's Lenience request.",
+      "contracts": [
+        {
+          "giver_vnum": 58804,
+          "completion_key": "give=I:58416;receive=I:58849;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-58416",
+          "text": "Carry Perganan's hastily-written note",
+          "kind": "carried_item",
+          "item_vnums": [
+            58416
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Perganan in Castle Ravenloft gives this note for Lenience. Exact supplied notes fit; your own earlier castle delivery is not required. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Urik: news of Perganan",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 58804,
+              "completion_key": "give=I:58416;receive=I:58849;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact hand-in completes this independent story. Reward custody, lore, stealth claims, shared-open passages and earlier kills are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "eva-witch-relics",
+      "title": "Madam Eva: relics of the two witches",
+      "category": "story",
+      "summary": "Bring the tiny locket and cloudy glass eye together for the holy Ravenkind symbol and the outer-gate key.",
+      "contracts": [
+        {
+          "giver_vnum": 58812,
+          "completion_key": "give=I:58817,I:58824;receive=I:58825,I:58826;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-58817",
+          "text": "Carry a tiny locket on a platinum chain",
+          "kind": "carried_item",
+          "item_vnums": [
+            58817
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Baba Zelenna at the top of the Mountain Fane tower carries her tiny locket. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "material-58824",
+          "text": "Carry an old, cloudy glass eye",
+          "kind": "carried_item",
+          "item_vnums": [
+            58824
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Drowned Lady in the deep Ivlis Marsh wears the cloudy glass eye. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Madam Eva: relics of the two witches",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 58812,
+              "completion_key": "give=I:58817,I:58824;receive=I:58825,I:58826;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact hand-in completes this independent story. Reward custody, lore, stealth claims, shared-open passages and earlier kills are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "eva-vistani-marks",
+      "title": "Madam Eva: the Vistani marks",
+      "category": "story",
+      "summary": "Bring the Vistani badge and mark of the saboteur together for the blood-red bandana and a returned mark. The native welcome does not record a faction or stealth milestone.",
+      "contracts": [
+        {
+          "giver_vnum": 58812,
+          "completion_key": "give=I:58844,I:58845;receive=I:58844,I:58846;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-58845",
+          "text": "Carry a badge of the Vistani",
+          "kind": "carried_item",
+          "item_vnums": [
+            58845
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The overseer at the mountain camp has the Vistani badge. It is different from the witch locket. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "material-58844",
+          "text": "Carry the mark of the saboteur",
+          "kind": "carried_item",
+          "item_vnums": [
+            58844
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A special saboteur in the hidden Vistani den wears the mark. Eva returns a mark on acceptance; returned custody is separate from a new acquisition. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Madam Eva: the Vistani marks",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 58812,
+              "completion_key": "give=I:58844,I:58845;receive=I:58844,I:58846;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact hand-in completes this independent story. Reward custody, lore, stealth claims, shared-open passages and earlier kills are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mirkodesiuska-dragon-egg",
+      "title": "Mirkodesiuska: the red dragon's egg",
+      "category": "story",
+      "summary": "Bring the fire dragon egg for a shimmering crystal dragon scale. Mirkodesiuska departs after acceptance.",
+      "contracts": [
+        {
+          "giver_vnum": 58822,
+          "completion_key": "give=I:58809;receive=I:58810;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-58809",
+          "text": "Carry a fire dragon egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            58809
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The red dragon in its damp mountain cave carries this fire dragon egg. Supplied proof does not establish your own red-dragon kill. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Mirkodesiuska: the red dragon's egg",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 58822,
+              "completion_key": "give=I:58809;receive=I:58810;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact hand-in completes this independent story. Reward custody, lore, stealth claims, shared-open passages and earlier kills are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "megosh-devil-heart",
+      "title": "Megosh: the heart of Chernovog",
+      "category": "story",
+      "summary": "Bring Chernovog's black heart for the castle outer-gate key. This is an alternative to Eva's relic reward and separate from the inner Megosh request.",
+      "contracts": [
+        {
+          "giver_vnum": 58846,
+          "completion_key": "give=I:58834;receive=I:58826;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-58834",
+          "text": "Carry a grotesque black devil's heart",
+          "kind": "carried_item",
+          "item_vnums": [
+            58834
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Chernovog carries this heart in Kashtrakis. Zelenna's books, the pentagram, burning scrolls and hellfire key lead through native routes; exact supplied heart proof needs no personal route or kill history. Keep the complete bundle loose; current preparation is distinct from source or accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Megosh: the heart of Chernovog",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 58846,
+              "completion_key": "give=I:58834;receive=I:58826;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact hand-in completes this independent story. Reward custody, lore, stealth claims, shared-open passages and earlier kills are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

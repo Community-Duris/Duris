@@ -1,0 +1,686 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "delwyn",
+  "coverage": "complete",
+  "introduction": "Explore a working bailey, its palisades and the Duke's keep. Six independent deliveries explain a bell-and-cog route, a replacement banner, a missing chess piece and the study documents. Five paid services remain separate. Active, ready accounting is required; paid textile settlement and safe source/access journeys remain open.",
+  "orientation": [
+    "The ordinary entrance is the bailey gate, reached north from the surface stone highway. The outside gate leads south back to the highway. Closed inner, keep and room doors are access steps; source descriptions do not prove safe travel or a return.",
+    "The bell-and-cog route is exact small iron bell → large iron cog → military blade. The bell is carried by the bellfounder; no local purchase is bound. Both accepted deliveries are independent, and supplied matching items fit without earlier personal receipts.",
+    "The replacement-banner producer route is sheep fleece + 5000 copper → white yarn; white yarn + 10000 → crimson yarn; crimson yarn + 10000 → fabric; fabric + 35000 → banner. Starting from fleece costs 60000 copper. All four paid stages are currently guarded with accounting active. The later exact-banner return is an independent item-only outcome and accepts supplied matching banners.",
+    "The recipient of the banner is high above the keep, at the top of the flagpole. The ladder can cause falls and the two flagpole rooms have no ground. Prepare flight, levitation or suitable climbing protection for the approach and return. Delivery gives slippers; it does not prove hanging the flag or a magical transformation.",
+    "A worried servant has the exact ivory knight sought by the off-duty captain. The accepted piece gives military boots; it does not prove borrowing the piece, winning chess or learning a move.",
+    "In the private study, the military assessment lies inside an ebony desk that starts closed and has a one-charge acid trap on opening. The assessment exchange gives a scribbled note. One exact note plus a deep blue braid give the signet ring in a separate court delivery. Supplied matching evidence fits without a desk-opening history or personal kill.",
+    "The scribbled note describes a wedding, while the court reply calls the occasion a daughter's birthday. Treat the documents as evidence for the accepted delivery; no event date, spy allegiance, timed invasion or defended-castle state is checked.",
+    "Five paid services have no achievement or daily credit. Matching material checks cannot pay fees. Native delivery receipts and optional producer histories remain separate from current unequipped custody; neither proves first recovery, source ownership or a personally completed campaign.",
+    "Many craftsmen and merchants appear in room descriptions, but there is no local shop file. Lodging and customs descriptions do not provide a local rent or tariff quest. Ambient craft work, false alarms, scenery and the magician's teacher role remain separate from the six delivery outcomes.",
+    "Quest materials and recipients have one-copy source declarations, and the zone resets in mode two. These declarations do not promise supplies, safe recovery or repeatable daily availability in the current visit. Sources carried or worn by others need a separate acquisition route; the journal does not assume a personal kill."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 82808,
+      "name": "Bailey miller",
+      "keyword": "miller",
+      "description": "Mill. Ask cog, part or mill. An exact large iron cog yields the old military blade; no running-mill state is measured.",
+      "topics": [
+        "gearwork",
+        "fix",
+        "part",
+        "cog",
+        "grumbling",
+        "mill"
+      ]
+    },
+    {
+      "mob_vnum": 82815,
+      "name": "Gnomish clockmaker",
+      "keyword": "clockmaker",
+      "description": "Clockmaker workshop. Ask bell or clock. The exact small iron bell yields the cog for a separate mill delivery.",
+      "topics": [
+        "part",
+        "clock",
+        "bell"
+      ]
+    },
+    {
+      "mob_vnum": 82821,
+      "name": "Bailey dyer",
+      "keyword": "dyer",
+      "description": "Dyer workshop. Ask dye or yarn. Exact white yarn plus 10000 copper becomes crimson yarn; this paid service is guarded with accounting active.",
+      "topics": [
+        "spool",
+        "yarn",
+        "wool",
+        "dye"
+      ]
+    },
+    {
+      "mob_vnum": 82823,
+      "name": "Bailey seamstress",
+      "keyword": "seamstress",
+      "description": "Seamstress workshop. Ask flag or fabric. Exact crimson fabric plus 35000 copper becomes a banner; settlement is guarded with accounting active.",
+      "topics": [
+        "flag",
+        "banner",
+        "wool",
+        "bolt",
+        "fabric"
+      ]
+    },
+    {
+      "mob_vnum": 82824,
+      "name": "Bailey weaver",
+      "keyword": "weaver",
+      "description": "Weaver workshop beside the spinner. Ask spool or yarn. Exact crimson yarn plus 10000 copper becomes fabric; settlement is guarded with accounting active.",
+      "topics": [
+        "spool",
+        "yarn",
+        "wool"
+      ]
+    },
+    {
+      "mob_vnum": 82825,
+      "name": "Elderly spinner",
+      "keyword": "spinner",
+      "description": "Weaver workshop. Ask fleece. Exact sheep fleece plus 5000 copper becomes white yarn; settlement is guarded with accounting active.",
+      "topics": [
+        "fleece"
+      ]
+    },
+    {
+      "mob_vnum": 82874,
+      "name": "Off-duty captain",
+      "keyword": "captain",
+      "description": "Officers' barracks. Ask chess or mutter. Exact carved ivory knight gives military boots, without a game or lesson requirement.",
+      "topics": [
+        "mutter",
+        "mutters",
+        "muttering",
+        "chess",
+        "something"
+      ]
+    },
+    {
+      "mob_vnum": 82878,
+      "name": "Duke Delwyn",
+      "keyword": "delwyn",
+      "description": "Duke's court. No addressed quest topic family. One exact scribbled note and one deep blue braid together give the signet ring; no successful invasion defense is checked.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82890,
+      "name": "Skulking halfling",
+      "keyword": "halfling",
+      "description": "Duke's private study behind its closed door. Ask search or study. The desk's exact military assessment gives a scribbled note. The worn braid is separate evidence for the Duke.",
+      "topics": [
+        "search",
+        "searching",
+        "study",
+        "duke",
+        "something"
+      ]
+    },
+    {
+      "mob_vnum": 82895,
+      "name": "Keep magician",
+      "keyword": "magician",
+      "description": "Top of the midair flagpole. Ask flag or flagpole. The exact crimson banner gives slippers. Flight, levitation or suitable climbing protection matters on the approach. His teacher role is separate.",
+      "topics": [
+        "flagpole",
+        "frown",
+        "flag"
+      ]
+    },
+    {
+      "mob_vnum": 82807,
+      "name": "Pub alley contact",
+      "keyword": "prostitute",
+      "description": "Pub. A coin-only 1000-copper service with no item reward or addressed topic, guarded with accounting active. Its narrated alley and cleric visit are not separate objectives.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82833,
+      "name": "Bellfounder",
+      "keyword": "bellfounder",
+      "description": "Smithies' ring. Carries the exact small iron bell. No local purchase or commission contract supplies it peacefully; matching supplied bells remain valid.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82852,
+      "name": "Humble shepherd",
+      "keyword": "shepherd",
+      "description": "Declared on the eastern bailey lane; can wander within the zone with the sheep. No addressed sheep-shearing service is bound here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82853,
+      "name": "Rambouillet sheep",
+      "keyword": "sheep",
+      "description": "Follower of the shepherd with the exact sheep fleece in a one-copy carried source. An encounter cannot prove fleece issuance or personal acquisition.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82872,
+      "name": "Worried-looking servant",
+      "keyword": "worried-looking",
+      "description": "Servants' recreation area. Carries the exact carved ivory knight. No borrowed-piece dialogue or game outcome is bound here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82806,
+      "name": "Towering hosteler",
+      "keyword": "hosteler",
+      "description": "Bailey lodging description and ambient room guidance. No local inn assignment, inn room flag or shop file supplies the advertised lodging service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82800,
+      "name": "Inspection agent",
+      "keyword": "agent",
+      "description": "Customs station just inside the gate. Inspection is ambient narration; it does not establish a tariff payment or spy-clearance milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82801,
+      "name": "Customs officer",
+      "keyword": "officer",
+      "description": "Customs station. Ambient taxation dialogue is lore, with no local accepted levy or entry-permit quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82892,
+      "name": "Tall lookout",
+      "keyword": "lookout",
+      "description": "Keep roof. The ogre/troll warning is an ambient false alarm, without an invasion trigger or defense quest.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "clockmaker-iron-bell",
+      "title": "A bell for the bailey clock",
+      "category": "story",
+      "summary": "The clockmaker accepts one small iron bell and gives a large iron cog. This delivery feeds a separate request at the mill. The clock repair is described in conversation; the recorded outcome is the accepted bell and returned cog.",
+      "contracts": [
+        {
+          "giver_vnum": 82815,
+          "completion_key": "give=I:82828;receive=I:82829;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82828",
+          "text": "Carry the small iron bell",
+          "kind": "carried_item",
+          "item_vnums": [
+            82828
+          ],
+          "count": 1,
+          "hint": "The bellfounder in the smithies' ring has the exact bell in a one-copy carried source. There is no local bell-purchase or bell-making exchange. A supplied matching bell also fits without proving a personal fight or purchase.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82815,
+              "completion_key": "give=I:82828;receive=I:82829;disappear=0"
+            }
+          ],
+          "hint": "Meet the clockmaker, ask bell or clock, then offer the exact bell. The recipient stays. The cog can be offered to the miller independently; clock function and personal manufacture are not checked."
+        }
+      ]
+    },
+    {
+      "id": "miller-iron-cog",
+      "title": "The miller's missing gear",
+      "category": "story",
+      "summary": "The miller accepts one large iron cog and returns a spike-knuckled razor sharp blade from his military days. His reply describes a repaired mill, while acceptance checks the exact cog. The bell delivery and mill delivery remain independent outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 82808,
+          "completion_key": "give=I:82829;receive=I:82830;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82815",
+          "text": "Optional history: receive the cog from the clockmaker",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82815,
+              "completion_key": "give=I:82828;receive=I:82829;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82829",
+          "text": "Carry the large iron cog",
+          "kind": "carried_item",
+          "item_vnums": [
+            82829
+          ],
+          "count": 1,
+          "hint": "The clockmaker's bell delivery produces this exact cog. Supplied matching cogs fit without that earlier receipt. Clock scenery and other metalwork do not substitute.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82808,
+              "completion_key": "give=I:82829;receive=I:82830;disappear=0"
+            }
+          ],
+          "hint": "At the mill, ask cog, part or mill and offer the exact cog. The miller stays. Delivery does not measure a running mill, restored business or earlier personal bell recovery."
+        }
+      ]
+    },
+    {
+      "id": "spinner-fleece-yarn",
+      "title": "Spin a fleece into white yarn",
+      "category": "service",
+      "summary": "The spinner takes one sheep fleece and 5000 copper for one spool of fine white yarn. This paid intermediate service starts the local textile route. Active accounting currently guards this item-and-coin exchange; material custody does not prove payment or award an achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 82825,
+          "completion_key": "give=C:5000,I:82816;receive=I:82817;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82816",
+          "text": "Carry the sheep fleece",
+          "kind": "carried_item",
+          "item_vnums": [
+            82816
+          ],
+          "count": 1,
+          "hint": "A rambouillet sheep following the wandering shepherd has the exact fleece in a one-copy carried source. No shearing command or peaceful fleece sale is bound here. A supplied matching fleece fits without proving a personal animal kill.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted paid service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82825,
+              "completion_key": "give=C:5000,I:82816;receive=I:82817;disappear=0"
+            }
+          ],
+          "hint": "Meet the spinner beside the weaver, ask fleece, and prepare the exact fleece plus 5000 copper. This paid service needs accounting settlement support before it can run with accounting active. An earlier receipt cannot replace current material or the fee."
+        }
+      ]
+    },
+    {
+      "id": "dyer-white-crimson-yarn",
+      "title": "Dye the white yarn crimson",
+      "category": "service",
+      "summary": "The dyer takes one spool of fine white yarn and 10000 copper for one spool of crimson yarn. This is a paid service with an independent receipt, guarded while durable item-and-coin settlement is unavailable.",
+      "contracts": [
+        {
+          "giver_vnum": 82821,
+          "completion_key": "give=C:10000,I:82817;receive=I:82818;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82825",
+          "text": "Optional history: obtain white yarn from the spinner",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82825,
+              "completion_key": "give=C:5000,I:82816;receive=I:82817;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82817",
+          "text": "Carry the spool of fine white yarn",
+          "kind": "carried_item",
+          "item_vnums": [
+            82817
+          ],
+          "count": 1,
+          "hint": "The paid spinning service produces the exact white yarn. Supplied matching yarn fits without its receipt. Crimson yarn is the output of this stage, not its input.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted paid service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82821,
+              "completion_key": "give=C:10000,I:82817;receive=I:82818;disappear=0"
+            }
+          ],
+          "hint": "Ask yarn, wool or dye after meeting the dyer. Prepare the exact white spool plus 10000 copper. Paid-service history is guidance, and this service does not award a separate achievement or daily."
+        }
+      ]
+    },
+    {
+      "id": "weaver-crimson-fabric",
+      "title": "Weave the crimson yarn",
+      "category": "service",
+      "summary": "The weaver takes one spool of crimson yarn and 10000 copper for one bolt of crimson fabric. This paid service follows dyeing in the local producer route; earlier personal spinning and dyeing are not required by the native recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 82824,
+          "completion_key": "give=C:10000,I:82818;receive=I:82819;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82821",
+          "text": "Optional history: obtain crimson yarn from the dyer",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82821,
+              "completion_key": "give=C:10000,I:82817;receive=I:82818;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82818",
+          "text": "Carry the spool of crimson yarn",
+          "kind": "carried_item",
+          "item_vnums": [
+            82818
+          ],
+          "count": 1,
+          "hint": "The paid dyeing service produces this exact crimson spool. Supplied matching yarn fits. White yarn cannot skip the dyeing material requirement; having several wrong spools does not supply a crimson one.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted paid service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82824,
+              "completion_key": "give=C:10000,I:82818;receive=I:82819;disappear=0"
+            }
+          ],
+          "hint": "Meet the weaver and ask spool or yarn. Prepare the exact crimson yarn plus 10000 copper. Active accounting guards settlement of this paid service; it has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "seamstress-crimson-banner",
+      "title": "Sew the replacement banner",
+      "category": "service",
+      "summary": "The seamstress takes one bolt of crimson fabric and 35000 copper for one large crimson banner. This is the last paid producer stage before the separate banner return. All four local textile fees total 60000 copper, if starting from fleece.",
+      "contracts": [
+        {
+          "giver_vnum": 82823,
+          "completion_key": "give=C:35000,I:82819;receive=I:82820;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82824",
+          "text": "Optional history: obtain crimson fabric from the weaver",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82824,
+              "completion_key": "give=C:10000,I:82818;receive=I:82819;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82819",
+          "text": "Carry the bolt of crimson fabric",
+          "kind": "carried_item",
+          "item_vnums": [
+            82819
+          ],
+          "count": 1,
+          "hint": "The paid weaving service produces the exact bolt. Supplied matching fabric fits without earlier service history. Yarn, ordinary clothing and the finished banner are different materials.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted paid service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82823,
+              "completion_key": "give=C:35000,I:82819;receive=I:82820;disappear=0"
+            }
+          ],
+          "hint": "Meet the seamstress and ask flag, banner or fabric. Prepare one exact bolt plus 35000 copper. Active accounting guards this mixed payment. Receipt history does not preserve the fabric or pay the fee; the finished banner has its own later delivery outcome."
+        }
+      ]
+    },
+    {
+      "id": "magician-crimson-banner",
+      "title": "A banner for the keep",
+      "category": "story",
+      "summary": "The keep magician accepts one large crimson banner and gives velvet-lined lizard-skin slippers. The local replacement route has four paid stages, currently guarded with accounting active. A supplied exact banner still fits this independent item-only delivery. No flag-hanging or lizard-transformation outcome is checked.",
+      "contracts": [
+        {
+          "giver_vnum": 82895,
+          "completion_key": "give=I:82820;receive=I:82821;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82823",
+          "text": "Optional history: obtain the banner from the seamstress",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82823,
+              "completion_key": "give=C:35000,I:82819;receive=I:82820;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82820",
+          "text": "Carry the large crimson banner",
+          "kind": "carried_item",
+          "item_vnums": [
+            82820
+          ],
+          "count": 1,
+          "hint": "The seamstress's paid service is the declared local banner producer. Supplied matching banners fit without the four service receipts. The recipient is at the top of the flagpole: the ladder and midair rooms can cause falls; prepare flight, levitation or suitable climbing protection.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82895,
+              "completion_key": "give=I:82820;receive=I:82821;disappear=0"
+            }
+          ],
+          "hint": "Meet the magician high above the keep, ask flag or flagpole, and offer the exact banner. He stays and returns slippers. The floating encounter needs a safe approach and return; possession of a banner does not establish successful travel, hanging it or surviving a threat."
+        }
+      ]
+    },
+    {
+      "id": "captain-ivory-knight",
+      "title": "The captain's missing chess piece",
+      "category": "story",
+      "summary": "The off-duty captain accepts the carved ivory knight and gives spit-shined military boots. Conversation explains his incomplete chess set, but the recorded outcome is the accepted piece. Playing a game or learning en passant is not required.",
+      "contracts": [
+        {
+          "giver_vnum": 82874,
+          "completion_key": "give=I:82826;receive=I:82827;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82826",
+          "text": "Carry the carved ivory knight",
+          "kind": "carried_item",
+          "item_vnums": [
+            82826
+          ],
+          "count": 1,
+          "hint": "The worried-looking servant in the recreation area has the exact knight in a one-copy carried source. There is no bound request to borrow it or a chess-game win. A matching supplied piece fits without proving a personal recovery.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82874,
+              "completion_key": "give=I:82826;receive=I:82827;disappear=0"
+            }
+          ],
+          "hint": "In the officers' barracks, meet the off-duty captain and ask chess or mutter. Offer the exact ivory knight. The recipient stays; boots are the reward rather than a recorded chess lesson or match."
+        }
+      ]
+    },
+    {
+      "id": "halfling-military-assessment",
+      "title": "The papers in the Duke's study",
+      "category": "story",
+      "summary": "The skulking halfling accepts the military assessment and gives a hastily scribbled note. The note describes an attack planned for a wedding. This exchange is independent of the later warning to the Duke; no spy allegiance, deadline, attack or siege victory is checked.",
+      "contracts": [
+        {
+          "giver_vnum": 82890,
+          "completion_key": "give=I:82822;receive=I:82824;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82822",
+          "text": "Carry the assessment of the duchy's military",
+          "kind": "carried_item",
+          "item_vnums": [
+            82822
+          ],
+          "count": 1,
+          "hint": "The exact assessment is placed inside the ebony desk in the Duke's private study. The desk starts closed and has a one-charge acid trap on opening. A supplied matching assessment fits without opening the desk, reading it or proving first recovery; a document inside a container is not loose carried material.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82890,
+              "completion_key": "give=I:82822;receive=I:82824;disappear=0"
+            }
+          ],
+          "hint": "Meet the skulking halfling in the study, ask search or study, and offer the exact assessment. He stays and gives the note. Helping with the papers does not prevent a separate warning delivery or establish allegiance to the unnamed master."
+        }
+      ]
+    },
+    {
+      "id": "duke-note-and-braid",
+      "title": "Warn the Duke with two pieces of evidence",
+      "category": "story",
+      "summary": "The Duke takes the hastily scribbled note and deep blue braid of rank together, and gives his signet ring. These two exact items are one delivery outcome. The note names a wedding while the Duke's reply calls it his daughter's birthday; neither a date nor prevention of an invasion is checked.",
+      "contracts": [
+        {
+          "giver_vnum": 82878,
+          "completion_key": "give=I:82823,I:82824;receive=I:82825;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-82890",
+          "text": "Optional history: obtain the note from the skulking halfling",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82890,
+              "completion_key": "give=I:82822;receive=I:82824;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt describes an earlier producer route. Supplied exact material fits without that history. A receipt cannot replace material already spent, prove a personal kill or establish first recovery."
+        },
+        {
+          "id": "material-82824",
+          "text": "Carry the hastily scribbled note",
+          "kind": "carried_item",
+          "item_vnums": [
+            82824
+          ],
+          "count": 1,
+          "hint": "The study assessment exchange produces this exact note. Supplied matching notes fit without the earlier receipt. The military assessment and other papers are different kinds.",
+          "optional": true
+        },
+        {
+          "id": "material-82823",
+          "text": "Carry the deep blue braid of rank",
+          "kind": "carried_item",
+          "item_vnums": [
+            82823
+          ],
+          "count": 1,
+          "hint": "The skulking halfling in the study wears the exact braid in a one-copy equipment source. A supplied matching braid also fits. The native delivery does not require a personal kill or check how the braid was recovered; remove it from equipment before offering.",
+          "optional": true
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82878,
+              "completion_key": "give=I:82823,I:82824;receive=I:82825;disappear=0"
+            }
+          ],
+          "hint": "Meet the Duke in his court and offer both exact items together; he has no addressed topic family. He stays and gives the signet ring. An earlier note receipt cannot replace a spent note. The two independent study and warning receipts do not form an enforced campaign or exclusive branch."
+        }
+      ]
+    },
+    {
+      "id": "alley-paid-service",
+      "title": "The pub's paid alley encounter",
+      "category": "service",
+      "summary": "This legacy paid encounter takes 1000 copper with no item reward. Its reply describes time in an alley and suggests seeing a cleric, but does not perform a quest journey, impose an illness or check a cleric visit. It is a paid service, outside achievement and daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 82807,
+          "completion_key": "give=C:1000;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted paid service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82807,
+              "completion_key": "give=C:1000;receive=;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient in the pub. Coin-only settlement is guarded with accounting active. This service does not require a dialogue keyword or establish medical, travel or personal-progression milestones."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

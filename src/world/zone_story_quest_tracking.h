@@ -8,7 +8,7 @@
 
 namespace zone_story_quest_tracking
 {
-constexpr uint32_t ZONE_STORY_QUEST_TRACKING_SCHEMA_VERSION = 1;
+constexpr uint32_t ZONE_STORY_QUEST_TRACKING_SCHEMA_VERSION = 2;
 constexpr std::string_view ZONE_STORY_QUEST_SOURCE_SYSTEM = "zone_story";
 
 constexpr uint32_t ZONE_STORY_CREDIT_NONE = 0;
@@ -35,6 +35,11 @@ struct quest_definition
 	std::string giver_name;
 	std::string zone_name;
 	std::string objective;
+	bool daily_eligible = false;
+	std::string daily_exclusion = {};
+	std::vector<std::string> prerequisites = {};
+	/* Reviewed ownership correction; immutable older receipts keep this owner. */
+	int32_t previous_zone_number = -1;
 };
 
 struct completion_transaction
@@ -49,6 +54,9 @@ struct completion_transaction
 	int64_t completed_at = 0;
 	uint32_t season_id = 0;
 	uint32_t content_revision = 0;
+	/* Captured at admission, never inferred from a later party or login. */
+	uint32_t daily_policy_revision = 0;
+	std::vector<uint32_t> daily_credited_pids = {};
 };
 
 bool validate_definition(const quest_definition &definition, std::string *error = nullptr);

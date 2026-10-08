@@ -1,0 +1,170 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "earthp",
+  "coverage": "complete",
+  "introduction": "Explore Grumbar's Domain, bring Sunnis ten planar granite shards and recover the golden lash for Thulum's Gem-Seeker pick. The prison, mines and enslaved pechs explain the setting. Discovery is separate. New progress requires active, ready accounting.",
+  "orientation": [
+    "The outer Plane of Earth connects to the domain's tunnels. Pech miners, dao masters, imprisoned titans and gemstone creatures explain the struggle beneath Grumbar's prison. Discovery records actual arrival. Hearing mining or songs does not record a mined item, a rescue or an accepted return.",
+    "ASK SUNNIS about hello, grumbar, prison and feed or hunger. She asks for ten shards of planar granite together. Other granite objects, unrefined gems and fewer than ten exact shards cannot replace them. Keep the ten matching shards loose rather than held or nested. Matching supplied shards also fit.",
+    "Xorns, xarens and galber dhers have declared planar granite stock in the tunnels and dispersal area. Current stock and custody determine what can be recovered. Fresh reset-issued items, mining and salvage are gated while accounting is active, so the journal cannot promise new shards on the next daily reset. Existing admitted matching stock can prepare the request.",
+    "Defeating the living wall can expose a fractured wall control at the downward approach to Sunnis. PUSH WALL operates the blocked passage when the control is present on the ground. The control also has a dangerous charged movement trap; opening the passage is separate from surviving and traversing it. This approach is guidance, without an added access achievement.",
+    "Sunnis grants a huge key of blazing white flame, then leaves. The key matches the blazing archway between her location and Grumbar's lair. Ordinary unlocking, opening and actual travel remain separate. Her narrated barrier and golem scene does not prove a new spawn, a changed barrier or Grumbar's liberation.",
+    "ASK THULUM about hello, song, dao or slave. His request speaks of Vashur's essence, but the accepted offering is the exact golden lash whip. Vashur starts in a dispersal room and can wander; inspect his current location and equipment. Recover the lash, or obtain a matching supplied lash, and keep it loose. A corpse, another whip or a personal kill alone cannot complete this exchange.",
+    "Thulum gives the Gem-Seeker pick and experience, then leaves. This accepted return stands independently of Sunnis's shards and key. The pech slaves and dao followers remain world actors; the receipt does not establish that every miner has been freed or that a new tunnel has opened.",
+    "Gem-Seeker is a wieldable pick with movement bonuses. The domain has ore and gem mine declarations, and a prismatic crysmal can expose a narrow crevice leading to another mine chamber. ENTER CREVICE requires the visible ground control after its carrier is defeated. Its destination has an ordinary downward return. Mining remains unavailable while accounting is active; receiving the pick does not record a mined gem.",
+    "Planar granite is also requested in Alatorin. Miboli's paper-and-two-shard lithic arcanum and Dweefniggle's single-shard collecting token are separate exchanges owned by their recipients. Spending shards there does not fulfill Sunnis's ten-shard request.",
+    "Two accepted returns can each contribute one achievement and one potential daily. Optional material rows reflect current loose custody, while accepted history remains after offerings are spent. Departing recipients, wandering, caps and active, ready accounting determine availability. A daily clock does not recreate supplies or residents, and it does not impose a fixed order on these two stories."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 131200,
+      "name": "A pech miner",
+      "keyword": "pech",
+      "description": "A miner supplies the setting through ambient mining actions; there is no accepted request or learned ASK topic.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 131214,
+      "name": "Sunnis, Princess of the Dawn",
+      "keyword": "sunnis",
+      "description": "The princess explains Grumbar and the ten exact planar granite shards; she grants the barrier key and leaves after acceptance.",
+      "topics": [
+        "hi",
+        "hello",
+        "earth",
+        "plane",
+        "grumbar",
+        "prison",
+        "balance",
+        "feed",
+        "hunger",
+        "hungry"
+      ]
+    },
+    {
+      "mob_vnum": 131217,
+      "name": "a pech slave miner",
+      "keyword": "slave",
+      "description": "Enslaved pech mining is ambient context; meeting a slave does not record liberation or an accepted request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 131230,
+      "name": "Vashur, the Golden Lash",
+      "keyword": "vashur",
+      "description": "The wandering taskmaster is the declared equipment source of the golden lash; encountering him is separate from acquiring or returning it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 131235,
+      "name": "an ENORMOUS stone colossus",
+      "keyword": "colossus",
+      "description": "The crashing colossus is an ambient encounter and equipment source, without another accepted request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 131236,
+      "name": "Thulum Stonebone, elder pech miner",
+      "keyword": "thulum",
+      "description": "The elder explains the pech slaves, songs and Vashur; the exact golden lash grants Gem-Seeker and experience before he leaves.",
+      "topics": [
+        "hi",
+        "hello",
+        "pick",
+        "song",
+        "sing",
+        "singing",
+        "earth",
+        "plane",
+        "dao",
+        "daos",
+        "master",
+        "masters",
+        "slave",
+        "slaves",
+        "enslaved",
+        "entemoch",
+        "ogremoch",
+        "grumbar"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "sunnis-planar-granite",
+      "title": "Sunnis: ten planar granite shards",
+      "category": "story",
+      "summary": "Bring ten copies of the exact planar granite shard together for the white-flame key. The receipt records the accepted return; the prison scene and actual access have separate meanings.",
+      "contracts": [
+        {
+          "giver_vnum": 131214,
+          "completion_key": "give=I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104;receive=I:131211;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-400104",
+          "text": "Carry ten planar granite shards loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            400104
+          ],
+          "count": 10,
+          "optional": true,
+          "hint": "Xorns, xarens and galber dhers declare this exact shard kind. Other granite and gems do not substitute. Matching supplied shards fit, without proving ten personal recoveries. Fresh reset supply, mining and salvage are gated during active accounting."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete Sunnis: ten planar granite shards",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 131214,
+              "completion_key": "give=I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104,I:400104;receive=I:131211;disappear=1"
+            }
+          ],
+          "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Supplied matching loose items fit. Successful access, personal source recovery, actual barrier changes, mining and liberation require separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "thulum-golden-lash",
+      "title": "Thulum: the Golden Lash",
+      "category": "story",
+      "summary": "Return the exact golden lash whip for Gem-Seeker and experience. The essence wording identifies this item, and the receipt does not prove liberation of every pech.",
+      "contracts": [
+        {
+          "giver_vnum": 131236,
+          "completion_key": "give=I:131227;receive=E:200000,I:131232;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-131227",
+          "text": "Carry the golden lash loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            131227
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Vashur declares this exact whip as wielded equipment and can wander from his dispersal room. Recover it or use a matching supplied lash, then keep it loose. Essence prose does not mean a corpse, another whip or a required personal kill."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete Thulum: the Golden Lash",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 131236,
+              "completion_key": "give=I:131227;receive=E:200000,I:131232;disappear=1"
+            }
+          ],
+          "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Supplied matching loose items fit. Successful access, personal source recovery, actual barrier changes, mining and liberation require separate evidence."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

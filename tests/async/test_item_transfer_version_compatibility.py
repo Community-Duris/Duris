@@ -458,6 +458,85 @@ int main()
 	assert(terms.version == 5 && terms.xp_award_count == 2 &&
 	       terms.xp_awards[0].recipient_pid == 42 && terms.xp_awards[0].amount == 75 &&
 	       terms.xp_awards[1].recipient_pid == 43 && terms.xp_awards[1].amount == 100);
+    auto frozen_daily = frozen_group_xp;
+    put_u32(&frozen_daily, 0, 6);
+    const size_t daily_offset = frozen_daily.size();
+    frozen_daily.resize(daily_offset + 20);
+    put_u32(&frozen_daily, daily_offset, 7);
+    put_u32(&frozen_daily, daily_offset + 4, 2);
+    put_u32(&frozen_daily, daily_offset + 8, 1);
+    put_u32(&frozen_daily, daily_offset + 12, 1);
+    put_u32(&frozen_daily, daily_offset + 16, 43);
+    assert(quest_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
+    assert(terms.version == 6 && terms.season_id == 7 && terms.catalog_revision == 2 &&
+        terms.daily_count == 1 && terms.daily_pids[0] == 43 && terms.xp_award_count == 2);
+    assert(quest_reward_has_daily_context(terms) && !quest_reward_is_fee_only(terms));
+    auto daily_item = frozen_daily;
+    put_u32(&daily_item, 56, 1);
+    put_u32(&daily_item, 60, 777);
+    put_u32(&daily_item, 68, 0);
+    put_u32(&daily_item, xp_award_count_offset, 0);
+    daily_item.erase(daily_item.begin() + xp_award_count_offset + 4,
+                     daily_item.begin() + xp_award_count_offset + 28);
+    assert(quest_reward_continuation_decode(daily_item.data(), daily_item.size(), &terms));
+    assert(quest_item_reward_source_id(terms, 0) ==
+           quest_item_reward_source_id(terms.roots[0], 777, 0));
+    assert(quest_fee_item_reward_source_id(terms, 0) == 0);
+    assert(!quest_fee_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
+    auto daily_as_fee = frozen_daily;
+    put_u32(&daily_as_fee, 32, 0);
+    assert(!quest_reward_continuation_decode(daily_as_fee.data(), daily_as_fee.size(), &terms));
+
+    // Both established v6 wire shapes remain readable after accounting integration.
+    quest_reward_continuation fee{};
+    fee.version = 6;
+    fee.player_pid = 42;
+    fee.mobile_vnum = 711;
+    fee.room_vnum = 500;
+    fee.completed_at = 1700000000;
+    fee.reward_count = 1;
+    fee.rewards[0] = {1, 777, 0, 0};
+    fee.zone_number = 4;
+    fee.player_level = fee.strongest_party_level = 15;
+    fee.player_racewar = 2;
+    fee.party_size = fee.credited_count = 1;
+    fee.credited_pids[0] = 42;
+    fee.character_name = "Ada";
+    fee.definition_id = "qst";
+    fee.action_operation = operation();
+    fee.triggering_acceptance = operation();
+    fee.triggering_acceptance.bytes[0] ^= 1;
+    fee.action_source.kind = economic_source_kind::quest_action;
+    fee.action_source.source = fee.action_operation;
+    fee.action_source.generation = operation();
+    fee.action_source.sequence = 1;
+    fee.action_mobile_instance_id = 123;
+    item_transfer_result fee_acceptance{};
+    fee_acceptance.root_item_uid = 100;
+    fee_acceptance.item_count = 1;
+    assert(item_transfer_command_encode_result(fee_acceptance, &fee.original_acceptance_result));
+    std::vector<uint8_t> encoded_fee;
+    assert(quest_fee_reward_continuation_encode(fee, &encoded_fee));
+    assert(quest_reward_continuation_decode(encoded_fee.data(), encoded_fee.size(), &terms));
+    assert(quest_reward_is_fee_only(terms) && !quest_reward_has_daily_context(terms));
+    assert(terms.action_operation.bytes == fee.action_operation.bytes && terms.daily_count == 0);
+    assert(quest_item_reward_source_id(terms, 0) == quest_fee_item_reward_source_id(fee, 0));
+    assert(quest_item_reward_source_id(terms, 0) != 0);
+    auto fee_as_daily = encoded_fee;
+    put_u32(&fee_as_daily, 32, 1);
+    assert(!quest_reward_continuation_decode(fee_as_daily.data(), fee_as_daily.size(), &terms));
+    auto mixed_fee = encoded_fee;
+    mixed_fee.insert(mixed_fee.end(), frozen_daily.begin() + daily_offset, frozen_daily.end());
+    assert(!quest_reward_continuation_decode(mixed_fee.data(), mixed_fee.size(), &terms));
+    for (size_t length = 0; length < encoded_fee.size(); ++length)
+        assert(!quest_reward_continuation_decode(encoded_fee.data(), length, &terms));
+    assert(quest_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
+    assert(!quest_fee_reward_continuation_encode(terms, &encoded_fee));
+    auto foreign_daily = frozen_daily;
+    put_u32(&foreign_daily, daily_offset + 16, 99);
+    assert(!quest_reward_continuation_decode(foreign_daily.data(), foreign_daily.size(), &terms));
+    frozen_daily.pop_back();
+    assert(!quest_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
 	auto inconsistent_completer_xp = frozen_group_xp;
 	put_u32(&inconsistent_completer_xp, xp_award_count_offset + 12, 74);
 	assert(!quest_reward_continuation_decode(inconsistent_completer_xp.data(),
@@ -775,6 +854,10 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
+            rel("lockpick_retirement_continuation.c"),
+            rel("native_quest_coin_give.c"), rel("native_quest_cost.c"),
+            rel("shop_trade_recovery_manifest.c"),
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-lcrypto",
             "-o",
             str(binary),

@@ -1,0 +1,502 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "cloister",
+  "coverage": "complete",
+  "introduction": "Expose the intruder’s tablet, choose how to use Mahr’s recommendation, return Mande’s robes or the General’s head and memoirs, and follow Troggahn’s egg through the podium ring and poison to the helmet-case key. Tel’s recommendation rejection is a supporting exchange, not an achievement.",
+  "orientation": [
+    "The surface temple and the underworld Clan Stealth Hunter outpost are separate parts of this area. The temple has an open tundra approach. The outpost also connects to Clan Stoutdorf through a secret passage; a recorded recommendation is not an access requirement.",
+    "Follow the intruder’s tablet to Mahr’s recommendation, then choose how to use the note. Tel rejects and replaces it; the upset disciple consumes it for experience and a clue. Neither exchange admits you to the order. Exact supplied notes can skip the earlier tablet exchange.",
+    "For the outpost wall, read its inscription and SAY Khildarak. The switch removes the blocked north passage. The guardians’ black key opens the gates; the guild officer’s thin key opens the short-hallway door. Both keys normally break after a successful unlock; another copy may be needed after the doors reset.",
+    "PUSH the statue at the short hallway to expose the underground tunnel. PUSH boulder at the secret lair approach, then SEARCH for the west entrance. On the second-floor landing, PUSH tapestry, then SEARCH for the north helmet-room entrance. SEARCH again on the secret return side if needed. Switch activation, finding an exit and actual travel are separate actions.",
+    "Troggahn’s egg supplies the priest’s bone key. Unlock and open the dining-room podium to recover the hidden exact ring, then bring it with the assassin’s poison to the adviser. His rib bone unlocks the stone case; open the case and retrieve the battle helmet separately. Exact supplied rings can skip the egg/key route.",
+    "The General’s named head is already loaded as a hidden held trophy. Doss needs Mande’s loaded robes, and the General needs Kirrb’s exact hidden tome. Search source bodies and recover exact items loose. Current possession, first personal recovery, another player’s handoff and a source kill are different facts.",
+    "The egg has competing requests in Jade and Winterhaven; the elder ring has local and rare Alatorin sources sharing a world cap of one. Missing stock, traps, breakable keys and departed singleton recipients can limit a journey. A daily request does not guarantee renewal or replace a spent item.",
+    "The tablet’s ten-minute instructions, Father Tel’s meditation lesson, admission into the order and narrated poison revenge have no accepted campaign ending or timer in this journal. Questions provide guidance, without granting an achievement for every keyword. Every new journal or credit update requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 67100,
+      "name": "Brother Doss",
+      "keyword": "doss",
+      "description": "Doss begins on the temple perimeter and wants Brother Mande’s blood-stained robes from the Jade Empire. His request is for the robes, rather than Mande’s separately loaded head.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 67102,
+      "name": "Brother Mahr",
+      "keyword": "mahr",
+      "description": "Mahr searches the perimeter halls. Ask about what or looking for his intruder clue. The sly assassin’s adamantite tablet earns his recommendation note; the hidden poison has a separate purpose.",
+      "topics": [
+        "what",
+        "looking"
+      ]
+    },
+    {
+      "mob_vnum": 67103,
+      "name": "Father Tel",
+      "keyword": "tel",
+      "description": "Father Tel rests in the central meditation chamber with his following assistant. Ask about bakarakh. His named-head request gives an earring; his separate note exchange is a rejection, not admission into the order.",
+      "topics": [
+        "bakarakh"
+      ]
+    },
+    {
+      "mob_vnum": 67104,
+      "name": "General Bakarakh",
+      "keyword": "bakarakh",
+      "description": "The General begins in the elder’s room with following guards. Ask about elder, ring, kirrb or tome. His memoirs request is independent of Tel’s head request. His ring dialogue conflicts with its current podium and Alatorin sources.",
+      "topics": [
+        "hi",
+        "hello",
+        "elder",
+        "elders",
+        "ring",
+        "kirrb",
+        "faktl",
+        "tome"
+      ]
+    },
+    {
+      "mob_vnum": 67105,
+      "name": "a sly duergar assassin",
+      "keyword": "assassin",
+      "description": "The sly duergar assassin starts in the perimeter halls with a hidden adamantite tablet and poison vial. They are different items for different requests; neither requires a recorded personal kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 67106,
+      "name": "an assistant",
+      "keyword": "assistant",
+      "description": "The assistant follows Father Tel from the meditation chamber. His protective role is part of the setting, rather than an authored rescue or meditation lesson receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 67107,
+      "name": "an upset disciple",
+      "keyword": "upset",
+      "description": "The upset disciple rests in a prayer room beside a disturbed monk. Ask about rejection, mahr or letter. The exact recommendation gives experience and a clan-outpost clue; no formal admission is granted.",
+      "topics": [
+        "hello",
+        "hi",
+        "rejection",
+        "mahr",
+        "letter"
+      ]
+    },
+    {
+      "mob_vnum": 67109,
+      "name": "a monk",
+      "keyword": "monk",
+      "description": "The disturbed monk shares the upset disciple’s room. Ask about disciple for his complaint. He does not accept the recommendation or supply a separate quest terminal.",
+      "topics": [
+        "disciple"
+      ]
+    },
+    {
+      "mob_vnum": 67113,
+      "name": "a clansdwarf guardian",
+      "keyword": "guardian",
+      "description": "Two clansdwarf guardians start outside the outpost gates. Only one reset placement carries the black gate key. A guardian’s shared name does not prove that it has the key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 67114,
+      "name": "a clansdwarf priest",
+      "keyword": "priest",
+      "description": "The clan priest rests in his room near the foyer. Ask about dragon, egg or podium. Troggahn’s exact egg buys the bone key to the podium; his departure is part of that exchange.",
+      "topics": [
+        "dragon",
+        "egg",
+        "podium"
+      ]
+    },
+    {
+      "mob_vnum": 67115,
+      "name": "the guild officer",
+      "keyword": "officer",
+      "description": "The guild officer carries the thin key for the upper short-hallway door. The key normally breaks after a successful unlock; a spare may be needed after the door resets. Using it is separate from a quest offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 67120,
+      "name": "the clansdwarf advisor",
+      "keyword": "advisor",
+      "description": "The adviser paces in his own room. Ask about elder, deceived, ring or assistance. He needs the exact ring and the assassin’s poison together, then supplies the rib bone to the helmet case.",
+      "topics": [
+        "hi",
+        "hello",
+        "elder",
+        "bakarakh",
+        "deceived",
+        "deceive",
+        "ring",
+        "assistance"
+      ]
+    },
+    {
+      "mob_vnum": 67121,
+      "name": "Troggahn, the black dragon",
+      "keyword": "troggahn",
+      "description": "Troggahn starts in the secret black-dragon lair carrying his exact egg. The clan priest, Saint Macavor in Jade and Lancer in Winterhaven have competing uses for that same item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 76720,
+      "name": "Brother Mande",
+      "keyword": "mande",
+      "description": "Brother Mande hides in the Jade Empire’s decaying tunnels carrying hidden blood-stained robes and a separate named head. Doss needs the robes; Saint Macavor’s foreign request uses the head and Troggahn’s egg.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 83335,
+      "name": "Kirrb Faktl",
+      "keyword": "kirrb",
+      "description": "Kirrb Faktl carries the hidden clan-lore tome in Alatorin’s secretive den. Returning it is a Cloister request even though this source belongs to Alatorin.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 83463,
+      "name": "Hargorigard the duergar elder",
+      "keyword": "hargorigard",
+      "description": "Hargorigard has a rare Alatorin placement carrying the same elder-ring kind that the local podium contains. His actual availability and the shared world cap need checking; the adviser accepts supplied exact rings.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "doss-mandes-robes",
+      "title": "Brother Doss: return Mande’s blood-stained robes",
+      "category": "story",
+      "summary": "Bring Brother Doss the blood-stained robes of Brother Mande for a priest’s holy collar. Doss leaves afterward. The exact robes are accepted proof; Mande’s separately loaded head and ordinary carved parts do not replace them.",
+      "contracts": [
+        {
+          "giver_vnum": 67100,
+          "completion_key": "give=I:76728;receive=I:67129;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "mandes-robes",
+          "text": "Carry Brother Mande’s blood-stained robes",
+          "kind": "carried_item",
+          "item_vnums": [
+            76728
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Brother Mande starts in a decaying tunnel within the Jade Empire with the hidden robes and a separate named head. Search the source body, recover the robes and remove them from equipment before offering. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Brother Doss: return Mande’s blood-stained robes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67100,
+              "completion_key": "give=I:76728;receive=I:67129;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "mahr-intruder-tablet",
+      "title": "Brother Mahr: expose the intruder’s instructions",
+      "category": "story",
+      "summary": "Bring Mahr the intruder’s small adamantite tablet for his formal recommendation note. Mahr leaves afterward. The tablet records assassination instructions, but supplies no active ten-minute quest deadline or recorded poisoning attempt.",
+      "contracts": [
+        {
+          "giver_vnum": 67102,
+          "completion_key": "give=I:67100;receive=I:67101;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "adamantite-tablet",
+          "text": "Carry the intruder’s adamantite tablet",
+          "kind": "carried_item",
+          "item_vnums": [
+            67100
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sly duergar assassin starts among the temple’s perimeter halls with the hidden tablet and poison vial. Search the source body for them. Delivering the tablet does not require handing over the poison or a recorded personal kill. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Brother Mahr: expose the intruder’s instructions",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67102,
+              "completion_key": "give=I:67100;receive=I:67101;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "tel-rejected-recommendation",
+      "title": "Father Tel: a rejected recommendation",
+      "category": "service",
+      "summary": "Father Tel refuses the formal recommendation note, explains that you are not a student and grants another note of that same kind. This supporting rejection exchange awards no achievement or daily credit. It does not admit you into the order.",
+      "contracts": [
+        {
+          "giver_vnum": 67103,
+          "completion_key": "give=I:67101;receive=I:67101;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "recommendation-note",
+          "text": "Carry Mahr’s formal recommendation note",
+          "kind": "carried_item",
+          "item_vnums": [
+            67101
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Mahr’s tablet request supplies the note. Tel rejects it regardless of that earlier receipt in the current native recipe. The disappointed disciple offers a separate use for the exact note. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Father Tel: a rejected recommendation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67103,
+              "completion_key": "give=I:67101;receive=I:67101;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "tel-bakarakhs-head",
+      "title": "Father Tel: deliver Bakarakh’s named head",
+      "category": "story",
+      "summary": "Bring Father Tel the bloody head of Bakarakh for a glowing jade earring. Tel remains afterward. This is a separately loaded named trophy worn by the General, rather than an ordinary carved head.",
+      "contracts": [
+        {
+          "giver_vnum": 67103,
+          "completion_key": "give=I:67102;receive=I:67104;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "bakarakhs-head",
+          "text": "Carry the bloody head of Bakarakh",
+          "kind": "carried_item",
+          "item_vnums": [
+            67102
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "General Bakarakh begins in the elder’s room of Clan Stealth Hunter and wears the hidden named head in his held slot. Recover that exact trophy from its actual source. Tel accepts supplied proof without an earlier Mahr or disciple receipt. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Father Tel: deliver Bakarakh’s named head",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67103,
+              "completion_key": "give=I:67102;receive=I:67104;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "bakarakh-stolen-memoirs",
+      "title": "Bakarakh: return the stolen clan memoirs",
+      "category": "story",
+      "summary": "Bring General Bakarakh the tome of Clan Stealth Hunter lore for a black leather belt with a crimson coral buckle. He remains afterward. This is an independent return request; returning the tome does not complete Tel’s head request or the adviser’s ring request.",
+      "contracts": [
+        {
+          "giver_vnum": 67104,
+          "completion_key": "give=I:83374;receive=I:67130;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "clan-memoirs",
+          "text": "Carry the tome of Clan Stealth Hunter lore",
+          "kind": "carried_item",
+          "item_vnums": [
+            83374
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kirrb Faktl carries the hidden tome in Alatorin’s dark, secretive den. The General’s old sea-rescue story is a clue, while the current placement is in Alatorin’s undercity. Other tomes and books do not replace this one. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Bakarakh: return the stolen clan memoirs",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67104,
+              "completion_key": "give=I:83374;receive=I:67130;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "disciple-recommendation",
+      "title": "The disappointed disciple: offer a recommendation",
+      "category": "story",
+      "summary": "Give the upset disciple Mahr’s formal recommendation note for a declared 15,000 experience and an outpost clue. He leaves afterward. The clue is a real narrative reward, but no item or guaranteed admission to the order is granted.",
+      "contracts": [
+        {
+          "giver_vnum": 67107,
+          "completion_key": "give=I:67101;receive=E:15000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-mahr-route",
+          "text": "Optional earlier route: help Brother Mahr",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67102,
+              "completion_key": "give=I:67100;receive=I:67101;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Mahr supplies the exact note for the intruder’s tablet. A supplied note, including Tel’s same-kind replacement, can skip this earlier receipt. History does not restore a note that was spent or handed away."
+        },
+        {
+          "id": "formal-note",
+          "text": "Carry Mahr’s formal recommendation note",
+          "kind": "carried_item",
+          "item_vnums": [
+            67101
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Offer the note to the upset disciple, rather than the nearby disturbed monk. The disciple consumes the note; his promise of knowledge does not produce another physical quest item. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The disappointed disciple: offer a recommendation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67107,
+              "completion_key": "give=I:67101;receive=E:15000;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "priest-troggahns-egg",
+      "title": "The clan priest: bring Troggahn’s egg",
+      "category": "story",
+      "summary": "Bring the Clan Stealth Hunter priest the egg of Troggahn the black dragon for a bone key. The priest leaves afterward. The key opens the dining-room podium containing the adviser’s exact ring. The egg is also requested elsewhere, so choose where to spend it.",
+      "contracts": [
+        {
+          "giver_vnum": 67114,
+          "completion_key": "give=I:67116;receive=I:67117;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "troggahns-egg",
+          "text": "Carry Troggahn’s black dragon egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            67116
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Beyond the short hallway, PUSH the statue to uncover the tunnel. At the boulder, PUSH boulder, then SEARCH for the secret west entrance. Troggahn carries the exact egg in his lair. A trapped pickup can hurt you without giving you the egg. Other dragon eggs do not replace it. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The clan priest: bring Troggahn’s egg",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67114,
+              "completion_key": "give=I:67116;receive=I:67117;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "advisor-ring-and-poison",
+      "title": "The adviser: recover the ring and poison",
+      "category": "story",
+      "summary": "Bring the clansdwarf adviser the exact duergar-elder ring and vial of poison together for Khildarak’s rib bone. He leaves afterward. The rib bone unlocks the stone case containing the battle helmet, but later case access and treasure recovery are separate from this accepted offering.",
+      "contracts": [
+        {
+          "giver_vnum": 67120,
+          "completion_key": "give=I:67103,I:67113;receive=I:67111;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-bone-key-route",
+          "text": "Optional local route: obtain the priest’s bone key",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67114,
+              "completion_key": "give=I:67116;receive=I:67117;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The priest’s egg exchange gives the key to the locked podium where the local ring is placed. A supplied ring or Hargorigard’s alternate Alatorin source skips this earlier exchange. The receipt does not replace a spent key or absent ring."
+        },
+        {
+          "id": "elder-ring",
+          "text": "Carry the duergar elder’s crimson-coral ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            67113
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The local ring is hidden inside the locked dining-room podium, opened with the priest’s bone key. Hargorigard also carries this kind on a rare Alatorin placement. Both resets use a world cap of one, so neither promises a fresh ring. Bakarakh’s dialogue about wearing it does not identify the current carrier. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "poison-vial",
+          "text": "Carry the assassin’s exact vial of poison",
+          "kind": "carried_item",
+          "item_vnums": [
+            67103
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sly assassin carries the hidden poison vial alongside the tablet. Keep the exact vial for the adviser; ordinary poison, its drink volume or a poisoned weapon does not replace the required item. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The adviser: recover the ring and poison",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 67120,
+              "completion_key": "give=I:67103,I:67113;receive=I:67111;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this entry. Questions, current materials, source kills, access and later treasure recovery are separate facts. Rewards and any recipient departure still require settlement. A daily request does not promise fresh stock or a present recipient."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

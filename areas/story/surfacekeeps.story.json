@@ -1,0 +1,772 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "surfacekeeps",
+  "coverage": "complete",
+  "introduction": "Follow Mystardala’s two-stage seer mission, bring Ungalen dragon proof or one dwarven brew, supply Tok with vermin proofs, return Glendarla’s lost band and gather ten body-part items for Gulranor. Supplied exact materials can skip earlier personal recovery.",
+  "orientation": [
+    "Discover the Depths and meet its residents to reveal their requests. Nine story outcomes are separate from three supporting services. Discovering the zone has its own achievement; conversation topics provide clues.",
+    "This large map joins Alatorin’s promenades, the Caverns of Time and the Shanatar mountains. Follow passages and trails around steep cavern walls; the map’s mountain-wall sectors cannot ordinarily be entered from another map room. Some imported dispersal rooms place NPCs onto those routes and are not intended player entrances.",
+    "Mystardala’s crystal-ball offering supplies the dagger of the seers. Return that exact dagger with Ofnil’s staff and Ghiran’s bracelet for the leggings, after which she leaves. The two Surface wizard trophies are equipped at their sources; carry them loose. Exact supplied items can skip earlier personal collection and the earlier dagger receipt.",
+    "Miboli’s crystal ball lies inside the hidden, locked chest atop Alatorin’s Mystic Tower. The chest resists lockpicking. Miboli, Dweefniggle and the halfling magician can supply its hidden tiny key; search the source body, then unlock and open the chest. Mystardala’s dialogue does not add a tracked requirement to kill both Surface wizards while wielding her dagger.",
+    "The eyeglasses merchant crafts permanent blue glasses from the base pair and one shopkeepers token. Pink glasses, older blue stock and the permanent blue reward are different kinds. His shopping is currently unavailable at present; the item-only exchange is a separate supporting service.",
+    "Ungalen’s white-dragon head bounty, silver-scale referral and ale request are independent. Search a source dragon’s body for hidden head and scales. The local roaming white dragon and Alatorin’s massive white dragon are separate possible sources, with shared stock caps and chance-limited appearances.",
+    "Bring Ungalen one accepted Stonebrew barrel, Barlow’s keg, Hammer and Shield cask or Frothing Mug cask. Those alternatives have different declared rewards. Naltem in Alatorin needs five different brews together, so decide where to spend your exact containers. A mug or another brand cannot replace them.",
+    "Tok needs the freshly killed osquip item, rather than an ordinary corpse. The death procedure creates it on the ground; retrieve it before it becomes a rotting corpse of a different kind. The cook in Alatorin can consume the same fresh item for a steak, and the cooked steak then has its own foreign recipient.",
+    "Tok has two separate gloomwing-feather recipes. Their names and aliases match, but their kinds and rewards differ. Local gloomwings carry the ordinary kind. Alatorin’s gloomwings in the secluded and upper gloomy caves can carry either kind, so a creature’s name alone cannot select the correct reward.",
+    "Glendarla asks about both Borik and her lost golden band. Search the narrow winding trail below the royal balcony for the hidden band. Returning it finishes the band request; there is no separate accepted local rescue or fate result for Borik.",
+    "Gulranor requires ten separate body-part items at once. CARVE uses an intact part from a humanoid corpse, a suitable wielded blade and a successful skill check, then places the piece inside the corpse. GET each piece before offering. There are nine listed part choices per ordinary intact corpse; the request does not require ten distinct victims or personal carving history.",
+    "Arms and legs can be weapons while retaining the accepted body-part kind. Other named heads, bones or trophies may have different kinds and cannot replace these ten items. Gulranor grants a stealth token and two separate smoke bombs before leaving. Questions and current materials do not prove an accepted hand-in or settled rewards.",
+    "Trag’s and Takar’s heads, Rringlor’thak’s head, dragonling wings, silver scales and medals have Alatorin continuations. Those receipts belong to Alatorin. Their foreign rewards, optional personal kills and equipment effects do not become extra Depths achievements.",
+    "The boar seller’s coin offering, trading, smithing, foraging and paid training remain unavailable at present. Supplied or otherwise admitted exact materials can still satisfy supported item offerings. Native stock and daily requests do not guarantee a fresh material or recipient today."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 120013,
+      "name": "a boar meat salesman",
+      "keyword": "salesman",
+      "description": "The meat seller wanders from the Shanatar mountains. His 13-platinum sales pitch leads to a paid boar provision service, currently unavailable.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120016,
+      "name": "Mystardala the prophet",
+      "keyword": "mystardala",
+      "description": "Mystardala starts in the Caverns of Time. Ask about Miboli, the seers or the threat for her two-stage mission: crystal ball for dagger, then dagger and the two wizard trophies for leggings.",
+      "topics": [
+        "hello",
+        "hi",
+        "hooded",
+        "dwarves",
+        "dwarf",
+        "caverns",
+        "time",
+        "travel",
+        "travelling",
+        "traveling",
+        "travellers",
+        "seer",
+        "seers",
+        "mystardala",
+        "prophet",
+        "you",
+        "me",
+        "threat",
+        "miboli",
+        "snoblsniz"
+      ]
+    },
+    {
+      "mob_vnum": 120020,
+      "name": "'Uncle' Istban",
+      "keyword": "istban",
+      "description": "Uncle Istban starts on Alatorin’s shield-dwarf promenade. His questions explain the city, Shanatar and foreign lands; his announcements offer rumours and service leads without local completion rewards.",
+      "topics": [
+        "hi",
+        "hello",
+        "taark",
+        "shanat",
+        "maegor",
+        "twin",
+        "world",
+        "worlds",
+        "elfgate",
+        "shanatar",
+        "granat"
+      ]
+    },
+    {
+      "mob_vnum": 120021,
+      "name": "a wandering Alatorin guard",
+      "keyword": "guard",
+      "description": "Wandering Alatorin guards patrol several promenades. Their greetings and public disputes are lore, without a separate reconciliation offering.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 120023,
+      "name": "a shield dwarf patrol guard",
+      "keyword": "patrol",
+      "description": "Shield-dwarf patrol guards follow captains and lieutenants rather than spawning alone. Their greeting explains the patrol; it is not another quest achievement.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 120024,
+      "name": "a shield dwarf lieutenant",
+      "keyword": "lieutenant",
+      "description": "Shield-dwarf lieutenants lead patrol guards across the promenades. They answer greetings while their public disputes remain narrative.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 120035,
+      "name": "A gnome eyeglasses merchant",
+      "keyword": "gnome",
+      "description": "The gnome eyeglasses merchant starts on the Grand Alatorin Promenade. Ask about glasses or special for his token-and-base-glasses crafting service. Shopping is currently unavailable; his permanent blue reward differs from older blue stock.",
+      "topics": [
+        "hi",
+        "hello",
+        "glasses",
+        "eyeglasses",
+        "special"
+      ]
+    },
+    {
+      "mob_vnum": 120040,
+      "name": "Ungalen the Bounty Hunter",
+      "keyword": "ungalen",
+      "description": "Ungalen waits in the Valley of the Geyser. Ask about bounty, dragon, ale or Mundorno. His dragon head, one-brew offering and returned-scale referral are independent requests.",
+      "topics": [
+        "hi",
+        "hello",
+        "hunt",
+        "hunter",
+        "hunting",
+        "bounty",
+        "shanatar",
+        "mountains",
+        "mountain",
+        "shield",
+        "dwarves",
+        "dwarf",
+        "alatorin",
+        "king",
+        "taark",
+        "shanat",
+        "ale",
+        "dragon",
+        "dragons",
+        "target",
+        "mundorno",
+        "money",
+        "platinum",
+        "plat",
+        "coins",
+        "coin"
+      ]
+    },
+    {
+      "mob_vnum": 120052,
+      "name": "Tok the exterminator",
+      "keyword": "tok",
+      "description": "Tok starts in Alatorin’s rare-mobile dispersal room and can wander onto ordinary promenades. Ask about work, osquip or gloomwing. He accepts fresh osquip proof and two distinct, identically named feather kinds.",
+      "topics": [
+        "hi",
+        "hello",
+        "alatorin",
+        "dwarfs",
+        "shield",
+        "dwarf",
+        "dwarven",
+        "city",
+        "work",
+        "trapping",
+        "osquips",
+        "osquip",
+        "tooth",
+        "rat",
+        "rats",
+        "gloomwing",
+        "gloomwings"
+      ]
+    },
+    {
+      "mob_vnum": 120065,
+      "name": "Glendarla Shanat, the princess of Alatorin",
+      "keyword": "glendarla",
+      "description": "Glendarla starts at the Royal Balcony overlooking the Shanatar Valley. Ask about Borik or the golden band. Her accepted band return does not establish what happened to Borik.",
+      "topics": [
+        "hi",
+        "hello",
+        "taark",
+        "shanat",
+        "king",
+        "father",
+        "borik",
+        "marriage",
+        "man",
+        "love",
+        "golden",
+        "band",
+        "gold",
+        "symbol"
+      ]
+    },
+    {
+      "mob_vnum": 120066,
+      "name": "Gulranor the duergar hunter-killer",
+      "keyword": "gulranor",
+      "description": "Gulranor is a chance-limited visitor starting in Alatorin’s rare-mobile dispersal room. He can wander. Ask about blood, hunt or hunter-killer for the ten-body-part offering; its reward retires this appearance.",
+      "topics": [
+        "storm",
+        "port",
+        "alatorin",
+        "hi",
+        "hello",
+        "blood",
+        "hunt",
+        "hunter-killer",
+        "hunter",
+        "killer"
+      ]
+    },
+    {
+      "mob_vnum": 120015,
+      "name": "a gloomwing",
+      "keyword": "gloomwing",
+      "description": "Local gloomwings inhabit the Caverns of Time and carry the ordinary feather. Alatorin’s separate gloomwing kinds can carry either feather variant.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120051,
+      "name": "an osquip",
+      "keyword": "osquip",
+      "description": "Osquips scurry around the city and caverns. Their death procedure creates a fresh proof on the ground, which later becomes a different rotting corpse. Retrieve the fresh item for Tok or Alatorin’s cook.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120060,
+      "name": "a roaming white dragon",
+      "keyword": "dragon",
+      "description": "The roaming white dragon can start in the Shanatar bowl. It carries a hidden white-dragon head, hidden silver scales and chance-limited dragon eggs. Search the body for hidden trophies. Alatorin’s massive white dragon supplies alternatives.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120061,
+      "name": "Trag-guka-kag the troglodyte hunt leader",
+      "keyword": "trag",
+      "description": "Trag can start in the Shanatar bowl, leading troglodytes and carrying a hidden head. Taark in Alatorin owns the head exchange; it is a foreign continuation rather than a new local offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120067,
+      "name": "Rringlor Noroth",
+      "keyword": "rringlor",
+      "description": "Rringlor’thak starts on the western Shanatar mountain ridges with blue dragonling followers. Its head and those followers’ wings have separate Alatorin uses; combat effects do not finish another local story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 120068,
+      "name": "Takar Shanat, Prince of Alatorin",
+      "keyword": "takar",
+      "description": "Takar Shanat starts on the shield-dwarf promenade with mounted peacekeepers. His hidden head has a separate Taark exchange in Alatorin. It differs from ordinary carved body parts.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "boar-meat-service",
+      "title": "The meat seller: buy a side of boar",
+      "category": "service",
+      "summary": "The wandering meat seller offers one side of boar for 13 platinum, then leaves. This paid provision service is currently unavailable. His sales pitch does not make another achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 120013,
+          "completion_key": "give=C:13000;receive=I:83223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-offering",
+          "text": "Complete The meat seller: buy a side of boar",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120013,
+              "completion_key": "give=C:13000;receive=I:83223;disappear=1"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "mystardala-crystal-ball",
+      "title": "Mystardala: restore the crystal ball",
+      "category": "story",
+      "summary": "Return Miboli Snoblsniz’s crystal ball to Mystardala for the dagger of the seers. The ball comes from Alatorin’s Mystic Tower. Supplied exact material can satisfy this stage without a personal tower journey.",
+      "contracts": [
+        {
+          "giver_vnum": 120016,
+          "completion_key": "give=I:83340;receive=I:120038;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "crystal-ball",
+          "text": "Carry Miboli’s crystal ball",
+          "kind": "carried_item",
+          "item_vnums": [
+            83340
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search for the small concealed chest atop Alatorin’s Mystic Tower. It starts closed, locked and resistant to lockpicking. Miboli, Dweefniggle and the halfling magician have possible sources of its hidden tiny key. Search the creature’s body for the key, then unlock and open the chest. Its ball’s name alone does not prove an item is the correct crystal ball. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Mystardala: restore the crystal ball",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120016,
+              "completion_key": "give=I:83340;receive=I:120038;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "mystardala-paired-trophies",
+      "title": "Mystardala: the seers’ two trophies",
+      "category": "story",
+      "summary": "Bring back the dagger of the seers together with Ofnil’s stonewood staff and Ghiran’s bronze bracelet for deathweave leggings. Mystardala then leaves. Her dialogue tells a larger story about two dangerous wizards, but the offering requires these three items without a recorded personal kill or wielded-dagger prerequisite.",
+      "contracts": [
+        {
+          "giver_vnum": 120016,
+          "completion_key": "give=I:120038,I:500104,I:500121;receive=I:120039;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dagger-history",
+          "text": "Optional earlier route: receive the seers’ dagger",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120016,
+              "completion_key": "give=I:83340;receive=I:120038;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Mystardala’s ball offering supplies the dagger. A supplied exact dagger skips that history; an earlier receipt does not replace a dagger you have spent or transferred."
+        },
+        {
+          "id": "seers-dagger",
+          "text": "Carry the dagger of the seers",
+          "kind": "carried_item",
+          "item_vnums": [
+            120038
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Mystardala gives this dagger for the crystal ball. Carry it loose together with the two different wizard trophies. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "ofnil-staff",
+          "text": "Carry Ofnil’s stonewood staff",
+          "kind": "carried_item",
+          "item_vnums": [
+            500121
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ofnil on the Surface wears the ancient stonewood staff. It can be identified as a staff of stoneskin. An ordinary same-named staff is insufficient. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "ghiran-bracelet",
+          "text": "Carry Ghiran’s bronze bracelet",
+          "kind": "carried_item",
+          "item_vnums": [
+            500104
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ghiran on the Surface wears the thick bronze bracelet, identifiable as the bracelet of the mage. It is separate from Ofnil’s staff and from the seers’ dagger. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Mystardala: the seers’ two trophies",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120016,
+              "completion_key": "give=I:120038,I:500104,I:500121;receive=I:120039;disappear=1"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "permanent-blue-eyeglasses",
+      "title": "The gnome: permanent blue eyeglasses",
+      "category": "service",
+      "summary": "Trade the base gnomish eyeglasses and a gnomish shopkeepers token for permanent blue eyeglasses. This item-only crafting service remains separate from the merchant’s currently unavailable shopping. His older blue stock and pink glasses are different kinds; the response mentions a purse, but declares no coin fee.",
+      "contracts": [
+        {
+          "giver_vnum": 120035,
+          "completion_key": "give=I:55033,I:120014;receive=I:120054;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "base-eyeglasses",
+          "text": "Carry the base gnomish eyeglasses",
+          "kind": "carried_item",
+          "item_vnums": [
+            120014
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The merchant lists base and pink glasses, but shopping is currently unavailable. Use an exact supplied or otherwise admitted base pair. The pink or either blue kind cannot replace the base pair. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "shopkeepers-token",
+          "text": "Carry one gnomish shopkeepers token",
+          "kind": "carried_item",
+          "item_vnums": [
+            55033
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This token has many foreign quest sources. It is an item offered with the glasses, rather than a wallet payment. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The gnome: permanent blue eyeglasses",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120035,
+              "completion_key": "give=I:55033,I:120014;receive=I:120054;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "ungalen-white-dragon",
+      "title": "Ungalen: the white-dragon bounty",
+      "category": "story",
+      "summary": "Bring Ungalen the disembodied white-dragon head for the bounty reward. The roaming white dragon in the Shanatar bowl and the massive white dragon in Alatorin are possible sources. Exact supplied proof works without a personal slaying history.",
+      "contracts": [
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83376;receive=C:700000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "white-dragon-head",
+          "text": "Carry the disembodied white-dragon head",
+          "kind": "carried_item",
+          "item_vnums": [
+            83376
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the creature’s body for this hidden head before retrieving it. Ungalen’s scale referral and ale request are independent offerings. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Ungalen: the white-dragon bounty",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83376;receive=C:700000;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "ungalen-scale-referral",
+      "title": "Ungalen: a scale referral",
+      "category": "service",
+      "summary": "Show Ungalen the silver dragonscales to receive a replacement of the same kind and his referral to Mundorno in Alatorin. This supporting referral does not award another local achievement. The replacement need not preserve the original item identity.",
+      "contracts": [
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83377;receive=I:83377;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "silver-scales",
+          "text": "Carry the silver dragonscales",
+          "kind": "carried_item",
+          "item_vnums": [
+            83377
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The roaming white dragon and Alatorin’s massive white dragon carry these hidden scales. Search before retrieving them. They can instead be offered directly to Alatorin recipients without Ungalen’s history; paid Mundorno scale crafting is currently unavailable. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Ungalen: a scale referral",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83377;receive=I:83377;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "ungalen-ale",
+      "title": "Ungalen: bring a dwarven brew",
+      "category": "story",
+      "summary": "Ungalen accepts one of four exact Alatorin brews: Stonebrew, Barlow’s, Hammer and Shield, or Frothing Mug. These are alternatives to the same request, with different declared coin and experience rewards. One accepted offering completes this entry; it does not require all four. Naltem’s separate Alatorin request needs five different brews together.",
+      "contracts": [
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83118;receive=C:28000,E:7000;disappear=0"
+        },
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83172;receive=C:30000,E:5000;disappear=0"
+        },
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83428;receive=C:25000,E:5000;disappear=0"
+        },
+        {
+          "giver_vnum": 120040,
+          "completion_key": "give=I:83417;receive=C:28750,E:8750;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "one-accepted-brew",
+          "text": "Carry one accepted barrel, keg or cask",
+          "kind": "carried_item",
+          "item_vnums": [
+            83118,
+            83172,
+            83428,
+            83417
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Stonebrew and Barlow’s are in their tavern storage rooms. Search for the hidden Hammer and Shield or Frothing Mug cask in its respective storage room. A mug, another brew or a brew’s label alone is insufficient. Keep the whole exact container for the offering; there is no extra recorded brewing or drinking step. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Ungalen: bring a dwarven brew",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83118;receive=C:28000,E:7000;disappear=0"
+            },
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83172;receive=C:30000,E:5000;disappear=0"
+            },
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83428;receive=C:25000,E:5000;disappear=0"
+            },
+            {
+              "giver_vnum": 120040,
+              "completion_key": "give=I:83417;receive=C:28750,E:8750;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "tok-fresh-osquip",
+      "title": "Tok: a freshly killed osquip",
+      "category": "story",
+      "summary": "Return the freshly killed osquip item to Tok for declared coins and experience. An osquip’s death procedure creates this special proof on the ground. It later becomes a rotting corpse of a different kind, which cannot satisfy Tok. Alatorin’s cook can consume the same fresh proof for a steak instead.",
+      "contracts": [
+        {
+          "giver_vnum": 120052,
+          "completion_key": "give=I:120051;receive=C:6800,E:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fresh-osquip",
+          "text": "Carry the freshly killed osquip",
+          "kind": "carried_item",
+          "item_vnums": [
+            120051
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Retrieve the special fresh item from an osquip’s death room before it decays. Killing the creature does not itself place the proof in your inventory. An ordinary corpse or a rotting replacement is insufficient. Personal kill and first-source recovery remain separate from a supplied proof. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tok: a freshly killed osquip",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120052,
+              "completion_key": "give=I:120051;receive=C:6800,E:5000;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "tok-gloomwing-feather",
+      "title": "Tok: a gloomwing feather",
+      "category": "story",
+      "summary": "Offer Tok the ordinary gloomwing-feather kind for coin and experience rewards. Local gloomwings and some Alatorin gloomwings carry it. The other feather has the same displayed name but a different kind and reward.",
+      "contracts": [
+        {
+          "giver_vnum": 120052,
+          "completion_key": "give=I:120052;receive=C:7777,E:7777;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ordinary-feather",
+          "text": "Carry the ordinary gloomwing feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            120052
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Local gloomwings carry this feather. Some Alatorin gloomwings carry it too. Keep the exact kind separate from the stronger, identically named feather. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tok: a gloomwing feather",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120052,
+              "completion_key": "give=I:120052;receive=C:7777,E:7777;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "tok-stronger-gloomwing-feather",
+      "title": "Tok: the stronger gloomwing feather",
+      "category": "story",
+      "summary": "Offer Tok the stronger feather kind for coin and experience rewards. Alatorin gloomwings carry this variant. Its displayed name and aliases match the ordinary feather, but that feather cannot satisfy this particular recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 120052,
+          "completion_key": "give=I:120053;receive=C:17433,E:17332;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "stronger-feather",
+          "text": "Carry the stronger gloomwing feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            120053
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This exact variant comes from gloomwings in Alatorin’s secluded or upper gloomy caves. Both kinds can appear on the same creature kind; a source creature’s name alone does not identify the feather. Supplied exact material also works. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tok: the stronger gloomwing feather",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120052,
+              "completion_key": "give=I:120053;receive=C:17433,E:17332;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "glendarla-lost-band",
+      "title": "Glendarla: return the lost band",
+      "category": "story",
+      "summary": "Return Glendarla’s golden runed band for coin and experience rewards. Search the narrow winding mountain trail for the hidden band. Her dialogue also asks after Borik, but this offering records the band’s return without proving his rescue or fate.",
+      "contracts": [
+        {
+          "giver_vnum": 120065,
+          "completion_key": "give=I:120049;receive=C:30000,E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "golden-band",
+          "text": "Carry the golden runed band",
+          "kind": "carried_item",
+          "item_vnums": [
+            120049
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the narrow winding trail below the royal balcony for the hidden, glowing band. This is Glendarla’s local band, distinct from Alatorin’s ancient wedding band and its other recipients. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Glendarla: return the lost band",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120065,
+              "completion_key": "give=I:120049;receive=C:30000,E:100000;disappear=0"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    },
+    {
+      "id": "gulranor-ten-body-parts",
+      "title": "Gulranor: ten carved body parts",
+      "category": "story",
+      "summary": "Offer ten separate body-part items together for a stealth token and two smoke bomb potions. Gulranor then leaves. The request accepts the body-part kind without requiring ten different victims, a particular part, personal kills or personal carving history. Arms and legs can become weapons while retaining that same offering kind.",
+      "contracts": [
+        {
+          "giver_vnum": 120066,
+          "completion_key": "give=I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8;receive=I:58814,I:58814,I:83463;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ten-body-parts",
+          "text": "Carry ten separate body-part items",
+          "kind": "carried_item",
+          "item_vnums": [
+            8
+          ],
+          "count": 10,
+          "optional": true,
+          "hint": "CARVE an intact part from a humanoid corpse using a wielded knife, dagger or blade and the carving skill. Successful carving places the part inside the corpse: GET it before offering. A corpse has nine listed part choices, so it cannot ordinarily supply ten separate successful pieces alone. Carving can fail and spend parts. Keep ten separate exact items loose; one item, ordinary bones or differently numbered named trophies are insufficient. Keep the required items in your inventory, outside equipment slots and containers. Items received from another player also work."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gulranor: ten carved body parts",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 120066,
+              "completion_key": "give=I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8,I:8;receive=I:58814,I:58814,I:83463;disappear=1"
+            }
+          ],
+          "hint": "A successful hand-in records this entry. Conversation and carrying the materials alone do not finish it. A daily request does not guarantee replacement materials or that a departed recipient has returned."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

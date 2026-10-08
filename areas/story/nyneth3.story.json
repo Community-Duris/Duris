@@ -1,0 +1,513 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "nyneth3",
+  "coverage": "complete",
+  "introduction": "Find your way through the Steps of Pain and the hellish maze, distinguish the Hunger’s fourteen soul requirements, and keep its accepted exchange separate from the stronghold’s longer rescue, artifact and campaign stories.",
+  "orientation": [
+    "Actually arrive in this part of the stronghold to discover it. Find the Hunger beyond the maze to reveal its request.",
+    "Ask the Hunger about soul or souls. Both words lead to the same answer; hearing it and completing the exchange are separate events.",
+    "Bring fourteen different exact souls together and loose in your inventory. All look like an elusive yet immortal soul, but fourteen copies of one kind cannot replace the fourteen different requirements.",
+    "The optional rows name each required soul by its declared carrier. They describe the matching item, rather than requiring you to have personally killed that carrier. Exact copies supplied by another player also fit.",
+    "The fourteen source identities are spread across four maze corners. A similarly named illithid lord’s soul is a different item and does not substitute. Present supplies depend on what is actually available.",
+    "The Hunger trades the full set for a key of utter blackness. The accepted exchange stays recorded after the souls are spent or the key leaves your inventory.",
+    "A prior-stage third key opens the entrance to the Steps of Pain. Most of the steps have no ordinary way back. The tear at the end offers a return to their top; the demonic gateway leads into the maze.",
+    "The maze conceals powerful creatures and two separated groups of heroes. Learning a route, helping a surviving traveler and completing the Hunger’s trade are different accomplishments.",
+    "Kaska, Cavadd and Retreagg are separated from Nainutom, Sir Dannyk and Lecani. Their rescue or reunion needs its own useful outcome; soul collection and their deaths do not record their freedom.",
+    "Montaleus mourns Astar, Vathor’s past holds a sacrifice, and Brumen and Nouthayk share a lasting bond. These stories give context; the native exchange does not require you to reverse their histories.",
+    "The black key opens the way to the Tear before Ny’Neth’s lair. Passing its gate, entering the Tear and surviving the defended encounter are separate actions. Keys can break when used.",
+    "Ny’Neth carries the treasure-room key. Finding the hidden passage, unlocking it and entering the vault are separate from collecting a key or defeating a creature.",
+    "The sanctuary and the apparition of Ny’Neth’s wife belong to a larger soul-pact story. Seeing the altar or a weapon effect does not record her restoration, and refuge depends on actual threats.",
+    "Treasure bearers suffer under a curse. Taking their treasures does not prove that they survived or were freed. Artifact commands and effects also have their own wear, target and timing conditions.",
+    "The vault’s return tear reveals the top of the steps. A monolith follows its own source, participant and committed-reward rules. Return, useful liberation, accepted trade and final campaign progress remain distinct."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 38700,
+      "name": "a shadow golem",
+      "keyword": "shadow",
+      "description": "Not appearing as much more than a collection of moving shadows, this golem is nonetheless very real.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38701,
+      "name": "a Betrayer",
+      "keyword": "betrayer",
+      "description": "Dressed all in dark tight leather, this vampire sports a scarlet cloak across his shoulders.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38702,
+      "name": "a Reaper",
+      "keyword": "reaper",
+      "description": "Impossible to glimpse in his shell of darkness, this Reaper vampire looks like nothing more than a moving shroud of shadows.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38703,
+      "name": "Keth'Kel the dark imp",
+      "keyword": "kethkel",
+      "description": "Slightly larger than a halfling, this dark imp has skin the color of deep ashy red.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38704,
+      "name": "Taezuul the ravener lord",
+      "keyword": "ravener",
+      "description": "Clothed completely in dazzling blue, this vampire lord does not seem to be interested in stealth, but rather in fashion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38705,
+      "name": "Saaloth the great FuRy",
+      "keyword": "saaloth",
+      "description": "Its skin a fiery red, complimenting its ferocious anger, this demon is fearsome to behold.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38706,
+      "name": "Corsc-Alaath the armageddon wyrm",
+      "keyword": "dragon",
+      "description": "Its scales covered by ripples of liquid fire, this ancient dragon has brought cities to their knees with her great power.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38707,
+      "name": "Lo'Taan the demonic knight",
+      "keyword": "lotaan",
+      "description": "Encased in a full suit of spiked field platemail, this terrifying demons true form is completely concealed from view.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38708,
+      "name": "Tescuuden the betrayer",
+      "keyword": "tescuuden",
+      "description": "As unnoticeable as a shadow in a deep pool of darkness, this vampire lord stalks with a silence developed over centuries of hunting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38709,
+      "name": "Asgoth the undead wyrm",
+      "keyword": "asgoth",
+      "description": "This gigantic dragon has kept himself animated through sheer focus of magical willpower.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38710,
+      "name": "Montaleus the fallen wyrm of Astar",
+      "keyword": "montaleus",
+      "description": "Although she has stopped cleaning and maintaining herself in her deep sadness, her scales still gleam a beautiful translucent bright blue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38711,
+      "name": "Desmuth the Slayer",
+      "keyword": "desmuth",
+      "description": "A humanoid figure enveloped by shadows, this deadly vampire glides quietly through this hellhole searching for prey.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38712,
+      "name": "Lun-Val the Avenger",
+      "keyword": "lun-val",
+      "description": "A giant sized humanoid demon equipped with extremely long muscular arms stands here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38713,
+      "name": "Kassis the watcher",
+      "keyword": "kassis",
+      "description": "This ancient beholder floats here, watching the area.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38714,
+      "name": "Sycatunn the pestilence lord",
+      "keyword": "sycatunn",
+      "description": "Sheathed in a droopy, hanging skin blotched with dark and bright green patches, this devil leaves a swath of decay and corruption in his wake.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38715,
+      "name": "Assud the dark spirit master",
+      "keyword": "assud",
+      "description": "Barely visible to this world, this spirits tenuous hold upon the living realm still allows it to exert incredibly powerful magical forces to twist manipulate flesh and stone alike.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38716,
+      "name": "Vathor the Slayer",
+      "keyword": "vathor",
+      "description": "Once a handsome lord of a realm the spanned a years journed in every direction, Vathor was a kind and benevolent leige for scores of years.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38717,
+      "name": "Kortheos, the fourth lord of chaos",
+      "keyword": "kortheos",
+      "description": "The size of a giant, this devil walks stiffly upright, a horribly large two-handed blade clutched easily in his powerful grip.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38718,
+      "name": "Tet'Azuul the blood god",
+      "keyword": "blood",
+      "description": "So thin and frail he looks as though he could be snapped in two like a dry twig, this vampire's pale skin only adds to his image of weakness.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38719,
+      "name": "Oesthes the death wisp",
+      "keyword": "oesthes",
+      "description": "Barely visible, this death wisp moves with a fluidity impossible for the living.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38720,
+      "name": "Sytania the dread siren",
+      "keyword": "sytania",
+      "description": "To subtle to see, this devil appears only as a subtle movement in the peripheral vision, even as she moves swiftly to take her opponent.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38721,
+      "name": "Brumen the dread knight",
+      "keyword": "brumen",
+      "description": "This dread knights skill in riding in unrivaled in the underworld, and possibly even the entire realms.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38722,
+      "name": "Nouthayk the great nightmare",
+      "keyword": "nouthayk",
+      "description": "Much larger than a normal nightmare, this steed is fearsome indeed and can only be summoned from the dread realms by a master dread knight in a dark ritual that bonds them for life.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38723,
+      "name": "Kaska, valkyrie of truth",
+      "keyword": "kaska",
+      "description": "Her upper torso as muscular as her lower, Kaska is one of the six heroes chosen by the greater god Fomotri to embark upon a quest to destroy the evil wizard Ny'Neth here is the depths of his lair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38724,
+      "name": "Cavadd the holy avenger",
+      "keyword": "cavadd",
+      "description": "The look of hope now buried deep within his eyes, it nonetheless still burns within this holy paladin as he carries out the will of his god here in the heart of darkness.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38725,
+      "name": "Retreagg, fighting high griffon",
+      "keyword": "retreagg",
+      "description": "Although intelligent, this griffon does not possess the ability to know the fear of his companions, thus making him an excellent warrior in this desolate wasteland of hopelessness.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38726,
+      "name": "Yrachan the chaos wyrm",
+      "keyword": "yrachan",
+      "description": "Large even for an ancient dragon, this wyrm radiates an aura of such malevolence that fear follows its gaze in such density that it hits like a crushing wave of physical force.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38727,
+      "name": "Sebelabek the mad",
+      "keyword": "sebelabek",
+      "description": "His body a physical extension of his mental state, this dragon is not proportioned properly, which when combined with his erratic movements only adds to the fear and confusion of onlookers.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38728,
+      "name": "Qudisocc the Illithid lord",
+      "keyword": "qudisocc",
+      "description": "The mental power of this terrible creature is such that the very space surrounding him ripples and warps in rejection of such a powerful presence confined in such a small part of reality.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38729,
+      "name": "Sornfewel the ripper",
+      "keyword": "sornfewel",
+      "description": "Extremely long and thin, this snakelike dragon coils and whips its supple body about with lightning quickness.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38730,
+      "name": "Lazebaaz the Pyre Lord",
+      "keyword": "lazebaaz",
+      "description": "Visible only as a demonically humanoid form encased completely in an inferno of roiling flames, this fearsome creature causes even the intensity of dragonfire to be questioned beneath the ferocity of the relentless heat radiating off his form.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38731,
+      "name": "Nainutom the dwarven infiltrator",
+      "keyword": "nainutom",
+      "description": "Short and stout, true to form on the main trademarks of his race, this powerful dwarf crouches low to the ground, his eyes scanning the area in a constant and methodical manner.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38732,
+      "name": "Sir Dannyk the Reverend",
+      "keyword": "dannyk",
+      "description": "This honorable knight is reknown throughout the realms as a truly good soul and honest teacher or virtue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38733,
+      "name": "Lecani the angel wyrm",
+      "keyword": "lecani",
+      "description": "Small for a dragon, this angelic creature is nonetheless the most feared holy dragon among the ranks of anti-paladins for their ferocity and loyalty to their knightly companions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38734,
+      "name": "a hell hound",
+      "keyword": "hell",
+      "description": "Much larger than an average hound, this devil dog is more devil than canine.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38735,
+      "name": "a FuRy",
+      "keyword": "fury",
+      "description": "Short and stocky, this demon is a burned red color streaked by ashey smudges.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38736,
+      "name": "the Hunger",
+      "keyword": "hunger",
+      "description": "The Hunger wants fourteen different souls for a key of utter blackness. Ask about soul or souls. The souls look alike, so follow the separately named requirements and bring all fourteen together.",
+      "topics": [
+        "soul",
+        "souls"
+      ]
+    },
+    {
+      "mob_vnum": 38737,
+      "name": "Ny'Neth the Dark",
+      "keyword": "nyneth",
+      "description": "Ny’Neth waits in his defended lair and can summon more Furies during combat. The Hunger’s exchange, an admitted victory, his wife’s fate and a monolith reward are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38738,
+      "name": "a guardian golem",
+      "keyword": "guardian",
+      "description": "Larger than even a giant, this golem has only a single purpose and mission for its existence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38739,
+      "name": "a dark entity",
+      "keyword": "dark",
+      "description": "This is not so much a thing as a strange dark presence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38740,
+      "name": "an ancient earth wyrm",
+      "keyword": "ancient",
+      "description": "Dwarfing their purple cousins, this ancient earth wyrm is coiled several times about the entire chamber due to its gargantuan size.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38741,
+      "name": "a treasure bearer",
+      "keyword": "treasure",
+      "description": "This creature was once healthy and strong, but now stands here shriveled and withered from the intense burden it carries.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38742,
+      "name": "a treasure bearer",
+      "keyword": "treasure",
+      "description": "This creature was once healthy and strong, but now stands here shriveled and withered from the intense burden it carries.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "fourteen-souls-for-the-hunger",
+      "title": "Fourteen souls for the Hunger",
+      "category": "request",
+      "summary": "The Hunger trades a key of utter blackness for fourteen different souls that look alike. Each named preparation row identifies one exact requirement. Recovered or supplied copies fit; the heroes’ fate, Ny’Neth and final rewards remain separate.",
+      "contracts": [
+        {
+          "giver_vnum": 38736,
+          "completion_key": "give=I:38741,I:38742,I:38743,I:38744,I:38745,I:38746,I:38747,I:38748,I:38749,I:38750,I:38751,I:38752,I:38753,I:38754;receive=I:38755;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-soul-38741",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Kortheos, the fourth lord of chaos",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38741
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38742",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Tet'Azuul the blood god",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38742
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38743",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Brumen the dread knight",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38743
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38744",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Nouthayk the great nightmare",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38744
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38745",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Lo'Taan the demonic knight",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38745
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38746",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Asgoth the undead wyrm",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38746
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38747",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Lun-Val the Avenger",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38747
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38748",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Sycatunn the pestilence lord",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38748
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38749",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Kaska, valkyrie of truth",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38749
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38750",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Cavadd the holy avenger",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38750
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38751",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Retreagg, fighting high griffon",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38751
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38752",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Nainutom the dwarven infiltrator",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38752
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38753",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Sir Dannyk the Reverend",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38753
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-soul-38754",
+          "kind": "carried_item",
+          "text": "Carry the required soul linked to Lecani the angel wyrm",
+          "hint": "One exact soul from this named requirement must be loose in your inventory. An exact supplied copy also fits; another lookalike soul does not. This row records current preparation, not a personal kill or source history.",
+          "item_vnums": [
+            38754
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Complete the Hunger’s fourteen-soul exchange",
+          "hint": "Offer the fourteen exact souls together when the Hunger can accept them. The accepted exchange records history separately from source recovery, hero survival, later key ownership or Ny’Neth’s defeat.",
+          "contracts": [
+            {
+              "giver_vnum": 38736,
+              "completion_key": "give=I:38741,I:38742,I:38743,I:38744,I:38745,I:38746,I:38747,I:38748,I:38749,I:38750,I:38751,I:38752,I:38753,I:38754;receive=I:38755;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

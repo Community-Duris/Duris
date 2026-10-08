@@ -1,0 +1,265 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "spshold",
+  "coverage": "complete",
+  "introduction": "Bring coal and the broken furnace valve to the Drifter captain for a ticket, then exchange that exact ticket with Decker for the Master’s helm. Hordine independently accepts sea maps for equipment or a torn treasure map for a sunken-chest key. Exchanges, current material, optional earlier history and travel are separate. New journal, achievement and daily credit requires active, ready accounting.",
+  "orientation": [
+    "Storm Port Stronghold zone226 is reached from the Surface: bay636281 south and bay636680 east lead to ocean22600, and grass636682 west leads to forest22634. All three routes have reciprocal returns. Outside room22607 now correctly places the outpost west, with the forest path east.",
+    "Decker22617 starts in forest22634. The Drifter captain22636 starts at helm22643. At glade22631, use UP on fixed rope ladder22617 to deck22640; the fixed ladder22618 at stern22642 goes DOWN to22631. These use existing portal and movement restrictions, not the ticket as a fare.",
+    "The captain needs both exact pile of coal22610 and broken valve22612 together. Coal is hidden in the locked fixed juggernaught furnace-container22609 at slave gallows22663; black iron key22611 is carried by slave master22624 at22662. The container has pickproof/locked/closed flags. Valve is hidden stock carried by ifrit22618 inside Drifter furnace22647.",
+    "ENTER the fixed Drifter furnace22604 at22641 to reach22647. The fixed return furnace22605 there ENTERs back to22641. No ordinary exits are authored in22647. Key, source visibility and current return portal need qualification; the journal grants no new access or personal kill requirement.",
+    "Offer coal and valve together for ticket22613, then offer that exact ticket to Decker for helm22621. Matching supplied ticket fits without personally helping the captain. The captain’s message says the ship can take off, but no local launch, departure, fare redemption or Decker escort controller is bound. Ticket receipt and helm exchange do not prove a travelled journey.",
+    "Hordine Scorn22626 starts on the juggernaught bridge22659. Native sea maps22622 are hidden G stock on ghost Aphantan22623, initially at multizone load room22649. That room has outward links and no identified static incoming route. Aphantan has neither SENTINEL nor STAY_ZONE and can wander out under the shared movement rules; find current legitimate stock rather than relying on a route into the load room.",
+    "Hordine exchanges exact sea maps22622 for shoes22627, ruby globe22625 and imported greaves40771. Local greaves22626 are a different prototype. The same sea maps are consumed by Oberon helmsman77218 in the Jade Mini Zones for no authored reward; choose uses or obtain another legitimate copy. Mui Pai appears in treasure lore and is not that map-hand-in recipient.",
+    "The torn treasure map77209 is a separate hidden item, held by a pirate77219 in Jade Mini Zones room77248. Burgadan38037 in Thetis initially38013 accepts it and returns the same prototype plus deep-sea spade38037. That foreign referral can be done before giving the map to Hordine; matching supplied map/spade also fits without your own referral history.",
+    "Hordine consumes torn map77209 for treasure key22633. Chest77210 is placed on Jade Mini Zones ocean floor77262. The paired silt exits77261 DOWN/77262 UP use spade38037 as their key and reset secret/closed/locked. Ordinary keyed UNLOCK has a 100 percent break roll for spade and treasure key, with destruction settlement separate. Carry legitimate replacements as needed. The silt route is a door/key mechanic; DIG rejects underwater terrain and does not use the spade keyword as its shovel/hoe/pick tool.",
+    "Opening the chest and collecting its coins, flippers, scepter or gauntlets is a later foreign access/loot route, not another recorded Stronghold story. Source GET, first recovery, source versus gift, personal kills, unlocking, reading and travel/arrival need separate admitted facts before credit.",
+    "Crew hiring at unfinished structure22648 is a separate evil-aligned owner/ship/frags-or-skills service. Its shared handler ignores SUB_MONEY failure and proceeds to change/save crew or chief; SUB_MONEY refuses while accounting is active. This accounting defect needs an isolated shared fix and transaction qualification; the journal does not claim the service is safely paid or award crew-hire credit.",
+    "The Master’s helm uses an active equipment-set procedure, not a set-completion quest. Foreign vehicle avatars can supply helm or maelstrom boots; Divine Home and Myrabolus have separate reward routes. Owning their equipment does not prove Decker’s or Hordine’s exchange. Rakshasa shop prose has no local shop file; ordinary resting/inn and other service lore remains builder qualification.",
+    "Four native exchanges are potential daily candidates. All givers remain after acceptance, but cap1 sources, hidden stock, Aphantan’s roaming, portals, key breakage, reset mode2 and active accounting’s item-reset refusal still need played availability and renewal qualification. No source, movement, pickup, reward or live ship change is added."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 22617,
+      "name": "Decker",
+      "keyword": "decker",
+      "description": "Starts at forest22634 and accepts the exact ticket for Master’s helm; remains.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22626,
+      "name": "Hordine Scorn",
+      "keyword": "hordine",
+      "description": "Starts at juggernaught bridge22659; two independent map exchanges; remains.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22636,
+      "name": "the captain",
+      "keyword": "captain",
+      "description": "Starts at Drifter helm22643; accepts coal and valve together; no launch controller.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22623,
+      "name": "the ghost of Aphantan",
+      "keyword": "aphantan",
+      "description": "Native sea-map holder starts at22649 with no static entrance and can roam beyond the zone. Actual source/visibility needs qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22618,
+      "name": "a blazing ifrit",
+      "keyword": "ifrit",
+      "description": "Native hidden valve holder inside furnace22647; existing fixed ENTER/return route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22624,
+      "name": "the slave master",
+      "keyword": "slave",
+      "description": "Native black iron key holder at slave gallows22662; no personal kill or rescue outcome is added.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "captain-coal-valve",
+      "title": "Drifter captain: exchange coal and valve for a ticket",
+      "category": "story",
+      "summary": "Offer both exact loose materials together for a travel ticket. This accepted bundle does not launch the Drifter, move Decker or record a journey.",
+      "contracts": [
+        {
+          "giver_vnum": 22636,
+          "completion_key": "give=I:22610,I:22612;receive=I:22613;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22610",
+          "text": "Carry the exact pile of coal",
+          "kind": "carried_item",
+          "item_vnums": [
+            22610
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Hidden in fixed locked furnace-container22609 at22663; black iron key22611 is native G stock on slave master22624 at22662. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "material-22612",
+          "text": "Carry the exact broken furnace valve",
+          "kind": "carried_item",
+          "item_vnums": [
+            22612
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Hidden G stock on ifrit22618 inside furnace22647. ENTER furnace22604 at22641 and verify its fixed return22605. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22636,
+              "completion_key": "give=I:22610,I:22612;receive=I:22613;disappear=0"
+            }
+          ],
+          "hint": "Recorded only after the exact native offering and rewards settle. Owning supplies or the reward, reading lore, opening a gate, travelling or hearing another player’s exchange does not establish this outcome. Native giver remains; legitimate new supply and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "decker-ticket",
+      "title": "Decker: exchange the ticket for the Master’s helm",
+      "category": "story",
+      "summary": "Give Decker exact ticket22613 for helm22621. Supplied matching ticket fits without your own repair receipt or travelled ride. Master-set gear possession is not quest evidence.",
+      "contracts": [
+        {
+          "giver_vnum": 22617,
+          "completion_key": "give=I:22613;receive=I:22621;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-captain",
+          "text": "Optional earlier route: help the Drifter captain",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22636,
+              "completion_key": "give=I:22610,I:22612;receive=I:22613;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "The earlier accepted coal-and-valve bundle can explain the ticket source. Supplied matching material fits without your own earlier exchange. History cannot restore spent, lost or gifted items."
+        },
+        {
+          "id": "material-22613",
+          "text": "Carry the exact travel ticket",
+          "kind": "carried_item",
+          "item_vnums": [
+            22613
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Captain’s accepted bundle is the only identified native ticket producer. A receipt never supplies a ticket already spent. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22617,
+              "completion_key": "give=I:22613;receive=I:22621;disappear=0"
+            }
+          ],
+          "hint": "Recorded only after the exact native offering and rewards settle. Owning supplies or the reward, reading lore, opening a gate, travelling or hearing another player’s exchange does not establish this outcome. Native giver remains; legitimate new supply and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "hordine-sea-maps",
+      "title": "Hordine: return the sea maps",
+      "category": "story",
+      "summary": "Offer exact sea maps22622 for the shoes, ruby globe and imported greaves40771. Maps also have a separate consuming helmsman route. Gifts fit; own source history and travelling are not required.",
+      "contracts": [
+        {
+          "giver_vnum": 22626,
+          "completion_key": "give=I:22622;receive=I:22625,I:22627,I:40771;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22622",
+          "text": "Carry the exact packet of sea maps",
+          "kind": "carried_item",
+          "item_vnums": [
+            22622
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Hidden G stock on wandering ghost Aphantan22623. His initial load room22649 has no static entrance; find his current source legitimately. Torn treasure map77209 is different. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22626,
+              "completion_key": "give=I:22622;receive=I:22625,I:22627,I:40771;disappear=0"
+            }
+          ],
+          "hint": "Recorded only after the exact native offering and rewards settle. Owning supplies or the reward, reading lore, opening a gate, travelling or hearing another player’s exchange does not establish this outcome. Native giver remains; legitimate new supply and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "hordine-torn-map",
+      "title": "Hordine: exchange the torn map for the treasure key",
+      "category": "story",
+      "summary": "Give torn map77209 for treasure key22633. Optional Burgadan referral returns a map and spade beforehand. Silt access and chest loot remain later foreign steps with their existing locks and breakage.",
+      "contracts": [
+        {
+          "giver_vnum": 22626,
+          "completion_key": "give=I:77209;receive=I:22633;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-burgadan",
+          "text": "Optional earlier route: ask Burgadan about the torn map",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38037,
+              "completion_key": "give=I:77209;receive=I:38037,I:77209;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Thetis owns Burgadan’s accepted referral: he consumes/returns the torn-map prototype and gives spade38037. This history does not prove source recovery or grant extra Stronghold achievement. Supplied matching material fits without your own earlier exchange. History cannot restore spent, lost or gifted items."
+        },
+        {
+          "id": "material-77209",
+          "text": "Carry the exact torn treasure map",
+          "kind": "carried_item",
+          "item_vnums": [
+            77209
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Pirate77219 at77248 is its declared hidden holder; Burgadan can return another matching map through his exchange. Sea maps22622 cannot substitute. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "material-38037",
+          "text": "Optional later access: carry the deep-sea spade",
+          "kind": "carried_item",
+          "item_vnums": [
+            38037
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Burgadan’s reward is the exact key for secret locked silt exits77261/77262. It has a 100 percent break roll on ordinary keyed UNLOCK; history cannot replace an intact current key. It is not required by Hordine’s torn-map offering. Carry the actual item loose; held, worn or nested copies do not count for this check. Current possession does not distinguish source recovery from a player gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22626,
+              "completion_key": "give=I:77209;receive=I:22633;disappear=0"
+            }
+          ],
+          "hint": "Recorded only after the exact native offering and rewards settle. Owning supplies or the reward, reading lore, opening a gate, travelling or hearing another player’s exchange does not establish this outcome. Native giver remains; legitimate new supply and ready accounting still govern repeats."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

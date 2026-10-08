@@ -1,0 +1,93 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "troll_hills",
+  "coverage": "complete",
+  "introduction": "Follow the terrified adventurer's missing idol through the mound, with optional desk treasure, item magic and marsh exploration kept separate from the accepted return.",
+  "orientation": [
+    "Explore the Troll Hills, dark marshes, mound and Fields of the Dead. Northern and southern roads connect to the surface; the lake connects to Ghore. Current stock, visibility, combat, water and direction of travel matter. A map does not guarantee safe passage.",
+    "Find the terrified adventurer in the dark marshes. Ask hello, hi or greetings for one introduction, they for his mysterious employers, and statuette, idol, description or details for one description of the missing stone ogre idol. These aliases select three shared responses; conversation alone is not an accepted return.",
+    "The ogre magi in the mound holds the small stone ogre idol when stocked and carries a small key. Look for the idol on the magi, and use the key for the separate desk treasure. Meeting or defeating the magi does not put the idol in your inventory; you still need to recover the actual item.",
+    "The mound entrance north of the western mound is secret and closed. A successful SEARCH can reveal it before OPEN and entry. The door on the other side may have a different state. Take care on the ladders below, where you can fall. An entrance opened by someone else does not prove you found or opened it yourself.",
+    "Carry the exact idol loose in your inventory where the adventurer can see it. Held, worn or nested items do not count toward this preparation row. An idol obtained from another player also fits; you do not need to defeat the magi yourself, recover it from its source, ask questions, collect the key or use its magic. Ready now shows your current count and does not guarantee the adventurer can see or accept the idol.",
+    "Return the idol to the adventurer for a vial of boiling goo and 5000 experience. He takes the idol and departs after accepting it. This return counts as one quest achievement and one potential daily. It remains recorded after the idol is spent; owning the reward or gaining experience alone does not prove you completed the return.",
+    "The magi's small key addresses the locked wooden desk in the shrine. An eligible key or successful PICK may unlock it before OPEN and GET. The desk is declared to contain a pile of 250 gold coins. This optional treasure branch is separate from the idol source and the adventurer's quest reward.",
+    "The idol is also a charged wand of snailspeed. Its magical use, remaining charges, target and resolved effect are separate from returning the exact prototype. Using it does not complete the adventurer's request. If held, it still must become an eligible loose root for the native offering.",
+    "The boiling goo is a coldshield potion. Quaffing, spilling, a potion timer, blocked magic or an existing conflicting shield can change whether an effect occurs. Receiving the vial completes no extra quest and drinking it is not required for the adventurer's accepted return.",
+    "The massive half-breed troll stands on the old bridge. Treat him as an exploration contact; this journal has no paid-crossing objective or required toll. Use the established passages and check your route back before travelling farther.",
+    "The monolith's readable inscription says to seek an old man. That lead has no current objective in this journal. Explore the marsh, ruins and Fields of the Dead, but do not treat the scattered corpses or the inscription alone as completed quests.",
+    "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. Daily rollover does not restock an idol or bring back an adventurer who has departed. The distant cloud portal has no confirmed usable route here; use the established roads or lake approach."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 1810,
+      "name": "the terrified adventurer",
+      "keyword": "adventurer",
+      "description": "Ask hello, hi, greetings, they, statuette, idol, description or details. Bring the exact idol loose in your inventory for the adventurer to accept. His reward is a vial and 5000 experience, after which he departs.",
+      "topics": [
+        "hello",
+        "hi",
+        "greetings",
+        "they",
+        "statuette",
+        "idol",
+        "description",
+        "details"
+      ]
+    },
+    {
+      "mob_vnum": 1804,
+      "name": "the ogre magi",
+      "keyword": "magi",
+      "description": "The ogre magi holds the idol and carries the optional desk key when stocked. Source encounter, recovery, wand use and accepted return are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 1819,
+      "name": "the massive half-breed troll",
+      "keyword": "massive",
+      "description": "The half-breed troll is a contact on the old bridge. Explore the surrounding passages; this journal has no paid-crossing objective or required toll.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "adventurer-idol",
+      "title": "Return the ogre idol to the adventurer",
+      "category": "request",
+      "summary": "Bring the terrified adventurer the small stone ogre idol for a vial of boiling goo and 5000 experience. The ogre magi holds the idol when stocked, but one obtained from another player also fits. The adventurer takes the idol and departs after accepting it. Preparation and optional exploration remain separate from your recorded return.",
+      "contracts": [
+        {
+          "giver_vnum": 1810,
+          "completion_key": "give=I:1804;receive=E:5000,I:1807;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "idol",
+          "text": "Carry the small stone ogre idol loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            1804
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Shows the number of exact idols currently loose in your inventory. The ogre magi holds one when stocked; an idol obtained from another player also fits. The adventurer must still be able to see and accept it. Held, worn and nested idols do not fill this row. The key, desk gold and potion are different items."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record the adventurer's accepted idol return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1810,
+              "completion_key": "give=I:1804;receive=E:5000,I:1807;disappear=1"
+            }
+          ],
+          "hint": "Records the accepted idol return, with its vial, 5000 experience and the adventurer departure. Finding the source, asking questions, using the wand, collecting optional gold or drinking the potion does not replace this return."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

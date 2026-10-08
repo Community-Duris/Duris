@@ -1,0 +1,322 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "lylr",
+  "coverage": "complete",
+  "introduction": "Follow Venmar’s exact scalp exchange and explore the separate dragon, forest, prisoner, village and Meopham stories.",
+  "orientation": [
+    "Explore the forest and Lylrstas, meet Venmar the dragon and follow his request. Actual arrival discovers this zone; meeting Venmar reveals his exchange.",
+    "Ask Venmar about evil or ogre. These two aliases share one response about his summoning and the ogre in the woods.",
+    "Venmar accepts one exact ogre scalp for the drow skin boots. BBryt carries that scalp in the hollow tree; the native source is carried stock rather than a carving result. An exact supplied scalp also fits. The recipe does not require a remembered personal kill, greeting, first-source recovery or prison rescue.",
+    "The scalp is authored as hidden and cannot be sold, located or rented. Recovering and offering it require their actual visibility and custody admission; the optional material row only shows current loose inventory.",
+    "Offer the exact scalp loose to Venmar. Accepted history is separate from current material and reward possession. Spent materials or missing boots do not erase the recorded exchange.",
+    "Venmar departs after the native exchange. A departure message, a missing dragon or his reset declaration cannot substitute for accepted reward and retirement outcomes.",
+    "The tree entrance resets hidden and closed. Its platform has a chance of falling during command dispatch; locating an entrance, opening it, crossing it and surviving a fall are different events.",
+    "The forest and Lylrstas form one local route, while Meopham has a separate approach. The selected surface rooms lack reciprocal entry exits in the static source; builders must qualify actual arrival before advertising a usable approach.",
+    "The prison contains five distinct captives. Finding the guard’s key or opening a cell does not prove release from restraints, consent, a surviving escort or lasting freedom.",
+    "One prison door has different keys on its two sides. The vault chest has an unsupported trap damage type. Both need played diagnosis and a balanced builder repair plan.",
+    "Cionvra and the Lylrstas barkeep have native supply shops. Native purchases currently refuse while accounting is active; supplied items and acknowledged purchases are separate facts.",
+    "Both barkeeps can dispatch generated world quests. Those paid assignments, maps, returns and rewards belong to the world-quest system rather than Venmar’s scalp exchange. Hylga has no local drink shop declaration.",
+    "Sakthris redirects coin-exchange requests to the Royal Bank. The counter’s sign advertises banking commands, while its assigned interaction is locker entry. Actual banking and locker outcomes need their own admitted callers.",
+    "The Lylrstas inn has an explicitly assigned rent handler, despite lacking the raw inn flag. Inn wording, light or a room visit does not prove safe storage, healing or protection.",
+    "The cyan potion is configured for armor, serious vigor and barkskin; the vault staff is configured for earthquake. Custody, charges, admitted use and actual beneficiary effects are separate outcomes.",
+    "The summoned dragon, captives, village families, guards, animals, town cleaners, library and bar suggest wider stories. Builders must define real contributions, choices, beneficiaries and lasting results. New tracking requires active READY accounting. Daily replay remains disabled until source availability, exact exchange, giver retirement, reward/save/replay and accountable renewal are qualified."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 82200,
+      "name": "A rattlesnake",
+      "keyword": "snake",
+      "description": "This contact is stocked around The Forest Of Lylrstas, The Southern Forest Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82201,
+      "name": "Venmar, the dragon",
+      "keyword": "venmar",
+      "description": "Venmar accepts the exact scalp for drow skin boots and then departs. Evil and ogre share one response. His summoning and lasting return home need defined agency and actual outcomes beyond the exchange.",
+      "topics": [
+        "evil",
+        "ogre"
+      ]
+    },
+    {
+      "mob_vnum": 82202,
+      "name": "BBryt",
+      "keyword": "ogre",
+      "description": "BBryt carries the exact scalp in the hollow tree. Source recovery, a supplied copy, defeat, the requested exchange and lasting forest safety are different facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82203,
+      "name": "A squirrel",
+      "keyword": "squirrel",
+      "description": "This contact is stocked around A Small Park, An Old Stone Pathway, The Forest Of Lylrstas, The Park of Meopham, The Southern Forest Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82204,
+      "name": "Cionvra",
+      "keyword": "shopkeeper",
+      "description": "Cionvra stocks supplies, the cyan potion and foreign bandages. Native purchases currently refuse under active accounting. A supply listing, supplied copy or purchase cannot alone establish aid to a beneficiary.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82205,
+      "name": "A thin guard",
+      "keyword": "guard",
+      "description": "This contact is stocked around Within The Gates Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82206,
+      "name": "an apprentice",
+      "keyword": "apprentice",
+      "description": "This contact is stocked around Within The Gates Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82207,
+      "name": "Lylrstas, the village leader",
+      "keyword": "leader",
+      "description": "The village leader has two guard followers. His summoning of Venmar and town governance suggest separate investigation, agency and restoration stories; follower stock is not a player hire or liberation result.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82208,
+      "name": "The barkeep",
+      "keyword": "barkeep",
+      "description": "The Lylrstas barkeep has a drink shop and generated world-quest special. Native purchase, paid world assignment, map, return and Venmar’s receipt remain distinct. The room also has an explicitly assigned rent handler.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82209,
+      "name": "A bluejay",
+      "keyword": "bird",
+      "description": "This contact is stocked around A Small Park, The Southern Forest Of Lylrstas, The forest of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82210,
+      "name": "A half-elf commoner",
+      "keyword": "half-elf",
+      "description": "This contact is stocked around A Cobbelstone Road, A Small Park. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82211,
+      "name": "A half-elf child",
+      "keyword": "half-elf",
+      "description": "This contact is stocked around A Small Park, The Main Street Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82212,
+      "name": "A small dog",
+      "keyword": "dog",
+      "description": "This contact is stocked around The Main Street Of Lylrstas, The Marble Way. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82213,
+      "name": "A brown bear",
+      "keyword": "brown",
+      "description": "This contact is stocked around The Forest Of Lylrstas, The Park of Meopham. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82214,
+      "name": "A cottontail rabbit",
+      "keyword": "rabbit",
+      "description": "This contact is stocked around The Forest Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82215,
+      "name": "Grandma",
+      "keyword": "grandma",
+      "description": "This contact is stocked around A Small Elven Home. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82216,
+      "name": "Grandpa",
+      "keyword": "grandpa",
+      "description": "This contact is stocked around The Inn Of Lylrstas. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82217,
+      "name": "A prison guard",
+      "keyword": "guard",
+      "description": "This contact is stocked around Before The Prisons. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82218,
+      "name": "A grey elf prisoner",
+      "keyword": "elf",
+      "description": "The grey elf prisoner describes forced labor and restraint. A key or open cell does not certify consent, release from actual restraint, surviving escape or lasting freedom.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82219,
+      "name": "An illithid prisoner",
+      "keyword": "illithid",
+      "description": "This illithid is a distinct captive. Define beneficiary choice, actual release, legal movement and lasting welfare before treating an encounter or open door as rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82220,
+      "name": "A goblin prisoner",
+      "keyword": "goblin",
+      "description": "This goblin is a distinct captive. Define actual agency, release and safe destination; prison access, guards and the scalp exchange have separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82221,
+      "name": "A ogre prisoner",
+      "keyword": "ogre",
+      "description": "This ogre is a prisoner rather than BBryt. A similarly named captive, scalp or kill cannot satisfy Venmar’s exact exchange or establish rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82222,
+      "name": "A troll prisoner",
+      "keyword": "troll",
+      "description": "This troll is a distinct captive behind the cell with asymmetric key definitions. Qualify actual door admission, restraint, surviving departure and lasting welfare.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82223,
+      "name": "A bored guard",
+      "keyword": "guard",
+      "description": "The bored guard carries the exact rusty key. It opens the declared prison locks subject to actual door admission; key custody or a guard defeat cannot prove that a captive has been freed.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82224,
+      "name": "Sakthris the banker",
+      "keyword": "banker",
+      "description": "Sakthris has a shop and the retired money-changer interaction. LIST and EXCHANGE can redirect to the Royal Bank; the counter’s locker hook and actual bank transactions are separate services.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82225,
+      "name": "A thin guard",
+      "keyword": "guard",
+      "description": "These guards follow the village leader as native stock. A player’s hire, control, escort, liberation or restored defenses need separately admitted ownership and beneficiary outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82226,
+      "name": "A city guard",
+      "keyword": "city",
+      "description": "This contact is stocked around Before the Town of Meopham. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82227,
+      "name": "A furry white rabbit",
+      "keyword": "furry",
+      "description": "This contact is stocked around An Old Stone Pathway, The Park of Meopham, Town Center of Meopham. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82228,
+      "name": "A street cleaner",
+      "keyword": "street",
+      "description": "Street cleaners carry brooms. Stocked equipment and cleanup prose do not prove a player’s contribution or a lasting change to the streets.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82229,
+      "name": "Hylga, the barkeep",
+      "keyword": "hylga",
+      "description": "Hylga dispatches generated world quests in the Bar of Foxes. She has no local drink shop declaration; builder-defined bar service or aid needs an actual admitted result.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82230,
+      "name": "an old drunken orc",
+      "keyword": "old",
+      "description": "This awake drunken orc and the sleeping orc are separate prototypes. Their descriptions do not implement a recovery or transformation state machine.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82231,
+      "name": "an angry commoner",
+      "keyword": "angry",
+      "description": "This contact is stocked around Backroom of the Bar. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82232,
+      "name": "an old drunken orc",
+      "keyword": "old",
+      "description": "The sleeping orc is separate from the awake drunken orc. Define consent, actual care and lasting recovery rather than inferring a cure from a visit.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82233,
+      "name": "a town fool",
+      "keyword": "town",
+      "description": "This contact is stocked around An Old Cottage, An Old Stone Pathway, An Old Storage Room, High Street of Meopham, Town Center of Meopham. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82234,
+      "name": "a black spider",
+      "keyword": "black",
+      "description": "This contact is stocked around An Old Shed, An Old Storage Room. Meeting, aid, equipment recovery and lasting forest or town outcomes need their own evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82235,
+      "name": "a crying baby",
+      "keyword": "crying",
+      "description": "The crying baby suggests a family-care story. Define the caregiver, appropriate contribution, consent and lasting welfare; a diaper or encounter is not proof of care.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "venmar-ogre-scalp",
+      "title": "Bring Venmar the ogre scalp",
+      "category": "request",
+      "summary": "Offer the exact scalp for drow skin boots. Supplied custody, source recovery, the accepted exchange and Venmar’s departure are distinct facts.",
+      "contracts": [
+        {
+          "giver_vnum": 82201,
+          "completion_key": "give=I:82217;receive=I:82200;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ogre-scalp",
+          "text": "Carry the exact ogre scalp loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82217
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "BBryt carries the scalp in the hollow tree. Exact supplied copies also fit. This row shows loose custody without proving a kill, first-source recovery or visibility; the scalp is hidden and cannot be rented."
+        },
+        {
+          "id": "exchange",
+          "text": "Record Venmar’s accepted scalp exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82201,
+              "completion_key": "give=I:82217;receive=I:82200;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact loose scalp to Venmar for the boots. One accepted exchange records completion. Dialogue, an open cell, reward possession or a departure message cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

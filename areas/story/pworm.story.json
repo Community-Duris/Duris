@@ -1,0 +1,162 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "pworm",
+  "coverage": "complete",
+  "introduction": "Trace Drakhov's family amulet and gather seven exact hides for one return, with clear source, quantity, route and giver-availability guidance.",
+  "orientation": [
+    "Draknahov seeks news of his brother Drakhov. Ask about his family, brother, Drakhov and the amulet. His exchange requires the family amulet and seven gargantuan worm hides together for drider skin leggings. The conversation names the amulet but omits the seven hides; all eight items are required by the actual recipe.",
+    "Seven gargantuan worm segments can each carry one required hide. The final segment can also carry Drakhov's corpse, with the family amulet and a sapphire ring nested inside. Recover the exact amulet and hides; the ring, ordinary worm loot and purple worm hide armor do not substitute.",
+    "The corpse is an ordinary non-takeable container, not a generated player corpse or a living prisoner. Its inspection and contents provide the brother's story. Current possession can prepare the exchange, but it does not prove your own first recovery, victory or rescue. Supplied items can satisfy the native exchange.",
+    "The mouth chamber's actual route into the worm body is northeast, despite its prose saying northward. Follow the real exits through the body; the final segment has a southwest passage back to the tunnels. The entrance is an ordinary world edge. No personal swallowing or digestion event is required for this exchange.",
+    "The entrance boulder and two breeding-chamber rock passages have closed, unlocked door resets. Their secret keywords do not by themselves establish an active hidden-door flag. Shared doors can already be open; opening each personally is not a recipe ingredient or accepted quest receipt.",
+    "Draknahov's source row names a loading room and a 65-percent chance. Current loader policy skips that row during ordinary resets and rolls it during forced or fresh-boot resets. Finding him is therefore not guaranteed. The loading room has routes to a separate room with no exits; its name does not promise automatic safe dispersal.",
+    "The mutated worm and goblin warrior share the same conditional loading-room policy. The assassin and shadow dragon use another loading room with exits toward the first room or the trap room. Their separate equipment and encounters do not add amulets, hides or extra native exchanges.",
+    "This zone uses reset mode1, with ordinary resets dependent on age and the zone being empty. Seven shared hide copies match the required seven; other players holding stock can prevent a fresh complete set. Daily rollover does not force restock, open doors or respawn the giver.",
+    "Carry one exact family amulet and at least seven exact gargantuan worm hides loose. Worn or nested proof is not current loose preparation. Owning leggings or answering every keyword does not prove an accepted exchange. Recorded acceptance survives spent ingredients and stored rewards. New discovery, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 42506,
+      "name": "Draknahov, the purple worm slayer",
+      "keyword": "draknahov",
+      "description": "Ask about the family, brother, Drakhov and amulet. The actual return is one family amulet plus seven gargantuan worm hides for drider skin leggings. His conditional loading-room stock needs availability qualification.",
+      "topics": [
+        "worm",
+        "purple",
+        "quest",
+        "bloodthirst",
+        "blood",
+        "hi",
+        "hello",
+        "actions",
+        "family",
+        "did",
+        "brother",
+        "drakhov",
+        "amulet"
+      ]
+    },
+    {
+      "mob_vnum": 42505,
+      "name": "a segment of the gargantuan worm",
+      "keyword": "worm",
+      "description": "Seven segments supply the exact hides. The final segment can carry Drakhov's corpse containing the amulet. Current or supplied proof does not establish personal recovery or seven victories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42504,
+      "name": "the mouth of the gargantuan worm",
+      "keyword": "mouth",
+      "description": "The mouth is stocked in the mouth chamber. Its northeast world exit enters the body; the northward prose is misleading. It does not impose an accepted swallowing prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42500,
+      "name": "a purple worm",
+      "keyword": "worm",
+      "description": "Ordinary purple worms provide tunnel context. Their selected reset groups do not stock the required gargantuan hide.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42501,
+      "name": "an infant purple worm",
+      "keyword": "infant",
+      "description": "Infants populate breeding chambers and selected outside nests. They are separate from the seven hide-bearing segments.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42502,
+      "name": "a large purple worm",
+      "keyword": "large",
+      "description": "Large worms are separate tunnel inhabitants. Their selected stock is not the required family amulet or gargantuan hide.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42503,
+      "name": "a HUGE purple worm",
+      "keyword": "huge",
+      "description": "HUGE worms provide combat and tunnel context. Their size and lore do not make them the seven hide-bearing segment prototype.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42508,
+      "name": "a mutated purple worm",
+      "keyword": "mutated",
+      "description": "The mutated worm has conditional loading-room stock, with armor and a jaw sword. Purple worm hide armor is not a required gargantuan worm hide.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42509,
+      "name": "the great goblin warrior",
+      "keyword": "goblin",
+      "description": "The goblin warrior has conditional loading-room stock and separate equipment. His worm-hunting prose does not add a personal combat prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42507,
+      "name": "a sly battle-scarred assassin",
+      "keyword": "assassin",
+      "description": "The assassin has separate loading-room stock, boots and stilettos. His ambush lore and equipment are distinct from Draknahov's return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42510,
+      "name": "a shadow dragon",
+      "keyword": "shadow",
+      "description": "The shadow dragon has separate loading-room stock and a cloak. The cloak is not the drider skin leggings reward or an accepted family exchange.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "family-amulet-and-seven-hides",
+      "title": "Bring Drakhov's amulet and seven hides to Draknahov",
+      "category": "request",
+      "summary": "Bring the family amulet and seven gargantuan worm hides together for drider skin leggings. Recovering the nested amulet explains the family story; supplied ingredients still fit the recipe. Giver availability needs qualification, and conversation alone does not record acceptance.",
+      "contracts": [
+        {
+          "giver_vnum": 42506,
+          "completion_key": "give=I:42500,I:42500,I:42500,I:42500,I:42500,I:42500,I:42500,I:42502;receive=I:42504;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-42502",
+          "text": "Carry 1 × the family amulet of Drakhov loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            42502
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose quantity only. Supplied proof can fit the return; worn or nested proof, similarly named armor and reward possession do not establish preparation or personal first recovery."
+        },
+        {
+          "id": "item-42500",
+          "text": "Carry 7 × some gargantuan worm hide loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            42500
+          ],
+          "count": 7,
+          "optional": true,
+          "hint": "Current exact loose quantity only. Supplied proof can fit the return; worn or nested proof, similarly named armor and reward possession do not establish preparation or personal first recovery."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted amulet-and-seven-hide exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 42506,
+              "completion_key": "give=I:42500,I:42500,I:42500,I:42500,I:42500,I:42500,I:42500,I:42502;receive=I:42504;disappear=0"
+            }
+          ],
+          "hint": "Records one native exchange after all eight ingredients are spent. Dialogue, corpse inspection, swallowing, source recovery and personal victories are separate. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

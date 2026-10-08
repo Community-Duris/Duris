@@ -1,0 +1,160 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "harpyht",
+  "coverage": "complete",
+  "introduction": "Find the rusted key, free the chained dwarf and bring his shackles to the queen. This journal records the two accepted hand-ins. The separate good, evil and undead life paths are not recorded here. New progress requires active, ready accounting.",
+  "orientation": [
+    "Travel north from the Surface hills into the foothills. The communal nest serves as a Harpy home and inn. Its sign advertises a destiny requirement for leaving, but that exit restriction is currently inactive.",
+    "Find the chained dwarf in his cave. To recover the hidden rusted key, ENTER the fixed hanging cage; DOWN returns from its interior. The other hanging cages are scenery: use the key as a hand-in to the dwarf rather than trying to unlock those props.",
+    "Give the exact rusted key to the dwarf to receive his prisoner shackles. He leaves after this exchange. A matching key supplied by another player also works. If the dwarf or key is absent, the route depends on their usual return and availability.",
+    "Bring the prisoner shackles to the queen in her nest. This earns her recognition; it does not choose the good life path. She accepts the native shackles hand-in while your race-war allegiance is neutral. Supplied matching shackles work without your own earlier dwarf hand-in.",
+    "The queen and khan have separate storm-crow-feather interactions that change a neutral character into a Harpy and choose the good or evil side. Those custom choices do not create a journal completion. Their GIVE handling can catch gifts addressed to another recipient in the same room, and characters who have already chosen a side cannot use their ordinary hand-ins.",
+    "Storm crows carry the hidden feather. It is ordinary carried stock, not a CARVE reward. Holding a feather, receiving one from another player and personally recovering it do not establish the same history. The khan feather route earns no achievement or daily credit in this journal.",
+    "In the crypt, ASK gargoyle undead reaches the response about two Harpy NPC corpses on the floor. The advertised word unlife does not reach that response. The advertised undead transformation is inactive: supplying two corpses does not currently complete it or earn a journal achievement.",
+    "PULL the fixed rope ladder to reach the wyvern nest; DOWN returns. CLIMB is a different command. The hidden wyvern egg belongs to a request from Wicks in Home of the Divine. Travel restrictions and falling hazards still apply.",
+    "Look for hidden golem plans inside the skeleton near the giant battle golem. OPEN the skeleton and remove the papers before offering them elsewhere. The skeleton is unlocked despite being resistant to picking. The nearby golem and the artifact described beneath rubble have no local quest outcome.",
+    "Foreign requests remain in their own journals: Wicks accepts the wyvern egg for 25,000 copper; the elderly engineer in Ultarium accepts the golem plans for a siege golem head; the dwarven trapper there accepts a gigasaur tail for two copper ores. A gigasaur carries the tail; CARVE is not its source. Holding these materials does not complete the foreign requests.",
+    "The merchant sells ordinary supplies. Merv redirects currency exchange inquiries to bank tellers. These services and the settlement’s nesting, mining and combat lore do not create additional quest achievements.",
+    "The dwarf rescue and queen’s recognition are potential daily requests. Availability still depends on the returning dwarf, current materials and the queen’s allegiance restrictions. Earlier completion never replaces shackles you have spent, lost or given away."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 31118,
+      "name": "a chained dwarf",
+      "keyword": "dwarf",
+      "description": "In the cave: accepts the rusted key, gives prisoner shackles and leaves after the exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31109,
+      "name": "the harpy queen",
+      "keyword": "queen",
+      "description": "In her nest: accepts prisoner shackles for recognition. Her separate feather interaction chooses the good life path.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31124,
+      "name": "a harpy khan",
+      "keyword": "khan",
+      "description": "His feather interaction chooses the evil life path and currently earns no journal completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31108,
+      "name": "an enormous gargoyle",
+      "keyword": "gargoyle",
+      "description": "In the crypt: ask about undead for the corpse response. The advertised transformation is inactive.",
+      "topics": [
+        "undead"
+      ]
+    },
+    {
+      "mob_vnum": 31140,
+      "name": "a storm crow",
+      "keyword": "crow",
+      "description": "Carries the hidden storm crow feather. Current possession does not prove a personal kill.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "free-the-chained-dwarf",
+      "title": "Free the chained dwarf: exchange the rusted key",
+      "category": "story",
+      "summary": "Give the rusted key to the chained dwarf, receive his shackles and see him leave. A supplied matching key works too.",
+      "contracts": [
+        {
+          "giver_vnum": 31118,
+          "completion_key": "give=I:31104;receive=I:31111;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-31104",
+          "text": "Carry the exact rusted key",
+          "kind": "carried_item",
+          "item_vnums": [
+            31104
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "ENTER the fixed hanging cage to look for the hidden rusted key; DOWN returns. Carry the loose key before offering it to the dwarf. Worn, held or nested copies do not satisfy this preparation check. A matching gift works just like a recovered key for the hand-in."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the rusted key to the dwarf",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31118,
+              "completion_key": "give=I:31104;receive=I:31111;disappear=1"
+            }
+          ],
+          "hint": "Completion records the accepted exchange for shackles and the dwarf’s departure. Finding the key or approaching the cage alone does not complete this request."
+        }
+      ]
+    },
+    {
+      "id": "queen-rescue-proof",
+      "title": "Queen: present the prisoner shackles",
+      "category": "story",
+      "summary": "Present the prisoner shackles for the queen’s recognition. This hand-in does not choose the good life path and is available while your race-war allegiance is neutral.",
+      "contracts": [
+        {
+          "giver_vnum": 31109,
+          "completion_key": "give=I:31111;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-dwarf",
+          "text": "Optional earlier route: free the chained dwarf",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31118,
+              "completion_key": "give=I:31104;receive=I:31111;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Your earlier dwarf rescue explains where the shackles came from. Supplied matching shackles work without that personal history; a recorded rescue cannot replace shackles you no longer carry."
+        },
+        {
+          "id": "material-31111",
+          "text": "Carry the exact prisoner shackles",
+          "kind": "carried_item",
+          "item_vnums": [
+            31111
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The dwarf gives these shackles in exchange for the rusted key. Carry a matching pair loose; worn, held or nested copies do not satisfy this check. A storm crow feather is a different offering. The queen’s ordinary shackles hand-in requires neutral race-war allegiance."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Present the prisoner shackles to the queen",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31109,
+              "completion_key": "give=I:31111;receive=;disappear=0"
+            }
+          ],
+          "hint": "Completion records her accepted shackles hand-in. Her recognition leaves your race and allegiance unchanged; choosing a life path is a separate interaction."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "contracts": [
+        {
+          "giver_vnum": 31124,
+          "completion_key": "give=I:31112;receive=;disappear=0"
+        }
+      ],
+      "reason": "Normal mobile-special dispatch handles the khan’s feather first: neutral actors directly lose the item and change Harpy/racewar/alignment without a quest receipt, while non-neutral actors are refused. This shadowed native Q is not a safe recorded achievement or daily. Typed actor-state/item/recipient integration and explicit one-time policy are required before any custom path credit."
+    }
+  ]
+}

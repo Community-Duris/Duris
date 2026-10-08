@@ -1,0 +1,2016 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "ravenloft2",
+  "coverage": "complete",
+  "introduction": "The Ravenloft Catacombs weave independent prisoner rescues, relic recovery, fortune commissions and three Strahd-skull reward choices through a large network of crypts. Follow the contacts you encounter and keep their competing proofs and availability in mind. Player journal progress requires active, ready accounting.",
+  "orientation": [
+    "Enter through Castle Ravenloft's cellar or Kingsmen route, or push the paired handprints between Ravenloft and the catacomb wine-cellar passage. These are world access mechanisms; discovering or reading about them does not record successful travel.",
+    "The black key carried by Stefania fits the cell doors and supplies Emil's release. The old Castle Ravenloft key fits the main gates and hidden wall route; it has a 100 break chance. The image of Rahadin replaces it and awards a separately brittle spectral key for the spectral corridor.",
+    "Pull the iron curtains for Thredra's laboratory route and push the broken wine racks for the cellar passage. Bring Thredra three different holy relics together for a buckler and stake; her relic delivery retires her.",
+    "Dostron's ashes can restore Exethanter's narrated memory or rejuvenate Thredra for a different reward. Neither route is required by the other. Identical slab/remains prototypes use a shared container lookup, so the intended crypt placement of several relics needs live qualification.",
+    "The bleeding slab opens the Amber Temple passage. Kasimir accepts the altar's blood of Zhudun for a key to Patrina's crypt and three moonbeam drops. The existing banshee and Kasimir corpse do not prove a resurrection event.",
+    "Rahadin offers eight independent proof requests. Each supplies one physical spectral fortune coin; these items are distinct from wallet currency. Proofs drawn from Ezmerelda, Rictavio or Jander compete with keeping those contacts available for their good-aligned skull rewards.",
+    "Each favor commission requires five fortune coins and one exact role scroll together. The animated cloak carries four different scrolls and also has a shop role. Active accounting currently blocks buying; supplied existing scrolls still qualify. Native giving enforces no class or faction prerequisite.",
+    "Fortune services consume one coin for potions or equipment chests plus cash and experience. These remain visible support deliveries without extra achievements. Ezmerelda's paid card reading and Izek's paid dues use wallet offerings and remain unavailable under active accounting.",
+    "Ezmerelda's twelve card faces form a conversational loop: raven, moon and mists lead through blood, rose and chalice to bat, mirror and gate, then castle, coffin and candelabra return to the opening faces. Replies are stateless; keywords do not complete quest steps or establish a paid reading session.",
+    "Blinsky accepts any one of five exact clockwork artifacts as a single recovery request. His stocked toy woman supports a separate Izek request. Izek also accepts two different wines and Ireena's comb for distinct rewards; his toy reward key has no confirmed door or container target.",
+    "Wolf, human, bat and gaseous Strahd forms are independently reset creatures. The wolf statuette, two memory switches, dimension door and coffin mechanisms provide alternate passage routes. The gaseous form carries the exact skull; receipt does not prove a personal kill or a sequence of transformations.",
+    "Choose a skull recipient: Ezmerelda, Rictavio or Jander. Their equipment rewards differ, and each contact disappears after delivery. Promised room keys, restored sunshine, party departure and permanent liberation are not corresponding native outputs or recorded world changes.",
+    "Explore the crypt names, coffin-and-lid escape switches, Tomescu's Blood Rift portals, Sergei's portcullis and marble sword, and Dhavit's speech door. Say dhavit from the northern side or utherlan from the southern side to unlock that door, then open it. Some Blood Rift portals release enemies instead of transporting you.",
+    "Sasha's journal describes the Dayheart and Sunsword as history and intended vampire preparation. It is optional lore, without a verified Dayheart destruction or Sunsword quest outcome. One skeleton search mechanism targets an absent exit, and Sasha's alternate epitaph switch has no ordinary placement; those routes need builder repair.",
+    "Carry all offering items directly. Readiness and optional earlier receipts award nothing. Eighteen repeatable story/request groups are potential daily candidates; mode-zero disappearing contacts are story-only. Daily eligibility does not promise available stock or contacts. Active source-generation support must be qualified for a playable journey."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 59035,
+      "name": "Exethanter",
+      "keyword": "exethanter",
+      "description": "Exethanter wanders from the Amber Temple holding passage. Ask about his name and the crypts; Dostron is addressed by the native spelling dostran. His ash exchange and Thredra's ash exchange are independent choices.",
+      "topics": [
+        "exethanter",
+        "hi",
+        "steliana",
+        "petrovna",
+        "patrina",
+        "dostran",
+        "something",
+        "amber",
+        "who",
+        "strahd",
+        "anda"
+      ]
+    },
+    {
+      "mob_vnum": 59046,
+      "name": "Emil the Barovian",
+      "keyword": "emil",
+      "description": "Emil is the shackled Barovian in the keyed cells. Stefania's black key supplies his rescue; his werewolf departure is narrated.",
+      "topics": [
+        "hi",
+        "she",
+        "stefania"
+      ]
+    },
+    {
+      "mob_vnum": 59049,
+      "name": "Thredra Anarax",
+      "keyword": "thredra",
+      "description": "Thredra offers holy-relic and ash outcomes plus a fortune service. Her relic exchange retires her, so choose contact order carefully. The chanting word eugszr is an addressable response rather than a recorded spell.",
+      "topics": [
+        "eugszr",
+        "giorgio",
+        "vistani",
+        "strahd",
+        "act",
+        "hi",
+        "black",
+        "dostron",
+        "fortune"
+      ]
+    },
+    {
+      "mob_vnum": 59058,
+      "name": "Kasimir Velikov",
+      "keyword": "kasimir",
+      "description": "Kasimir offers the blood-of-Zhudun rescue story and a separate fortune service. His rescue retires him; the already stocked corpse and banshee in Patrina's crypt are independent world data.",
+      "topics": [
+        "hi",
+        "graverobber",
+        "vistani",
+        "lightbringer",
+        "dungeon",
+        "sister",
+        "patrina",
+        "strahd",
+        "blood",
+        "amber",
+        "fortune"
+      ]
+    },
+    {
+      "mob_vnum": 59059,
+      "name": "a Vistani wagoner",
+      "keyword": "vistani",
+      "description": "The Vistani wagoner provides road, rumor and vampire guidance without a native terminal delivery.",
+      "topics": [
+        "hi",
+        "yes",
+        "no",
+        "rumors",
+        "vampire"
+      ]
+    },
+    {
+      "mob_vnum": 59060,
+      "name": "Ezmerelda D'avenir",
+      "keyword": "ezmerelda",
+      "description": "Ezmerelda explains Vistani culture and twelve stateless card faces, offers an unsupported paid reading, and accepts the Strahd skull. Rahadin also requests her dagger; these routes share contact availability.",
+      "topics": [
+        "hi",
+        "vistani",
+        "raunie",
+        "madam",
+        "rema",
+        "anda",
+        "vardos",
+        "strahd",
+        "protection",
+        "death",
+        "cards",
+        "raven",
+        "moon",
+        "mists",
+        "blood",
+        "thorned",
+        "chalice",
+        "bat",
+        "broken",
+        "irongate",
+        "castle",
+        "coffin",
+        "candelabra"
+      ]
+    },
+    {
+      "mob_vnum": 59070,
+      "name": "Rahadin",
+      "keyword": "rahadin",
+      "description": "Rahadin exchanges eight independent proofs for physical fortune coins, then offers four separate five-coin favor commissions. Printed invitations, court roles and vampire imagery do not establish faction membership.",
+      "topics": [
+        "hi",
+        "master",
+        "awaits",
+        "count",
+        "expecting",
+        "imperial",
+        "intentions",
+        "fortune",
+        "individual",
+        "favor",
+        "scroll",
+        "jander",
+        "deeds",
+        "wardship",
+        "madam",
+        "baba",
+        "drowned",
+        "rictavio",
+        "ezmerelda",
+        "gaulthias",
+        "ant",
+        "spider",
+        "barovia",
+        "dracolich"
+      ]
+    },
+    {
+      "mob_vnum": 59081,
+      "name": "Gadof Blinsky",
+      "keyword": "gadof",
+      "description": "Gadof Blinsky roams from the toyshop toward Barovia. One of five artifacts satisfies his recovery request. His carried toy woman can be sold by legacy shopping, though it is not replenishing shop stock; purchases are blocked under active accounting.",
+      "topics": [
+        "hi",
+        "zombies",
+        "barovia",
+        "mister",
+        "business",
+        "izek",
+        "castle",
+        "wonderous",
+        "fritz",
+        "yes"
+      ]
+    },
+    {
+      "mob_vnum": 59082,
+      "name": "Rictavio",
+      "keyword": "rictavio",
+      "description": "Rictavio can roam through the Ravenloft approach. His Strahd-skull reward differs from the other two recipients, and Rahadin accepts his bonnet as an independent proof.",
+      "topics": [
+        "hi",
+        "mists",
+        "history",
+        "svalich",
+        "master",
+        "barovia",
+        "vistani",
+        "dark",
+        "vampire",
+        "castle",
+        "strahd",
+        "word",
+        "izek",
+        "vallaki",
+        "werewolves",
+        "ezmerelda",
+        "madam"
+      ]
+    },
+    {
+      "mob_vnum": 59084,
+      "name": "Izek Strazni",
+      "keyword": "izek",
+      "description": "Izek offers distinct wine, comb and toy requests, a fortune service and unsupported paid dues. His reward key has no confirmed access target. Use the native topic breech for his castle-breach response.",
+      "topics": [
+        "hi",
+        "paid",
+        "castle",
+        "wine",
+        "rictavio",
+        "gnome",
+        "it",
+        "barovia",
+        "burgomaster",
+        "ireena",
+        "catacombs",
+        "treasure"
+      ]
+    },
+    {
+      "mob_vnum": 59085,
+      "name": "Cyrus Belview",
+      "keyword": "cyrus",
+      "description": "Cyrus Belview trades one fortune coin for four equipment chests, cash and experience, then disappears. This is a service rather than a separate story achievement.",
+      "topics": [
+        "hi",
+        "rahadin"
+      ]
+    },
+    {
+      "mob_vnum": 59090,
+      "name": "an image of Rahadin",
+      "keyword": "image",
+      "description": "The image of Rahadin in the spectral corridor replaces the old catacomb key and awards the spectral key, then disappears. The old key and spectral key both have a 100 break chance.",
+      "topics": [
+        "hi",
+        "ravenloft",
+        "master",
+        "barovia"
+      ]
+    },
+    {
+      "mob_vnum": 59091,
+      "name": "Jander Sunstar",
+      "keyword": "jander",
+      "description": "Jander offers a distinct Strahd-skull finale and raw-ant-pincer food service. Rahadin requests his Oathbow, so proof recovery and later availability need a conscious route choice.",
+      "topics": [
+        "hi",
+        "castle",
+        "eva",
+        "ant"
+      ]
+    },
+    {
+      "mob_vnum": 59047,
+      "name": "a spectre of \"Stefania\"",
+      "keyword": "spectre",
+      "description": "Stefania's spectre carries the black cell key needed by Emil. Possession does not prove a personal kill or a successful unlocking journey.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59097,
+      "name": "Rahadin's animated cloak",
+      "keyword": "animated",
+      "description": "The animated cloak follows Rahadin with four different favor scrolls and also has a fixed-room shop role. Purchases are unavailable under active accounting; existing supplied stock remains valid for favor commissions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59061,
+      "name": "&-wPidlwick II",
+      "keyword": "pidlwick",
+      "description": "Pidlwick II carries the exact clockwork artifact Blinsky accepts and roams from a release passage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59072,
+      "name": "a miniature wind-up gnome",
+      "keyword": "miniature",
+      "description": "This specific windup gnome carries Blinsky's required artifact. The many other windup gnomes do not share that stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59094,
+      "name": "a GIANT spider",
+      "keyword": "giant",
+      "description": "The giant spider carries the chelicerae requested by Rahadin and has a roaming release route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59092,
+      "name": "the Gulthias tree",
+      "keyword": "gulthias",
+      "description": "Gulthias carries Rahadin's heart proof and can roam through foreign forest, castle and Barovia routes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59093,
+      "name": "the giant ant queen",
+      "keyword": "giant",
+      "description": "The ant queen in the burrow carries a heavy eggsac for Rahadin and raw pincers for Jander. These are distinct requests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59041,
+      "name": "Count Strahd (dire wolf form)",
+      "keyword": "count",
+      "description": "Strahd's wolf form carries a wolf statuette and a memory switch. The configured get and touch mechanisms open release passages; the form is an independent reset placement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59044,
+      "name": "Count Strahd (human form)",
+      "keyword": "count",
+      "description": "Strahd's human form carries a second memory switch. Its configured touch target opens a passage; no reviewed death transformation creates the other forms.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59071,
+      "name": "Count Strahd (bat form)",
+      "keyword": "count",
+      "description": "Strahd's bat form carries the dimension-door object. Entering is a teleport mechanism requiring its own committed-travel qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59076,
+      "name": "Count Strahd (gaseous form)",
+      "keyword": "count",
+      "description": "Strahd's gaseous form carries the crypt key and exact skull. It is independent reset stock, not verified lineage from a player killing the human form.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 59083,
+      "name": "the banshee of Patrina Velikovna",
+      "keyword": "banshee",
+      "description": "Patrina's banshee is already placed in her crypt behind the reforged-key door. This placement and Kasimir's already stocked corpse do not prove successful resurrection.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "emils-release",
+      "title": "Emil's Release",
+      "category": "story",
+      "summary": "Bring Emil the black key carried by Stefania to receive the key back and up to 1,000,000 experience. Emil disappears after the accepted rescue. His werewolf departure and reunion are narrated rather than recorded transformations.",
+      "contracts": [
+        {
+          "giver_vnum": 59046,
+          "completion_key": "give=I:59037;receive=E:1000000,I:59037;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59037",
+          "kind": "carried_item",
+          "item_vnums": [
+            59037
+          ],
+          "count": 1,
+          "text": "Carry the black cell key",
+          "hint": "Stefania's spectre carries this key in her cell. It fits the keyed cell doors, including Emil's; unlocking and entering are access preparation, without a separate completion event."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59046,
+              "completion_key": "give=I:59037;receive=E:1000000,I:59037;disappear=1"
+            }
+          ],
+          "text": "Bring the black key to Emil",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The returned key is a newly created replacement of the same kind. Receiving it does not preserve the original object identity or prove personal recovery from Stefania."
+        }
+      ]
+    },
+    {
+      "id": "exethanters-lost-memory",
+      "title": "Exethanter's Lost Memory",
+      "category": "story",
+      "summary": "Bring Dostron's ashes to Exethanter for the phylactery. The lich disappears after delivery. His restored memory, golden figure and journey to Vallaki are narrated; no separate revived king or linked onward quest is established.",
+      "contracts": [
+        {
+          "giver_vnum": 59035,
+          "completion_key": "give=I:59150;receive=I:59317;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59150",
+          "kind": "carried_item",
+          "item_vnums": [
+            59150
+          ],
+          "count": 1,
+          "text": "Carry Dostron's ashes",
+          "hint": "The reset declares these ashes inside a marble slab in Dostron's crypt. Repeated slab instances use a shared container lookup, so the declared room needs live placement qualification. Thredra accepts the same ashes for a different outcome."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59035,
+              "completion_key": "give=I:59150;receive=I:59317;disappear=1"
+            }
+          ],
+          "text": "Give Dostron's ashes to Exethanter",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Seek Exethanter through the Amber Temple route. No matching door or container destination for his phylactery was found in the reviewed world; breaking it is a narrated instruction, not a confirmed objective."
+        }
+      ]
+    },
+    {
+      "id": "thredras-holy-relics",
+      "title": "Thredra's Holy Relics",
+      "category": "story",
+      "summary": "Bring three different relics together: the shroud, fingerbone and thighbone. Thredra awards the buckler of the Saints and a sharpened crucifix stake, then disappears. Three copies of one relic do not substitute.",
+      "contracts": [
+        {
+          "giver_vnum": 59049,
+          "completion_key": "give=I:59171,I:59206,I:59238;receive=I:55322,I:59247;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59171",
+          "kind": "carried_item",
+          "item_vnums": [
+            59171
+          ],
+          "count": 1,
+          "text": "Carry the holy shroud",
+          "hint": "The reset declares the shroud inside mummified remains in Ravenovia's coffin. Several remains share the same prototype; container placement needs live qualification."
+        },
+        {
+          "id": "item-59206",
+          "kind": "carried_item",
+          "item_vnums": [
+            59206
+          ],
+          "count": 1,
+          "text": "Carry the holy fingerbone",
+          "hint": "The fingerbone is declared inside the mirror in Tomescu's hidden bedchamber. His misty portal and Blood Rift passages are separate access puzzles."
+        },
+        {
+          "id": "item-59238",
+          "kind": "carried_item",
+          "item_vnums": [
+            59238
+          ],
+          "count": 1,
+          "text": "Carry the holy thighbone",
+          "hint": "The thighbone is declared in the marble slab in Markovia's crypt. The shared lookup among repeated slabs needs qualification."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59171,I:59206,I:59238;receive=I:55322,I:59247;disappear=1"
+            }
+          ],
+          "text": "Deliver all three holy relics to Thredra",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The stake is suggested preparation for the Strahd story. The later skull deliveries do not require this earlier receipt, the stake, or a recorded stake attack."
+        }
+      ]
+    },
+    {
+      "id": "thredras-rejuvenation",
+      "title": "Thredra's Rejuvenation",
+      "category": "story",
+      "summary": "Bring Dostron's ashes to Thredra for the ring of the Dire Lantern. Her youth and departure are narrated without a transformed replacement NPC; this exchange does not retire her. Exethanter offers a different outcome for the same ashes.",
+      "contracts": [
+        {
+          "giver_vnum": 59049,
+          "completion_key": "give=I:59150;receive=I:59305;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59150",
+          "kind": "carried_item",
+          "item_vnums": [
+            59150
+          ],
+          "count": 1,
+          "text": "Carry Dostron's ashes",
+          "hint": "These are the same ashes requested by Exethanter, declared in Dostron's marble slab. One spent object cannot be handed to both contacts; supplied or later available copies can support independent deliveries."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59150;receive=I:59305;disappear=0"
+            }
+          ],
+          "text": "Give Dostron's ashes to Thredra",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Thredra's relic exchange retires her, while this ash exchange does not. Consider contact availability when choosing the order of independent requests."
+        }
+      ]
+    },
+    {
+      "id": "kasimirs-sister",
+      "title": "Kasimir's Sister",
+      "category": "story",
+      "summary": "Bring Kasimir the blood of Zhudun for a reforged key and three drops of moonbeam, then he disappears. His planned rescue of Patrina is narrated; Patrina's banshee and a stocked Kasimir corpse already exist independently in her crypt.",
+      "contracts": [
+        {
+          "giver_vnum": 59058,
+          "completion_key": "give=I:59256;receive=I:59248,I:59248,I:59248,I:59257;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59256",
+          "kind": "carried_item",
+          "item_vnums": [
+            59256
+          ],
+          "count": 1,
+          "text": "Carry the blood of Zhudun",
+          "hint": "The vial is placed on the Amber Temple altar. The bleeding slab opens the temple passage. Possessing or drinking the vial does not record a resurrection; its configured potion effects are aura spells."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59058,
+              "completion_key": "give=I:59256;receive=I:59248,I:59248,I:59248,I:59257;disappear=1"
+            }
+          ],
+          "text": "Deliver the blood of Zhudun to Kasimir",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The reforged key fits Patrina's crypt. The key opens access after this delivery; the pre-existing corpse, staff, medallion and moonbeam drops do not prove a successful resurrection episode."
+        }
+      ]
+    },
+    {
+      "id": "the-spiders-proof",
+      "title": "The Spider's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges the spider chelicerae for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59290",
+          "kind": "carried_item",
+          "item_vnums": [
+            59290
+          ],
+          "count": 1,
+          "text": "Carry the spider chelicerae",
+          "hint": "The giant spider carries this exact proof as equipment and roams from its crypt holding route."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present the spider chelicerae to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "rictavios-proof",
+      "title": "Rictavio's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges Rictavio's bonnet for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59306",
+          "kind": "carried_item",
+          "item_vnums": [
+            59306
+          ],
+          "count": 1,
+          "text": "Carry Rictavio's bonnet",
+          "hint": "Rictavio carries this bonnet and can roam through the Castle Ravenloft approach. He is also an independent skull recipient; source and recipient availability compete."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present Rictavio's bonnet to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "ezmereldas-proof",
+      "title": "Ezmerelda's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges Ezmerelda's dagger for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59240",
+          "kind": "carried_item",
+          "item_vnums": [
+            59240
+          ],
+          "count": 1,
+          "text": "Carry Ezmerelda's dagger",
+          "hint": "Ezmerelda carries this exact dagger. She is also a skull recipient; taking her proof and keeping her available need an explicit choice."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present Ezmerelda's dagger to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "janders-proof",
+      "title": "Jander's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges Jander's Oathbow for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59303",
+          "kind": "carried_item",
+          "item_vnums": [
+            59303
+          ],
+          "count": 1,
+          "text": "Carry Jander's Oathbow",
+          "hint": "Jander carries the Oathbow on the overgrown ledge and also accepts the Strahd skull. Taking his proof does not require or prove killing him."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present Jander's Oathbow to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "gulthias-proof",
+      "title": "Gulthias's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges Gulthias's heart for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59297",
+          "kind": "carried_item",
+          "item_vnums": [
+            59297
+          ],
+          "count": 1,
+          "text": "Carry Gulthias's heart",
+          "hint": "Gulthias carries the heart and can leave through routes toward Svalich Woods, Castle Ravenloft and Barovia. His holding placement is not an exitless supply gap."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present Gulthias's heart to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "the-ant-queens-proof",
+      "title": "The Ant Queen's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges the ant queen eggsac for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59307",
+          "kind": "carried_item",
+          "item_vnums": [
+            59307
+          ],
+          "count": 1,
+          "text": "Carry the ant queen eggsac",
+          "hint": "The queen carries this exact eggsac in the burrow. It is heavy; readiness does not guarantee carrying capacity or personal combat."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present the ant queen eggsac to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "madam-evas-proof",
+      "title": "Madam Eva's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges Madam Eva's crystal ball for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-58803",
+          "kind": "carried_item",
+          "item_vnums": [
+            58803
+          ],
+          "count": 1,
+          "text": "Carry Madam Eva's crystal ball",
+          "hint": "The crystal ball is ordinary room stock by Madam Eva in Svalich Woods. Rahadin explicitly suggests recovering it without killing her."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present Madam Eva's crystal ball to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "the-dracolichs-proof",
+      "title": "The Dracolich's Proof",
+      "category": "request",
+      "summary": "Rahadin exchanges the dracolich skull for one physical spectral fortune coin. Each proof is an independent request, without an all-eight prerequisite, personal kill requirement or faction grant.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-58397",
+          "kind": "carried_item",
+          "item_vnums": [
+            58397
+          ],
+          "count": 1,
+          "text": "Carry the dracolich skull",
+          "hint": "This is the dracolich skull in Castle Ravenloft, distinct from Strahd's skull and the separate undead encounters in the catacombs."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Present the dracolich skull to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral fortune is an inventory item, not wallet currency. A single recorded proof does not establish five available coins. Receiving a coin neither joins Strahd's court nor makes later contacts safe."
+        }
+      ]
+    },
+    {
+      "id": "the-chaplains-favor",
+      "title": "The Chaplain's Favor",
+      "category": "story",
+      "summary": "Bring Rahadin five physical spectral fortune coins and the exact chaplain's favor scroll together. He awards a stole and crozier plus a vial of blood. Giving has no class, faction or prior-proof requirement; equipment restrictions are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59281;receive=I:59294,I:59314,I:59315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: earn a spectral fortune from Rahadin",
+          "hint": "Any of his eight independent proofs can supply a coin. This optional receipt proves one delivery, not possession of five coins or all eight deeds.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 5,
+          "text": "Carry five spectral fortune coins",
+          "hint": "These five inventory items are consumed together. Wallet money and earlier spent coins do not substitute."
+        },
+        {
+          "id": "item-59281",
+          "kind": "carried_item",
+          "item_vnums": [
+            59281
+          ],
+          "count": 1,
+          "text": "Carry the exact chaplain's favor scroll",
+          "hint": "The animated cloak follows Rahadin with these scrolls as stock and also has a shop role. Buying is unavailable under active accounting; supplied existing stock qualifies."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59281;receive=I:59294,I:59314,I:59315;disappear=0"
+            }
+          ],
+          "text": "Deliver five fortune coins and the exact favor scroll to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The chapel, kneeling and transformation scenes are printed narrative. The blood vial uses temporary configured spell effects, not a permanent vampire race or faction change. Favor routes remain independent; this delivery does not complete every role."
+        }
+      ]
+    },
+    {
+      "id": "the-whispering-blades-favor",
+      "title": "The Whispering Blade's Favor",
+      "category": "story",
+      "summary": "Bring Rahadin five physical spectral fortune coins and the exact whispering blade's favor scroll together. He awards a pin and dagger plus a vial of blood. Giving has no class, faction or prior-proof requirement; equipment restrictions are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59289;receive=I:59295,I:59299,I:59315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: earn a spectral fortune from Rahadin",
+          "hint": "Any of his eight independent proofs can supply a coin. This optional receipt proves one delivery, not possession of five coins or all eight deeds.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 5,
+          "text": "Carry five spectral fortune coins",
+          "hint": "These five inventory items are consumed together. Wallet money and earlier spent coins do not substitute."
+        },
+        {
+          "id": "item-59289",
+          "kind": "carried_item",
+          "item_vnums": [
+            59289
+          ],
+          "count": 1,
+          "text": "Carry the exact whispering blade's favor scroll",
+          "hint": "The animated cloak follows Rahadin with these scrolls as stock and also has a shop role. Buying is unavailable under active accounting; supplied existing stock qualifies."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59289;receive=I:59295,I:59299,I:59315;disappear=0"
+            }
+          ],
+          "text": "Deliver five fortune coins and the exact favor scroll to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The chapel, kneeling and transformation scenes are printed narrative. The blood vial uses temporary configured spell effects, not a permanent vampire race or faction change. Favor routes remain independent; this delivery does not complete every role."
+        }
+      ]
+    },
+    {
+      "id": "the-archmages-favor",
+      "title": "The Archmage's Favor",
+      "category": "story",
+      "summary": "Bring Rahadin five physical spectral fortune coins and the exact archmage's favor scroll together. He awards a talisman and staff plus a vial of blood. Giving has no class, faction or prior-proof requirement; equipment restrictions are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59300;receive=I:59293,I:59315,I:59316;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: earn a spectral fortune from Rahadin",
+          "hint": "Any of his eight independent proofs can supply a coin. This optional receipt proves one delivery, not possession of five coins or all eight deeds.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 5,
+          "text": "Carry five spectral fortune coins",
+          "hint": "These five inventory items are consumed together. Wallet money and earlier spent coins do not substitute."
+        },
+        {
+          "id": "item-59300",
+          "kind": "carried_item",
+          "item_vnums": [
+            59300
+          ],
+          "count": 1,
+          "text": "Carry the exact archmage's favor scroll",
+          "hint": "The animated cloak follows Rahadin with these scrolls as stock and also has a shop role. Buying is unavailable under active accounting; supplied existing stock qualifies."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59300;receive=I:59293,I:59315,I:59316;disappear=0"
+            }
+          ],
+          "text": "Deliver five fortune coins and the exact favor scroll to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The chapel, kneeling and transformation scenes are printed narrative. The blood vial uses temporary configured spell effects, not a permanent vampire race or faction change. Favor routes remain independent; this delivery does not complete every role."
+        }
+      ]
+    },
+    {
+      "id": "the-dread-guards-favor",
+      "title": "The Dread Guard's Favor",
+      "category": "story",
+      "summary": "Bring Rahadin five physical spectral fortune coins and the exact dread guard's favor scroll together. He awards a sigil and glaive plus a vial of blood. Giving has no class, faction or prior-proof requirement; equipment restrictions are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 59070,
+          "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59282;receive=I:59291,I:59313,I:59315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: earn a spectral fortune from Rahadin",
+          "hint": "Any of his eight independent proofs can supply a coin. This optional receipt proves one delivery, not possession of five coins or all eight deeds.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 5,
+          "text": "Carry five spectral fortune coins",
+          "hint": "These five inventory items are consumed together. Wallet money and earlier spent coins do not substitute."
+        },
+        {
+          "id": "item-59282",
+          "kind": "carried_item",
+          "item_vnums": [
+            59282
+          ],
+          "count": 1,
+          "text": "Carry the exact dread guard's favor scroll",
+          "hint": "The animated cloak follows Rahadin with these scrolls as stock and also has a shop role. Buying is unavailable under active accounting; supplied existing stock qualifies."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59282;receive=I:59291,I:59313,I:59315;disappear=0"
+            }
+          ],
+          "text": "Deliver five fortune coins and the exact favor scroll to Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The chapel, kneeling and transformation scenes are printed narrative. The blood vial uses temporary configured spell effects, not a permanent vampire race or faction change. Favor routes remain independent; this delivery does not complete every role."
+        }
+      ]
+    },
+    {
+      "id": "blinskys-clockwork-recovery",
+      "title": "Blinsky's Clockwork Recovery",
+      "category": "request",
+      "summary": "Bring Gadof Blinsky any one of five exact clockwork artifacts for a gnomish shopkeepers token and a strange scroll of enchantment. These alternatives share one request and one achievement; collecting or delivering all five is not required.",
+      "contracts": [
+        {
+          "giver_vnum": 59081,
+          "completion_key": "give=I:59093;receive=I:55033,I:55362;disappear=0"
+        },
+        {
+          "giver_vnum": 59081,
+          "completion_key": "give=I:59126;receive=I:55033,I:55362;disappear=0"
+        },
+        {
+          "giver_vnum": 59081,
+          "completion_key": "give=I:59255;receive=I:55033,I:55362;disappear=0"
+        },
+        {
+          "giver_vnum": 59081,
+          "completion_key": "give=I:59254;receive=I:55033,I:55362;disappear=0"
+        },
+        {
+          "giver_vnum": 59081,
+          "completion_key": "give=I:59283;receive=I:55033,I:55362;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59093",
+          "kind": "carried_item",
+          "item_vnums": [
+            59093,
+            59126,
+            59255,
+            59254,
+            59283
+          ],
+          "count": 1,
+          "text": "Carry one of Blinsky's five clockwork artifacts",
+          "hint": "Choose the automatic music player, self-winding watch, Pidlwick II, windup gnome or cake topper. The music player/watch/cake topper have declared crypt-container sources; Pidlwick and the exact stocked windup gnome have roaming release routes. Other windup gnomes do not necessarily carry the required artifact."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59081,
+              "completion_key": "give=I:59093;receive=I:55033,I:55362;disappear=0"
+            },
+            {
+              "giver_vnum": 59081,
+              "completion_key": "give=I:59126;receive=I:55033,I:55362;disappear=0"
+            },
+            {
+              "giver_vnum": 59081,
+              "completion_key": "give=I:59255;receive=I:55033,I:55362;disappear=0"
+            },
+            {
+              "giver_vnum": 59081,
+              "completion_key": "give=I:59254;receive=I:55033,I:55362;disappear=0"
+            },
+            {
+              "giver_vnum": 59081,
+              "completion_key": "give=I:59283;receive=I:55033,I:55362;disappear=0"
+            }
+          ],
+          "text": "Return one clockwork artifact to Gadof Blinsky",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Gadof can roam from the toyshop toward Barovia. Returning another accepted artifact records its delivery without awarding this request again."
+        }
+      ]
+    },
+    {
+      "id": "izeks-elven-wine",
+      "title": "Izek's Elven Wine",
+      "category": "request",
+      "summary": "Give Izek the elven wine for 250,000 copper. This is an item offering with a cash reward, supported by accounting; it is separate from paying his dues.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=I:59035;receive=C:250000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59035",
+          "kind": "carried_item",
+          "item_vnums": [
+            59035
+          ],
+          "count": 1,
+          "text": "Carry the elven wine",
+          "hint": "Four bottles are declared in the wine cellar. The broken wine racks open the concealed eastern route."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=I:59035;receive=C:250000;disappear=0"
+            }
+          ],
+          "text": "Give the elven wine to Izek",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The reward does not pay his separate castle-entry fee or prove access through the gates."
+        }
+      ]
+    },
+    {
+      "id": "izeks-red-mountain-wine",
+      "title": "Izek's Red Mountain Wine",
+      "category": "request",
+      "summary": "Give Izek the Red Mountain wine for 1,000,000 copper, up to 100,000 experience, a shopkeepers token and an enchantment scroll. This richer wine is a different item from his elven wine.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=I:59060;receive=C:1000000,E:100000,I:55033,I:55362;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59060",
+          "kind": "carried_item",
+          "item_vnums": [
+            59060
+          ],
+          "count": 1,
+          "text": "Carry the Red Mountain wine",
+          "hint": "This wine has cellar stock and a stocked ragged skeleton source. The exact bottle matters; elven wine does not qualify."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=I:59060;receive=C:1000000,E:100000,I:55033,I:55362;disappear=0"
+            }
+          ],
+          "text": "Give the Red Mountain wine to Izek",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Cash is the reward, not a wallet offering. The experience award remains subject to native limits."
+        }
+      ]
+    },
+    {
+      "id": "ireenas-comb-for-izek",
+      "title": "Ireena's Comb for Izek",
+      "category": "request",
+      "summary": "Bring Izek Ireena's comb for the Runecutter axe. Protecting Ireena and opposing Strahd are the narrated reason for the request; this delivery does not change either NPC's world state.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=I:59127;receive=I:59319;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59127",
+          "kind": "carried_item",
+          "item_vnums": [
+            59127
+          ],
+          "count": 1,
+          "text": "Carry Ireena's comb",
+          "hint": "The comb is ordinary room stock in Ireena's crypt. It is distinct from the toy woman and favor scrolls."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=I:59127;receive=I:59319;disappear=0"
+            }
+          ],
+          "text": "Bring Ireena's comb to Izek",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Izek remains available after the hand-in. No prior paid-dues, wine or toy delivery is enforced."
+        }
+      ]
+    },
+    {
+      "id": "a-toy-woman-for-izek",
+      "title": "A Toy Woman for Izek",
+      "category": "request",
+      "summary": "Bring Izek Blinsky's toy woman for his key and up to 250,000 experience. Blinsky has the toy as carried shop stock, though it is not a replenishing shop product. Active accounting currently blocks shop purchases.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=I:59252;receive=E:250000,I:59324;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59252",
+          "kind": "carried_item",
+          "item_vnums": [
+            59252
+          ],
+          "count": 1,
+          "text": "Carry the toy woman",
+          "hint": "Gadof Blinsky carries this exact toy. The shared shop can sell existing carried stock, including this toy, when legacy shopping is available. A supplied toy can feed this independent request while active purchases remain unsupported."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=I:59252;receive=E:250000,I:59324;disappear=0"
+            }
+          ],
+          "text": "Give the toy woman to Izek",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. No matching door or container target for Izek's key was found in the reviewed world. The native exchange awards the key without actually granting the narrated private access."
+        }
+      ]
+    },
+    {
+      "id": "thredras-fortune-exchange",
+      "title": "Thredra's Fortune Exchange",
+      "category": "service",
+      "summary": "Exchange one physical spectral fortune coin for 4 lichbane potions, 1,000,000 copper and up to 200,000 experience. This support service records a delivery without another quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59049,
+          "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:59209,I:59209,I:59209,I:59209;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain a spectral fortune coin",
+          "hint": "Any one Rahadin proof is an optional source; supplied coins qualify.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 1,
+          "text": "Carry one spectral fortune coin",
+          "hint": "This is an inventory item, distinct from wallet money. A favor commission consumes five of the same coins; a spent coin cannot be reused."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:59209,I:59209,I:59209,I:59209;disappear=0"
+            }
+          ],
+          "text": "Exchange the fortune coin with Thredra",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Cyrus disappears after his exchange; the other three do not. Identical rewards from Izek and Cyrus have separate recipients and availability. Equipment chests are not potions."
+        }
+      ]
+    },
+    {
+      "id": "kasimirs-fortune-exchange",
+      "title": "Kasimir's Fortune Exchange",
+      "category": "service",
+      "summary": "Exchange one physical spectral fortune coin for 4 drops of moonbeam, 1,000,000 copper and up to 200,000 experience. This support service records a delivery without another quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59058,
+          "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:59248,I:59248,I:59248,I:59248;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain a spectral fortune coin",
+          "hint": "Any one Rahadin proof is an optional source; supplied coins qualify.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 1,
+          "text": "Carry one spectral fortune coin",
+          "hint": "This is an inventory item, distinct from wallet money. A favor commission consumes five of the same coins; a spent coin cannot be reused."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59058,
+              "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:59248,I:59248,I:59248,I:59248;disappear=0"
+            }
+          ],
+          "text": "Exchange the fortune coin with Kasimir",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Cyrus disappears after his exchange; the other three do not. Identical rewards from Izek and Cyrus have separate recipients and availability. Equipment chests are not potions."
+        }
+      ]
+    },
+    {
+      "id": "izeks-fortune-exchange",
+      "title": "Izek's Fortune Exchange",
+      "category": "service",
+      "summary": "Exchange one physical spectral fortune coin for 4 smoldering chests of Exceptional Duris equipment, 1,000,000 copper and up to 200,000 experience. This support service records a delivery without another quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:400233,I:400233,I:400233,I:400233;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain a spectral fortune coin",
+          "hint": "Any one Rahadin proof is an optional source; supplied coins qualify.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 1,
+          "text": "Carry one spectral fortune coin",
+          "hint": "This is an inventory item, distinct from wallet money. A favor commission consumes five of the same coins; a spent coin cannot be reused."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:400233,I:400233,I:400233,I:400233;disappear=0"
+            }
+          ],
+          "text": "Exchange the fortune coin with Izek",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Cyrus disappears after his exchange; the other three do not. Identical rewards from Izek and Cyrus have separate recipients and availability. Equipment chests are not potions."
+        }
+      ]
+    },
+    {
+      "id": "cyruss-fortune-exchange",
+      "title": "Cyrus's Fortune Exchange",
+      "category": "service",
+      "summary": "Exchange one physical spectral fortune coin for 4 smoldering chests of Exceptional Duris equipment, 1,000,000 copper and up to 200,000 experience. This support service records a delivery without another quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59085,
+          "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:400233,I:400233,I:400233,I:400233;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fortune-source",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59290;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59306;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59240;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59303;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59297;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:59307;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58803;receive=I:59202;disappear=0"
+            },
+            {
+              "giver_vnum": 59070,
+              "completion_key": "give=I:58397;receive=I:59202;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain a spectral fortune coin",
+          "hint": "Any one Rahadin proof is an optional source; supplied coins qualify.",
+          "optional": true
+        },
+        {
+          "id": "item-59202",
+          "kind": "carried_item",
+          "item_vnums": [
+            59202
+          ],
+          "count": 1,
+          "text": "Carry one spectral fortune coin",
+          "hint": "This is an inventory item, distinct from wallet money. A favor commission consumes five of the same coins; a spent coin cannot be reused."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59085,
+              "completion_key": "give=I:59202;receive=C:1000000,E:200000,I:400233,I:400233,I:400233,I:400233;disappear=1"
+            }
+          ],
+          "text": "Exchange the fortune coin with Cyrus",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Cyrus disappears after his exchange; the other three do not. Identical rewards from Izek and Cyrus have separate recipients and availability. Equipment chests are not potions."
+        }
+      ]
+    },
+    {
+      "id": "ezmereldas-paid-reading",
+      "title": "Ezmerelda's Paid Reading",
+      "category": "service",
+      "summary": "This wallet-coin offering is unavailable under active accounting. Its exact legacy fee is 10,000 copper. Keep the service visible as context without awarding a quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59060,
+          "completion_key": "give=C:10000;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59060,
+              "completion_key": "give=C:10000;receive=;disappear=0"
+            }
+          ],
+          "text": "Complete ezmerelda's paid reading",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The reading opens a narrated choice among raven, moon and mists. The card keywords themselves have stateless addressable replies without a durable paid-reading session, locked branch or achievement."
+        }
+      ]
+    },
+    {
+      "id": "izeks-paid-dues",
+      "title": "Izek's Paid Dues",
+      "category": "service",
+      "summary": "This wallet-coin offering is unavailable under active accounting. Its exact legacy fee is 50,000 copper. Keep the service visible as context without awarding a quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 59084,
+          "completion_key": "give=C:50000;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59084,
+              "completion_key": "give=C:50000;receive=;disappear=0"
+            }
+          ],
+          "text": "Complete izek's paid dues",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The promised first-light castle breach is narration, without a committed entrance grant or changed gate. Paying does not record confirmed travel."
+        }
+      ]
+    },
+    {
+      "id": "rahadins-spectral-key",
+      "title": "Rahadin's Spectral Key",
+      "category": "service",
+      "summary": "Show the image of Rahadin the old Ravenloft Catacombs key to receive a replacement of that key plus a brittle spectral key. The image disappears. The ordinary key is distinct from Izek's key, Emil's black key and Kasimir's reforged key.",
+      "contracts": [
+        {
+          "giver_vnum": 59090,
+          "completion_key": "give=I:58419;receive=I:58419,I:59288;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-58419",
+          "kind": "carried_item",
+          "item_vnums": [
+            58419
+          ],
+          "count": 1,
+          "text": "Carry the old Ravenloft Catacombs key",
+          "hint": "The old key is declared in Strahd's keyring in Castle Ravenloft. It fits the main catacomb gates and the concealed northern wall route; its break chance is 100, so an access journey may consume the current copy."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59090,
+              "completion_key": "give=I:58419;receive=I:58419,I:59288;disappear=1"
+            }
+          ],
+          "text": "Show the old key to the image of Rahadin",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The spectral key opens the southern spectral gate toward the cellars and also has a 100 break chance. The returned ordinary key is a new object, not the same identity. Neither receipt proves unlocking or successful passage."
+        }
+      ]
+    },
+    {
+      "id": "janders-ant-meat",
+      "title": "Jander's Ant Meat",
+      "category": "service",
+      "summary": "Bring Jander one exact raw ant pincer for three seared ant meats. This repeatable food service records its delivery without another quest achievement or a personal kill objective.",
+      "contracts": [
+        {
+          "giver_vnum": 59091,
+          "completion_key": "give=I:59201;receive=I:59323,I:59323,I:59323;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-59201",
+          "kind": "carried_item",
+          "item_vnums": [
+            59201
+          ],
+          "count": 1,
+          "text": "Carry a raw ant pincer",
+          "hint": "Soldier, worker and queen ants carry these exact pincers in multiple equipment slots. A supplied pincer qualifies; the queen eggsac is a different proof."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59091,
+              "completion_key": "give=I:59201;receive=I:59323,I:59323,I:59323;disappear=0"
+            }
+          ],
+          "text": "Give the raw ant pincer to Jander",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. Keeping Jander available matters for his independent Strahd-skull route. The food exchange does not complete the ant-queen proof."
+        }
+      ]
+    },
+    {
+      "id": "ezmereldas-strahd-finale",
+      "title": "Ezmerelda's Strahd Finale",
+      "category": "story",
+      "summary": "Deliver the exact Strahd skull to Ezmerelda for a javelin, invisibility ring, flying carpet, boots, enchantment scroll and shopkeepers token. The recipient disappears. These are three independent reward choices; one skull delivery neither completes the other two nor proves a personal Strahd kill.",
+      "contracts": [
+        {
+          "giver_vnum": 59060,
+          "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59014,I:59223,I:59253,I:59298;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "holy-relic-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59171,I:59206,I:59238;receive=I:55322,I:59247;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Thredra's holy relic reward",
+          "hint": "Her buckler and stake are suggested preparation. Supplied skulls qualify without this earlier delivery.",
+          "optional": true
+        },
+        {
+          "id": "item-59247",
+          "kind": "carried_item",
+          "item_vnums": [
+            59247
+          ],
+          "count": 1,
+          "text": "Optional: carry the sharpened crucifix stake",
+          "hint": "The stake comes from Thredra's three-relic exchange. The skull hand-in has no required weapon, damage or stake-use event.",
+          "optional": true
+        },
+        {
+          "id": "item-59269",
+          "kind": "carried_item",
+          "item_vnums": [
+            59269
+          ],
+          "count": 1,
+          "text": "Carry Strahd's skull",
+          "hint": "The gaseous Strahd form carries this exact skull as independently reset stock. Wolf, human, bat and gaseous forms are separate ordinary placements; no reviewed transformation or personal death lineage connects them."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59060,
+              "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59014,I:59223,I:59253,I:59298;disappear=1"
+            }
+          ],
+          "text": "Bring Strahd's skull to Ezmerelda",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The native reward list above is authoritative. Promised chamber or tower keys, party departure, sunlight and permanent liberation are narration without corresponding key outputs or world-state changes. Receiving the reward records this chosen delivery only."
+        }
+      ]
+    },
+    {
+      "id": "rictavios-strahd-finale",
+      "title": "Rictavio's Strahd Finale",
+      "category": "story",
+      "summary": "Deliver the exact Strahd skull to Rictavio for a rod, three-wishes ring, bracelet, motley coat, enchantment scroll and shopkeepers token. The recipient disappears. These are three independent reward choices; one skull delivery neither completes the other two nor proves a personal Strahd kill.",
+      "contracts": [
+        {
+          "giver_vnum": 59082,
+          "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59296,I:59302,I:59308,I:59309;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "holy-relic-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59171,I:59206,I:59238;receive=I:55322,I:59247;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Thredra's holy relic reward",
+          "hint": "Her buckler and stake are suggested preparation. Supplied skulls qualify without this earlier delivery.",
+          "optional": true
+        },
+        {
+          "id": "item-59247",
+          "kind": "carried_item",
+          "item_vnums": [
+            59247
+          ],
+          "count": 1,
+          "text": "Optional: carry the sharpened crucifix stake",
+          "hint": "The stake comes from Thredra's three-relic exchange. The skull hand-in has no required weapon, damage or stake-use event.",
+          "optional": true
+        },
+        {
+          "id": "item-59269",
+          "kind": "carried_item",
+          "item_vnums": [
+            59269
+          ],
+          "count": 1,
+          "text": "Carry Strahd's skull",
+          "hint": "The gaseous Strahd form carries this exact skull as independently reset stock. Wolf, human, bat and gaseous forms are separate ordinary placements; no reviewed transformation or personal death lineage connects them."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59082,
+              "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59296,I:59302,I:59308,I:59309;disappear=1"
+            }
+          ],
+          "text": "Bring Strahd's skull to Rictavio",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The native reward list above is authoritative. Promised chamber or tower keys, party departure, sunlight and permanent liberation are narration without corresponding key outputs or world-state changes. Receiving the reward records this chosen delivery only."
+        }
+      ]
+    },
+    {
+      "id": "janders-strahd-finale",
+      "title": "Jander's Strahd Finale",
+      "category": "story",
+      "summary": "Deliver the exact Strahd skull to Jander for a full-moon sickle, Dawn-tear earring, missile gloves, baldric, enchantment scroll and shopkeepers token. The recipient disappears. These are three independent reward choices; one skull delivery neither completes the other two nor proves a personal Strahd kill.",
+      "contracts": [
+        {
+          "giver_vnum": 59091,
+          "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59029,I:59224,I:59310,I:59311;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "holy-relic-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59049,
+              "completion_key": "give=I:59171,I:59206,I:59238;receive=I:55322,I:59247;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Thredra's holy relic reward",
+          "hint": "Her buckler and stake are suggested preparation. Supplied skulls qualify without this earlier delivery.",
+          "optional": true
+        },
+        {
+          "id": "item-59247",
+          "kind": "carried_item",
+          "item_vnums": [
+            59247
+          ],
+          "count": 1,
+          "text": "Optional: carry the sharpened crucifix stake",
+          "hint": "The stake comes from Thredra's three-relic exchange. The skull hand-in has no required weapon, damage or stake-use event.",
+          "optional": true
+        },
+        {
+          "id": "item-59269",
+          "kind": "carried_item",
+          "item_vnums": [
+            59269
+          ],
+          "count": 1,
+          "text": "Carry Strahd's skull",
+          "hint": "The gaseous Strahd form carries this exact skull as independently reset stock. Wolf, human, bat and gaseous forms are separate ordinary placements; no reviewed transformation or personal death lineage connects them."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 59091,
+              "completion_key": "give=I:59269;receive=I:55033,I:55362,I:59029,I:59224,I:59310,I:59311;disappear=1"
+            }
+          ],
+          "text": "Bring Strahd's skull to Jander",
+          "hint": "Carry every offering directly, outside equipment and containers. Supplied exact materials qualify without personal recovery history. The native reward list above is authoritative. Promised chamber or tower keys, party departure, sunlight and permanent liberation are narration without corresponding key outputs or world-state changes. Receiving the reward records this chosen delivery only."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

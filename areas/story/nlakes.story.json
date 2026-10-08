@@ -1,0 +1,403 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "nlakes",
+  "coverage": "complete",
+  "introduction": "Connect the heart order’s preparation, delivery and return note, help the lost human and cursed dragon, and gather Artek’s exact dragon-and-demon bundle. Six accepted offerings retain independent progress while the journal explains their source routes, shared actors, travel hazards and Winterhaven continuation.",
+  "orientation": [
+    "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Northern Lakes and Settlements has its own achievement. Questions and current materials explain preparation; the six accepted offerings complete six distinct stories.",
+    "The delivery chain runs Maur’s heart → Tamara at office 75409 → bottled heart → Aerin at vestibule 75264 → delivery note → Tamara’s earring and copper. Each accepted handoff is independent. Exact supplied bottles or notes skip earlier personal history without granting the stages you skipped.",
+    "Artek at foggy bottom 75391 asks for two separate green scales and the red demon’s amulet together. The green dragon at 75393 wears a scale and the old dragon at cave 75411 carries one. Both scales are the same kind; the offering does not enforce one personally taken from each dragon.",
+    "The green dragon also accepts the Ruzdo shaman’s quest vial for a dagger and then leaves. Plan the scale route before that delivery when relying on this dragon as a source. The ordinary golden potion in bookcases is a different item despite its similar name.",
+    "The lost human at tavern 75278 accepts the exact scroll held by Syria on lake room 75292, rewards a mace and leaves. Asking about home or recall helps identify the request; it does not create an escort, spell-casting or home-arrival objective.",
+    "From Winterhaven 55297, travel south to footpath 75410, then south to frozen-lake approach 75283. The cathedral vestibule 75264 connects north to the separate Teka extension at 75546. Those neighboring areas retain their own discovery and quest credit.",
+    "Three Surface connections are 537871 down ↔ frozen passage 75418 up, 537889 west ↔ river 75337 east, and 539488 west ↔ forest 75363 east. Entering this physical zone is distinct from completing any foreign story.",
+    "The frozen lakes and rivers mostly use water movement rules. Bron at 75219 declares a canoe; Melbh at 75283 declares a canoe and raft. A carried or worn boat, a suitable flying or levitating ability, or another working movement alternative may help. Boat possession does not prevent a current from sweeping you away.",
+    "Creek rooms 75234–75237 and river/falls rooms 75309–75313 and 75331–75338 declare currents. Currents can attempt movement on arrival and while you act; flight or levitation can change exposure. Prepare for the direction, return route and actual movement result rather than assuming safe travel.",
+    "The hidden cellar door links 75211 down with 75212 up; the vault lies south at 75213. Hidden floor boards link shed 75248 down with cellar 75249 up. Hidden outer stone gates link 75202 north and 75203 south. These doors reset closed and secret, without a declared key lock.",
+    "The secret north exit from well-bottom 75274 leads to frozen passage 75414; its south return resets closed without the same secret declaration. A hidden earthen door links hill trail 75403 east with 75404 west. Finding and opening an available route remain separate from quest receipts.",
+    "The cathedral ladder at 75266 and 75267 and the well at 75275 have chances of starting a fall while you act there. The vestibule 75264 has a healing flag, while bridge 75392 is single-file. No local room has a safe flag; scenery, recovery and movement support do not promise safety.",
+    "Artek’s inspiring dragon visage is accepted by Aevenyl at the Bronze Griffon in Winterhaven 55161 for a silken backsheath of flight and 250000 experience. That is Winterhaven’s separate request. Local visage custody or Artek’s receipt does not complete it.",
+    "All six deliveries remain potential dailies under the existing classification. Actual renewal depends on admitted materials, caps, recipient presence and active accounting. The lost human and green dragon leave after acceptance; an old receipt does not recreate either actor or refill spent supplies."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 75239,
+      "name": "a lost human",
+      "keyword": "human",
+      "topics": [
+        "home",
+        "homesick",
+        "scroll",
+        "recall",
+        "word"
+      ],
+      "description": "The lost human waits at the tavern 75278. Ask about home, the scroll or recall. The exact scroll earns a mace and the human leaves; asking each alias does not complete another quest."
+    },
+    {
+      "mob_vnum": 75254,
+      "name": "Artek",
+      "keyword": "artek",
+      "topics": [
+        "hi",
+        "hello",
+        "hey",
+        "howdy",
+        "dragon",
+        "dragons",
+        "demon",
+        "demons"
+      ],
+      "description": "Artek waits at the foggy bottom 75391 near the bridge. Ask about dragons and demons. Two separate green scales plus the demonic amulet form one offering; the reward is a dragon visage and copper."
+    },
+    {
+      "mob_vnum": 75255,
+      "name": "a green dragon",
+      "keyword": "dragon",
+      "topics": [
+        "flight",
+        "fly",
+        "help"
+      ],
+      "description": "The green dragon starts on shore 75393, wears a green scale and accepts the shaman’s quest vial for a dagger before leaving. It shares green/dragon keywords with the old dragon; use the actual actor and location. Ask about flight or help."
+    },
+    {
+      "mob_vnum": 75260,
+      "name": "Tamara",
+      "keyword": "tamara",
+      "topics": [
+        "help",
+        "order",
+        "late"
+      ],
+      "description": "Tamara waits in office 75409 west of the pier. Ask about the late order or help. She first bottles a heart, then separately accepts Aerin’s return note for an earring and copper. Each handoff has its own completion."
+    },
+    {
+      "mob_vnum": 75261,
+      "name": "Aerin, a tekan shaman",
+      "keyword": "aerin",
+      "topics": [
+        "order"
+      ],
+      "description": "Aerin waits in cathedral vestibule 75264. Ask about the order. The exact bottled heart earns the delivery note for Tamara; a supplied bottle works without your own preparation receipt."
+    },
+    {
+      "mob_vnum": 75206,
+      "name": "a red demon",
+      "keyword": "demon",
+      "topics": [],
+      "description": "The red demon starts in vault 75213 wearing the jeweled demonic amulet. The hidden cellar route below 75211 leads toward the vault. Artek needs this exact amulet alongside two scales; current custody does not prove a personal kill."
+    },
+    {
+      "mob_vnum": 75249,
+      "name": "Syria",
+      "keyword": "syria",
+      "topics": [],
+      "description": "Syria starts on the icy lake at 75292 holding the scroll of recall needed by the lost human. Recover the exact item loose for delivery. Reaching the lake needs appropriate movement support and is not guaranteed safe."
+    },
+    {
+      "mob_vnum": 75209,
+      "name": "Maur",
+      "keyword": "maur",
+      "topics": [],
+      "description": "Maur, the dragon of death, starts in lair 75216 carrying Tamara’s dragon heart and holding a blue egg. The heart and egg are different items. Delivery uses the exact heart without requiring a personal blue-dragon kill."
+    },
+    {
+      "mob_vnum": 75244,
+      "name": "a ruzdo shaman",
+      "keyword": "shaman",
+      "topics": [],
+      "description": "The Ruzdo shaman starts in hut 75372 holding the golden quest vial for the green dragon. The ordinary same-named potion in bookcases is different. The accepted vial request does not require a recorded shaman death."
+    },
+    {
+      "mob_vnum": 75256,
+      "name": "an old dragon",
+      "keyword": "dragon",
+      "topics": [],
+      "description": "The old dragon starts in cave 75411, south of shore 75383 through the boulder door, carrying a green scale. It shares ordinary green/dragon keywords with the quest-giving dragon at 75393 but accepts no local native offering."
+    },
+    {
+      "mob_vnum": 75259,
+      "name": "Tein",
+      "keyword": "tein",
+      "topics": [],
+      "description": "Tein starts mounted at settlement 75230 with a following guard. His periodic boast is ambient scene text, not an addressed question or a native quest achievement."
+    },
+    {
+      "mob_vnum": 75212,
+      "name": "Bron, the travelling salesman",
+      "keyword": "bron",
+      "topics": [],
+      "description": "Bron starts at supply room 75219 with a horse. His declared shop supplies include a canoe, rations, water and bandages. Shopping is preparation for travel, not another local quest outcome."
+    },
+    {
+      "mob_vnum": 75241,
+      "name": "Melbh",
+      "keyword": "melbh",
+      "topics": [],
+      "description": "Melbh starts at frozen-lake approach 75283. His declared shop supplies include a canoe, raft and rations. A boat supports ordinary water travel; it does not guarantee resisting currents or safely passing the falls."
+    }
+  ],
+  "stories": [
+    {
+      "id": "lost-humans-recall",
+      "title": "Help the lost human return home",
+      "category": "story",
+      "summary": "Find the lost human in the warm tavern at 75278 and return the exact scroll of recall for a polished stone mace. The human uses it and leaves after acceptance. The scroll is a delivery item; this request does not require you to cast recall, escort the human or visit their home.",
+      "contracts": [
+        {
+          "giver_vnum": 75239,
+          "completion_key": "give=I:75252;receive=I:75263;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-75252",
+          "text": "Carry the lost human’s exact scroll of recall",
+          "kind": "carried_item",
+          "item_vnums": [
+            75252
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Syria starts on the icy lake at 75292 holding this scroll. Recover the exact item and carry it loose; a different spell scroll will not substitute. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Help the lost human return home",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75239,
+              "completion_key": "give=I:75252;receive=I:75263;disappear=1"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    },
+    {
+      "id": "arteks-dragon-and-demon-bundle",
+      "title": "Artek’s dragons and demon",
+      "category": "story",
+      "summary": "Bring Artek two separate green scales and one jeweled demonic amulet together for an inspiring visage of a Dragon and 250000 copper. His suggested route visits the green and old dragons and the red demon. Both dragons declare the same kind of scale; the accepted bundle counts exact items rather than personal kills or one recorded source of each kind. The visage can inspire Aevenyl in Winterhaven.",
+      "contracts": [
+        {
+          "giver_vnum": 75254,
+          "completion_key": "give=I:75215,I:75271,I:75271;receive=C:250000,I:55287;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-75271",
+          "text": "Carry two separate green scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            75271
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "The green dragon at shore 75393 wears a scale as a shield; the old dragon in cave 75411 carries another. Both have the same scale kind. Helping the green dragon with its vial makes it leave, so consider the scale route before that handoff. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "material-75215",
+          "text": "Carry the jeweled demonic amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            75215
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The red demon at vault 75213 wears the amulet at the neck. The vault is reached through the hidden cellar route in the Tekan settlement. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Artek’s dragons and demon",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75254,
+              "completion_key": "give=I:75215,I:75271,I:75271;receive=C:250000,I:55287;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    },
+    {
+      "id": "green-dragons-vial",
+      "title": "Free the green dragon from its curse",
+      "category": "story",
+      "summary": "Bring the green dragon the shaman’s exact golden vial for a mystical green dagger. The dragon drinks it and leaves after acceptance. Its flight explains the scene; there is no additional flight, shaman-kill or curse-removal objective. The dragon also carries a scale useful to Artek, so plan those two requests together.",
+      "contracts": [
+        {
+          "giver_vnum": 75255,
+          "completion_key": "give=I:75274;receive=I:75273;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-75274",
+          "text": "Carry the shaman’s quest golden vial",
+          "kind": "carried_item",
+          "item_vnums": [
+            75274
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Ruzdo shaman starts in hut 75372 holding the quest vial. The ordinary golden vial in bookcases is a different potion and will not satisfy this request. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Free the green dragon from its curse",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75255,
+              "completion_key": "give=I:75274;receive=I:75273;disappear=1"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    },
+    {
+      "id": "tamara-package-heart",
+      "title": "Tamara: prepare the heart order",
+      "category": "story",
+      "summary": "Bring Tamara a dragon heart at the pier office 75409. She bottles it for delivery to Aerin. Acceptance completes this preparation stage; delivery and returning the note remain their own requests. The heart is declared on Maur, the dragon of death, at 75216; a personal blue-dragon kill or expedition rescue is not required.",
+      "contracts": [
+        {
+          "giver_vnum": 75260,
+          "completion_key": "give=I:75268;receive=I:75281;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-75268",
+          "text": "Carry the exact dragon heart",
+          "kind": "carried_item",
+          "item_vnums": [
+            75268
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maur at lair 75216 carries the heart. Recover the exact material for Tamara; the blue egg held by Maur is a different item and does not substitute. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tamara: prepare the heart order",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75260,
+              "completion_key": "give=I:75268;receive=I:75281;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    },
+    {
+      "id": "aerin-receive-order",
+      "title": "Aerin: deliver the bottled heart",
+      "category": "story",
+      "summary": "Deliver the exact bottled heart to Aerin in the cathedral vestibule 75264. Aerin gives you a note for Tamara. Tamara’s packaging is a useful earlier route, while an exact supplied bottle works too. This accepted delivery completes only the middle stage; it does not finish Tamara’s return-note request or an experiment.",
+      "contracts": [
+        {
+          "giver_vnum": 75261,
+          "completion_key": "give=I:75281;receive=I:75280;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-request-101",
+          "text": "Optional earlier route: have Tamara bottle the heart",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75260,
+              "completion_key": "give=I:75268;receive=I:75281;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This earlier delivery explains a useful source. An exact supplied item skips it; an old receipt does not restore an item already spent."
+        },
+        {
+          "id": "material-75281",
+          "text": "Carry the exact bottled heart",
+          "kind": "carried_item",
+          "item_vnums": [
+            75281
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tamara’s preparation request rewards this sealed bottle. Keep it loose for Aerin; holding an old preparation receipt does not replace the bottle. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Aerin: deliver the bottled heart",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75261,
+              "completion_key": "give=I:75281;receive=I:75280;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    },
+    {
+      "id": "tamara-return-note",
+      "title": "Tamara: return the delivery note",
+      "category": "story",
+      "summary": "Return Aerin’s exact note to Tamara for a shiny crystal earring and 10000 copper. This accepted return closes the useful delivery chain. A supplied exact note works without your own packaging or delivery receipts; the earlier stages keep their separate completion records.",
+      "contracts": [
+        {
+          "giver_vnum": 75260,
+          "completion_key": "give=I:75280;receive=C:10000,I:75279;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-request-126",
+          "text": "Optional earlier route: deliver the bottle to Aerin",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75261,
+              "completion_key": "give=I:75281;receive=I:75280;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This earlier delivery explains a useful source. An exact supplied item skips it; an old receipt does not restore an item already spent."
+        },
+        {
+          "id": "material-75280",
+          "text": "Carry Aerin’s exact delivery note",
+          "kind": "carried_item",
+          "item_vnums": [
+            75280
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Aerin rewards this note for the bottled heart. It describes the received heart; ordinary paper, a handwritten substitute or a prior delivery receipt is not enough. Carry the exact quantity loose for the offering. Exact supplied items work without a personal kill, first-source record or earlier receipt."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tamara: return the delivery note",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75260,
+              "completion_key": "give=I:75280;receive=C:10000,I:75279;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle to this recipient. This accepted handoff has its own completion; questions, current supplies and later steps stay separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

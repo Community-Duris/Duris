@@ -1,0 +1,306 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "goblincave",
+  "coverage": "complete",
+  "introduction": "The Gagga’Jobo livestock caves supply hides, bones and flesh to two goblin craftspeople. Six accepted recipes have their own cards: two item-only requests and four paid services. Some offering paths still need integration. Discovery is separate; new progress requires active, ready accounting.",
+  "orientation": [
+    "ASK LEATHER about chothe, hide or strip, then backpack or bp, shoes, shirt or gloves. Use LOOK to identify the craftsperson and a numbered LEATHER target if his apprentice shares the room. The plain leatherworker name needs repair. Shoes need one hide and one platinum; a shirt needs two hides and two platinum; a backpack needs three hides; gloves need four hides and ten platinum. Repeated hide counts matter.",
+    "ASK BONE-WORKER about bone or sword, or about earring. His sword recipe requires one exact chothe bone, one strip of pootata flesh, one strip of chothe hide and one hundred platinum. An earring requires two chothe bones. The two different handle materials cannot replace one another.",
+    "Large chothe declare the exact hide and bone; pootata declare the flesh. These are livestock inventory sources. A chained chothe, butcher’s meat, table contents, a meat pack, floor scraps or finished garments are different goods. Matching materials supplied by another player fit the recipes without personal kill or first-recovery evidence.",
+    "The trapdoor and iron gate are ordinary closed passages. Opening a shared route, personally collecting materials and handing over a complete offering are separate. No special livestock-raising, slaughter, feeding, transport or conservation outcome has been confirmed from their descriptions.",
+    "The four mixed material-and-coin services cannot safely accept new offerings while accounting is active. Their material rows show only loose goods, without checking funds or promising acceptance. This limitation must be resolved before those paid recipes can be used.",
+    "The backpack’s item-only recipe also has a dispatch blocker: the earlier mixed-payment glove recipe stops the current offering path first. Carrying three hides shows material readiness without promising a backpack payout. The two-bone earring is the first matching bone-worker recipe; its actual settlement and stock still need qualification.",
+    "Each recipe is independent. A finished product found on a craftsperson is different from a commissioned return, and wearing shoes or a sword is different from making them. Shoes add a finite movement modifier; the claim that you can walk forever is a story boast. Accepted history remains after materials are spent. Two item-only requests retain two achievements and two potential daily candidates; four paid services remain journal context without achievement or daily credit."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 19000,
+      "name": "a large chothe",
+      "keyword": "chothe",
+      "description": "Declares the exact hide and bone used by the craftspeople. Encounter, personal combat, material recovery and acceptance are separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 19001,
+      "name": "a large Pootata",
+      "keyword": "pootata",
+      "description": "Declares the exact flesh for the bone sword. Ordinary meat and a hide cannot replace that material.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 19005,
+      "name": "a goblin leatherworker",
+      "keyword": "leather",
+      "description": "Explains four leather recipes and their quantities and costs. Select the craftsperson if his apprentice shares the LEATHER keyword. Paid offerings and backpack dispatch need further integration.",
+      "topics": [
+        "chothe",
+        "hide",
+        "strip",
+        "backpack",
+        "bp",
+        "shoes",
+        "shirt",
+        "gloves"
+      ]
+    },
+    {
+      "mob_vnum": 19006,
+      "name": "a goblin bone-worker",
+      "keyword": "bone-worker",
+      "description": "Explains the two-bone earring and a sword using three exact kinds plus coins. The earring and paid sword have independent accepted histories.",
+      "topics": [
+        "bone",
+        "sword",
+        "earring"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "leather-shoes",
+      "title": "Commission leather shoes",
+      "category": "service",
+      "summary": "One chothe hide and one platinum for leather shoes. This paid service is currently guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 19005,
+          "completion_key": "give=C:1000,I:19006;receive=I:19007;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19006",
+          "text": "Carry 1 exact chothe hide strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19006
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19005,
+              "completion_key": "give=C:1000,I:19006;receive=I:19007;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "leather-shirt",
+      "title": "Commission a goblin-made shirt",
+      "category": "service",
+      "summary": "Two chothe hides and two platinum for a leather shirt. This paid service is currently guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 19005,
+          "completion_key": "give=C:2000,I:19006,I:19006;receive=I:19008;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19006",
+          "text": "Carry 2 exact chothe hide strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19006
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19005,
+              "completion_key": "give=C:2000,I:19006,I:19006;receive=I:19008;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "chothe-backpack",
+      "title": "Three hides for a backpack",
+      "category": "request",
+      "summary": "Three chothe hides for a backpack, with no coin fee. The current offering dispatch is blocked by the earlier mixed-payment glove recipe; material readiness does not promise payout.",
+      "contracts": [
+        {
+          "giver_vnum": 19005,
+          "completion_key": "give=I:19006,I:19006,I:19006;receive=I:19009;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19006",
+          "text": "Carry 3 exact chothe hide strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19006
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19005,
+              "completion_key": "give=I:19006,I:19006,I:19006;receive=I:19009;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "leather-gloves",
+      "title": "Commission goblin-made gloves",
+      "category": "service",
+      "summary": "Four chothe hides and ten platinum for gloves. This paid service is currently guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 19005,
+          "completion_key": "give=C:10000,I:19006,I:19006,I:19006,I:19006;receive=I:19010;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19006",
+          "text": "Carry 4 exact chothe hide strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19006
+          ],
+          "count": 4,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19005,
+              "completion_key": "give=C:10000,I:19006,I:19006,I:19006,I:19006;receive=I:19010;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "bone-sword",
+      "title": "Commission a blade of bone",
+      "category": "service",
+      "summary": "One chothe bone, one pootata flesh strip, one chothe hide and one hundred platinum for a bone sword. This mixed-payment service is currently guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 19006,
+          "completion_key": "give=C:100000,I:19006,I:19011,I:19013;receive=I:19012;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19011",
+          "text": "Carry 1 exact chothe bones loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19011
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "material-19013",
+          "text": "Carry 1 exact pootata flesh strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19013
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "material-19006",
+          "text": "Carry 1 exact chothe hide strips loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19006
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19006,
+              "completion_key": "give=C:100000,I:19006,I:19011,I:19013;receive=I:19012;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "bone-earring",
+      "title": "Two bones for an earring",
+      "category": "request",
+      "summary": "Two exact chothe bones for a goblin earring, with no coin fee. Matching supplied loose bones fit; the sword’s history, personal kills and first recovery are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 19006,
+          "completion_key": "give=I:19011,I:19011;receive=I:19014;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-19011",
+          "text": "Carry 2 exact chothe bones loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            19011
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Counts only this exact kind loose now. Matching supplied goods fit; held or nested materials and finished products are different. This row does not check funds, select a recipe or guarantee dispatch."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted recipe",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 19006,
+              "completion_key": "give=I:19011,I:19011;receive=I:19014;disappear=0"
+            }
+          ],
+          "hint": "Records the exact accepted recipe. Mixed-payment services and backpack dispatch still need integration; material readiness does not bypass those guards. Accepted history remains after supplies are spent. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -15,14 +15,14 @@ import test_flatfile_combat_journey as journey
 import test_static_quest_reward_journey as quest
 
 
-def prepare_quest_fixture(run_root: Path, case_id: str) -> dict:
+def prepare_quest_fixture(run_root: Path, case_id: str, daily: bool = False) -> dict:
     """Retain the original calibration and expose the actual Kord contract.
 
     QP06 copies production prototypes/Q terms. Its relocated NPC and supplied
     O stock are a journey fixture, not authentic birth or activation evidence.
     """
     if case_id == "synthetic":
-        quest.quest_fixture(run_root, xp_reward=100)
+        quest.quest_fixture(run_root, xp_reward=100, daily=daily)
         return dict(offering_vnums=(22802, 22803, 22804),
                     offering_names=("acorn", "branch", "feather"), giver="lapney",
                     reward_vnum=quest.REWARD_VNUM, reward_name="blade", coin_reward=1000)
@@ -78,7 +78,7 @@ def pending_quest_reward_count(state_root: Path, player_pid: int) -> int:
 
 
 def run(binary: Path, expect_recovered: bool, *, sql=None,
-        sql_environment=None, fault_phase: str = "offering",
+        sql_environment=None, fault_phase: str = "offering", daily: bool = False,
         quest_case: str = "synthetic", move_reward: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="duris-quest-crash-state-") as state_tmp, \
          tempfile.TemporaryDirectory(prefix="duris-quest-crash-run-") as run_tmp:
@@ -88,9 +88,16 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
         if sql is None:
             subprocess.run([str(journey.INSPECTOR), str(state_root), "seed-combat"],
                            check=True)
-        terms = prepare_quest_fixture(run_root, quest_case)
+        terms = prepare_quest_fixture(run_root, quest_case, daily=daily)
         (run_root / "logs/log").mkdir(parents=True)
         (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
+        if daily:
+            quest.seed_daily_evidence(state_root, xp_reward=100)
+            if sql is not None:
+                evidence = (state_root / "domains/zone-story-quests.state").read_bytes()[56:].decode("ascii")
+                evidence = evidence.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+                sql("INSERT INTO zone_story_quest_state (state_id,state_version,catalog_revision,state_blob) "
+                    "VALUES (1,2,2,'" + evidence + "')")
         journey.generate_certificate(run_root)
         journals = run_root / "journals"
         (journals / "players").mkdir(parents=True, mode=0o700)
@@ -110,6 +117,8 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             # and native error without recording connection credentials.
             "DURIS_NEVENT_TRACE_PLAYER": "1",
         }
+        if daily:
+            environment["ZONE_STORY_DAILY_ENABLED"] = "true"
         if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
             environment["LD_LIBRARY_PATH"] = runtime_library_path
         if sql_environment is not None:
@@ -250,6 +259,9 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                 journey.require(pending_after_load == 0,
                                 f"recovered reward obligation remains pending: "
                                 f"{pending_after_load}")
+            if daily:
+                client.send("quest daily")
+                client.expect("Completed today: 1; renown: 1", timeout=15)
             moved_custody = None
             if expect_recovered and move_reward:
                 original_uid = rewards[0]["uid"]
@@ -302,6 +314,9 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             client.send("save")
             client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
             again = authority()
+            if daily:
+                client.send("quest daily")
+                client.expect("Completed today: 1; renown: 1", timeout=15)
             journey.require(again == recovered, "second restart changed reward UID, XP or cash")
             journey.require(pending_rewards() == 0, "second restart reopened the obligation")
             if moved_custody is not None:
@@ -330,7 +345,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
 
 
 def run_sql(binary: Path, fault_phase: str, quest_case: str = "synthetic",
-            move_reward: bool = False) -> None:
+            move_reward: bool = False, daily: bool = False) -> None:
     if os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("TEST_DB_HOST") != "127.0.0.1":
         raise RuntimeError("TEST_DB_DISPOSABLE=1 and a loopback disposable database are required")
     database = "quest_journey_test_" + uuid.uuid4().hex[:12]
@@ -358,7 +373,7 @@ def run_sql(binary: Path, fault_phase: str, quest_case: str = "synthetic",
             subprocess.run(["python3", "scripts/migration_runner.py", *command],
                            cwd=quest.ROOT, env=environment, check=True, timeout=600)
         run(binary, True, sql=sql, sql_environment=environment, fault_phase=fault_phase,
-            quest_case=quest_case, move_reward=move_reward)
+            quest_case=quest_case, move_reward=move_reward, daily=daily)
     finally:
         sql("DROP DATABASE " + database, False)
 
@@ -374,17 +389,21 @@ if __name__ == "__main__":
                         help="retain original calibration or use production Kord terms/prototypes")
     parser.add_argument("--move-reward", action="store_true",
                         help="after recovery, drop the original reward before the second cold boot")
+    parser.add_argument("--daily", action="store_true",
+                        help="qualify frozen daily credit with the synthetic fixture")
     args = parser.parse_args()
+    if args.daily and args.quest_case != "synthetic":
+        parser.error("daily qualification uses the synthetic fixture")
     if args.confirm_loss and (args.quest_case != "synthetic" or args.move_reward):
         parser.error("historical loss calibration requires its original synthetic fixture")
     if args.backend == "mariadb":
         if args.confirm_loss:
             parser.error("--confirm-loss is only a historical flatfile baseline")
-        run_sql(args.server.resolve(strict=True), args.fault_phase, args.quest_case, args.move_reward)
+        run_sql(args.server.resolve(strict=True), args.fault_phase, args.quest_case, args.move_reward, args.daily)
     else:
         subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
                         "--build-inspector", str(journey.INSPECTOR)],
                        cwd=quest.ROOT, check=True, timeout=180)
         run(args.server.resolve(strict=True), not args.confirm_loss, fault_phase=args.fault_phase,
-            quest_case=args.quest_case, move_reward=args.move_reward)
+            quest_case=args.quest_case, move_reward=args.move_reward, daily=args.daily)
     print("post-ack quest reward crash journey passed")

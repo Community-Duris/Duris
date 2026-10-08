@@ -1,0 +1,4346 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "bs",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "the-brothers-royal-ring",
+      "title": "The Brother's Royal Ring",
+      "category": "story",
+      "summary": "The imprisoned brother accepts the baron's royal ring for a glass pyramid and 350000 experience, then leaves. The ring is worn by the baron on his balcony; supplied rings qualify. This records the delivery and reward, while the proposed change of ruler remains untracked.",
+      "contracts": [
+        {
+          "giver_vnum": 74036,
+          "completion_key": "give=I:74032;receive=E:350000,I:74005;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "upper-prison-key-route",
+          "text": "Optional: obtain the upper-prison key from the mage",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Returning his locket supplies the key to the upper-prison gates. Supplied keys, an open route or supplied ring can avoid this history.",
+          "contracts": [
+            {
+              "giver_vnum": 74037,
+              "completion_key": "give=I:74039;receive=E:25000,I:74002;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-74032",
+          "text": "Carry 1 x a royal ring of Bloodstone",
+          "kind": "carried_item",
+          "hint": "The baron wears this ring on his balcony. The reception gate uses the blue-fish key, and the upper royal gate uses the sapphire key. Remove the ring before a native turn-in. Supplied copies qualify.",
+          "item_vnums": [
+            74032
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to the baron's brother",
+          "kind": "completion",
+          "hint": "Reward: a glass pyramid, 350000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74036,
+              "completion_key": "give=I:74032;receive=E:350000,I:74005;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-mages-lost-locket",
+      "title": "The Mage's Lost Locket",
+      "category": "story",
+      "summary": "Return the golden locket from the pregnant corpse at the forest altar. The mage awards the upper-prison key and 25000 experience, then leaves. The key opens two upper-prison gate pairs. Supplied lockets and keys can avoid this preparation; the exchange does not prove the cells were visited.",
+      "contracts": [
+        {
+          "giver_vnum": 74037,
+          "completion_key": "give=I:74039;receive=E:25000,I:74002;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74039",
+          "text": "Carry 1 x a golden locket",
+          "kind": "carried_item",
+          "hint": "Get the exact locket out of the pregnant corpse at the forest altar. The northern forest path is concealed and closed at reset, with no key requirement. Carry the locket directly rather than offering its container.",
+          "item_vnums": [
+            74039
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to an ailing mage",
+          "kind": "completion",
+          "hint": "Reward: a blue skeleton key, 25000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74037,
+              "completion_key": "give=I:74039;receive=E:25000,I:74002;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-numbaca-ingredients",
+      "title": "The Numbaca Ingredients",
+      "category": "story",
+      "summary": "The captain's wife needs five distinct ingredients together, including the missionary head returned by the captain. She awards a red pendant and 100000 experience. The bloody scalp has no confirmed ordinary source in the reviewed data. Her Pellops instructions have no implemented follow-on exchange, so this entry ends at the pendant reward.",
+      "contracts": [
+        {
+          "giver_vnum": 74147,
+          "completion_key": "give=I:74057,I:74240,I:74243,I:74246,I:74293;receive=E:100000,I:74294;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-74293",
+          "text": "Optional: obtain the blood soaked head of a Verzanan missionary",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74180,
+              "completion_key": "give=I:74257;receive=E:50000,I:74293;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-74057",
+          "text": "Carry 1 x a bloody head",
+          "kind": "carried_item",
+          "hint": "Ordinary bloody heads occur at the execution platform, inside its basket, and on the meditation platform. The wife accepts this kind; the mother's same-item return is rejection feedback.",
+          "item_vnums": [
+            74057
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74240",
+          "text": "Carry 1 x a bloody ear",
+          "kind": "carried_item",
+          "hint": "This exact bloody ear lies on the meditation platform. The nearby portal in the tight passage or the garden's ring ladder can lead there; personal travel is not recorded by carrying it.",
+          "item_vnums": [
+            74240
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74243",
+          "text": "Carry 1 x a bloody scalp",
+          "kind": "carried_item",
+          "hint": "The exact bloody scalp has a prototype but no confirmed active reset or custom producer in the reviewed source paths. Supplied or recovered stock can still satisfy delivery. Check availability before planning the Numbaca commission.",
+          "item_vnums": [
+            74243
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74246",
+          "text": "Carry 1 x some pink entrails",
+          "kind": "carried_item",
+          "hint": "A human slave on the initial slave-platform placement carries these entrails. Other same-prototype placements do not each carry another copy. Supplied stock qualifies.",
+          "item_vnums": [
+            74246
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74293",
+          "text": "Carry the head returned by the captain",
+          "kind": "carried_item",
+          "hint": "The captain awards this head for the original missionary head. Both share a displayed name, but the wife needs this returned kind. The original does not substitute.",
+          "item_vnums": [
+            74293
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a woman",
+          "kind": "completion",
+          "hint": "Reward: a red pendant, 100000 experience. The giver stays after the exchange, if present. No second Pellops exchange or completed takeover is implemented.",
+          "contracts": [
+            {
+              "giver_vnum": 74147,
+              "completion_key": "give=I:74057,I:74240,I:74243,I:74246,I:74293;receive=E:100000,I:74294;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-four-bloodstone-quarters",
+      "title": "The Four Bloodstone Quarters",
+      "category": "story",
+      "summary": "The high mage assembles four distinct pieces into the dark amulet of Bloodstone. The father, mother and Faust supply three pieces; the baron carries the fourth. All pieces share a name, but four copies of one kind will not do. Supplied pieces qualify without the earlier producer receipts.",
+      "contracts": [
+        {
+          "giver_vnum": 74175,
+          "completion_key": "give=I:74259,I:74260,I:74261,I:74262;receive=I:74264;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-74259",
+          "text": "Optional: obtain a piece of a broken amulet",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74218,
+              "completion_key": "give=I:74239,I:74253;receive=E:50000,I:74259;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "prepare-74260",
+          "text": "Optional: obtain a piece of a broken amulet",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74234,
+              "completion_key": "give=I:74254;receive=E:150000,I:74260;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "prepare-74261",
+          "text": "Optional: obtain a piece of a broken amulet",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74217,
+              "completion_key": "give=I:74242;receive=E:100000,I:74261;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-74259",
+          "text": "Carry the father's quarter",
+          "kind": "carried_item",
+          "hint": "The father supplies this distinct quarter for the bloody heart and child's bones together, then leaves. This is one of four same-named quarter kinds.",
+          "item_vnums": [
+            74259
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74260",
+          "text": "Carry Faust's quarter",
+          "kind": "carried_item",
+          "hint": "Faust supplies this distinct quarter for the huge manticore's head, then leaves. Bring it alongside the other three kinds; four identical quarters do not work.",
+          "item_vnums": [
+            74260
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74261",
+          "text": "Carry the mother's quarter",
+          "kind": "carried_item",
+          "hint": "The mother supplies this distinct quarter for her exact accepted trophy, then leaves. Supplied quarters qualify without her recorded history.",
+          "item_vnums": [
+            74261
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74262",
+          "text": "Carry the baron's quarter",
+          "kind": "carried_item",
+          "hint": "The baron carries the fourth quarter on his balcony, separately from the royal ring he wears. The ring and quarter fund different native rewards.",
+          "item_vnums": [
+            74262
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to the high mage of Bloodstone",
+          "kind": "completion",
+          "hint": "Reward: the dark amulet of Bloodstone. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74175,
+              "completion_key": "give=I:74259,I:74260,I:74261,I:74262;receive=I:74264;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-captains-missionary-proof",
+      "title": "The Captain's Missionary Proof",
+      "category": "request",
+      "summary": "Bring the missionary's original head to the captain for 50000 experience and a different same-named head. His returned head is the kind accepted by his wife. This commission records delivery without claiming a personal kill or completion of her larger Numbaca request.",
+      "contracts": [
+        {
+          "giver_vnum": 74180,
+          "completion_key": "give=I:74257;receive=E:50000,I:74293;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74257",
+          "text": "Carry the original missionary head",
+          "kind": "carried_item",
+          "hint": "The missionary in the narrow gorge carries the original head. Bring it to the captain for the different same-named head accepted by his wife. Supplied originals qualify.",
+          "item_vnums": [
+            74257
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to the captain of the keep's guard",
+          "kind": "completion",
+          "hint": "Reward: 50000 experience, the blood soaked head of a Verzanan missionary. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74180,
+              "completion_key": "give=I:74257;receive=E:50000,I:74293;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-fishermans-lizard",
+      "title": "The Fisherman's Lizard",
+      "category": "request",
+      "summary": "Bring the fisherman the exact small-lizard carcass for a shiny flute and 25000 experience. Fat cats and a chameleon carry it. This is an ordinary loaded quest item, rather than a tracked fresh animal birth. Asmond has a separate exchange for the actual flute.",
+      "contracts": [
+        {
+          "giver_vnum": 74182,
+          "completion_key": "give=I:74252;receive=E:25000,I:74251;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74252",
+          "text": "Carry 1 x the carcass of some small lizard.",
+          "kind": "carried_item",
+          "hint": "A fat cat's initial grassy-embankment placement and a chameleon on the grassy knoll carry the lizard carcass, sharing a live item cap of two. Its quest-item type differs from generic food/corpses consumed by devour.",
+          "item_vnums": [
+            74252
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a fisherman",
+          "kind": "completion",
+          "hint": "Reward: a shiny flute, 25000 experience. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74182,
+              "completion_key": "give=I:74252;receive=E:25000,I:74251;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-mistresss-sapphire-key",
+      "title": "The Mistress's Sapphire Key",
+      "category": "request",
+      "summary": "The mistress accepts the baron's mother's head for a sapphire-encrusted key to the upper royal chambers. She also carries that key as ordinary stock. Her mother-trophy request and the old woman's mistress-trophy request are independent; neither delivery records a faction choice or personal kill.",
+      "contracts": [
+        {
+          "giver_vnum": 74185,
+          "completion_key": "give=I:74295;receive=I:74055;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74295",
+          "text": "Carry 1 x the bloody head of the baron's mother",
+          "kind": "carried_item",
+          "hint": "The wrinkled old woman by the river reeds carries the accepted mother's head. Another same-named mother-head prototype is not a substitute. Her own mistress-head commission remains independent.",
+          "item_vnums": [
+            74295
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to the baron's mistress",
+          "kind": "completion",
+          "hint": "Reward: a sapphire-encrusted key. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74185,
+              "completion_key": "give=I:74295;receive=I:74055;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sabrinas-two-children",
+      "title": "Sabrina's Two Children",
+      "category": "story",
+      "summary": "Sister Sabrina requires both one baby boy and one baby girl together for 10000 experience, then leaves. The boy-only success wording does not change the actual two-item requirement. These are ground quest items, not proof that a player gave birth, rescued a living NPC or completed the orphanage's adoption service.",
+      "contracts": [
+        {
+          "giver_vnum": 74206,
+          "completion_key": "give=I:74237,I:74238;receive=E:10000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74237",
+          "text": "Carry 1 x a baby boy",
+          "kind": "carried_item",
+          "hint": "Boy items have ground placements on three refuse heaps and a monastery grassy knoll. Bring one boy and one girl together; two boys do not satisfy Sabrina.",
+          "item_vnums": [
+            74237
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74238",
+          "text": "Carry 1 x a baby girl",
+          "kind": "carried_item",
+          "hint": "Girl items have ground placements by the holyman's path, in the animal preserve and on two grassy knolls. Bring one girl and one boy together; ordinary infant NPCs do not substitute.",
+          "item_vnums": [
+            74238
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sister Sabrina",
+          "kind": "completion",
+          "hint": "Reward: 10000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74206,
+              "completion_key": "give=I:74237,I:74238;receive=E:10000;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-old-womans-mistress-proof",
+      "title": "The Old Woman's Mistress Proof",
+      "category": "request",
+      "summary": "Bring the wrinkled old woman the mistress's head for 100000 experience. She remains and points toward Ferris. The clue is guidance; it supplies neither an amulet quarter nor a Ferris receipt. The mistress carries the trophy.",
+      "contracts": [
+        {
+          "giver_vnum": 74207,
+          "completion_key": "give=I:74249;receive=E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74249",
+          "text": "Carry 1 x the bloody head of the mistress",
+          "kind": "carried_item",
+          "hint": "The mistress carries this exact head on Ridge Road. The old woman consumes it for her independent reward and remains available. Delivery does not prove who killed the mistress.",
+          "item_vnums": [
+            74249
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a wrinkled old woman",
+          "kind": "completion",
+          "hint": "Reward: 100000 experience. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74207,
+              "completion_key": "give=I:74249;receive=E:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-mothers-amulet-quarter",
+      "title": "The Mother's Amulet Quarter",
+      "category": "story",
+      "summary": "Bring the mother the exact execution-basket trophy she accepts for one amulet quarter and 100000 experience. She leaves after the reward. Her return of an ordinary bloody head is rejection feedback and does not count as another achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 74217,
+          "completion_key": "give=I:74242;receive=E:100000,I:74261;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74242",
+          "text": "Carry 1 x a crusty phallus",
+          "kind": "carried_item",
+          "hint": "This trophy is inside the execution platform's basket. Get the exact offering out first. The mother accepts it for her quarter; an ordinary bloody head is returned as wrong proof.",
+          "item_vnums": [
+            74242
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a mother",
+          "kind": "completion",
+          "hint": "Reward: a piece of a broken amulet, 100000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74217,
+              "completion_key": "give=I:74242;receive=E:100000,I:74261;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-fathers-amulet-quarter",
+      "title": "The Father's Amulet Quarter",
+      "category": "story",
+      "summary": "The father needs both the killer's bloody heart and his child's bones together for one amulet quarter and 50000 experience, then leaves. The bones lie on the meditation platform. Supplied trophies qualify; the receipt does not prove a personal kill or resolve the narrated loss.",
+      "contracts": [
+        {
+          "giver_vnum": 74218,
+          "completion_key": "give=I:74239,I:74253;receive=E:50000,I:74259;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74239",
+          "text": "Carry 1 x a bloody heart",
+          "kind": "carried_item",
+          "hint": "The vicious killer in the tiny graveyard carries this bloody heart. Bring it with the child's bones for the father's quarter. A delivered heart is not personal-kill evidence.",
+          "item_vnums": [
+            74239
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-74253",
+          "text": "Carry 1 x a child's bones",
+          "kind": "carried_item",
+          "hint": "The child's bones lie on the meditation platform. Bring them and the killer's heart together. This ordinary item is not a newly generated player corpse or an inferred rescue event.",
+          "item_vnums": [
+            74253
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a father",
+          "kind": "completion",
+          "hint": "Reward: a piece of a broken amulet, 50000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74218,
+              "completion_key": "give=I:74239,I:74253;receive=E:50000,I:74259;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "asmonds-recovered-flute",
+      "title": "Asmond's Recovered Flute",
+      "category": "request",
+      "summary": "Return the shiny flute to Asmond for a bottle of rum, a barony map and 25000 experience. The fisherman supplies the flute for a lizard carcass. Asmond stays and mentions Jeremy; there is no implemented Jeremy exchange in the local source. A supplied flute is accepted without fisherman history.",
+      "contracts": [
+        {
+          "giver_vnum": 74220,
+          "completion_key": "give=I:74251;receive=E:25000,I:74026,I:74191;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-74251",
+          "text": "Optional: obtain a shiny flute",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74182,
+              "completion_key": "give=I:74252;receive=E:25000,I:74251;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-74251",
+          "text": "Carry 1 x a shiny flute",
+          "kind": "carried_item",
+          "hint": "The fisherman supplies the shiny flute for the exact small-lizard carcass. Asmond consumes the actual flute; recorded fisherman history cannot replace a spent flute. A supplied flute qualifies.",
+          "item_vnums": [
+            74251
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Asmond",
+          "kind": "completion",
+          "hint": "Reward: a map of the Bloodstone Barony, a bottle of rum, 25000 experience. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74220,
+              "completion_key": "give=I:74251;receive=E:25000,I:74026,I:74191;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-jealous-boys-trophy",
+      "title": "The Jealous Boy's Trophy",
+      "category": "request",
+      "summary": "The jealous boy accepts the spoiled boy's exact tongue for 5000 experience and remains. The spoiled boy carries it in a lavish dwelling. This records the native delivery, without proving personal combat or resolving a broader rivalry.",
+      "contracts": [
+        {
+          "giver_vnum": 74221,
+          "completion_key": "give=I:74241;receive=E:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74241",
+          "text": "Carry 1 x a small bloody tongue",
+          "kind": "carried_item",
+          "hint": "The spoiled boy in the lavish dwelling carries this tongue. It is the jealous boy's exact proof; another tongue or the nearby ordinary head does not substitute.",
+          "item_vnums": [
+            74241
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to a jealous boy",
+          "kind": "completion",
+          "hint": "Reward: 5000 experience. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74221,
+              "completion_key": "give=I:74241;receive=E:5000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fausts-manticore-quarter",
+      "title": "Faust's Manticore Quarter",
+      "category": "story",
+      "summary": "Bring Faust the huge manticore's head for one distinct amulet quarter and 150000 experience. He leaves afterward. The trophy belongs to the huge manticore's initial forest placement; other manticores and the same prototype's cellar placement do not all load a spare head.",
+      "contracts": [
+        {
+          "giver_vnum": 74234,
+          "completion_key": "give=I:74254;receive=E:150000,I:74260;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74254",
+          "text": "Carry 1 x the bloody head of the huge manticore",
+          "kind": "carried_item",
+          "hint": "The huge manticore initially placed in the forest carries its head. Its cellar placement does not repeat the trophy load. Other fierce manticores do not all supply this kind.",
+          "item_vnums": [
+            74254
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Faust, the wanderer",
+          "kind": "completion",
+          "hint": "Reward: a piece of a broken amulet, 150000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74234,
+              "completion_key": "give=I:74254;receive=E:150000,I:74260;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ferriss-minotaur-lyre",
+      "title": "Ferris's Minotaur Lyre",
+      "category": "story",
+      "summary": "Return the Svalich Minotaur's lyre to Ferris in the royal training room for 200000 experience. He leaves after revealing a useful captain topic. He does not award an amulet quarter or a missionary head. A supplied lyre qualifies.",
+      "contracts": [
+        {
+          "giver_vnum": 74235,
+          "completion_key": "give=I:74256;receive=E:200000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-74256",
+          "text": "Carry 1 x the lyre of the Svalich Minotaur",
+          "kind": "carried_item",
+          "hint": "The Svalich Minotaur carries the lyre on the distant trail. Ferris is in the royal training room beyond the reception gate. This delivery does not claim an amulet-quarter reward.",
+          "item_vnums": [
+            74256
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Ferris",
+          "kind": "completion",
+          "hint": "Reward: 200000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 74235,
+              "completion_key": "give=I:74256;receive=E:200000;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldars-mask-exchange",
+      "title": "Moldar's Mask Exchange",
+      "category": "service",
+      "summary": "Moldar accepts the exact scrotum-mask prototype for the mace Smite. No ordinary active source for this mask or placement for this Bloodstone maker is confirmed in the reviewed data. This is a separate item service; the item-zero exchange is invalid and excluded.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55029;receive=I:55053;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55029",
+          "text": "Carry 1 x a mask made from a svirfneblin scrotum",
+          "kind": "carried_item",
+          "hint": "No ordinary active producer for this exact mask is confirmed in the reviewed sources. A supplied or recovered copy may qualify. Smite also has an independent carried-equipment source abroad.",
+          "item_vnums": [
+            55029
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: the mighty warmace named 'Smite'. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55029;receive=I:55053;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55155",
+      "title": "Prepare a magical platinum longsword",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical platinum longsword. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55112,I:55129,I:55154;receive=I:55155;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55112",
+          "text": "Carry 1 x a plain steel longsword",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55112
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55129",
+          "text": "Carry 1 x a platinum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55129
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical platinum longsword. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55112,I:55129,I:55154;receive=I:55155;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55158",
+      "title": "Prepare a magical electrum shortsword",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical electrum shortsword. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55113,I:55130,I:55154;receive=I:55158;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55113",
+          "text": "Carry 1 x a plain steel shortsword",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55113
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical electrum shortsword. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55113,I:55130,I:55154;receive=I:55158;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55161",
+      "title": "Prepare a magical adamantium warhammer",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical adamantium warhammer. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55114,I:55128,I:55154;receive=I:55161;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55114",
+          "text": "Carry 1 x a plain steel warhammer",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55114
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55128",
+          "text": "Carry 1 x an adamantium ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55128
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical adamantium warhammer. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55114,I:55128,I:55154;receive=I:55161;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55160",
+      "title": "Prepare a magical bronze axe",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical bronze axe. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55115,I:55131,I:55154;receive=I:55160;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55115",
+          "text": "Carry 1 x a plain steel axe",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55115
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55131",
+          "text": "Carry 1 x a bronze ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55131
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical bronze axe. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55115,I:55131,I:55154;receive=I:55160;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55156",
+      "title": "Prepare a magical platinum bastard sword",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical platinum bastard sword. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55116,I:55129,I:55154;receive=I:55156;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55116",
+          "text": "Carry 1 x a plain steel bastard sword",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55116
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55129",
+          "text": "Carry 1 x a platinum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55129
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical platinum bastard sword. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55116,I:55129,I:55154;receive=I:55156;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55159",
+      "title": "Prepare a magical mithril spiked mace",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical mithril spiked mace. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. The actual ingot is mithril despite electrum wording in the base-mace keywords.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55117,I:55127,I:55154;receive=I:55159;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55117",
+          "text": "Carry 1 x a plain steel spiked mace",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55117
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55127",
+          "text": "Carry 1 x a mithril ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55127
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical mithril spiked mace. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55117,I:55127,I:55154;receive=I:55159;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moldar-commission-55157",
+      "title": "Prepare a magical electrum dagger",
+      "category": "service",
+      "summary": "Moldar accepts this exact recipe for a magical electrum dagger. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:55118,I:55130,I:55154;receive=I:55157;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55118",
+          "text": "Carry 1 x a plain steel dagger",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the weapon merchant beside Kzantha. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55118
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Moldar",
+          "kind": "completion",
+          "hint": "Reward: a magical electrum dagger. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55118,I:55130,I:55154;receive=I:55157;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55167",
+      "title": "Prepare a pair of magical mithril armplates",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a pair of magical mithril armplates. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55119,I:55127,I:55154;receive=I:55167;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55119",
+          "text": "Carry 1 x a set of steel armplates",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55119
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55127",
+          "text": "Carry 1 x a mithril ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55127
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a pair of magical mithril armplates. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55119,I:55127,I:55154;receive=I:55167;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55166",
+      "title": "Prepare a pair of magical mithril legplates",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a pair of magical mithril legplates. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55120,I:55127,I:55154;receive=I:55166;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55120",
+          "text": "Carry 1 x a set of steel legplates",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55120
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55127",
+          "text": "Carry 1 x a mithril ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55127
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a pair of magical mithril legplates. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55120,I:55127,I:55154;receive=I:55166;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55165",
+      "title": "Prepare a pair of magical platinum boots",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a pair of magical platinum boots. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55121,I:55129,I:55154;receive=I:55165;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55121",
+          "text": "Carry 1 x a set of steel boots",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55121
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55129",
+          "text": "Carry 1 x a platinum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55129
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a pair of magical platinum boots. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55121,I:55129,I:55154;receive=I:55165;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55164",
+      "title": "Prepare a magical mithril helmet",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a magical mithril helmet. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Bring a steel helmet and mithril ingot; the prose describes a mithril helmet.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55122,I:55127,I:55154;receive=I:55164;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55122",
+          "text": "Carry 1 x a simple steel helmet",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55122
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55127",
+          "text": "Carry 1 x a mithril ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55127
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a magical mithril helmet. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55122,I:55127,I:55154;receive=I:55164;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55163",
+      "title": "Prepare a suit of magical adamantium platemail",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a suit of magical adamantium platemail. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55123,I:55128,I:55154;receive=I:55163;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55123",
+          "text": "Carry 1 x a suit of steel platemail",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55123
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55128",
+          "text": "Carry 1 x an adamantium ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55128
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a suit of magical adamantium platemail. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55123,I:55128,I:55154;receive=I:55163;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55162",
+      "title": "Prepare a pair of magical bronze gauntlets",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a pair of magical bronze gauntlets. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55124,I:55131,I:55154;receive=I:55162;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55124",
+          "text": "Carry 1 x a set of steel gauntlets",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55124
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55131",
+          "text": "Carry 1 x a bronze ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55131
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a pair of magical bronze gauntlets. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55124,I:55131,I:55154;receive=I:55162;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55168",
+      "title": "Prepare a magical adamantium tower shield",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a magical adamantium tower shield. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55125,I:55128,I:55154;receive=I:55168;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55125",
+          "text": "Carry 1 x a heavy steel tower shield",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55125
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55128",
+          "text": "Carry 1 x an adamantium ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55128
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a magical adamantium tower shield. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55125,I:55128,I:55154;receive=I:55168;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sark-commission-55169",
+      "title": "Prepare a magical adamantium buckler",
+      "category": "service",
+      "summary": "Sark accepts this exact recipe for a magical adamantium buckler. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74252,
+          "completion_key": "give=I:55126,I:55128,I:55154;receive=I:55169;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55126",
+          "text": "Carry 1 x a light steel buckler",
+          "kind": "carried_item",
+          "hint": "Buy the exact plain equipment from the armory merchant beside Davril. Improved equipment cannot replace this starting piece.",
+          "item_vnums": [
+            55126
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55128",
+          "text": "Carry 1 x an adamantium ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55128
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55154",
+          "text": "Carry 1 x the gnomish blueprints of improvement",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle exchanges three gnomish shopkeepers tokens for one blueprint. The blueprint is consumed by each improvement; Lancer also accepts it for coins.",
+          "item_vnums": [
+            55154
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Sark",
+          "kind": "completion",
+          "hint": "Reward: a magical adamantium buckler. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55126,I:55128,I:55154;receive=I:55169;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navifts-splinter-token",
+      "title": "Navift's Splinter Token",
+      "category": "service",
+      "summary": "Navift exchanges the exact nightshade splinter for a Sootfoot token. Winterhaven's Hedvig has a separate recipe for the splinter, consuming a jeweled dirk, two Sootfoot tokens and a Juiblex earring. This is a support trade, without a new named artifact achievement or confirmed ordinary Navift placement.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55077;receive=I:55066;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55077",
+          "text": "Carry 1 x a small nightshade splinter",
+          "kind": "carried_item",
+          "hint": "Winterhaven's Hedvig supplies this nightshade splinter for the exact dirk, two Sootfoot tokens and Juiblex earring. Navift's output is one token; source history does not replace the consumed splinter.",
+          "item_vnums": [
+            55077
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: Sootfoot's token of appreciation. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55077;receive=I:55066;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55211",
+      "title": "Commission the spiked mace of the Death Seekers",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the spiked mace of the Death Seekers. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55145,I:55159,I:55209,I:55283;receive=I:55211;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55159",
+          "text": "Optional: obtain a magical mithril spiked mace",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55117,I:55127,I:55154;receive=I:55159;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55117,I:55127,I:55154;receive=I:55159;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55145",
+          "text": "Carry 1 x the mark of Death",
+          "kind": "carried_item",
+          "hint": "Frenbar accepts the three distinct tormented spirits for the mark of Death, a middle finger and coins. Sootfoot consumes the mark in DeathSeeker.",
+          "item_vnums": [
+            55145
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55159",
+          "text": "Carry 1 x a magical mithril spiked mace",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55159
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the spiked mace of the Death Seekers. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55145,I:55159,I:55209,I:55283;receive=I:55211;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55306",
+      "title": "Commission the mystical longsword of Volo the Traveler",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the mystical longsword of Volo the Traveler. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55155,I:55209,I:55283,I:55305;receive=I:55306;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55155",
+          "text": "Optional: obtain a magical platinum longsword",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55112,I:55129,I:55154;receive=I:55155;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55112,I:55129,I:55154;receive=I:55155;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55155",
+          "text": "Carry 1 x a magical platinum longsword",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55155
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55305",
+          "text": "Carry 1 x the living essence of Volo the Traveler",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55305
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the mystical longsword of Volo the Traveler. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55155,I:55209,I:55283,I:55305;receive=I:55306;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55301",
+      "title": "Commission the bastard sword of the Demon Slayer",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the bastard sword of the Demon Slayer. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55156,I:55209,I:55281,I:55282,I:55283,I:55336;receive=I:55301;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55156",
+          "text": "Optional: obtain a magical platinum bastard sword",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55116,I:55129,I:55154;receive=I:55156;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55116,I:55129,I:55154;receive=I:55156;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55156",
+          "text": "Carry 1 x a magical platinum bastard sword",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55156
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55281",
+          "text": "Carry 1 x the decaying femur of Euronymous",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55281
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55282",
+          "text": "Carry 1 x the decaying femur of Bel",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55282
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55336",
+          "text": "Carry 1 x the decaying femur of Juiblex",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55336
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the bastard sword of the Demon Slayer. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55156,I:55209,I:55281,I:55282,I:55283,I:55336;receive=I:55301;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55210",
+      "title": "Commission the fabled electrum dagger named 'Ra'",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the fabled electrum dagger named 'Ra'. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55157,I:55209,I:55270,I:55271,I:55283;receive=I:55210;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55157",
+          "text": "Optional: obtain a magical electrum dagger",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55118,I:55130,I:55154;receive=I:55157;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55118,I:55130,I:55154;receive=I:55157;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55157",
+          "text": "Carry 1 x a magical electrum dagger",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55157
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55270",
+          "text": "Carry 1 x the broken rays of morning Sunrise",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55270
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55271",
+          "text": "Carry 1 x the broken rays of evening Sunset",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55271
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the fabled electrum dagger named 'Ra'. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55157,I:55209,I:55270,I:55271,I:55283;receive=I:55210;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55304",
+      "title": "Commission the misty electrum shortsword named 'Blur'",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the misty electrum shortsword named 'Blur'. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55158,I:55209,I:55283,I:55302,I:55303;receive=I:55304;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55158",
+          "text": "Optional: obtain a magical electrum shortsword",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55113,I:55130,I:55154;receive=I:55158;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55113,I:55130,I:55154;receive=I:55158;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55158",
+          "text": "Carry 1 x a magical electrum shortsword",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55158
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55302",
+          "text": "Carry 1 x a swirling mist",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55302
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55303",
+          "text": "Carry 1 x a swirling mist",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55303
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the misty electrum shortsword named 'Blur'. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55158,I:55209,I:55283,I:55302,I:55303;receive=I:55304;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55205",
+      "title": "Commission the flaming axe of the Illithid lords",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the flaming axe of the Illithid lords. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55160,I:55206,I:55207,I:55208,I:55209,I:55283;receive=I:55205;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55160",
+          "text": "Optional: obtain a magical bronze axe",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55115,I:55131,I:55154;receive=I:55160;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55115,I:55131,I:55154;receive=I:55160;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55160",
+          "text": "Carry 1 x a magical bronze axe",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55160
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55206",
+          "text": "Carry 1 x the mind of an Illithid lord",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55206
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55207",
+          "text": "Carry 1 x the body of an Illithid lord",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55207
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55208",
+          "text": "Carry 1 x the soul of an Illithid lord",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55208
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the flaming axe of the Illithid lords. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55160,I:55206,I:55207,I:55208,I:55209,I:55283;receive=I:55205;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55277",
+      "title": "Commission the titan warhammer of the Snow Ogre kings",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the titan warhammer of the Snow Ogre kings. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55161,I:55209,I:55276,I:55283;receive=I:55277;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55161",
+          "text": "Optional: obtain a magical adamantium warhammer",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74250,
+              "completion_key": "give=I:55114,I:55128,I:55154;receive=I:55161;disappear=0"
+            },
+            {
+              "giver_vnum": 55093,
+              "completion_key": "give=I:55114,I:55128,I:55154;receive=I:55161;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55161",
+          "text": "Carry 1 x a magical adamantium warhammer",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55161
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55276",
+          "text": "Carry 1 x the tamed fury of the snow ogre kings",
+          "kind": "carried_item",
+          "hint": "Ohjal accepts the snow-ogre blessing for the cloak of billowing smoke and this fury. Sootfoot consumes the fury in his Titan warhammer recipe.",
+          "item_vnums": [
+            55276
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55283",
+          "text": "Carry 1 x a strange glowing weapon hilt",
+          "kind": "carried_item",
+          "hint": "Buy the glowing weapon hilt from the weapon merchant beside Kzantha. Each Sootfoot weapon recipe consumes its own hilt.",
+          "item_vnums": [
+            55283
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the titan warhammer of the Snow Ogre kings. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55161,I:55209,I:55276,I:55283;receive=I:55277;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55280",
+      "title": "Commission the gauntlets of a Living Legend",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the gauntlets of a Living Legend. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55162,I:55209,I:55279,I:55284;receive=I:55280;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55162",
+          "text": "Optional: obtain a pair of magical bronze gauntlets",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55124,I:55131,I:55154;receive=I:55162;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55124,I:55131,I:55154;receive=I:55162;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55162",
+          "text": "Carry 1 x a pair of magical bronze gauntlets",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55162
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55279",
+          "text": "Carry 1 x the story of a Living Legend",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55279
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the gauntlets of a Living Legend. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55162,I:55209,I:55279,I:55284;receive=I:55280;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55307",
+      "title": "Commission the infamous platemail named 'Fame'",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the infamous platemail named 'Fame'. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55163,I:55209,I:55284,I:55308;receive=I:55307;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55163",
+          "text": "Optional: obtain a suit of magical adamantium platemail",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55123,I:55128,I:55154;receive=I:55163;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55123,I:55128,I:55154;receive=I:55163;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55163",
+          "text": "Carry 1 x a suit of magical adamantium platemail",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55163
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55308",
+          "text": "Carry 1 x the captured egos of the immortals",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55308
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the infamous platemail named 'Fame'. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55163,I:55209,I:55284,I:55308;receive=I:55307;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55309",
+      "title": "Commission the helmet of the Vampire Gods",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the helmet of the Vampire Gods. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55164,I:55209,I:55284,I:55310;receive=I:55309;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55164",
+          "text": "Optional: obtain a magical mithril helmet",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55122,I:55127,I:55154;receive=I:55164;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55122,I:55127,I:55154;receive=I:55164;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55164",
+          "text": "Carry 1 x a magical mithril helmet",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55164
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55310",
+          "text": "Carry 1 x the bloody fangs of a Vampire God",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55310
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the helmet of the Vampire Gods. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55164,I:55209,I:55284,I:55310;receive=I:55309;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55311",
+      "title": "Commission the boots of the Abyss",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the boots of the Abyss. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55165,I:55209,I:55284,I:55312,I:55313;receive=I:55311;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55165",
+          "text": "Optional: obtain a pair of magical platinum boots",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55121,I:55129,I:55154;receive=I:55165;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55121,I:55129,I:55154;receive=I:55165;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55165",
+          "text": "Carry 1 x a pair of magical platinum boots",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55165
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55312",
+          "text": "Carry 1 x the immaterial darkness of the Abyss",
+          "kind": "carried_item",
+          "hint": "Adryv in the Sea Caves accepts Dagon's eyeball, a pulsating crystal and a Leviathan scale for darkness and three elixirs of power. Reserve a second scale for Sootfoot.",
+          "item_vnums": [
+            55312
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55313",
+          "text": "Carry 1 x the scale of the Leviathan",
+          "kind": "carried_item",
+          "hint": "The Leviathan carries this scale. Adryv consumes one for darkness, and Sootfoot's Abyss boots need another; collect two if following the complete route.",
+          "item_vnums": [
+            55313
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the boots of the Abyss. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55165,I:55209,I:55284,I:55312,I:55313;receive=I:55311;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55315",
+      "title": "Commission the legplates of the Storm",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the legplates of the Storm. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. Bloodstone requires rolling thunder and Gaia's blessing; Winterhaven has a different thirteen-item recipe for the same legplates. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55166,I:55209,I:55284,I:55316,I:55317;receive=I:55315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55166",
+          "text": "Optional: obtain a pair of magical mithril legplates",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55120,I:55127,I:55154;receive=I:55166;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55120,I:55127,I:55154;receive=I:55166;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55166",
+          "text": "Carry 1 x a pair of magical mithril legplates",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55166
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55316",
+          "text": "Carry 1 x a rolling thunder",
+          "kind": "carried_item",
+          "hint": "The actual accepted item is a rolling thunder. The Bloodstone dialogue instead names a tempest. No confirmed active producer appears in the reviewed paths; supplied or recovered stock can qualify.",
+          "item_vnums": [
+            55316
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55317",
+          "text": "Carry 1 x Gaia's blessing",
+          "kind": "carried_item",
+          "hint": "The actual accepted item is Gaia's blessing. The Bloodstone dialogue instead names a damned legbone. No confirmed active producer appears in the reviewed paths; keep this exact kind distinct.",
+          "item_vnums": [
+            55317
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the legplates of the Storm. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55166,I:55209,I:55284,I:55316,I:55317;receive=I:55315;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55318",
+      "title": "Commission the armplates of the Cosmos",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the armplates of the Cosmos. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55167,I:55209,I:55284,I:55319,I:55319;receive=I:55318;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55167",
+          "text": "Optional: obtain a pair of magical mithril armplates",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55119,I:55127,I:55154;receive=I:55167;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55119,I:55127,I:55154;receive=I:55167;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55167",
+          "text": "Carry 1 x a pair of magical mithril armplates",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55167
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55319",
+          "text": "Carry 2 x some cosmic dust",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55319
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the armplates of the Cosmos. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55167,I:55209,I:55284,I:55319,I:55319;receive=I:55318;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55320",
+      "title": "Commission the tower shield of Indomitability",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the tower shield of Indomitability. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power. The refusal wording in dialogue does not remove this implemented recipe.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55168,I:55209,I:55284,I:55321;receive=I:55320;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55168",
+          "text": "Optional: obtain a magical adamantium tower shield",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55125,I:55128,I:55154;receive=I:55168;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55125,I:55128,I:55154;receive=I:55168;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55168",
+          "text": "Carry 1 x a magical adamantium tower shield",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55168
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55321",
+          "text": "Carry 1 x the essence of the Indomitable Snowman",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55321
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the tower shield of Indomitability. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55168,I:55209,I:55284,I:55321;receive=I:55320;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navift-commission-55322",
+      "title": "Commission the buckler of the Saints",
+      "category": "request",
+      "summary": "Navift accepts this exact recipe for the buckler of the Saints. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source. Each artifact is an independent commission; its reward does not establish every source route or advertised combat power.",
+      "contracts": [
+        {
+          "giver_vnum": 74254,
+          "completion_key": "give=I:55169,I:55209,I:55284,I:55323,I:55324,I:55325;receive=I:55322;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55169",
+          "text": "Optional: obtain a magical adamantium buckler",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The Bloodstone or Winterhaven improvement exchange can supply this base. Either receipt is optional; a supplied base is accepted. The final recipe needs the actual base, connector, binding orb and its additional exact components.",
+          "contracts": [
+            {
+              "giver_vnum": 74252,
+              "completion_key": "give=I:55126,I:55128,I:55154;receive=I:55169;disappear=0"
+            },
+            {
+              "giver_vnum": 55095,
+              "completion_key": "give=I:55126,I:55128,I:55154;receive=I:55169;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55169",
+          "text": "Carry 1 x a magical adamantium buckler",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55169
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55209",
+          "text": "Carry 1 x the gnomish orb of binding",
+          "kind": "carried_item",
+          "hint": "Chibbleniffle accepts the three distinct gnomish key molds for one orb of binding. The figureless hazes carry the molds; more than one area uses these sources.",
+          "item_vnums": [
+            55209
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55284",
+          "text": "Carry 1 x a strange glowing flint of armor",
+          "kind": "carried_item",
+          "hint": "Buy the glowing armor flint from the armory merchant beside Davril. Each Sootfoot armor recipe consumes its own flint.",
+          "item_vnums": [
+            55284
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55323",
+          "text": "Carry 1 x the aura of Saint Gauce",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55323
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55324",
+          "text": "Carry 1 x the aura of Saint Macavor",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55324
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55325",
+          "text": "Carry 1 x the aura of Saint Verdonnaly",
+          "kind": "carried_item",
+          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "item_vnums": [
+            55325
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Navift",
+          "kind": "completion",
+          "hint": "Reward: the buckler of the Saints. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74254,
+              "completion_key": "give=I:55169,I:55209,I:55284,I:55323,I:55324,I:55325;receive=I:55322;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefingers-planar-elixirs",
+      "title": "Fibblefinger's Planar Elixirs",
+      "category": "request",
+      "summary": "Bring all six distinct planar essences and all five distinct potion kinds together for two elixirs of power. This eleven-item recipe fits the offering limit. Winterhaven and Alatorin have different recipes for the same reward, so their potion-only exchanges do not complete this commission. Supplied ingredients qualify; Fibblefinger's ordinary placement remains unconfirmed.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55136,I:55137,I:55138,I:55139,I:55140,I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:55204,I:55204;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55137",
+          "text": "Optional: obtain a fiery potion",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55550;receive=I:55137;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55136",
+          "text": "Optional: obtain a frosty potion",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55551;receive=I:55136;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55138",
+          "text": "Optional: obtain a granite potion",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55552;receive=I:55138;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55139",
+          "text": "Optional: obtain a acceleration potion",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55553;receive=I:55139;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55140",
+          "text": "Optional: obtain a protection potion",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55554;receive=I:55140;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55136",
+          "text": "Carry 1 x a frosty potion",
+          "kind": "carried_item",
+          "hint": "Fibblefinger, Winterhaven's Bipplewizzlille or Alatorin's Mystra can make this potion from an empty bottle and its exact elemental ingredient. Fibblefinger's finale consumes all five potion kinds plus six essences. A supplied potion qualifies without earlier recipe history.",
+          "item_vnums": [
+            55136
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55137",
+          "text": "Carry 1 x a fiery potion",
+          "kind": "carried_item",
+          "hint": "Fibblefinger, Winterhaven's Bipplewizzlille or Alatorin's Mystra can make this potion from an empty bottle and its exact elemental ingredient. Fibblefinger's finale consumes all five potion kinds plus six essences. A supplied potion qualifies without earlier recipe history.",
+          "item_vnums": [
+            55137
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55138",
+          "text": "Carry 1 x a granite potion",
+          "kind": "carried_item",
+          "hint": "Fibblefinger, Winterhaven's Bipplewizzlille or Alatorin's Mystra can make this potion from an empty bottle and its exact elemental ingredient. Fibblefinger's finale consumes all five potion kinds plus six essences. A supplied potion qualifies without earlier recipe history.",
+          "item_vnums": [
+            55138
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55139",
+          "text": "Carry 1 x a acceleration potion",
+          "kind": "carried_item",
+          "hint": "Fibblefinger, Winterhaven's Bipplewizzlille or Alatorin's Mystra can make this potion from an empty bottle and its exact elemental ingredient. Fibblefinger's finale consumes all five potion kinds plus six essences. A supplied potion qualifies without earlier recipe history.",
+          "item_vnums": [
+            55139
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55140",
+          "text": "Carry 1 x a protection potion",
+          "kind": "carried_item",
+          "hint": "Fibblefinger, Winterhaven's Bipplewizzlille or Alatorin's Mystra can make this potion from an empty bottle and its exact elemental ingredient. Fibblefinger's finale consumes all five potion kinds plus six essences. A supplied potion qualifies without earlier recipe history.",
+          "item_vnums": [
+            55140
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55198",
+          "text": "Carry 1 x the essence of Ogremoch",
+          "kind": "carried_item",
+          "hint": "Ogremoch on the Elemental Plane of Earth carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55198
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55199",
+          "text": "Carry 1 x the essence of Imix",
+          "kind": "carried_item",
+          "hint": "Imix on the Elemental Plane of Fire carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55199
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55200",
+          "text": "Carry 1 x the essence of Yan-c-bin",
+          "kind": "carried_item",
+          "hint": "Yan-c-bin on the Elemental Plane of Air carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55200
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55201",
+          "text": "Carry 1 x the essence of Menzellon",
+          "kind": "carried_item",
+          "hint": "Menzellon on the Ethereal Plane carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55201
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55202",
+          "text": "Carry 1 x the essence of Olhydra",
+          "kind": "carried_item",
+          "hint": "Olhydra on the Elemental Plane of Water carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55202
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55203",
+          "text": "Carry 1 x the essence of Demogorgon",
+          "kind": "carried_item",
+          "hint": "Demogorgon on the Astral Plane carries this distinct essence. Bring all six essences and all five potion kinds for Fibblefinger. Supplied copies qualify; delivery does not prove personal planar victories.",
+          "item_vnums": [
+            55203
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: 2 x the elixir of power. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55136,I:55137,I:55138,I:55139,I:55140,I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:55204,I:55204;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefinger-commission-55137",
+      "title": "Prepare a fiery potion",
+      "category": "service",
+      "summary": "Fibblefinger accepts this exact recipe for a fiery potion. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55141,I:55550;receive=I:55137;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55141",
+          "text": "Carry 1 x an empty potion bottle",
+          "kind": "carried_item",
+          "hint": "Buy an empty bottle from the alchemist merchant beside Bipplewizzlille. Each potion consumes another bottle.",
+          "item_vnums": [
+            55141
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55550",
+          "text": "Carry 1 x a burning flame",
+          "kind": "carried_item",
+          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "item_vnums": [
+            55550
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: a fiery potion. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55550;receive=I:55137;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefinger-commission-55136",
+      "title": "Prepare a frosty potion",
+      "category": "service",
+      "summary": "Fibblefinger accepts this exact recipe for a frosty potion. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55141,I:55551;receive=I:55136;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55141",
+          "text": "Carry 1 x an empty potion bottle",
+          "kind": "carried_item",
+          "hint": "Buy an empty bottle from the alchemist merchant beside Bipplewizzlille. Each potion consumes another bottle.",
+          "item_vnums": [
+            55141
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55551",
+          "text": "Carry 1 x a small snowflake",
+          "kind": "carried_item",
+          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "item_vnums": [
+            55551
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: a frosty potion. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55551;receive=I:55136;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefinger-commission-55138",
+      "title": "Prepare a granite potion",
+      "category": "service",
+      "summary": "Fibblefinger accepts this exact recipe for a granite potion. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55141,I:55552;receive=I:55138;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55141",
+          "text": "Carry 1 x an empty potion bottle",
+          "kind": "carried_item",
+          "hint": "Buy an empty bottle from the alchemist merchant beside Bipplewizzlille. Each potion consumes another bottle.",
+          "item_vnums": [
+            55141
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55552",
+          "text": "Carry 1 x a flint of granite",
+          "kind": "carried_item",
+          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "item_vnums": [
+            55552
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: a granite potion. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55552;receive=I:55138;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefinger-commission-55139",
+      "title": "Prepare a acceleration potion",
+      "category": "service",
+      "summary": "Fibblefinger accepts this exact recipe for a acceleration potion. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55141,I:55553;receive=I:55139;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55141",
+          "text": "Carry 1 x an empty potion bottle",
+          "kind": "carried_item",
+          "hint": "Buy an empty bottle from the alchemist merchant beside Bipplewizzlille. Each potion consumes another bottle.",
+          "item_vnums": [
+            55141
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55553",
+          "text": "Carry 1 x a wisp of wind",
+          "kind": "carried_item",
+          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "item_vnums": [
+            55553
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: a acceleration potion. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55553;receive=I:55139;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fibblefinger-commission-55140",
+      "title": "Prepare a protection potion",
+      "category": "service",
+      "summary": "Fibblefinger accepts this exact recipe for a protection potion. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74257,
+          "completion_key": "give=I:55141,I:55554;receive=I:55140;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55141",
+          "text": "Carry 1 x an empty potion bottle",
+          "kind": "carried_item",
+          "hint": "Buy an empty bottle from the alchemist merchant beside Bipplewizzlille. Each potion consumes another bottle.",
+          "item_vnums": [
+            55141
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55554",
+          "text": "Carry 1 x a delicate bubble",
+          "kind": "carried_item",
+          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "item_vnums": [
+            55554
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Fibblefinger",
+          "kind": "completion",
+          "hint": "Reward: a protection potion. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74257,
+              "completion_key": "give=I:55141,I:55554;receive=I:55140;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvigs-nine-earring-service",
+      "title": "Hedvig's Nine-Earring Service",
+      "category": "service",
+      "summary": "Hedvig needs all nine distinct enchanted earrings and 500000 copper together for one earring of wondrous power. Each supporting earring recipe needs two matching scrolls plus electrum. This complete item-and-coin offering is currently unavailable under active accounting. Supplied earrings qualify without the nine earlier crafting receipts.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=C:500000,I:55343,I:55344,I:55345,I:55346,I:55347,I:55348,I:55349,I:55350,I:55351;receive=I:55361;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-55343",
+          "text": "Optional: obtain an enchanted earring of strength",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55352,I:55352;receive=I:55343;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55344",
+          "text": "Optional: obtain an enchanted earring of intelligence",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55353,I:55353;receive=I:55344;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55345",
+          "text": "Optional: obtain an enchanted earring of dexterity",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55354,I:55354;receive=I:55345;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55346",
+          "text": "Optional: obtain an enchanted earring of wisdom",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55355,I:55355;receive=I:55346;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55347",
+          "text": "Optional: obtain an enchanted earring of constitution",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55356,I:55356;receive=I:55347;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55348",
+          "text": "Optional: obtain an enchanted earring of agility",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55357,I:55357;receive=I:55348;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55349",
+          "text": "Optional: obtain an enchanted earring of luck",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55358,I:55358;receive=I:55349;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55350",
+          "text": "Optional: obtain an enchanted earring of power",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55359,I:55359;receive=I:55350;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "prepare-55351",
+          "text": "Optional: obtain an enchanted earring of charisma",
+          "kind": "completion",
+          "optional": true,
+          "hint": "This producer receipt is one preparation route. Supplied components are accepted, and the final exchange still consumes the actual item.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55360,I:55360;receive=I:55351;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-55343",
+          "text": "Carry 1 x an enchanted earring of strength",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55343
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55344",
+          "text": "Carry 1 x an enchanted earring of intelligence",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55344
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55345",
+          "text": "Carry 1 x an enchanted earring of dexterity",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55345
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55346",
+          "text": "Carry 1 x an enchanted earring of wisdom",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55346
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55347",
+          "text": "Carry 1 x an enchanted earring of constitution",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55347
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55348",
+          "text": "Carry 1 x an enchanted earring of agility",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55348
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55349",
+          "text": "Carry 1 x an enchanted earring of luck",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55349
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55350",
+          "text": "Carry 1 x an enchanted earring of power",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55350
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55351",
+          "text": "Carry 1 x an enchanted earring of charisma",
+          "kind": "carried_item",
+          "hint": "Hedvig in Bloodstone or Winterhaven supplies this exact earring for two matching attribute scrolls and electrum. The final service consumes all nine distinct kinds together plus 500000 copper. Recorded recipe history cannot replace a spent earring.",
+          "item_vnums": [
+            55351
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "This entire item-and-coin offering is currently unavailable under active accounting. It requires all nine distinct earrings plus 500000 copper, for one earring of wondrous power. Earlier recipe receipts are optional and do not pay the fee or replace physical earrings.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=C:500000,I:55343,I:55344,I:55345,I:55346,I:55347,I:55348,I:55349,I:55350,I:55351;receive=I:55361;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55343",
+      "title": "Prepare an enchanted earring of strength",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of strength. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55352,I:55352;receive=I:55343;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55352",
+          "text": "Carry 2 x an enchanted scroll of strength",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55352
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of strength. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55352,I:55352;receive=I:55343;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55344",
+      "title": "Prepare an enchanted earring of intelligence",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of intelligence. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55353,I:55353;receive=I:55344;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55353",
+          "text": "Carry 2 x an enchanted scroll of intelligence",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55353
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of intelligence. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55353,I:55353;receive=I:55344;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55345",
+      "title": "Prepare an enchanted earring of dexterity",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of dexterity. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55354,I:55354;receive=I:55345;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55354",
+          "text": "Carry 2 x an enchanted scroll of dexterity",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55354
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of dexterity. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55354,I:55354;receive=I:55345;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55346",
+      "title": "Prepare an enchanted earring of wisdom",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of wisdom. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55355,I:55355;receive=I:55346;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55355",
+          "text": "Carry 2 x an enchanted scroll of wisdom",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55355
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of wisdom. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55355,I:55355;receive=I:55346;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55347",
+      "title": "Prepare an enchanted earring of constitution",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of constitution. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55356,I:55356;receive=I:55347;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55356",
+          "text": "Carry 2 x an enchanted scroll of constitution",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55356
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of constitution. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55356,I:55356;receive=I:55347;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55348",
+      "title": "Prepare an enchanted earring of agility",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of agility. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55357,I:55357;receive=I:55348;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55357",
+          "text": "Carry 2 x an enchanted scroll of agility",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55357
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of agility. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55357,I:55357;receive=I:55348;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55349",
+      "title": "Prepare an enchanted earring of luck",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of luck. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55358,I:55358;receive=I:55349;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55358",
+          "text": "Carry 2 x an enchanted scroll of luck",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55358
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of luck. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55358,I:55358;receive=I:55349;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55350",
+      "title": "Prepare an enchanted earring of power",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of power. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55359,I:55359;receive=I:55350;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55359",
+          "text": "Carry 2 x an enchanted scroll of power",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55359
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of power. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55359,I:55359;receive=I:55350;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hedvig-commission-55351",
+      "title": "Prepare an enchanted earring of charisma",
+      "category": "service",
+      "summary": "Hedvig accepts this exact recipe for an enchanted earring of charisma. Supplied ingredients qualify without earlier personal crafting. This maker has no confirmed ordinary active placement in the reviewed source.",
+      "contracts": [
+        {
+          "giver_vnum": 74258,
+          "completion_key": "give=I:55130,I:55360,I:55360;receive=I:55351;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-55130",
+          "text": "Carry 1 x an electrum ingot",
+          "kind": "carried_item",
+          "hint": "Buy the named ingot from the blacksmith merchant beside Sootfoot. Each recipe needs its specified metal.",
+          "item_vnums": [
+            55130
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-55360",
+          "text": "Carry 2 x an enchanted scroll of charisma",
+          "kind": "carried_item",
+          "hint": "Reciting a generic attribute scroll outside combat can transform it into one random attribute-scroll kind. Bring two copies of this exact kind plus electrum. Random source selection and publication need qualification; do not assume you can choose a statistic.",
+          "item_vnums": [
+            55360
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the exact offering to Hedvig",
+          "kind": "completion",
+          "hint": "Reward: an enchanted earring of charisma. The giver stays after the exchange, if present.",
+          "contracts": [
+            {
+              "giver_vnum": 74258,
+              "completion_key": "give=I:55130,I:55360,I:55360;receive=I:55351;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "contracts": [
+        {
+          "giver_vnum": 74217,
+          "completion_key": "give=I:74057;receive=I:74057;disappear=0"
+        }
+      ],
+      "reason": "Wrong-trophy rejection returns the same bloody head; no successful quest reward."
+    },
+    {
+      "contracts": [
+        {
+          "giver_vnum": 74250,
+          "completion_key": "give=I:0;receive=I:55053;disappear=0"
+        }
+      ],
+      "reason": "Item-zero offering references a missing prototype; builder must specify or retire the intended recipe."
+    }
+  ],
+  "introduction": "Bloodstone connects the lost locket and upper prison, royal-ring reward, four distinct amulet quarters, missionary proof and unfinished Numbaca plot. Independent local commissions sit beside distant artifact and alchemy recipes. Discovery and player progress require active accounting. Topic words explain the story; they are not separate achievements.",
+  "orientation": [
+    "The forest and regional approaches lead through glowing spheres to the drawbridge and keep. These portals use enter; confirmed travel is separate from a turn-in receipt. The drawbridge and keep gate are open routes in the reviewed data.",
+    "The golden locket lies inside the pregnant corpse at the forest altar, beyond the concealed northern path. Return it to the ailing mage for the upper-prison key. Supplied lockets or keys can avoid earlier history.",
+    "Ordinary prison access uses the prison key sold by local tavern contacts. The upper gates use the mage's blue skeleton key. Grey and blue cell keys are separate. Some black-key doors described as locked actually reset closed but unlocked; do not assume every prose barrier needs a key.",
+    "A blue fish supplies the reception key to the Forbidden Tower. The mistress supplies or carries the sapphire key for the upper royal chambers. The baron wears the royal ring and carries the fourth amulet quarter; these fund separate exchanges.",
+    "The mother, father and Faust supply three different quarters and leave after their rewards. The baron carries the fourth. The high mage requires all four distinct kinds together, despite their identical displayed names.",
+    "The captain transforms the missionary's original head into a different same-named head for his wife. Her other exact ingredients include a bloody scalp with no confirmed ordinary producer. Her pendant reward points toward Pellops, but the follow-on exchange is absent.",
+    "The fisherman's lizard request supplies Asmond's flute. The old woman's mistress-proof reward mentions Ferris; Ferris's minotaur lyre supplies a captain clue and experience, rather than an amulet quarter. These clues do not themselves record learned topics.",
+    "Sabrina requires both baby item kinds at once. The ordinary bloody head returned by the mother is rejection feedback. Delivery of loaded trophies does not prove personal combat, a rescue, freshness or a faction choice.",
+    "The ring ladder in the vegetable garden and the tight-passage portal provide routes to the meditation platform's bones, ear and ordinary head. Get offerings out of containers and remove equipment before a native turn-in.",
+    "Moldar, Sark, Navift, Fibblefinger and Hedvig have no confirmed ordinary active placements in the reviewed sources. Their recipe guidance is still useful for supplied or recovered stock and later builder integration; verify that the actual recipient is present.",
+    "Winterhaven provides plain equipment, ingots, blueprint routes, hilts, armor flints and the binding-orb exchange. Each artifact needs its exact upgraded base and distant components. Several component sources remain unconfirmed; separate recipes keep separate ownership.",
+    "Bloodstone's Storm legplates recipe needs rolling thunder and Gaia's blessing. Winterhaven instead requires ten maelstrom components alongside the base, orb and flint. Equal rewards do not imply equal inputs or a shared completion.",
+    "Fibblefinger requires six planar essences and five potion kinds for two elixirs. Winterhaven and Alatorin use different recipes for the same reward. The generic attribute-scroll transformation chooses one random kind; Hedvig needs two matching scrolls for each basic earring.",
+    "The nine-earring finale costs 500000 copper and is currently unavailable under active accounting. Maelborg's stat shop also refuses active-accounting purchases. The ordinary inn and Cerrio's separate world-quest service have their own service rules, without local story completion.",
+    "Fresh reset supply and committed scripted transformations still need qualification. Supplied items can satisfy delivery; inventory readiness, keys, topic words and reward prose do not establish personal acquisition or every earlier stage."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 74036,
+      "name": "the baron's brother",
+      "keyword": "brother",
+      "description": "Seek this contact around the upper prison; current location and availability can vary.",
+      "topics": [
+        "ring"
+      ]
+    },
+    {
+      "mob_vnum": 74037,
+      "name": "an ailing mage",
+      "keyword": "mage",
+      "description": "Seek this contact around the keep's hidden hallway; current location and availability can vary.",
+      "topics": [
+        "locket",
+        "key",
+        "home"
+      ]
+    },
+    {
+      "mob_vnum": 74147,
+      "name": "a woman",
+      "keyword": "woman",
+      "description": "Seek this contact around the cathedral and Lane of Crows; current location and availability can vary. Ask about the ingredient list; the pendant is the last implemented exchange, and Pellops remains a proposed continuation.",
+      "topics": [
+        "ingredients",
+        "spells",
+        "numbaca",
+        "pellops"
+      ]
+    },
+    {
+      "mob_vnum": 74175,
+      "name": "the high mage of Bloodstone",
+      "keyword": "high",
+      "description": "Seek this contact around the Hall of the Dark; current location and availability can vary.",
+      "topics": [
+        "amulet"
+      ]
+    },
+    {
+      "mob_vnum": 74180,
+      "name": "the captain of the keep's guard",
+      "keyword": "captain",
+      "description": "Seek this contact around the Street of Tears; current location and availability can vary.",
+      "topics": [
+        "amulet",
+        "pain"
+      ]
+    },
+    {
+      "mob_vnum": 74182,
+      "name": "a fisherman",
+      "keyword": "fisherman",
+      "description": "Seek this contact around the wooden dam; current location and availability can vary.",
+      "topics": [
+        "fish"
+      ]
+    },
+    {
+      "mob_vnum": 74185,
+      "name": "the baron's mistress",
+      "keyword": "mistress",
+      "description": "Seek this contact around Ridge Road; current location and availability can vary.",
+      "topics": [
+        "mother",
+        "woman"
+      ]
+    },
+    {
+      "mob_vnum": 74206,
+      "name": "Sister Sabrina",
+      "keyword": "sabrina",
+      "description": "Seek this contact around the orphanage gates; current location and availability can vary.",
+      "topics": [
+        "children"
+      ]
+    },
+    {
+      "mob_vnum": 74207,
+      "name": "a wrinkled old woman",
+      "keyword": "old",
+      "description": "Seek this contact around the river reeds; current location and availability can vary.",
+      "topics": [
+        "amulet",
+        "favor",
+        "royalty"
+      ]
+    },
+    {
+      "mob_vnum": 74217,
+      "name": "a mother",
+      "keyword": "weeping",
+      "description": "Seek this contact around the cathedral altar; current location and availability can vary.",
+      "topics": [
+        "melinda"
+      ]
+    },
+    {
+      "mob_vnum": 74218,
+      "name": "a father",
+      "keyword": "crying",
+      "description": "Seek this contact around the Street of Tears shrine; current location and availability can vary.",
+      "topics": [
+        "jeremy"
+      ]
+    },
+    {
+      "mob_vnum": 74220,
+      "name": "Asmond",
+      "keyword": "asmond",
+      "description": "Seek this contact around the slave-side saloon; current location and availability can vary.",
+      "topics": [
+        "flute"
+      ]
+    },
+    {
+      "mob_vnum": 74221,
+      "name": "a jealous boy",
+      "keyword": "jealous",
+      "description": "Seek this contact around the orphanage steps or Road of Clay; current location and availability can vary.",
+      "topics": [
+        "hat",
+        "fisherman",
+        "chameleon"
+      ]
+    },
+    {
+      "mob_vnum": 74234,
+      "name": "Faust, the wanderer",
+      "keyword": "faust",
+      "description": "Seek this contact around a village dwelling; current location and availability can vary.",
+      "topics": [
+        "misery",
+        "beowik"
+      ]
+    },
+    {
+      "mob_vnum": 74235,
+      "name": "Ferris",
+      "keyword": "ferris",
+      "description": "Seek this contact around the royal training room; current location and availability can vary.",
+      "topics": [
+        "amulet",
+        "lyre",
+        "information"
+      ]
+    },
+    {
+      "mob_vnum": 74250,
+      "name": "Moldar",
+      "keyword": "moldar",
+      "description": "This maker has native dialogue and recipes, but no confirmed ordinary active placement in the reviewed source. Encounter visibility still requires the NPC to be present.",
+      "topics": [
+        "longsword",
+        "shortsword",
+        "warhammer",
+        "axe",
+        "bastard",
+        "sword",
+        "spiked",
+        "mace",
+        "dagger"
+      ]
+    },
+    {
+      "mob_vnum": 74252,
+      "name": "Sark",
+      "keyword": "sark",
+      "description": "This maker has native dialogue and recipes, but no confirmed ordinary active placement in the reviewed source. Encounter visibility still requires the NPC to be present.",
+      "topics": [
+        "buckler",
+        "tower",
+        "shield",
+        "armplates",
+        "legplates",
+        "boots",
+        "helmet",
+        "platemail",
+        "gauntlets"
+      ]
+    },
+    {
+      "mob_vnum": 74254,
+      "name": "Navift",
+      "keyword": "navift",
+      "description": "This maker has native dialogue and recipes, but no confirmed ordinary active placement in the reviewed source. Encounter visibility still requires the NPC to be present. Fifteen distinct artifact recipes exist, including seven whose dialogue refuses to recall them. The Storm recipe differs from Winterhaven.",
+      "topics": [
+        "case",
+        "portrait",
+        "axe",
+        "illithid",
+        "warhammer",
+        "snow",
+        "mace",
+        "death",
+        "volo",
+        "longsword",
+        "demon",
+        "slayer",
+        "dagger",
+        "ra",
+        "gauntlets",
+        "legend",
+        "misty",
+        "shortsword",
+        "blur",
+        "platemail",
+        "fame",
+        "helmet",
+        "vampire",
+        "boots",
+        "abyss",
+        "legplates",
+        "storm",
+        "armplates",
+        "cosmos",
+        "buckler",
+        "tower",
+        "orb"
+      ]
+    },
+    {
+      "mob_vnum": 74257,
+      "name": "Fibblefinger",
+      "keyword": "fibblefinger",
+      "description": "This maker has native dialogue and recipes, but no confirmed ordinary active placement in the reviewed source. Encounter visibility still requires the NPC to be present. Five potion services support the six-essence elixir commission; the copied success response names a different alchemist.",
+      "topics": [
+        "essence",
+        "essences",
+        "incarnates",
+        "incarnate"
+      ]
+    },
+    {
+      "mob_vnum": 74258,
+      "name": "Hedvig",
+      "keyword": "hedvig",
+      "description": "This maker has native dialogue and recipes, but no confirmed ordinary active placement in the reviewed source. Encounter visibility still requires the NPC to be present. Each basic earring needs two matching scrolls and electrum. The final nine-earring fee is currently unsupported under active accounting.",
+      "topics": [
+        "strength",
+        "intelligence",
+        "dexterity",
+        "wisdom",
+        "constitution",
+        "agility",
+        "luck",
+        "power",
+        "charisma",
+        "wonderous",
+        "earring",
+        "scroll"
+      ]
+    }
+  ]
+}

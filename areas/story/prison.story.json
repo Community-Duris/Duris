@@ -1,0 +1,191 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "prison",
+  "coverage": "complete",
+  "introduction": "Two visitors ask for help in Carthapia: recover a lost tarnished coin, or gather the three different sets of Smaug scales for a forged shield. The journal follows those accepted returns and explains the prison’s keys, secret routes and planar detour.",
+  "orientation": [
+    "ASK SHADOWY about HI, HELLO, PARTNER or ITEM in the visiting room. The shadowy figure seeks a particular tarnished coin, not a payment in ordinary coins. His missing partner is a story lead; returning the coin does not record a rescue.",
+    "The tarnished coin lies inside the hole in the disgusting commode near the mess hall. The coin is hidden: SEARCH the open hole when needed, then GET the coin from it and carry it loose for the visitor. He rewards the accepted item return with coins. A coin still inside a container is different from proof ready to hand over.",
+    "ASK GNOME about HELLO, CRAFT, TALENTS or MATERIAL. Bring all three different sets of scales from the Great Dragon Smaug, carried loose together. The scales are hidden; SEARCH their container or remains when needed to reveal them. They look alike, but three copies of one set cannot replace the full set. The accepted return grants the shield of flames.",
+    "The Captain of the Guard carries the obsidian key for the hidden hatches leading below the detention center toward Smaug and the oubliette. Keys can also be hidden in their source’s belongings. SEARCH can reveal a secret entrance or hidden contents; the key, an already-open door and your successful entry are separate facts. Supplies handed to you can fit a return without proving your own dragon victory or first recovery.",
+    "For the planar detour, the Warden’s wooden cylinder fits his locked desk, which contains the glass key. That key fits the steel door before the shimmering gateway. ENTER the gateway for the planar prisons. The robed figure at the Center of Power carries the key of the elements and the swirling Nexus key; the elemental key serves the surrounding planar walls.",
+    "TUG the switch torch along the sloping shaft to open the distant western passage, and TUG the switch torch in the granite hallway to open the way toward the secret shrine. Other lit torches are ordinary lights. The chaplain’s PRACTICE ki strike lesson has its own class, level, skill and payment rules and is currently unavailable while accounting is active.",
+    "ENTER the actual pool, flames, mist, fog, air, obsidian or earth portal for the matching planar branch. These routes lead to separate prisoners and onward to the Nexus. The swirling key fits its vault door. The Nexus portal sends you to a random eligible surface location; it does not promise a fixed prison entrance. The vault’s runestone follows separate epic settlement rules.",
+    "Optional material checks show what you carry loose now; accepted return history remains after the items are spent. Keys, questions, equipment, encounters and shared open passages do not by themselves record personal route completion, rescues, training or victories. Daily offers use accepted returns; a new day does not restock their supplies. New progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 7304,
+      "name": "a shadowy figure",
+      "keyword": "shadowy",
+      "description": "Seeks the tarnished coin for a coin reward; his missing partner remains a story lead.",
+      "topics": [
+        "hi",
+        "hello",
+        "partner",
+        "item"
+      ]
+    },
+    {
+      "mob_vnum": 7306,
+      "name": "a visiting gnome",
+      "keyword": "gnome",
+      "description": "Accepts three different sets of Smaug scales together to forge the shield of flames.",
+      "topics": [
+        "hello",
+        "craft",
+        "talents",
+        "material"
+      ]
+    },
+    {
+      "mob_vnum": 7353,
+      "name": "the Great Dragon, Smaug",
+      "keyword": "smaug",
+      "description": "Carries the three exact scale sets. Meeting him or holding scales is not a recorded personal victory.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7351,
+      "name": "captain of the guard",
+      "keyword": "captain",
+      "description": "Carries the obsidian key for the hidden routes below the detention center.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7333,
+      "name": "the Warden",
+      "keyword": "warden",
+      "description": "Carries the wooden cylinder for his desk and can call guards for help in combat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7332,
+      "name": "a guardian",
+      "keyword": "guardian",
+      "description": "Carries the large silver key for the maximum security entrance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7354,
+      "name": "a robed figure",
+      "keyword": "robed",
+      "description": "Carries the elemental and swirling Nexus keys at the Center of Power.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7357,
+      "name": "the prison chaplain",
+      "keyword": "chaplain",
+      "description": "Serves the secret shrine and teaches ki strike through a separate epic lesson, currently unavailable while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7365,
+      "name": "The Legendary Tarrasque",
+      "keyword": "tarrasque",
+      "description": "A separate prisoner in the astral branch. An encounter, its equipment or assistance does not complete either visitor’s return.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "lost-tarnished-coin",
+      "title": "Recover the visitor’s tarnished coin",
+      "category": "story",
+      "summary": "Find the tarnished coin in the commode’s hole and return that exact item to the shadowy visitor. Ordinary money, learned keywords and a rescued partner are separate evidence.",
+      "contracts": [
+        {
+          "giver_vnum": 7304,
+          "completion_key": "give=I:7372;receive=C:15000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-7372",
+          "text": "Carry the tarnished coin loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            7372
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact material carried loose now. A worn or nested item, ordinary money, another scale set or a rewarded shield cannot replace it. Supplied proof does not establish your first recovery, a personal victory or successful access."
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the tarnished coin to the shadowy visitor",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7304,
+              "completion_key": "give=I:7372;receive=C:15000;disappear=0"
+            }
+          ],
+          "hint": "Records the accepted return after its proof is spent. Questions, source recovery, access, rescues and separate services remain distinct outcomes. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "smaug-scales",
+      "title": "Forge a shield from Smaug’s scales",
+      "category": "story",
+      "summary": "Gather all three distinct scale sets from Smaug, then return them together to the visiting gnome for the shield of flames. An accepted return does not require your own recorded dragon victory.",
+      "contracts": [
+        {
+          "giver_vnum": 7306,
+          "completion_key": "give=I:7342,I:7343,I:7344;receive=I:7345;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-7342",
+          "text": "Carry the first set of Smaug scales loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            7342
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact material carried loose now. A worn or nested item, ordinary money, another scale set or a rewarded shield cannot replace it. Supplied proof does not establish your first recovery, a personal victory or successful access."
+        },
+        {
+          "id": "proof-7343",
+          "text": "Carry the second set of Smaug scales loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            7343
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact material carried loose now. A worn or nested item, ordinary money, another scale set or a rewarded shield cannot replace it. Supplied proof does not establish your first recovery, a personal victory or successful access."
+        },
+        {
+          "id": "proof-7344",
+          "text": "Carry the third set of Smaug scales loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            7344
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact material carried loose now. A worn or nested item, ordinary money, another scale set or a rewarded shield cannot replace it. Supplied proof does not establish your first recovery, a personal victory or successful access."
+        },
+        {
+          "id": "turn-in",
+          "text": "Return all three sets of scales to the gnome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7306,
+              "completion_key": "give=I:7342,I:7343,I:7344;receive=I:7345;disappear=0"
+            }
+          ],
+          "hint": "Records the accepted return after its proof is spent. Questions, source recovery, access, rescues and separate services remain distinct outcomes. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

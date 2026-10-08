@@ -1,0 +1,268 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "pods",
+  "coverage": "complete",
+  "introduction": "Find the swamp’s surviving voices, learn the history of the ruined elf-kin city and decide what to do with its crystal shard. One accepted shard request records a story outcome; the key and two crafts are paid services. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Enter from the bottom of Pharr Valley through the wall of vegetation. The swamp is a large maze of pools, creatures, ruins and hidden paths. Currents and underwater passages remain dangerous; journal guidance does not supply waterbreathing or remove travel restrictions.",
+    "Knarlash, the dirty half-elf in the southern hut, speaks about his Skexis neighbor, Ahgra, the Mystics and the ruined elf-kin city. The chamberlain in the northern hut asks for a crystal shard. Their dialogue explains the setting without creating separate achievements for every keyword.",
+    "The lurking duergar deep in the swamp wields the exact crystal shard that the chamberlain wants. Bring that shard for 75 platinum. The chamberlain remains after the accepted hand-in. Finding a shard, defeating its carrier or hearing about it does not itself record the request.",
+    "The chamberlain separately sells the mummified tongue of a dwarf for 50 platinum. This tongue is the key to the mummified dwarf beside him, rather than the crystal shard. The key purchase is currently unavailable while accounting is active; owning a matching key does not establish a purchase receipt.",
+    "The mummified dwarf is a container holding the series of small skulls laced into a tome. Its current state is closed and locked, but not pickproof. UNLOCK and OPEN it when needed; a successful unlock breaks its tongue key. The container puzzle and the shard hand-in are independent.",
+    "PULL the thick gray vine or vines at the edge of Keera’s quiet clearing. SEARCH and OPEN the hidden route afterward when required. Keera describes her rescue, adoptive family and the Gartham raids. These are memories and leads; the current contracts do not record escorting her or freeing captives.",
+    "In the ruined workshop, the hunched podaling can make two different ornaments. The tall bird with arms beside him runs a separate shop. Ask the podaling about headdress, necklace, Keera or Ahgra to hear the exact native clues.",
+    "A birdfeather headdress requires six actual dark feathers and one strip of neberihide. The native recipe also requires 1 platinum, although the spoken clue asks for nine. This mixed item-and-coin service is currently unavailable while accounting is active; having the ingredients does not mean the payment or craft has succeeded.",
+    "A woven neberihide necklace requires three actual strips of neberihide and a native fee of 500 copper, although the spoken clue asks for six platinum. The necklace provides waterbreathing when worn. This is another guarded paid service, separate from the headdress and from the shard story.",
+    "Brooding dark birds carry dark feathers; neberis of several sizes carry strips of neberihide. One bird also carries a hide strip, and the intent podaling’s woven sack can contain both materials. These are exact stock items, not generic CARVE products. Take ingredients out of any sack before offering them. Current caps and legitimate stock govern availability.",
+    "SHAKE the thorny vine near the carved stone to clear the hidden way toward the farmer’s former wife’s shop; PUSH the vine on the shop side operates its own blocked exit when applicable. PULL the other tangled vines and crumbling stone controls along the swamp and ruins. Shared passages can already be open; some still need SEARCH and OPEN. Walking through one does not prove you operated its control.",
+    "The ruins’ fresco describes the crystal, Mystics and Skexis coming together when moon and sun align. Ahgra and the castle are wider Pharr Valley leads. The current local contracts do not restore the crystal, reunite the peoples or overthrow an emperor; those outcomes need deliberate builder integration.",
+    "A humble hermit elsewhere requests both a birdfeather headdress and a woven neberihide necklace for a recipe for a granular potion. That accepted request belongs to his own zone. Owning the ornaments here does not record either local craft or his hand-in, and supplied matching ornaments do not require your own earlier craft receipts.",
+    "The local shops, spell teachers, epic node, decorative blossoms, stranded travelers and creature stories are separate from the one shard request. Prices, existing accounting guards, shared access, hazards and scarce supply retain their native rules. The shard request is the only local potential daily; its availability depends on the actual giver and legitimate current shard supply."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 28520,
+      "name": "an insect cloud",
+      "keyword": "cloud",
+      "description": "The insect cloud responds to pest with a buzzing remark; it has no accepted proof request.",
+      "topics": [
+        "pest"
+      ]
+    },
+    {
+      "mob_vnum": 28533,
+      "name": "a skulking Skexis",
+      "keyword": "chamberlain",
+      "description": "In the northern hut: asks for the crystal shard and separately sells the dwarf’s tongue key.",
+      "topics": [
+        "elf",
+        "elf-kin",
+        "crystal",
+        "shard",
+        "dwarf",
+        "mummified",
+        "mummy",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 28565,
+      "name": "a dirty half-elf",
+      "keyword": "knarlash",
+      "description": "Knarlash in the southern hut: explains the Skexis, Ahgra, Mystics and the ruined city.",
+      "topics": [
+        "swamp",
+        "home",
+        "alone",
+        "evil",
+        "neighbor",
+        "skexis",
+        "ahgra",
+        "mystic",
+        "mystics",
+        "messenger",
+        "ruins",
+        "wall",
+        "walls",
+        "gartham",
+        "garthams"
+      ]
+    },
+    {
+      "mob_vnum": 28571,
+      "name": "a young elf-kin",
+      "keyword": "keera",
+      "description": "Keera in the quiet clearing: recalls her rescue and describes the continuing raids.",
+      "topics": [
+        "ruins",
+        "elf",
+        "elf-kin",
+        "elfling",
+        "kin",
+        "gartham",
+        "skexis"
+      ]
+    },
+    {
+      "mob_vnum": 28576,
+      "name": "a hunched podaling",
+      "keyword": "podaling",
+      "description": "In the ruined workshop: makes the headdress and necklace as separate paid services.",
+      "topics": [
+        "make",
+        "weave",
+        "woven",
+        "hands",
+        "feather",
+        "feathers",
+        "headband",
+        "headdress",
+        "neberihide",
+        "neberi",
+        "strips",
+        "strip",
+        "necklace",
+        "ruins",
+        "ahgra",
+        "walls",
+        "keera",
+        "elf",
+        "elf-kin",
+        "skexis",
+        "gartham"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "chamberlain-crystal-shard",
+      "title": "The chamberlain: a shard for an emperor",
+      "category": "story",
+      "summary": "Return the exact crystal shard to the chamberlain for 75 platinum. He remains. This records his accepted request, without restoring the crystal or changing the ruler.",
+      "contracts": [
+        {
+          "giver_vnum": 28533,
+          "completion_key": "give=I:28579;receive=C:75000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28579",
+          "text": "Carry the crystal shard",
+          "kind": "carried_item",
+          "item_vnums": [
+            28579
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lurking duergar wields this crystal shard deep in the swamp. The mummified dwarf contains a tome, rather than this proof. Carry the exact copies loose; held, worn or nested items do not satisfy this preparation check. Matching supplied items fit too. Possession does not establish your own kill or recovery."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the crystal shard to the chamberlain",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 28533,
+              "completion_key": "give=I:28579;receive=C:75000;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "chamberlain-tongue-key",
+      "title": "The chamberlain: the dwarf’s tongue key",
+      "category": "service",
+      "summary": "The chamberlain sells the mummified tongue of a dwarf for 50 platinum. The key opens the mummified dwarf’s container and breaks after a successful unlock. This purchase is guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 28533,
+          "completion_key": "give=C:50000;receive=I:28598;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-hand-in",
+          "text": "Purchase the tongue key for 50 platinum",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 28533,
+              "completion_key": "give=C:50000;receive=I:28598;disappear=0"
+            }
+          ],
+          "hint": "This paid service is currently unavailable while accounting is active. Ingredients or reward possession do not prove accepted payment or completion. A future accounting-backed adapter must preserve the exact fee and inputs."
+        }
+      ]
+    },
+    {
+      "id": "podaling-birdfeather-headdress",
+      "title": "The podaling: a birdfeather headdress",
+      "category": "service",
+      "summary": "Six dark feathers, one strip of neberihide and the native 1-platinum fee make a birdfeather headdress. The spoken nine-platinum price needs builder review. This craft is guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 28576,
+          "completion_key": "give=C:1000,I:28554,I:28554,I:28554,I:28554,I:28554,I:28554,I:28555;receive=I:28552;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28554",
+          "text": "Carry six dark feathers",
+          "kind": "carried_item",
+          "item_vnums": [
+            28554
+          ],
+          "count": 6,
+          "optional": true,
+          "hint": "Brooding dark birds carry these exact feathers; the intent podaling’s woven sack can also contain one. Carry the exact copies loose; held, worn or nested items do not satisfy this preparation check. Matching supplied items fit too. Possession does not establish your own kill or recovery."
+        },
+        {
+          "id": "material-28555",
+          "text": "Carry one strip of neberihide",
+          "kind": "carried_item",
+          "item_vnums": [
+            28555
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Neberis carry these strips. A dark bird and an intent podaling’s sack supply further native stock. Carry the exact copies loose; held, worn or nested items do not satisfy this preparation check. Matching supplied items fit too. Possession does not establish your own kill or recovery."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Complete the headdress service with its full inputs and fee",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 28576,
+              "completion_key": "give=C:1000,I:28554,I:28554,I:28554,I:28554,I:28554,I:28554,I:28555;receive=I:28552;disappear=0"
+            }
+          ],
+          "hint": "This paid service is currently unavailable while accounting is active. Ingredients or reward possession do not prove accepted payment or completion. A future accounting-backed adapter must preserve the exact fee and inputs."
+        }
+      ]
+    },
+    {
+      "id": "podaling-neberihide-necklace",
+      "title": "The podaling: a woven neberihide necklace",
+      "category": "service",
+      "summary": "Three strips of neberihide and the native 500-copper fee make a woven neberihide necklace with waterbreathing when worn. The spoken six-platinum price needs builder review. This craft is guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 28576,
+          "completion_key": "give=C:500,I:28555,I:28555,I:28555;receive=I:28553;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28555",
+          "text": "Carry three strips of neberihide",
+          "kind": "carried_item",
+          "item_vnums": [
+            28555
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Bring three distinct copies together. Other neberihide gear and one strip counted repeatedly do not satisfy the recipe. Carry the exact copies loose; held, worn or nested items do not satisfy this preparation check. Matching supplied items fit too. Possession does not establish your own kill or recovery."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Complete the necklace service with its full inputs and fee",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 28576,
+              "completion_key": "give=C:500,I:28555,I:28555,I:28555;receive=I:28553;disappear=0"
+            }
+          ],
+          "hint": "This paid service is currently unavailable while accounting is active. Ingredients or reward possession do not prove accepted payment or completion. A future accounting-backed adapter must preserve the exact fee and inputs."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

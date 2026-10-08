@@ -1,0 +1,566 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "desert",
+  "coverage": "complete",
+  "introduction": "Aid the wounded miner, follow rival signet requests, supply a desert traveler, recover hidden contraband, and trace the Queen’s garb through Goranon and Eriic to Winterhaven. Exact item exchanges remain distinct from personal source, access, combat, travel and epic learning.",
+  "orientation": [
+    "Enter from the Surface’s Amber Sands through the city’s western approach. Inns, bazaars, merchant docks, poor encampments, the Sultan’s palace, House Lo’Ushuur and the undermountain provide separate paths. Native visits, loot and prose do not automatically create quest achievements.",
+    "Ask the eight quest givers their mapped topics. These aliases reveal existing responses; asking every alias is not eight or forty-six additional achievements. The mine’s potion, two distinct signets, compass, contraband, wyrm eyeball, royal garb and hunter medallion are exact item proofs.",
+    "For the collapsed mine, PUSH the fixed boulder along the cliffs. It clears the blocked north exit below; neither the boulder nor an entrance needs to be made takeable. Follow the shaft with native falling risk, then ENTER the first river and follow its downstream rooms to the River’s End. NORTH reaches the miner’s trench and UP the wyrm lair. The second river portal at the trench returns to the River’s End. Access and movement remain guidance until admitted events are qualified.",
+    "The wandering merchant carries and sells the miner’s large potion. The miner grants the studded belt; the white-robed figure separately accepts the wyrm’s eyeball for an ordinary glowing runestone. Miner rescue and wyrm proof are independent exchanges, and a supplied exact item bypasses personal access or combat.",
+    "The cloaked figure wants the jolly old merchant’s dusty signet from the Sultan’s pleasure room; the evil wizard wants Vernadad’s different signet from House Lo’Ushuur. Palace and House gates have separate keys and pickproof locks. The first burly guard carries the House key; the lord wears his ring.",
+    "The gangleader at the refuse encampment carries the traveler’s compass. The city map from the tinker is a different item and has two separate Shipyard recipients. The traveler’s narrated magic-tower expedition has no native campaign endpoint.",
+    "SEARCH and OPEN the secret DOWN plank in the massive warehouse for Mijium’s wine cellar. The shady merchant wants the exact contraband on the floor there. Ship-shop contraband uses separate cargo state; the same word does not make it this quest item.",
+    "Goranon accepts the insect Queen’s royal garb for the elvish hunter medallion. Eriic accepts that medallion for the desert-island locket. Winterhaven’s ambassador then accepts the locket; its rare fabric can enter Grendilyn’s paired-fabric recipe there. Each exchange keeps its actual owner, and supplied later proof requires no personal earlier history.",
+    "The tower’s two fixed runestones use TOUCH to travel between tower approach and the desert stone. They are not the white-robed figure’s type11 reward and do not require possessing that reward. Fixed ships, tents, ladder, caravan, warehouse and river portals preserve native mobility, access and charges.",
+    "Eriic also teaches Improved Endurance, and Ruffus Totemic Mastery, through computed epic bindings. Epic purchases remain guarded while accounting is active. Narggle’s random world quests, the dock’s ship services, taproom crew hiring, ten shops and inn services are separate support systems.",
+    "Current loose materials, historical accepted outcomes, actual source recovery, gifts, access, combat, travel and learning are separate states. An old receipt never restores spent proof or a key. No journal binding makes narrated House collapse, slave liberation, nest destruction or expedition success into an implemented campaign.",
+    "The Sultan also carries a memory of Venan’Trut for Winterhaven’s ambassador, independently of Eriic’s locket. His imported rune-covered epic stone has a real TOUCH group-reward handler, periodic configuration and actor custody; accepted claim, eligibility, peaceful room, group membership and reward recovery remain separate from native item hand-ins. Neither merely holding it nor visiting the palace completes another journal card.",
+    "Discovery has its own achievement, and meeting each terminal giver reveals its journal card. Active, ready accounting is mandatory for all new discovery, encounter, journal, achievement and daily credit; frozen recovery is separate. Reset mode1 and existing recipients make eight static daily candidates, without proving live stock or daily renewal."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 49020,
+      "name": "a wounded miner",
+      "keyword": "miner",
+      "description": "Starts in the soggy mud trench north of the River’s End. Needs the large glowing potion; gives the studded mining belt.",
+      "topics": [
+        "miner",
+        "mortally",
+        "wounded",
+        "cavern",
+        "mines",
+        "shaft",
+        "what",
+        "why",
+        "who",
+        "hi",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 49061,
+      "name": "a heavily cloaked figure",
+      "keyword": "cloaked",
+      "description": "Starts in the One Armed Dwarf taproom. Needs the jolly merchant’s dusty signet; gives the copper serpent medallion.",
+      "topics": [
+        "jolly",
+        "old",
+        "fat",
+        "hi",
+        "quest",
+        "kill"
+      ]
+    },
+    {
+      "mob_vnum": 49087,
+      "name": "a desert traveler",
+      "keyword": "traveler",
+      "description": "Starts before the narrow crevice. Needs the exact compass; gives the pale tourmaline medallion.",
+      "topics": [
+        "compass",
+        "desert",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 49099,
+      "name": "an evil wizard",
+      "keyword": "wizard",
+      "description": "Starts in the Lone Desert Star reception area. Needs Vernadad’s signet; gives the eerie silver medallion. His House-destruction promise is broader than the exact exchange.",
+      "topics": [
+        "lo",
+        "ushuur",
+        "hi",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 49155,
+      "name": "a shady merchant",
+      "keyword": "shady",
+      "description": "Starts before the sandy beach. Needs the cellar’s smuggled contraband; gives the cold bluesteel ring. Ship contraband sales are separate.",
+      "topics": [
+        "hi",
+        "merchandise",
+        "arguing",
+        "buy",
+        "sell",
+        "drugs",
+        "drug",
+        "contra",
+        "contraband"
+      ]
+    },
+    {
+      "mob_vnum": 49161,
+      "name": "Eriic",
+      "keyword": "eriic",
+      "description": "Starts in the wanderer’s tent. Needs Goranon’s hunter medallion; gives the desert-island locket for a Winterhaven follow-on. Separately teaches Improved Endurance through PRACTICE, with purchases guarded while accounting is active.",
+      "topics": [
+        "hi",
+        "hello",
+        "howdy"
+      ]
+    },
+    {
+      "mob_vnum": 49220,
+      "name": "a mysterious white robed figure",
+      "keyword": "white",
+      "description": "Starts in the Blinking Cowl common room. Needs the huge fire wyrm’s writhing eyeball; gives an ordinary glowing runestone, distinct from the fixed travel stones.",
+      "topics": [
+        "wyrm",
+        "dragon",
+        "rivers",
+        "mines",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 49223,
+      "name": "Goranon",
+      "keyword": "goranon",
+      "description": "Starts in the Lone Desert Star reception area. Needs the insect Queen’s royal garb; gives Eriic’s hunter medallion. His empty shop stock does not remove the independent quest handler.",
+      "topics": [
+        "thri-kreen",
+        "queen",
+        "quest",
+        "hi",
+        "robe"
+      ]
+    },
+    {
+      "mob_vnum": 49142,
+      "name": "the wandering merchant",
+      "keyword": "wandering",
+      "description": "Starts along the tents and may wander. Carries and sells the exact large glowing potion requested by the miner. Live location and stock are not guaranteed by a reset declaration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49221,
+      "name": "a jolly old merchant",
+      "keyword": "jolly",
+      "description": "Starts in the Sultan’s pleasure room, carrying the exact dusty signet with two following guards. The cloaked figure’s proof source; not Vernadad’s ring.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49116,
+      "name": "a gangleader",
+      "keyword": "gangleader",
+      "description": "Starts before the pile of refuse, carrying the exact compass with two following gang members. Prose about refuse does not place the compass inside a container.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49170,
+      "name": "Vernadad",
+      "keyword": "vernadad",
+      "description": "Vernadad wears his signet in his sleeping chamber beyond the pickproof House gate, with four following bodyguards. Personal victory is distinct from supplied proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49149,
+      "name": "Mijium",
+      "keyword": "mijium",
+      "description": "Mijium guards the dark wine cellar beneath the massive warehouse. The exact contraband resets on the floor; he does not carry it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49121,
+      "name": "an insect Queen",
+      "keyword": "queen",
+      "description": "The insect Queen wears the gold-laced royal garb in her nest. Her egg/nest lore does not implement a permanent infestation-restoration endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49024,
+      "name": "a HUGE fire wyrm",
+      "keyword": "wyrm",
+      "description": "The huge fire wyrm carries the exact writhing eyeball in the lair above the miner’s trench. Mine access and another player’s recovered eye do not certify this player’s kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49171,
+      "name": "a burly guard",
+      "keyword": "burly",
+      "description": "Four burly guards stand before House Lo’Ushuur. Only the first reset carries the iron key for its locked pickproof north gate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49064,
+      "name": "Narggle",
+      "keyword": "narggle",
+      "description": "Narggle tends the One Armed Dwarf taproom. His bound ASK world-quest service has its own level, fee, target and recipient policy; random world quests stay outside the native zone-story catalog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49162,
+      "name": "Ruffus",
+      "keyword": "ruffus",
+      "description": "Ruffus waits in the shaman’s tent beside Eriic. The computed epic table binds Totemic Mastery through PRACTICE. Purchases remain unavailable while economic accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49065,
+      "name": "a tinker",
+      "keyword": "tinker",
+      "description": "The tinker keeps the bazaar caravan shop and stocks the city map. Shipyard recipients elsewhere accept this map under their own zone ownership.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55242,
+      "name": "an Ambassador from Venan'Trut",
+      "keyword": "ambassador",
+      "description": "Winterhaven’s Ambassador from Venan’Trut accepts Eriic’s desert-island locket for rare fabrics, sandy-brine elixir and 100,000 copper. Starts at two ambassador dispersal rooms and can wander. This foreign exchange does not complete a Venan’Trut card.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55133,
+      "name": "Grendilyn",
+      "keyword": "grendilyn",
+      "description": "Grendilyn is Winterhaven’s tailor. Requires both her exact Jade Empire fabric and the rare Venan’Trut fabric for two magical threads and 250,000 copper; Eriic’s reward alone does not satisfy that pair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 49187,
+      "name": "the Sultan",
+      "keyword": "sultan",
+      "topics": [],
+      "description": "Starts in the palace audience chamber carrying the memory of Venan’Trut, gold-chest key and imported epic stone359. The memory goes to Winterhaven’s ambassador under foreign ownership; the bound epic stone has its own actual group claim, actor custody, peaceful-room and level requirements."
+    }
+  ],
+  "stories": [
+    {
+      "id": "miner-potion-rescue",
+      "title": "Miner: bring the large glowing potion",
+      "category": "story",
+      "summary": "Bring the wounded miner the exact large glowing potion for the leather studded mining belt. The cliff boulder opens the collapsed mine; the falling shaft and downstream river route leads toward his mud trench. Accepted delivery records the native rescue exchange, without proving your own boulder action, source purchase, descent or wyrm victory.",
+      "contracts": [
+        {
+          "giver_vnum": 49020,
+          "completion_key": "give=I:49072;receive=I:49099;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the large glowing potion",
+          "kind": "carried_item",
+          "item_vnums": [
+            49072
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The wandering merchant starts carrying and sells this exact potion. He starts near the city tents and may move. The miner starts in the soggy mud trench north of the River’s End. PUSH the fixed boulder along the cliffs clears the blocked north entrance to the mine, then descend the shaft, ENTER the first river and follow the downstream river rooms to the River’s End, then NORTH to the trench. The second river portal in the trench returns to the River’s End. Drinking a potion, killing a wyrm or carrying another purple bottle does not satisfy this offering. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49020,
+              "completion_key": "give=I:49072;receive=I:49099;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "cloaked-figure-dusty-signet",
+      "title": "Cloaked figure: deliver the dusty signet",
+      "category": "story",
+      "summary": "Bring the heavily cloaked figure the jolly old merchant’s exact dusty signet ring for the copper serpent medallion. The merchant starts in the Sultan’s pleasure room. His ring differs from Vernadad’s signet. The native exchange accepts supplied exact proof without requiring a personal kill or the destruction of a faction.",
+      "contracts": [
+        {
+          "giver_vnum": 49061,
+          "completion_key": "give=I:49171;receive=I:49042;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the dusty signet ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            49171
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The jolly old merchant in the Sultan’s pleasure room starts carrying this ring, with two following guards. The palace’s locked pickproof gates use the separate silver key carried by an elite guard outside. This dusty ring is not Vernadad’s signet or an ordinary ring. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49061,
+              "completion_key": "give=I:49171;receive=I:49042;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "traveler-compass",
+      "title": "Traveler: supply the exact compass",
+      "category": "story",
+      "summary": "Bring the desert traveler the exact compass for the pale tourmaline medallion. The gangleader in the refuse encampment carries the compass; the traveler starts before a narrow crevice. This helps his narrated search for a magic tower, without recording a successful expedition or giving him a new route controller.",
+      "contracts": [
+        {
+          "giver_vnum": 49087,
+          "completion_key": "give=I:49057;receive=I:49058;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the compass",
+          "kind": "carried_item",
+          "item_vnums": [
+            49057
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The gangleader before the pile of refuse starts carrying this compass, with two following gang members. The described fixed refuse pile and broken wagon have no identified active placement as compass containers. Recover this exact item or bring a supplied copy; a map does not substitute. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49087,
+              "completion_key": "give=I:49057;receive=I:49058;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "wizard-vernadad-signet",
+      "title": "Wizard: return Vernadad’s signet",
+      "category": "story",
+      "summary": "Bring the evil wizard Vernadad Lo’Ushuur’s exact signet ring for the eerie silver medallion. The lord wears it in his sleeping chamber. The House gate uses a real iron key and is pickproof. This accepted proof is independent of any permanent fall of the House, personal victory or previous access history.",
+      "contracts": [
+        {
+          "giver_vnum": 49099,
+          "completion_key": "give=I:49148;receive=I:49167;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "house-key",
+          "text": "Optional access: carry House Lo’Ushuur’s iron key",
+          "kind": "carried_item",
+          "item_vnums": [
+            49106
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The first of four burly-guard resets outside the north House gate carries this key. The gate is closed, locked and pickproof; ordinary PICK/KNOCK does not bypass it. An already open passage or supplied signet bypasses your own key history. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "offering",
+          "text": "Carry Vernadad’s signet ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            49148
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Vernadad wears this exact ring in his sleeping chamber beyond House Lo’Ushuur’s north gate. Remove it to carry it loose before offering. The dusty merchant ring is a different proof. The room’s account of smuggling or the wizard’s promise does not establish a House-destruction endpoint. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49099,
+              "completion_key": "give=I:49148;receive=I:49167;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "shady-merchant-contraband",
+      "title": "Shady merchant: return the smuggled contraband",
+      "category": "story",
+      "summary": "Bring the shady merchant one exact smuggled piece of contraband for the cold bluesteel ring. The item lies in Mijium’s hidden wine cellar beneath the massive warehouse. Ordinary ship cargo or ship-shop contraband is a separate service and does not replace this object.",
+      "contracts": [
+        {
+          "giver_vnum": 49155,
+          "completion_key": "give=I:49079;receive=I:49098;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the smuggled piece of contraband",
+          "kind": "carried_item",
+          "item_vnums": [
+            49079
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One floor reset places this exact object in the dark wine cellar with Mijium. SEARCH and OPEN the secret DOWN plank in the massive warehouse to reach the cellar; its reverse UP plank is also secret. The shady merchant starts before the sandy beach. No personal Mijium kill is required, and unrelated contraband does not substitute. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49155,
+              "completion_key": "give=I:49079;receive=I:49098;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "eriic-lost-medallion",
+      "title": "Eriic: return the hunter medallion",
+      "category": "story",
+      "summary": "Bring Eriic the exact elvish hunter medallion for the locket of the desert island. Goranon’s royal-garb exchange is the identified medallion producer; supplied proof bypasses personal earlier history. The locket leads onward to Winterhaven’s Ambassador from Venan’Trut, whose exchange belongs to Winterhaven. Eriic’s separate epic Endurance teaching is not this reward.",
+      "contracts": [
+        {
+          "giver_vnum": 49161,
+          "completion_key": "give=I:49173;receive=I:55371;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-goranon",
+          "text": "Optional earlier route: exchange the Queen’s royal garb",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49223,
+              "completion_key": "give=I:49063;receive=I:49173;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Goranon’s accepted garb exchange gives the hunter medallion. Supplied exact medallions bypass personal earlier history; an old receipt never recreates a spent medallion or garb."
+        },
+        {
+          "id": "earlier-royal-garb",
+          "text": "Optional earlier material: carry the Queen’s royal garb",
+          "kind": "carried_item",
+          "item_vnums": [
+            49063
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Queen wears this exact item. Goranon consumes it to issue the hunter medallion; Eriic asks only for the medallion. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "offering",
+          "text": "Carry the elvish hunter medallion",
+          "kind": "carried_item",
+          "item_vnums": [
+            49173
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Goranon gives this exact medallion for the insect Queen’s royal garb. Eriic starts in the wanderer’s tent and accepts an exact supplied medallion without your own queen victory or earlier Goranon receipt. The miner’s belt, serpent medallion and traveler’s tourmaline medallion do not substitute. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49161,
+              "completion_key": "give=I:49173;receive=I:55371;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "white-robed-figure-wyrm-eye",
+      "title": "White-robed figure: return the wyrm eyeball",
+      "category": "story",
+      "summary": "Bring the mysterious white-robed figure the huge fire wyrm’s exact writhing eyeball for the glowing runestone. The recipient starts in the Blinking Cowl common room and the wyrm above the miner’s trench. The reward is an ordinary type11 item, distinct from the two fixed TOUCH travel stones at the magic tower.",
+      "contracts": [
+        {
+          "giver_vnum": 49220,
+          "completion_key": "give=I:49027;receive=I:49170;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the writhing wyrm eyeball",
+          "kind": "carried_item",
+          "item_vnums": [
+            49027
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The huge fire wyrm in its lair starts carrying this exact eyeball. Reach the blocked mine through the cliff boulder and descend the falling shaft, ENTER the first river and follow the downstream route to the River’s End, then NORTH to the miner’s trench and UP to the wyrm lair, or bring supplied proof. Another dragon eye does not substitute. Delivering the eyeball does not prove a personal kill, miner rescue or use of the reward. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49220,
+              "completion_key": "give=I:49027;receive=I:49170;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    },
+    {
+      "id": "goranon-queen-royal-garb",
+      "title": "Goranon: retrieve the Queen’s royal garb",
+      "category": "story",
+      "summary": "Bring Goranon the insect Queen’s exact gold-laced royal garb for the elvish hunter medallion. The Queen wears it deep in the undermountain. Eriic separately accepts the medallion. Neither earlier miner rescue nor permanent destruction of the nest is required by this item exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 49223,
+          "completion_key": "give=I:49063;receive=I:49173;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the Queen’s royal garb",
+          "kind": "carried_item",
+          "item_vnums": [
+            49063
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The insect Queen wears this exact gold-laced garb in her nest in the undermountain. Remove it to carry it loose. Goranon starts in the Lone Desert Star reception area beside the evil wizard. Another robe or dress does not substitute, and supplied exact proof needs no personal nest campaign. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Current possession does not certify first source recovery or who gave you the item."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete an accepted exchange for this outcome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 49223,
+              "completion_key": "give=I:49063;receive=I:49173;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange records the outcome. Dialogue, current materials, personal source, access, combat, travel, learning and reward settlement are separate facts. Recipient presence and fresh supply still govern daily availability."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

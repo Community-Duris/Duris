@@ -1,0 +1,157 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "vargan",
+  "coverage": "complete",
+  "introduction": "Follow Norkon's stolen armor story, locate its hidden pieces and check the status of his paid reward.",
+  "orientation": [
+    "Norkon Longbeard works at the ancient forge. Ask about armor, betrayed, pieces and weld to learn how his greatest creation was stolen and broken. He asks for two ancient shoulder plates, one ancient breast plate and 40 platinum, equivalent to 40,000 copper, in return for ancient dwarven plate.",
+    "The paid exchange is currently unavailable while accounting is active. Keep your parts and money. Your journal can show the required materials and retain a recorded successful exchange, but having the pieces ready does not complete the purchase. This return is excluded from dailies.",
+    "Look for a shoulder plate in the ancient storeroom and another at the end of the later passageway. The breast plate lies in the limestone cavern. The pieces are hidden: use SEARCH in these rooms, then pick up the revealed piece. A search can fail, and another player may already have revealed or taken a piece.",
+    "You need two copies of the ancient shoulder plate and one ancient breast plate. Check the exact names and quantities; the orog leader's splint mail is different. Pieces supplied by another player can prepare the set without establishing that you discovered or recovered them yourself.",
+    "From the forest entrance, follow the abandoned cave down through the crawl spaces into the old passageways. These narrow rooms require single-file travel and can prevent mounted entry. Follow the available exits and allow for other travelers.",
+    "Wall doors connect the ancient storeroom to the Scrag River and the passageway to the limestone cavern. They may already be open. Follow their current shared state when looking for the hidden armor pieces.",
+    "The Scrag River leads past an island ruin and Drake. The river, ruined writing and nearby creatures give context to your exploration. A passage route also reaches Norkon's forge without crossing the river.",
+    "The forge holds a living flame inside a closed, unlocked container. Opening the forge and retrieving the flame are separate from the armor reward; the flame is not one of Norkon's requested materials. Ask about weld for his explanation of the paid exchange.",
+    "The lower caverns contain minotaurs, a spectator and a passage into Vargan II. Their equipment is separate from the armor pieces. The upper cavern has no ground underfoot; check your route and travel abilities before entering.",
+    "Armor pieces are shared stock. Other players holding them can limit what you find until the zone can restock on its normal schedule. A new daily does not restock pieces or reopen the paid exchange. Your recorded story progress remains separate from current availability.",
+    "Carry two exact shoulders and one exact breast plate loose to show preparation. Worn pieces and contents of containers do not count as loose materials. A recorded successful exchange remains in your history after the parts are spent or the reward is stored. All new story progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 2104,
+      "name": "Norkon Longbeard",
+      "keyword": "norkon",
+      "description": "Ask about armor, betrayed, pieces and weld. Norkon asks for two ancient shoulder plates, one ancient breast plate and 40 platinum for ancient dwarven plate. The paid exchange is unavailable while accounting is active; keep your parts and money.",
+      "topics": [
+        "armor",
+        "betrayed",
+        "pieces",
+        "weld",
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 2100,
+      "name": "a hobgoblin warrior",
+      "keyword": "hobgoblin",
+      "description": "Hobgoblins occupy the abandoned cave and carry equipment for the cave encounters.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2101,
+      "name": "a savage orog",
+      "keyword": "orog",
+      "description": "Savage orogs occupy the passageways. Search nearby rooms for the hidden armor pieces on the ground.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2102,
+      "name": "the fierce scrag",
+      "keyword": "scrag",
+      "description": "Scrags inhabit the river and may carry red diamonds. Norkon asks for armor pieces and coins.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2103,
+      "name": "Drake",
+      "keyword": "drake",
+      "description": "Drake occupies the island ruins and carries gloves and a robe. The ruined writing is part of the island's lore.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2105,
+      "name": "the orog leader",
+      "keyword": "leader",
+      "description": "The orog leader occupies the limestone cavern. Search the room for the hidden breast plate; his splint mail is a different item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2106,
+      "name": "the ravenous minotaur",
+      "keyword": "minotaur",
+      "description": "Ravenous minotaurs inhabit the lower caverns and carry swords or gold links.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2107,
+      "name": "an evil spectator",
+      "keyword": "spectator",
+      "description": "The spectator guards the upper cavern and carries a dragonbone shield. This encounter is separate from Norkon's armor story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2108,
+      "name": "a starved minotaur",
+      "keyword": "starved",
+      "description": "Starved minotaurs occupy the first rooms of the lower cavern.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2109,
+      "name": "an orog shaman",
+      "keyword": "shaman",
+      "description": "The orog shaman occupies the ancient storeroom and carries sleeves and a bracelet. SEARCH the room for a hidden shoulder plate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2110,
+      "name": "an orog rogue",
+      "keyword": "rogue",
+      "description": "The orog rogue also occupies the ancient storeroom and carries a long dagger. Look for the required shoulder plate among the room's hidden items.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "norkons-stolen-armor",
+      "title": "Recover Norkon's stolen armor parts",
+      "category": "request",
+      "summary": "Recover two ancient shoulder plates and one ancient breast plate. Norkon asks for these pieces and 40 platinum in return for ancient dwarven plate. The paid exchange is currently unavailable while accounting is active; keep your parts and money. The journal shows material preparation and any recorded successful exchange. This return is excluded from dailies.",
+      "contracts": [
+        {
+          "giver_vnum": 2104,
+          "completion_key": "give=C:40000,I:2126,I:2126,I:2127;receive=I:2128;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-2126",
+          "text": "Carry 2 × an ancient shoulder plate loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            2126
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Checks the exact quantity carried loose now. SEARCH can reveal hidden pieces. Supplied pieces can prepare the set without recording your own discovery. The paid exchange is currently unavailable."
+        },
+        {
+          "id": "item-2127",
+          "text": "Carry 1 × an ancient breast plate loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            2127
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact quantity carried loose now. SEARCH can reveal hidden pieces. Supplied pieces can prepare the set without recording your own discovery. The paid exchange is currently unavailable."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record a successful armor exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 2104,
+              "completion_key": "give=C:40000,I:2126,I:2126,I:2127;receive=I:2128;disappear=0"
+            }
+          ],
+          "hint": "Keeps a recorded successful exchange after the parts are spent. New exchanges are currently unavailable while accounting is active. Materials, money, a forge visit or dialogue do not complete the purchase."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

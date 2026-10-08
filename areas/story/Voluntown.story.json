@@ -1,0 +1,231 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "Voluntown",
+  "coverage": "complete",
+  "introduction": "Seven royal dynasties lie beneath IceCrag. The caretaker asks for six different fragments to rebuild the Drakenstone key, then accepts a golden strand of time for a cloak. Mary’s story connects these returns to Auril’s curse. Your journal records the accepted returns; carrying supplies shows what you have now.",
+  "orientation": [
+    "ASK CARETAKER about necropolis, family, auril, drakenstone or mary. FAMILIES also works, as do TAILOR and TIME for Mary’s story. Questions give you leads. They are not separate completed quests.",
+    "The six other royal crypts hold six distinct key fragments. They share the name KEY FRAGMENT, so use the family labels below to tell them apart. Recover the Crav, Boru, Llywelyn, Sarum, Tavinshir and Platyr pieces, carry them loose and return the full set to the caretaker. Six copies of one piece cannot replace the six different pieces.",
+    "Thadeus Crav, Bran Boru, Rydian Llywelyn, Marr Sarum and Tyvinius Tavinshir carry keys for their family containers. Artavus Platyr also carries a royal key, but the Platyr urn starts open. Coffins and sarcophagi can have traps. A fragment supplied by another adventurer can fit the return without proving that you defeated its guardian or recovered it yourself.",
+    "The rebuilt key fits the Drakenstone crypt. Haratius carries a golden seal of the fates, which fits the door behind Mary’s shrine. ASK MARY about drakenstone for that lead. Shared or already-open doors can also let you through; carrying a key does not record your own successful entry or battle.",
+    "A golden strand of time lies before the monolith beyond Mary’s shrine. The caretaker accepts that strand for the cloak of woven time. His words describe Mary’s freedom, but this journal records the strand return. It does not establish that you defeated both Drakenstones, moved Mary from the shrine or ended Auril’s hold.",
+    "The castle’s rear exit leads to the snowy trail. The Captain of the Upper Echelon in Castle IceCrag carries the mausoleum entrance key. The rune-covered stone associated with Haratius has its own TOUCH reward and group rules. That reward is separate from the caretaker’s two returns.",
+    "Optional material checks describe loose supplies now. Worn and nested items are different evidence. Accepted history stays recorded after you spend the materials. A daily opportunity does not promise refreshed crypt stock, and new journal progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 142400,
+      "name": "The caretaker",
+      "keyword": "caretaker",
+      "description": "Explains the royal families and accepts six fragments for a Drakenstone key, then a golden strand of time for a cloak. These are two accepted returns.",
+      "topics": [
+        "necropolis",
+        "family",
+        "families",
+        "auril",
+        "drakenstone",
+        "mary",
+        "tailor",
+        "time"
+      ]
+    },
+    {
+      "mob_vnum": 142401,
+      "name": "Mary, tailor of time",
+      "keyword": "mary",
+      "description": "Explains the curse and the seal that opens the monolith chamber. Her dialogue gives a lead; she has no declared item-return contract here.",
+      "topics": [
+        "drakenstone"
+      ]
+    },
+    {
+      "mob_vnum": 142402,
+      "name": "Thadeus Crav",
+      "keyword": "thadeus",
+      "description": "The Crav monarch carries the key to the large stone coffin that holds the Crav fragment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142408,
+      "name": "Bran Boru",
+      "keyword": "bran",
+      "description": "The Boru monarch carries the key to the pedestal coffin that holds the Boru fragment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142410,
+      "name": "Rydian Llywelyn",
+      "keyword": "rydian",
+      "description": "The Llywelyn monarch carries the key to the golden coffin that holds the Llywelyn fragment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142417,
+      "name": "Marr Sarum",
+      "keyword": "marr",
+      "description": "The Sarum monarch carries the key to the obsidian coffin that holds the Sarum fragment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142420,
+      "name": "Tyvinius Tavinshir",
+      "keyword": "tyvinius",
+      "description": "The Tavinshir monarch carries the key to the stone sarcophagus that holds the Tavinshir fragment.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142422,
+      "name": "Artavus Platyr",
+      "keyword": "artavus",
+      "description": "The Platyr monarch carries a royal key, while the fragment’s marble urn starts open. Reaching it does not record a personal defeat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142425,
+      "name": "Haratius Drakenstone",
+      "keyword": "haratius",
+      "description": "Carries the golden seal of the fates for the door beyond Mary’s shrine and an imported rune-covered stone with its own reward rules.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142427,
+      "name": "Hynera Drakenstone",
+      "keyword": "hynera",
+      "description": "Shares the Drakenstone burial chamber with Haratius. Encountering her or returning the strand does not establish your personal victory over either ruler.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "drakenstone-key",
+      "title": "Rebuild the Drakenstone key",
+      "category": "story",
+      "summary": "Gather one fragment from each of the six other royal crypts and return the full set to the caretaker. He rebuilds the key for the Drakenstone tomb. This records the return, without requiring a personal guardian defeat.",
+      "contracts": [
+        {
+          "giver_vnum": 142400,
+          "completion_key": "give=I:142404,I:142405,I:142406,I:142407,I:142408,I:142409;receive=I:142443;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-142404",
+          "text": "Carry the Crav key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142404
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "proof-142405",
+          "text": "Carry the Boru key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142405
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "proof-142406",
+          "text": "Carry the Llywelyn key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "proof-142407",
+          "text": "Carry the Sarum key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142407
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "proof-142408",
+          "text": "Carry the Tavinshir key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142408
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "proof-142409",
+          "text": "Carry the Platyr key fragment loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142409
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this family’s exact fragment carried loose now. Other fragments share its name but cannot replace it. Supplied proof does not establish a personal guardian defeat or first recovery."
+        },
+        {
+          "id": "turn-in",
+          "text": "Return all six distinct fragments to the caretaker",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 142400,
+              "completion_key": "give=I:142404,I:142405,I:142406,I:142407,I:142408,I:142409;receive=I:142443;disappear=0"
+            }
+          ],
+          "hint": "Records the accepted return for the Drakenstone key after the fragments are spent. Opening the crypt, defeating its rulers and rescuing Mary are separate outcomes."
+        }
+      ]
+    },
+    {
+      "id": "strand-of-time",
+      "title": "Bring back a strand of time",
+      "category": "story",
+      "summary": "Follow Mary’s lead to the monolith chamber, then return its golden strand to the caretaker for the cloak of woven time. The accepted proof is the strand; this return does not record an independent rescue or an end to Auril’s curse.",
+      "contracts": [
+        {
+          "giver_vnum": 142400,
+          "completion_key": "give=I:142450;receive=I:142451;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-strand",
+          "text": "Carry a golden strand of time loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142450
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact strand loose now. The seal, a key, a cloak or an encounter with Mary cannot replace it. Its source and your successful access are separate evidence."
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the golden strand to the caretaker",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 142400,
+              "completion_key": "give=I:142450;receive=I:142451;disappear=0"
+            }
+          ],
+          "hint": "Records the accepted strand-for-cloak return and retains it after spending the strand. Earlier key-return history is not required by this native contract. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

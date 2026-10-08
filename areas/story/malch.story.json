@@ -1,0 +1,233 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "malch",
+  "coverage": "complete",
+  "introduction": "Find the hidden card table and the wandering priest, then choose among three independent item returns. Exact materials explain preparation; accepted exchanges keep separate histories.",
+  "orientation": [
+    "Choose among three independent returns: three dark shadowy circles for Snarg, Threzik's exact pirate hat for Gisdan, or three lightning bolt charms for Shablem. Each accepted return has its own history; none requires completing another first.",
+    "Ask Snarg hi or hello, Gisdan hi, hello or yes, and Shablem hi or hello. These addressed replies explain their requests. Ambient gambling chatter does not record your conversation, a game result or another achievement.",
+    "From the main city, PUSH the rock near the hidden passage to reach the card table where Snarg and Gisdan wait. PUSH the tapestry on the table side to open the reverse passage. These are fixed controls; someone else may already have opened the passage.",
+    "The chamber also connects upward to the Shipyards wine cellar through a separate route whose secret door may need SEARCH and opening. Arriving by either route does not prove your own switch activation. Shablem starts in the city square and may wander.",
+    "Snarg wants three separate exact dark shadowy circles. Shadowclave supplies them on cloaked druids and named inhabitants; a cloaked visitor in Alatorin also has one. Bring all three loose. Supplied copies fit the request without proving that you personally killed a druid or recovered an item there.",
+    "Snarg pays 66666 experience and 66666 copper for all three circles together. Gisdan pays 25000 experience and 25000 copper for the pirate hat. Shablem pays 65000 experience and 40000 copper for all three charms together. These coins are rewards paid to you.",
+    "Threzik wears the exact pirate hat at the back of his den. It starts hidden; a successful SEARCH of the relevant corpse can reveal hidden loot after combat. His eyepatch and fireball wand are different items. Supplied hat proof also fits without recording your own search, kill or recovery.",
+    "The pirate hat has a no-rent flag. Its persistence depends on the actual item and accounting lifecycle; this journal does not promise an expiry timer or a particular rent outcome. Keep the visible exact hat loose when offering it.",
+    "Shablem wants three separate exact lightning bolt charms from the warlock lead at Thur'Gurax. Three orc warlocks at the Altar of Storms have one charm each. A charm starts hidden and may need a successful corpse SEARCH for personal recovery. Carry all three loose; merely reaching the altar does not complete the return.",
+    "The guildmaster's desk is closed, locked and trapped. Eligible lock-picking or knock magic can unlock it, but unlocking does not disarm its room-wide fire trap when opened. Its hidden ivory shard is a separate exploration lead, not an offering for these three quests.",
+    "The library bookcase starts open and holds a book and quill. Hidden coin sacks and other local treasure are separate exploration leads. Finding a coin sack is not a quest return; a committed wallet credit and a personal source history are different outcomes.",
+    "Gobo and Sulog have teacher data, while the goblin guildmaster and Maglo have teaching descriptions that need builder review. Paid skill practice is unavailable under active accounting. Local shop stock and training remain separate services rather than extra quest cards.",
+    "The underground ledge and pirate passages have falling hazards. Actual downward exit state, flight, levitation, climbing and mount state affect travel. The story journal does not require visiting every room or promise a safe crossing.",
+    "Every accepting giver departs after a successful return. A daily rollover does not recreate that giver, replenish an item or guarantee availability. Exact loose materials prepare a return; held or nested copies do not substitute loose offerings. Recorded history survives spent materials. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 23623,
+      "name": "Snarg SkagTooth",
+      "keyword": "snarg",
+      "description": "Ask hi or hello at the hidden card table. Three exact loose circles earn 66666 experience and 66666 copper together; Snarg departs after acceptance.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 23624,
+      "name": "Gisdan Flegidigo",
+      "keyword": "gisdan",
+      "description": "Ask hi, hello or yes at the hidden card table. The exact loose pirate hat earns 25000 experience and 25000 copper; Gisdan departs after acceptance.",
+      "topics": [
+        "hi",
+        "hello",
+        "yes"
+      ]
+    },
+    {
+      "mob_vnum": 23626,
+      "name": "Shablem the High Priest",
+      "keyword": "shablem",
+      "description": "Ask hi or hello. Three exact loose lightning bolt charms earn 65000 experience and 40000 copper together. Shablem starts in the square, may wander and departs after acceptance.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 23622,
+      "name": "Threzik One-Eye the Pirate",
+      "keyword": "threzik",
+      "description": "Threzik wears the exact hidden pirate hat in his den. Successful corpse SEARCH, personal recovery, combat and Gisdan's accepted return are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23625,
+      "name": "a goblin",
+      "keyword": "pirate",
+      "description": "The goblin pirates at the card table provide ambient gambling chatter. Their quips do not record a player conversation, bet or quest completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23601,
+      "name": "Jaga'Gook",
+      "keyword": "jaga",
+      "description": "Jaga'Gook is a local merchant. Purchases and current stock are separate from the three item return histories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23608,
+      "name": "Gobo",
+      "keyword": "gobo",
+      "description": "Gobo is a local shop and teacher lead. Training eligibility and successful service credit are separate from the three quest returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23610,
+      "name": "the goblin cook",
+      "keyword": "cook",
+      "description": "The cook offers a local food shop lead. Food purchases do not complete the item return quests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23613,
+      "name": "The goblin guildmaster",
+      "keyword": "guildmaster",
+      "description": "The guildmaster is near the trapped desk. His teaching description needs builder review; neither the ivory shard nor a training attempt completes these returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23614,
+      "name": "Sulog",
+      "keyword": "sulog",
+      "description": "Sulog is a local warrior teacher lead. Paid skill practice is unavailable under active accounting; learning is a separate service outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23617,
+      "name": "Maglo",
+      "keyword": "maglo",
+      "description": "Maglo provides the cleric guild lead, but his teaching description needs builder review. Ritual scenery does not record an actor-specific quest outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 23619,
+      "name": "a Malch'Hor Ganl outcast",
+      "keyword": "outcast",
+      "description": "The outcast provides revenge lore in the caves. No native revenge exchange, personal victory or rescue receipt is defined here.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "shadowclave-circles",
+      "title": "Bring Snarg three shadowy circles",
+      "category": "request",
+      "summary": "Three exact loose dark shadowy circles earn 66666 experience and 66666 copper together. Snarg waits at the hidden card table and departs after acceptance. Supplied proof fits without personal druid combat or first-source history.",
+      "contracts": [
+        {
+          "giver_vnum": 23623,
+          "completion_key": "give=I:93901,I:93901,I:93901;receive=C:66666,E:66666;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "circles",
+          "text": "Carry three exact dark shadowy circles loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            93901
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 23623,
+              "completion_key": "give=I:93901,I:93901,I:93901;receive=C:66666,E:66666;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver departs; access, lore and other returns stay separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "pirate-hat",
+      "title": "Return Threzik's pirate hat",
+      "category": "request",
+      "summary": "The exact loose pirate hat earns 25000 experience and 25000 copper. Gisdan waits at the hidden card table and departs after acceptance. The hat starts hidden and has a no-rent flag; supplied proof fits without personal SEARCH or combat history.",
+      "contracts": [
+        {
+          "giver_vnum": 23624,
+          "completion_key": "give=I:23622;receive=C:25000,E:25000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hat",
+          "text": "Carry the exact pirate hat loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            23622
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 23624,
+              "completion_key": "give=I:23622;receive=C:25000,E:25000;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver departs; access, lore and other returns stay separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "storm-altar-charms",
+      "title": "Bring Shablem three lightning charms",
+      "category": "request",
+      "summary": "Three exact loose lightning bolt charms earn 65000 experience and 40000 copper together. Shablem may wander and departs after acceptance. The charms start hidden on three warlocks; supplied proof fits without personal SEARCH, combat or altar history.",
+      "contracts": [
+        {
+          "giver_vnum": 23626,
+          "completion_key": "give=I:43131,I:43131,I:43131;receive=C:40000,E:65000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "charms",
+          "text": "Carry three exact lightning bolt charms loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            43131
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 23626,
+              "completion_key": "give=I:43131,I:43131,I:43131;receive=C:40000,E:65000;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The accepting giver departs; access, lore and other returns stay separate. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

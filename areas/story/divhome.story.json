@@ -1,0 +1,1619 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "divhome",
+  "coverage": "complete",
+  "introduction": "Explore the mist, elemental shrines, titan palace and cloud camps. Twenty independent deliveries cover the siren, seven bounty proofs, nine treasures, the competing titan token and Pure-Dark. Twelve preparation/access services explain the longer routes. Active, ready accounting is required; missing reward, guarded fees and source/access qualification remain explicit.",
+  "orientation": [
+    "The mountain peak reaches the outside portal room. Enter the local arrival portal to reach the mist; the reciprocal arrival portal returns outside. Enter Shiva's pool for the icy cloud, touch the palace loom for the prison corridor, and enter the fiery cave portal for the foreign Great Below. These are real item teleport routes; knowing a clue or carrying a key does not prove successful travel.",
+    "One nexus cloud buys the wispy palace key. One giant badge buys the cloudy prison key, which opens both locked cells beyond the loom passage. These two access services do not award achievements. The named prison key is not the palace key or Raith's blood-red eyepiece, and neither key receipt proves freeing a giant.",
+    "The siren accepts four distinct elemental tokens together, gives dress and harp, then vanishes. The shrine chancellors wear the tokens. One accepted bundle owns the outcome; it does not require four personal kills or confirm peace for the sisters.",
+    "The hunter accepts seven different hearts independently, including Sealot's foreign heart. Delivery proof is not a recorded personal kill. The Relazier heart request names a reward absent from current world data and needs repair before a safe attempt; material readiness cannot certify payout. Rare holding sources may wander and do not guarantee encounter or repeatable availability.",
+    "Wicks has nine independent cash-reward curiosity requests. Distinguish the local single golden horseshoe from Moria's full set, the Harpy Heights wyvern egg from the exotic surface egg, and a smoke egg from both. Ivory, feather and disc are container contents; the horseshoe, bone statue and smoke egg are ground declarations. Recovery and falls need separate care.",
+    "The shared Riser mace feeds fire or frost crafting. Fire needs the prison demon's trapped claw; frost needs an icicle reached through Shiva's pool. Each mace plus its own mist shard and 50000 copper becomes a different longsword. Both swords plus the generic dragon scale and 200000 copper make Dusk and Dawn. Starting from Riser requires two maces, two shards and 300000 copper; one-copy source caps and mode-one empty-zone resets prevent a promise of fresh same-visit supply.",
+    "Six item-and-coin crafting recipes remain guarded with accounting active. The generic dragon scale's automatic death source is also disabled under active accounting. Support receipts cannot pay fees or replace consumed inputs, and no all-stage crafting achievement is inferred. Item-only crafting services remain distinct from the twenty quest outcomes.",
+    "Emition also turns the foreign electrum chunk into the first angelic flute. Return it to Whetstone in the Airship Graveyard for his separate outcome and a different same-named flute. Reln's jade warsuit needs the foreign jade wyrmscale and 10000000 copper; local celestial/smoke scales and generic dragon scale are distinct.",
+    "Leolan and Raith both accept the same titan token in independent exchanges. One physical token is consumed by one recipient; earlier history or allegiance does not produce a replacement. Raith's eyepiece is equipment and is not a requirement for the fiery portal. The native recipes do not enforce a good/evil campaign branch.",
+    "Relazier accepts foreign Pure-Dark for Purelight and retires, which can remove the bounty heart he carries. These independent outcomes need a deliberate episode/branch policy before becoming a personal campaign. Departure text does not record a returned warlock, royal power drain, released prisoners, invasion or war victory.",
+    "Ordinary Emition shop/forge and Snent encrust teaching have shared bindings and separate accounting/actor requirements. No additional custom local quest terminal is bound. Dialogue remains useful guidance; each keyword, source encounter, trap, door, teleport, kill or container inspection needs accepted evidence before it can become its own tracked objective."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 40701,
+      "name": "a beautiful siren",
+      "keyword": "siren",
+      "description": "Siren area in the clouds. Ask hello about the four elements; accepted tokens give dress and harp, after which she retires.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 40706,
+      "name": "a heavenly bounty hunter",
+      "keyword": "bounty",
+      "description": "Palace guard station. Ask hello, villains or evil. Seven exact heart requests remain independent; the Relazier bounty reward is missing and needs repair before a safe attempt.",
+      "topics": [
+        "hello",
+        "villains",
+        "evil"
+      ]
+    },
+    {
+      "mob_vnum": 40708,
+      "name": "a majestic phoenix",
+      "keyword": "phoenix",
+      "description": "Palace phoenix. Ask hello or tools. Riser and the trapped captive demon claw produce the Rising Sun mace through a support service.",
+      "topics": [
+        "hello",
+        "tools"
+      ]
+    },
+    {
+      "mob_vnum": 40712,
+      "name": "Emition",
+      "keyword": "emition",
+      "description": "Palace forge. Ask hello, mist, reforge or special. Five native recipes include hammer, foreign flute and three guarded mixed weapon payments; ordinary shop/forge commands are separate services.",
+      "topics": [
+        "hello",
+        "mist",
+        "reforge",
+        "special"
+      ]
+    },
+    {
+      "mob_vnum": 40715,
+      "name": "Shiva",
+      "keyword": "shiva",
+      "description": "Shiva's chambers. Ask hello, ingredient or ingredients. Riser and the cloud icicle produce a frost mace; enter the pool for the icy-cloud route.",
+      "topics": [
+        "hello",
+        "ingredients",
+        "ingredient"
+      ]
+    },
+    {
+      "mob_vnum": 40716,
+      "name": "Wicks",
+      "keyword": "wicks",
+      "description": "Palace treasure collector. Ask hello or unique. Nine distinct curiosity requests pay cash; distinguish the two wyvern eggs and single horseshoe from the full set.",
+      "topics": [
+        "hello",
+        "unique"
+      ]
+    },
+    {
+      "mob_vnum": 40717,
+      "name": "Leolan, the titan prince",
+      "keyword": "leolan",
+      "description": "Prince's chambers. Ask hello about the lost titan token. The return gives a shield. His separately carried hammer is needed by one Emition service.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 40718,
+      "name": "Lenia, sister of the prince",
+      "keyword": "lenia",
+      "description": "Palace royalty. Ask hello. One cloud giant badge gives the prison key, without proving a freed prisoner or three kills.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 40735,
+      "name": "Raith",
+      "keyword": "raith",
+      "description": "Cave of Illumination. Ask hello. A titan token gives an eyepiece; he also carries his bounty heart. His request does not unlock the fiery portal.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 40748,
+      "name": "Reln",
+      "keyword": "reln",
+      "description": "Forge back room. Ask hello, fee or scale. Three exact armor services have guarded fees; the two local recipes retire her, while the foreign jade recipe leaves her present.",
+      "topics": [
+        "hello",
+        "fee",
+        "scale"
+      ]
+    },
+    {
+      "mob_vnum": 40749,
+      "name": "a majestic guardian angel",
+      "keyword": "strong",
+      "description": "Palace entrance. Ask hello. A nexus cloud gives the key for the locked gate; receipt or custody does not prove passage.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 40761,
+      "name": "Relazier",
+      "keyword": "relazier",
+      "description": "Wandering warlock initially declared in Rare Load Two. No addressed topic family is bound. Exact Pure-Dark gives Purelight and retires him; his own carried heart competes with that episode.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40704,
+      "name": "the chancellor of air",
+      "keyword": "air",
+      "description": "Air Elemental Shrine. Wears the exact air token sought by the siren; no separate personal-kill or shrine-restoration objective is checked.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40705,
+      "name": "the chancellor of flames",
+      "keyword": "flames",
+      "description": "Fire Elemental Shrine. Wears the exact fire token sought by the siren; no local peaceful token request is bound.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40709,
+      "name": "the chancellor of earth",
+      "keyword": "earth",
+      "description": "Earth Elemental Shrine. Wears the exact earth token; collection remains separate from its later accepted four-token delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40710,
+      "name": "the chancellor of water",
+      "keyword": "water",
+      "description": "Water Elemental Shrine. Wears the exact water token; current worn custody is not a loose offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40729,
+      "name": "a shifty-eyed high elf",
+      "keyword": "shifty",
+      "description": "Hidden high-elf camp. Carries the one-copy titan token consumed by Leolan or Raith; there is no enforced exclusive allegiance or local peaceful handover.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40736,
+      "name": "the cloud giant camp leader",
+      "keyword": "leader",
+      "description": "Cloud giant camp. Wears the one-copy Riser mace and has one of three badge declarations. Both fire and frost paths need separate Riser copies.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40737,
+      "name": "a cloud giant guard",
+      "keyword": "guard",
+      "description": "Cloud giant camp. Has a badge equipment declaration; Lenia requires one matching badge, not this exact individual's defeat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40738,
+      "name": "a young cloud giant",
+      "keyword": "young",
+      "description": "Cloud giant camp. Has a badge equipment declaration. This and the guard/leader are source alternatives, not three required kills.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40722,
+      "name": "a huge celestial dragon",
+      "keyword": "celestial",
+      "description": "Celestial dragon cloud. Carries the local celestial scale for Reln. This scale is distinct from generic dragon scale and jade wyrmscale.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40746,
+      "name": "a large smoke dragon",
+      "keyword": "smoke",
+      "description": "Smoke dragon lair. Carries the local smoke scale for Reln; its egg is separate ground treasure for Wicks.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40747,
+      "name": "Vain, the drow conjurer",
+      "keyword": "vain",
+      "description": "Wandering conjurer initially declared in Rare Load Two. Carries Vain's exact bounty heart, without a cosmocy-learning or domination terminal.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40755,
+      "name": "Gravet",
+      "keyword": "gravet",
+      "description": "Wandering githyanki initially declared in Rare Load Two. Carries Gravet's exact heart, which yields the foreign ruby globe rather than the similarly named local globe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40756,
+      "name": "Ajandaner",
+      "keyword": "ajandaner",
+      "description": "Wandering assassin initially declared in Rare Load Three. Carries Ajandaner's exact bounty heart; random movement is not a guaranteed encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40757,
+      "name": "a raging demon",
+      "keyword": "demon",
+      "description": "Locked western prison cell. Carries the flaming claw with a get/put fire trap; its recovery is distinct from freeing a prisoner.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40760,
+      "name": "Snent",
+      "keyword": "snent",
+      "description": "Wandering alchemist initially declared in the mist. Carries Snent's exact bounty heart and is a shared epic encrust teacher. Practice, payment and skill admission are separate from the bounty.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "siren-four-elements",
+      "title": "Four elements for the siren",
+      "category": "story",
+      "summary": "Bring the earth, water, air and fire tokens together. The siren gives her black dress and harp, then vanishes. This is one four-item delivery; her promised peace is narrative, without four personal kills or a checked peace state.",
+      "contracts": [
+        {
+          "giver_vnum": 40701,
+          "completion_key": "give=I:40762,I:40763,I:40764,I:40765;receive=I:40766,I:40767;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40762",
+          "text": "Carry a token of earth",
+          "kind": "carried_item",
+          "item_vnums": [
+            40762
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chancellor of earth wears the earth token in the Earth Elemental Shrine. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40763",
+          "text": "Carry a token of water",
+          "kind": "carried_item",
+          "item_vnums": [
+            40763
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chancellor of water wears the water token in the Water Elemental Shrine. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40764",
+          "text": "Carry a token of air",
+          "kind": "carried_item",
+          "item_vnums": [
+            40764
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chancellor of air wears the air token in the Air Elemental Shrine. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40765",
+          "text": "Carry a token of fire",
+          "kind": "carried_item",
+          "item_vnums": [
+            40765
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chancellor of flames wears the fire token in the Fire Elemental Shrine. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40701,
+              "completion_key": "give=I:40762,I:40763,I:40764,I:40765;receive=I:40766,I:40767;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-raith",
+      "title": "The hunter's request: Raith",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Raith for greaves. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40726;receive=I:40771;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40726",
+          "text": "Carry the dark heart of Raith",
+          "kind": "carried_item",
+          "item_vnums": [
+            40726
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Raith carries his exact heart while watching the portal in the Cave of Illumination. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40726;receive=I:40771;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-ajandaner",
+      "title": "The hunter's request: Ajandaner",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Ajandaner for headdress. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40758;receive=I:40769;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40758",
+          "text": "Carry the dark heart of Ajandaner",
+          "kind": "carried_item",
+          "item_vnums": [
+            40758
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ajandaner carries his exact heart. His declared source starts in Rare Load Three and may wander; that holding room is not a normal arrival route. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40758;receive=I:40769;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-vain",
+      "title": "The hunter's request: Vain",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Vain for ring. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40756;receive=I:40768;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40756",
+          "text": "Carry the dark heart of Vain",
+          "kind": "carried_item",
+          "item_vnums": [
+            40756
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Vain carries his exact heart. His source starts in Rare Load Two and may wander into the mist; appearance at a particular place is not guaranteed. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40756;receive=I:40768;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-gravet",
+      "title": "The hunter's request: Gravet",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Gravet for ruby globe of majesty. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40757;receive=I:22625;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40757",
+          "text": "Carry the dark heart of Gravet",
+          "kind": "carried_item",
+          "item_vnums": [
+            40757
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gravet carries his exact heart. His source starts in Rare Load Two and may wander; distinguish it from the hearts of Vain and Raith. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40757;receive=I:22625;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-snent",
+      "title": "The hunter's request: Snent",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Snent for battle-forgers' hammer. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40772;receive=I:40773;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40772",
+          "text": "Carry the dark heart of Snent",
+          "kind": "carried_item",
+          "item_vnums": [
+            40772
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Snent carries his exact heart in the mist. He also teaches encrust through the shared epic teacher system; the bounty does not require learning that skill. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40772;receive=I:40773;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-sealot",
+      "title": "The hunter's request: Sealot",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Sealot for cloak of storm winds. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The hunter stays; other hearts and their receipts do not complete this request.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40774;receive=I:22020;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40774",
+          "text": "Carry the dark heart of Sealot",
+          "kind": "carried_item",
+          "item_vnums": [
+            40774
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Sealot carries this exact heart in the foreign Pits of Cerebrus hunting ground. Other hearts do not fit this request. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40774;receive=I:22020;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bounty-relazier",
+      "title": "The hunter's request: Relazier",
+      "category": "request",
+      "summary": "The heavenly bounty hunter accepts the exact heart of Relazier for an unavailable reward. This is a separate trophy delivery; supplied matching proof fits without a personal kill. The named reward object is absent from current world data. This request needs repair and safe reward admission before gameplay qualification.",
+      "contracts": [
+        {
+          "giver_vnum": 40706,
+          "completion_key": "give=I:40776;receive=I:31341;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40776",
+          "text": "Carry the dark heart of Relazier",
+          "kind": "carried_item",
+          "item_vnums": [
+            40776
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Relazier carries his exact heart and wanders from a rare holding source. The hunter's named reward is absent from the current world data: this bounty needs repair before a safe attempt. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40706,
+              "completion_key": "give=I:40776;receive=I:31341;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate. The named reward is missing. Do not treat journal readiness as proof this bounty can safely pay out; repair and reward admission checks are pending."
+        }
+      ]
+    },
+    {
+      "id": "phoenix-fire-mace",
+      "title": "Infuse Riser with fire",
+      "category": "service",
+      "summary": "The phoenix combines one Riser mace and one flaming demon claw into the Rising Sun mace. This item-only preparation service feeds a separate paid reforge; it has no achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 40708,
+          "completion_key": "give=I:40727,I:40760;receive=I:40729;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-312",
+          "text": "Optional history: obtain the prison key from Lenia",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40718,
+              "completion_key": "give=I:40744;receive=I:40745;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "material-40727",
+          "text": "Carry an iron mace dubbed 'Riser'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40727
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cloud giant camp leader wears the exact Riser mace. Both fire and frost recipes consume a separate copy; a single mace cannot supply both branches. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40760",
+          "text": "Carry a flaming demon claw",
+          "kind": "carried_item",
+          "item_vnums": [
+            40760
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The captive demon in the prison carries the flaming claw. Reach the loom passage and the locked western cell with the prison key. The claw has a one-charge level-twenty fire trap on get/put; its recovery needs care. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40708,
+              "completion_key": "give=I:40727,I:40760;receive=I:40729;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "shiva-frost-mace",
+      "title": "Infuse Riser with frost",
+      "category": "service",
+      "summary": "Shiva combines one Riser mace and one frosty icicle into the Rising Frost mace. This item-only preparation service consumes its own Riser; it does not complete the fire branch or award achievement credit.",
+      "contracts": [
+        {
+          "giver_vnum": 40715,
+          "completion_key": "give=I:40727,I:40749;receive=I:40728;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40727",
+          "text": "Carry an iron mace dubbed 'Riser'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40727
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cloud giant camp leader wears the exact Riser mace. Both fire and frost recipes consume a separate copy; a single mace cannot supply both branches. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40749",
+          "text": "Carry a frosty icicle",
+          "kind": "carried_item",
+          "item_vnums": [
+            40749
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact frosty icicle lies on the icy cloud reached by entering Shiva's pool and then exploring that cloud. The pool in the cloud returns to her room. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40715,
+              "completion_key": "give=I:40727,I:40749;receive=I:40728;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "emition-ethereal-hammer",
+      "title": "A hammer of solidified mist",
+      "category": "service",
+      "summary": "Emition combines the hammer of the titans and a shard of solidified mist into an ethereal battlehammer. This is an independent item-only crafting service; the prince's token return does not provide the hammer or require this exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 40712,
+          "completion_key": "give=I:40715,I:40716;receive=I:40717;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40715",
+          "text": "Carry the hammer of the titans",
+          "kind": "carried_item",
+          "item_vnums": [
+            40715
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Leolan carries the exact hammer of the titans in his palace chambers. His token-return reward is a shield, not this hammer; there is no local peaceful hammer request. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40716",
+          "text": "Carry a shard of solidified mist",
+          "kind": "carried_item",
+          "item_vnums": [
+            40716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One shard of solidified mist is declared loose in the mist. The hammer and both sword reforgings compete for this same exact material; each consumes its own copy. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=I:40715,I:40716;receive=I:40717;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "emition-whetstone-flute",
+      "title": "Make Whetstone's electrum flute",
+      "category": "service",
+      "summary": "Emition takes the foreign chunk of electrum and gives the first angelic electrum flute. This local crafting service feeds Whetstone's separate return in the Airship Graveyard. His returned same-named flute is a different item; the foreign outcome belongs there.",
+      "contracts": [
+        {
+          "giver_vnum": 40712,
+          "completion_key": "give=I:77539;receive=I:40778;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77539",
+          "text": "Carry a chunk of solid electrum",
+          "kind": "carried_item",
+          "item_vnums": [
+            77539
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact chunk of solid electrum lies behind rock debris on the steep mountain slope in the foreign Airship Graveyard. Whetstone's metal clue is near Fossil Rock. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=I:77539;receive=I:40778;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "emition-sun-longsword",
+      "title": "Reforge the Rising Sun mace",
+      "category": "service",
+      "summary": "The exact Rising Sun mace, one mist shard and 50000 copper become a Rising Sun longsword. This mixed payment is guarded with accounting active. The final weapon merge needs this sword, not its similarly named mace.",
+      "contracts": [
+        {
+          "giver_vnum": 40712,
+          "completion_key": "give=C:50000,I:40716,I:40729;receive=I:40780;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-101",
+          "text": "Optional history: infuse Riser with fire",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40708,
+              "completion_key": "give=I:40727,I:40760;receive=I:40729;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "material-40729",
+          "text": "Carry a blazing mace dubbed 'Rising Sun'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40729
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The phoenix's Riser-and-claw service produces the Rising Sun mace. The similarly named Rising Sun longsword is a different item. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40716",
+          "text": "Carry a shard of solidified mist",
+          "kind": "carried_item",
+          "item_vnums": [
+            40716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One shard of solidified mist is declared loose in the mist. The hammer and both sword reforgings compete for this same exact material; each consumes its own copy. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=C:50000,I:40716,I:40729;receive=I:40780;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 50000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "emition-frost-longsword",
+      "title": "Reforge the Rising Frost mace",
+      "category": "service",
+      "summary": "The exact Rising Frost mace, one mist shard and 50000 copper become a Rising Frost longsword. This mixed payment is guarded with accounting active. The fire and frost reforgings are independent services.",
+      "contracts": [
+        {
+          "giver_vnum": 40712,
+          "completion_key": "give=C:50000,I:40716,I:40728;receive=I:40782;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-214",
+          "text": "Optional history: infuse Riser with frost",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40715,
+              "completion_key": "give=I:40727,I:40749;receive=I:40728;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "material-40728",
+          "text": "Carry an icy mace dubbed 'Rising Frost'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40728
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Shiva's Riser-and-icicle service produces the Rising Frost mace. The similarly named Rising Frost longsword is a different item. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40716",
+          "text": "Carry a shard of solidified mist",
+          "kind": "carried_item",
+          "item_vnums": [
+            40716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One shard of solidified mist is declared loose in the mist. The hammer and both sword reforgings compete for this same exact material; each consumes its own copy. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=C:50000,I:40716,I:40728;receive=I:40782;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 50000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "emition-dusk-and-dawn",
+      "title": "Merge the swords into Dusk and Dawn",
+      "category": "service",
+      "summary": "Emition consumes both exact Rising Sun and Rising Frost longswords, one generic dragon scale and 200000 copper for Dusk and Dawn and a declared 150000 experience reward, then retires. Starting from Riser requires two maces, two shards, claw, icicle, scale and 300000 copper. Mixed settlement and fresh generic scale issuance remain blocked with accounting active; no full crafting campaign is inferred.",
+      "contracts": [
+        {
+          "giver_vnum": 40712,
+          "completion_key": "give=C:200000,I:392,I:40780,I:40782;receive=E:150000,I:40781;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-162",
+          "text": "Optional history: reforge the fire longsword",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=C:50000,I:40716,I:40729;receive=I:40780;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "history-170",
+          "text": "Optional history: reforge the frost longsword",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=C:50000,I:40716,I:40728;receive=I:40782;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "material-40780",
+          "text": "Carry a blazing longsword dubbed 'Rising Sun'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40780
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Emition's paid fire reforge produces the Rising Sun longsword. The fire mace cannot replace this sword. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-40782",
+          "text": "Carry an icy longsword dubbed 'Rising Frost'",
+          "kind": "carried_item",
+          "item_vnums": [
+            40782
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Emition's paid frost reforge produces the Rising Frost longsword. The frost mace cannot replace this sword. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-392",
+          "text": "Carry a dragon scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            392
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The recipe needs the generic dragon scale, not the local celestial/smoke scales or the jade wyrmscale. Its automatic dragon-death source is currently disabled while accounting is active; no static reset or native exchange supplies a replacement. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=C:200000,I:392,I:40780,I:40782;receive=E:150000,I:40781;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 200000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient retires after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "wicks-single-horseshoe",
+      "title": "A golden horseshoe for Wicks",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 50000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40734;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40734",
+          "text": "Carry a golden horse shoe",
+          "kind": "carried_item",
+          "item_vnums": [
+            40734
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The single golden horseshoe lies on the high unicorn lookout. The room can cause a fall; it is ground treasure, not a unicorn kill reward. The foreign set of horseshoes is a different request. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40734;receive=C:50000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-ivory",
+      "title": "The palace ivory curiosity",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 10000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40719;receive=C:10000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40719",
+          "text": "Carry a piece of ivory",
+          "kind": "carried_item",
+          "item_vnums": [
+            40719
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact piece of ivory is inside one specific marble statue in the palace. Other same-named statues are not this container; recover its contents before offering. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40719;receive=C:10000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-griffon-feather",
+      "title": "A rare griffon feather",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 25000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40746;receive=C:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40746",
+          "text": "Carry a rare griffon feather",
+          "kind": "carried_item",
+          "item_vnums": [
+            40746
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact rare feather is inside the griffon nest high above the cloud. The local nesting room can cause falls. Declared foreign griffon sources also exist; this is not a required local griffon kill. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40746;receive=C:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-smoke-egg",
+      "title": "A smoke dragon egg",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 25000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40748;receive=C:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40748",
+          "text": "Carry a smoke dragon egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            40748
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact smoke dragon egg lies on the ground in the smoke dragon's lair. Neither the dragon's scale nor a wyvern egg fits this request. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40748;receive=C:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-adamantium-disc",
+      "title": "The forge's adamantium disc",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 5000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40751;receive=C:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40751",
+          "text": "Carry a disc of molded adamantium",
+          "kind": "carried_item",
+          "item_vnums": [
+            40751
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact adamantium disc is inside the massive anvil at Emition's forge. Recover the content; seeing or carrying its container does not supply the disc. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40751;receive=C:5000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-bone-statue",
+      "title": "The prison's tiny bone statue",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 10000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:40750;receive=C:10000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-312",
+          "text": "Optional history: obtain the prison key from Lenia",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40718,
+              "completion_key": "give=I:40744;receive=I:40745;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted receipt explains a preparation route. Supplied exact material fits without that history. A receipt cannot replace spent material, pay a fee or prove successful passage, personal recovery or a completed campaign."
+        },
+        {
+          "id": "material-40750",
+          "text": "Carry a tiny carved bone statue",
+          "kind": "carried_item",
+          "item_vnums": [
+            40750
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The tiny bone statue lies in the eastern prison cell. The palace loom leads to the prison entrance; Lenia's prison key opens the locked cell. No prisoner-release objective is checked. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:40750;receive=C:10000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-harpy-wyvern-egg",
+      "title": "The Harpy Heights wyvern egg",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 25000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:31105;receive=C:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-31105",
+          "text": "Carry a wyvern egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            31105
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This wyvern egg is declared on the foreign Harpy Heights nest. The nest has a sixty-percent fall chance. The other same-named wyvern egg belongs to Wicks's separate exotic request. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:31105;receive=C:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-exotic-wyvern-egg",
+      "title": "The exotic wyvern egg",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 55000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:500026;receive=C:55000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-500026",
+          "text": "Carry a wyvern egg",
+          "kind": "carried_item",
+          "item_vnums": [
+            500026
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This distinct wyvern egg has surface ground, vehicle/broodmare and Alatorin sources. It is the exotic request with a 55000-copper reward, not the Harpy Heights egg. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:500026;receive=C:55000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "wicks-moria-horseshoes",
+      "title": "Moria's golden horseshoes",
+      "category": "request",
+      "summary": "Wicks accepts this exact curiosity and pays 40000 copper. This independent treasure request has its own outcome. He stays; a cash reward does not turn the request into a paid service or prove personal treasure recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 40716,
+          "completion_key": "give=I:99061;receive=C:40000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-99061",
+          "text": "Carry a set of golden horseshoes",
+          "kind": "carried_item",
+          "item_vnums": [
+            99061
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The full set of golden horseshoes is declared on the ground in Moria Forest. It is not the single local golden horseshoe; its own request pays 40000 copper. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40716,
+              "completion_key": "give=I:99061;receive=C:40000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "leolan-titan-token",
+      "title": "Return the prince's token",
+      "category": "story",
+      "summary": "Leolan accepts one token of the titans and gives his shield. This independent return competes for the same physical token as Raith's request, but native acceptance does not enforce exclusive allegiance or award a defeated-high-elf milestone.",
+      "contracts": [
+        {
+          "giver_vnum": 40717,
+          "completion_key": "give=I:40718;receive=I:40722;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40718",
+          "text": "Carry a token of the titans",
+          "kind": "carried_item",
+          "item_vnums": [
+            40718
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A shifty-eyed high elf carries the single declared token in the hidden camp. Leolan and Raith both consume this exact kind, so one physical token can satisfy only one exchange before a replacement is obtained. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40717,
+              "completion_key": "give=I:40718;receive=I:40722;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "lenia-prison-key",
+      "title": "A badge for the prison key",
+      "category": "service",
+      "summary": "Lenia accepts one cloud giant badge and gives the cloudy key. It opens the eastern and western prison cells after using the palace loom passage. This is an access service; her request to release the giants has no checked release, escape or escort endpoint.",
+      "contracts": [
+        {
+          "giver_vnum": 40718,
+          "completion_key": "give=I:40744;receive=I:40745;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40744",
+          "text": "Carry a badge of the cloud giants",
+          "kind": "carried_item",
+          "item_vnums": [
+            40744
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cloud giant leader, guard and young giant each have a badge equipment declaration, with a cap of three. Lenia accepts one exact badge, without counting three defeated giants. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40718,
+              "completion_key": "give=I:40744;receive=I:40745;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "raith-titan-token",
+      "title": "The token Raith seeks",
+      "category": "story",
+      "summary": "Raith accepts one token of the titans and gives a blood-red eyepiece. This is an independent delivery with no enforced branch exclusion. The eyepiece is equipment, not a portal key; draining royal power or winning a war is not checked.",
+      "contracts": [
+        {
+          "giver_vnum": 40735,
+          "completion_key": "give=I:40718;receive=I:40725;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40718",
+          "text": "Carry a token of the titans",
+          "kind": "carried_item",
+          "item_vnums": [
+            40718
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A shifty-eyed high elf carries the single declared token in the hidden camp. Leolan and Raith both consume this exact kind, so one physical token can satisfy only one exchange before a replacement is obtained. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40735,
+              "completion_key": "give=I:40718;receive=I:40725;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "reln-celestial-armor",
+      "title": "Craft local celestial scale armor",
+      "category": "service",
+      "summary": "Reln takes one local celestial dragon scale and 10000 copper for celestial scale armor, then retires. This paid support service remains guarded with accounting active. Neither a generic scale nor jade wyrmscale fits.",
+      "contracts": [
+        {
+          "giver_vnum": 40748,
+          "completion_key": "give=C:10000,I:40736;receive=I:40738;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40736",
+          "text": "Carry a large celestial dragon scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            40736
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The huge celestial dragon carries this local celestial scale. The generic dragon scale and foreign jade wyrmscale are different inputs. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40748,
+              "completion_key": "give=C:10000,I:40736;receive=I:40738;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 10000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient retires after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "reln-smoke-armor",
+      "title": "Craft smoke dragonscale armor",
+      "category": "service",
+      "summary": "Reln takes one local smoke dragon scale and 10000 copper for smoke dragonscale armor, then retires. This paid support service remains guarded with accounting active. The other armor branch needs a replacement recipient episode.",
+      "contracts": [
+        {
+          "giver_vnum": 40748,
+          "completion_key": "give=C:10000,I:40735;receive=I:40737;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40735",
+          "text": "Carry a large smoke dragon scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            40735
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The large smoke dragon carries this local smoke scale in its lair. The egg and generic dragon scale do not fit this armor recipe. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40748,
+              "completion_key": "give=C:10000,I:40735;receive=I:40737;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 10000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient retires after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "reln-jade-warsuit",
+      "title": "Craft a jade wyrmscale warsuit",
+      "category": "service",
+      "summary": "Reln takes one exact foreign jade wyrmscale and 10000000 copper for the jade warsuit and stays. This guarded paid service costs one thousand times the local armor fee, as her dialogue explains; local scales cannot substitute.",
+      "contracts": [
+        {
+          "giver_vnum": 40748,
+          "completion_key": "give=C:10000000,I:76697;receive=I:40777;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-76697",
+          "text": "Carry a giant scale of a jade wyrm",
+          "kind": "carried_item",
+          "item_vnums": [
+            76697
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The great celestial jade wyrm in the foreign Jade Empire has a twenty-five-percent, one-copy declaration for this exact scale. The local celestial scale is not a substitute. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40748,
+              "completion_key": "give=C:10000000,I:76697;receive=I:40777;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. This recipe also costs 10000000 copper and remains guarded while accounting cannot safely settle the combined items and payment. Material readiness or an earlier receipt does not pay that fee. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "guardian-nexus-key",
+      "title": "A cloud for the palace key",
+      "category": "service",
+      "summary": "The strong guardian takes one nexus cloud and gives the wispy palace key. The key opens the locked palace entrance. This access service does not prove a personally explored nexus, successful unlocking or safe passage.",
+      "contracts": [
+        {
+          "giver_vnum": 40749,
+          "completion_key": "give=I:40739;receive=I:40740;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-40739",
+          "text": "Carry a piece of nexus cloud",
+          "kind": "carried_item",
+          "item_vnums": [
+            40739
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Four misty nexus rooms declare matching pieces of cloud. The guardian accepts one exact cloud; possessing it does not prove that you personally completed the nexus. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted support service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40749,
+              "completion_key": "give=I:40739;receive=I:40740;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. This support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "relazier-puredark",
+      "title": "Pure-Dark for Relazier",
+      "category": "story",
+      "summary": "Relazier accepts the exact foreign Pure-Dark warmace and gives the Purelight warhammer, then retires. This cross-plane exchange is independent of the hunter's heart bounty. His announced departure does not record a return to his homeland or an invasion, and retirement can remove the heart he carries.",
+      "contracts": [
+        {
+          "giver_vnum": 40761,
+          "completion_key": "give=I:22032;receive=I:40775;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22032",
+          "text": "Carry the demonic warmace 'Pure-Dark'",
+          "kind": "carried_item",
+          "item_vnums": [
+            22032
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The demonic Pure-Dark warmace is declared on the ground in a foreign Pits of Cerebrus treasure room. The local fiery portal leads to the Great Below; the further vault/treasure route is separate. Purelight is the reward, not a substitute input. Supplied matching material also fits; custody does not prove first recovery or a personal kill. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40761,
+              "completion_key": "give=I:22032;receive=I:40775;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome; dialogue, sources, travel and other requests remain separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

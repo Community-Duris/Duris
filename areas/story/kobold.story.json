@@ -1,0 +1,344 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "kobold",
+  "coverage": "complete",
+  "introduction": "Follow Szxvu’s silver and gem commissions, understand their active-accounting payment limits, and use the fence, mound and temple clues to trace the exact material sources. The journal keeps useful preparation services separate from the guarded spectacles request, ambient scenes, dangerous guardian behavior and Winterhaven’s memory continuation.",
+  "orientation": [
+    "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Kobold Settlement has its own achievement. All four native exchanges are explained here. Three supporting services do not count toward zone completion; the spectacles request retains one achievement candidate whose paid offering is guarded. None is a daily candidate.",
+    "The two useful progressions are nuggets → silver blocks → shield, and statue gems + corpse frames → spectacles. Each declared exchange stays independent. Inspection and producer receipts are optional; exact supplied materials skip earlier personal history. Current custody does not establish a first original acquisition, a personal kill or safe source access.",
+    "Szxvu at 1406 asks 10 platinum and eight nuggets for one block, then 170 platinum and two blocks for the shield. Two self-produced blocks use sixteen nuggets and two separate smelting fees. The spectacles recipe asks for 20 platinum, the exact gems and frames. These recipes cannot accept mixed coin-and-item payments with accounting active; gathering materials does not remove that guard.",
+    "Szxvu also receives a smith handler dynamically from the tradeskill table. Its ten armor recipes use the separate ore kinds and a generated object, rather than the local nugget/block recipes. The forge command is disabled with accounting active, including its menu. It is not a working alternative for these commissions or a rod-reassembly route.",
+    "Miners and leaders at 1495 and 1498 declare five nugget resets with a normal global live-copy limit five. The smelt wants eight. Saved-item reload, ordinary resets and forced repops can differ; the source audit does not establish a played eight-nugget collection or daily-renewal route. The journal can count exact supplied loose nuggets without promising their availability.",
+    "Gem inspection names the same input and output kind, not a guaranteed return of the original item identity. The later spectacles recipe is checked first and shares the gems. With no frames, inspection can remain the matching route; with the matching frames, its unsupported fee can block that route. Do not make inspection a required stage or keep handing gems over to force progress.",
+    "From Surface 622130, travel north to forest trail 1400, then north toward the fence at 1462. The iron gate needs Gwark’s key. TUG the root switch at 1463 or its counterpart at 1469 to clear the reciprocal blocked fence passage. This opens a route, without creating a quest receipt.",
+    "The settlement can also be entered from Winterhaven 55402 southwest to 1402 through the foreign Incarnate Evil loading area. There is no declared ordinary reverse exit from 1402 to that room. Deep cavern 1542 connects east with Underdark 816080 west. Foreign discovery and completion retain their own ownership.",
+    "Gwark’s key fits the house door 1433 north ↔ 1434 south and the perimeter gate 1462 north ↔ 1468 south. The shaman’s key fits mound door 1425 north ↔ 1456 south; the mound desk holds the note about the temple word. The pantry trapdoor 1436 down ↔ 1455 up starts closed without a key lock.",
+    "From pond 1424, the downward muddy hole enters 1445. At 1449, PULL the bar switch to clear the blocked east passage to 1470; its western return door resets closed without a lock. Continue east to 1471, down to 1472, east to 1473 and down to temple 1474. Normal rubble clearing and actual arrival are separate from recorded story acceptance.",
+    "At temple 1476, static warrior corpse 1463 contains the spectacle frames and language journal. The statue at 1478 wears the gem eyes and has a custom stone-pile death handler. Reading the journal or recovering gear supplies clues, without automatically recording a learned language, first-source acquisition, kill or corpse recovery.",
+    "The altar at 1481 has the eastern bone door to tomb 1482, with magic-key marker -2 and final keyword i>|uub. The note, parchment and language journal explain a translation puzzle. Shared speech checks the raw supplied word and unlocks matching reciprocal locks; it does not automatically open the door or prove the language was learned. Jkyl’s east barrier is a separate live actor obstacle.",
+    "The restored temple handlers use their actual reset rooms: Jkyl at altar 1481, golems at tomb 1482, demon at pit 1484. Jkyl’s west command sends the actor to the pit; the demon can pull an eligible player from ledge 1483 and start combat, and can block upward escape. Actor presence and command/periodic conditions matter. Neither arrival nor narration proves survival or a successful escape.",
+    "Tomb 1482 contains the sarcophagus with a tablet half, gear and the imported Kobold Settlement memory 55440. The other tablet is on the pit demon. The imported rune-covered stone 358 uses shared epic TOUCH settlement, separately from journal request credit; visiting or hearing it hum does not prove an accepted award. Rod of Rulership prototypes and four same-named pieces have lore, but the reviewed resets, native quests and smith recipes provide no local piece supply or reassembly endpoint. Treat that as an incomplete integration lead until builder intent and an actual route are established.",
+    "The tomb’s imported memory continues to the Kobold Settlement ambassador in Winterhaven for two declared item rewards and 1000000 copper. This is the existing foreign memory request. Obtaining the memory or visiting the tomb does not complete Winterhaven’s offering or discover that zone.",
+    "No room declares a current or chance-fall property; pit danger is driven by the native guardian handlers and ordinary vertical travel. The pond uses ordinary water movement rules, with BOAT boots as one declared source of support. Inns, recovery flags, room names and carried equipment do not promise safe travel or reset renewal."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 1420,
+      "name": "Szxvu, the kobold blacksmith",
+      "keyword": "szxvu",
+      "topics": [
+        "rod",
+        "rulership",
+        "tyxru",
+        "mine",
+        "mines",
+        "silver",
+        "fee",
+        "block",
+        "blocks",
+        "shield",
+        "nugget",
+        "nuggets",
+        "jewels",
+        "jewel",
+        "eyes",
+        "eye"
+      ],
+      "description": "Szxvu starts at weaponry and armory 1406. Ask about mines, nuggets, fees, blocks, shields or jewels. Six addressed response families have sixteen aliases, not sixteen quest achievements. His three mixed-fee commissions are guarded with accounting active; his separate dynamically assigned forge command is also disabled. Gem inspection is optional and overlaps the guarded spectacles input."
+    },
+    {
+      "mob_vnum": 1433,
+      "name": "a black demon statue",
+      "keyword": "statue",
+      "topics": [],
+      "description": "The black demon statue starts at temple 1478 wearing the required gem eyes. Its custom death handler creates a stone pile and transfers gear. A pile or current gem custody does not prove your personal first acquisition or statue kill."
+    },
+    {
+      "mob_vnum": 1437,
+      "name": "Jkyl, the kobold high priest",
+      "keyword": "jkyl",
+      "topics": [],
+      "description": "Jkyl starts at altar 1481, carrying the parchment about translating open and wearing a death mask. His corrected handler blocks north, south and east from the altar, sends westward players into pit 1484, and can summon imps while fighting. These are access and combat behaviors, not native quest receipts."
+    },
+    {
+      "mob_vnum": 1438,
+      "name": "a stone golem",
+      "keyword": "golem",
+      "topics": [],
+      "description": "Two stone golems start in tomb 1482; one reset carries stone key 1434. Their corrected handler can shove an ordinary player back when leaving west. A key or guardian encounter does not prove the tomb door was unlocked or that you escaped."
+    },
+    {
+      "mob_vnum": 1436,
+      "name": "a summoned tako demon",
+      "keyword": "tako",
+      "topics": [],
+      "description": "The tako demon starts in sacrificial pit 1484, wearing its talon and carrying tablet 1436. Its corrected handler can block upward escape and pull an eligible player from ledge 1483 into the pit, starting combat. Expect an active guardian, not a narrated safe descent."
+    },
+    {
+      "mob_vnum": 1441,
+      "name": "a kobold miner",
+      "keyword": "miner",
+      "topics": [],
+      "description": "The nugget-bearing miners start at 1495 and 1498. Three G resets declare silver nugget 1447, each with global live-copy cap five. Carrying eight is preparation, not evidence that ordinary resets admitted eight at once."
+    },
+    {
+      "mob_vnum": 1443,
+      "name": "a kobold mine leader",
+      "keyword": "leader",
+      "topics": [],
+      "description": "Mine leaders start at 1495 and 1498. Their two G resets also use nugget cap five. Together with the three miner resets they declare five initial nugget sources; further admitted supply needs reset and persistence qualification."
+    },
+    {
+      "mob_vnum": 1400,
+      "name": "the kobold shaman",
+      "keyword": "shaman",
+      "topics": [],
+      "description": "The kobold shaman starts in field 1427 carrying key 1415 for the mound door between 1425 and 1456. The mound desk contains the note about the temple magic word. Recovering a key, reading the note, speaking a word and successfully entering are separate actions."
+    },
+    {
+      "mob_vnum": 1401,
+      "name": "Gwark, the kobold clan leader",
+      "keyword": "gwark",
+      "topics": [],
+      "description": "Gwark starts in pantry 1436 carrying key 1419. It fits the house door between 1433 and 1434 and the perimeter gate between 1462 and 1468. The pantry trapdoor reaches tunnels 1455. The fence switches offer another declared perimeter route."
+    },
+    {
+      "mob_vnum": 1430,
+      "name": "Grumbiter, the innkeeper",
+      "keyword": "grumbiter",
+      "topics": [],
+      "description": "Grumbiter starts in inn 1443, which has the inn room flag and declared drink/bandage supplies. The neighboring guard post 1444 has an additional literal inn handler despite its different description; its intended rent policy remains a builder decision."
+    },
+    {
+      "mob_vnum": 1413,
+      "name": "a kobold maid",
+      "keyword": "maid",
+      "topics": [],
+      "description": "The kobold maid starts at gathering hall 1415 with declared egg, ale and tea stock. Use her actual maid command alias. This shop supports exploration; shopping does not complete a local native commission."
+    },
+    {
+      "mob_vnum": 1419,
+      "name": "a kobold baker",
+      "keyword": "baker",
+      "topics": [],
+      "description": "The baker starts at shop 1420 with bread. The shop room number is distinct from Szxvu’s mobile number 1420; the smith actually starts at room 1406."
+    },
+    {
+      "mob_vnum": 1429,
+      "name": "a master kobold fisherman",
+      "keyword": "fisherman",
+      "topics": [],
+      "description": "The master fisherman starts at pond 1461 wearing water-walking boots 1414. They are a BOAT item for ordinary movement support. Their name does not create a fishing quest, prove spell activation or guarantee safe access."
+    },
+    {
+      "mob_vnum": 1418,
+      "name": "a stronad golem",
+      "keyword": "golem",
+      "topics": [],
+      "description": "The stronad golem starts at cavern 1532 and has two periodic qc_action messages. Its stomping is ambient scene text without an addressed request or recorded quest endpoint."
+    },
+    {
+      "mob_vnum": 1446,
+      "name": "a kobold miner",
+      "keyword": "miner",
+      "topics": [],
+      "description": "These miners start in the lower cavern at 1527, 1528 and 1529. Their two qc_action mining messages are ambient; they do not dispatch nuggets or prove a player’s mining progress."
+    },
+    {
+      "mob_vnum": 1447,
+      "name": "an experienced kobold surveyor",
+      "keyword": "surveyor",
+      "topics": [],
+      "description": "Experienced surveyors start at 1516 and 1534. Three qc_action messages describe surveying and throwing dung, without a player-directed quest or reward."
+    }
+  ],
+  "stories": [
+    {
+      "id": "silver-smelting",
+      "title": "Szxvu: smelt a silver block (guarded)",
+      "category": "service",
+      "summary": "The declared commission takes eight separate silver nuggets plus 10000 copper (10 platinum) for one large silver block. Its mixed item-and-coin offering is unavailable with accounting active. Normal reset sources use a five-live-copy nugget cap; saved supplies, resets and forced repops need actual qualification before claiming eight can be gathered. This preparation service grants no quest or daily achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 1420,
+          "completion_key": "give=C:10000,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447;receive=I:1448;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1447",
+          "text": "Carry eight separate silver nuggets",
+          "kind": "carried_item",
+          "item_vnums": [
+            1447
+          ],
+          "count": 8,
+          "optional": true,
+          "hint": "Miners 1441 and mine leaders 1443 at 1495 and 1498 declare five nugget resets, each with global live-copy limit five. The recipe asks for eight; current quantity alone does not qualify a source route. Current loose copies explain preparation. Exact supplied copies do not require personal source, kill or earlier service history. Readiness does not mean a guarded commission can accept payment."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Szxvu: smelt a silver block (guarded)",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=C:10000,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447;receive=I:1448;disappear=0"
+            }
+          ],
+          "hint": "Only accepted exchange evidence can record this stage. Questions, current materials and scenery do not create a receipt. Paid item-and-coin commissions are guarded with accounting active. Supporting exchanges grant no quest achievements; the spectacles story remains a guarded achievement candidate. None of these four contracts is a daily candidate."
+        }
+      ]
+    },
+    {
+      "id": "silver-shield",
+      "title": "Szxvu: silver shield commission (guarded)",
+      "category": "service",
+      "summary": "The declared commission takes two large silver blocks plus 170000 copper (170 platinum) for a shining silver shield. Smelting is a useful optional source, requiring sixteen nuggets across two batches and its own two fees; supplied exact blocks skip that history. Both mixed-fee commissions remain unavailable with accounting active. This equipment service grants no quest or daily achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 1420,
+          "completion_key": "give=C:170000,I:1448,I:1448;receive=I:1451;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-service-65",
+          "text": "Optional earlier route: have Szxvu smelt silver",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=C:10000,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447,I:1447;receive=I:1448;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional service explains a declared source. Supplied copies skip it; an old receipt does not restore spent materials or establish current payment support."
+        },
+        {
+          "id": "material-1448",
+          "text": "Carry two separate large silver blocks",
+          "kind": "carried_item",
+          "item_vnums": [
+            1448
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Each declared eight-nugget smelt yields one block. One old smelt receipt or one physical block does not satisfy the two-block commission. Current loose copies explain preparation. Exact supplied copies do not require personal source, kill or earlier service history. Readiness does not mean a guarded commission can accept payment."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Szxvu: silver shield commission (guarded)",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=C:170000,I:1448,I:1448;receive=I:1451;disappear=0"
+            }
+          ],
+          "hint": "Only accepted exchange evidence can record this stage. Questions, current materials and scenery do not create a receipt. Paid item-and-coin commissions are guarded with accounting active. Supporting exchanges grant no quest achievements; the spectacles story remains a guarded achievement candidate. None of these four contracts is a daily candidate."
+        }
+      ]
+    },
+    {
+      "id": "gem-inspection",
+      "title": "Szxvu: inspect the demon gems",
+      "category": "service",
+      "summary": "The gem-only inspection exchanges the exact statue gems for the same item kind and explains matching frames and a 20-platinum fee. It does not itself create spectacles, repair the original item identity or grant a quest achievement. Inspection is optional. The later spectacles recipe shares these gems and is checked first: carrying the matching frames can reach its guarded coin requirement instead of the inspection. Actual routing and item replacement need gameplay qualification.",
+      "contracts": [
+        {
+          "giver_vnum": 1420,
+          "completion_key": "give=I:1431;receive=I:1431;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1431",
+          "text": "Carry the demon statue gems",
+          "kind": "carried_item",
+          "item_vnums": [
+            1431
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The black demon statue 1433 at temple 1478 wears these gems in its eyes slot. Its custom death handler moves gear into stone pile 1438. Recover the exact kind through a valid route; no personal statue kill is required by the offering. Current loose copies explain preparation. Exact supplied copies do not require personal source, kill or earlier service history. Readiness does not mean a guarded commission can accept payment."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Szxvu: inspect the demon gems",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=I:1431;receive=I:1431;disappear=0"
+            }
+          ],
+          "hint": "Only accepted exchange evidence can record this stage. Questions, current materials and scenery do not create a receipt. Paid item-and-coin commissions are guarded with accounting active. Supporting exchanges grant no quest achievements; the spectacles story remains a guarded achievement candidate. None of these four contracts is a daily candidate."
+        }
+      ]
+    },
+    {
+      "id": "gem-spectacles",
+      "title": "Szxvu: fashion gem spectacles (guarded)",
+      "category": "story",
+      "summary": "Gather the exact demon gems and matching frames for the declared spectacles commission: 20000 copper (20 platinum) plus both items yields the spectacles. The frames and a language journal are in the static warrior corpse at temple 1476; the gems are on the statue at 1478. Inspection is optional, and supplied exact materials skip personal history. This mixed-fee request is unavailable with accounting active and grants no new quest or daily credit until payment settlement is supported.",
+      "contracts": [
+        {
+          "giver_vnum": 1420,
+          "completion_key": "give=C:20000,I:1431,I:1433;receive=I:1432;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-service-85",
+          "text": "Optional earlier route: ask Szxvu to inspect the gems",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=I:1431;receive=I:1431;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional service explains a declared source. Supplied copies skip it; an old receipt does not restore spent materials or establish current payment support."
+        },
+        {
+          "id": "material-1431",
+          "text": "Carry the demon statue gems",
+          "kind": "carried_item",
+          "item_vnums": [
+            1431
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The statue at 1478 wears the exact gems. The inspection names the same reward kind, but an earlier inspection receipt cannot substitute for current gems. Current loose copies explain preparation. Exact supplied copies do not require personal source, kill or earlier service history. Readiness does not mean a guarded commission can accept payment."
+        },
+        {
+          "id": "material-1433",
+          "text": "Carry the matching spectacle frames",
+          "kind": "carried_item",
+          "item_vnums": [
+            1433
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Static warrior corpse 1463 at room 1476 contains the exact frames and language journal 1437. This reset container is a source clue; its name does not establish a personal death, resurrection or corpse-recovery objective. Current loose copies explain preparation. Exact supplied copies do not require personal source, kill or earlier service history. Readiness does not mean a guarded commission can accept payment."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Szxvu: fashion gem spectacles (guarded)",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 1420,
+              "completion_key": "give=C:20000,I:1431,I:1433;receive=I:1432;disappear=0"
+            }
+          ],
+          "hint": "Only accepted exchange evidence can record this stage. Questions, current materials and scenery do not create a receipt. Paid item-and-coin commissions are guarded with accounting active. Supporting exchanges grant no quest achievements; the spectacles story remains a guarded achievement candidate. None of these four contracts is a daily candidate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

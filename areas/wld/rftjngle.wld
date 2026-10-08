@@ -8941,7 +8941,7 @@ S
 #80325
 &+yOn a &+rJodani&N &+yWood Wall&N~
    A wooden walkway goes north along the wall toward the huge jodani
-tree that makes the entrance to Moonhollow and north into an opening in
+tree that makes the entrance to Moonhollow and south into an opening in
 the cliff face.  It is easy to see over the wall here toward the jungle.
 The area immediately before the wall has been cleared of most heavy
 jungle growth to prevent anyone from approaching unseen, and to prevent
@@ -9000,7 +9000,7 @@ faces out toward the doorway from the eastern wall, and several Jodani wood
 bookcases occupy the northeastern corner.  Near the bookcases is a leather
 upholstered reading chair and a small lamp.  A marble shelf along the southern
 wall holds many beautiful trinkets that have been given to Moonstone as gifts.
-There are no exits but an open doorway to the east that leads back to the
+There are no exits but an open doorway to the west that leads back to the
 guardroom.
 ~
 800 167804936 0
@@ -9166,7 +9166,7 @@ All of the stone have been cut to fit together so smoothly it is hard to
 make out where one stone ends and another begins.  Gray granite was used
 to make a majority of the building and a thin line of green granite
 about four feet above the ground seems to split it into halves.  The
-open doorway to the south is framed with a light pink stone of some
+open doorway to the east is framed with a light pink stone of some
 sort.  The pounding of a blacksmith's hammer can be heard from within
 the building, along with the wheeze of a bellows.  The lose stones line
 the narrow path that heads south from here.
@@ -9227,7 +9227,7 @@ is a large anvil and a rack containing a number of hammers of different
 weights, as well as some other tools.  Slots in the roof channel some of
 the hot air out, but even so, the room is so hot it is hard to believe
 anyone could work in it all day long.  An open doorway leads back into
-the armory to the east.
+the armory to the south.
 ~
 800 167804936 0
 D2
@@ -9419,7 +9419,7 @@ A ladder heads up the side of an ebonwood tree.
 S
 #80346
 &+yOn a Narrow Branch&N~
-   Entry to the small elven home to the west requires first walking
+   Entry to the small elven home to the north requires first walking
 across a narrow branch.  Though the branch seems sturdy enough, the
 ground is an appalling distance away and the constant humidity of the
 jungle has made the branch seem a bit slick.  Clouds of insects hover

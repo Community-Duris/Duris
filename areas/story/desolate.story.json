@@ -1,0 +1,696 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "desolate",
+  "coverage": "complete",
+  "introduction": "Explore Desolate's village, forest, lagoon, jousting grounds and hidden Master trial. Nine story outcomes and two supply services explain all eleven exchanges. Active, ready accounting is required. Supplied exact proof fits without personal source history; control success, first recovery and trial or world-phase completion need separate accepted events.",
+  "orientation": [
+    "Meet actual recipients before asking addressed words. The eclipse mercenary answers ale. Jandar has generic, class-sensitive level guidance; his teacher role is separate from quest dialogue. The other recipes are described by native prose and the journal, without inventing keyword achievements.",
+    "Recover the exact empty tankard from a bar patron in the North Star Tavern, let the eclipse mercenary fill it on the house, and bring that ale kind to the tired halfling for fifty platinum. The decorative ale tankard is different. Current acceptance checks the kind rather than actual liquid fullness; material readiness is not a drink-state objective.",
+    "The lost monkey is an item container in the bear den with the minotaur's chain inside it. Open it and remove the chain before handing the monkey to its hunter. Accepted hand-in consumes remaining container contents. Return the chain for an iron rod and ten platinum; the separate monkey request gives a mandolin and fifteen platinum.",
+    "The stranded wagon chain is chain → iron rod; rod + broken wheel + five platinum → repaired wheel; repaired wheel → brass token. Scotson's mixed payment is currently guarded under active accounting. A supplied repaired wheel still fits the driver without personal smith history. The driver leaves after acceptance; no physical wagon repair, movement or escort is recorded.",
+    "Beregan needs the severed hand from one particular outcast follower and the storm badge worn by the orc captain. Three matching outcasts do not all carry the hand. The captain is inside an entered tent. The scout's distinct armageddon badge instead goes to the Myrabolus delegate. Evidence delivery does not certify personal defeats or a military response.",
+    "Stinky bones inside the trapped old garbage container in the minotaur's dwelling fit the wandering shaggy dog and produce a platinum collar. The same container has the persistent bronze key for the locked jousting trophy cabinet. The key and trophy are not dog prerequisites or native story deliveries.",
+    "The original letter is inside a dresser drawer in a rented room of Myrabolus' Rising Sun Inn. The drawer is closed and unlocked despite open-drawer prose. Balance on the pier accepts and returns the same letter kind, referring you to the Seraphim on Desolate's secret beach ledge. Supplied original letter fits without that optional foreign referral history; local delivery gives a totem and ten platinum.",
+    "The northern exterior road can change: a reset may load a timed random-exit object, which reroutes its north exit into Desolate Under Fire and changes zone closed flags. Normal and invaded areas have different owners. Check the actual route; neither a normal-zone receipt nor discovery is proof of an invasion phase, restoration or safe return.",
+    "For the hidden Master approach, touch the torch in Jandar's tent to clear the downward block, then find and open the secret closed route. Push the soil below for the reverse upward block. Secret switches clear their own blocked side, not both directions; the rock and branch controls use the same distinction.",
+    "The Master chamber leads through closed rooms and entered caskets. One casket enters the starting trial room; its paired casket returns to the chamber route. Trial buttons lead east to Speed, east to Endurance, south to Strength, west to Courage, west to Will, then north back to the start. The Speed guardians are in the separate upstairs room. Buttons do not explicitly require recorded guardian kills.",
+    "The dragon's Master armor and other equipment are ordinary loot, with another declared foreign armor source. Its direct Master procedure counts worn matching slots against seven members, capped at six; the separate adapter table differs. Owning or equipping armor does not prove the whole trial, a full set or an accepted effect lifecycle.",
+    "The blue and black knights have R-loaded unicorn and nightmare mounts. Jousting and betting prose has no active local result contract; the gambler has no assigned casino procedure. Locked trophy access is separate, with a pickable cabinet and persistent bronze key. No joust, wager or trophy achievement is invented.",
+    "Forest declines have ninety-percent fall fields and watchtower stairs twenty-percent fields. These are falling risks, not quest destinations or ordinary guaranteed movement. Village no-magic rooms and actual movement/equipment conditions remain relevant. Shop purchases are separate services; three trinket stock references are absent from the current static prototype inventory and need builder review.",
+    "Nine native exchanges have potential daily shape. Classifying free tankard filling and the potion purchase as services leaves eight story candidates; the guarded mixed wheel repair has no eligible daily shape. Reset mode two, retiring recipients, wandering contacts, shared stock, actual access and ready accounting still govern repeats. No army, animal escort or Master/world-phase campaign terminal is invented."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 22225,
+      "name": "a tired halfling",
+      "keyword": "halfling",
+      "description": "Tired halfling starts at the shallow lagoon and accepts the exact ale kind. Tankard filling is an optional earlier service, not an additional required receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22227,
+      "name": "a minotaur",
+      "keyword": "large",
+      "description": "Minotaur in his dwelling wants the chain from inside the recovered monkey. His iron rod supplies Scotson; the monkey hand-in is separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22234,
+      "name": "an eclipse mercenary",
+      "keyword": "mercenary",
+      "description": "Eclipse mercenary starts near the broken horse pen and answers ale. He fills the exact empty tankard on the house; his filled reward supplies the halfling.",
+      "topics": [
+        "ale"
+      ]
+    },
+    {
+      "mob_vnum": 22238,
+      "name": "a monkey hunter",
+      "keyword": "man",
+      "description": "Monkey hunter starts by the jousting approach and can wander across zones. The monkey is an item container; remove its chain before an accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22248,
+      "name": "the wagon driver",
+      "keyword": "driver",
+      "description": "Driver at the stranded wagon accepts a repaired wheel and leaves. Scotson's mixed payment is guarded; supplied exact wheel remains a valid independent branch.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22250,
+      "name": "Beregan",
+      "keyword": "mayor",
+      "description": "Mayor Beregan at the northern entrance asks for the hand and storm badge together. The armageddon badge is for the delegate, not this request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22266,
+      "name": "a delegate from myrabolus",
+      "keyword": "myrabolus",
+      "description": "Myrabolus delegate starts in the village and can wander. The scout's armageddon badge proves his warning; no military response is implemented by the hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22269,
+      "name": "the village blacksmith",
+      "keyword": "blacksmith",
+      "description": "Scotson in the forge needs iron rod, broken wheel and five platinum together. Current accounting guards this mixed payment; two carried items alone are not a payable repair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22282,
+      "name": "a travelling merchant",
+      "keyword": "merchant",
+      "description": "Travelling merchant near Royal Oak Way offers a ten-platinum potion purchase, then leaves. Coin-only acceptance is guarded with accounting active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22285,
+      "name": "a shaggy dog",
+      "keyword": "dog",
+      "description": "Shaggy dog starts near the old weathered man and can wander. Exact bones from the garbage container yield a collar; no adoption endpoint exists.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22294,
+      "name": "a seraphim angel",
+      "keyword": "angel",
+      "description": "Seraphim on the secret beach ledge accepts the original Myrabolus letter. Balance's referral remains optional and foreign-owned.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22239,
+      "name": "an orc scout",
+      "keyword": "scout",
+      "description": "Orc scout starts in the northern forest wearing the armageddon badge. Actual custody matters; its load origin is not a guaranteed current location.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22296,
+      "name": "a vengeful outcast",
+      "keyword": "outcast",
+      "description": "Three outcasts share the hideout. The first F-loaded follower, not every outcast, carries the declared severed hand.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22306,
+      "name": "the orc captain",
+      "keyword": "captain",
+      "description": "Orc captain starts inside the southern tent wearing the storm badge. Entering the tent and recovering this proof are separate from Beregan's delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22219,
+      "name": "Jandar",
+      "keyword": "jandar",
+      "description": "Jandar in the wilderness tent receives the generic teacher binding, with class-sensitive level guidance. Touch the torch for the separate hidden downward route; asking a word does not open it.",
+      "topics": [
+        "level"
+      ]
+    },
+    {
+      "mob_vnum": 22277,
+      "name": "a celestial dragon",
+      "keyword": "dragon",
+      "description": "Celestial dragon in the Test of Will wears Master armor and other ordinary loot. The northern final button returns to the starting trial room; no durable gauntlet terminal is supplied.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22254,
+      "name": "an ethereal knight",
+      "keyword": "knight",
+      "description": "Ethereal knight starts in the Test of Endurance. The progression button is on the southern wall; its control is not conditioned on a recorded defeat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22255,
+      "name": "an ethereal rogue",
+      "keyword": "rogue",
+      "description": "Three ethereal rogues start in a darkened side room above the Test of Speed. The eastern progression button and this upstairs route are separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22289,
+      "name": "a spectral titan",
+      "keyword": "titan",
+      "description": "Spectral titan starts in the Test of Strength. The western progression control is ordinary switch behavior, not a durable trial achievement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22276,
+      "name": "an ethereal behemoth",
+      "keyword": "behemoth",
+      "description": "Two behemoths start in the Test of Courage. The button to the Test of Will is on the western wall.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22217,
+      "name": "the blue knight",
+      "keyword": "knight",
+      "description": "Blue knight starts on the jousting field with an R-loaded unicorn mount. Ordinary equipment and mounting do not define a joust victory contract.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22218,
+      "name": "the black knight",
+      "keyword": "knight",
+      "description": "Black knight starts on the jousting field with an R-loaded nightmare mount. No local joust/betting finale was found.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22220,
+      "name": "an obese gambler",
+      "keyword": "gambler",
+      "description": "Gambler starts overlooking the jousting field. No active casino procedure or wager contract is assigned to this mobile; gambling prose supplies no achievement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22290,
+      "name": "a trinket vendor",
+      "keyword": "vendor",
+      "description": "Trinket vendor in the northern village has three stock references missing from the checked-in prototype inventory. Restoring or replacing that stock needs a separate builder decision.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22292,
+      "name": "a myrabolan vendor",
+      "keyword": "myrabolan",
+      "description": "Myrabolan vendor supplies ordinary imported goods. Shop purchases are not zone-story outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 22311,
+      "name": "a nomadic merchant",
+      "keyword": "merchant",
+      "description": "Nomadic merchant at the southern clearing supplies ordinary food and a backpack. Source stock and current purchases require their actual commerce path.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82569,
+      "name": "Balance",
+      "keyword": "hunter",
+      "description": "Balance on the Myrabolus pier accepts and returns the original letter, referring you to Desolate's Seraphim. His accepted referral remains owned by Myrabolus.",
+      "topics": [
+        "hi",
+        "hello",
+        "howdy",
+        "hey"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "halfling-ale",
+      "title": "A drink for the tired halfling",
+      "category": "story",
+      "summary": "Bring the exact full-ale tankard kind for fifty platinum. The mercenary can fill the empty tankard first; supplied exact ale fits without that personal service history.",
+      "contracts": [
+        {
+          "giver_vnum": 22225,
+          "completion_key": "give=I:22230;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-29",
+          "text": "Earlier tankard filling recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22234,
+              "completion_key": "give=I:22229;receive=I:22230;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted earlier exchange explains this chain. Supplied exact proof fits without that personal history. The receipt does not restore consumed materials, pay another fee or prove access. "
+        },
+        {
+          "id": "material-22230",
+          "text": "Carry a full tankard of ale",
+          "kind": "carried_item",
+          "item_vnums": [
+            22230
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The eclipse mercenary fills exact empty tankard 22229 for this ale kind. The decorative ale tankard is a different kind. Native acceptance matches this item kind, not current liquid contents; possession does not certify a full drink. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22225,
+              "completion_key": "give=I:22230;receive=C:50000;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "minotaur-lost-chain",
+      "title": "The minotaur's lost chain",
+      "category": "story",
+      "summary": "Remove the chain from the recovered monkey and return it for an iron rod and ten platinum. The rod can supply the wagon repair; rescuing the monkey is a separate request.",
+      "contracts": [
+        {
+          "giver_vnum": 22227,
+          "completion_key": "give=I:22215;receive=C:10000,I:22220;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22215",
+          "text": "Carry a silver neck chain",
+          "kind": "carried_item",
+          "item_vnums": [
+            22215
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The chain is declared inside the monkey container in the bear den. Open it and remove the chain before giving away the monkey: accepted container hand-in consumes its remaining contents. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22227,
+              "completion_key": "give=I:22215;receive=C:10000,I:22220;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "mercenary-tankard",
+      "title": "Fill a tankard with ale",
+      "category": "service",
+      "summary": "Bring the exact empty tankard to the eclipse mercenary for full ale, on the house. This is a supply service for the halfling, with no separate achievement or daily objective.",
+      "contracts": [
+        {
+          "giver_vnum": 22234,
+          "completion_key": "give=I:22229;receive=I:22230;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22229",
+          "text": "Carry an empty tankard",
+          "kind": "carried_item",
+          "item_vnums": [
+            22229
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A bar patron starting in the North Star Tavern holds this exact empty tankard. Recover it loose; the decorative tankard and depleted full-ale kind are different identities. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22234,
+              "completion_key": "give=I:22229;receive=I:22230;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "hunter-lost-monkey",
+      "title": "Recover the lost monkey",
+      "category": "story",
+      "summary": "Bring the sad monkey item for a mandolin and fifteen platinum. Remove its silver chain before handing it in if following the minotaur and wagon chain. This records delivery, not a live-animal rescue or escort.",
+      "contracts": [
+        {
+          "giver_vnum": 22238,
+          "completion_key": "give=I:22214;receive=C:15000,I:22269;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22214",
+          "text": "Carry a sad little monkey",
+          "kind": "carried_item",
+          "item_vnums": [
+            22214
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sad monkey is an item container in the bear den, not a live mobile rescue. Remove its silver chain first if pursuing the minotaur and wagon chain; other contents are consumed with an accepted monkey hand-in. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22238,
+              "completion_key": "give=I:22214;receive=C:15000,I:22269;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "driver-repaired-wheel",
+      "title": "Help the stranded wagon driver",
+      "category": "story",
+      "summary": "Bring the repaired wheel for a brass token of the ancients; the driver then leaves. Scotson's earlier repair is optional history, and a supplied matching wheel remains valid. No wagon movement or escort is recorded.",
+      "contracts": [
+        {
+          "giver_vnum": 22248,
+          "completion_key": "give=I:22251;receive=I:22252;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-81",
+          "text": "Earlier wheel repair recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22269,
+              "completion_key": "give=C:5000,I:22220,I:22231;receive=I:22251;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted earlier exchange explains this chain. Supplied exact proof fits without that personal history. The receipt does not restore consumed materials, pay another fee or prove access. "
+        },
+        {
+          "id": "material-22251",
+          "text": "Carry a repaired wheel",
+          "kind": "carried_item",
+          "item_vnums": [
+            22251
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Scotson produces this wheel for an iron rod, broken wheel and five platinum. His mixed payment is currently guarded under active accounting; a supplied exact repaired wheel still fits the driver independently. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22248,
+              "completion_key": "give=I:22251;receive=I:22252;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The driver leaves after acceptance. Reset mode two and actual stock may permit renewal; the receipt does not prove repairing, escorting or moving the wagon."
+        }
+      ]
+    },
+    {
+      "id": "beregan-two-threats",
+      "title": "Beregan's two proofs",
+      "category": "story",
+      "summary": "Bring the severed hand and the storm badge together for an exquisite earring. These exact proofs represent the outcasts and the orc captain; the armageddon badge cannot replace the storm badge.",
+      "contracts": [
+        {
+          "giver_vnum": 22250,
+          "completion_key": "give=I:22283,I:22284;receive=I:22288;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22284",
+          "text": "Carry the severed hand of a thief",
+          "kind": "carried_item",
+          "item_vnums": [
+            22284
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Three outcasts start together in the hideout. Only the first F-loaded follower has the declared severed-hand source; shared appearance does not mean each instance carries it. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-22283",
+          "text": "Carry a badge of the storm",
+          "kind": "carried_item",
+          "item_vnums": [
+            22283
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The orc captain wears this storm badge inside his entered tent. It differs from the scout's armageddon badge; recover the exact kind loose. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22250,
+              "completion_key": "give=I:22283,I:22284;receive=I:22288;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "delegate-armageddon",
+      "title": "The delegate's warning",
+      "category": "story",
+      "summary": "Bring the orc scout's armageddon badge for a purple stone ring. The storm badge is different. This records evidence delivery, without claiming a military response or restored peace.",
+      "contracts": [
+        {
+          "giver_vnum": 22266,
+          "completion_key": "give=I:22216;receive=I:22286;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22216",
+          "text": "Carry the badge of armageddon",
+          "kind": "carried_item",
+          "item_vnums": [
+            22216
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The orc scout starting north of the forest wears this armageddon badge. It is different from the captain's storm badge and is proof for the Myrabolus delegate. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22266,
+              "completion_key": "give=I:22216;receive=I:22286;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "scotson-wheel-repair",
+      "title": "Scotson's wheel repair",
+      "category": "story",
+      "summary": "Bring the iron rod, broken wheel and five platinum for the repaired wheel. The minotaur supplies the rod. This mixed payment is currently guarded under active accounting; guidance explains the required chain without promising acceptance.",
+      "contracts": [
+        {
+          "giver_vnum": 22269,
+          "completion_key": "give=C:5000,I:22220,I:22231;receive=I:22251;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-10",
+          "text": "Earlier lost-chain exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22227,
+              "completion_key": "give=I:22215;receive=C:10000,I:22220;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted earlier exchange explains this chain. Supplied exact proof fits without that personal history. The receipt does not restore consumed materials, pay another fee or prove access. "
+        },
+        {
+          "id": "material-22220",
+          "text": "Carry an iron rod",
+          "kind": "carried_item",
+          "item_vnums": [
+            22220
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The minotaur produces this iron rod for his lost chain. No ordinary rod load was found. Supplied exact rod fits without personal chain history; the wheel repair also needs the broken wheel and five platinum. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-22231",
+          "text": "Carry a broken wheel",
+          "kind": "carried_item",
+          "item_vnums": [
+            22231
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The broken wheel is declared on the road near the stranded wagon. Carry it loose with the iron rod; neither material alone pays Scotson's separate five-platinum requirement. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22269,
+              "completion_key": "give=C:5000,I:22220,I:22231;receive=I:22251;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. This mixed item-and-five-platinum payment is currently guarded under active accounting. Material readiness does not mean the native repair can be accepted."
+        }
+      ]
+    },
+    {
+      "id": "merchant-potion",
+      "title": "Buy the travelling merchant's potion",
+      "category": "service",
+      "summary": "The travelling merchant asks ten platinum for a deep blue potion, then leaves. This is a purchase service without story or daily credit, and its coin-only payment is currently guarded under active accounting.",
+      "contracts": [
+        {
+          "giver_vnum": 22282,
+          "completion_key": "give=C:10000;receive=I:22255;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22282,
+              "completion_key": "give=C:10000;receive=I:22255;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. This coin-only purchase is currently guarded under active accounting. Paying or possessing the potion is not a story achievement."
+        }
+      ]
+    },
+    {
+      "id": "dog-bones",
+      "title": "Feed the shaggy dog",
+      "category": "story",
+      "summary": "Bring the exact stinky bones for the platinum dog collar. The bones come from the trapped garbage container. The exchange does not record adoption, escort or the collar physically falling from worn equipment.",
+      "contracts": [
+        {
+          "giver_vnum": 22285,
+          "completion_key": "give=I:22211;receive=I:22250;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-22211",
+          "text": "Carry some stinky meat bones",
+          "kind": "carried_item",
+          "item_vnums": [
+            22211
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The bones are inside old garbage in the minotaur's dwelling. That closed, unlocked container also holds a bronze key and has a native trap. Recover the bones loose; key possession is not required for this dog offering. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22285,
+              "completion_key": "give=I:22211;receive=I:22250;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    },
+    {
+      "id": "seraphim-letter",
+      "title": "The Seraphim's information",
+      "category": "story",
+      "summary": "Bring the original Myrabolus letter for a totem and ten platinum. Balance can refer you while returning the letter; that foreign exchange stays separately owned and is optional history.",
+      "contracts": [
+        {
+          "giver_vnum": 22294,
+          "completion_key": "give=I:82543;receive=C:10000,I:22289;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-mira-126",
+          "text": "Earlier Myrabolus letter referral recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82569,
+              "completion_key": "give=I:82543;receive=I:82543;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted earlier exchange explains this chain. Supplied exact proof fits without that personal history. The receipt does not restore consumed materials, pay another fee or prove access. The referral remains owned by Myrabolus; it gives no extra local achievement."
+        },
+        {
+          "id": "material-82543",
+          "text": "Carry a small letter",
+          "kind": "carried_item",
+          "item_vnums": [
+            82543
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The original letter is inside the dresser drawer in a rented room of Myrabolus' Rising Sun Inn. Balance on the pier accepts and returns the same letter kind, referring you to the Seraphim. Supplied original letter fits without personal referral history. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 22294,
+              "completion_key": "give=I:82543;receive=C:10000,I:22289;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact required proof together. Only an accepted exchange is recorded; source recovery, words, access, guardian defeats, world phases and full-zone restoration require separate accepted events. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

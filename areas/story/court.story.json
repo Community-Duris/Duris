@@ -1,0 +1,656 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "court",
+  "coverage": "complete",
+  "introduction": "Explore the Court's four seasonal favors, distinct admission tokens and independent brook, soul, stone and lost-wand requests. Active, ready accounting is required. Current proof and accepted deliveries remain separate from first recovery, seasonal rituals, safe access and a personal audience with the Muse.",
+  "orientation": [
+    "Enter the twisted path from the surface and examine the stone arch. The enchanted arch responds to enter, leading into the seasonal forest; its poetic inscription is lore, without a reviewed learned-word quest gate. The traveller's journal on the approach also serves as an exact cave-door key.",
+    "Four independent favors give four distinct tokens: the frost thief's perfect snowflake for Sieck; Tookles' sunflower-petal pouch for Kithaya; Grielda's perfect dew drop for Kithapa; and the hollowed-out stump's perfect red leaf for Zialh. Each has its own delivery receipt and native experience reward. Narrated storms, daylight, spring ritual and decay are not extra checked milestones.",
+    "The red leaf lies at the top of the hollowed-out stump. Search for the secret, closed stump entrance and open it, or enter the dying stump from the clearing to reach the roots and climb. No personal harvest or leaf from another tree replaces the exact proof.",
+    "Offer one Spring, Autumn, Summer and Winter token together to the priestess in the dream tree for the fae key. Matching supplied tokens fit without your earlier personal favor receipts. Four copies of one season do not fit; receipts cannot restore spent tokens.",
+    "Search for the secret branches above the priestess, unlock the pickproof door with the fae key, and open the passage. The key has a declared break chance of one hundred percent, with actual destruction subject to accounting acceptance. From the ethereal branch, enter the shimmering portal to the Muse's court. Normal reciprocal unlocking/opening permits return, and the court has a down exit; reset/restart return episodes still need qualification.",
+    "Two instances of the imaginary friend follow the Spring and Summer children. Either accepts one obsidian rock for sunshine through the same outcome. Bitter sprites, an autumn satyr and autumn nymphs have declared rocks. The request narrates a skipping lesson without actually recording one.",
+    "Kyra accepts a lost-soul essence for decay. Eight initial satyr/sprite sources carry it; later same-named creatures do not all receive it. This is ordinary exact item proof, without a required player death or soul extraction. Sunshine and decay are potion rewards; drinking them is separate from delivery.",
+    "Bring twelve exact koi scales together to the fisherman for the necklace. Fifteen fish-and-scale declarations provide sufficient declared quantity across the brook; live supply is not guaranteed. He retires after acceptance. Currents and falling at the waterfall affect access; fishing text does not define an actual catch objective.",
+    "Larissa's description asks for the diamond-encrusted wand. It lies on the birch tree's thin ice floor in winter; that room and its upper canopy can cause falling. Return this exact wand to her for the diamond stud. Wandering encounter and first recovery need their own evidence.",
+    "The waterfall object responds to jump waterfall and leads to the still cave. Two secret, locked, pickable cave doors use the traveller's journal and the perfect dew drop as exact keys, despite locket-shaped prose clues. Door code accepts those objects without requiring key item type. Use the dew gate before offering that copy if desired; cave exploration is optional and does not block supplied seasonal tokens.",
+    "The ledge below the Pegasus cliff has an enter seasonal portal to the Wheel of Time, then the dream tree. World-file value four alone is not a secret exit: the loader masks door type and reset commands set secrecy. Passage, secret discovery, portal arrival and survival are guidance rather than journal credit.",
+    "Fiera's shop sells an ordinary apple. Sieck, Pegasus and Kyra have shared class-matched level/runestone guidance from their teacher flags, without local epic-teaching contracts. The Muse, poetic lore and Zialh's elk heart do not supply a reviewed finale. Some seasonal tokens and the diamond stud have pickup-trap metadata; intended trap values and safe retrieval need qualification, not extra achievements."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6700,
+      "name": "a satyr",
+      "keyword": "satyr",
+      "description": "Summer satyr. An initial dream-tree instance carries a lost-soul essence; later matching satyrs do not all receive it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6701,
+      "name": "a satyr",
+      "keyword": "satyr",
+      "description": "Spring satyr. The initial dream-tree declaration carries a lost-soul essence; actual source generation matters.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6702,
+      "name": "a satyr",
+      "keyword": "satyr",
+      "description": "Autumn satyr. An initial dream-tree instance carries essence; a later autumn declaration instead carries an obsidian rock. Same-named satyrs have distinct source episodes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6703,
+      "name": "a satyr",
+      "keyword": "satyr",
+      "description": "Winter satyr. An initial dream-tree instance carries a lost-soul essence; later copies are not automatic essence sources.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6705,
+      "name": "Liseu, the Muse of Dreams",
+      "keyword": "liseu",
+      "description": "The Muse in the dream court. The priestess's key route leads through an ethereal branch portal. Her presence and lore do not supply another native delivery or campaign finale.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6706,
+      "name": "Sieck, the frost pixie",
+      "keyword": "sieck",
+      "description": "Winter forest. Ask snowflake, quest, frost or stolen. Return the frost thief's perfect snowflake, different from her worn enchanted one. Her teacher flag also provides shared class-matched level/runestone guidance.",
+      "topics": [
+        "hi",
+        "quest",
+        "snowflake",
+        "favor",
+        "token",
+        "frost",
+        "stolen"
+      ]
+    },
+    {
+      "mob_vnum": 6707,
+      "name": "Kithaya, the child of Summer",
+      "keyword": "kithaya",
+      "description": "Summer apple tree. Ask sunflower, pouch, quest or favor about Tookles' stolen petal pouch. Daylight extension is narrative; acceptance gives the Summer token.",
+      "topics": [
+        "quest",
+        "hi",
+        "sunflower",
+        "token",
+        "favor",
+        "plotting",
+        "pouch"
+      ]
+    },
+    {
+      "mob_vnum": 6708,
+      "name": "Kithapa, the child of Spring",
+      "keyword": "kithapa",
+      "description": "Spring apple tree. Her description asks for the perfect dew drop. No addressed native topic family exists for this request; acceptance gives the Spring token.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6711,
+      "name": "a beautiful nymph",
+      "keyword": "nymph",
+      "description": "Autumn nymph. Two declarations in the holding source carry obsidian rocks. Other seasonal nymphs have the same short name and are different prototypes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6713,
+      "name": "a Pegasus guardian of the seasonal portal",
+      "keyword": "pegasus",
+      "description": "Cliff guardian near the seasonal portal. Has shared teacher level/runestone guidance for matching classes, without a local epic-lesson contract or checked portal passage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6714,
+      "name": "Zialh, spirit of decay",
+      "keyword": "zialh",
+      "description": "Autumn canopy. Ask leaf, token, favor or quest. The perfect red leaf comes from the hollowed-out stump. His carried forest-elk heart is loot without a reviewed native quest consumer.",
+      "topics": [
+        "quest",
+        "hi",
+        "leaf",
+        "token",
+        "favor"
+      ]
+    },
+    {
+      "mob_vnum": 6715,
+      "name": "koi fish",
+      "keyword": "koi",
+      "description": "Brook fish. Fifteen source declarations carry exact scales across three sections. Recover twelve loose scales for the fisherman; current stock and hazardous-water travel need qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6716,
+      "name": "an imaginary friend",
+      "keyword": "friend",
+      "description": "Two instances follow the Spring and Summer children. Ask rocks, rock or quest. One obsidian rock gives sunshine through one shared outcome, without an actual stone-skipping lesson.",
+      "topics": [
+        "rocks",
+        "rock",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 6718,
+      "name": "Kyra, the banshee of decay",
+      "keyword": "kyra",
+      "description": "Autumn forest banshee. Her description seeks souls; bring one exact lost-soul essence. Shared teacher level guidance is separate from the delivery and requires a matching class.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6720,
+      "name": "a tree sprite",
+      "keyword": "sprite",
+      "description": "Tree sprite. Only its initial dream-tree-adjacent source receives a lost-soul essence; later copies do not all carry proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6721,
+      "name": "a tree sprite",
+      "keyword": "sprite",
+      "description": "Tree sprite. An initial dream-tree-adjacent source receives a lost-soul essence; distinguish source episodes from other matching sprites.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6722,
+      "name": "a tree sprite",
+      "keyword": "sprite",
+      "description": "Winter-tinted tree sprite. An initial dream-tree-adjacent source carries essence. It is different from the perfect snowflake source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6723,
+      "name": "a tree sprite",
+      "keyword": "sprite",
+      "description": "Bitter tree sprite. Initial dream-tree-adjacent declaration carries essence; four autumn declarations carry obsidian rocks. Do not assume every instance carries both.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6724,
+      "name": "Tookles, the mischievous imaginary cat",
+      "keyword": "tookles",
+      "description": "Imaginary cat initially at the pond. Carries Kithaya's sunflower-petal pouch. The exact treasure proof is not a container to empty.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6727,
+      "name": "a wood elven fisherman",
+      "keyword": "fisherman",
+      "description": "Brook bank. Ask fishing, koi, fish or quest. Requires twelve exact scales together and retires after the necklace exchange; ritual and actual catches are not checked.",
+      "topics": [
+        "fishing",
+        "hi",
+        "quest",
+        "koi",
+        "fish"
+      ]
+    },
+    {
+      "mob_vnum": 6728,
+      "name": "Fiera, the wood-elven apple farmer",
+      "keyword": "fiera",
+      "description": "Apple farmer in the small hut. Actual local shop sells the ordinary apple; that shop item is not a seasonal offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6729,
+      "name": "the grey elven priestess of the Muse",
+      "keyword": "priestess",
+      "description": "Dream tree waiting area. Ask muse, tokens, token or key. Four distinct seasons give one small fae key. Optional favor history does not substitute for current tokens or prove an audience.",
+      "topics": [
+        "muse",
+        "tokens",
+        "token",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 6731,
+      "name": "the frost thief",
+      "keyword": "thief",
+      "description": "Winter forest frost thief. Carries the perfect snowflake for Sieck, different from her worn delicate enchanted snowflake.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6734,
+      "name": "Grielda, the enchantress of harvest growth",
+      "keyword": "grielda",
+      "description": "Small hut harvest enchantress. Carries the perfect dew drop for Kithapa and one cave gate. Delivery consumes this copy; possession does not prove a personal incantation or opening.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6735,
+      "name": "Larissa, the pixie of snow and ice",
+      "keyword": "larissa",
+      "description": "Wandering snow-and-ice pixie. Her description asks for the lost diamond wand on the icy birch tree. No addressed native dialogue family exists for her request.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "winter-snowflake",
+      "title": "Winter: return the perfect snowflake",
+      "category": "story",
+      "summary": "Return the frost thief's exact perfect snowflake to Sieck for the Winter token and the native experience reward. Her worn enchanted snowflake is different. The delivery stays independent of the narrated frost storm.",
+      "contracts": [
+        {
+          "giver_vnum": 6706,
+          "completion_key": "give=I:6722;receive=E:50000,I:6717;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6722",
+          "text": "Carry a perfect snowflake",
+          "kind": "carried_item",
+          "item_vnums": [
+            6722
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The frost thief initially in the winter forest carries the perfect snowflake. Sieck's worn delicate enchanted snowflake is a different item and does not fit. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6706,
+              "completion_key": "give=I:6722;receive=E:50000,I:6717;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "summer-petals",
+      "title": "Summer: recover the sunflower-petal pouch",
+      "category": "story",
+      "summary": "Bring Tookles' exact sunflower-petal pouch to Kithaya for the Summer token and the native experience reward. Offer the treasure object intact; the native exchange does not unpack a container or actually extend daylight.",
+      "contracts": [
+        {
+          "giver_vnum": 6707,
+          "completion_key": "give=I:6727;receive=E:50000,I:6716;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6727",
+          "text": "Carry a small leather pouch of sunflower petals",
+          "kind": "carried_item",
+          "item_vnums": [
+            6727
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tookles, the imaginary cat initially at the pond, carries the exact small leather pouch of sunflower petals. This is a treasure proof, not a container to unpack; some native text calls it a whole sunflower. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6707,
+              "completion_key": "give=I:6727;receive=E:50000,I:6716;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "spring-dew",
+      "title": "Spring: bring the perfect dew drop",
+      "category": "story",
+      "summary": "Return Grielda's exact dew drop to Kithapa for the Spring token and the native experience reward. The same object keys a waterfall-cave gate: that optional use competes with consuming this copy. No actual seasonal ritual is checked.",
+      "contracts": [
+        {
+          "giver_vnum": 6708,
+          "completion_key": "give=I:6724;receive=E:50000,I:6714;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6724",
+          "text": "Carry the perfect dew drop upon a leaf",
+          "kind": "carried_item",
+          "item_vnums": [
+            6724
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grielda in the small hut carries the perfect dew drop upon a leaf. This same object also keys one secret waterfall-cave door. Use that optional gate before consuming this copy in the Spring offering if you intend to explore it. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6708,
+              "completion_key": "give=I:6724;receive=E:50000,I:6714;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "autumn-leaf",
+      "title": "Autumn: return the undecayed red leaf",
+      "category": "story",
+      "summary": "Recover the perfect red leaf from the hollowed-out stump and bring it to Zialh for the Autumn token and the native experience reward. This is exact item delivery, without a personal harvesting or decay-spell event.",
+      "contracts": [
+        {
+          "giver_vnum": 6714,
+          "completion_key": "give=I:6720;receive=E:50000,I:6715;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6720",
+          "text": "Carry a perfect red leaf",
+          "kind": "carried_item",
+          "item_vnums": [
+            6720
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The perfect red leaf is a ground source at the top of the hollowed-out stump in autumn, rather than an automatic harvest from any leaf. Search/open the secret stump entrance or enter the dying stump from the clearing to reach its roots and climb. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6714,
+              "completion_key": "give=I:6720;receive=E:50000,I:6715;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "friend-obsidian",
+      "title": "A skipping stone for the imaginary friend",
+      "category": "request",
+      "summary": "Offer one exact obsidian rock to either instance of the imaginary friend for a vial of sunshine. Both share one native contract and outcome. Narrated stone skipping does not establish a lesson, branch or child-training completion.",
+      "contracts": [
+        {
+          "giver_vnum": 6716,
+          "completion_key": "give=I:6734;receive=I:6735;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6734",
+          "text": "Carry an obsidian rock",
+          "kind": "carried_item",
+          "item_vnums": [
+            6734
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Seven declared rocks are carried by bitter tree sprites, an autumn satyr and autumn nymphs. Bring one exact obsidian rock, not any thrown stone. The native request does not check an actual skipping-stone lesson. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6716,
+              "completion_key": "give=I:6734;receive=I:6735;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "kyra-lost-soul",
+      "title": "A lost soul for the banshee",
+      "category": "story",
+      "summary": "Bring the exact essence of a lost soul to Kyra for a vial containing decay. Declared carried essences do not imply a player death, personal extraction or a soul campaign. The vial is an item reward; consuming it is separate.",
+      "contracts": [
+        {
+          "giver_vnum": 6718,
+          "completion_key": "give=I:6732;receive=I:6733;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6732",
+          "text": "Carry the essence of a lost soul",
+          "kind": "carried_item",
+          "item_vnums": [
+            6732
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Eight declared essences belong to initial satyrs in the dream tree and initial tree sprites nearby. Later copies of the same mobiles do not all receive this object. Bring the exact essence; this does not require a player death or a personal soul extraction. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6718,
+              "completion_key": "give=I:6732;receive=I:6733;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "fisherman-dozen-scales",
+      "title": "Twelve koi scales for the fisherman",
+      "category": "story",
+      "summary": "Offer twelve copies of the exact koi scale together for the druidic necklace. Fifteen declared fish-and-scale sources support the quantity, while live stock remains unqualified. The fisherman retires; delivery does not record actual fishing or completion of his experimental ritual.",
+      "contracts": [
+        {
+          "giver_vnum": 6727,
+          "completion_key": "give=I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702;receive=I:6703;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6702",
+          "text": "Carry 12 copies of a scale of a koi fish",
+          "kind": "carried_item",
+          "item_vnums": [
+            6702
+          ],
+          "count": 12,
+          "optional": true,
+          "hint": "Fifteen koi fish in three brook sections have fifteen scale declarations, enough declared quantity for twelve. Recover twelve exact scale objects; actual stock and safe travel through currents/falls need qualification. Fishing prose does not establish a catch or kill counter. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6727,
+              "completion_key": "give=I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702,I:6702;receive=I:6703;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The fisherman retires after native acceptance; repetition requires a new available recipient episode. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "priestess-four-seasons",
+      "title": "Four distinct seasonal tokens for admission",
+      "category": "story",
+      "summary": "Offer one Spring, Autumn, Summer and Winter token together to the priestess for the small fae key. Four optional favor receipts explain the route; supplied matching tokens fit. Admission is its own delivery outcome and does not prove opening the secret branches or visiting the Muse.",
+      "contracts": [
+        {
+          "giver_vnum": 6729,
+          "completion_key": "give=I:6714,I:6715,I:6716,I:6717;receive=I:6713;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "spring-favor-history",
+          "text": "Spring favor recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6708,
+              "completion_key": "give=I:6724;receive=E:50000,I:6714;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains the Spring token. A supplied exact token fits without this receipt; history cannot replace spent proof or establish a ritual, access or an all-stage campaign."
+        },
+        {
+          "id": "autumn-favor-history",
+          "text": "Autumn favor recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6714,
+              "completion_key": "give=I:6720;receive=E:50000,I:6715;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains the Autumn token. A supplied exact token fits without this receipt; history cannot replace spent proof or establish a ritual, access or an all-stage campaign."
+        },
+        {
+          "id": "summer-favor-history",
+          "text": "Summer favor recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6707,
+              "completion_key": "give=I:6727;receive=E:50000,I:6716;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains the Summer token. A supplied exact token fits without this receipt; history cannot replace spent proof or establish a ritual, access or an all-stage campaign."
+        },
+        {
+          "id": "winter-favor-history",
+          "text": "Winter favor recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6706,
+              "completion_key": "give=I:6722;receive=E:50000,I:6717;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains the Winter token. A supplied exact token fits without this receipt; history cannot replace spent proof or establish a ritual, access or an all-stage campaign."
+        },
+        {
+          "id": "material-6714",
+          "text": "Carry a token of the fae court of Spring",
+          "kind": "carried_item",
+          "item_vnums": [
+            6714
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kithapa gives the Spring token for the exact dew drop. It is different from the three other season tokens; a producer receipt cannot replace the token itself. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-6715",
+          "text": "Carry a token of the fae court of Autumn",
+          "kind": "carried_item",
+          "item_vnums": [
+            6715
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zialh gives the Autumn token for the perfect red leaf. Four copies of one season do not replace one of each of the four seasons. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-6716",
+          "text": "Carry a token of the fae court of Summer",
+          "kind": "carried_item",
+          "item_vnums": [
+            6716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kithaya gives the Summer token for Tookles' sunflower-petal pouch. The priestess accepts supplied matching tokens without requiring your personal earlier favors. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-6717",
+          "text": "Carry a token of the fae court of Winter",
+          "kind": "carried_item",
+          "item_vnums": [
+            6717
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Sieck gives the Winter token for the frost thief's perfect snowflake. Its declared pickup trap can cause cold damage; a saved favor does not prove safe recovery, trap discharge or later admission. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6729,
+              "completion_key": "give=I:6714,I:6715,I:6716,I:6717;receive=I:6713;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    },
+    {
+      "id": "larissa-diamond-wand",
+      "title": "Return Larissa's lost diamond wand",
+      "category": "request",
+      "summary": "Recover the exact diamond-encrusted wand from the icy birch tree and return it to wandering Larissa for a glittering diamond stud. Her description supplies the request. A different wand, wand use or a reported first recovery does not replace the accepted object.",
+      "contracts": [
+        {
+          "giver_vnum": 6735,
+          "completion_key": "give=I:6741;receive=I:6740;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6741",
+          "text": "Carry a small wand encrusted with a diamond",
+          "kind": "carried_item",
+          "item_vnums": [
+            6741
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact diamond-encrusted wand is a ground source on the snow-covered birch tree's thin ice floor. This room and the canopy above have falling hazards. Larissa wanders; no personal first recovery or wand-use event is checked. Supplied matching material fits. Current possession does not prove first recovery or a personal kill. Offer proof loose in inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6735,
+              "completion_key": "give=I:6741;receive=I:6740;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This independent receipt does not grant personal recovery, learned dialogue, combat, ritual, access or another delivery."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

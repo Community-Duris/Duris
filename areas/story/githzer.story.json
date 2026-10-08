@@ -1,0 +1,683 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "githzer",
+  "coverage": "complete",
+  "introduction": "Follow the outpost patrols, chaos relics and royal tombs of Githzerai Stronghold. Thirteen independent accepted deliveries sit alongside the larger fortress and Rrakkma stories. Gather the exact items for each bundle together. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Begin at the surface outpost and follow the patrol, guild and Limbo leads. ASK nearby contacts about their listed topics to hear their stories. A recognized response reveals the contact; individual keywords are not separate achievements. The spirit of Zerthimon has an item request but no listed ASK topics, and the stranded githyanki has no substantive written reply.",
+    "The wrinkled parchment begins with an outpost warden. A sergeant accepts it for an insignia, while Zangzk also needs it in a separate three-item key bundle. Choose which request to supply. The parchment, the insignia and learning the map topic are different things.",
+    "Zangzk offers independent routes: three githyanki trophies for a katana and master key, or a violet potion, parchment and azure poison bottle for the master key. His cash option asks for 500 platinum, but that payment cannot currently be accepted while accounting is active. Keep the item routes separate from the pending cash route.",
+    "A pile of adamantite coins is a physical item found in a guild locker. Zangzk accepts it for information without awarding an item. This is separate from his 500-platinum fee, and the information delivery is not required before his other hand-ins. An Alatorin contact also accepts these coins; giving them away consumes stock needed here.",
+    "Prazyz, the slaadi hunter, asks for one large hide and two matching smaller scraps. The red and green bundles have separate rewards. Identically named hides can be different sizes and kinds: one large hide cannot stand in for two smaller pieces, and one scrap cannot count twice. His starting location is in Limbo; contacts can move.",
+    "Collect the three separate relics of chaos for the spirit of Zerthimon and the long fortress key. The mixed slaad, huge shadow and githzerai watch leader are the declared sources. This delivery is independent of the king's heartstone request. Supplied relics fit without your own earlier kills or realm travel.",
+    "King Tayr-Dryn accepts Zerthimon's heartstone for an eternal shadow and then retires. The shadow opens a different approach. The king's arcane form already has a separate world appearance; the delivery narrative does not prove that you created or defeated that form. The royal feud still needs distinct story endpoints.",
+    "Vozalyzk accepts a Zerthimonian necklace for a mindstone bracelet or a Zerthimonian ring for a mindstone ear clasp. These are separate requests. The necklace and ring come from different Zerth placements; the ring is not one of the royal signet rings requested by the prophet.",
+    "The stranded githyanki accepts the wicked implement of torture for a blood-stained rosary and then retires. The torturer and prisoner begin together. Acceptance records the delivery; the departure text does not escort you or establish a separate rescue destination.",
+    "The prophet connects the royal feud, Kezyr-Dryn, secret tombs and rogue Rrakkma. Bring five separate signet rings with a kingly crest together for the bright marble key. The rings are inside five royal sarcophagi, including the father's tomb. The king's statue responds to BOW; its return portal has a different command. Your own tomb visit is not required if the exact rings are supplied.",
+    "Read inscriptions for the native speech-door clues. Speaking a recognized password can reveal and unlock a shared door, but opening it or moving another barrier may still be necessary. Keys, PULL controls and the shadow control that responds to BLEED affect different passages. A shared-open route does not establish your own earlier solve.",
+    "The deeper soul chambers, ghost controls, forcefield, mirrors and void are exploration stories. Guardians can leave fixed controls on the floor when they die; those controls can affect remote passages. Actual controls and travel commands differ from their narrative wording. Flight, falling, traps, door state and native travel restrictions still govern the route.",
+    "Carry all items for the chosen request loose and together. Held, worn, nested, consumed or handed-away materials are not current preparation. A reward alone does not prove an accepted delivery. Exact supplied materials fit without earlier dialogue, source, combat or access history. World stock, retiring contacts and renewal can limit potential dailies; new credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 44402,
+      "name": "a githzerai patrol sergeant",
+      "keyword": "sergeant",
+      "description": "Sergeants start at three surface outpost posts: parchment intelligence and a Zangzk lead.",
+      "topics": [
+        "zangzk",
+        "map"
+      ]
+    },
+    {
+      "mob_vnum": 44422,
+      "name": "Zangzk, the githzerai captain",
+      "keyword": "zangzk",
+      "description": "Starts at his shop near the outpost exit: trophy or potion/map/poison bundles, an independent information request and a pending cash-for-key route.",
+      "topics": [
+        "githyanki",
+        "news",
+        "money"
+      ]
+    },
+    {
+      "mob_vnum": 44431,
+      "name": "Prazyz, the githzerai hunter",
+      "keyword": "prazyz",
+      "description": "Prazyz starts in Limbo: red and green slaadi bundle requests; he may move from the starting location.",
+      "topics": [
+        "slaad"
+      ]
+    },
+    {
+      "mob_vnum": 44437,
+      "name": "the spirit of Zerthimon",
+      "keyword": "zerthimon",
+      "description": "Spirit of Zerthimon: accepts three relics for a fortress key, carries a separate heartstone and speaks spontaneously. No listed ASK topics.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 44461,
+      "name": "Tayr-Dryn, the githzerai Wizard King",
+      "keyword": "tayr-dryn",
+      "description": "King Tayr-Dryn in the hidden throne room: feud and heartstone request. His spontaneous sorrow is not a listed topic.",
+      "topics": [
+        "savior",
+        "strength",
+        "zerthimon"
+      ]
+    },
+    {
+      "mob_vnum": 44465,
+      "name": "Vozalyzk",
+      "keyword": "vozalyzk",
+      "description": "Vozalyzk starts in a Limbo holding location: outpost inspection, Zerth necklace and ring requests.",
+      "topics": [
+        "hello",
+        "hi",
+        "inspection",
+        "progress",
+        "zerth",
+        "zerths"
+      ]
+    },
+    {
+      "mob_vnum": 44494,
+      "name": "a brutalized githyanki prisoner",
+      "keyword": "githyanki",
+      "description": "Stranded githyanki beside the torturer: accepted implement delivery. Listed greetings have no substantive written reply.",
+      "topics": [
+        "help",
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 44509,
+      "name": "a wise and bothered githzerai prophet",
+      "keyword": "prophet",
+      "description": "Prophet in the gallery: royal feud, tombs, five signets, statue and rogue Rrakkma leads.",
+      "topics": [
+        "hi",
+        "hello",
+        "quest",
+        "chaos",
+        "tayr-dryn",
+        "zerthimon",
+        "father",
+        "kezyr-dryn",
+        "secret",
+        "tomb",
+        "signet",
+        "rings",
+        "ring",
+        "psycophantic",
+        "psycophant",
+        "magi",
+        "magis"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "sergeant-patrol-map",
+      "title": "The sergeant: outpost intelligence",
+      "category": "story",
+      "summary": "Return the wrinkled parchment for a sergeant insignia. Zangzk uses the same parchment in a separate key request; learning a map topic is not a delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 44402,
+          "completion_key": "give=I:44401;receive=I:44515;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44401",
+          "text": "Carry the wrinkled parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            44401
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The outpost warden carries the parchment. Choose between this patrol delivery and Zangzk's potion-and-poison bundle. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the parchment to a sergeant",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44402,
+              "completion_key": "give=I:44401;receive=I:44515;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "zangzk-githyanki-trophies",
+      "title": "Zangzk: three githyanki trophies",
+      "category": "story",
+      "summary": "Bring the dark heart, scalp and bloody skull together for Krazakan and the master key. These are three different objects. The mentioned sheath is not a separate reward.",
+      "contracts": [
+        {
+          "giver_vnum": 44422,
+          "completion_key": "give=I:44422,I:44428,I:44429;receive=I:44431,I:44516;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44422",
+          "text": "Carry the dark heart of a githyanki",
+          "kind": "carried_item",
+          "item_vnums": [
+            44422
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The githyanki assassin is the declared source. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44428",
+          "text": "Carry the scalp of a githyanki",
+          "kind": "carried_item",
+          "item_vnums": [
+            44428
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The githyanki spy is the declared source. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44429",
+          "text": "Carry the bloody skull of a githyanki",
+          "kind": "carried_item",
+          "item_vnums": [
+            44429
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The githyanki escort is the declared source. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver all three trophies to Zangzk",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44422,
+              "completion_key": "give=I:44422,I:44428,I:44429;receive=I:44431,I:44516;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "zangzk-paid-key",
+      "title": "Zangzk: the paid master key",
+      "category": "service",
+      "summary": "Zangzk asks for 500 platinum for the master key. This cash route is currently unavailable while accounting is active and needs payment integration. His independent item bundles offer separate requests; a pile of adamantite coins is not this fee.",
+      "contracts": [
+        {
+          "giver_vnum": 44422,
+          "completion_key": "give=C:500000;receive=I:44516;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-hand-in",
+          "text": "Complete the 500-platinum payment to Zangzk when supported",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44422,
+              "completion_key": "give=C:500000;receive=I:44516;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "zangzk-potion-map-poison",
+      "title": "Zangzk: potion, map and poison",
+      "category": "story",
+      "summary": "Bring the violet potion, wrinkled parchment and tiny azure bottle together for the master key. The information delivery is optional. Drinking, spending or using a material removes it from this bundle.",
+      "contracts": [
+        {
+          "giver_vnum": 44422,
+          "completion_key": "give=I:44401,I:44470,I:44512;receive=I:44516;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44512",
+          "text": "Carry the violet potion",
+          "kind": "carried_item",
+          "item_vnums": [
+            44512
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The master warlock carries this potion. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44401",
+          "text": "Carry the wrinkled parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            44401
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The outpost warden carries the parchment, which also serves the sergeant's independent request. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44470",
+          "text": "Carry the tiny azure bottle",
+          "kind": "carried_item",
+          "item_vnums": [
+            44470
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The master rogue carries the exact azure poison bottle. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver potion, parchment and poison to Zangzk",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44422,
+              "completion_key": "give=I:44401,I:44470,I:44512;receive=I:44516;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "zangzk-adamantite-information",
+      "title": "Zangzk: adamantite information",
+      "category": "service",
+      "summary": "Deliver the physical pile of adamantite coins for information. The item is consumed and no reward item is promised. This is independent of both the wallet fee and the other master-key routes; Alatorin offers a competing use.",
+      "contracts": [
+        {
+          "giver_vnum": 44422,
+          "completion_key": "give=I:44509;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44509",
+          "text": "Carry a pile of adamantite coins",
+          "kind": "carried_item",
+          "item_vnums": [
+            44509
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look inside the guild locker. These coins are a physical quest item; keep them separate from wallet funds and choose whether to supply Zangzk or the Alatorin contact. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the adamantite coins for Zangzk's information",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44422,
+              "completion_key": "give=I:44509;receive=;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "prazyz-red-hide",
+      "title": "Prazyz: the red slaadi bundle",
+      "category": "story",
+      "summary": "Bring one large red hide and two separate red scraps for a slaadi-hide helmet. All three must be present together. The green bundle is independent.",
+      "contracts": [
+        {
+          "giver_vnum": 44431,
+          "completion_key": "give=I:44436,I:44440,I:44440;receive=I:44439;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44436",
+          "text": "Carry one large red slaadi hide",
+          "kind": "carried_item",
+          "item_vnums": [
+            44436
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mixed red-green slaad carries the large hide. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44440",
+          "text": "Carry two smaller red slaadi scraps",
+          "kind": "carried_item",
+          "item_vnums": [
+            44440
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Red slaadi supply the smaller matching scraps. One piece cannot count twice. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the complete red bundle to Prazyz",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44431,
+              "completion_key": "give=I:44436,I:44440,I:44440;receive=I:44439;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "prazyz-green-hide",
+      "title": "Prazyz: the green slaadi bundle",
+      "category": "story",
+      "summary": "Bring one large green hide and two separate green scraps for slaadi-hide leggings. All three must be present together. Red hides do not substitute.",
+      "contracts": [
+        {
+          "giver_vnum": 44431,
+          "completion_key": "give=I:44437,I:44441,I:44441;receive=I:44438;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44437",
+          "text": "Carry one large green slaadi hide",
+          "kind": "carried_item",
+          "item_vnums": [
+            44437
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mixed red-green slaad carries the large hide. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44441",
+          "text": "Carry two smaller green slaadi scraps",
+          "kind": "carried_item",
+          "item_vnums": [
+            44441
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Green slaadi supply the smaller matching scraps. One piece cannot count twice. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the complete green bundle to Prazyz",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44431,
+              "completion_key": "give=I:44437,I:44441,I:44441;receive=I:44438;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "zerthimon-three-relics",
+      "title": "Zerthimon: the three relics of chaos",
+      "category": "story",
+      "summary": "Bring all three distinct relics of chaos to the spirit of Zerthimon for the long fortress key. The spirit's spontaneous words are ambient speech, not ASK topics or a prerequisite.",
+      "contracts": [
+        {
+          "giver_vnum": 44437,
+          "completion_key": "give=I:44434,I:44444,I:44448;receive=I:44456;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44434",
+          "text": "Carry the first relic of chaos",
+          "kind": "carried_item",
+          "item_vnums": [
+            44434
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mixed red-green slaad carries the first relic. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44444",
+          "text": "Carry the second relic of chaos",
+          "kind": "carried_item",
+          "item_vnums": [
+            44444
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The huge shadow carries the second relic. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "material-44448",
+          "text": "Carry the third relic of chaos",
+          "kind": "carried_item",
+          "item_vnums": [
+            44448
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The githzerai watch leader carries the third relic. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver all three relics to Zerthimon",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44437,
+              "completion_key": "give=I:44434,I:44444,I:44448;receive=I:44456;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "tayr-dryn-heartstone",
+      "title": "Tayr-Dryn: Zerthimon's heartstone",
+      "category": "story",
+      "summary": "Deliver Zerthimon's heartstone for an eternal shadow. The king retires on acceptance. His narrated transformation is separate from the independently loaded arcane king and any personal defeat.",
+      "contracts": [
+        {
+          "giver_vnum": 44461,
+          "completion_key": "give=I:44446;receive=I:44501;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44446",
+          "text": "Carry Zerthimon's heartstone",
+          "kind": "carried_item",
+          "item_vnums": [
+            44446
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The spirit of Zerthimon carries the heartstone. This is separate from his relic request. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the heartstone to King Tayr-Dryn",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44461,
+              "completion_key": "give=I:44446;receive=I:44501;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "vozalyzk-necklace",
+      "title": "Vozalyzk: the Zerthimonian necklace",
+      "category": "story",
+      "summary": "Deliver the exact necklace for a mindstone bracelet. The inspector's plans for the Zerths and the outpost are narrative; his ring request is independent.",
+      "contracts": [
+        {
+          "giver_vnum": 44465,
+          "completion_key": "give=I:44427;receive=I:44519;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44427",
+          "text": "Carry the Zerthimonian necklace",
+          "kind": "carried_item",
+          "item_vnums": [
+            44427
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Zerths at the outpost wormhole carry the necklace. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the necklace to Vozalyzk",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44465,
+              "completion_key": "give=I:44427;receive=I:44519;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "vozalyzk-ring",
+      "title": "Vozalyzk: the Zerthimonian ring",
+      "category": "story",
+      "summary": "Deliver the exact Zerthimonian ring for a mindstone ear clasp. This ring is different from the five royal signets and from the inspector's necklace request.",
+      "contracts": [
+        {
+          "giver_vnum": 44465,
+          "completion_key": "give=I:44550;receive=I:44577;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44550",
+          "text": "Carry the Zerthimonian ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            44550
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two deeper fortress Zerths wear these rings. Remove the exact ring from equipment before offering it; a royal signet is not a substitute. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the ring to Vozalyzk",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44465,
+              "completion_key": "give=I:44550;receive=I:44577;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "githyanki-torture-implement",
+      "title": "The stranded githyanki: a torturer's implement",
+      "category": "story",
+      "summary": "Deliver the wicked implement of torture for a blood-stained githyanki rosary. The recipient retires. The narrated departure is not a player escort or a separate rescue endpoint.",
+      "contracts": [
+        {
+          "giver_vnum": 44494,
+          "completion_key": "give=I:44580;receive=I:44581;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44580",
+          "text": "Carry the wicked implement of torture",
+          "kind": "carried_item",
+          "item_vnums": [
+            44580
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The torturer beside the stranded githyanki carries this exact implement. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the implement to the stranded githyanki",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44494,
+              "completion_key": "give=I:44580;receive=I:44581;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "prophet-five-signet-rings",
+      "title": "The prophet: five royal signet rings",
+      "category": "story",
+      "summary": "Bring five separate signet rings with a kingly crest together for the bright marble key to the rogue Rrakkma. The prophet retires. Bowing, tomb visits, guardian defeats, forcefield clearance and king overthrow remain separate stories.",
+      "contracts": [
+        {
+          "giver_vnum": 44509,
+          "completion_key": "give=I:44563,I:44563,I:44563,I:44563,I:44563;receive=I:44572;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-44563",
+          "text": "Carry five royal signet rings",
+          "kind": "carried_item",
+          "item_vnums": [
+            44563
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Look inside the five royal sarcophagi, including Kezyr-Dryn's tomb. Each contributes a separate ring. The Zerthimonian ring is different; all five signets must be loose together. Carry the exact stock loose with all other requested items. Held, worn, nested, spent or handed-away stock is not current preparation. Supplied material fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver five separate signet rings to the prophet",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 44509,
+              "completion_key": "give=I:44563,I:44563,I:44563,I:44563,I:44563;receive=I:44572;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted delivery records this independent outcome. Possessing a reward, asking a topic or passing a shared gate does not prove acceptance. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

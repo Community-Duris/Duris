@@ -21,6 +21,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "world/zone_story_quest_runtime.h"
 extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include "economy/shop_trade_destination_weight.h"
 #include "world/bloodstains.h"
@@ -1125,6 +1126,7 @@ void recover_from_room_ch_loop(P_char k)
  * place a character in a room.
  */
 // Returns TRUE iff char made it into the room.
+static bool char_to_room_impl(P_char ch, int room, int dir);
 bool quest_mobile_native_room_restore_owner::restore(P_char ch, int room,
 						     size_t *retained_step) noexcept
 {
@@ -1226,6 +1228,23 @@ bool quest_mobile_native_room_restore_owner::restore(P_char ch, int room,
 }
 
 bool char_to_room(P_char ch, int room, int dir)
+{
+	const bool player = ch && IS_PC(ch);
+	const bool placed = char_to_room_impl(ch, room, dir);
+	if (placed && player)
+		for (P_char present = character_list; present; present = present->next)
+			if (present == ch)
+			{
+				zone_story_quest_runtime::arrived(present);
+				break;
+			}
+	if (placed && !player)
+		for (P_char present = world[ch->in_room].people; present;
+		     present = present->next_in_room)
+			zone_story_quest_runtime::encountered(present, ch);
+	return placed;
+}
+static bool char_to_room_impl(P_char ch, int room, int dir)
 {
 	P_char t_ch, k, who;
 	P_desc d;

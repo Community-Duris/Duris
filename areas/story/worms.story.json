@@ -1,0 +1,840 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "worms",
+  "coverage": "complete",
+  "introduction": "Explore the Caverns of the Worms and bring exact skins and hides to Wilms for equipment. His sixteen independent commissions are supporting crafting services. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Enter from the Underdark and follow the short duergar corridor to the old tool alcove. Wilms is the curer who offers equipment for worm skins and hides. ASK wilms about cure, hide or wormskin, then use the listed equipment topics to hear his recipes. Recognized dialogue reveals the contact; each keyword is not a separate achievement.",
+    "The burrows contain grey, glowing, brown, red and purple worms. Small worms supply strips, middle-sized worms supply pieces and large worms supply whole hides. These exact colors and sizes are different materials; a hide cannot stand in for several strips or pieces. Exploration has several overlapping routes rather than a required personal quest order.",
+    "Choose the equipment you want and gather its complete bundle loose in inventory. Repeated ingredients require separate items together. The shield needs five items, the armor needs three separate red strips and two hides, and the mask, cloak and gloves need matching pairs. The journal shows current quantities; spent, nested, held or worn materials are not ready now.",
+    "ASK describes a recipe but does not select an order. If several complete bundles share an offered material, Wilms accepts the first matching complete request. Extra materials can make a larger or different commission take precedence. Keep only the intended complete bundle available when practical, and inspect the received equipment. A journal card does not reserve materials or select the native hand-in.",
+    "Some materials serve several commissions. Grey strip and red hide can make a helmet or contribute to a backpack; glowing strip can make an ear clasp or combine with purple strip for a ring. The shield overlaps the boots ingredients. Choose how to spend your stock; receiving equipment is separate from having materials ready for another commission.",
+    "A small fixed pile of garbage conceals a blocked passage in the red burrows. PUSH the garbage to affect the south passage toward the purple worm route. A passage another player already opened is usable without your own earlier solve. The garbage stays fixed and is separate from Wilms's ingredient requests.",
+    "Bring light for the dark burrows and respect normal movement, combat and access rules. Wet descriptions do not by themselves require swimming or flight. The Underdark entrance is south from the entry cavern despite its old description; the deeper connector route is separate. An incoming veil can also arrive here, but using it is not a required step.",
+    "Exact supplied skins and hides fit without your own earlier kills, source recovery, tunnel visits, dialogue or control history. Accepting a commission records its independent service receipt; owning its reward alone does not prove acceptance. These services do not add quest achievements or dailies. Discovery remains a separate achievement, and new credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6915,
+      "name": "Wilms",
+      "keyword": "wilms",
+      "description": "Wilms starts in the old tool alcove. Ask about his curing trade or an equipment piece to learn its exact recipe. Asking does not select an order; competing complete bundles can affect the hand-in.",
+      "topics": [
+        "cure",
+        "hide",
+        "wormskin",
+        "helmet",
+        "choker",
+        "eyepatch",
+        "mask",
+        "ear",
+        "clasp",
+        "armor",
+        "backpack",
+        "cloak",
+        "sleeves",
+        "gloves",
+        "bracelet",
+        "ring",
+        "belt",
+        "leggings",
+        "boots",
+        "shield"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "wilms-helmet",
+      "title": "Wilms: helmet",
+      "category": "service",
+      "summary": "Bring 1 × a strip of grey wormskin; 1 × a red wormhide together for a wormskin helmet. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6900,I:6908;receive=I:6915;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6900",
+          "text": "Carry a strip of grey wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6900
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6908",
+          "text": "Carry a red wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6908
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large red worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's helmet commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6900,I:6908;receive=I:6915;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-choker",
+      "title": "Wilms: choker",
+      "category": "service",
+      "summary": "Bring 1 × a strip of red wormskin; 1 × a strip of brown wormskin together for a braided wormskin choker. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6906,I:6909;receive=I:6916;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6906",
+          "text": "Carry a strip of red wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6906
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small red worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6909",
+          "text": "Carry a strip of brown wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6909
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's choker commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6906,I:6909;receive=I:6916;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-eyepatch",
+      "title": "Wilms: eyepatch",
+      "category": "service",
+      "summary": "Bring 1 × a piece of grey wormskin together for a wormskin eyepatch. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6901;receive=I:6917;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6901",
+          "text": "Carry a piece of grey wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6901
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Middle-sized grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's eyepatch commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6901;receive=I:6917;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-mask",
+      "title": "Wilms: mask",
+      "category": "service",
+      "summary": "Bring 2 × a piece of brown wormskin; 1 × a strip of purple wormskin; 1 × a strip of red wormskin together for a wormskin mask. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6906,I:6910,I:6910,I:6912;receive=I:6918;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6910",
+          "text": "Carry two pieces of brown wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6910
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Middle-sized brown worms are the declared source of this exact kind. Carry 2 separate items loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6912",
+          "text": "Carry a strip of purple wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6912
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6906",
+          "text": "Carry a strip of red wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6906
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small red worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's mask commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6906,I:6910,I:6910,I:6912;receive=I:6918;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-ear-clasp",
+      "title": "Wilms: ear clasp",
+      "category": "service",
+      "summary": "Bring 1 × a strip of glowing wormskin together for a decorative wormskin ear clasp. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6903;receive=I:6919;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6903",
+          "text": "Carry a strip of glowing wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6903
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small glowing worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's ear clasp commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6903;receive=I:6919;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-armor",
+      "title": "Wilms: armor",
+      "category": "service",
+      "summary": "Bring 1 × a purple wormhide; 1 × a brown wormhide; 3 × a strip of red wormskin together for a suit of wormhide armor. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6906,I:6906,I:6906,I:6911,I:6914;receive=I:6920;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6914",
+          "text": "Carry a purple wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6914
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6911",
+          "text": "Carry a brown wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6911
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6906",
+          "text": "Carry three strips of red wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6906
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Small red worms are the declared source of this exact kind. Carry 3 separate items loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's armor commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6906,I:6906,I:6906,I:6911,I:6914;receive=I:6920;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-backpack",
+      "title": "Wilms: backpack",
+      "category": "service",
+      "summary": "Bring 1 × a strip of grey wormskin; 1 × a red wormhide; 1 × a glowing wormhide together for a backpack of wormskin. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6900,I:6905,I:6908;receive=I:6921;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6900",
+          "text": "Carry a strip of grey wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6900
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6908",
+          "text": "Carry a red wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6908
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large red worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6905",
+          "text": "Carry a glowing wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6905
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large glowing worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's backpack commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6900,I:6905,I:6908;receive=I:6921;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-cloak",
+      "title": "Wilms: cloak",
+      "category": "service",
+      "summary": "Bring 2 × a red wormhide together for a thick wormskin cloak. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6908,I:6908;receive=I:6922;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6908",
+          "text": "Carry two red wormhides",
+          "kind": "carried_item",
+          "item_vnums": [
+            6908
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Large red worms are the declared source of this exact kind. Carry 2 separate items loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's cloak commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6908,I:6908;receive=I:6922;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-sleeves",
+      "title": "Wilms: sleeves",
+      "category": "service",
+      "summary": "Bring 1 × a grey wormhide; 1 × a piece of brown wormskin together for a pair of plated wormskin sleeves. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6902,I:6910;receive=I:6923;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6902",
+          "text": "Carry a grey wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6902
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6910",
+          "text": "Carry a piece of brown wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6910
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Middle-sized brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's sleeves commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6902,I:6910;receive=I:6923;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-gloves",
+      "title": "Wilms: gloves",
+      "category": "service",
+      "summary": "Bring 2 × a piece of glowing wormskin together for a pair of polished wormskin gloves. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6904,I:6904;receive=I:6924;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6904",
+          "text": "Carry two pieces of glowing wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6904
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Middle-sized glowing worms are the declared source of this exact kind. Carry 2 separate items loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's gloves commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6904,I:6904;receive=I:6924;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-bracelet",
+      "title": "Wilms: bracelet",
+      "category": "service",
+      "summary": "Bring 1 × a strip of grey wormskin; 1 × a strip of brown wormskin; 1 × a strip of purple wormskin together for a braided wormskin bracelet. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6900,I:6909,I:6912;receive=I:6925;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6900",
+          "text": "Carry a strip of grey wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6900
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6909",
+          "text": "Carry a strip of brown wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6909
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6912",
+          "text": "Carry a strip of purple wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6912
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's bracelet commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6900,I:6909,I:6912;receive=I:6925;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-ring",
+      "title": "Wilms: ring",
+      "category": "service",
+      "summary": "Bring 1 × a strip of glowing wormskin; 1 × a strip of purple wormskin together for a finely braided wormskin ring. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6903,I:6912;receive=I:6926;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6903",
+          "text": "Carry a strip of glowing wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6903
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small glowing worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6912",
+          "text": "Carry a strip of purple wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6912
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's ring commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6903,I:6912;receive=I:6926;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-belt",
+      "title": "Wilms: belt",
+      "category": "service",
+      "summary": "Bring 1 × a grey wormhide; 1 × a strip of brown wormskin together for a thick wormskin belt. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6902,I:6909;receive=I:6927;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6902",
+          "text": "Carry a grey wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6902
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large grey worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6909",
+          "text": "Carry a strip of brown wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6909
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Small brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's belt commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6902,I:6909;receive=I:6927;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-leggings",
+      "title": "Wilms: leggings",
+      "category": "service",
+      "summary": "Bring 1 × a glowing wormhide; 1 × a brown wormhide together for a pair of plated wormskin leggings. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6905,I:6911;receive=I:6928;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6905",
+          "text": "Carry a glowing wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6905
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large glowing worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6911",
+          "text": "Carry a brown wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6911
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large brown worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's leggings commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6905,I:6911;receive=I:6928;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-boots",
+      "title": "Wilms: boots",
+      "category": "service",
+      "summary": "Bring 1 × a piece of purple wormskin; 1 × a piece of red wormskin together for a pair of rough wormskin boots. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6907,I:6913;receive=I:6929;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6913",
+          "text": "Carry a piece of purple wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6913
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Middle-sized purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6907",
+          "text": "Carry a piece of red wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6907
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Middle-sized red worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's boots commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6907,I:6913;receive=I:6929;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wilms-shield",
+      "title": "Wilms: shield",
+      "category": "service",
+      "summary": "Bring 1 × a purple wormhide; 1 × a glowing wormhide; 2 × a piece of red wormskin; 1 × a piece of purple wormskin together for a thick wormhide-plated shield. This is an independent equipment-making service. Keep competing complete bundles in mind when offering a material.",
+      "contracts": [
+        {
+          "giver_vnum": 6915,
+          "completion_key": "give=I:6905,I:6907,I:6907,I:6913,I:6914;receive=I:6930;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6914",
+          "text": "Carry a purple wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6914
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6905",
+          "text": "Carry a glowing wormhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            6905
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Large glowing worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6907",
+          "text": "Carry two pieces of red wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6907
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Middle-sized red worms are the declared source of this exact kind. Carry 2 separate items loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "material-6913",
+          "text": "Carry a piece of purple wormskin",
+          "kind": "carried_item",
+          "item_vnums": [
+            6913
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Middle-sized purple worms are the declared source of this exact kind. Carry 1 separate item loose with all other materials for the chosen commission. Colors and sizes do not substitute. Supplied material fits without your own earlier source or combat history."
+        },
+        {
+          "id": "accepted-commission",
+          "text": "Complete Wilms's shield commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6915,
+              "completion_key": "give=I:6905,I:6907,I:6907,I:6913,I:6914;receive=I:6930;disappear=0"
+            }
+          ],
+          "hint": "Only the exact accepted hand-in records this service. ASK and a journal card do not select an order; other complete inventory bundles can take precedence. Reward possession alone is not an accepted receipt. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

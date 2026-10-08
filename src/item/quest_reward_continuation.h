@@ -49,6 +49,11 @@ struct quest_reward_continuation
 	std::array<uint32_t, 64> credited_pids = {};
 	uint32_t xp_award_count = 0;
 	std::array<quest_reward_xp_award, 64> xp_awards = {};
+	uint32_t season_id = 0;
+	uint32_t catalog_revision = 0;
+	uint32_t daily_policy_revision = 0;
+	uint32_t daily_count = 0;
+	std::array<uint32_t, 64> daily_pids = {};
 	std::string character_name;
 	std::string definition_id;
 	// Explicit fee-only v6 authority, never a synthetic consumed item root.
@@ -57,6 +62,18 @@ struct quest_reward_continuation
 	uint64_t action_mobile_instance_id = 0;
 	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> original_acceptance_result{};
 };
+
+// v6 item records retain daily terms; v6 fee records retain native action terms.
+// The original consumed-root field distinguishes their immutable layouts.
+inline bool quest_reward_is_fee_only(const quest_reward_continuation &terms)
+{
+	return terms.version == 6 && terms.root_count == 0;
+}
+
+inline bool quest_reward_has_daily_context(const quest_reward_continuation &terms)
+{
+	return terms.version == 6 && terms.root_count != 0;
+}
 
 constexpr size_t QUEST_REWARD_MAX_CREDITED_PIDS = 64;
 constexpr size_t QUEST_REWARD_MAX_CHARACTER_NAME_BYTES = 64;
@@ -89,7 +106,7 @@ inline uint64_t quest_item_reward_source_id(uint64_t offering_uid, int vnum,
 	return source_id ? source_id : 1;
 }
 
-// v6 derives logical reward source from the actual admitted action and its
+// Fee-only v6 derives logical reward source from the actual admitted action and its
 // one bound event; the produced item UID still comes from genuine birth reserve.
 inline uint64_t quest_fee_item_reward_source_id(const quest_reward_continuation &terms,
 						size_t index)
@@ -131,7 +148,7 @@ inline uint64_t quest_fee_item_reward_source_id(const quest_reward_continuation 
 
 inline uint64_t quest_item_reward_source_id(const quest_reward_continuation &terms, size_t index)
 {
-	if (terms.version == 6)
+	if (quest_reward_is_fee_only(terms))
 		return quest_fee_item_reward_source_id(terms, index);
 	if (!terms.root_count || index >= terms.reward_count || terms.rewards[index].type != 1U)
 		return 0;
@@ -148,13 +165,14 @@ inline uint64_t quest_item_reward_source_id(const quest_reward_continuation &ter
 // party and stable quest identity. Version 3 adds skill eligibility metadata.
 // Version 4 freezes solo quest XP. Version 5 freezes per-recipient XP values
 // for the already captured group, so recovery need not rediscover the party.
+// Rooted version 6 freezes season, catalog revision, and daily-qualified recipients.
+// Rootless version 6 retains accounting's fee-only QRF6 action binding. The root
+// count selects the established wire shape; neither shape can decode the other.
 inline bool quest_fee_reward_continuation_decode(const uint8_t *, size_t,
 						 quest_reward_continuation *);
 inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 					     quest_reward_continuation *decoded)
 {
-	if (data && size >= 4 && data[0] == 6 && !data[1] && !data[2] && !data[3])
-		return quest_fee_reward_continuation_decode(data, size, decoded);
 	if (!data || !decoded || size < 40 || size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
 		return false;
 	auto read32 = [&](size_t offset)
@@ -172,7 +190,11 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		return value;
 	};
 	const uint32_t version = read32(0);
-	if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5)
+	// The established v6 layouts are disjoint: fee-only has no consumed roots.
+	if (version == 6 && read32(32) == 0)
+		return quest_fee_reward_continuation_decode(data, size, decoded);
+	if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5 &&
+	    version != 6)
 		return false;
 	quest_reward_continuation value;
 	value.version = version;
@@ -237,7 +259,7 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		value.strongest_party_level = static_cast<int32_t>(read32(offset + 16));
 		value.credited_count = read32(offset + 20);
 		offset += extension_header_bytes;
-		if (!value.zone_number || value.zone_number > INT32_MAX || value.player_level < 0 ||
+		if (value.zone_number > INT32_MAX || value.player_level < 0 ||
 		    value.strongest_party_level < 0 || !value.credited_count ||
 		    value.credited_count > QUEST_REWARD_MAX_CREDITED_PIDS ||
 		    value.party_size != value.credited_count ||
@@ -290,8 +312,11 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 			value.xp_award_count = read32(offset);
 			offset += sizeof(uint32_t);
 			if (value.xp_award_count > value.xp_awards.size() ||
-			    size != offset + static_cast<size_t>(value.xp_award_count) * 3 *
-						     sizeof(uint32_t))
+			    (size < offset + static_cast<size_t>(value.xp_award_count) * 3 *
+						     sizeof(uint32_t) ||
+			     (version == 5 &&
+			      size != offset + static_cast<size_t>(value.xp_award_count) * 3 *
+						       sizeof(uint32_t))))
 				return false;
 			for (size_t index = 0; index < value.xp_award_count;
 			     ++index, offset += 3 * sizeof(uint32_t))
@@ -342,6 +367,35 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 							return false;
 					}
 		}
+		if (version == 6)
+		{
+			if (size - offset < 16)
+				return false;
+			value.season_id = read32(offset);
+			value.catalog_revision = read32(offset + 4);
+			value.daily_policy_revision = read32(offset + 8);
+			value.daily_count = read32(offset + 12);
+			offset += 16;
+			if (!value.season_id || !value.catalog_revision ||
+			    value.daily_policy_revision != 1 ||
+			    value.daily_count > value.credited_count ||
+			    size - offset != value.daily_count * 4)
+				return false;
+			for (size_t i = 0; i < value.daily_count; ++i, offset += 4)
+			{
+				value.daily_pids[i] = read32(offset);
+				bool member = false;
+				for (size_t j = 0; j < value.credited_count; ++j)
+					member |= value.daily_pids[i] == value.credited_pids[j];
+				if (!member)
+					return false;
+				for (size_t j = 0; j < i; ++j)
+					if (value.daily_pids[i] == value.daily_pids[j])
+						return false;
+			}
+		}
+		if (version >= 5 && size != offset)
+			return false;
 		if (version < 5 && size != offset)
 			return false;
 	}

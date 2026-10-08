@@ -228,7 +228,7 @@ D2
 ~
 0 0 93309
 D3
-   The path here heads east toward a dark sylvan expanse.
+   The path here heads west toward a dark sylvan expanse.
 ~
 ~
 0 0 93311
@@ -276,7 +276,7 @@ S
 &+yFootpath&+W Toward the &+GForest&n~
 &+y   This dirt footpath is scattered with a few pebbles and twigs deposited here
 &+yby the wind.  The crags to the north give way as a giant forest opens up to
-&+ythe east.  Massive oaks and maples tower over the path, casting their hellish
+&+ythe west.  Massive oaks and maples tower over the path, casting their hellish
 &+yshadow across the tawny dirt.  The path continues to the west and to the east.&n
 ~
 933 0 4
@@ -400,7 +400,7 @@ S
 &+yFootpath&+W Toward the &+GForest&n~
 &+y   This dirt footpath is scattered with a few pebbles and twigs deposited here
 &+yby the wind.  The path broadens here as it heads into the midnight gloom of
-&+ythe wilderness to the east.  The Black Thorne range is thick to the north,
+&+ythe wilderness to the west.  The Black Thorne range is thick to the north,
 &+ywhile only a few peaks poke from the valley floor to the south.  The path
 &+ycontinues to the west and to the east.&n
 ~
@@ -2006,7 +2006,7 @@ S
 ~
 933 1 3
 D1
-   There is an intersection to the west.
+   There is an intersection to the east.
 ~
 ~
 0 0 93382
@@ -2299,7 +2299,7 @@ S
 &+gearth's nutrients.  &+LDead&+g leaves litter the area, slowly being ground into
 &+gcompost by the forest creatures and passing travellers.  The &+maroma&+g of blooming
 &+Rflowers&+g wafts through the air as if carried by an army of sprites.  The path
-&+genters from the west and comes to a stop here.  An ancient oak blocking all
+&+genters from the east and comes to a stop here.  An ancient oak blocking all
 &+gfurther progress the path might have made.&n
 ~
 933 1 3

@@ -1,0 +1,377 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "dirkn",
+  "coverage": "complete",
+  "introduction": "Explore Dirk’nspire’s caves, town and competing clans; meet Balith and bring him the two kinds of intelligence he accepts.",
+  "orientation": [
+    "The cave entrance connects to the Valinhav cave system. Successful arrival, finding a passage and opening or crossing it are separate actions.",
+    "Find Balith in the collapsed tunnel and ask maps or secrets. Map and secret are alternate keywords for the same conversation lead.",
+    "Balith accepts the sealed defense document for a scarab of Ghore. He also pays 2 platinum, 5 gold and 7 silver for the tattered silk-paper despite his disappointed reply. These are two independent requests.",
+    "The tattered paper is hidden inside guano at the cave dead end. Examine and search the open container, then GET its contents; a search or readable map alone does not acquire the paper.",
+    "The sealed document is declared inside a moneybox in Firb’s private chambers. Unlock attempts depend on current state, skill or magic, then opening and GET remain separate. Identical boxes can affect actual reset placement and stock.",
+    "The granite golem carries a bloodstone key for the pickproof main gate. Key recovery, unlocking, opening and crossing are separate; this route is not a remembered prerequisite for Balith’s returns.",
+    "Carry the requested item loose. A held, worn or nested item does not prepare a return. Supplied exact items also fit; current preparation changes after spending while recorded acceptance remains.",
+    "Balith’s worn scarab and a newly issued scarab reward have different acquisition histories. Merely possessing a scarab does not record the document return.",
+    "Firb’s Foe Hammer is also requested by Ragmor and Wikzor in Alatorin. Keeping or using it and spending it with the other four weapons are different choices. Those separate bounties do not complete a Balith request.",
+    "The homeless wemic can offer native instruction under current admission, and Flyrr runs a general store. Meeting either or carrying shop food does not complete Balith’s requests.",
+    "The damaged paper, slave pens, rival clans, temples and resident families suggest wider stories. Poisoning food, rescuing captives, learning or resolving clan conflict need explicit successful outcomes before awards."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 96829,
+      "name": "Balith, Emissary of Ghore",
+      "keyword": "balith",
+      "description": "Ask Balith about maps or secrets. He accepts a sealed document for a scarab and a tattered silk-paper for coins as two independent returns.",
+      "topics": [
+        "maps",
+        "secrets",
+        "map",
+        "secret"
+      ]
+    },
+    {
+      "mob_vnum": 96800,
+      "name": "a large bat",
+      "keyword": "bat",
+      "description": "The large bats inhabit the cave approaches. Encounters and combat remain separate from Balith’s returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96801,
+      "name": "a small bat",
+      "keyword": "bat",
+      "description": "Small bats inhabit the cave approaches, including the collapsed tunnel near Balith.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96802,
+      "name": "a small lizard",
+      "keyword": "lizard",
+      "description": "Lizards inhabit the natural passages. Their encounter does not record a recovered document.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96803,
+      "name": "a Deep Dwarf",
+      "keyword": "derro",
+      "description": "A Deep Dwarf inhabits the cavern approaches. The damaged paper describes wider infiltration leads that need defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96804,
+      "name": "a Granite Golem",
+      "keyword": "golem",
+      "description": "The granite golem carries the bloodstone key used by the main gate. Recovering a key, unlocking, opening and crossing are separate actions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96805,
+      "name": "a skeletal rat",
+      "keyword": "skeletal",
+      "description": "This skeletal rat inhabits the slime passages. Similar rat names retain distinct identities.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96806,
+      "name": "a skeletal rat",
+      "keyword": "skeletal",
+      "description": "This other skeletal rat also inhabits the slime passages. Its encounter is separate from the other rat’s.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96807,
+      "name": "Bofak Purefinger",
+      "keyword": "bofak",
+      "description": "Bofak is found in the brothel’s back room. Temple and virtue stories need explicit outcomes before completion can be recorded.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96808,
+      "name": "Morgana Strongheart",
+      "keyword": "morgana",
+      "description": "Morgana occupies the brothel’s back room. Meeting her does not complete a service or temple story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96809,
+      "name": "the brothel receptionist",
+      "keyword": "receptionist",
+      "description": "The brothel receptionist occupies its reception area. Current service admission and successful service need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96810,
+      "name": "a brothel patron",
+      "keyword": "patron",
+      "description": "A brothel patron occupies the reception area. This encounter does not record a purchase or completed request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96811,
+      "name": "a derro initiate",
+      "keyword": "initiate",
+      "description": "The initiate occupies Bofak’s temple. Initiation, worship and prayer need builder-defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96812,
+      "name": "a corpulent guard",
+      "keyword": "corpulent",
+      "description": "Corpulent guards patrol the stronghold. Their encounter and any fight remain separate from accepted return history.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96813,
+      "name": "a street cleaner",
+      "keyword": "cleaner",
+      "description": "The street cleaner inhabits Liberation Road. Helping residents or restoring the streets needs a defined endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96814,
+      "name": "Gartuk, Bartender Extraordinaire",
+      "keyword": "gartuk",
+      "description": "Gartuk occupies the Groaning Goblin tavern. His bartender role does not itself prove a scripted service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96815,
+      "name": "a drunk orc patron",
+      "keyword": "orc",
+      "description": "A drunk orc patron inhabits the tavern. Encounter, drinking and any assistance remain separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96816,
+      "name": "Firb Derstl, Burrow Warden of Dirk'nspire",
+      "keyword": "firb",
+      "description": "Firb Derstl occupies his private chambers and wields the Foe Hammer. That weapon is also requested by separate Alatorin bounties.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96817,
+      "name": "an irate duergar",
+      "keyword": "duergar",
+      "description": "An irate duergar occupies the rest room. His encounter is a local story lead, without an automatic objective.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96818,
+      "name": "a tired troll",
+      "keyword": "troll",
+      "description": "A tired troll inhabits the tavern. Assistance requires a defined successful outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96819,
+      "name": "a thri-kreen",
+      "keyword": "thri-kreen",
+      "description": "A thri-kreen inhabits a dingy abode. Its encounter does not resolve the stronghold’s wider captivity story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96820,
+      "name": "a homeless wemic",
+      "keyword": "wemic",
+      "description": "The homeless wemic has the native teacher flag. Available instruction depends on current visibility, class, level, skill and fee admission; meeting him does not record learning.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96821,
+      "name": "a drow commoner",
+      "keyword": "drow",
+      "description": "Drow commoners inhabit the dwellings. Similar resident names do not merge their identities or imply rescue completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96822,
+      "name": "an orc child",
+      "keyword": "child",
+      "description": "An orc child inhabits a disheveled hovel with an orc woman. Family assistance needs an explicit lasting outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96823,
+      "name": "an orc female",
+      "keyword": "orc",
+      "description": "An orc woman inhabits the hovel with a child. Meeting the family does not complete an assistance story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96824,
+      "name": "a drunk goblin",
+      "keyword": "goblin",
+      "description": "A drunk goblin inhabits the ghetto. Helping residents needs a defined recipient and outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96825,
+      "name": "a Dirk'nspire guard",
+      "keyword": "guard",
+      "description": "Dirk’nspire guards defend the town and clan routes. Entry, combat and threat resolution are separate from Balith’s acceptance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96826,
+      "name": "a drow slave",
+      "keyword": "slave",
+      "description": "Drow slaves occupy the slave pens. Rescue requires admitted release, safe arrival and lasting state, rather than an encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96827,
+      "name": "an orc slave",
+      "keyword": "slave",
+      "description": "Orc slaves occupy the slave pens. Their rescue needs defined actor contribution and recipient state.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96828,
+      "name": "a thri-kreen slave",
+      "keyword": "slave",
+      "description": "A thri-kreen slave occupies the pens. An encounter alone does not record liberation.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96830,
+      "name": "a goblin slave",
+      "keyword": "slave",
+      "description": "A goblin slave inhabits the bathing room. Relief or rescue needs an explicit outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96831,
+      "name": "a clan priest",
+      "keyword": "priest",
+      "description": "This clan priest inhabits Clan Broken Will’s priest chambers. Worship and sacrificial leads need defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96832,
+      "name": "a clan priest",
+      "keyword": "priest",
+      "description": "This other clan priest inhabits Clan Swifthammer’s priest chamber. Different priests retain distinct identities.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96833,
+      "name": "a derro cook",
+      "keyword": "cook",
+      "description": "Derro cooks inhabit both clan kitchens. The paper’s food-poisoning orders do not establish a native mission outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96834,
+      "name": "the clan elder",
+      "keyword": "elder",
+      "description": "The clan elder inhabits Clan Broken Will’s chamber. Clan leadership and temple stories need builder-defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96835,
+      "name": "a derro commoner",
+      "keyword": "commoner",
+      "description": "This derro commoner inhabits the paved tunnel. Similar commoners retain distinct identities.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96836,
+      "name": "a derro commoner",
+      "keyword": "commoner",
+      "description": "This other derro commoner inhabits the paved tunnel. Meeting residents does not complete a clan story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96837,
+      "name": "a derro commoner",
+      "keyword": "commoner",
+      "description": "This derro commoner carries cereal near the Path of Honour. Food custody is separate from Balith’s requests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96838,
+      "name": "Flyrr Pharthing",
+      "keyword": "flyrr",
+      "description": "Flyrr’s general store offers cereal and a flask. Successful purchases and current stock are separate from Balith’s returns.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "balith-sealed-document",
+      "title": "Bring Balith the sealed defense document",
+      "category": "request",
+      "summary": "Carry the sealed document loose and offer it to Balith for a scarab of Ghore. This return can be completed independently of his other request.",
+      "contracts": [
+        {
+          "giver_vnum": 96829,
+          "completion_key": "give=I:96845;receive=I:96843;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "text": "Carry the sealed document loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            96845
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look for the moneybox in Firb’s private chambers. A closed locked box needs an admitted unlock attempt and opening before GET. Other identical boxes and global reset parent selection mean actual stock must be checked."
+        },
+        {
+          "id": "return",
+          "text": "Record Balith’s accepted document return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96829,
+              "completion_key": "give=I:96845;receive=I:96843;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact loose item to Balith when present for a scarab of Ghore. Supplied exact items also fit. Neither return requires the other, remembered conversation, a personal search or a source kill. Recorded acceptance survives spending; reward custody is a later outcome."
+        }
+      ]
+    },
+    {
+      "id": "balith-tattered-paper",
+      "title": "Bring Balith the tattered silk-paper",
+      "category": "request",
+      "summary": "Carry the tattered silk-paper loose and offer it to Balith for 2 platinum, 5 gold and 7 silver. This return can be completed independently of his other request.",
+      "contracts": [
+        {
+          "giver_vnum": 96829,
+          "completion_key": "give=I:96802;receive=C:2570;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "text": "Carry the tattered silk-paper loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            96802
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Examine the guano at the cave dead end. Search the open container to reveal hidden contents, then GET the exact paper. Finding or reading it alone does not put it in your inventory."
+        },
+        {
+          "id": "return",
+          "text": "Record Balith’s accepted paper return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96829,
+              "completion_key": "give=I:96802;receive=C:2570;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact loose item to Balith when present for 2 platinum, 5 gold and 7 silver. Supplied exact items also fit. Neither return requires the other, remembered conversation, a personal search or a source kill. Recorded acceptance survives spending; reward custody is a later outcome."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

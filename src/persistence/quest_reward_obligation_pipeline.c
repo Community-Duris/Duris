@@ -84,8 +84,9 @@ quest_reward_ack_completion execute_native_fee_ack(MYSQL *connection, const ack_
 		const auto read = quest_reward_obligation_repository_read_ack_terms(
 			connection, request.player_pid, request.offering_operation, &literal,
 			&terms, &error, &preflight);
-		if (read != quest_reward_obligation_result::ok || error || terms.version != 6 ||
-		    literal != original_literal || !transaction.same_session())
+		if (read != quest_reward_obligation_result::ok || error ||
+		    !quest_reward_is_fee_only(terms) || literal != original_literal ||
+		    !transaction.same_session())
 		{
 			completion.result = read == quest_reward_obligation_result::ok ?
 						    quest_reward_obligation_result::corrupt :
@@ -196,7 +197,7 @@ quest_reward_ack_completion execute_ack(const ack_request &request)
 	const auto read = quest_reward_obligation_repository_read_ack_terms(
 		connection, request.player_pid, request.offering_operation, &literal, &terms,
 		&completion.error_code, &preflight);
-	if (read == quest_reward_obligation_result::ok && terms.version == 6)
+	if (read == quest_reward_obligation_result::ok && quest_reward_is_fee_only(terms))
 		return execute_native_fee_ack(connection, request,
 					      literal); // consumes this pool lease
 	if (read != quest_reward_obligation_result::ok &&

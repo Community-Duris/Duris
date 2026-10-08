@@ -1,0 +1,511 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "lornecro",
+  "coverage": "complete",
+  "introduction": "Discover Fairlocke, the Black Hall and the lost Ironstar hold. Follow Larra’s ring to Robert’s spirit, return Haldron’s crown, and learn the separate paid vault-key route and three independent equipment commissions. Exact material sources and access clues guide preparation while each accepted exchange retains its own outcome.",
+  "orientation": [
+    "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Ironstar has its own achievement. Reading lore, asking keywords and carrying materials award no quest credit.",
+    "Enter the Wherston Road from the northern tundra boundary at 138978. Follow the bridge and Fairlocke village to Larra’s garden. Behind the waterfall is the Black Hall; its school rooms, lower ladder and ancient dwarven ruins form the main exploration route. Flight, water, darkness, door state and survival need actual qualification.",
+    "Recover the black skull key in the kitchen and open the locked office desk for Larra’s gold wedding ring. Return it to Larra for Robert’s gold-and-silver ring, then meet Robert’s actual spirit for Soulcatcher. Zrack starts by the dragon, not in his office. The two accepted deliveries are separate; supplied ring material fits.",
+    "The king’s tomb is down from the newly excavated area. Its raw door declares the dagger mold as a key, but the two D resets open and unlock that route. Do not invent a mandatory vault-first mold dependency or a circular crown quest from the prototype alone. Shared or later closed state may differ.",
+    "Return the old adamantium crown to Dralor for a runed darksteel axe. His trading station has a closed secret entrance. The axe plus 500 platinum produces a vault key in the native recipe; current durable coin-offering support blocks that paid exchange. His completion prose mentions crown and axe together, but the actual paid inputs are axe and fee.",
+    "Three successive southward vault locks use the silver mithril key from the third baby-dragon reset, the large mithril key inside riverside gravel, and Dralor’s paid vault key. Reverse doors have different key/state definitions. A key receipt, copied room prose or possession alone does not certify an unlock or arrival.",
+    "The vault contains both distinct mithril molds, other equipment and imported ore. Reforging either mold needs the minion’s demonhide scroll, Maltheas’s broken weapon and its own 1000-platinum fee. The intact burning blade is a separate weapon, not the broken offering. Shared cap-one materials cannot be spent twice.",
+    "Dragonbone mail uses Charringdeath’s declared scales and a 100-platinum fee. Mail, dagger and hammer are equipment services, separate from the four named story outcomes. All four paid native recipes remain guarded until durable coin offering is supported; material readiness does not establish wallet readiness or accepted payment.",
+    "The black velvet spellbook contains the word Datherlion. The underground grate uses a magic-word lock: saying the matching word can unlock an actually locked grate, but the zone’s normal D resets already open both sides. SAY does not itself open a closed door or award a learned-topic achievement.",
+    "River currents, waterfall falls, underwater breathing and native item traps are actual hazards. The surface river bends east at 138911 while its current direction remains south; that mismatch needs a bounded source/behavior review before an isolated repair. The map does not treat an attempted command or surviving hint as successful passage.",
+    "Robert’s nominal seventy-five-percent and Urian’s apprentice’s eighty-percent placement need admitted initial/forced placement and actual wandering qualification. Normal unforced active-accounting reset does not admit these lower-chance M commands, and legacy item resets require admitted generation. Source declarations do not promise daily stock.",
+    "Marius’s teaching, the lovers’ reunion, rebuilding Ironstar, reading globe histories, and Urian’s letter are contextual stories without reviewed accepted endpoints. Preserve that lore; let builders specify committed actor, dialogue, access or campaign objectives before granting semantic milestones.",
+    "Supplied exact loose material fits all native recipes. Earlier Larra or crown receipts are optional history, cannot replenish spent items and do not certify the current object’s original source. Robert’s D1 retirement under reset mode one requires renewal qualification before assigning repeated dailies."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 138908,
+      "name": "Larra",
+      "keyword": "larra",
+      "topics": [
+        "robert",
+        "necromancer",
+        "zrack",
+        "school",
+        "love",
+        "lover"
+      ],
+      "description": "Larra starts in the overgrown garden behind her house at 138961. Return the gold wedding ring from the office desk for Robert’s gold-and-silver ring. Her grief and Robert’s story are lore; acceptance does not implement an escorted reunion."
+    },
+    {
+      "mob_vnum": 138927,
+      "name": "the spirit of Robert",
+      "keyword": "robert",
+      "topics": [
+        "larra",
+        "zrack",
+        "marius",
+        "janos",
+        "ezzra",
+        "ali",
+        "faethor",
+        "darksteel",
+        "dwarf",
+        "dwarves",
+        "ironstar",
+        "maltheas",
+        "angel",
+        "dark"
+      ],
+      "description": "Robert’s spirit starts on the Wherston Road at 138900 with nominal seventy-five-percent placement, may wander within the zone, and departs after accepting the gold-and-silver ring for Soulcatcher. The unused random rooms do not prove his placement or renewal."
+    },
+    {
+      "mob_vnum": 138921,
+      "name": "Dralor",
+      "keyword": "dralor",
+      "topics": [
+        "hi",
+        "haldron",
+        "ironstar",
+        "darksteel",
+        "scales",
+        "dragon",
+        "key",
+        "vault",
+        "mithril",
+        "maltheas",
+        "demonic",
+        "weapon",
+        "dagger",
+        "warhammer",
+        "demon",
+        "mold"
+      ],
+      "description": "Dralor is in the trading company behind a closed secret southern entrance at 138980. Crown yields darksteel axe; axe plus fee yields vault key. Dragonbone mail, dagger and hammer are paid equipment services with independent inputs. No local shop file makes his narrated stock an actual shop."
+    },
+    {
+      "mob_vnum": 138922,
+      "name": "Zrack",
+      "keyword": "zrack",
+      "topics": [],
+      "description": "Zrack starts with Charringdeath at 138977, rather than in his office. His office desk contains Larra’s wedding ring. The office’s red and black globe extra-descriptions tell the dragon and Maltheas histories without implemented globe actions or quest credit."
+    },
+    {
+      "mob_vnum": 138906,
+      "name": "Maltheas",
+      "keyword": "maltheas",
+      "topics": [],
+      "description": "Maltheas starts at 138998 with two following angels. He carries broken Fury and separately wields the intact burning blade. No literal local assigned combat routine establishes a required player-driven break, personal kill or story finale."
+    },
+    {
+      "mob_vnum": 138923,
+      "name": "Charringdeath",
+      "keyword": "death",
+      "topics": [],
+      "description": "Charringdeath starts at the Dragon’s Rest 138977 carrying the scales for Dralor’s mail commission. The skeletal dragon and its lore are distinct from a recorded original dragon kill or skinning."
+    },
+    {
+      "mob_vnum": 138928,
+      "name": "a minion of Nakral",
+      "keyword": "minion",
+      "topics": [],
+      "description": "The minion of Nakral starts at cavern turn 138976 carrying the demonhide scroll and the note about the underground river. Two following guardian skeletons are separate owners; neither carries this scroll."
+    },
+    {
+      "mob_vnum": 138926,
+      "name": "a skeletal baby dragon",
+      "keyword": "baby",
+      "topics": [],
+      "description": "Four skeletal baby dragons start at battle chamber 138984. Only the third reset declares the silver mithril key for the first vault lock; not every similar dragon has it."
+    },
+    {
+      "mob_vnum": 138904,
+      "name": "Marius",
+      "keyword": "marius",
+      "topics": [],
+      "description": "Marius starts in the Forum at 138939. His office journal and senior portrait explain Robert, Larra and the school. His graduation and teaching are lore: this prototype has no ACT_TEACHER flag or reviewed local teaching special."
+    },
+    {
+      "mob_vnum": 138919,
+      "name": "Faethor",
+      "keyword": "faethor",
+      "topics": [],
+      "description": "Faethor starts on the ladder at 138967 with following undead and a wight. His relationship to Ali and the senior school history supplies context, without a native accepted couple or escort outcome."
+    },
+    {
+      "mob_vnum": 138918,
+      "name": "Ali",
+      "keyword": "ali",
+      "topics": [],
+      "description": "Ali starts in the excavated area at 138970 with following undead and a wight. Her portrait and relationship to Faethor are lore, not a reviewed quest completion or a new source for either ring."
+    },
+    {
+      "mob_vnum": 138932,
+      "name": "an apprentice of Urian",
+      "keyword": "apprentice",
+      "topics": [],
+      "description": "Urian’s apprentice starts on the Wherston Road at 138900 with nominal eighty-percent placement and an equipped sealed letter. The letter describes another group’s operations; no reviewed local or foreign native exchange accepts it."
+    },
+    {
+      "mob_vnum": 138930,
+      "name": "Daxion, the duergar miner",
+      "keyword": "duergar",
+      "topics": [],
+      "description": "Daxion starts at underground river bank 138987 with following dwarven undead. Gravel there contains the large mithril key for the second vault lock. The gravel, not the miner’s inventory, owns that key."
+    },
+    {
+      "mob_vnum": 138916,
+      "name": "Joseph McLarun",
+      "keyword": "joseph",
+      "topics": [],
+      "description": "Joseph McLarun starts in the maintained village house at 138960. His household and the desolate village provide context without an accepted rescue, repair or household quest terminal."
+    },
+    {
+      "mob_vnum": 138907,
+      "name": "Kathrine",
+      "keyword": "woman",
+      "topics": [],
+      "description": "Kathrine starts in the Black Hall kitchen at 138941, where the black skull desk key is ground-declared. Meeting her does not transfer or credit the key."
+    }
+  ],
+  "stories": [
+    {
+      "id": "larra-wedding-ring",
+      "title": "Larra’s lost wedding ring",
+      "category": "story",
+      "summary": "Recover the gold wedding ring from Zrack’s office desk and return it to Larra in the overgrown garden. She gives Robert’s ring of gold and silver. That ring can be offered to Robert’s spirit in a separate exchange; neither delivery proves reuniting the lovers or escorting them.",
+      "contracts": [
+        {
+          "giver_vnum": 138908,
+          "completion_key": "give=I:138913;receive=I:138914;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-138911",
+          "text": "Carry a black skull key",
+          "kind": "carried_item",
+          "item_vnums": [
+            138911
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The black skull key is ground-declared in the Black Hall kitchen at 138941. It opens the locked, pickproof office desk; the office door itself is merely closed. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "material-138913",
+          "text": "Carry a gold ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            138913
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The gold wedding ring is inside desk 138910 at Zrack’s office 138937. It is not Zrack’s carried inventory, and it differs from Larra’s gold-and-silver reward ring. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Larra’s lost wedding ring exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138908,
+              "completion_key": "give=I:138913;receive=I:138914;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "robert-soulcatcher",
+      "title": "Robert’s ring and Soulcatcher",
+      "category": "story",
+      "summary": "Offer the ring of gold and silver to the actual spirit of Robert for Soulcatcher, followed by his native departure. Larra produces that ring for the gold wedding ring, but your earlier Larra receipt is optional. Robert’s narrated recognition, soul rest and lover reunion have no separate implemented terminal.",
+      "contracts": [
+        {
+          "giver_vnum": 138927,
+          "completion_key": "give=I:138914;receive=I:138950;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-producer",
+          "text": "Earlier Larra exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138908,
+              "completion_key": "give=I:138913;receive=I:138914;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history. Supplied matching material fits without this earlier receipt. History does not identify the current item or replenish a spent offering."
+        },
+        {
+          "id": "material-138914",
+          "text": "Carry a ring of gold and silver",
+          "kind": "carried_item",
+          "item_vnums": [
+            138914
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Larra’s wedding-ring exchange produces this exact ring. Robert starts on the Wherston Road at 138900 with nominal seventy-five-percent placement and may wander. Meet his actual spirit rather than relying on unused random-load-room descriptions. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Robert’s ring and Soulcatcher exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138927,
+              "completion_key": "give=I:138914;receive=I:138950;disappear=1"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "haldron-crown",
+      "title": "Haldron’s lost crown",
+      "category": "story",
+      "summary": "Recover the old adamantium crown from King Haldron’s skeleton and offer it to Dralor for an axe of runed darksteel. The tomb inscription explains returning it to the clan. Normal zone resets open the tomb door; its prototype mold lock is not a required step on that reset route. The axe can later be spent on the separate paid vault-key exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 138921,
+          "completion_key": "give=I:138942;receive=I:138943;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-138942",
+          "text": "Carry an old crown made of adamantium",
+          "kind": "carried_item",
+          "item_vnums": [
+            138942
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The crown is inside skeleton-container 138934 at the dwarven resting place 138975, down from excavation room 138971. The two tomb D resets open the door. Remove worn crown equipment before offering it to Dralor. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Haldron’s lost crown exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=I:138942;receive=I:138943;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "dralor-vault-key",
+      "title": "Dralor’s Ironstar vault key",
+      "category": "story",
+      "summary": "Offer the runed darksteel axe plus 500 platinum (500000 copper) to Dralor for the vault key. This paid recipe is unavailable under the current durable offering guard. The crown exchange is a producer link, not an extra consumed crown or hidden prior-history condition. Obtaining the key does not itself unlock or enter the three-door vault.",
+      "contracts": [
+        {
+          "giver_vnum": 138921,
+          "completion_key": "give=C:500000,I:138943;receive=I:138958;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-producer",
+          "text": "Earlier Haldron crown exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=I:138942;receive=I:138943;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history. Supplied matching material fits without this earlier receipt. History does not identify the current item or replenish a spent offering."
+        },
+        {
+          "id": "material-138943",
+          "text": "Carry an axe of runed darksteel",
+          "kind": "carried_item",
+          "item_vnums": [
+            138943
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Dralor produces the darksteel axe for the crown. The paid key recipe consumes this axe, not another crown. Held or wielded axes must become loose carried material; an earlier crown receipt cannot substitute for the spent axe. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Dralor’s Ironstar vault key exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=C:500000,I:138943;receive=I:138958;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "dralor-dragonbone-mail",
+      "title": "Dralor’s dragonbone mail",
+      "category": "service",
+      "summary": "Dralor offers dragonbone plate mail for Charringdeath’s scales and 100 platinum (100000 copper). This equipment commission is independent of the crown and vault stories. The coin recipe remains unavailable under the current durable offering guard; narrative skinning is not a required native input.",
+      "contracts": [
+        {
+          "giver_vnum": 138921,
+          "completion_key": "give=C:100000,I:138909;receive=I:138945;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-138909",
+          "text": "Carry the scales of Charring Death",
+          "kind": "carried_item",
+          "item_vnums": [
+            138909
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Charringdeath at the Dragon’s Rest 138977 carries these exact scales. They are declared inventory, not an implemented personal skinning milestone. Zrack and his following servants are separate actors in that room. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Dralor’s dragonbone mail exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=C:100000,I:138909;receive=I:138945;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "dralor-demonic-dagger",
+      "title": "Dralor’s demonic dagger",
+      "category": "service",
+      "summary": "Offer the mithril parrying-dagger mold, demonhide scroll, broken Fury of Demons and 1000 platinum (1000000 copper) for the demonic dagger. This paid equipment commission is unavailable under the current durable offering guard. The hammer is a different mold, output and independent commission; the same spent scroll and broken weapon cannot fund both.",
+      "contracts": [
+        {
+          "giver_vnum": 138921,
+          "completion_key": "give=C:1000000,I:138944,I:138952,I:138965;receive=I:138963;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-138944",
+          "text": "Carry the mold of a small mithril parrying dagger",
+          "kind": "carried_item",
+          "item_vnums": [
+            138944
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The dagger mold is ground-declared inside the treasure vault at 138994, beyond three successive locks. Its copied extra-description calls it a hammer; the native recipe and item identity require this dagger-mold kind. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "material-138952",
+          "text": "Carry a scroll of demonhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            138952
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The minion of Nakral at 138976 carries the demonhide scroll, before two following guardian skeletons. Its copied extra-description says dragonhide, but the actual input kind is demonhide. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "material-138965",
+          "text": "Carry a broken demonic weapon called 'The Fury of Demons'",
+          "kind": "carried_item",
+          "item_vnums": [
+            138965
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maltheas at 138998 carries the broken Fury while separately wielding the intact burning blade 138908. The intact blade cannot replace this broken input; no reviewed procedure requires the player to break that weapon in combat. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Dralor’s demonic dagger exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=C:1000000,I:138944,I:138952,I:138965;receive=I:138963;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    },
+    {
+      "id": "dralor-demonic-hammer",
+      "title": "Dralor’s demonic hammer",
+      "category": "service",
+      "summary": "Offer the mithril hammer mold, demonhide scroll, broken Fury of Demons and 1000 platinum (1000000 copper) for the demonic hammer. This paid equipment commission is unavailable under the current durable offering guard. It is separate from the dagger and requires its own scroll, broken weapon and fee.",
+      "contracts": [
+        {
+          "giver_vnum": 138921,
+          "completion_key": "give=C:1000000,I:138952,I:138962,I:138965;receive=I:138964;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-138962",
+          "text": "Carry the mold of a small mithril hammer",
+          "kind": "carried_item",
+          "item_vnums": [
+            138962
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hammer mold is ground-declared inside the treasure vault at 138994. It is a different kind from the dagger mold despite similar descriptions; access needs all three vault doors, not merely a vault-key receipt. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "material-138952",
+          "text": "Carry a scroll of demonhide",
+          "kind": "carried_item",
+          "item_vnums": [
+            138952
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The minion of Nakral carries the exact demonhide scroll; its following guardians do not. This scarce cap-one material is shared by both reforging recipes and must be obtained again for a second commission. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "material-138965",
+          "text": "Carry a broken demonic weapon called 'The Fury of Demons'",
+          "kind": "carried_item",
+          "item_vnums": [
+            138965
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maltheas carries the broken demonic weapon as a separate cap-one object from his wielded intact Fury. Supplied broken material fits without your personal Maltheas encounter or victory. Recover the exact kind into loose carried inventory. Matching supplied material fits; current possession does not record original source, first recovery, combat, unlocking or arrival."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Dralor’s demonic hammer exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138921,
+              "completion_key": "give=C:1000000,I:138952,I:138962,I:138965;receive=I:138964;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records only this named exchange. Coin recipes remain unavailable until durable coin offering is supported; carrying materials or reading clues does not award credit."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

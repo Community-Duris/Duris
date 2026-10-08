@@ -1,0 +1,1698 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "caertannad",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "gremlin-claws-for-the-tower-key",
+      "title": "Gremlin Claws for the Tower Key",
+      "category": "story",
+      "summary": "Kristigrogg offers the tower key for five gremlin claws. It opens the four tower routes to Blackrock Mountain, the Alteran Valley, Blackbeard's island and the Shaeradin Valley. The key can break on unlocking; another claw exchange can supply a replacement. Supplied claws qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 78400,
+          "completion_key": "give=I:78493,I:78493,I:78493,I:78493,I:78493;receive=I:78494;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "outer-gate-key-route",
+          "text": "Optional: earn the outer gate key in ruined Tharnadia",
+          "kind": "completion",
+          "hint": "The expeditionary leader or the wandering Old Quarter contact accepts the skeletal necromancer's remains for the gate key. Their exchanges belong to ruined Tharnadia. A supplied key or another arrival route can avoid this preparation; the key breaks when used.",
+          "optional": true,
+          "contracts": [
+            {"giver_vnum": 5506, "completion_key": "give=I:66201;receive=I:5504;disappear=0"},
+            {"giver_vnum": 5528, "completion_key": "give=I:66201;receive=I:5504;disappear=1"}
+          ]
+        },
+        {
+          "id": "material-78493",
+          "text": "Carry 5 x a gremlin claw",
+          "kind": "carried_item",
+          "hint": "Gremlins carry claws throughout both keeps. Bring five top-level carried claws; supplied copies qualify. This proof records the exchange, rather than personal kills.",
+          "item_vnums": [
+            78493
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring five gremlin claws to Kristigrogg",
+          "kind": "completion",
+          "hint": "Reward: a tower key. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78400,
+              "completion_key": "give=I:78493,I:78493,I:78493,I:78493,I:78493;receive=I:78494;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "four-distinct-life-shards",
+      "title": "Four Distinct Life Shards",
+      "category": "story",
+      "summary": "Bring Kristigrogg the four distinct life shards from Bostas, Hagluf, Thel'Samar and Blackbeard's remains. All share a name, but four copies of one kind will not do. He awards the dungeon key and asks you to face Krizzix. This exchange records the key reward; the later dragon journey has no separate quest receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 78400,
+          "completion_key": "give=I:78499,I:78513,I:78514,I:78515;receive=I:78504;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "tower-key-route",
+          "text": "Optional: earn a tower key from Kristigrogg",
+          "kind": "completion",
+          "hint": "This is one route to the four realms. A supplied key or supplied shards may avoid it. The key can break while unlocking; the receipt does not prove every tower was entered.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78400,
+              "completion_key": "give=I:78493,I:78493,I:78493,I:78493,I:78493;receive=I:78494;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78499",
+          "text": "Carry Blackbeard's life shard",
+          "kind": "carried_item",
+          "hint": "Recover this life shard inside Blackbeard's skeletal remains in his sunken quarters. Use the captain's key route from the crate and burial cave. It is distinct from the other three same-named shards.",
+          "item_vnums": [
+            78499
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78513",
+          "text": "Carry Hagluf's life shard",
+          "kind": "carried_item",
+          "hint": "Hagluf Crownsplitter carries this life shard in the leader hut of FrostSharn Camp. Bring this exact kind alongside the other three kinds; supplied shards qualify.",
+          "item_vnums": [
+            78513
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78514",
+          "text": "Carry Thel'Samar's life shard",
+          "kind": "carried_item",
+          "hint": "Thel'Samar Deathweave carries this life shard atop Dagger Peak, with his head and the shadow staff. This shard is distinct from the Bostas, Hagluf and Blackbeard kinds.",
+          "item_vnums": [
+            78514
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78515",
+          "text": "Carry Bostas's life shard",
+          "kind": "carried_item",
+          "hint": "Bostas Firebraid carries this life shard at the High Seat of Strak'Ash. Captain Fizz Thunderfist carries the key to the locked approach; that key breaks when used. Supplied shards qualify.",
+          "item_vnums": [
+            78515
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring all four distinct life shards to Kristigrogg",
+          "kind": "completion",
+          "hint": "Reward: the dungeon key. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78400,
+              "completion_key": "give=I:78499,I:78513,I:78514,I:78515;receive=I:78504;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "treskins-five-fire-hearts",
+      "title": "Treskin's Five Fire Hearts",
+      "category": "request",
+      "summary": "Treskin needs five hearts of fire for his blackrock ring. Trekash can explain the ingredient; dragon elemental-kin carry it around Blackrock Mountain. Treskin leaves after the exchange. A supplied set records delivery without claiming five personal kills.",
+      "contracts": [
+        {
+          "giver_vnum": 78416,
+          "completion_key": "give=I:78410,I:78410,I:78410,I:78410,I:78410;receive=I:78411;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78410",
+          "text": "Carry 5 x a heart of fire",
+          "kind": "carried_item",
+          "hint": "Dragon elemental-kin carry hearts of fire in Blackrock Mountain. Bring five hearts together. They are loaded stock, without a custom personal-kill or fresh-birth requirement.",
+          "item_vnums": [
+            78410
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring five hearts of fire to Treskin",
+          "kind": "completion",
+          "hint": "Reward: a blackrock ring of the dark iron dwarves. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78416,
+              "completion_key": "give=I:78410,I:78410,I:78410,I:78410,I:78410;receive=I:78411;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trekashs-dragonling-guards",
+      "title": "Trekash's Dragonling Guards",
+      "category": "request",
+      "summary": "Bring Trekash four dragonling wings for blue dragonscale shoulder guards. These are separate from his FrostSharn scimitar commission. Dragonlings also appear abroad, and Alatorin has its own wing consumers and a paid recipe for the same guards. That foreign recipe has separate ownership and requirements.",
+      "contracts": [
+        {
+          "giver_vnum": 78426,
+          "completion_key": "give=I:78414,I:78414,I:78414,I:78414;receive=I:78415;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78414",
+          "text": "Carry 4 x a dragonling wing",
+          "kind": "carried_item",
+          "hint": "Dragonlings carry wings in Blackrock Mountain, with additional sources in Alatorin and the Surface Keeps. Trekash needs four. Alatorin has separate consumers, including mixed-payment recipes; one consumed wing cannot fund multiple rewards.",
+          "item_vnums": [
+            78414
+          ],
+          "count": 4
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring four dragonling wings to Trekash",
+          "kind": "completion",
+          "hint": "Reward: some blue dragonscale shoulder guards. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78426,
+              "completion_key": "give=I:78414,I:78414,I:78414,I:78414;receive=I:78415;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trekashs-frostsharn-orb",
+      "title": "Trekash's FrostSharn Orb",
+      "category": "story",
+      "summary": "Bring Trekash five FrostSharn scimitars for a greenstone orb and 85000 experience. Keshia accepts the orb for an old pirate key; that later exchange is independent. Trekash remains available. Other scimitars do not substitute for the exact FrostSharn kind.",
+      "contracts": [
+        {
+          "giver_vnum": 78426,
+          "completion_key": "give=I:78426,I:78426,I:78426,I:78426,I:78426;receive=E:85000,I:78427;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78426",
+          "text": "Carry 5 x a FrostSharn scimitar",
+          "kind": "carried_item",
+          "hint": "FrostSharn grunts carry these exact scimitars in the camp. Bring five for the greenstone orb; another scimitar does not substitute.",
+          "item_vnums": [
+            78426
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring five FrostSharn scimitars to Trekash",
+          "kind": "completion",
+          "hint": "Reward: a green orb of mystics, 85000 experience. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78426,
+              "completion_key": "give=I:78426,I:78426,I:78426,I:78426,I:78426;receive=E:85000,I:78427;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thelranaks-azharul-plate",
+      "title": "Thelranak's Azharul Plate",
+      "category": "request",
+      "summary": "Thelranak offers Azharul plate for Kyzastaxkasis's scales. The ancient dragon and its scales have separate chance loads, so the source may be absent even when you reach the lair. The blacksmith stays. A supplied scale is valid proof for this commission.",
+      "contracts": [
+        {
+          "giver_vnum": 78427,
+          "completion_key": "give=I:78428;receive=I:78429;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78428",
+          "text": "Carry 1 x the scales of Kyzastaxkasis",
+          "kind": "carried_item",
+          "hint": "Kyzastaxkasis has a chance load in its ancient Azharul dragon cave above Blackrock Mountain, reached through a concealed pass. The scales have a separate chance load. Check current availability rather than assuming the dragon always holds them.",
+          "item_vnums": [
+            78428
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Kyzastaxkasis scales to Thelranak",
+          "kind": "completion",
+          "hint": "Reward: the spiked platemail of the Azharul dragons. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78427,
+              "completion_key": "give=I:78428;receive=I:78429;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marnys-blackrock-sample",
+      "title": "Marny's Blackrock Sample",
+      "category": "story",
+      "summary": "Marny awards an ornate earcuff and a physical receipt for a blackrock sample. His later endurium commission requires that actual receipt, alongside the ore. Recorded history alone cannot replace a receipt that has been spent or lost. Marny stays after either exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 78437,
+          "completion_key": "give=I:78422;receive=I:78423,I:78424;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78422",
+          "text": "Carry 1 x a chunk of blackrock ore",
+          "kind": "carried_item",
+          "hint": "The blackrock sample lies at the heart of the mining dig site in Blackrock Mountain. Marny accepts the exact ore sample, then supplies an earcuff and a physical receipt.",
+          "item_vnums": [
+            78422
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the blackrock sample to Marny",
+          "kind": "completion",
+          "hint": "Reward: a tiny endurium earring, a receipt from Marny Taskgulch. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78437,
+              "completion_key": "give=I:78422;receive=I:78423,I:78424;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marnys-endurium-commission",
+      "title": "Marny's Endurium Commission",
+      "category": "story",
+      "summary": "Bring Marny endurium ore and his physical receipt together for a blackrock belt and void crystal. The earlier blackrock exchange is one preparation route; supplied ore and receipt are accepted. A concentrated void elemental is an alternative source of the crystal, without this commission's history.",
+      "contracts": [
+        {
+          "giver_vnum": 78437,
+          "completion_key": "give=I:78424,I:78463;receive=I:78464,I:78465;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "blackrock-receipt-route",
+          "text": "Optional: obtain the physical receipt from Marny",
+          "kind": "completion",
+          "hint": "His earlier blackrock exchange awards the receipt. A supplied receipt is accepted, and recorded history cannot replace the physical item.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78437,
+              "completion_key": "give=I:78422;receive=I:78423,I:78424;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78424",
+          "text": "Carry 1 x a receipt from Marny Taskgulch",
+          "kind": "carried_item",
+          "hint": "Marny supplies this physical receipt with his blackrock reward. His endurium exchange consumes the actual item. Recorded completion is optional history and does not replace a spent receipt; a supplied receipt is accepted.",
+          "item_vnums": [
+            78424
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78463",
+          "text": "Carry 1 x some endurium ore",
+          "kind": "carried_item",
+          "hint": "The endurium ore lies in a small cave at the end of the eastern Pirate Cove tunnel. Bring it with Marny's physical receipt. This differs from the nether ore exchanged by CrowFoot and Woten.",
+          "item_vnums": [
+            78463
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring endurium ore and the physical receipt to Marny",
+          "kind": "completion",
+          "hint": "Reward: a segmented endurium belt, a void crystal. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78437,
+              "completion_key": "give=I:78424,I:78463;receive=I:78464,I:78465;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zadens-lost-hunting-hat",
+      "title": "Zaden's Lost Hunting Hat",
+      "category": "story",
+      "summary": "Return Zaden's hunting hat from the Frozen Claw Hall for a marksman's quiver. He leaves after thanking you. His departure prose does not record a player teleport or a scouting achievement. A supplied hat is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 78446,
+          "completion_key": "give=I:78436;receive=I:78437;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78436",
+          "text": "Carry 1 x a hunting hat",
+          "kind": "carried_item",
+          "hint": "The hunting hat lies in the Frozen Claw Hall of FrostSharn Camp. It belongs to Zaden's independent return request, alongside the other camp stories.",
+          "item_vnums": [
+            78436
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the hunting hat to Zaden",
+          "kind": "completion",
+          "hint": "Reward: a marksman's quiver. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78446,
+              "completion_key": "give=I:78436;receive=I:78437;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kralths-four-warlord-hearts",
+      "title": "Kralth's Four Warlord Hearts",
+      "category": "request",
+      "summary": "Kralth's dialogue asks for heads, but his contract accepts four distinct bloody hearts: Thresh Blackmane, Grimmar Stonebrow, Axelon Clawgrip and Riker Firstfang. Bring all four for a tribal mask and 200000 copper. He leaves afterward. Alatorin's assassins consume separate sets for their own rewards.",
+      "contracts": [
+        {
+          "giver_vnum": 78455,
+          "completion_key": "give=I:78442,I:78443,I:78444,I:78445;receive=C:200000,I:78446;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78442",
+          "text": "Carry 1 x the bloody heart of Thresh Blackmane",
+          "kind": "carried_item",
+          "hint": "Thresh Blackmane carries his distinct bloody heart in the Alteran Valley. Kralth accepts this heart despite asking for heads. Alatorin's Kirrb and Doklin also consume full heart sets.",
+          "item_vnums": [
+            78442
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78443",
+          "text": "Carry 1 x the bloody heart of Grimmar Stonebrow",
+          "kind": "carried_item",
+          "hint": "Grimmar Stonebrow carries this distinct bloody heart in the Alteran Valley. One heart of another warlord cannot substitute; keep separate sets for competing consumers.",
+          "item_vnums": [
+            78443
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78444",
+          "text": "Carry 1 x the bloody heart of Axelon Clawgrip",
+          "kind": "carried_item",
+          "hint": "Axelon Clawgrip carries this distinct bloody heart in the Alteran Valley. Bring it with the other three hearts; a supplied heart qualifies.",
+          "item_vnums": [
+            78444
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78445",
+          "text": "Carry 1 x the bloody heart of Riker Firstfang",
+          "kind": "carried_item",
+          "hint": "Riker Firstfang carries this distinct bloody heart in the Alteran Valley. The name differs from the Frostfang wording in dialogue. Bring all four distinct hearts together.",
+          "item_vnums": [
+            78445
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the four distinct warlord hearts to Kralth",
+          "kind": "completion",
+          "hint": "Reward: a tribal warlord mask, 200000 copper. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78455,
+              "completion_key": "give=I:78442,I:78443,I:78444,I:78445;receive=C:200000,I:78446;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skinjars-two-harpy-tribes",
+      "title": "Skinjar's Two Harpy Tribes",
+      "category": "request",
+      "summary": "Bring Skinjar three Bren'Shan harpy feathers and three Straka harpy feathers together for a frost-harpy necklace and 450000 experience. Six feathers of one tribe do not qualify. The delivered trophies do not establish territory conquest or a completed campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 78456,
+          "completion_key": "give=I:78447,I:78447,I:78447,I:78448,I:78448,I:78448;receive=E:450000,I:78449;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78447",
+          "text": "Carry 3 x a Bren'Shan harpy feather",
+          "kind": "carried_item",
+          "hint": "Bren'Shan harpies carry feathers on Mount Bren'Shan. Bring three of this tribe and three Straka feathers; six of one kind do not qualify.",
+          "item_vnums": [
+            78447
+          ],
+          "count": 3
+        },
+        {
+          "id": "material-78448",
+          "text": "Carry 3 x a Straka harpy feather",
+          "kind": "carried_item",
+          "hint": "Straka harpies carry feathers on Mount Straka. Bring three of this tribe and three Bren'Shan feathers. Delivered trophies do not record territorial conquest.",
+          "item_vnums": [
+            78448
+          ],
+          "count": 3
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring three feathers from each harpy tribe to Skinjar",
+          "kind": "completion",
+          "hint": "Reward: a necklace of frost harpy feathers, 450000 experience. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78456,
+              "completion_key": "give=I:78447,I:78447,I:78447,I:78448,I:78448,I:78448;receive=E:450000,I:78449;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-recovered-scouting-report",
+      "title": "The Recovered Scouting Report",
+      "category": "story",
+      "summary": "Recover the scouting report inside the frozen orc corpse in the Mount Straka gorge and deliver it to Skinjar. He supplies a packaged note for Woten. The later note, bottle-message and nether-ore exchanges each have their own receipts. A supplied report is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 78456,
+          "completion_key": "give=I:78450;receive=I:78451;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78450",
+          "text": "Carry 1 x a scouting report",
+          "kind": "carried_item",
+          "hint": "The report lies inside the frozen orc corpse in a snowy gorge on Mount Straka. Get the report out of the corpse; scenery or another dead animal does not substitute. A supplied report is accepted.",
+          "item_vnums": [
+            78450
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the scouting report to Skinjar",
+          "kind": "completion",
+          "hint": "Reward: a carefully packaged note. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78456,
+              "completion_key": "give=I:78450;receive=I:78451;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mungirs-silverleaf-remedy",
+      "title": "Mungir's Silverleaf Remedy",
+      "category": "service",
+      "summary": "Mungir asks for the exact silverleaf and 50000 copper for a curing potion. Known silverleaf sources are the Tharnadia Rifts grove and the Elemental Plane groves. This mixed payment is currently unavailable under active accounting. The potion service does not establish a named patient cure or achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 78459,
+          "completion_key": "give=C:50000,I:78455;receive=I:78456;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78455",
+          "text": "Carry 1 x a silverleaf",
+          "kind": "carried_item",
+          "hint": "The exact silverleaf has ground sources in the Tharnadia Rifts patch of silverleaf trees and two Elemental Plane groves. Bring it with the 50000-copper fee. Active accounting currently refuses this mixed offering.",
+          "item_vnums": [
+            78455
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the silverleaf and 50000 copper to Mungir",
+          "kind": "completion",
+          "hint": "This exact item-and-coin offering is currently unavailable under active accounting. Qualify atomic payment, input retirement and potion publication before enabling it. The potion does not record a named cure.",
+          "contracts": [
+            {
+              "giver_vnum": 78459,
+              "completion_key": "give=C:50000,I:78455;receive=I:78456;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jenzuels-missing-longbow",
+      "title": "Jenzuel's Missing Longbow",
+      "category": "story",
+      "summary": "Return Jenzuel's longbow from the secret alcove in Dagger Peak for his mystical figurine, 350000 copper and 600000 experience. Hindis accepts the figurine for night-elven boots. Jenzuel leaves; Hindis's separate head reward also removes that later recipient, so consider your delivery order.",
+      "contracts": [
+        {
+          "giver_vnum": 78469,
+          "completion_key": "give=I:78458;receive=C:350000,E:600000,I:78459;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78458",
+          "text": "Carry 1 x the MoonGaze longbow",
+          "kind": "carried_item",
+          "hint": "The longbow lies in the concealed alcove off Dagger Peak's upper ramp. Return it to Jenzuel, who supplies the mystical figurine for Hindis's separate exchange.",
+          "item_vnums": [
+            78458
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the longbow to Jenzuel",
+          "kind": "completion",
+          "hint": "Reward: a small orog figurine, 350000 copper, 600000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78469,
+              "completion_key": "give=I:78458;receive=C:350000,E:600000,I:78459;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hindiss-figurine-exchange",
+      "title": "Hindis's Figurine Exchange",
+      "category": "story",
+      "summary": "Deliver the mystical figurine to Hindis for boots of the Night Elven Hunt. Jenzuel's bow reward is an optional preparation route when you already have the figurine. Hindis stays after this exchange, but leaves after his independent Thel'Samar-head reward. Check his availability before planning both.",
+      "contracts": [
+        {
+          "giver_vnum": 78470,
+          "completion_key": "give=I:78459;receive=I:78512;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "longbow-figurine-route",
+          "text": "Optional: recover Jenzuel's bow for the figurine",
+          "kind": "completion",
+          "hint": "This records the producer exchange. A supplied figurine is also valid, and Hindis's head reward may remove him before this delivery.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78469,
+              "completion_key": "give=I:78458;receive=C:350000,E:600000,I:78459;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-78459",
+          "text": "Carry 1 x a small orog figurine",
+          "kind": "carried_item",
+          "hint": "Jenzuel's longbow reward supplies this figurine. Hindis accepts it for boots and stays, but his separate head reward removes him. A supplied figurine qualifies without Jenzuel's receipt.",
+          "item_vnums": [
+            78459
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the mystical figurine to Hindis",
+          "kind": "completion",
+          "hint": "Reward: some high boots of the night elves. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78470,
+              "completion_key": "give=I:78459;receive=I:78512;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hindiss-thel-samar-proof",
+      "title": "Hindis's Thel'Samar Proof",
+      "category": "request",
+      "summary": "Bring Hindis the head of Thel'Samar for a crystal bracelet. He leaves after this reward, making his figurine exchange unavailable for that encounter. Thel'Samar also carries the shadow staff and a life shard, used by independent Twin Keeps stories. Delivering a supplied head is valid.",
+      "contracts": [
+        {
+          "giver_vnum": 78470,
+          "completion_key": "give=I:78466;receive=I:78467;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78466",
+          "text": "Carry 1 x the bloody head of Thel'Samar Deathweave",
+          "kind": "carried_item",
+          "hint": "Thel'Samar carries his head atop Dagger Peak. Hindis leaves after this reward; consider delivering the figurine first if you want both. The head differs from the separately useful shadow staff and life shard.",
+          "item_vnums": [
+            78466
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Thel'Samar's head to Hindis",
+          "kind": "completion",
+          "hint": "Reward: a finely woven crystal bracelet. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78470,
+              "completion_key": "give=I:78466;receive=I:78467;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keshias-pirate-key",
+      "title": "Keshia's Pirate Key",
+      "category": "story",
+      "summary": "Bring Keshia the greenstone orb for an old pirate key. Trekash's scimitar commission can supply the orb, or you may use a supplied one. Her jungle clue leads to a hidden cave containing the locked pirate chest and ether crystal. The key is consumed when used; the reward receipt does not prove that you opened the chest.",
+      "contracts": [
+        {
+          "giver_vnum": 78471,
+          "completion_key": "give=I:78427;receive=I:78460;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "greenstone-orb-route",
+          "text": "Optional: obtain the greenstone orb from Trekash",
+          "kind": "completion",
+          "hint": "His five-scimitar commission supplies the orb. You may deliver a supplied orb without that earlier receipt.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78426,
+              "completion_key": "give=I:78426,I:78426,I:78426,I:78426,I:78426;receive=E:85000,I:78427;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78427",
+          "text": "Carry 1 x a green orb of mystics",
+          "kind": "carried_item",
+          "hint": "Trekash awards this greenstone orb for five FrostSharn scimitars. Keshia exchanges the actual orb for the pirate-chest key; an earlier receipt cannot replace a spent orb.",
+          "item_vnums": [
+            78427
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the greenstone orb to Keshia",
+          "kind": "completion",
+          "hint": "Reward: an old pirate's key. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78471,
+              "completion_key": "give=I:78427;receive=I:78460;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "venalis-six-ravasaur-teeth",
+      "title": "Venali's Six Ravasaur Teeth",
+      "category": "request",
+      "summary": "Bring Venali six ravasaur teeth for the Amulet of the Earth and 500000 experience. The giant and hungry ravasaurs carry these teeth in the Shaeradin Valley. Venali leaves afterward. A delivered set does not prove six personal kills.",
+      "contracts": [
+        {
+          "giver_vnum": 78472,
+          "completion_key": "give=I:78461,I:78461,I:78461,I:78461,I:78461,I:78461;receive=E:500000,I:78462;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78461",
+          "text": "Carry 6 x a sharp ravasaur tooth",
+          "kind": "carried_item",
+          "hint": "Giant and hungry ravasaurs carry these teeth in the Shaeradin Valley. Bring six exact teeth to Venali. Supplied teeth qualify without recording personal kills.",
+          "item_vnums": [
+            78461
+          ],
+          "count": 6
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring six ravasaur teeth to Venali",
+          "kind": "completion",
+          "hint": "Reward: a ravasaur tooth necklace, 500000 experience. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78472,
+              "completion_key": "give=I:78461,I:78461,I:78461,I:78461,I:78461,I:78461;receive=E:500000,I:78462;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-staff-of-twin-worlds",
+      "title": "The Staff of Twin Worlds",
+      "category": "story",
+      "summary": "Bring Thelinnius four different crystals—void, earth, nether and ether—and the staff of the Shadow Mage together. The shadow staff is the fifth required item, rather than a fifth crystal. Ore exchanges, moonstone and pirate-message deliveries are optional source routes; supplied components are accepted. The final reward is the staff of Twin Worlds.",
+      "contracts": [
+        {
+          "giver_vnum": 78473,
+          "completion_key": "give=I:78465,I:78477,I:78480,I:78486,I:78492;receive=I:78400;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "void-crystal-route",
+          "text": "Optional: earn Marny's void crystal",
+          "kind": "completion",
+          "hint": "Marny's endurium commission is one source; a concentrated void elemental or supplied crystal is another. The final staff still needs the actual crystal.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78437,
+              "completion_key": "give=I:78424,I:78463;receive=I:78464,I:78465;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earth-crystal-route",
+          "text": "Optional: earn Weskel's earth crystal",
+          "kind": "completion",
+          "hint": "His moonstone exchange supplies one crystal and removes him. A supplied crystal is accepted.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78492,
+              "completion_key": "give=I:78468;receive=I:78480;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "nether-crystal-route",
+          "text": "Optional: earn Woten's nether crystal",
+          "kind": "completion",
+          "hint": "His ore exchange supplies one crystal. A supplied crystal is accepted.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78484,
+              "completion_key": "give=I:78485;receive=I:78486;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "ether-key-route",
+          "text": "Optional: obtain Keshia's pirate-chest key",
+          "kind": "completion",
+          "hint": "The key helps recover the ether crystal. This receipt does not record opening or recovering the chest contents; a supplied crystal avoids that route.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78471,
+              "completion_key": "give=I:78427;receive=I:78460;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78465",
+          "text": "Carry 1 x a void crystal",
+          "kind": "carried_item",
+          "hint": "Marny supplies one void crystal with the endurium reward. A concentrated void elemental in the collapsed Caer Dauthe corridor is another chance-loaded source. Either source or a supplied crystal is accepted; the other elemental types do not all carry it.",
+          "item_vnums": [
+            78465
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78477",
+          "text": "Carry 1 x a shadow staff",
+          "kind": "carried_item",
+          "hint": "Thel'Samar carries the staff of the Shadow Mage atop Dagger Peak. Thelinnius requires this staff alongside four crystals; another staff or a fifth crystal will not substitute.",
+          "item_vnums": [
+            78477
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78480",
+          "text": "Carry 1 x an earth crystal",
+          "kind": "carried_item",
+          "hint": "Weskel exchanges a rare moonstone for one earth crystal, then leaves. Naboriyan can supply the moonstone, or you may use supplied components. The actual crystal is needed for the final staff.",
+          "item_vnums": [
+            78480
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78486",
+          "text": "Carry 1 x a nether crystal",
+          "kind": "carried_item",
+          "hint": "Woten exchanges nether ore for one nether crystal. CrowFoot can supply the ore for Woten's bottled message. Supplied ore or a supplied crystal also qualify; history does not replace a spent ingredient.",
+          "item_vnums": [
+            78486
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-78492",
+          "text": "Carry 1 x an ether crystal",
+          "kind": "carried_item",
+          "hint": "The ether crystal lies inside the locked pirate chest in the secret jungle cave, reached through the hidden crevice. Keshia supplies its old pirate key for the greenstone orb. Get the actual crystal out of the chest; a supplied crystal is accepted.",
+          "item_vnums": [
+            78492
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring four distinct crystals and the shadow staff to Thelinnius",
+          "kind": "completion",
+          "hint": "Reward: the staff of twin worlds. The giver remains available after the exchange. Only this final delivery completes this staff entry. Earlier source exchanges remain distinct; the finale does not prove every route or personal acquisition.",
+          "contracts": [
+            {
+              "giver_vnum": 78473,
+              "completion_key": "give=I:78465,I:78477,I:78480,I:78486,I:78492;receive=I:78400;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "naboriyans-moonstone-reward",
+      "title": "Naboriyan's Moonstone Reward",
+      "category": "story",
+      "summary": "Bring Naboriyan Bostas Firebraid's scepter for a rare moonstone and 500000 copper. Weskel accepts that moonstone for an earth crystal in a separate exchange. Naboriyan leaves. Alatorin's weapon collectors also consume the scepter with four other weapons; reserve separate copies for separate rewards.",
+      "contracts": [
+        {
+          "giver_vnum": 78475,
+          "completion_key": "give=I:78419;receive=C:500000,I:78468;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78419",
+          "text": "Carry 1 x the scepter of Bostas Firebraid",
+          "kind": "carried_item",
+          "hint": "Bostas holds this scepter at Strak'Ash's High Seat. Captain Fizz Thunderfist carries the approach key, which breaks on use. Naboriyan and two Alatorin weapon collectors consume separate copies for separate rewards.",
+          "item_vnums": [
+            78419
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Bostas Firebraid's scepter to Naboriyan",
+          "kind": "completion",
+          "hint": "Reward: 500000 copper, a moonstone. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78475,
+              "completion_key": "give=I:78419;receive=C:500000,I:78468;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wotens-bottled-message",
+      "title": "Woten's Bottled Message",
+      "category": "story",
+      "summary": "Bring Woten Skinjar's packaged note. Woten supplies a bottled message for CrowFoot McGuillies, who offers nether ore in return. Woten remains available for the eventual ore-to-crystal exchange. Supplied notes qualify; his ambient actions do not provide extra learned-topic achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 78484,
+          "completion_key": "give=I:78451;receive=I:78473;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "scouting-note-route",
+          "text": "Optional: obtain Skinjar's packaged note",
+          "kind": "completion",
+          "hint": "Recover the report or bring a supplied one. Woten also accepts a supplied note directly.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78456,
+              "completion_key": "give=I:78450;receive=I:78451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78451",
+          "text": "Carry 1 x a carefully packaged note",
+          "kind": "carried_item",
+          "hint": "Skinjar supplies the packaged note for the recovered scouting report. Deliver the actual note to Woten in Dagger Peak; a supplied note is accepted.",
+          "item_vnums": [
+            78451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the packaged note to Woten",
+          "kind": "completion",
+          "hint": "Reward: a message in a bottle. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78484,
+              "completion_key": "give=I:78451;receive=I:78473;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wotens-nether-crystal",
+      "title": "Woten's Nether Crystal",
+      "category": "story",
+      "summary": "Bring Woten nether ore for one nether crystal. The scouting-report, note and bottled-message route can supply the ore, or you may bring a supplied copy. His reward text describes several crystals, but the contract awards one. The crystal is one component of Thelinnius's final staff.",
+      "contracts": [
+        {
+          "giver_vnum": 78484,
+          "completion_key": "give=I:78485;receive=I:78486;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "scouting-report-route",
+          "text": "Optional: deliver the scouting report to Skinjar",
+          "kind": "completion",
+          "hint": "This begins one ore-source route; supplied ore avoids it.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78456,
+              "completion_key": "give=I:78450;receive=I:78451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "bottled-message-route",
+          "text": "Optional: obtain Woten's bottled message",
+          "kind": "completion",
+          "hint": "Deliver Skinjar's note to receive the bottle. Supplied ore avoids this earlier exchange.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78484,
+              "completion_key": "give=I:78451;receive=I:78473;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "crowfoot-ore-route",
+          "text": "Optional: obtain nether ore from CrowFoot",
+          "kind": "completion",
+          "hint": "The message exchange supplies ore and removes CrowFoot. Supplied ore is also accepted by Woten.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78499,
+              "completion_key": "give=I:78473;receive=I:78485;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-78485",
+          "text": "Carry 1 x some nether ore",
+          "kind": "carried_item",
+          "hint": "CrowFoot awards nether ore for Woten's bottled message, then leaves. Bring the ore back to Woten for one crystal. This differs from Marny's endurium ore.",
+          "item_vnums": [
+            78485
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the nether ore to Woten",
+          "kind": "completion",
+          "hint": "Reward: a nether crystal. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78484,
+              "completion_key": "give=I:78485;receive=I:78486;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gulthaks-zorana-signet",
+      "title": "Gul'Thak's Zorana Signet",
+      "category": "request",
+      "summary": "Bring Gul'Thak Lord Zorana's signet ring for the Band of the Shadow Mage and 1750000 copper. Gul'Thak leaves afterward. This opposing-faction request is independent of the Refuge's other exchanges; it does not record allegiance, personal defeat of Zorana or a completed war.",
+      "contracts": [
+        {
+          "giver_vnum": 78487,
+          "completion_key": "give=I:78471;receive=C:1750000,I:78474;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78471",
+          "text": "Carry 1 x a golden signet of Zorana Felwood",
+          "kind": "carried_item",
+          "hint": "Lord Zorana wears his signet ring at the top of the Refuge tower. Gul'Thak accepts the exact ring, including a supplied copy. This delivery does not select a faction or record a personal kill.",
+          "item_vnums": [
+            78471
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Zorana's signet ring to Gul'Thak",
+          "kind": "completion",
+          "hint": "Reward: a shadowmage band, 1750000 copper. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78487,
+              "completion_key": "give=I:78471;receive=C:1750000,I:78474;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "weskels-earth-crystal",
+      "title": "Weskel's Earth Crystal",
+      "category": "story",
+      "summary": "Bring Weskel the rare moonstone for one earth crystal. Naboriyan's scepter reward is an optional producer route; a supplied moonstone is accepted. Weskel leaves after the exchange. His description of several crystals does not change the one-item reward used by Thelinnius.",
+      "contracts": [
+        {
+          "giver_vnum": 78492,
+          "completion_key": "give=I:78468;receive=I:78480;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "moonstone-route",
+          "text": "Optional: obtain Naboriyan's moonstone",
+          "kind": "completion",
+          "hint": "His scepter exchange supplies the moonstone. A supplied moonstone is valid without this receipt.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78475,
+              "completion_key": "give=I:78419;receive=C:500000,I:78468;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-78468",
+          "text": "Carry 1 x a moonstone",
+          "kind": "carried_item",
+          "hint": "Naboriyan awards the rare moonstone for Bostas's scepter. Weskel consumes the actual moonstone for an earth crystal, then leaves. A supplied moonstone is accepted.",
+          "item_vnums": [
+            78468
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the rare moonstone to Weskel",
+          "kind": "completion",
+          "hint": "Reward: an earth crystal. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78492,
+              "completion_key": "give=I:78468;receive=I:78480;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mithranils-blackbeard-chest",
+      "title": "Mithranil's Blackbeard Chest",
+      "category": "story",
+      "summary": "Retrieve Blackbeard's chest from his sunken skeletal remains and bring the chest itself to Mithranil for mailed gloves. A pullable crate opens a route to the key for the captain's quarters. Mithranil leaves after rewarding you. Offering a container retires its contents too; inspect any contents before handing it over.",
+      "contracts": [
+        {
+          "giver_vnum": 78493,
+          "completion_key": "give=I:78481;receive=I:78482;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78481",
+          "text": "Carry 1 x Blackbeard's chest",
+          "kind": "carried_item",
+          "hint": "Blackbeard's chest lies inside his skeletal remains in the captain's sunken quarters. Pull the massive crate in Veedle's cave, recover the key from the burial cave, then unlock the submerged doorway. Give Mithranil the chest itself, after checking any contents; opening its own lock is not a prerequisite.",
+          "item_vnums": [
+            78481
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Blackbeard's chest itself to Mithranil",
+          "kind": "completion",
+          "hint": "Reward: a pair of mailed dragoon gloves. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78493,
+              "completion_key": "give=I:78481;receive=I:78482;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brothedins-five-pirate-bandanas",
+      "title": "Brothedin's Five Pirate Bandanas",
+      "category": "request",
+      "summary": "Bring Brothedin five pirate bandanas for two strong Brews of the Forgotten. Pirates and burly pirates carry the bandanas. Although his dialogue describes a continuing bottle supply, this contract makes him leave. Further rewards require another available recipient encounter.",
+      "contracts": [
+        {
+          "giver_vnum": 78494,
+          "completion_key": "give=I:78483,I:78483,I:78483,I:78483,I:78483;receive=I:78484,I:78484;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78483",
+          "text": "Carry 5 x a red pirate's bandana",
+          "kind": "carried_item",
+          "hint": "Pirates and burly pirates wear bandanas in Pirate Cove. Bring five exact bandanas for two brew bottles. Brothedin leaves after this reward despite his continuing-supply dialogue.",
+          "item_vnums": [
+            78483
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring five pirate bandanas to Brothedin",
+          "kind": "completion",
+          "hint": "Reward: a powerful dwarven brew, a powerful dwarven brew. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78494,
+              "completion_key": "give=I:78483,I:78483,I:78483,I:78483,I:78483;receive=I:78484,I:78484;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crowfoots-nether-ore",
+      "title": "CrowFoot's Nether Ore",
+      "category": "story",
+      "summary": "Deliver Woten's bottled message to CrowFoot McGuillies for nether ore. Return the ore to Woten for his separate crystal reward. CrowFoot leaves after accepting the message, which can prevent his independent basilisk-egg bounty for that encounter. A supplied message is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 78499,
+          "completion_key": "give=I:78473;receive=I:78485;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "woten-message-route",
+          "text": "Optional: obtain Woten's bottled message",
+          "kind": "completion",
+          "hint": "Woten supplies it for Skinjar's note. A supplied bottle is accepted without this history.",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 78484,
+              "completion_key": "give=I:78451;receive=I:78473;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-78473",
+          "text": "Carry 1 x a message in a bottle",
+          "kind": "carried_item",
+          "hint": "Woten supplies the bottled message for Skinjar's packaged note. CrowFoot accepts the bottle, awards nether ore and leaves. Complete any wanted egg bounty before the message when using the same encounter.",
+          "item_vnums": [
+            78473
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the bottled message to CrowFoot",
+          "kind": "completion",
+          "hint": "Reward: some nether ore. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78499,
+              "completion_key": "give=I:78473;receive=I:78485;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crowfoots-basilisk-egg",
+      "title": "CrowFoot's Basilisk Egg",
+      "category": "request",
+      "summary": "Bring CrowFoot the basilisk egg from the island nest for 145000 copper. He stays after this bounty, while his independent bottled-message exchange makes him leave. His reward text is unfinished; the coin reward is encoded. The actual source is a ground egg, without a personal kill or timed-birth requirement.",
+      "contracts": [
+        {
+          "giver_vnum": 78499,
+          "completion_key": "give=I:78478;receive=C:145000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78478",
+          "text": "Carry 1 x a basilisk egg",
+          "kind": "carried_item",
+          "hint": "The basilisk egg lies among bones and debris in the island nest. It is ground stock, without a reviewed timed hatching or custom death requirement. CrowFoot stays after the egg bounty but leaves after the separate message exchange.",
+          "item_vnums": [
+            78478
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the basilisk egg to CrowFoot",
+          "kind": "completion",
+          "hint": "Reward: 145000 copper. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78499,
+              "completion_key": "give=I:78478;receive=C:145000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "veedles-five-plagued-skulls",
+      "title": "Veedle's Five Plagued Skulls",
+      "category": "request",
+      "summary": "Bring Veedle five plagued skulls from the sunken sailors of Queen Anne's Revenge for 420000 copper. He remains available. These are exact inventory trophies from the wreck's undead; delivery does not prove you killed the sailors or liberated the ship.",
+      "contracts": [
+        {
+          "giver_vnum": 78500,
+          "completion_key": "give=I:78487,I:78487,I:78487,I:78487,I:78487;receive=C:420000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78487",
+          "text": "Carry 5 x a plagued skull",
+          "kind": "carried_item",
+          "hint": "Sunken sailors and bloodthirsty sunken sailors carry plagued skulls in Queen Anne's Revenge. Bring five top-level carried skulls. Another skull type does not qualify.",
+          "item_vnums": [
+            78487
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring five plagued skulls to Veedle",
+          "kind": "completion",
+          "hint": "Reward: 420000 copper. The giver remains available after the exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 78500,
+              "completion_key": "give=I:78487,I:78487,I:78487,I:78487,I:78487;receive=C:420000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chaz-wazzs-lost-ring",
+      "title": "Chaz'Wazz's Lost Ring",
+      "category": "story",
+      "summary": "Recover the githzerai's ring from the collapsed corridor of Caer Dauthe and return it to Chaz'Wazz for his plane-walking rucksack. He leaves afterward. The rucksack's name describes the reward; it is a container, without an encoded portal power. A supplied ring is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 78511,
+          "completion_key": "give=I:78495;receive=I:78496;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78495",
+          "text": "Carry 1 x a golden githzerai ring",
+          "kind": "carried_item",
+          "hint": "The githzerai's ring lies in the collapsed Caer Dauthe corridor, where a concentrated void elemental may also appear. Return the actual ring to Chaz'Wazz; supplied copies qualify.",
+          "item_vnums": [
+            78495
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the githzerai's ring to Chaz'Wazz",
+          "kind": "completion",
+          "hint": "Reward: a rucksack of plane-walking. The giver leaves afterward.",
+          "contracts": [
+            {
+              "giver_vnum": 78511,
+              "completion_key": "give=I:78495;receive=I:78496;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "The Twin Keeps connect four realms and several independent commissions. Follow Kristigrogg's key route, the ore and crystal recipes, the scouting-message chain, or the Refuge and pirate requests. Each exchange keeps its own reward and history. Discovery and progress require active accounting; source availability and scripted stages still need qualification.",
+  "orientation": [
+    "From ruined Tharnadia, the locked western keep gate uses the city's gate key. The expeditionary leader and an Old Quarter contact offer it for the necromancer's remains; the leader's pouch is another source. The key breaks on use. Rifts and regional approaches can offer other arrival routes.",
+    "Kristigrogg trades five claws for the tower key and four distinct same-named life shards for the dungeon key. Tower keys can break while opening the four locked tower approaches; you may need replacements.",
+    "The four tower rifts lead to Blackrock Mountain, the Alteran Valley, Blackbeard's island and the Shaeradin Valley. The dungeon's fifth portal leads to the foreign Pit of Dragons. A shown route does not record confirmed travel or a dragon victory.",
+    "In Blackrock Mountain, Captain Fizz Thunderfist carries the consumed key to Bostas's High Seat. Bostas carries a life shard and scepter; use separate scepters for separate consumers.",
+    "In the Alteran Valley, look for FrostSharn Camp and the two harpy mountains. The warlord contracts accept four distinct hearts, despite head wording. The scouting report is inside the frozen orc corpse on Mount Straka.",
+    "Skinjar's report reward leads to Woten's note exchange, CrowFoot's bottled-message delivery and Woten's nether crystal. Supplied intermediate items can skip the producer route.",
+    "Jenzuel's recovered bow supplies Hindis's figurine. Deliver the figurine before Hindis's head reward when using the same encounter, because the head exchange removes him.",
+    "Trekash's orb leads to Keshia's pirate key. The hidden crevice in the island jungle leads to the locked pirate chest and ether crystal. The key is consumed on unlocking.",
+    "In Pirate Cove, pull the massive tied-up crate to open the northward route to the burial cave and captain's key. That consumed key opens the concealed submerged doorway to Blackbeard's remains, chest and life shard.",
+    "CrowFoot stays after his egg bounty but leaves after the message delivery. Several other givers also leave after a reward. This area uses epic-triggered rather than ordinary timed resets; do not assume daily replacement.",
+    "Thelinnius needs void, earth, nether and ether crystals plus the shadow staff. A concentrated void elemental is another void-crystal source. Earlier exchange history does not replace a spent component.",
+    "Ground, carried, equipped and nested sources are distinct. Get offerings out of containers and remove equipment before a native turn-in. Supplied items are accepted; inventory readiness does not establish personal recovery or kills.",
+    "Mungir's silverleaf-and-50000-copper payment is currently unavailable under active accounting. Ordinary reset supply also needs qualification. Existing recovered materials and valid receipts can still explain the routes.",
+    "Read contacts for useful topic words. Topics, switches, keys, scenery and departures are guidance until their accepted events and outcomes are integrated; each keyword is not an achievement."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 78400,
+      "name": "Kristigrogg the goblin magi",
+      "keyword": "kristigrogg",
+      "description": "Seek this contact near the lavish bedchamber of Caer Dauthe. His claw and shard exchanges provide different keys; the later Krizzix request has no native terminal.",
+      "topics": [
+        "hi",
+        "hello",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 78416,
+      "name": "Treskin the dark iron recluse",
+      "keyword": "treskin",
+      "description": "Seek this contact near the hidden cavern in Blackrock Mountain. Ask about the ingredient; he leaves after the five-heart reward.",
+      "topics": [
+        "hi",
+        "hello",
+        "ingredient"
+      ]
+    },
+    {
+      "mob_vnum": 78426,
+      "name": "Trekash the Elder",
+      "keyword": "trekash",
+      "description": "Seek this contact near the Strak'Ash planning chamber. His wing and scimitar commissions are independent. His actual name is Trekash.",
+      "topics": [
+        "treskin",
+        "ingredients",
+        "heart",
+        "flame",
+        "hi",
+        "hello",
+        "frostsharn"
+      ]
+    },
+    {
+      "mob_vnum": 78427,
+      "name": "Thelranak the Blacksmith",
+      "keyword": "thelranak",
+      "description": "Seek this contact near the Strak'Ash foundry. Ask about the dragon before planning the chance-loaded scales commission.",
+      "topics": [
+        "hi",
+        "hello",
+        "dragon"
+      ]
+    },
+    {
+      "mob_vnum": 78437,
+      "name": "Marny Taskgulch the Surveyor",
+      "keyword": "marny",
+      "description": "Seek this contact near the Strak'Ash planning chamber. His second commission requires endurium and the physical receipt supplied by the first.",
+      "topics": [
+        "hi",
+        "hello",
+        "sample",
+        "blackrock",
+        "ore",
+        "bostas"
+      ]
+    },
+    {
+      "mob_vnum": 78446,
+      "name": "Zaden GrimTooth the Trapper",
+      "keyword": "zaden",
+      "description": "Seek this contact near the long rope bridge between the harpy mountains. He asks for the hunting hat and leaves after rewarding it.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78455,
+      "name": "Kralth Gaptooth the Orc Warlord",
+      "keyword": "kralth",
+      "description": "Seek this contact near the Frozen Claw Hall. His head wording refers to four distinct accepted heart items.",
+      "topics": [
+        "hi",
+        "hello",
+        "solve",
+        "problem",
+        "frostsharn",
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 78456,
+      "name": "Skinjar Wyrmsnout the Tactitian",
+      "keyword": "skinjar",
+      "description": "Seek this contact near the Frozen Claw Hall. Harpy feathers and the scouting report are independent requests.",
+      "topics": [
+        "hi",
+        "hello",
+        "harpy",
+        "harpies",
+        "mountain",
+        "mountains",
+        "frostsharn",
+        "brenshan",
+        "straka"
+      ]
+    },
+    {
+      "mob_vnum": 78459,
+      "name": "Mungir the Herbalist",
+      "keyword": "mungir",
+      "description": "Seek this contact near the rear of the icy cave. His silverleaf-and-coin potion service currently needs accounting settlement support.",
+      "topics": [
+        "hi",
+        "hello",
+        "silverleaf"
+      ]
+    },
+    {
+      "mob_vnum": 78469,
+      "name": "Jenzuel MoonGazer",
+      "keyword": "jenzuel",
+      "description": "Seek this contact near a secret refuge in the Shaeradin Valley. His longbow reward supplies a figurine for Hindis; he leaves afterward.",
+      "topics": [
+        "hi",
+        "hello",
+        "searching",
+        "upset"
+      ]
+    },
+    {
+      "mob_vnum": 78470,
+      "name": "Hindis the Seer",
+      "keyword": "hindis",
+      "description": "Seek this contact near the balcony of Zorana's Refuge. The figurine exchange keeps him present; the head exchange removes him.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78471,
+      "name": "Keshia Moongleam",
+      "keyword": "keshia",
+      "description": "Seek this contact near the Refuge barracks. Her orb exchange supplies the consumed pirate-chest key.",
+      "topics": [
+        "hi",
+        "hello",
+        "quest",
+        "orb",
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 78472,
+      "name": "Venali Mistbloom the Prophet",
+      "keyword": "venali",
+      "description": "Seek this contact near the Refuge's elegant chamber. He asks for six exact ravasaur teeth and leaves after the reward.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78473,
+      "name": "Thelinnius Bravethunder",
+      "keyword": "thelinnius",
+      "description": "Seek this contact near Zorana's war chamber. Ask about the staff and reagents; he needs four crystals and a shadow staff together.",
+      "topics": [
+        "hi",
+        "hello",
+        "staff",
+        "twin",
+        "worlds",
+        "reagents"
+      ]
+    },
+    {
+      "mob_vnum": 78475,
+      "name": "Naboriyan the Sergeant",
+      "keyword": "naboriyan",
+      "description": "Seek this contact near Zorana's war chamber. His Bostas-scepter reward supplies Weskel's moonstone and makes him leave.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78476,
+      "name": "Lord Zorana Felwood",
+      "keyword": "lord",
+      "description": "Seek this contact near Lord Zorana's chamber. His combat special calls existing helpers. Greeting him or hearing help does not complete a quest.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78484,
+      "name": "Woten Darkhammer",
+      "keyword": "woten",
+      "description": "Seek this contact near the lower Dagger Peak hallway. He accepts Skinjar's note and later nether ore. His local M blocks are ambient, so no specific keyword is advertised.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 78487,
+      "name": "Gul'Thak the Seer",
+      "keyword": "gulthak",
+      "description": "Seek this contact near the secret Dagger Peak alcove. His exact Zorana-signet request is independent of Refuge allegiance and other stories.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78492,
+      "name": "Weskel the Centaur Druid",
+      "keyword": "weskel",
+      "description": "Seek this contact near the island mountain trail. Ask about the moonstone; he awards one earth crystal and leaves.",
+      "topics": [
+        "hi",
+        "hello",
+        "moonstone"
+      ]
+    },
+    {
+      "mob_vnum": 78493,
+      "name": "Mithranil the Dragoon",
+      "keyword": "mithranil",
+      "description": "Seek this contact near the hidden northern cave. He asks for Blackbeard's chest itself, then leaves after the reward.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78494,
+      "name": "Brothedin the Hunter",
+      "keyword": "brothedin",
+      "description": "Seek this contact near the hidden southern cave. He awards two brew bottles for five bandanas, then leaves despite continuing-supply dialogue.",
+      "topics": [
+        "hi",
+        "hello",
+        "pirate",
+        "pirates"
+      ]
+    },
+    {
+      "mob_vnum": 78499,
+      "name": "CrowFoot McGuillies",
+      "keyword": "crowfoot",
+      "description": "Seek this contact near the bend in Pirate Cove. His egg bounty keeps him present; the bottled-message delivery makes him leave.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78500,
+      "name": "Veedle the First Mate",
+      "keyword": "veedle",
+      "description": "Seek this contact near the large Pirate Cove cave. His five-skull bounty is independent of the crate access route in his cave.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 78511,
+      "name": "Chaz'Wazz the Githzerai",
+      "keyword": "chaz",
+      "description": "Seek this contact near the pillaged magick shop in Caer Tannad. Ask about the lost ring; his reward rucksack has no encoded portal power.",
+      "topics": [
+        "hi",
+        "hello",
+        "search",
+        "searching",
+        "ring"
+      ]
+    }
+  ]
+}

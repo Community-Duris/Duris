@@ -1,0 +1,254 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "highway",
+  "coverage": "complete",
+  "introduction": "Follow the imprisoned mage’s trust lead and Magnamus’s two collecting requests. Each accepted return has its own journal card. Morlanthra’s story crosses into Bastine; the collector’s harpy request is accepted independently of his chalice request. Discovery is separate. New progress requires active, ready accounting.",
+  "orientation": [
+    "ASK MORLANTHRA about free, proof or victor for his trust lead. Victor the Apprentice in Bastine accepts Sir Lamerok’s signet ring and supplies a small steel key and his apprentice’s ring. Victor’s accepted exchange appears as optional history; the exact apprentice’s ring can also come from another player.",
+    "The mound entrance, Esterra’s chamber, the hidden waterfall approach, the magical curtain and Morlanthra’s tree have separate access barriers. Sir Ector, Esterra and Nynevena carry three keys along the route. Victor supplies another; the tree-shaped key is declared with the red dragon’s treasure. Existing shared access can change which keys you need. Carrying a key does not record unlocking or reaching the mage.",
+    "Morlanthra accepts the apprentice’s ring for experience and an amulet of petrified dragon eyes, then departs. His farewell is the native accepted outcome. The journal does not claim a separately persisted rescue, changed tree, personal friendship or defeated captors.",
+    "ASK COLLECTOR about items, help or interested for the emerald-chalice lead. The chalice is declared among the red dragon’s loose treasure. Return it for experience, coins and the staff of the windwalkers. The dragon is danger context; personal defeat is not an acceptance prerequisite.",
+    "ASK COLLECTOR about harpy, in or hunt for the harpy-parts lead. The nest declares a loose tooth infrequently, while the stout harpy declares the hair infrequently. Bring one exact tooth and one exact hair loose together for the dragon-claw ear clasp. Two copies of one part cannot replace the pair. The earlier chalice return is suggested by dialogue, without an enforced history gate.",
+    "Bastine’s King requests several trophies from this region, including the Kearonor Beast’s original spotted hide. Those accepted returns belong to the Bastine journal. The replacement hide carries a custom curse; ordinary acquisition, wearing, transformation and the King’s accepted reward are different events.",
+    "Mountain climbs, falls, currents, hidden passages and containers remain part of the world. The statue and dusty organ control different passages; their descriptions provide clues. The separate scrying-organ prototype uses another mechanic. Equipment use, far sight, mount encounters and opening treasure routes do not invent additional quest completions.",
+    "Material rows show current loose inventory; accepted history remains after offerings are spent. Matching supplied goods fit without personal kills or first recovery. Three local returns preserve three achievements and three potential dailies. Reset timing and daily eligibility do not guarantee fresh stock: active accounting gates new item issuance. New discovery, encounters and progress require active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 41302,
+      "name": "the Kearonor Beast",
+      "keyword": "beast",
+      "description": "The original spotted hide leads to a Bastine royal commission. This encounter does not create a Highway return or prove a personal kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41306,
+      "name": "Sir Ector",
+      "keyword": "ector",
+      "description": "Sir Ector declares the rusty key for the mound entrance. Recovery, shared door access and arrival are distinct.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41313,
+      "name": "Esterra",
+      "keyword": "esterra",
+      "description": "Esterra declares the plain iron key for the hidden waterfall approach. Her defeat is not a journal prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41314,
+      "name": "Nynevena",
+      "keyword": "nynevena",
+      "description": "Nynevena declares the transparent key for the curtain near Morlanthra’s tree. The key and changed access are different evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41315,
+      "name": "Morlanthra",
+      "keyword": "morlanthra",
+      "description": "The imprisoned mage accepts Victor’s apprentice ring for an amulet and then departs. His ASK leads do not record accepted trust or a persistent rescue.",
+      "topics": [
+        "hi",
+        "hello",
+        "greetings",
+        "welcome",
+        "prison",
+        "free",
+        "proof",
+        "volheru",
+        "king",
+        "mrotha",
+        "victor",
+        "knights"
+      ]
+    },
+    {
+      "mob_vnum": 41338,
+      "name": "a red dragon",
+      "keyword": "dragon",
+      "description": "The red dragon is hazard context for the declared chalice and tree-shaped key. Encountering it does not reveal unseen recipients’ cards or complete their returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41355,
+      "name": "Sir Lamerok",
+      "keyword": "lamerok",
+      "description": "Sir Lamerok declares the signet ring that Victor accepts in Bastine. His defeat, recovery and Victor’s trust exchange remain separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41358,
+      "name": "a stout harpy",
+      "keyword": "stout",
+      "description": "The stout harpy infrequently declares the requested hair. The loose tooth has its own infrequent source in the nest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41360,
+      "name": "a tired artifact collector",
+      "keyword": "collector",
+      "description": "Magnamus accepts the chalice and the distinct harpy pair as independent returns. His follow-on conversation does not enforce the chalice first.",
+      "topics": [
+        "hi",
+        "artifacts",
+        "quest",
+        "items",
+        "help",
+        "yes",
+        "interested",
+        "harpy",
+        "out",
+        "in",
+        "hunt",
+        "hunting",
+        "more"
+      ]
+    },
+    {
+      "mob_vnum": 41361,
+      "name": "Xalinor the horse merchant",
+      "keyword": "xalinor",
+      "description": "The horse merchant’s prose and nearby mount stock are world context. No reviewed horse-sale contract creates another journal request.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "morlanthra-apprentice-ring",
+      "title": "Morlanthra’s proof of trust",
+      "category": "story",
+      "summary": "Follow Victor’s cross-zone lead, then return the apprentice’s ring to Morlanthra. The mage rewards you and departs; his native acceptance does not require recorded earlier stages.",
+      "contracts": [
+        {
+          "giver_vnum": 41315,
+          "completion_key": "give=I:41398;receive=E:2500,I:41405;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "victor-trust-history",
+          "text": "Victor accepted Sir Lamerok’s signet in Bastine",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 7603,
+              "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0"
+            }
+          ],
+          "hint": "Optional accepted history for the cross-zone story. Morlanthra still accepts matching supplied apprentice rings without this history; key use and rescue need separate evidence."
+        },
+        {
+          "id": "item-41398",
+          "text": "Carry Victor’s apprentice ring loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            41398
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Victor supplies this ring after accepting Sir Lamerok’s signet in Bastine. Matching supplied stock also fits. The signet, small steel key or amulet reward cannot substitute."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 41315,
+              "completion_key": "give=I:41398;receive=E:2500,I:41405;disappear=1"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence. Morlanthra departs after this return."
+        }
+      ]
+    },
+    {
+      "id": "magnamus-emerald-chalice",
+      "title": "Magnamus’s emerald chalice",
+      "category": "story",
+      "summary": "Return the exact emerald chalice for experience, coins and the staff of the windwalkers. Personal defeat of the dragon is separate from accepted history.",
+      "contracts": [
+        {
+          "giver_vnum": 41360,
+          "completion_key": "give=I:41348;receive=C:10000,E:10000,I:41417;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-41348",
+          "text": "Carry the emerald chalice loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            41348
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared loose among the red dragon’s treasure. Existing matching supplied stock fits; dragon defeat and first recovery are separate evidence."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 41360,
+              "completion_key": "give=I:41348;receive=C:10000,E:10000,I:41417;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence."
+        }
+      ]
+    },
+    {
+      "id": "magnamus-harpy-parts",
+      "title": "Hair and a tooth for Magnamus",
+      "category": "story",
+      "summary": "Return the exact harpy hair and tooth together for the dragon-claw ear clasp. This paired return is accepted independently of the chalice commission.",
+      "contracts": [
+        {
+          "giver_vnum": 41360,
+          "completion_key": "give=I:41415,I:41416;receive=I:41419;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-41415",
+          "text": "Carry a harpy tooth loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            41415
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared infrequently in the harpy nest. Keep one exact tooth loose with the hair. Another part or two hairs do not prepare this row."
+        },
+        {
+          "id": "item-41416",
+          "text": "Carry harpy hair loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            41416
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The stout harpy declares this exact hair infrequently. Keep it loose together with the tooth; personal defeat is not required for acceptance."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 41360,
+              "completion_key": "give=I:41415,I:41416;receive=I:41419;disappear=0"
+            }
+          ],
+          "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -94,8 +94,8 @@ int braddistock(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	if (cmd == CMD_NORTH && pl != ch && (GET_LEVEL(pl) > 14))
 	{
 		send_to_char(
-			"The spirit of Lord Braddistock says 'We don't want your kind around here!'",
-			ch);
+			"The spirit of Lord Braddistock says 'We don't want your kind around here!'\r\n",
+			pl);
 		act("$N says 'We don't want your kind around here!'", TRUE, pl, 0, ch, TO_NOTVICT);
 		act("$N blocks your passage.", TRUE, pl, 0, ch, TO_CHAR);
 		act("$N blocks $n.", TRUE, pl, 0, ch, TO_NOTVICT);

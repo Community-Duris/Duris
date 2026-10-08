@@ -1,0 +1,248 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "suntmpl",
+  "coverage": "complete",
+  "introduction": "Bring the forest evidence for temple access, then choose the separate sunbeam and mystical-rock returns. Inner keys, custom services and outside recipes form distinct progression leads.",
+  "orientation": [
+    "Start with Trentloss at the forest gateway. Ask key, temple or lock. He accepts one exact heart of the pine and one exact mind of the bear together and grants a vine key. These are two different materials; two hearts do not replace the bear mind.",
+    "The pine spirit in the heart of the pine and the deranged bear in its alcove are the native evidence sources. Their passages begin hidden and closed. Successful SEARCH, opening, defeating a source and recovering its item are separate actions; supplied exact materials can also prepare the return.",
+    "The vine key fits the locked temple entrance. Obtaining the key, using it, opening the doorway and entering are separate events. A key supplied by another player or a door already opened by someone else can permit travel without recording your own exchange or door action.",
+    "The vine key and the two inner-temple keys are designed to break on use and have no-rent flags. Actual destruction, persistence and reset state matter. A recorded key exchange remains history after the key is spent; it does not guarantee that the entrance stays open.",
+    "Rantah in the cellar carries a shiny key for the hidden locked route up to the stairwell. The golden statue there carries a bright key for the locked dome above. Find the actual passage, obtain the matching key and use the live door state; finishing a quest does not automatically perform these actions.",
+    "The enraged demon in the dome carries two different materials: a sunbeam and a mystical rock. The sunbeam prepares the oak spirit return; the rock prepares Grentkas's return. Carrying one does not prepare both. Defeating the demon and recovering each item are separate from either accepted exchange.",
+    "Ask the spirit in the heart of the oak temple. One exact sunbeam earns the ring of the morning sun. The dialogue describes restoring the woods and promises a mace, while the actual reward is a ring. The accepted return records that exchange; it does not confirm a lasting forest restoration.",
+    "Ask Grentkas hi, hello, hey, howdy, item, items or craft in the guest rooms. One exact mystical rock earns an enchanted ring of stone. The native acceptance text refers to centaur armor; the actual item is a ring with finger and tail wear. These seven aliases lead to one conversation and one return.",
+    "Present each requested item loose and visible. Held equipment, items inside bags, similarly named objects and the creatures themselves do not replace the exact materials. Current preparation stays separate from accepted history and personal recovery, including when another player supplies a valid item.",
+    "Frolikk is an Epic Charisma teacher and carries a golden lyre and a unique music box. His epic teaching purchase is currently unavailable while economic accounting is active. Meeting him or owning an instrument does not record training, playing music or completing another native exchange.",
+    "A magical fountain lies in the stairwell and an epic stone in the dome. Their spell and reward services have their own eligibility and actual outcomes. A drink or touch attempt, a pending message or seeing someone else use them does not complete one of these three quest cards.",
+    "Pelakra and the research assistants supply scholarly lore and a tome. Llentor and the garden farmers provide exploration context. Farm belts and plant descriptions do not establish an additional magical garden barrier or a player harvesting requirement.",
+    "Garden ingredients support separate outside cooking and alchemy recipes. Grentkas's stone ring is also one material in Enfil's outside request, along with two other distinct items. These are optional leads with their own givers and receipts; owning an ingredient or a local reward does not finish an outside quest.",
+    "All three accepting givers remain after a successful return. Each exchange has its own achievement and potential daily. A day rollover does not replenish world stock or reopen doors. Repeated keywords create no separate achievements. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 82400,
+      "name": "Trentloss",
+      "keyword": "trentloss",
+      "description": "Ask key, temple or lock at the forest gateway. One pine heart and one bear mind together earn the vine key; its receipt is separate from unlocking and entering.",
+      "topics": [
+        "key",
+        "temple",
+        "lock"
+      ]
+    },
+    {
+      "mob_vnum": 82401,
+      "name": "a spirit",
+      "keyword": "spirit",
+      "description": "Ask temple in the heart of the oak. One exact sunbeam earns the morning-sun ring. Restoration dialogue does not record a permanent world change.",
+      "topics": [
+        "temple"
+      ]
+    },
+    {
+      "mob_vnum": 82407,
+      "name": "Grentkas",
+      "keyword": "grentkas",
+      "description": "Ask the greeting or crafting aliases in the guest rooms. One exact mystical rock earns an enchanted stone ring; actual ring wear differs from the acceptance wording.",
+      "topics": [
+        "hi",
+        "hello",
+        "hey",
+        "howdy",
+        "item",
+        "items",
+        "craft"
+      ]
+    },
+    {
+      "mob_vnum": 82402,
+      "name": "a spirit",
+      "keyword": "pine",
+      "description": "The spirit in the heart of the pine carries one of Trentloss's two different evidence materials. Revealing the passage, defeating the spirit and recovering the heart are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82403,
+      "name": "a deranged bear",
+      "keyword": "bear",
+      "description": "The deranged bear in the hidden alcove carries the other evidence material. Bear mind and pine heart are distinct; the nearby baby bears do not define a rescue endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82406,
+      "name": "an enraged demon",
+      "keyword": "demon",
+      "description": "The enraged demon in the locked dome carries both a sunbeam and a mystical rock. They prepare different returns and do not establish a personal victory receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82423,
+      "name": "Rantah",
+      "keyword": "rantah",
+      "description": "Rantah in the cellar carries the shiny stairwell key. Current key access is separate from receiving a quest reward or recording your own unlocking.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82424,
+      "name": "a golden statue",
+      "keyword": "statue",
+      "description": "The golden statue in the stairwell carries the bright dome key. Its source, actual recovery and live keyed access are separate progression concerns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82408,
+      "name": "Frolikk",
+      "keyword": "frolikk",
+      "description": "Frolikk teaches Epic Charisma through a custom service, currently unavailable under active economic accounting. Lyre and music-box possession do not record training or performance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82404,
+      "name": "Pelakra",
+      "keyword": "pelakra",
+      "description": "Pelakra carries a research tome and supplies scholarly lore. Receiving or using the tome, completing research and changing the temple are distinct from native quest returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82412,
+      "name": "Llentor",
+      "keyword": "llentor",
+      "description": "Llentor provides druidic temple context. His name and lore do not establish a fourth native quest exchange or a gardening prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82429,
+      "name": "a farmer",
+      "keyword": "farmer",
+      "description": "The garden farmers tend plant stock and some carry tool belts. Collecting planted ingredients is separate from personal foraging, harvesting or a magical access predicate.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "temple-entry",
+      "title": "Bring Trentloss evidence from the forest",
+      "category": "request",
+      "summary": "One exact loose pine heart and one exact loose bear mind together earn the vine key. Supplied evidence fits without personal recovery history. The key is designed to break on use; receiving it does not record unlocking, entering or restoring the forest.",
+      "contracts": [
+        {
+          "giver_vnum": 82400,
+          "completion_key": "give=I:82402,I:82403;receive=I:82420;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "pine-heart",
+          "text": "Carry the exact pine heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present the exact visible loose material. Supplied proof fits without a personal source receipt; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "bear-mind",
+          "text": "Carry the exact bear mind loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82403
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present the exact visible loose material. Supplied proof fits without a personal source receipt; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82400,
+              "completion_key": "give=I:82402,I:82403;receive=I:82420;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The giver stays; other exchanges, physical access and service outcomes keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "restore-woods",
+      "title": "Return a sunbeam to the oak spirit",
+      "category": "request",
+      "summary": "One exact loose sunbeam earns the ring of the morning sun. The native source is the demon beyond the inner keys. Supplied proof fits without personal victory history; acceptance does not confirm permanent forest restoration or grant the mace described in dialogue.",
+      "contracts": [
+        {
+          "giver_vnum": 82401,
+          "completion_key": "give=I:82408;receive=I:82409;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "sunbeam",
+          "text": "Carry the exact sunbeam loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82408
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present the exact visible loose material. Supplied proof fits without a personal source receipt; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82401,
+              "completion_key": "give=I:82408;receive=I:82409;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The giver stays; other exchanges, physical access and service outcomes keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "stone-ring",
+      "title": "Bring Grentkas a mystical rock",
+      "category": "request",
+      "summary": "One exact loose mystical rock earns an enchanted ring of stone, with finger and tail wear in its actual data. The native source is the demon in the locked dome. Supplied proof fits without personal recovery; this receipt does not complete Enfil's separate outside request.",
+      "contracts": [
+        {
+          "giver_vnum": 82407,
+          "completion_key": "give=I:82406;receive=I:82405;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "mystical-rock",
+          "text": "Carry the exact mystical rock loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present the exact visible loose material. Supplied proof fits without a personal source receipt; held or nested copies do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82407,
+              "completion_key": "give=I:82406;receive=I:82405;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. The giver stays; other exchanges, physical access and service outcomes keep separate histories. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

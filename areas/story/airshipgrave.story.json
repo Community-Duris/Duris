@@ -1,0 +1,909 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "airshipgrave",
+  "coverage": "complete",
+  "introduction": "Follow Dawndale's refugee preparations, rival ship-captain recipes, hunter and worm deliveries, and Whetstone's foreign forge return. Active, ready accounting is mandatory. Producer histories explain the route without rejecting supplied proof. Three support services and the fossil referral give no achievement or daily credit; source, payment and actual escape/curse effects need qualification.",
+  "orientation": [
+    "The surface has three routes into the valley. Quest descriptions give clues, while addressed questions exist for Drandagger, the smith and Whetstone. Meeting a giver reveals relevant requests; discovering the zone alone does not complete a delivery or award a learned-keyword milestone.",
+    "The curator's portrait gives refugee stones; the rock cutter converts them to dust and 250 platinum; the phantom engineer makes an explosive device and retires. A separate key-and-device delivery retires the refugee leader and gives an exquisite moonstone and Longhollow backpack. Supplied exact materials fit without your personal earlier deliveries.",
+    "The exiled moon-elf sells the city key for 250 platinum, but that coin-only support purchase remains guarded. Unlocking the city gate retains its zero-break-chance key, which can then be offered in the final refugee delivery. The capital, museum, office and elf-alcove keys are different items; breakable office/alcove keys also require return and reset planning.",
+    "At the joined wrecks, each rival captain needs two sunlight vials, dust, rank-water bucket, glowing runestones, witchcraft guide and monkey fur. Choose which bundle to spend; each captain gives his own reward and consumes independent proof. The book describes an incantation, but neither reading it nor reciting words replaces its delivery.",
+    "The chemist has three declared sunlight vials, while both captains together need four. The scholar appears only on a fifty-percent declaration and shares a globally capped guide with an administrative library. Accepted supply and renewal need qualification; the journal does not promise that every ingredient is currently obtainable.",
+    "Keenfeather accepts the master hunter's exact splintered bow. The orc accepts the warchief's treasure after you open its closed, unlocked sack and recover the contents loose. Other bows, the sack, nearby coin piles and similar rewards do not fit those deliveries.",
+    "Ask Drandagger hi, hello, help or assistance. Recover the larvae nest from the rock worm's nest for experience and chainmail. His promised tunneling and the refugees' narrated BOOM do not currently open a new escape route or record a settled party.",
+    "Ask the smith lens or telescope, then pile, fine or sand. His clue points to the hidden Aravne sand elemental, whose death produces the exact sand. Sand plus 25 platinum supports a lens commission, but mixed payment remains guarded; possession does not establish your own recovery or a repaired telescope.",
+    "Ask Whetstone metal. Recover his hidden electrum near Fossil Rock, take it to Emition in the Home of the Divine, then return the exact forged flute. Whetstone retires and leaves a different same-named flute. The foreign forge history is optional, and his promised visit to Emition is not actual recorded travel.",
+    "Push rocks on your side of the narrow rock passage to clear that direction's blockage, then search to reveal the passage and walk through. It is an open secret passage rather than a locked door. The other direction has its own rocks, so qualify return separately. Other secret closed wreck passages need search and opening.",
+    "The elf-alcove portal leads to a secluded surface island. Arrival, safe return and access are separate from quest delivery. Cliff and avalanche descriptions contain no reviewed falling-room declaration here; route prose alone does not create a fall objective.",
+    "The rock cutter replaces an offered fossil with the same item kind and refers you to an unnamed Ultarium cousin. This is excluded from quest credit and does not multiply supply. Red Star, Mctarvian, captive and great-lens lore have no reviewed additional defense, rescue, bounty or installation outcome."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 77501,
+      "name": "an exiled moon-elf",
+      "keyword": "exile",
+      "description": "Exiled moon-elf selling the city key for 250 platinum. His rare encounter and guarded coin-only purchase are support conditions, without achievement credit.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77502,
+      "name": "an orc treasure-hunter",
+      "keyword": "orc",
+      "description": "Orc requesting the firbolg warchief's treasure. Recover it loose from the sack; ordinary coins do not fit. He retires after delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77504,
+      "name": "a dwarven rock cutter",
+      "keyword": "cutter",
+      "description": "Rock cutter who prepares dust and pays 250 platinum for sparkling stones. His fossil exchange only refers you to an unnamed Ultarium cousin; it grants no new outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77505,
+      "name": "Keenfeather",
+      "keyword": "keenfeather",
+      "description": "Rare harpy accepting the master hunter's splintered bow for his armlet. His secret cliff route requires search and opening, without an additional kill milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77511,
+      "name": "a refugee",
+      "keyword": "refugee",
+      "description": "Leader near the refugee camp. Portrait gives stones; a separate key-and-device delivery gives moonstone and backpack and retires him. The described explosion and follower settlement remain unrecorded effects.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77514,
+      "name": "a phantom engineer",
+      "keyword": "engineer",
+      "description": "Phantom engineer in the wreck. Dust gives an explosive device, then he retires. Supplied dust fits without your own earlier rock-cutter receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77517,
+      "name": "the undead captain of the astral dancer",
+      "keyword": "astral",
+      "description": "Astral Dancer captain in the wreck, asking for two sunlight vials plus five other exact ingredients. Gives Ender and stays; his recipe is independent of the rival captain's.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77518,
+      "name": "the undead captain of the dlalgarvara",
+      "keyword": "dlalgarvara",
+      "description": "Dlalgarvara captain beside his rival. Requires his own identical two-vial/six-kind bundle for a helm; another captain's receipt does not complete this outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77527,
+      "name": "Drandagger",
+      "keyword": "drandagger",
+      "description": "Drow leader. Ask hi, hello, help or assistance. The exact rock-worm larvae nest gives experience and chainmail; his promised escape tunnel is not another recorded quest.",
+      "topics": [
+        "hi",
+        "hello",
+        "help",
+        "assistance"
+      ]
+    },
+    {
+      "mob_vnum": 77543,
+      "name": "a high-elven smith",
+      "keyword": "smith",
+      "description": "High-elven smith. Ask lens or telescope, then pile, fine or sand. Aravne elemental sand plus 25 platinum makes a lens; mixed payment remains guarded and there is no recorded telescope installation.",
+      "topics": [
+        "lens",
+        "telescope",
+        "pile",
+        "fine",
+        "sand"
+      ]
+    },
+    {
+      "mob_vnum": 77558,
+      "name": "a lost storm giant",
+      "keyword": "whetstone",
+      "description": "Lost storm giant. Ask metal for his electrum clue. Return Emition's exact flute for a distinct same-named instrument; the giant retires without a recorded journey to Emition.",
+      "topics": [
+        "metal"
+      ]
+    },
+    {
+      "mob_vnum": 77541,
+      "name": "a master hunter",
+      "keyword": "hunter",
+      "description": "Master hunter carrying Keenfeather's exact splintered bow. Other hunters and similar bows do not replace this material.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77554,
+      "name": "the curator",
+      "keyword": "curator",
+      "description": "Cultural-spire curator carrying the refugee's gold portrait. Museum admission and recovery are separate from the portrait delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77520,
+      "name": "the high chemist",
+      "keyword": "chemist",
+      "description": "Laboratory chemist with three declared sunlight vials/cap three. Each captain needs two; both bundles require four copies, so retained supply and renewal need qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77568,
+      "name": "a high-elf scholar",
+      "keyword": "scholar",
+      "description": "Rare witchcraft scholar in the archive carrying the exact guide. Its recipe is lore; each captain still consumes the book in his own bundle. Shared stock needs qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77569,
+      "name": "a cave monkey",
+      "keyword": "monkey",
+      "description": "Golden-furred monkey carrying the captains' tuft of fur. Possession does not establish personal killing or harvesting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77567,
+      "name": "a firbolg shaman",
+      "keyword": "shaman",
+      "description": "Firbolg shaman carrying the captains' glowing runestones. Other runestones are different proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77566,
+      "name": "a firbolg warchief",
+      "keyword": "warchief",
+      "description": "Firbolg warchief carrying a closed, unlocked sack with the orc's treasure inside. Open it and recover the loose treasure before delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77556,
+      "name": "a high-elf taskmaster",
+      "keyword": "taskmaster",
+      "description": "Taskmaster carrying the capital-gate key. This persistent key differs from the exile's breakable city key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77546,
+      "name": "an off-duty guard",
+      "keyword": "guard",
+      "description": "Off-duty guard. One instance below the rock-switch passage carries the museum key; other guards do not guarantee a matching key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77521,
+      "name": "a royal guard",
+      "keyword": "guard",
+      "description": "Royal guards by the Chancellor's office. One instance carries the breakable office key; the elf alcove has another breakable key and a portal beyond it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77533,
+      "name": "the former doctor",
+      "keyword": "doctor",
+      "description": "Former doctor carrying a petrified animal fossil; a separate ground copy also exists. The rock cutter's referral has no reviewed exact follow-up consumer.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21673,
+      "name": "a sand elemental",
+      "keyword": "sand",
+      "description": "Hidden Aravne sand elemental. Its death procedure produces the exact sand for the lens commission; first recovery and durable source generation require qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40712,
+      "name": "Emition",
+      "keyword": "emition",
+      "description": "Titan blacksmith in the Home of the Divine. Whetstone's exact Dawndale electrum gives the return flute; the forge service belongs to that journal, while the return belongs to Dawndale.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77559,
+      "name": "Red Star",
+      "keyword": "red",
+      "description": "Red Star's description asks for refugee escape and speaks of approaching firbolgs. No separate accepted defense, escort or reunion terminal was found.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77564,
+      "name": "Mctarvian",
+      "keyword": "mctarvian",
+      "description": "Mctarvian describes a captive and bounty gathering. Captive-object and bounty lore do not define an additional reviewed rescue or turn-in outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77561,
+      "name": "the lens-crafter",
+      "keyword": "lens-crafter",
+      "description": "Rare lens-crafter beside the great lens. The working-lens descriptions do not define a broken telescope or an accepted replacement/install action.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "exile-city-key",
+      "title": "The exile's city-key purchase",
+      "category": "service",
+      "summary": "The exiled moon-elf asks 250 platinum for the city key. This coin-only support purchase remains guarded; ordinary admission retains the zero-break-chance key. No achievement or daily credit is attached.",
+      "contracts": [
+        {
+          "giver_vnum": 77501,
+          "completion_key": "give=C:250000;receive=I:77501;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77501,
+              "completion_key": "give=C:250000;receive=I:77501;disappear=0"
+            }
+          ],
+          "hint": "The city key costs 250 platinum (250,000 native gold units). Coin-only purchase remains guarded under required active accounting; no achievement or daily credit is attached. A supplied matching key may still fit the separate refugee delivery."
+        }
+      ]
+    },
+    {
+      "id": "orc-warchief-treasure",
+      "title": "Plunder for the orc treasure-hunter",
+      "category": "story",
+      "summary": "Recover the firbolg warchief's treasure from his sack for the orc, earning 250,000 experience and a Stormport medallion. Ordinary coins and the sack itself are different proof. The orc retires.",
+      "contracts": [
+        {
+          "giver_vnum": 77502,
+          "completion_key": "give=I:77550;receive=E:250000,I:77562;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77550",
+          "text": "Carry a pile of treasure",
+          "kind": "carried_item",
+          "item_vnums": [
+            77550
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The firbolg warchief carries treasure inside a closed, unlocked sack. Open the sack and recover the exact treasure loose. The sack and ordinary piles of coins are different proof. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77502,
+              "completion_key": "give=I:77550;receive=E:250000,I:77562;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient retires after acceptance. This independent delivery does not record personal kills, learned words, first recovery, access, escape or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "rockcutter-combustible-dust",
+      "title": "Prepare the rock cutter's combustible dust",
+      "category": "service",
+      "summary": "The refugee's sparkling stones give combustible dust and 250 platinum. Dust supports the engineer and competing captain recipes. This preparation service gives no achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 77504,
+          "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "portrait-producer-history",
+          "text": "Portrait delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77511,
+              "completion_key": "give=I:77522;receive=I:77523;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-77523",
+          "text": "Carry a collection of sparkling stones",
+          "kind": "carried_item",
+          "item_vnums": [
+            77523
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The refugee gives these stones for the cultural-spire curator's gold portrait. Earlier personal delivery is optional; supplied matching stones fit. The rock cutter pays 250 platinum and returns combustible dust. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77504,
+              "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact sparkling stones for combustible dust and 250 platinum (250,000 native gold units). This preparation service has no achievement or daily credit. Its coin payout is distinct from a coin offering; accepted item settlement and payout need qualification."
+        }
+      ]
+    },
+    {
+      "id": "keenfeather-hunter-bow",
+      "title": "A hunter's bow for Keenfeather",
+      "category": "story",
+      "summary": "Bring the master hunter's exact splintered bow for Keenfeather's armlet. Similar bows and the differently identified same-named armlet do not complete another outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 77505,
+          "completion_key": "give=I:77517;receive=I:77516;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77517",
+          "text": "Carry a splintered hunter's bow",
+          "kind": "carried_item",
+          "item_vnums": [
+            77517
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The master hunter carries the exact splintered bow. Other hunter bows do not fit, and delivery does not establish that you personally killed the hunters. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77505,
+              "completion_key": "give=I:77517;receive=I:77516;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent delivery does not record personal kills, learned words, first recovery, access, escape or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "refugee-gold-portrait",
+      "title": "A portrait for the refugees",
+      "category": "story",
+      "summary": "Bring the curator's gold portrait to the refugee leader for sparkling stones, introducing the dust-and-device route. This delivery does not itself relocate the refugees.",
+      "contracts": [
+        {
+          "giver_vnum": 77511,
+          "completion_key": "give=I:77522;receive=I:77523;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77522",
+          "text": "Carry a gold-framed portrait",
+          "kind": "carried_item",
+          "item_vnums": [
+            77522
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cultural-spire curator carries the gold portrait. The museum key is carried by one off-duty guard below the rock-switch passage; its door and the capital gate are separate access checks. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77511,
+              "completion_key": "give=I:77522;receive=I:77523;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent delivery does not record personal kills, learned words, first recovery, access, escape or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "refugee-key-and-device",
+      "title": "A city key and device for a new home",
+      "category": "story",
+      "summary": "Deliver one matching city key and one explosive device for an exquisite moonstone and Longhollow backpack. The leader retires; the described explosion and new settlement remain narrative until integrated.",
+      "contracts": [
+        {
+          "giver_vnum": 77511,
+          "completion_key": "give=I:77501,I:77525;receive=I:34464,I:77563;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "portrait-producer-history",
+          "text": "Portrait delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77511,
+              "completion_key": "give=I:77522;receive=I:77523;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "dust-producer-history",
+          "text": "Dust preparation recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77504,
+              "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "device-producer-history",
+          "text": "Device preparation recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77514,
+              "completion_key": "give=I:77524;receive=I:77525;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "key-producer-history",
+          "text": "City-key purchase recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77501,
+              "completion_key": "give=C:250000;receive=I:77501;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-77501",
+          "text": "Carry an adorned gold key",
+          "kind": "carried_item",
+          "item_vnums": [
+            77501
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exiled moon-elf offers this city key for 250 platinum, but that coin-only purchase remains guarded under required accounting. The city key has zero break chance and survives ordinary unlocking. Keep it for this separate delivery; supplied matching keys fit. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77525",
+          "text": "Carry a small explosive device",
+          "kind": "carried_item",
+          "item_vnums": [
+            77525
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The phantom engineer exchanges combustible dust for this explosive device, then retires. Optional earlier delivery history cannot replace a spent device. Delivering it does not record an actual explosion or open a new camp. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77511,
+              "completion_key": "give=I:77501,I:77525;receive=I:34464,I:77563;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact city key and explosive device together for the exquisite moonstone and backpack. The refugee retires. Earlier producer deliveries remain optional; narrated BOOM and settlement do not open a recorded camp or certify follower escape."
+        }
+      ]
+    },
+    {
+      "id": "engineer-explosive-device",
+      "title": "An engineer's final explosive device",
+      "category": "story",
+      "summary": "Give combustible dust to the phantom engineer for the refugee device. He retires after delivery; personal dust production is optional and ship-wide curse resolution is a separate integration.",
+      "contracts": [
+        {
+          "giver_vnum": 77514,
+          "completion_key": "give=I:77524;receive=I:77525;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dust-producer-history",
+          "text": "Dust preparation recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77504,
+              "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-77524",
+          "text": "Carry a handful of combustable rock dust",
+          "kind": "carried_item",
+          "item_vnums": [
+            77524
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The rock cutter gives this dust and 250 platinum for the refugee's sparkling stones. The engineer and both captains consume matching dust through separate exchanges; one completed producer delivery does not restore spent dust. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77514,
+              "completion_key": "give=I:77524;receive=I:77525;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient retires after acceptance. This independent delivery does not record personal kills, learned words, first recovery, access, escape or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "astral-captain-supply",
+      "title": "The Astral Dancer captain's supplies",
+      "category": "story",
+      "summary": "Two sunlight vials and five other exact ingredients give the lost blade Ender. The witchcraft guide is required as an item; reading or reciting its recipe is not substitute proof. The other captain has a separate outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 77517,
+          "completion_key": "give=I:77515,I:77515,I:77524,I:77549,I:77551,I:77556,I:77557;receive=I:77548;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dust-producer-history",
+          "text": "Dust preparation recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77504,
+              "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-77515",
+          "text": "Carry 2 copies of a vial of liquid sunlight",
+          "kind": "carried_item",
+          "item_vnums": [
+            77515
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "The chemist in the crowded laboratory has three declared vials with a cap of three. Each captain requires two copies; doing both requires four, so retained supply and accepted renewal need qualification. Drinking a vial consumes that input. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77524",
+          "text": "Carry a handful of combustable rock dust",
+          "kind": "carried_item",
+          "item_vnums": [
+            77524
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The rock cutter gives this dust and 250 platinum for the refugee's sparkling stones. The engineer and both captains consume matching dust through separate exchanges; one completed producer delivery does not restore spent dust. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77556",
+          "text": "Carry a bucket of rank pool water",
+          "kind": "carried_item",
+          "item_vnums": [
+            77556
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The naga pool has the exact bucket of rank water. Another bucket or water filled elsewhere does not fit this item-kind contract. Its volume and contents need separate qualification before any collection milestone. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77549",
+          "text": "Carry some shamanistic rune stones",
+          "kind": "carried_item",
+          "item_vnums": [
+            77549
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The firbolg shaman carries the handful of glowing runestones. Other magical stones are different proof. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77551",
+          "text": "Carry a witchcraft study guide",
+          "kind": "carried_item",
+          "item_vnums": [
+            77551
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The witchcraft scholar has a fifty-percent declaration in the archive and carries this exact guide. A shared administrative-library copy and global cap of one can affect renewal. Reading its recipe does not replace the book required in the offering. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77557",
+          "text": "Carry a clump of cave monkey fur",
+          "kind": "carried_item",
+          "item_vnums": [
+            77557
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The golden-furred monkey in the animal cave carries the exact tuft of golden fur. The contract does not require a personal kill or a separate harvesting action. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77517,
+              "completion_key": "give=I:77515,I:77515,I:77524,I:77549,I:77551,I:77556,I:77557;receive=I:77548;disappear=0"
+            }
+          ],
+          "hint": "Offer two liquid-sunlight vials and one each of dust, rank-water bucket, glowing runestones, witchcraft guide and golden monkey fur to this captain. The other captain consumes a separate matching bundle and records an independent outcome. This delivery does not prove a duel or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "dlalgarvara-captain-supply",
+      "title": "The Dlalgarvara captain's supplies",
+      "category": "story",
+      "summary": "This captain consumes his own two-vial/six-kind bundle for a helm. The Astral Dancer's receipt does not complete this delivery or restore its materials. Available sunlight and book stock need qualification.",
+      "contracts": [
+        {
+          "giver_vnum": 77518,
+          "completion_key": "give=I:77515,I:77515,I:77524,I:77549,I:77551,I:77556,I:77557;receive=I:77558;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dust-producer-history",
+          "text": "Dust preparation recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77504,
+              "completion_key": "give=I:77523;receive=C:250000,I:77524;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-77515",
+          "text": "Carry 2 copies of a vial of liquid sunlight",
+          "kind": "carried_item",
+          "item_vnums": [
+            77515
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "The chemist in the crowded laboratory has three declared vials with a cap of three. Each captain requires two copies; doing both requires four, so retained supply and accepted renewal need qualification. Drinking a vial consumes that input. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77524",
+          "text": "Carry a handful of combustable rock dust",
+          "kind": "carried_item",
+          "item_vnums": [
+            77524
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The rock cutter gives this dust and 250 platinum for the refugee's sparkling stones. The engineer and both captains consume matching dust through separate exchanges; one completed producer delivery does not restore spent dust. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77556",
+          "text": "Carry a bucket of rank pool water",
+          "kind": "carried_item",
+          "item_vnums": [
+            77556
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The naga pool has the exact bucket of rank water. Another bucket or water filled elsewhere does not fit this item-kind contract. Its volume and contents need separate qualification before any collection milestone. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77557",
+          "text": "Carry a clump of cave monkey fur",
+          "kind": "carried_item",
+          "item_vnums": [
+            77557
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The golden-furred monkey in the animal cave carries the exact tuft of golden fur. The contract does not require a personal kill or a separate harvesting action. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77551",
+          "text": "Carry a witchcraft study guide",
+          "kind": "carried_item",
+          "item_vnums": [
+            77551
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The witchcraft scholar has a fifty-percent declaration in the archive and carries this exact guide. A shared administrative-library copy and global cap of one can affect renewal. Reading its recipe does not replace the book required in the offering. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "material-77549",
+          "text": "Carry some shamanistic rune stones",
+          "kind": "carried_item",
+          "item_vnums": [
+            77549
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The firbolg shaman carries the handful of glowing runestones. Other magical stones are different proof. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77518,
+              "completion_key": "give=I:77515,I:77515,I:77524,I:77549,I:77551,I:77556,I:77557;receive=I:77558;disappear=0"
+            }
+          ],
+          "hint": "Offer two liquid-sunlight vials and one each of dust, rank-water bucket, glowing runestones, witchcraft guide and golden monkey fur to this captain. The other captain consumes a separate matching bundle and records an independent outcome. This delivery does not prove a duel or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "drandagger-worm-larvae",
+      "title": "Rock-worm larvae for Drandagger",
+      "category": "story",
+      "summary": "Ask hi, hello, help or assistance, then bring the exact larvae nest for 250,000 experience and chainmail. The promised escape tunnel has no extra accepted terminal; Drandagger stays.",
+      "contracts": [
+        {
+          "giver_vnum": 77527,
+          "completion_key": "give=I:77513;receive=E:250000,I:77552;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77513",
+          "text": "Carry a nest of rockworm larvae",
+          "kind": "carried_item",
+          "item_vnums": [
+            77513
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The massive rock worm's nest contains the exact larvae nest. Drandagger accepts that item; the promised tunneling does not create a recorded escape passage. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77527,
+              "completion_key": "give=I:77513;receive=E:250000,I:77552;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact materials together. The recipient stays. This independent delivery does not record personal kills, learned words, first recovery, access, escape or curse removal."
+        }
+      ]
+    },
+    {
+      "id": "smith-sand-lens",
+      "title": "The smith's fine-sand lens commission",
+      "category": "service",
+      "summary": "Ask lens or telescope, then pile, fine or sand for the Aravne source clue. The smith requests matching sand and 25 platinum for a lens. Mixed settlement remains guarded; delivery does not install or repair a telescope.",
+      "contracts": [
+        {
+          "giver_vnum": 77543,
+          "completion_key": "give=C:25000,I:21673;receive=I:77566;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-21673",
+          "text": "Carry a pile of fine sand",
+          "kind": "carried_item",
+          "item_vnums": [
+            21673
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hidden sand elemental in Aravne creates this exact sand through its death procedure. Finding and recovering that output needs source and accounting qualification; supplied matching sand also fits. The lens commission additionally requires 25 platinum. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted service",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77543,
+              "completion_key": "give=C:25000,I:21673;receive=I:77566;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact fine sand together with 25 platinum (25,000 native gold units) for a lens. Mixed item-and-coin settlement remains guarded. Material readiness does not prove payment or installation; this support service has no achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "whetstone-flute-return",
+      "title": "Return Emition's flute to Whetstone",
+      "category": "story",
+      "summary": "Ask Whetstone about metal, recover his hidden electrum and have Emition forge it in the Home of the Divine. Returning the exact flute gives a distinct same-named instrument as Whetstone retires. Earlier forge history is optional.",
+      "contracts": [
+        {
+          "giver_vnum": 77558,
+          "completion_key": "give=I:40778;receive=I:40779;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "emition-producer-history",
+          "text": "Emition forge delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 40712,
+              "completion_key": "give=I:77539;receive=I:40778;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal producer history explains this route. Supplied exact materials fit without it; a receipt cannot replace spent proof or require an all-stage campaign."
+        },
+        {
+          "id": "material-40778",
+          "text": "Carry an angelic electrum flute",
+          "kind": "carried_item",
+          "item_vnums": [
+            40778
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Whetstone's electrum is hidden near Fossil Rock. Take the exact metal to Emition in the Home of the Divine for this flute, then return to Whetstone. Personal forge history is optional. His retained reward has the same name but is a different item kind. Offer materials loose in inventory, rather than worn or inside a container. Possession does not prove personal first recovery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77558,
+              "completion_key": "give=I:40778;receive=I:40779;disappear=1"
+            }
+          ],
+          "hint": "Return Emition's exact flute to Whetstone for his distinct retained flute. He retires; his promise to visit Emition does not record actual travel. Supplied proof fits without your personal forge history."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "The fossil exchange is a same-kind replacement and referral to an unnamed Ultarium cousin, with no reviewed exact follow-up consumer. It is not a quest achievement, unchanged item identity, new source supply or required campaign stage.",
+      "contracts": [
+        {
+          "giver_vnum": 77504,
+          "completion_key": "give=I:77508;receive=I:77508;disappear=0"
+        }
+      ]
+    }
+  ]
+}

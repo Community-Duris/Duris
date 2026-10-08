@@ -1,0 +1,769 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "scorchvalley",
+  "coverage": "complete",
+  "introduction": "Explore ruined Nital, the battle for the valley and the temple rift. Nine exact deliveries remain independent, including foreign trophies and the blood-to-rings-to-necklace route. Active, ready accounting is required; personal recovery, access, prisoner state and full campaigns need additional accepted evidence.",
+  "orientation": [
+    "Enter from the surface lava fields and descend to the shield. The mostly formed golem carries its sharp shard key. The battle and ruined village lead toward the gnoll caves and temple. Discovery or holding a key does not prove successful unlocking, safe passage or a completed quest.",
+    "The mature white dragon carries the temple key. The black wyrm carries the inner-sanctum key, the many-armed demon carries the vault key, and the demonic advisor carries the final chest key. The blood sits inside the locked, pickproof chest in the vault office. These are separate doors and a separate container; keys are optional route guidance when matching blood is supplied.",
+    "The advisor also accepts three independent deliveries: the captive sack, three exact heads, and the bodyguard essence. Killing this carried-key holder can remove the recipient until replacement. Choose a source/recipient episode deliberately; a prior receipt cannot restore a missing character.",
+    "Return the heirloom ring from the hazardous demonic pit to Nital's survivor for Tallin's signet. The same pit has the strip of young demon hide. Ground declarations do not prove a personal kill or skinning event, and the ring is not one of the colored rings of perfection.",
+    "The frost giant upstairs in the ruined home carries the hefty wiggling sack. Examine the two strange columns downstairs for the legs clue. The sack delivery represents a captive in prose, without an escorted NPC or separate capture state.",
+    "Bring the exact local commander head plus Grog's Fields Between head and Zuzon's former dwarven lord head from Torg to the demonic advisor together. Only the tunnel commander carries the accepted head; the other same-named commander carries godly magic. The native recipe is narrower than the clue suggesting either commander.",
+    "Tallin's bodyguard has a holding source that leads into Mount Banishment and carries the essence for the advisor. Returning it narrates plans to bring the bodyguard back without actually resummoning him. Foreign encounters and recovery remain distinct from the accepted Scorched Valley delivery.",
+    "The collector on the overlook accepts two distinct standards plus the pit hide for one object named two bubbles of blazing energy. His separate dragon-charm request uses the abandoned souvenir cart's contents for a scarf. The flaming demon blocks ordinary players' up command while present. Membership and the battle's outcome are narrative rather than extra checked objectives.",
+    "Return godly magic from the other commander to the nervous council advisor in Torg. His holding source leads into that council hallway. The exchange stays owned by Scorched Valley and leaves the recipient present despite the runs-off text; it does not execute the planned curse.",
+    "Bring Tallin's blood to the seeker in the Fields Between raider camp for four distinct colored rings. Then offer those four rings together to the wandering wildmage for a necklace. Each delivery has its own outcome; the earlier receipt is optional producer history and cannot replace worn, nested, missing or spent proof.",
+    "Enter the dimensional rift from Tallin's chamber to the Abyss; its counterpart returns. The full rod object has lore but no verified active assembly terminal or declared reset source. Tallin, the Queen and Miska do not define an extra battle finale. The worn fog wisp responds to say invisible on a cooldown as an item effect, separate from delivery credit.",
+    "Yeenoghu's authored healing and attacks currently reject the server's combat event and are not scheduled periodically. A separate repair must qualify dispatch, callback survival and balance before restoring that behavior. Holding exits and reset caps require live encounter qualification; rare-room prose is not a declared rare reset percentage."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 71201,
+      "name": "the mostly formed golem",
+      "keyword": "golem",
+      "description": "Outside the shield. Carries the sharp shard key for the northern shield door; holding it does not prove entry.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71205,
+      "name": "the survivor of Nital",
+      "keyword": "survivor",
+      "description": "Nital survivor. Ask heirloom, ring, nital or betrayal about the family heirloom from the demonic pit.",
+      "topics": [
+        "horror",
+        "kill",
+        "tallin",
+        "nital",
+        "village",
+        "brain",
+        "divine",
+        "army",
+        "betrayed",
+        "hair",
+        "turncoat",
+        "betrayal",
+        "heirloom",
+        "ring"
+      ]
+    },
+    {
+      "mob_vnum": 71210,
+      "name": "the commander of the heavens",
+      "keyword": "commander",
+      "description": "Commander initially in the burning-barricade tunnel. Carries the exact head for the demonic advisor; the other commander instead supplies godly magic.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71213,
+      "name": "the large demon",
+      "keyword": "demon",
+      "description": "Demonic rally point. Carries Tallin's standard, one of the collector's two distinct banners.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71214,
+      "name": "a lieutenant of the heavens",
+      "keyword": "lieutenant",
+      "description": "Heavenly rally point. Carries the council standard, different from Tallin's standard.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71223,
+      "name": "a demon swathed in flames",
+      "keyword": "demon",
+      "description": "Flaming demon on the overlook trail. Its bound procedure blocks ordinary players' up command while present; this is an access hazard rather than a quest-proof gate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71232,
+      "name": "the mature white dragon",
+      "keyword": "dragon",
+      "description": "Mature white dragon in the caves. Carries the burning hot temple key; the gnoll's description supplies the hiding clue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71234,
+      "name": "the ancient black wyrm",
+      "keyword": "wyrm",
+      "description": "Ancient black wyrm before the inner sanctum. Carries the abyssal key. The neighboring red wyrm does not supply the same key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71236,
+      "name": "the demonic advisor of Tallin",
+      "keyword": "advisor",
+      "description": "Temple vault office. Ask tasks, heads, bodyguard or turncoat about three separate requests; council and chaos topics explain broader lore. Carries the chest key as well. Removing this key holder also removes a recipient until replacement.",
+      "topics": [
+        "tasks",
+        "duties",
+        "tallin",
+        "worries",
+        "problem",
+        "torg",
+        "grog",
+        "commander",
+        "heads",
+        "head",
+        "dwarven",
+        "heaven",
+        "yeenoghu",
+        "thrym",
+        "council",
+        "gods",
+        "miska",
+        "queen",
+        "chaos",
+        "abyss",
+        "bodyguard",
+        "mount",
+        "banishment",
+        "prison",
+        "essence",
+        "betrayal",
+        "betrayer",
+        "sack",
+        "giant",
+        "frost",
+        "turncoat"
+      ]
+    },
+    {
+      "mob_vnum": 71239,
+      "name": "Tallin, the goddess of destruction",
+      "keyword": "tallin",
+      "description": "Temple rift chamber. The goddess's destructive plans are world lore. No reviewed terminal assembles seven rod parts or resolves the entire battle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71243,
+      "name": "the Queen of Chaos",
+      "keyword": "queen",
+      "description": "Abyss throne. The Queen of Chaos and her followers explain the rift conflict; encountering or fighting her is not an authored delivery completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71244,
+      "name": "Miska, the Wolf Spider",
+      "keyword": "miska",
+      "description": "Follows the Queen of Chaos and carries Disintegrator. Rod-of-seven-parts lore does not establish an active assembly quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71246,
+      "name": "an enormous frost giant",
+      "keyword": "giant",
+      "description": "Frost giant upstairs in the ruined home. Carries the captive sack; downstairs columns are his legs. Native proof is the exact sack object.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71247,
+      "name": "the collector",
+      "keyword": "collector",
+      "description": "Valley overlook beyond the flaming demon. Ask standards, hide, charm or dragon about two independent historical collections.",
+      "topics": [
+        "battle",
+        "sack",
+        "collecting",
+        "collect",
+        "history",
+        "empty",
+        "odds",
+        "ends",
+        "cataloguing",
+        "catalogue",
+        "standards",
+        "standard",
+        "hide",
+        "charm",
+        "dragon",
+        "nital",
+        "town",
+        "souveneir",
+        "white",
+        "historian"
+      ]
+    },
+    {
+      "mob_vnum": 71248,
+      "name": "the bodyguard of Tallin",
+      "keyword": "bodyguard",
+      "description": "Holding source leads down into Mount Banishment. Carries the essence; actual wandering encounter, recovery and a resummoned bodyguard need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71249,
+      "name": "the fog feeding off of death",
+      "keyword": "fog",
+      "description": "Outdoor dispersal source. Carries the wisp of deadly fog; when worn, its shared procedure responds to say invisible with a cooldown. This item effect is separate from quest credit.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71253,
+      "name": "the nervous advisor to the council",
+      "keyword": "advisor",
+      "description": "Holding source leads into Torg's council hallway. Ask component, commander or council about godly magic. Completion remains owned by Scorched Valley; the native exchange leaves him present. After discovering The Scorched Valley, open that zone's journal for this request.",
+      "topics": [
+        "component",
+        "task",
+        "spell",
+        "head",
+        "commander",
+        "scorched",
+        "valley",
+        "heaven",
+        "forces",
+        "force",
+        "torg",
+        "council",
+        "councilor",
+        "counsel",
+        "counselor",
+        "councilors"
+      ]
+    },
+    {
+      "mob_vnum": 71254,
+      "name": "the many-armed demon",
+      "keyword": "demon",
+      "description": "Before the vault. Carries the vault key for the northern door, different from the advisor's chest key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71255,
+      "name": "the commander of the heavens",
+      "keyword": "commander",
+      "description": "Other same-named commander, initially on the village path. Carries godly magic for the council advisor, not the head for Tallin's advisor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71256,
+      "name": "the seeker from Torg",
+      "keyword": "seeker",
+      "description": "Holding source leads into the Fields Between raider camp. Ask blood, vial or torg about the sample; one bottle gives four distinct colored rings. After discovering The Scorched Valley, open that zone's journal for this request.",
+      "topics": [
+        "something",
+        "search",
+        "searching",
+        "torg",
+        "council",
+        "blood",
+        "vial",
+        "holy",
+        "talling",
+        "grog",
+        "sacred",
+        "plot",
+        "leads",
+        "seek",
+        "seeking"
+      ]
+    },
+    {
+      "mob_vnum": 71257,
+      "name": "the elderly wildmage",
+      "keyword": "wildmage",
+      "description": "Wanders from an outdoor dispersal source. Ask rings or search. Four distinct colors give a necklace; the promise of further searching has no extra reviewed delivery.",
+      "topics": [
+        "rings",
+        "ring",
+        "search",
+        "quest",
+        "look",
+        "my",
+        "daft",
+        "wildmage",
+        "mage"
+      ]
+    },
+    {
+      "mob_vnum": 71259,
+      "name": "Yeenoghu, the prince of gnolls",
+      "keyword": "yeenoghu",
+      "description": "Boss dispersal source leads into the Abyss and also has holding exits. Its authored special rejects the combat event and declines periodic scheduling; restoring it is pending dispatch, safety and balance qualification. Combat is separate from delivery credit.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "survivor-heirloom",
+      "title": "A family heirloom for Nital's survivor",
+      "category": "story",
+      "summary": "Recover the exact heirloom ring from the demonic pit and return it to the survivor for Tallin's signet. He stays. The exchange offers remembrance without checking emotional recovery or renewed faith.",
+      "contracts": [
+        {
+          "giver_vnum": 71205,
+          "completion_key": "give=I:71205;receive=I:71218;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71205",
+          "text": "Carry an heirloom ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            71205
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact heirloom ring lies on the ground in the demonic pit, inside the temple. It is a quest prop, different from the four colored rings of perfection. Recovery and safe passage through the hazardous pit need their own evidence. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71205,
+              "completion_key": "give=I:71205;receive=I:71218;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "advisor-turncoat",
+      "title": "The turncoat's sack for the advisor",
+      "category": "request",
+      "summary": "Bring the frost giant's hefty wiggling sack to Tallin's demonic advisor for the pulsating heart. He stays. The native item delivery narrates a prisoner; it does not check capture, escort or continuing prisoner state.",
+      "contracts": [
+        {
+          "giver_vnum": 71236,
+          "completion_key": "give=I:71212;receive=I:71213;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71212",
+          "text": "Carry a hefty wiggling sack",
+          "kind": "carried_item",
+          "item_vnums": [
+            71212
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The enormous frost giant upstairs in the ruined home carries this sack. The strange columns downstairs are his legs and provide an examination clue. The sack represents a captive in prose; this delivery does not check capture, an escorted NPC, or prisoner state. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71236,
+              "completion_key": "give=I:71212;receive=I:71213;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "advisor-three-heads",
+      "title": "Three exact heads for Tallin's advisor",
+      "category": "story",
+      "summary": "Offer the local commander's head, Grog's head from Fields Between and the former dwarven lord's head from Torg together for Devastation armor. This is one three-item delivery, with no required earlier campaign or personal kill. Only one same-named commander supplies the accepted head.",
+      "contracts": [
+        {
+          "giver_vnum": 71236,
+          "completion_key": "give=I:28980,I:71009,I:71227;receive=I:71226;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71227",
+          "text": "Carry the decapitated head of the commander",
+          "kind": "carried_item",
+          "item_vnums": [
+            71227
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The commander initially in the burning-barricade tunnel carries this head. The other same-named commander carries godly magic instead. The advisor's clue suggests either commander, but this native recipe accepts only this exact head kind. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71009",
+          "text": "Carry the head of Grog",
+          "kind": "carried_item",
+          "item_vnums": [
+            71009
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grog in Fields Between carries his own exact head, initially in the raider camp. This is a foreign source for a Scorched Valley delivery; its recovery is not a Fields Between completion or proof of a personal kill. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-28980",
+          "text": "Carry the head of the former dwarven lord",
+          "kind": "carried_item",
+          "item_vnums": [
+            28980
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Councilor Zuzon in Torg carries the former dwarven lord's head. This is a foreign source for the advisor's three-head bundle, not a Torg quest completion. It does not require an earlier personal Torg campaign. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71236,
+              "completion_key": "give=I:28980,I:71009,I:71227;receive=I:71226;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "advisor-bodyguard-essence",
+      "title": "Return the bodyguard's essence",
+      "category": "story",
+      "summary": "Recover the exact essence from Tallin's bodyguard in Mount Banishment and return it to the demonic advisor for a basilisk eye earring. He stays; native acceptance does not actually resurrect or resummon the bodyguard.",
+      "contracts": [
+        {
+          "giver_vnum": 71236,
+          "completion_key": "give=I:71228;receive=I:71230;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71228",
+          "text": "Carry the essence of Tallin's bodyguard",
+          "kind": "carried_item",
+          "item_vnums": [
+            71228
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tallin's bodyguard carries this essence. Its Scorched Valley holding source leads down into Mount Banishment, where the mobile can wander. Encounter and live supply are not guaranteed at its holding location. The return narrates plans without actually resummoning the bodyguard. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71236,
+              "completion_key": "give=I:71228;receive=I:71230;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "collector-battle-proofs",
+      "title": "Two banners and a hide for history",
+      "category": "story",
+      "summary": "Offer the council standard, Tallin's standard and the pit's young demon hide together for two bubbles of blazing energy, which is one reward object. The collector stays; this does not decide the battle or check a kill or skinning action.",
+      "contracts": [
+        {
+          "giver_vnum": 71247,
+          "completion_key": "give=I:71203,I:71204,I:71219;receive=I:71220;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71219",
+          "text": "Carry a strip of young demon hide",
+          "kind": "carried_item",
+          "item_vnums": [
+            71219
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The strip of young demon hide is a ground reset in the demonic pit alongside the heirloom ring. Its declared source is not a checked kill or skinning event on a young demon. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71203",
+          "text": "Carry the council standard",
+          "kind": "carried_item",
+          "item_vnums": [
+            71203
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lieutenant of the heavens at the heavenly rally point carries the council standard. Tallin's standard is a different kind; two copies of one cannot replace both. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71204",
+          "text": "Carry Tallin's standard",
+          "kind": "carried_item",
+          "item_vnums": [
+            71204
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The large demon at the demonic rally point carries Tallin's standard. The council standard is a different kind. Following golem and demon reset declarations do not change these named banner holders. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71247,
+              "completion_key": "give=I:71203,I:71204,I:71219;receive=I:71220;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "collector-dragon-charm",
+      "title": "Preserve a Nital dragon souvenir",
+      "category": "request",
+      "summary": "Recover the exact charm from the abandoned souvenir cart and bring it to the collector for the historical society scarf. He stays. Narrated membership does not create a separate society rank or dues record.",
+      "contracts": [
+        {
+          "giver_vnum": 71247,
+          "completion_key": "give=I:71250;receive=I:71251;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71250",
+          "text": "Carry a small souvenir charm of the Nital dragon",
+          "kind": "carried_item",
+          "item_vnums": [
+            71250
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The abandoned souvenir cart in the ruined village contains the exact Nital dragon charm. Recover it from the cart; the cart itself is not an offering. Dialogue about former sales does not establish a current shop. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71247,
+              "completion_key": "give=I:71250;receive=I:71251;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "council-godly-magic",
+      "title": "Godly magic for the council advisor",
+      "category": "story",
+      "summary": "Bring godly magic from the other commander to the nervous council advisor in Torg for the glowing pendant of Torg. The native recipient stays despite the success text saying he runs off. This Scorched Valley contract does not execute the proposed curse on the dwarves.",
+      "contracts": [
+        {
+          "giver_vnum": 71253,
+          "completion_key": "give=I:71240;receive=I:71235;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71240",
+          "text": "Carry a detached piece of godly magic",
+          "kind": "carried_item",
+          "item_vnums": [
+            71240
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The other commander of the heavens, initially on the village path, carries godly magic rather than the advisor's required head. Return the component to the council advisor, whose holding source leads into Torg. The accepted contract still belongs to Scorched Valley. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71253,
+              "completion_key": "give=I:71240;receive=I:71235;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "seeker-tallin-blood",
+      "title": "Tallin's blood for four perfect rings",
+      "category": "story",
+      "summary": "Recover Tallin's blood from the locked temple chest and bring it to the seeker, whose holding route leads into Fields Between. He gives one red, blue, green and yellow ring and stays. Supplied blood fits without enforcing a personal key or temple journey.",
+      "contracts": [
+        {
+          "giver_vnum": 71256,
+          "completion_key": "give=I:71239;receive=I:71224,I:71244,I:71245,I:71246;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-71201",
+          "text": "Carry a sharp shard of magic",
+          "kind": "carried_item",
+          "item_vnums": [
+            71201
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mostly formed golem initially outside the shield carries this shard. It is the key for the north shield door from the descent. Possession does not prove unlocking or entering. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71206",
+          "text": "Carry the burning hot key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71206
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mature white dragon in the caves carries the burning hot key. It opens the western temple gate from the gnoll side. Possession does not prove unlocking, dragon defeat or passage. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71208",
+          "text": "Carry the abyssal key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71208
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The ancient black wyrm outside the inner sanctum carries the abyssal key. It opens the northern sanctum doors. The red wyrm carries a different item. Possession does not prove opening or passage. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71236",
+          "text": "Carry the vault key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71236
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The many-armed demon outside the vault carries this key for the northern vault door. It is different from the chest key. Possession does not prove opening or passage. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71237",
+          "text": "Carry the chest key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71237
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tallin's demonic advisor carries this key inside the vault office. The locked, pickproof temple chest contains the blood. The advisor is also the recipient of three independent deliveries: obtaining a carried key by killing him removes that recipient until replacement. Supplied matching blood avoids enforcing that route. Key possession does not prove opening the chest. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71239",
+          "text": "Carry the sacred bottle of Tallin's blood",
+          "kind": "carried_item",
+          "item_vnums": [
+            71239
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The blood is inside the locked, pickproof temple chest in the vault office, with a declared coin stock. Shield, temple, inner-sanctum and vault doors have separate keys; the advisor carries the final chest key. Recover the exact bottle rather than offering coins or the chest. The seeker's holding source leads into the Fields Between raider camp. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71256,
+              "completion_key": "give=I:71239;receive=I:71224,I:71244,I:71245,I:71246;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    },
+    {
+      "id": "wildmage-four-rings",
+      "title": "Four distinct rings for the wildmage",
+      "category": "story",
+      "summary": "Offer one red, blue, green and yellow ring of perfection together for the necklace of perfection. The wandering wildmage stays. The earlier blood delivery is optional producer history; supplied rings fit, and this independent receipt does not complete an all-stage campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 71257,
+          "completion_key": "give=I:71224,I:71244,I:71245,I:71246;receive=I:71248;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "blood-delivery-history",
+          "text": "The seeker's blood delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71256,
+              "completion_key": "give=I:71239;receive=I:71224,I:71244,I:71245,I:71246;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional producer history explains where the four rings can come from. Supplied exact rings fit without this receipt; history cannot replace spent proof or establish first recovery, temple access or a complete campaign."
+        },
+        {
+          "id": "material-71224",
+          "text": "Carry the red ring of perfection",
+          "kind": "carried_item",
+          "item_vnums": [
+            71224
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The seeker gives the red ring for Tallin's blood together with one blue, one green and one yellow ring. Carry all four exact colors for the wildmage; a producer receipt cannot replace a spent or worn ring. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71244",
+          "text": "Carry the blue ring of perfection",
+          "kind": "carried_item",
+          "item_vnums": [
+            71244
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The seeker gives the blue ring for Tallin's blood together with the other three colors. Four copies of one color cannot replace the four distinct rings. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71245",
+          "text": "Carry the green ring of perfection",
+          "kind": "carried_item",
+          "item_vnums": [
+            71245
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The seeker gives the green ring for Tallin's blood together with the other three colors. The wildmage accepts supplied matching rings without requiring your earlier blood delivery. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-71246",
+          "text": "Carry the yellow ring of perfection",
+          "kind": "carried_item",
+          "item_vnums": [
+            71246
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The seeker gives the yellow ring for Tallin's blood together with the other three colors. The elderly wildmage wanders from an outdoor dispersal source; a particular encounter location is not guaranteed. Supplied matching material also fits. Current possession does not prove personal first recovery or a kill. Offer required proof loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71257,
+              "completion_key": "give=I:71224,I:71244,I:71245,I:71246;receive=I:71248;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer all exact required items together. The recipient stays after native acceptance. This delivery owns its independent outcome; dialogue, source recovery, keys, travel, combat and other deliveries are separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

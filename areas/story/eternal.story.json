@@ -1,0 +1,393 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "eternal",
+  "coverage": "complete",
+  "introduction": "Follow the four serpent scales, two independent visage returns, Issis's petition, Vaprak's standard and Flant's books. Keep current materials, accepted returns and unfinished source or access leads distinct.",
+  "orientation": [
+    "Follow six independent returns among the Spires: the Feathered Serpent, two mask makers, Issis, Horanth and Flant. Some native sources and routes need builder review; the journal describes the encoded exchanges without promising that every source is currently accessible.",
+    "The Feathered Serpent accepts four different scales together for an elder key. The Emerald Princess, Eshadow, Xaod and Dendar are the declared scale holders. Each exact scale has its own current count; collecting one scale does not substitute for the others.",
+    "Tix and the ordinary doppleganger each accept the visage of Dendar for a doppleganger mask. These are different giver receipts. One consumed visage cannot pay both makers; obtain another exact visage if you want both returns.",
+    "Ask Issis loss about her petition. She accepts the hide of Kezef for a skull key. The current native files declare the hound but do not configure a source for this exact hide. Her revenge against Slaazh remains a separate lead, not another encoded completion.",
+    "Ask Horanth outrage about the stolen standard. The standard of Vaprak is declared in a hidden vault. Its accepted return yields horns of Vaprak. The request to kill every lizard in the temple does not create a tracked kill count.",
+    "Flant accepts three different books together for his arquebuse. The books are declared on a dining table, in the hidden vault and in the library. His captivity and weapon plans do not encode a separate rescue or weapon-use quest.",
+    "Required books, scales, visage and hide lack normal pickup flags. Direct floor or floor-corpse recovery may be refused. Recovering an item from your own carried container can behave differently; a supplied exact item also fits the native return. Current custody does not prove how you obtained it.",
+    "Prepare every requested item loose in your inventory before offering a matching item. A four-scale or three-book return consumes its full exact set. Worn, held, nested or spent items do not fill current preparation counts; an accepted receipt remains recorded after the inputs are gone.",
+    "The naga switch is declared in the gauntlet and targets the east wall at the naga sigil. The shadow switch is declared at the shadow rune and targets the west wall at the shadow sigil. PULL the visible matching switch, then SEARCH the unblocked secret passage and cross it when admitted.",
+    "A switch opens only its configured near-side blockage. In particular the naga passage can remain blocked from the reverse side. Arrival, a reset and return travel are separate from pressing words or merely seeing a switch.",
+    "The Witch King carries an emerald key for the locked emerald approach. Issis rewards the skull key for Slaazh's door. The Feathered Serpent rewards the elder key for the elder gate. Emerald and elder keys break after a successful unlock; keep usable keys loose or held.",
+    "The current registered room graph has no outside entrance or incoming object portal. Even assuming arrival in the foyer, selected keys and switches do not connect every section. Dendar and Kezef occupy a separate section. Builders must qualify an intended arrival and source route before these leads promise a complete trip.",
+    "The Elf-Eater, summoning circle, sacrifices, captive emissaries and nightmare scenes supply story context. No selected rescue, conversion, sun-restoration, hide-carving or summoning terminal is encoded. A monster name, item description or spoken topic alone is not an achievement.",
+    "Declared reset locations are leads, not guaranteed stock. Current active accounting declines native reset item issuance. Daily rollover does not create materials, reconnect rooms or settle rewards. New discovery, encounter, journal, achievement and daily progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 135402,
+      "name": "Sss'yin'tia'saminass, the Feathered Serpent",
+      "keyword": "serpent",
+      "description": "Bring all four exact scales loose for the elder key. Current source and access gaps remain documented.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135440,
+      "name": "Tix, the horrified doppleganger",
+      "keyword": "tix",
+      "description": "Tix accepts the exact visage of Dendar for a mask. The other doppleganger has a separate receipt and needs another visage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135441,
+      "name": "Issis, the Queen of the Fanged Kingdom",
+      "keyword": "issis",
+      "description": "Ask loss, then bring the exact hide for the skull key. Its native source is currently unconfigured; Slaazh revenge is a separate lead.",
+      "topics": [
+        "loss"
+      ]
+    },
+    {
+      "mob_vnum": 135442,
+      "name": "Horanth, the Champion of Vaprak",
+      "keyword": "horanth",
+      "description": "Ask outrage and return the exact standard for the horns. The dialogue request to kill all lizards is not a completion predicate.",
+      "topics": [
+        "outrage"
+      ]
+    },
+    {
+      "mob_vnum": 135443,
+      "name": "Flant, the Priest of Gond, the Wonderbringer",
+      "keyword": "flant",
+      "description": "Bring all three exact books loose for the arquebuse. Current floor pickup flags need builder review; captivity is context.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135444,
+      "name": "a doppleganger",
+      "keyword": "doppleganger",
+      "description": "This maker also accepts the visage of Dendar, but its receipt is independent of Tix. One consumed item cannot supply both.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135407,
+      "name": "Ss'thar'tiss'ssun, the Emerald Princess",
+      "keyword": "princess",
+      "description": "Declared emerald-scale holder. The Witch King carries the access key; existing source recovery and a supplied scale remain distinct.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135400,
+      "name": "Eshadow, the Shadow Serpent",
+      "keyword": "eshadow",
+      "description": "Declared shadow-scale holder. The shadow switch opens its targeted wall; actual passage discovery and source recovery remain separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135414,
+      "name": "Xaod, the Death Serpent",
+      "keyword": "xaod",
+      "description": "Declared death-scale holder. Necromantic research and the assistant's trophy are separate from the scale return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135411,
+      "name": "Dendar, the Night Serpent",
+      "keyword": "dendar",
+      "description": "Declared night-scale and visage holder. This section lacks a qualified normal route from the foyer; nightmare lore supplies no extra return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135412,
+      "name": "Kezef, the Chaos Hound",
+      "keyword": "kezef",
+      "description": "The hound is declared here, but its exact hide has no configured source. Generic corpse creation or carving does not supply that prototype.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 135408,
+      "name": "Terpenzi, the Witch King",
+      "keyword": "terpenzi",
+      "description": "Declared emerald-key holder. Successful unlock consumes this breakable key; the Witch King's research is a separate scene.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "four-serpent-scales",
+      "title": "Gather the four serpent scales",
+      "category": "request",
+      "summary": "The Feathered Serpent exchanges four different exact scales together for the elder key. Sources and route availability remain separate from this receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 135402,
+          "completion_key": "give=I:135451,I:135452,I:135453,I:135454;receive=I:135459;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "death-scale",
+          "text": "Carry the death-serpent scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135451
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Xaod carries this exact scale when stocked. A supplied scale fits; neither a new kill nor a research outcome is required."
+        },
+        {
+          "id": "night-scale",
+          "text": "Carry the night-serpent scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135452
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Dendar carries it when stocked, in a section without a qualified route from the foyer. Current possession does not establish access."
+        },
+        {
+          "id": "shadow-scale",
+          "text": "Carry the shadow-serpent scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135453
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Eshadow carries it when stocked. PULL the shadow switch and SEARCH its unblocked passage for the source route lead."
+        },
+        {
+          "id": "emerald-scale",
+          "text": "Carry the emerald-serpent scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135454
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Emerald Princess carries it when stocked. The emerald approach uses the Witch King's breakable key."
+        },
+        {
+          "id": "return",
+          "text": "Record the four-scale return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135402,
+              "completion_key": "give=I:135451,I:135452,I:135453,I:135454;receive=I:135459;disappear=0"
+            }
+          ],
+          "hint": "Consumes all four exact loose scales in one accepted return. The elder key, source history, gate unlock and arrival are separate outcomes."
+        }
+      ]
+    },
+    {
+      "id": "tix-visage",
+      "title": "Bring Dendar's visage to Tix",
+      "category": "request",
+      "summary": "Tix exchanges the exact visage of Dendar for a mask. The other maker has its own independent return.",
+      "contracts": [
+        {
+          "giver_vnum": 135440,
+          "completion_key": "give=I:135442;receive=I:135427;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "visage",
+          "text": "Carry Dendar's visage loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135442
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Dendar is the declared holder. Normal corpse pickup flags and the source route need review; a supplied exact visage fits."
+        },
+        {
+          "id": "return",
+          "text": "Record Tix's visage return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135440,
+              "completion_key": "give=I:135442;receive=I:135427;disappear=0"
+            }
+          ],
+          "hint": "Only Tix's accepted exchange records this card. Seeing horrors, wearing a mask or the other maker's receipt does not complete it."
+        }
+      ]
+    },
+    {
+      "id": "issis-hide",
+      "title": "Answer Issis's petition",
+      "category": "request",
+      "summary": "Issis exchanges Kezef's exact hide for the skull key. No native source for this hide is currently configured.",
+      "contracts": [
+        {
+          "giver_vnum": 135441,
+          "completion_key": "give=I:135440;receive=I:135458;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hide",
+          "text": "Carry Kezef's hide loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135440
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hound is declared, but its death does not currently issue this exact prototype. Generic carving produces a different item."
+        },
+        {
+          "id": "return",
+          "text": "Record Issis's hide return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135441,
+              "completion_key": "give=I:135440;receive=I:135458;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact hide return records this card. Asking loss, killing the hound, obtaining a key or attacking Slaazh does not substitute."
+        }
+      ]
+    },
+    {
+      "id": "vaprak-standard",
+      "title": "Recover Vaprak's stolen standard",
+      "category": "request",
+      "summary": "Horanth exchanges the exact standard from the hidden vault for horns of Vaprak. His further revenge request is dialogue.",
+      "contracts": [
+        {
+          "giver_vnum": 135442,
+          "completion_key": "give=I:135455;receive=I:135428;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "standard",
+          "text": "Carry the standard of Vaprak loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135455
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hidden vault is the declared floor source when stocked. Supplied current standard custody also fits; book stock there is separate."
+        },
+        {
+          "id": "return",
+          "text": "Record Horanth's standard return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135442,
+              "completion_key": "give=I:135455;receive=I:135428;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted standard return records this card. Asking outrage, killing temple residents or wearing the horns supplies no extra receipt."
+        }
+      ]
+    },
+    {
+      "id": "flant-books",
+      "title": "Recover Flant's three books",
+      "category": "request",
+      "summary": "Flant exchanges three different exact books together for an arquebuse. Native floor pickup restrictions remain a builder follow-up.",
+      "contracts": [
+        {
+          "giver_vnum": 135443,
+          "completion_key": "give=I:135437,I:135438,I:135439;receive=I:135435;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "first-book",
+          "text": "Carry the vault book loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135437
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared in the hidden vault. This non-takeable floor book currently needs its intended acquisition path qualified."
+        },
+        {
+          "id": "second-book",
+          "text": "Carry the library book loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135438
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared in the library. Its current loose count is separate from finding the room, reading lore or source provenance."
+        },
+        {
+          "id": "third-book",
+          "text": "Carry the dining-table book loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135439
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared on the dining table. Normal floor pickup is restricted; a supplied exact book can prepare the native return."
+        },
+        {
+          "id": "return",
+          "text": "Record Flant's three-book return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135443,
+              "completion_key": "give=I:135437,I:135438,I:135439;receive=I:135435;disappear=0"
+            }
+          ],
+          "hint": "Consumes all three exact loose books in one accepted exchange. There is no encoded partial deposit, crafting delay, rescue or weapon-use terminal."
+        }
+      ]
+    },
+    {
+      "id": "doppleganger-visage",
+      "title": "Bring Dendar's visage to the other maker",
+      "category": "request",
+      "summary": "The ordinary doppleganger has an independent visage-for-mask return. Obtain a fresh visage after paying Tix.",
+      "contracts": [
+        {
+          "giver_vnum": 135444,
+          "completion_key": "give=I:135442;receive=I:135427;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "visage",
+          "text": "Carry Dendar's visage loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            135442
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The same prototype can prepare either maker's return. One consumed root cannot fund both; current preparation is not personal source evidence."
+        },
+        {
+          "id": "return",
+          "text": "Record the other maker's visage return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 135444,
+              "completion_key": "give=I:135442;receive=I:135427;disappear=0"
+            }
+          ],
+          "hint": "Only this maker's accepted exchange records this card. Tix's receipt and the identically named mask do not credit it."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -42,7 +42,7 @@ int main()
 	for (unsigned pid = 1; pid < 30; ++pid)
 		state.remember_character(1, pid, std::string(128, 'x'));
 	const auto healthy = state.serialize_state();
-	assert(healthy.starts_with("ZSQF|1\n") && healthy.size() > 29 * 128);
+	assert(healthy.starts_with("ZSQF|3\n") && healthy.size() > 29 * 128);
 	size_t injected_failures = 0;
 	bool completed = false;
 	for (size_t index = 1; index < 500; ++index)

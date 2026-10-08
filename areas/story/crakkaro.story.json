@@ -1,0 +1,833 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "crakkaro",
+  "coverage": "complete",
+  "introduction": "Explore the forest, temple prison and icy caverns of Crakkaros' Liar. Six story outcomes and five independent services cover eleven native exchanges. Active, ready accounting is required. Exact supplied proof fits without personal collection history; dialogue, access, burial, rescue and dragon victory need separately qualified events.",
+  "orientation": [
+    "Meet the actual recipients before asking their addressed words. The centaur starts as the sleek elf's mount; hello and drow/dark reveal clues. Burnhard answers hello, yes, no and parts. The woman answers lover, paladin/paladins and statue. Keywords are guidance rather than separate achievements.",
+    "Return the dark drow's exact centaur tail for a saddle. The drow can wander, and the mounted centaur's reset origin is not a guaranteed current room. The centaur's existing equipped saddle is a separate object from a later reward. Tail acceptance does not certify hunting, burial, rescue or using the saddle.",
+    "Burnhard's ogre chain begins with five distinct prison parts: finger, toe, eye, ear and nose, spread between five ogres. He makes a shield, then independently consumes shield for bracer, bracer for ring, and ring for earring. Supplied matching intermediate equipment fits without earlier personal receipts; recorded history does not restore consumed proof.",
+    "Burnhard also independently accepts red-dragon scale plus tooth, three different dragonkin parts, illithid head plus arm, or three different bantu-devil parts. These commissions do not require the ogre story. Each bundle draws different parts from different declared prison instances; duplicates cannot substitute for another kind.",
+    "The seventeen-fur request pays one hundred platinum. It is not a payment from the player. Deer, squirrels, does and rabbits have shared capped fur sources, but the requested bundle exceeds the current fourteen-item durable limit. Carrying seventeen pieces may show inventory readiness while the payment itself remains guarded pending durable support.",
+    "The woman's four badges have identical visible names but distinct identities. Maial and a paladin supply one kind, Malinok and a paladin another, Burnherf and a paladin the third; the fourth required kind is in a bookshelf. Another badge in the prison-guard corpse is a different kind and does not fit. The journal's separate source labels help explain these differences.",
+    "The bookshelf badge is inside one instance of a bookshelf prototype used throughout the temple. The shared reset selects an existing matching container, not a permanent room-specific shelf. Retrieve the item loose; a badge still inside a shelf, corpse or equipment slot does not satisfy carried proof.",
+    "The woman gives a key made of ice, then leaves. In this reset-mode-zero zone her native contract is story only. Receiving that key does not finish a lover rescue, cavern exploration or dragon victory. The key's usable keywords are ice and white; its visible name alone is not its command alias.",
+    "Find the secret basement route and use the exact ice key to unlock, then open it. This key breaks on use. The ice sculpture is bound to an envy switch that clears a block, but the current route is reset secret and locked without that block. Do not require the sculpture as a verified passage prerequisite; its intended interaction needs builder review.",
+    "Different access routes need different keys: the main gate has a persistent steel key, the watch-tower and northwestern underground route have a persistent small key, the tower-study keys break on use, and the prison keys also break on use. The ice key opens a different secret cavern route. Unlocking, opening and arriving are separate successful actions.",
+    "Crakkaros, the ice guardians and declared treasure are beyond the tunnel and caverns. Glyphs have trap metadata, not a mapped victory objective. A staircase also connects the lair area to the watch-tower underside. No native defeat, treasure-acquisition or complete-temple finale is awarded by a badge receipt.",
+    "The forest's southern exit names a room absent from the active static area inventory; an inactive ocean-map source contains it. Intended live world assembly and entry/return routes need qualification. Do not infer safe access or a repaired connection from historical files.",
+    "Nine native contracts retain potential daily shape because their recipients stay. Authoring the four independent part commissions as services leaves five story daily candidates. The guarded fur payment is unsupported, and the departing woman is story only. Candidate shape does not promise renewed stock, surviving recipients or a playable repeat in a zone without automatic resets."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 87000,
+      "name": "a burly centaur",
+      "keyword": "burly",
+      "description": "Burly centaur starts as the sleek elf's mount on the forest path. Return his brother's exact tail; burial is narrated rather than a separate accepted objective.",
+      "topics": [
+        "hello",
+        "drow",
+        "dark"
+      ]
+    },
+    {
+      "mob_vnum": 87001,
+      "name": "a sleek elf",
+      "keyword": "sleek",
+      "description": "Sleek elf starts mounted on the burly centaur. Following equipment and inventory resets target the loaded centaur; its existing saddle does not pre-complete the tail delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87005,
+      "name": "A dark drow",
+      "keyword": "dark",
+      "description": "Wandering dark drow in the temple carries the exact centaur tail.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87014,
+      "name": "Burnhard",
+      "keyword": "burnhard",
+      "description": "Burnhard in the grass hut explains prison parts. Four ogre stages form a linked story; four other commissions and the guarded fur payment are independent services.",
+      "topics": [
+        "hello",
+        "yes",
+        "no",
+        "parts"
+      ]
+    },
+    {
+      "mob_vnum": 87013,
+      "name": "a ravishing ogre",
+      "keyword": "ogre",
+      "description": "Five ravishing ogres in one prison cell have five different parts between them.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87016,
+      "name": "a red dragon",
+      "keyword": "dragon",
+      "description": "Two red dragons in a prison cell separately supply the scale and tooth.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87017,
+      "name": "a dragonkin",
+      "keyword": "dragonkin",
+      "description": "Three dragonkin in a prison cell separately supply ear, skin and foot.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87018,
+      "name": "an illithid",
+      "keyword": "illithid",
+      "description": "Two prison illithids separately supply a head and an arm.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87020,
+      "name": "a bantu devil",
+      "keyword": "devil",
+      "description": "Older bantu devil has the exact horn; younger devils supply eye and hand.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87021,
+      "name": "a bantu devil",
+      "keyword": "devil",
+      "description": "Two younger bantu devils separately have the exact eye and hand.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87030,
+      "name": "a wailing woman",
+      "keyword": "woman",
+      "description": "Wailing woman in the basement asks about lover, paladins and statue. Four distinct badges give the ice key, then she leaves. No lover rescue or dragon-victory receipt is supplied.",
+      "topics": [
+        "lover",
+        "paladin",
+        "paladins",
+        "statue"
+      ]
+    },
+    {
+      "mob_vnum": 87011,
+      "name": "Maial",
+      "keyword": "maial",
+      "description": "Maial wears one required badge kind in the northeastern tower study.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87006,
+      "name": "Malinok",
+      "keyword": "malinok",
+      "description": "Malinok wears a different required badge kind in the northwestern tower study.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87008,
+      "name": "Burnherf",
+      "keyword": "burnherf",
+      "description": "Burnherf carries the third required badge kind in the forest watch tower.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87025,
+      "name": "a temple paladin",
+      "keyword": "paladin",
+      "description": "Temple paladins in the small quarters can supply alternatives to Maial's and Malinok's badge kinds; declared stock and instance placement matter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87026,
+      "name": "a temple paladin",
+      "keyword": "paladin",
+      "description": "A temple paladin in the master quarters can supply the alternative Burnherf badge kind.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87034,
+      "name": "a large deer",
+      "keyword": "deer",
+      "description": "Forest deer have declared fur. The guarded payment needs seventeen exact pieces, with shared stock across animal sources.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87035,
+      "name": "a large doe",
+      "keyword": "deer",
+      "description": "Forest does have some declared fur placements; not every doe reset carries it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87003,
+      "name": "a frisky squirrel",
+      "keyword": "squirrel",
+      "description": "Squirrels have declared fur and can wander, including outside the zone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87002,
+      "name": "a small rabbit",
+      "keyword": "rabbit",
+      "description": "Forest rabbits have declared fur; possession does not certify personal hunting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87004,
+      "name": "a gate guard",
+      "keyword": "guard",
+      "description": "Gate guards hold the persistent steel key for the main temple gate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87007,
+      "name": "a tower guard",
+      "keyword": "guard",
+      "description": "Tower guards hold tower keys, while guards below the watch tower hold the persistent small key. These keys open different routes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87012,
+      "name": "a temple prison guard",
+      "keyword": "guard",
+      "description": "Prison guards carry single-use prison keys. Unlocking and opening the main prison or cell gates is separate from a delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87027,
+      "name": "Crakkaros",
+      "keyword": "crakkaros",
+      "description": "Crakkaros and his declared treasure occupy the deepest icy lair. No native dragon-victory or full-campaign contract exists.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87019,
+      "name": "a demon",
+      "keyword": "demon",
+      "description": "Prison demon wears a necklace; no native necklace delivery is defined here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87015,
+      "name": "a hunched orc",
+      "keyword": "orc",
+      "description": "Black orc assassins have equipment. The unused black-heart prototype is not an active quest source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87022,
+      "name": "a goblin",
+      "keyword": "goblin",
+      "description": "Prison goblins have a token on one declared instance; no native token delivery is defined here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87031,
+      "name": "a green dragon",
+      "keyword": "dragon",
+      "description": "Green prison dragons have a tail-tip equipment source, separate from the requested red-dragon scale and tooth.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87036,
+      "name": "a troll",
+      "keyword": "troll",
+      "description": "Prison trolls have a swamp-crown source; it is separate from Burnhard's commissions.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "centaur-brothers-tail",
+      "title": "The centaur's brother",
+      "category": "story",
+      "summary": "Return the dark drow's exact centaur tail for a studded saddle. The burly centaur starts as the sleek elf's mount; the delivery does not record a personal kill, burial or mounting the reward.",
+      "contracts": [
+        {
+          "giver_vnum": 87000,
+          "completion_key": "give=I:87007;receive=I:87000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87007",
+          "text": "Carry a centaur's tail",
+          "kind": "carried_item",
+          "item_vnums": [
+            87007
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The dark drow in the temple carries the centaur's exact tail. Its recovery does not itself prove a personal kill or burial. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87000,
+              "completion_key": "give=I:87007;receive=I:87000;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-ogre-shield",
+      "title": "Burnhard's five-part shield",
+      "category": "story",
+      "summary": "Bring one ogre finger, toe, eye, ear and nose together for a shield. Five different ogres supply the parts. Burnhard later consumes the shield, bracer and ring in three separate exchanges.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87016,I:87017,I:87018,I:87019,I:87020;receive=I:87021;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87016",
+          "text": "Carry an ogre's finger",
+          "kind": "carried_item",
+          "item_vnums": [
+            87016
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One ravishing ogre in the prison has the finger; the five ogres have five different required parts between them. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87017",
+          "text": "Carry an ogre's toe",
+          "kind": "carried_item",
+          "item_vnums": [
+            87017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A different ravishing ogre in the prison has this toe. It cannot replace the finger, eye, ear or nose. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87018",
+          "text": "Carry an ogre's eye",
+          "kind": "carried_item",
+          "item_vnums": [
+            87018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A ravishing ogre in the prison has this eye. A devil eye is a different kind. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87019",
+          "text": "Carry an ogre's ear",
+          "kind": "carried_item",
+          "item_vnums": [
+            87019
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A ravishing ogre in the prison has this ear. A dragonkin ear does not fit. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87020",
+          "text": "Carry an ogre's nose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87020
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A ravishing ogre in the prison has this nose. Bring each of the five ogre kinds together. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87016,I:87017,I:87018,I:87019,I:87020;receive=I:87021;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-ogre-bracer",
+      "title": "Burnhard's second attempt",
+      "category": "story",
+      "summary": "Offer the exact ogre shield for a bracer. This consumes the shield; a matching supplied shield fits without a personal five-part collection.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87021;receive=I:87022;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-59",
+          "text": "Earlier five-part shield delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87016,I:87017,I:87018,I:87019,I:87020;receive=I:87021;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed material or certify every earlier stage."
+        },
+        {
+          "id": "material-87021",
+          "text": "Carry a shield made of ogre parts",
+          "kind": "carried_item",
+          "item_vnums": [
+            87021
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Burnhard gives the exact shield for five distinct ogre parts. Supplied matching shields also fit the next exchange. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87021;receive=I:87022;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-ogre-ring",
+      "title": "Burnhard's better creation",
+      "category": "story",
+      "summary": "Offer the exact ogre bracer for a ring. The bracer exchange is optional supply history rather than a mandatory personal prerequisite.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87022;receive=I:87023;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-73",
+          "text": "Earlier shield-to-bracer exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87021;receive=I:87022;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed material or certify every earlier stage."
+        },
+        {
+          "id": "material-87022",
+          "text": "Carry a bracer made of ogre parts",
+          "kind": "carried_item",
+          "item_vnums": [
+            87022
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Burnhard consumes the ogre shield to make this exact bracer. Its receipt cannot restore a consumed bracer. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87022;receive=I:87023;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-ogre-earring",
+      "title": "Burnhard's final ogre creation",
+      "category": "story",
+      "summary": "Offer the exact ogre ring for an earring. This fourth exchange records its own delivery; a supplied ring does not complete all earlier ogre stages.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87023;receive=I:87024;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-84",
+          "text": "Earlier bracer-to-ring exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87022;receive=I:87023;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional accepted history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed material or certify every earlier stage."
+        },
+        {
+          "id": "material-87023",
+          "text": "Carry a ring made of ogre parts",
+          "kind": "carried_item",
+          "item_vnums": [
+            87023
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Burnhard consumes the ogre bracer to make this exact ring. The illithid ring is a different object. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87023;receive=I:87024;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-dragon-eyepatch",
+      "title": "Dragon-part eyepatch service",
+      "category": "service",
+      "summary": "Bring the different red-dragon scale and tooth together for an eyepatch. This independent commission does not require the ogre chain.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87028,I:87029;receive=I:87030;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87028",
+          "text": "Carry a dragon's scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            87028
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One of the two red dragons in the prison has the scale; another has the tooth. Two scales do not fit. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87029",
+          "text": "Carry a dragon's tooth",
+          "kind": "carried_item",
+          "item_vnums": [
+            87029
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The other red dragon in the prison has the exact tooth. Collect this together with the distinct scale. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87028,I:87029;receive=I:87030;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-dragonkin-whip",
+      "title": "Dragonkin whip service",
+      "category": "service",
+      "summary": "Bring the three distinct dragonkin ear, skin and foot for a whip. Three different prison dragonkin supply them; duplicate kinds do not fit.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87031,I:87032,I:87033;receive=I:87034;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87031",
+          "text": "Carry an ear of a dragonkin",
+          "kind": "carried_item",
+          "item_vnums": [
+            87031
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One of three dragonkin in the prison has this ear; the others have the skin and foot. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87032",
+          "text": "Carry a piece of dragonkin skin",
+          "kind": "carried_item",
+          "item_vnums": [
+            87032
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Another dragonkin in the prison has this exact skin. Bring all three different kinds together. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87033",
+          "text": "Carry a dragonkin's foot",
+          "kind": "carried_item",
+          "item_vnums": [
+            87033
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The third dragonkin in the prison has the foot. Three copies of one dragonkin part cannot substitute. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87031,I:87032,I:87033;receive=I:87034;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-illithid-ring",
+      "title": "Illithid ring service",
+      "category": "service",
+      "summary": "Bring an exact illithid head and arm together for a glowing ring. This is independent of the ogre ring and its earring continuation.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87035,I:87036;receive=I:87037;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87035",
+          "text": "Carry an illithid's head",
+          "kind": "carried_item",
+          "item_vnums": [
+            87035
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One of the two illithids in the prison has the head; another has the arm. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87036",
+          "text": "Carry an illithid's arm",
+          "kind": "carried_item",
+          "item_vnums": [
+            87036
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The other illithid in the prison has the exact arm. Bring it together with the head. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87035,I:87036;receive=I:87037;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-devil-horns",
+      "title": "Bantu-devil horns service",
+      "category": "service",
+      "summary": "Bring the distinct devil horn, eye and hand for studded horns. The older devil and two younger devils supply different parts.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87039,I:87040,I:87041;receive=I:87042;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87039",
+          "text": "Carry a devils horn",
+          "kind": "carried_item",
+          "item_vnums": [
+            87039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The older bantu devil in the prison has the horn. The two younger devils separately supply the eye and hand. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87040",
+          "text": "Carry a devil's eye",
+          "kind": "carried_item",
+          "item_vnums": [
+            87040
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One younger bantu devil in the prison has the eye. An ogre eye cannot substitute. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87041",
+          "text": "Carry a devil's hand",
+          "kind": "carried_item",
+          "item_vnums": [
+            87041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The other younger bantu devil in the prison has the hand. Offer it together with the distinct horn and eye. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87039,I:87040,I:87041;receive=I:87042;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The recipient stays after acceptance. Actual fresh supply and safe access still govern repeat attempts."
+        }
+      ]
+    },
+    {
+      "id": "burnhard-seventeen-furs",
+      "title": "Seventeen-fur payment (guarded)",
+      "category": "service",
+      "summary": "Burnhard offers one hundred platinum for seventeen exact animal furs. This is a reward, not a fee. The bundle exceeds the current fourteen-item durable limit; possession does not make the payment currently available.",
+      "contracts": [
+        {
+          "giver_vnum": 87014,
+          "completion_key": "give=I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87080",
+          "text": "Carry seventeen pieces of the exact animal fur",
+          "kind": "carried_item",
+          "item_vnums": [
+            87080
+          ],
+          "count": 17,
+          "optional": true,
+          "hint": "Deer, squirrels, does and rabbits have declared fur with a shared stock cap. Burnhard requests seventeen pieces together for a hundred-platinum reward. The current durable offering limit is fourteen, so this payment cannot presently accept the full durable bundle safely. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the payment when durable support is available",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87014,
+              "completion_key": "give=I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080,I:87080;receive=C:100000;disappear=0"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. Seventeen items exceed the fourteen-item durable limit. A ready inventory check describes possession only; the native durable payment remains guarded pending supported batch/recovery work."
+        }
+      ]
+    },
+    {
+      "id": "woman-four-badges",
+      "title": "The woman's four temple badges",
+      "category": "story",
+      "summary": "Bring four different badge kinds for the ice key. Maial, Malinok and Burnherf each have an alternative paladin source; the fourth kind comes from a bookshelf. The woman leaves, and receiving the key does not complete the cavern or dragon campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 87030,
+          "completion_key": "give=I:87044,I:87045,I:87046,I:87047;receive=I:87064;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87044",
+          "text": "Carry Maial's badge kind (or its matching paladin badge)",
+          "kind": "carried_item",
+          "item_vnums": [
+            87044
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maial wears this badge kind; a temple paladin also has a matching kind. The woman's four required badges look identical but are distinct. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87045",
+          "text": "Carry Malinok's badge kind (or its matching paladin badge)",
+          "kind": "carried_item",
+          "item_vnums": [
+            87045
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Malinok wears this badge kind; a temple paladin also has a matching kind. It is different from Maial's badge. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87046",
+          "text": "Carry Burnherf's badge kind (or its matching paladin badge)",
+          "kind": "carried_item",
+          "item_vnums": [
+            87046
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Burnherf and another temple paladin are alternative sources of this third badge kind. Matching names do not make other badges equivalent. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "material-87047",
+          "text": "Carry the bookshelf badge kind",
+          "kind": "carried_item",
+          "item_vnums": [
+            87047
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This fourth required badge kind is placed inside a temple bookshelf. Search the actual shelf contents; its prototype is shared by many shelves, and the reset does not bind the badge to one permanent room. Recover the required proof loose in inventory. Current possession does not distinguish source recovery from a player handoff."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87030,
+              "completion_key": "give=I:87044,I:87045,I:87046,I:87047;receive=I:87064;disappear=1"
+            }
+          ],
+          "hint": "Offer all exact required items together. Only this accepted exchange is recorded; dialogue, kills, first recovery, access, rescue, burial and dragon victory need separate accepted endpoints. The woman leaves after acceptance in this reset-mode-zero zone. Receiving the ice key does not prove unlocking, opening or entering the caverns."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

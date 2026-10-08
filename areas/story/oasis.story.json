@@ -1,0 +1,551 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "oasis",
+  "coverage": "complete",
+  "introduction": "Investigate the village raids and missing miners, help a worried mother, and explore the gnome's independent mixtures and the tower challenge. Exact current materials prepare a request; acceptance records its outcome. New progress requires active, ready accounting.",
+  "orientation": [
+    "ASK mayor about mine or insect, then ASK captain about insects for the suspected burrow. ASK foreman or miner about mine, troubles or miners for the disappearances. These conversations explain the routes; neither referral nor every dialogue keyword is a separate achievement or required receipt.",
+    "The mayor accepts one exact mantis queen heart and one exact demon ambassador wing together for diamond platemail and a vitality cloak. Carry both loose and offer one of them to submit the full bundle. The proofs have separate sources and access routes. Supplied exact proofs fit without your own kills, prior captain conversation or personal door-opening history.",
+    "Search the village's concealed downward passage near its southern wall to reach the burrows. Native searching can reveal the actual shared exit. The royal wall needs the exact royal emblem from a mantis guard captain, or another valid native unlocking or already-open route. That emblem is a key which breaks on native unlocking. It is not one of the mayor's two offerings.",
+    "The mines descend through deeper shafts into undead chambers. Their liches and vampires mutter pieces of the tomb name. At the magical tomb gate, SAY mortazoth can unlock the current locked door when speech is permitted; OPEN the tomb if it remains closed. Another player's opening can already provide access. Speaking a name does not prove that you learned it yourself or defeated the ambassador.",
+    "ASK weeping about crying or kara for her missing daughter. The native rescue accepts the exact carried girl item from the mine alcove for a ruby ring. This is an item-return request rather than an NPC escort. Carry the girl loose to the mother; supplied custody fits without a personal rescue, miner referral, kill or mayor completion.",
+    "ASK gnome about ingredients, potion or potions for five independent mixtures. Fungus alone makes an adrenaline potion; weed+moss+orchid makes green potion; rose+orchid makes swirling potion; moss+weed+rose makes strange elixir; lotus+rose makes sweet smelling potion. Carry each recipe's full exact set loose together. One accepted mixture does not complete the others or leave its spent ingredients available for reuse.",
+    "Village garden stock includes lotus, roses, orchids and weeds. Fungus actually has three limited burrow placements; the gnome describes finding it along the southern wall. Moss has limited burrow and mine stock. Search concealed stock where native visibility requires it. Gifts and existing exact stock fit; generic flowers, herbs, diamonds, potion rewards or historical possession do not replace current ingredients.",
+    "The tower overseer describes a 100 platinum entrance fee for the exact diamond key. Paid key issuance is a service, separate from winning the tower challenge. The five successive gladiators carry distinct emerald, sapphire, golden, ruby and obsidian keys for its later locked routes. Exact supplied keys, native picking or an already-open route can fit where allowed; paying once is not proof of kills or treasury recovery. The accounting payment adapter still needs qualification before this service is available in an active epoch.",
+    "Bargor exchanges the exact remote heart of Bel, orb of unmaking and mystic runed stone tablet together for the Constitution scroll. Other givers consume those same remote materials for different outcomes. The tablet's prose mentions an artifact which Bargor's actual recipe does not require. Its supply and the scroll's claimed stat power remain unresolved; the journal records the declared exchange without promising that reading grants constitution.",
+    "Bargor's forge and enchant remarks are ambient speech. His old epic-training table entry does not establish an available enchant lesson or a quest reward. Jallev's weapon lore, ordinary shops, diamonds, the rune stone, the Oasis memory and the alien-looking object beyond the queen remain separate from these accepted requests.",
+    "Current exact loose materials are preparation. Worn, held, nested, handed-away or spent items do not satisfy those rows, and holding a reward does not prove acceptance. Limited stock, reset timing, shared doors and other players affect availability. Three story receipts contribute achievements and potential dailies; six services remain visible without that credit. New discovery and progress require active, ready accounting; daily eligibility does not guarantee fresh stock."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 78006,
+      "name": "Bargor",
+      "keyword": "bargor",
+      "description": "Bargor accepts the remote three-item scroll exchange. His two forge/enchant remarks are ambient, without ASK topics or a proven lesson.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 78009,
+      "name": "Jallev, the arms master",
+      "keyword": "jallev",
+      "description": "Jallev describes two legendary swords without accepting another quest offering.",
+      "topics": [
+        "doombringer",
+        "avernus"
+      ]
+    },
+    {
+      "mob_vnum": 78010,
+      "name": "the village mayor",
+      "keyword": "mayor",
+      "description": "The mayor describes two village troubles and accepts both exact proofs together.",
+      "topics": [
+        "concerned",
+        "troubles",
+        "trouble",
+        "concern",
+        "help",
+        "mine",
+        "insect",
+        "raids",
+        "raid"
+      ]
+    },
+    {
+      "mob_vnum": 78011,
+      "name": "the captain of the guards",
+      "keyword": "captain",
+      "description": "The captain points toward the concealed burrow; this is an optional lead.",
+      "topics": [
+        "trouble",
+        "troubled",
+        "troubles",
+        "help",
+        "insects",
+        "raid",
+        "insect"
+      ]
+    },
+    {
+      "mob_vnum": 78024,
+      "name": "the tower overseer",
+      "keyword": "overseer",
+      "description": "The overseer offers paid tower access. Buying its key does not prove the challenge is won.",
+      "topics": [
+        "challenge"
+      ]
+    },
+    {
+      "mob_vnum": 78030,
+      "name": "an elderly gnome",
+      "keyword": "gnome",
+      "description": "The gnome offers five independent ingredient mixtures with shared, spent materials.",
+      "topics": [
+        "ingredients",
+        "potion",
+        "potions"
+      ]
+    },
+    {
+      "mob_vnum": 78055,
+      "name": "the mine foreman",
+      "keyword": "foreman",
+      "description": "The foreman describes missing miners and points toward deeper investigation.",
+      "topics": [
+        "mine",
+        "troubles",
+        "happenings",
+        "miners"
+      ]
+    },
+    {
+      "mob_vnum": 78057,
+      "name": "a concerned diamond miner",
+      "keyword": "miner",
+      "description": "The concerned miner provides deeper mine and noise clues.",
+      "topics": [
+        "mine",
+        "troubles",
+        "happenings",
+        "miners",
+        "noise",
+        "listen"
+      ]
+    },
+    {
+      "mob_vnum": 78058,
+      "name": "a weeping villager stands here.",
+      "keyword": "weeping",
+      "description": "The weeping mother accepts the exact carried girl item for a ring; this is not an escort task.",
+      "topics": [
+        "crying",
+        "kara"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "bargor-constitution-scroll",
+      "title": "Bargor: remote power scroll",
+      "category": "story",
+      "summary": "Offer the exact heart, orb and tablet together for the declared Constitution scroll. Its claimed stat effect and tablet supply need builder review.",
+      "contracts": [
+        {
+          "giver_vnum": 78006,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:407;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-32490",
+          "text": "Carry the still-beating heart of Bel",
+          "kind": "carried_item",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared cap-one heart stock belongs to Bel in the Bronze Citadel. Other remote givers consume the same heart. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-26614",
+          "text": "Carry the orb of unmaking",
+          "kind": "carried_item",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Dark in the Negative Material Plane has cap-one equipped orb stock. Remove it from equipped or held custody for this request; other remote givers also consume it. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-402",
+          "text": "Carry a mystic runed stone tablet",
+          "kind": "carried_item",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact tablet has no declared stock source in the active reset closure. Its text mentions an additional artifact, but Bargor's recipe does not require one. Qualification or builder source design remains pending. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Bargor: remote power scroll",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78006,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:407;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mayor-two-proofs",
+      "title": "The mayor: two village troubles",
+      "category": "story",
+      "summary": "Return the exact queen heart and ambassador wing together for two declared rewards. The investigation is explained without requiring personal kills or prior dialogue.",
+      "contracts": [
+        {
+          "giver_vnum": 78010,
+          "completion_key": "give=I:78030,I:78063;receive=I:78066,I:78067;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78030",
+          "text": "Carry the massive, still-beating heart of the mantis queen",
+          "kind": "carried_item",
+          "item_vnums": [
+            78030
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mantis queen carries cap-one exact heart stock in her burrow chamber. Royal-wall access and personal combat are not additional receipt requirements. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78063",
+          "text": "Carry a bloody wing of the demon ambassador",
+          "kind": "carried_item",
+          "item_vnums": [
+            78063
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The demon ambassador carries cap-one wing stock beyond the spoken tomb gate. A matching gift fits without personal defeat. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The mayor: two village troubles",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78010,
+              "completion_key": "give=I:78030,I:78063;receive=I:78066,I:78067;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "overseer-tower-access",
+      "title": "Tower access: paid diamond key",
+      "category": "service",
+      "summary": "The overseer charges 100 platinum for the first tower key. This is paid access, with accounting settlement still pending; it does not prove victory.",
+      "contracts": [
+        {
+          "giver_vnum": 78024,
+          "completion_key": "give=C:100000;receive=I:78007;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-offering",
+          "text": "Complete Tower access: paid diamond key",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78024,
+              "completion_key": "give=C:100000;receive=I:78007;disappear=0"
+            }
+          ],
+          "hint": "The native recipe charges exactly 100000 copper units, matching 100 platinum, for key78007. Active accounting currently refuses this legacy payment; qualify debit, reward issuance and recovery before enabling it. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "gnome-adrenaline",
+      "title": "Gnome mixture: adrenaline potion",
+      "category": "service",
+      "summary": "Exchange one exact fungus for the adrenaline potion.",
+      "contracts": [
+        {
+          "giver_vnum": 78030,
+          "completion_key": "give=I:78015;receive=I:78016;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78015",
+          "text": "Carry some pungent fungus",
+          "kind": "carried_item",
+          "item_vnums": [
+            78015
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Three burrow floor placements supply this exact fungus; the gnome's southern-wall directions need builder review. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gnome mixture: adrenaline potion",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78030,
+              "completion_key": "give=I:78015;receive=I:78016;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "gnome-green",
+      "title": "Gnome mixture: green potion",
+      "category": "service",
+      "summary": "Exchange exact weed, moss and orchid together for green potion.",
+      "contracts": [
+        {
+          "giver_vnum": 78030,
+          "completion_key": "give=I:78018,I:78019,I:78041;receive=I:78040;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78019",
+          "text": "Carry a strange weed",
+          "kind": "carried_item",
+          "item_vnums": [
+            78019
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited weeds load in the village garden. Two mixtures share this exact weed. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78041",
+          "text": "Carry a glowing patch of moss",
+          "kind": "carried_item",
+          "item_vnums": [
+            78041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited moss placements are in a burrow and a deeper mine. Two mixtures share this exact moss. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78018",
+          "text": "Carry an orchid petal",
+          "kind": "carried_item",
+          "item_vnums": [
+            78018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited orchids load in the village garden. Two mixtures share this exact orchid. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gnome mixture: green potion",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78030,
+              "completion_key": "give=I:78018,I:78019,I:78041;receive=I:78040;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "gnome-swirling",
+      "title": "Gnome mixture: swirling potion",
+      "category": "service",
+      "summary": "Exchange exact rose and orchid together for swirling potion.",
+      "contracts": [
+        {
+          "giver_vnum": 78030,
+          "completion_key": "give=I:78017,I:78018;receive=I:78042;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78017",
+          "text": "Carry a rose petal",
+          "kind": "carried_item",
+          "item_vnums": [
+            78017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited roses load in the village garden. Three mixtures share this exact rose, and each acceptance spends its own current ingredient. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78018",
+          "text": "Carry an orchid petal",
+          "kind": "carried_item",
+          "item_vnums": [
+            78018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited orchids load in the village garden. Two mixtures share this exact orchid. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gnome mixture: swirling potion",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78030,
+              "completion_key": "give=I:78017,I:78018;receive=I:78042;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "gnome-elixir",
+      "title": "Gnome mixture: strange elixir",
+      "category": "service",
+      "summary": "Exchange exact moss, weed and rose together for strange elixir.",
+      "contracts": [
+        {
+          "giver_vnum": 78030,
+          "completion_key": "give=I:78017,I:78019,I:78041;receive=I:78043;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78041",
+          "text": "Carry a glowing patch of moss",
+          "kind": "carried_item",
+          "item_vnums": [
+            78041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited moss placements are in a burrow and a deeper mine. Two mixtures share this exact moss. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78019",
+          "text": "Carry a strange weed",
+          "kind": "carried_item",
+          "item_vnums": [
+            78019
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited weeds load in the village garden. Two mixtures share this exact weed. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78017",
+          "text": "Carry a rose petal",
+          "kind": "carried_item",
+          "item_vnums": [
+            78017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited roses load in the village garden. Three mixtures share this exact rose, and each acceptance spends its own current ingredient. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gnome mixture: strange elixir",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78030,
+              "completion_key": "give=I:78017,I:78019,I:78041;receive=I:78043;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "gnome-sweet",
+      "title": "Gnome mixture: sweet smelling potion",
+      "category": "service",
+      "summary": "Exchange exact lotus and rose together for sweet smelling potion.",
+      "contracts": [
+        {
+          "giver_vnum": 78030,
+          "completion_key": "give=I:78017,I:78044;receive=I:78045;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78044",
+          "text": "Carry a lotus blossum",
+          "kind": "carried_item",
+          "item_vnums": [
+            78044
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One limited lotus blossom loads in the village garden. The exact lotus and rose are both required. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "material-78017",
+          "text": "Carry a rose petal",
+          "kind": "carried_item",
+          "item_vnums": [
+            78017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Two limited roses load in the village garden. Three mixtures share this exact rose, and each acceptance spends its own current ingredient. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Gnome mixture: sweet smelling potion",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78030,
+              "completion_key": "give=I:78017,I:78044;receive=I:78045;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mother-kara-return",
+      "title": "A mother: return Kara",
+      "category": "story",
+      "summary": "Return the exact carried girl item to her mother for the declared ruby ring. This accepted item return does not establish a personal escort or rescue history.",
+      "contracts": [
+        {
+          "giver_vnum": 78058,
+          "completion_key": "give=I:78057;receive=I:78068;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-78057",
+          "text": "Carry a dirty and frightened young girl",
+          "kind": "carried_item",
+          "item_vnums": [
+            78057
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "One cap-one exact girl item loads in the mine alcove. Native GET/return custody is distinct from escorting a mobile. Current loose custody is preparation; a gift fits without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete A mother: return Kara",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 78058,
+              "completion_key": "give=I:78057;receive=I:78068;disappear=0"
+            }
+          ],
+          "hint": "Carry the full exact ingredient set loose together and GIVE one requested item to the available giver to submit the recipe. Other recipes and earlier conversations remain optional. Readiness, source access, dialogue and reward possession do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

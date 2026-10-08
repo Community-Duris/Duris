@@ -10,11 +10,11 @@
     "mariadb10_11": "9ec7e9c0c109eaf2a7378fbd94159acc51bf962fcc308f9dcf6fc6fec8dbd32a"
   },
   "migration_head": {
-    "id": "0064_auction_custody_history",
-    "sequence": 64,
-    "apply_checksum": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
-    "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
-    "history_checksum": "8dbe4e1771a71d2eff1d496990d7afcf0a55e8fab932c59838ace4c8eb806fe2"
+    "id": "0056_discovered_zone_daily_state",
+    "sequence": 65,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "6c5f32e982369e7c07ae43c3e585eb5936910e237dce17da8a6a886e68be7e2c"
   },
   "connection": {
     "character_set": "utf8mb4",
@@ -35,20 +35,20 @@
     "dataset_version": 1
   },
   "staging_0045_migration_head": {
-    "id": "0064_auction_custody_history",
-    "sequence": 64,
-    "apply_checksum": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
-    "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
-    "history_checksum": "b2d023f5656a24b152aad61c2cb182fc75922d40eb8d0cc154c81ea7676f78e7"
+    "id": "0056_discovered_zone_daily_state",
+    "sequence": 65,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "7c996bd34e3cba8513fe6a992ed5a3e9fcd55d5d82141d6b4d20f08e03ed2421"
   },
-  "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 65",
+  "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 66",
   "extra_description_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND data_type='binary' AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)),CONCAT(CHAR(39),CHAR(39))),CHAR(96),''),' ',''),'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'",
   "master_0031_migration_head": {
-    "id": "0064_auction_custody_history",
-    "sequence": 64,
-    "apply_checksum": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
-    "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
-    "history_checksum": "07b6774ac624152e0c8b850f884393632d1b933e4485e3658b8da9baddc0c8a2"
+    "id": "0056_discovered_zone_daily_state",
+    "sequence": 65,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "9675a23e6f160702af36ca35386ffdb466ca01fd8c37be469ab07e293afb6e39"
   },
   "auction_active_item_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='auction_item_custody' AND column_name='active_item_uid' AND ordinal_position=11 AND data_type='bigint' AND LOWER(column_type) IN ('bigint unsigned','bigint(20) unsigned') AND is_nullable='YES' AND numeric_precision=20 AND numeric_scale=0 AND LOWER(extra)='stored generated' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CHAR(96),''),' ',''),CHAR(9),''),CHAR(10),''),CHAR(13),''),'(',''),')',''))='casewhenclaimed_atisnullthenitem_uidelsenullend'"
 }

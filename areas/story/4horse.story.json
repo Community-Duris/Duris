@@ -1,0 +1,234 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "4horse",
+  "coverage": "complete",
+  "introduction": "Face the four Horsemen and help the weeping zombie through two independent returns. Exact proof, current preparation, shared access and accepted history have distinct roles.",
+  "orientation": [
+    "The keeper wants one skull from each of War, Death, Famine and Pestilence. Bring all four exact skulls together for a golden vault key. The return is one accepted exchange; no particular boss order or earlier bracelet return is required.",
+    "War, Death, Famine and Pestilence can carry their own distinct skulls in their chambers. Their loot and the other skulls have separate identities. Supplied skulls can fit the return without proving your own hunt, first recovery or victory.",
+    "A silver golem at the entrance carries the large silver key for the keeper's gate. ENTER portal travels to the lands of Apocalypse. The keeper's topic describes respect, but the portal's current command is ENTER; hearing that topic or bowing is not a quest achievement.",
+    "The weeping zombie upstairs in the ruined town wants her old diamond bracelet. Recover it from the rocks at the bottom of the destroyed well. The deadly vampire at the well carries the well key. The bracelet of living water worn by Famine is a different item.",
+    "Return the old diamond bracelet to the zombie for a scratched silver amulet. The accepting zombie departs. This exchange is story-only; the keeper's four-skull exchange is the sole potential daily here. A new daily does not restock skulls, keys or the zombie.",
+    "The tattered scroll in the adventurer's carcass gives a travel clue. PUSH slab at the blue slab reaches another part of the plains; it does not switch off the area's magic restrictions. DREAM fountain at the town fountain returns to the keeper. These travel actions are separate from accepted returns.",
+    "The obscured rubble can be addressed by its keyword: SHOVE rubble opens the blocked northern route. The climb through the garden tree offers another route. The portcullis, castle gate, oak door and groundskeeper's gates each use different keys; shared doors and successful access do not record personal quest receipts.",
+    "The golden vault key opens the keeper's treasure vault. Seeing the monolith, obtaining other vault loot or having another copy of the key does not record the four-skull exchange. The monolith's touch and shared epic/reset outcomes follow their own rules.",
+    "Carry each exact proof item loose. Readiness checks current inventory; worn or nested proof does not replace it. After an accepted return spends its items, its recorded history remains complete. All new journal and quest credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 34502,
+      "name": "the portal keeper",
+      "keyword": "keeper",
+      "description": "The portal keeper accepts all four distinct Horsemen skulls together for the golden vault key. Ask about the horsemen, challenge or portal for context; the configured portal uses ENTER.",
+      "topics": [
+        "horsemen",
+        "horseman",
+        "challenge",
+        "portal"
+      ]
+    },
+    {
+      "mob_vnum": 34503,
+      "name": "a weeping zombie",
+      "keyword": "zombie",
+      "description": "The weeping zombie upstairs wants the old diamond bracelet from the well. Her accepted return grants the scratched silver amulet and she departs; it is a story-only exchange.",
+      "topics": [
+        "hi",
+        "bracelet",
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 34547,
+      "name": "The Horseman of War",
+      "keyword": "horseman",
+      "description": "War in his chamber can carry the skull of war. Brainripper and his other loot are separate from the skull and from the keeper's accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34544,
+      "name": "The Horseman of Death",
+      "keyword": "horseman",
+      "description": "Death in his chamber can carry the skull of death. A skull from another Horseman does not replace this exact proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34545,
+      "name": "The Horseman of Famine",
+      "keyword": "horseman",
+      "description": "Famine in his chamber can carry the skull of famine. His bracelet of living water is not the zombie's old diamond bracelet.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34546,
+      "name": "The Horseman of Pestilence",
+      "keyword": "horseman",
+      "description": "Pestilence in his chamber can carry the skull of pestilence. Meeting him, receiving supplied proof and your own victory are separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34501,
+      "name": "an enormous silver golem",
+      "keyword": "golem",
+      "description": "This silver golem at the entrance carries the large silver key for the keeper's gate. Other golems and the golden vault key have different roles.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34569,
+      "name": "a deadly vampire",
+      "keyword": "deadly",
+      "description": "The deadly vampire at the destroyed well carries the well key. The zombie's bracelet is separately stocked in the rocks below the well.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34537,
+      "name": "a skeleton patrol leader",
+      "keyword": "skeleton",
+      "description": "The patrol leader carries the portcullis key. Shared portcullis access does not replace any skull or bracelet return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34520,
+      "name": "the skeletal warmaster",
+      "keyword": "warmaster",
+      "description": "The warmaster carries the castle gate key. This key and the portcullis key unlock different gates.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34543,
+      "name": "a spectral knight",
+      "keyword": "spectral",
+      "description": "The spectral knight carries the sturdy oak key. This door access is preparation rather than an accepted quest receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34556,
+      "name": "the castle groundskeeper",
+      "keyword": "keeper",
+      "description": "The groundskeeper can carry two groundskeeper keys for separate gates. Copies, shared access and current possession do not establish your own recovery.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "four-horsemen-proof",
+      "title": "Bring the four Horsemen skulls to the keeper",
+      "category": "request",
+      "summary": "Bring the skulls of War, Death, Famine and Pestilence together for the golden vault key. Four preparations lead to one accepted exchange. Another vault key or a visit to the vault does not record this return.",
+      "contracts": [
+        {
+          "giver_vnum": 34502,
+          "completion_key": "give=I:34548,I:34549,I:34550,I:34551;receive=I:34552;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34548",
+          "text": "Carry 1 × the skull of war loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34548
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items, duplicates of another skull and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory."
+        },
+        {
+          "id": "item-34549",
+          "text": "Carry 1 × the skull of death loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34549
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items, duplicates of another skull and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory."
+        },
+        {
+          "id": "item-34550",
+          "text": "Carry 1 × the skull of famine loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34550
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items, duplicates of another skull and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory."
+        },
+        {
+          "id": "item-34551",
+          "text": "Carry 1 × the skull of pestilence loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34551
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items, duplicates of another skull and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34502,
+              "completion_key": "give=I:34548,I:34549,I:34550,I:34551;receive=I:34552;disappear=0"
+            }
+          ],
+          "hint": "Records the accepted native exchange after its proof is spent. Conversation, source recovery, personal victory, travel and another reward copy remain separate. New credit requires active, ready accounting."
+        },
+        {
+          "id": "vault-key-now",
+          "text": "Carry 1 × a golden vault key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34552
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional current readiness to open the vault. Another copy of this key can fit the door without recording this exchange; a spent or stored reward does not erase accepted history."
+        }
+      ]
+    },
+    {
+      "id": "lost-diamond-bracelet",
+      "title": "Return the zombie's lost diamond bracelet",
+      "category": "request",
+      "summary": "Bring the exact old diamond bracelet to the weeping zombie for a scratched silver amulet. The accepting zombie departs; this return is independent of the keeper's campaign and is story-only.",
+      "contracts": [
+        {
+          "giver_vnum": 34503,
+          "completion_key": "give=I:34505;receive=I:34527;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34505",
+          "text": "Carry 1 × an old diamond bracelet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            34505
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items, duplicates of another skull and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34503,
+              "completion_key": "give=I:34505;receive=I:34527;disappear=1"
+            }
+          ],
+          "hint": "Records the accepted native exchange after its proof is spent. Conversation, source recovery, personal victory, travel and another reward copy remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -110,9 +110,18 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
                 "AND ENGINE='InnoDB' AND table_name IN ('economic_baseline_control',"
                 "'economic_baseline_witness','economic_baseline_reservation');")
+            claim_tables_query = (
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name IN ('economic_pending_claim_source',"
+                "'economic_pending_claim_consumption','economic_account_mapping');")
+            native_quest_table_query = (
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name='quest_mobile_native';")
             def empty_restore_sql(query):
                 self.assertTrue(query.startswith("SELECT "))
-                return "3" if query == baseline_tables_query else "0"
+                if query == native_quest_table_query:
+                    return "1"
+                return "3" if query in (baseline_tables_query, claim_tables_query) else "0"
             executor.sql = mock.Mock(side_effect=empty_restore_sql)
             with self.subTest(complete=complete), mock.patch.dict(os.environ, {
                     "DB_NAME": "duris_restore", "DB_SOCKET": "/tmp/disposable.sock"}), \
@@ -194,9 +203,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 61)
+        self.assertEqual(len(manifest.migrations), 65)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0061_economic_baseline_equipment")
+                         "0056_discovered_zone_daily_state")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -334,6 +343,31 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(executor.events, ["lock", "baseline", "unlock"])
         self.assertEqual(executor.rows, rows)
 
+    def test_accounting_prefix_appends_daily_state_and_refuses_old_research_history(self):
+        for path in (runner.DEFAULT_MANIFEST,
+                     ROOT / "migrations/migration_manifest.staging_0045.json",
+                     ROOT / "migrations/migration_manifest.master_0031.json"):
+            manifest = runner.load_manifest(path)
+            rows = [runner.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations]
+            with self.subTest(manifest=path.name):
+                self.assertEqual(len(rows), 65)
+                self.assertEqual(rows[-1].sequence, 65)
+                self.assertEqual(rows[-1].migration_id, "0056_discovered_zone_daily_state")
+                accounting = FakeExecutor(rows[:64])
+                self.assertEqual(runner.run_pending(manifest, accounting),
+                                 ["0056_discovered_zone_daily_state"])
+                self.assertEqual(accounting.rows[:64], rows[:64])
+                self.assertEqual(accounting.rows, rows)
+                old_research = rows[:55] + [replace(rows[-1], sequence=56)]
+                refused = FakeExecutor(old_research)
+                with self.assertRaisesRegex(runner.MigrationContractError, "edited or reordered"):
+                    runner.run_pending(manifest, refused)
+                self.assertEqual(refused.events, ["lock", "baseline", "unlock"])
+                self.assertEqual(refused.rows, old_research)
+
     def test_explicit_staging_manifest_appends_without_rewriting_history(self):
         staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
         rows = [runner.AppliedMigration(
@@ -344,7 +378,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 61)
+        self.assertEqual(len(executor.rows), 65)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
@@ -377,9 +411,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(master, resumed),
                          [item.migration_id for item in master.migrations[31:]])
         self.assertEqual(resumed.rows[:31], prefix)
-        self.assertEqual(len(resumed.rows), 61)
+        self.assertEqual(len(resumed.rows), 65)
         self.assertEqual(resumed.rows[-1].migration_id,
-                         "0061_economic_baseline_equipment")
+                         "0056_discovered_zone_daily_state")
         replay = FakeExecutor(resumed.rows)
         self.assertEqual(runner.run_pending(master, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

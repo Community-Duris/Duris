@@ -1,0 +1,569 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "smokev",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "the-two-dragon-hearts",
+      "title": "The Two Dragon Hearts",
+      "category": "story",
+      "summary": "Ivar asks for Sanrabb's and Dolgar's hearts to end the village's tribute. Bring both together for his limestone bracelet. His talon reward is a separate request; either exchange makes him leave. Supplied hearts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 20239,
+          "completion_key": "give=I:20200,I:20209;receive=I:20207;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20200",
+          "text": "Carry 1 x the heart of Dolgar",
+          "kind": "carried_item",
+          "hint": "Dolgar carries his heart in the southern end of the dragon caves. Bring it with Sanrabb's heart for Ivar's one exchange. A supplied heart is accepted.",
+          "item_vnums": [
+            20200
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-20209",
+          "text": "Carry 1 x the heart of Sanrabb",
+          "kind": "carried_item",
+          "hint": "Sanrabb carries his heart in the dragon caves. Ivar's reward needs this and Dolgar's heart together, despite his account of a first and second delivery. A supplied heart is accepted.",
+          "item_vnums": [
+            20209
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring both dragon hearts to Ivar together",
+          "kind": "completion",
+          "hint": "He awards the well crafted limestone bracelet, then leaves. The talon reward remains a separate request and needs another available Ivar encounter.",
+          "contracts": [
+            {
+              "giver_vnum": 20239,
+              "completion_key": "give=I:20200,I:20209;receive=I:20207;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ivars-talon-reward",
+      "title": "Ivar's Talon Reward",
+      "category": "request",
+      "summary": "Bring Svartalo's bloody talon to Ivar for a blood stained mask. This request is independent of his two-heart exchange. The shaman and magician also need talons; reserve a separate copy for each reward. Ivar leaves after this exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 20239,
+          "completion_key": "give=I:20244;receive=I:20249;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20244",
+          "text": "Carry 1 x a bloody dragon talon",
+          "kind": "carried_item",
+          "hint": "Svartalo carries the bloody talon in the dragon caves. Ivar, Tarlator and Ilvorntas each consume a talon for their own reward. One copy cannot fund all three; check source and recipient availability. Supplied talons are accepted.",
+          "item_vnums": [
+            20244
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring a separate bloody dragon talon to Ivar",
+          "kind": "completion",
+          "hint": "He awards a blood stained mask, then leaves. This does not complete his two-heart request or the shaman and magician requests.",
+          "contracts": [
+            {
+              "giver_vnum": 20239,
+              "completion_key": "give=I:20244;receive=I:20249;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dargast-scales-for-boots",
+      "title": "Dargast's Scales for Boots",
+      "category": "request",
+      "summary": "Dorno offers fine dragonscale boots for Dargast's pile of black scales. His Dolgar warvisor commission is separate and needs a different scale. Dorno leaves after either reward; check that he is present before planning another commission.",
+      "contracts": [
+        {
+          "giver_vnum": 20240,
+          "completion_key": "give=I:20208;receive=I:20206;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20208",
+          "text": "Carry 1 x some black dragon scales",
+          "kind": "carried_item",
+          "hint": "Dargast carries the pile of black scales in the dragon caves. Dorno uses this pile for boots; Dolgar's large single scale belongs to the separate warvisor commission. Supplied scales are accepted.",
+          "item_vnums": [
+            20208
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Dargast's black scales to Dorno for boots",
+          "kind": "completion",
+          "hint": "He awards fine dragonscale boots, then leaves. This item-only trophy commission has no coin fee.",
+          "contracts": [
+            {
+              "giver_vnum": 20240,
+              "completion_key": "give=I:20208;receive=I:20206;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dolgars-scale-for-a-warvisor",
+      "title": "Dolgar's Scale for a Warvisor",
+      "category": "request",
+      "summary": "Dorno offers a black warvisor for Dolgar's large dragon scale. This is a separate trophy commission from his boots. He leaves after the exchange. Supplied scales are accepted; the reward does not require a recorded personal dragon kill.",
+      "contracts": [
+        {
+          "giver_vnum": 20240,
+          "completion_key": "give=I:20214;receive=I:20215;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20214",
+          "text": "Carry 1 x a large dragon scale",
+          "kind": "carried_item",
+          "hint": "Dolgar carries the large dragon scale with his heart in the southern dragon caves. Dorno uses this exact scale for the warvisor, not Dargast's pile of scales. Supplied scales are accepted.",
+          "item_vnums": [
+            20214
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Dolgar's large scale to Dorno for a warvisor",
+          "kind": "completion",
+          "hint": "He awards a black warvisor, then leaves. This item-only trophy commission has no coin fee.",
+          "contracts": [
+            {
+              "giver_vnum": 20240,
+              "completion_key": "give=I:20214;receive=I:20215;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oysteins-traitor-proof",
+      "title": "Oystein's Traitor Proof",
+      "category": "story",
+      "summary": "Oystein remembers Euronymous and asks for the head of the traitor Grishnak. Deliver the exact head for a scintilating necklace and marble quiver. The known source is carried by Diabolus in Tezcat's catacombs; Oystein leaves after rewarding you.",
+      "contracts": [
+        {
+          "giver_vnum": 20241,
+          "completion_key": "give=I:20255;receive=I:20256,I:20257;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20255",
+          "text": "Carry 1 x the head of the traitor Grishnak",
+          "kind": "carried_item",
+          "hint": "Diabolus, Dragon of Darkness carries the head of the traitor Grishnak in the catacombs beneath Tezcat's ruined temple. The trophy's name differs from its carrier. Deliver the head to Oystein in Shairak; supplied proof is accepted.",
+          "item_vnums": [
+            20255
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver Grishnak's head to Oystein in Shairak",
+          "kind": "completion",
+          "hint": "He awards a scintilating necklace and marble quiver, then leaves. The reward records this delivery, without claiming a personal kill in Tezcat.",
+          "contracts": [
+            {
+              "giver_vnum": 20241,
+              "completion_key": "give=I:20255;receive=I:20256,I:20257;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keebos-bunny-hunt",
+      "title": "Keebo's Bunny Hunt",
+      "category": "story",
+      "summary": "Follow Keebo's account of Xertrath into the forest burrow. Deliver Xertrath's head for a lugged spear. Keebo leaves after the exchange. A supplied head qualifies without proving you personally hunted the bunny master.",
+      "contracts": [
+        {
+          "giver_vnum": 20242,
+          "completion_key": "give=I:20210;receive=I:20238;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20210",
+          "text": "Carry 1 x the head of Xertrath",
+          "kind": "carried_item",
+          "hint": "Xertrath, the bunny master carries his head in the forest burrow. Follow the hole beneath the sparse brush into the rabbit warren. A supplied head is accepted.",
+          "item_vnums": [
+            20210
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring Xertrath's head to Keebo",
+          "kind": "completion",
+          "hint": "He awards a lugged spear, then leaves. His epic teaching is a separate support role.",
+          "contracts": [
+            {
+              "giver_vnum": 20242,
+              "completion_key": "give=I:20210;receive=I:20238;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "raltrons-helm-delivery",
+      "title": "Raltron's Helm Delivery",
+      "category": "story",
+      "summary": "Tarlator's helm carries a message for Raltron. Bring the blood soaked helm bearing a skull crest for a scintilating earring and 33333 experience. Obtaining it from Tarlator is one route; a supplied helm is accepted. Raltron leaves after the delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 20243,
+          "completion_key": "give=I:20252;receive=E:33333,I:20258;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-tarlator-route",
+          "text": "Optional: obtain the message-bearing helm from Tarlator",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 20244,
+              "completion_key": "give=I:20244,I:20253;receive=E:181000,I:20252;disappear=1"
+            }
+          ],
+          "hint": "Tarlator's exchange consumes a Tentabeast heart and bloody talon. You may deliver a supplied helm directly; this preparation records that exchange without proving the narrated cure."
+        },
+        {
+          "id": "material-20252",
+          "text": "Carry 1 x a blood soaked helm bearing a skull crest",
+          "kind": "carried_item",
+          "hint": "Tarlator awards this helm for a bloody dragon talon and Tentabeast heart. Delivering a supplied helm is also valid. An earlier reward does not replace the helm if it has since been spent or lost.",
+          "item_vnums": [
+            20252
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver the skull-crested helm to Raltron",
+          "kind": "completion",
+          "hint": "He awards a scintilating earring and 33333 experience, then leaves. Tarlator's earlier exchange is optional preparation when you already have the helm.",
+          "contracts": [
+            {
+              "giver_vnum": 20243,
+              "completion_key": "give=I:20252;receive=E:33333,I:20258;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tarlators-humanity-request",
+      "title": "Tarlator's Humanity Request",
+      "category": "story",
+      "summary": "Tarlator seeks the Tentabeast's heart and Svartalo's bloody talon for his narrated cure. Bring both for his skull-crested helm and 181000 experience. He leaves after the exchange and asks you to take the helm to Raltron. That later delivery has its own reward.",
+      "contracts": [
+        {
+          "giver_vnum": 20244,
+          "completion_key": "give=I:20244,I:20253;receive=E:181000,I:20252;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20244",
+          "text": "Carry 1 x a bloody dragon talon",
+          "kind": "carried_item",
+          "hint": "Svartalo carries the bloody talon in the dragon caves. Ivar, Tarlator and Ilvorntas each consume a talon for their own reward. One copy cannot fund all three; check source and recipient availability. Supplied talons are accepted.",
+          "item_vnums": [
+            20244
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-20253",
+          "text": "Carry 1 x the black heart of a Tentabeast",
+          "kind": "carried_item",
+          "hint": "Malstrog the Tentabeast carries this heart in the southern lake. Prepare for water travel. Tarlator and Ilvorntas each consume a heart; Ravi Bjornson in Alatorin also asks for one with a Bloodbeast heart. Reserve separate copies for each request. Supplied hearts are accepted.",
+          "item_vnums": [
+            20253
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the Tentabeast heart and bloody talon to Tarlator together",
+          "kind": "completion",
+          "hint": "He awards the skull-crested helm and 181000 experience, then leaves. Take the helm to Raltron for that separate delivery; this exchange alone does not record the entire cure or family reunion.",
+          "contracts": [
+            {
+              "giver_vnum": 20244,
+              "completion_key": "give=I:20244,I:20253;receive=E:181000,I:20252;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ilvorntas-trophy-reward",
+      "title": "Ilvorntas's Trophy Reward",
+      "category": "request",
+      "summary": "Ilvorntas asks for the Tentabeast's black heart and a bloody dragon talon for scintilating sleeves. The shaman consumes the same ingredients for a different reward; separate copies are needed to help both. Ilvorntas leaves after his exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 20245,
+          "completion_key": "give=I:20244,I:20253;receive=I:20254;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20244",
+          "text": "Carry 1 x a bloody dragon talon",
+          "kind": "carried_item",
+          "hint": "Svartalo carries the bloody talon in the dragon caves. Ivar, Tarlator and Ilvorntas each consume a talon for their own reward. One copy cannot fund all three; check source and recipient availability. Supplied talons are accepted.",
+          "item_vnums": [
+            20244
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-20253",
+          "text": "Carry 1 x the black heart of a Tentabeast",
+          "kind": "carried_item",
+          "hint": "Malstrog the Tentabeast carries this heart in the southern lake. Prepare for water travel. Tarlator and Ilvorntas each consume a heart; Ravi Bjornson in Alatorin also asks for one with a Bloodbeast heart. Reserve separate copies for each request. Supplied hearts are accepted.",
+          "item_vnums": [
+            20253
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring a separate Tentabeast heart and talon to Ilvorntas",
+          "kind": "completion",
+          "hint": "He awards scintilating sleeves, then leaves. Helping Tarlator does not complete this independent request.",
+          "contracts": [
+            {
+              "giver_vnum": 20245,
+              "completion_key": "give=I:20244,I:20253;receive=I:20254;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forvos-bottle-exchange",
+      "title": "Forvos's Bottle Exchange",
+      "category": "service",
+      "summary": "Forvos offers 181 copper for the village's whiskey bottle and remains available for more. This repeatable supply exchange accompanies his family story. You need the exact bottle; drinking from it yourself is not part of the request.",
+      "contracts": [
+        {
+          "giver_vnum": 20246,
+          "completion_key": "give=I:20245;receive=C:181;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20245",
+          "text": "Carry 1 x a bottle",
+          "kind": "carried_item",
+          "hint": "Otsurd sells the whiskey bottle in the village shop. Some tavern drinkers also carry it. This specific bottle is accepted, rather than every flask or drink container. A supplied bottle is accepted.",
+          "item_vnums": [
+            20245
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the whiskey bottle to Forvos",
+          "kind": "completion",
+          "hint": "He pays 181 copper and stays. His family stories and the bottle supply exchange are separate from the dragon and Tentabeast rewards.",
+          "contracts": [
+            {
+              "giver_vnum": 20246,
+              "completion_key": "give=I:20245;receive=C:181;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-meal-for-azcatlipoca",
+      "title": "A Meal for Azcatlipoca",
+      "category": "request",
+      "summary": "Bring Azcatlipoca the forest's dead animal for a marble snake and 9999 experience. The known animal lies in the forest; any corpse or freshly killed creature will not substitute for this exact item. Azcatlipoca leaves after the meal.",
+      "contracts": [
+        {
+          "giver_vnum": 20273,
+          "completion_key": "give=I:20211;receive=E:9999,I:20250;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20211",
+          "text": "Carry 1 x a dead animal",
+          "kind": "carried_item",
+          "hint": "The dead animal lies within the forest near the lakeward paths. A dead-animal description at the charred tree is scenery, not the carryable source. Recover the actual animal, or bring a supplied copy; freshness and a personal kill are not required.",
+          "item_vnums": [
+            20211
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the actual dead animal to Azcatlipoca",
+          "kind": "completion",
+          "hint": "He awards a marble snake and 9999 experience, then leaves. A corpse, scenery description or unrelated animal does not satisfy this request.",
+          "contracts": [
+            {
+              "giver_vnum": 20273,
+              "completion_key": "give=I:20211;receive=E:9999,I:20250;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Shairak's villagers remember dragon tribute, broken families and a shaman's curse. Explore Smokeveil's forest, caves, burrow and lake for the exact proofs each contact accepts. Their exchanges and reward choices remain separate.",
+  "orientation": [
+    "Start in Shairak: Ivar, Dorno, Keebo, Raltron, Tarlator and Ilvorntas live or work around the village paths. Oystein and Forvos wait in the tavern. Ordinary closed cottage, inn and shop doors can be opened.",
+    "Ask Ivar about sanrabb, dolgar, svartalo and the lottery to understand the village conflict. His heart reward needs both hearts together; his separate talon reward also makes him leave.",
+    "Enter the dragon cave from the forest's big-cave entrance. Dargast carries the pile of scales, Sanrabb his heart, Svartalo the bloody talon, and Dolgar his heart and the large scale. Azcatlipoca waits in the hatchery.",
+    "Beneath the sparse brush, follow the hole into the rabbit warren for Xertrath. Keebo wants the bunny master's head, not another rabbit or a general corpse.",
+    "The Tentabeast waits in the southern lake. Prepare for water travel and check your return route. The lake and forest paths also lead back to the surrounding lands.",
+    "Read the parchment in Tarlator's house and ask about his human curse, offer, heart, scrolls and Raltron. The parchment is readable scenery; you do not need to carry a quest scroll for his exchange.",
+    "Choose how to spend trophies. Ivar, Tarlator and Ilvorntas each consume a bloody talon. Tarlator and Ilvorntas each consume a Tentabeast heart. Completing every request needs three talons and two hearts from separate available supplies.",
+    "Tarlator's helm can then be delivered to Raltron. Each exchange has its own reward; supplied materials and a supplied helm qualify. A reward from an earlier step does not replace an item you have already spent.",
+    "For Oystein's betrayal request, the head named Grishnak has a known carrier in Tezcat: Diabolus in the ruined-temple catacombs. Return the exact trophy to Shairak. The local delivery does not establish a personal foreign kill.",
+    "Ravi Bjornson in Alatorin describes Ivar as his father and seeks vengeance for his injuries. His separate request consumes a Tentabeast heart and a Bloodbeast heart from Raxthan; reserve another heart if following that story.",
+    "Recover the actual dead animal in the forest for Azcatlipoca; the charred tree's animal description is scenery. Forvos accepts Otsurd's whiskey bottle, pays a coin reward and remains available.",
+    "Most request contacts leave after rewarding you. Check their presence and trophy availability before attempting another exchange. Their family histories and promised cures are guidance; these deliveries do not establish a reunion, transformation or every conversation."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 20239,
+      "name": "Ivar Bjornson",
+      "keyword": "ivar",
+      "description": "Ivar rules Shairak from his house. Ask about the dragons, tribute lottery and Raltron. His two-heart and talon rewards are independent, and either makes him leave.",
+      "topics": [
+        "sanrabb",
+        "svartalo",
+        "dolgar",
+        "dargast",
+        "lottery",
+        "raltron"
+      ]
+    },
+    {
+      "mob_vnum": 20240,
+      "name": "Dorno, The Town Blacksmith",
+      "keyword": "dorno",
+      "description": "Dorno works in the forge. Ask about scales, Forvos and the Tentabeast. His two trophy commissions each make him leave; his separate ore-forging purchase is currently unavailable.",
+      "topics": [
+        "boots",
+        "forvos",
+        "malstrog"
+      ]
+    },
+    {
+      "mob_vnum": 20241,
+      "name": "Oystein Eithun",
+      "keyword": "oystein",
+      "description": "Oystein waits in the tavern. Ask about Euronymous for the betrayal story, then bring the exact Grishnak head for his two equipment rewards.",
+      "topics": [
+        "euronymous"
+      ]
+    },
+    {
+      "mob_vnum": 20242,
+      "name": "Keebo, The Great Hunter",
+      "keyword": "keebo",
+      "description": "Keebo waits in his cottage. Ask about Xertrath for the burrow hunt. His separate Improved Track teaching requires prior skill and eligibility; purchases are currently unavailable.",
+      "topics": [
+        "xertrath"
+      ]
+    },
+    {
+      "mob_vnum": 20243,
+      "name": "Raltron, The village healer",
+      "keyword": "raltron",
+      "description": "Raltron waits in the healer house. Ask about Ivar, dragons and Tarl, then deliver the skull-crested helm for his separate reward.",
+      "topics": [
+        "ivar",
+        "dragon",
+        "tarl"
+      ]
+    },
+    {
+      "mob_vnum": 20244,
+      "name": "Tarlator, The Village Shaman",
+      "keyword": "tarlator",
+      "description": "Tarlator waits in the shaman house. Read the parchment and ask about his curse, ingredients, scrolls and Raltron. He awards the helm for the heart and talon, then leaves.",
+      "topics": [
+        "deity",
+        "human",
+        "dragon",
+        "offer",
+        "malstrog",
+        "scrolls",
+        "raltron"
+      ]
+    },
+    {
+      "mob_vnum": 20245,
+      "name": "Ilvorntas, The village magician",
+      "keyword": "ilvorntas",
+      "description": "Ilvorntas waits in the magician house. Ask about the dragons and Tentabeast. His sleeves consume the same ingredients as Tarlator's helm and require separate copies.",
+      "topics": [
+        "dolgar",
+        "dargast",
+        "sanrabb",
+        "svartalo",
+        "tentabeast"
+      ]
+    },
+    {
+      "mob_vnum": 20246,
+      "name": "Forvos, The town drunk",
+      "keyword": "forvos",
+      "description": "Forvos waits in the tavern. Ask about dragons, the Tentabeast and Dorno for the family history. He buys the whiskey bottle repeatedly.",
+      "topics": [
+        "dragon",
+        "tentabeast",
+        "dorno"
+      ]
+    },
+    {
+      "mob_vnum": 20273,
+      "name": "Azcatlipoca",
+      "keyword": "azcatlipoca",
+      "description": "Azcatlipoca waits in the dragon hatchery. Ask about food, dragons and Dargos. His meal needs the actual forest animal, not every dead creature.",
+      "topics": [
+        "food",
+        "dragon",
+        "dargos"
+      ]
+    }
+  ]
+}

@@ -31,7 +31,7 @@ harness = r'''
 int no_specials = 0;
 constexpr int LOG_DEBUG = 1, LOG_STATUS = 2;
 int loaded = 0, bootstrapped = 0, logged = 0;
-bool catalog_loaded = false, successful = true;
+bool catalog_loaded = false, successful = true, accounting = true;
 void boot_the_quests() { ++loaded; catalog_loaded = true; }
 void logit(int kind, const char *, ...) {
     ++logged;
@@ -46,7 +46,7 @@ bool bootstrap(std::string *error) {
     if (!successful) *error = "retained state cannot be loaded";
     return successful;
 }
-service_type *service() { assert(successful); static service_type result; return &result; }
+service_type *service() { assert(successful); static service_type result; return accounting ? &result : nullptr; }
 unsigned content_revision() { return 1; }
 }
 '''
@@ -61,11 +61,15 @@ int main() {
     catalog_loaded = false;
     boot_zone_story_quest_state();
     assert(loaded == 1 && bootstrapped == 2 && logged == 2);
+    // Catalog recovery remains available while the player service is gated.
+    accounting = false;
+    boot_zone_story_quest_state();
+    assert(loaded == 2 && bootstrapped == 3 && logged == 3);
     // Failed retained-state loading remains unavailable and logs the failure.
     catalog_loaded = false;
     successful = false;
     boot_zone_story_quest_state();
-    assert(loaded == 2 && bootstrapped == 3 && logged == 3);
+    assert(loaded == 3 && bootstrapped == 4 && logged == 4);
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-boot-") as temporary:
@@ -74,4 +78,4 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-story-boot-") as temporary:
     subprocess.run(["g++", "-std=c++20", "-fsanitize=address,undefined",
                     "-fno-omit-frame-pointer", str(cpp), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
-print("zone-story native boot owner: normal, no-specials and retained-state failure passed")
+print("zone-story native boot owner: normal, no-specials, accounting-inactive and retained-state failure passed")

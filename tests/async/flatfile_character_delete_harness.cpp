@@ -23,6 +23,7 @@
 #include "flatfile/flatfile_world_quest_history.h"
 #include "flatfile/flatfile_zone_story_quest_state.h"
 #include "player/player_snapshot_codec.h"
+#include "world/zone_story_quest_production.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -121,7 +122,8 @@ static void establish(const fs::path &root, bool establish_boons, bool player_lo
 					    &error) == flatfile_world_quest_result::ok,
 		"world-quest history baseline failed: " + error);
 	require(flatfile_zone_story_quest_state_save(
-			root.string().c_str(), 1,
+			root.string().c_str(),
+			zone_story_quest_production::ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
 			"ZSQF|1\nN|1|1|506c61796572|1\nN|7|1|4f6c64416c696173|1\n"
 			"N|1|2|5365636f6e64|1\nN|1|99|556e72656c61746564|1\n",
 			&error) == flatfile_zone_story_quest_result::ok,
@@ -635,9 +637,11 @@ static void zone_story_erasure_faults(const fs::path &base)
 				flatfile_character_delete_result::already_deleted,
 			"alias erasure recovery did not finish exactly once");
 		std::string state;
-		require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &state,
-							     &error) ==
-					flatfile_zone_story_quest_result::ok &&
+		require(flatfile_zone_story_quest_state_load(
+				root.string().c_str(),
+				zone_story_quest_production::
+					ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+				&state, &error) == flatfile_zone_story_quest_result::ok &&
 				state.find("N|1|1|") == std::string::npos &&
 				state.find("N|7|1|") == std::string::npos &&
 				state.find("N|1|99|") != std::string::npos &&
@@ -728,9 +732,10 @@ int main(int argc, char **argv)
 			flatfile_player_domain_result::not_found,
 		"recovered deletion retained player domain");
 	std::string quest_state;
-	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &quest_state,
-						     &error) ==
-				flatfile_zone_story_quest_result::ok &&
+	require(flatfile_zone_story_quest_state_load(
+			root.string().c_str(),
+			zone_story_quest_production::ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+			&quest_state, &error) == flatfile_zone_story_quest_result::ok &&
 			quest_state.find("N|1|1|") == std::string::npos &&
 			quest_state.find("N|7|1|") == std::string::npos &&
 			quest_state.find("N|1|2|") != std::string::npos &&
@@ -899,9 +904,10 @@ int main(int argc, char **argv)
 				flatfile_account_result::ok &&
 			!account_exists,
 		"account deletion retained the credential record");
-	require(flatfile_zone_story_quest_state_load(account.string().c_str(), 1, &quest_state,
-						     &error) ==
-				flatfile_zone_story_quest_result::ok &&
+	require(flatfile_zone_story_quest_state_load(
+			account.string().c_str(),
+			zone_story_quest_production::ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+			&quest_state, &error) == flatfile_zone_story_quest_result::ok &&
 			quest_state.find("N|1|1|") == std::string::npos &&
 			quest_state.find("N|7|1|") == std::string::npos &&
 			quest_state.find("N|1|2|") == std::string::npos &&

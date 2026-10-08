@@ -20,6 +20,6 @@ with tempfile.TemporaryDirectory(prefix="duris-sql-quest-erasure-") as temporary
         "tests/async/sql_zone_story_quest_erasure_harness.cpp",
         "src/sql/zone_story_quest_state_repository.c",
         "src/world/zone_story_quest_feature.c", "src/world/zone_story_quest_tracking.c",
-        "src/world/zone_story_quest_catalog.c", "-Wl,--wrap=free", "-o", str(binary),
+        "src/world/zone_story_quest_catalog.c", "-Wl,--wrap=free", "-lz", "-o", str(binary),
     ], cwd=ROOT, check=True, timeout=180)
     subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=60)

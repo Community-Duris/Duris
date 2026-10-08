@@ -569,7 +569,8 @@ quest_reward_obligation_result quest_reward_obligation_repository_read_ack_terms
 		    !quest_reward_continuation_decode(reinterpret_cast<const uint8_t *>(row[1]),
 						      lengths[1], &candidate) ||
 		    candidate.player_pid != player_pid ||
-		    (candidate.version == 6 && candidate.action_operation.bytes != operation.bytes))
+		    (quest_reward_is_fee_only(candidate) &&
+		     candidate.action_operation.bytes != operation.bytes))
 			return quest_reward_obligation_result::corrupt;
 		std::vector<uint8_t> bytes(reinterpret_cast<const uint8_t *>(row[1]),
 					   reinterpret_cast<const uint8_t *>(row[1]) + lengths[1]);

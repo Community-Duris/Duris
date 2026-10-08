@@ -1,0 +1,385 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "cldgt",
+  "coverage": "complete",
+  "introduction": "Follow the trader's five-pelt set, Anne's six-scalp return and Nonstros's legacy three-ingredient exchange, with keyed and hidden routes explained.",
+  "orientation": [
+    "Ask the fur trader about yeti. He requires five exact yeti pelts together with one thick leather strap for a girdle. His phrase a couple is a clue, not the actual count. This is one accepted exchange, with a five-pelt preparation row.",
+    "The huge mountain yetis and huge hairy yetis have five selected pelt sources between them. Only one selected cloud giant warrior carries the required strap. Current loose pelts and strap can prepare the exchange; another player may supply them without proving your own hunt or first recovery.",
+    "The quiet farmer and village leader can carry the brass key for the boulder. The leader hut can be reached before crossing that locked route. Existing shared access is valid preparation; personally recovering a key is not an invented condition for an accepted return.",
+    "Ask the leader giants, city, giant or cloud about the tunnel. The boulder separates the ordinary entrance routes from the deeper giant city. The same key fits both sides; their native pickability differs. Daily rollover does not unlock it or guarantee a stocked key.",
+    "Greet Anne or ask scalp, evils, evil or revenge. She requires one each of the duergar, troll, ogre, drow, illithid and orc scalps together for her tiara, then departs. Six copies of the same scalp do not fit her request; her singular clue does not define six separate rewards.",
+    "The graveyard leads to three hidden down routes. Selected battle scarred NPCs have the six exact scalps. The diseased farmer offers an alternative troll-scalp source, and Gilmorock an alternative drow-scalp source. Carried and equipped stock have distinct recovery paths; these are handcrafted quest items, not a demand for arbitrary player scalps.",
+    "SEARCH, door discovery and successful recovery have their own shared state and outcomes. Someone else may reveal a passage or supply proof. Notes mentioning the graveyard, quiet or dis are clues; reading them does not record a keyword achievement, source recovery or an accepted exchange.",
+    "Nonstros accepts the heart of Bel, orb of unmaking and mystic runed stone tablet together for the legacy scroll of Charisma. No extra arbitrary artifact is required by that native recipe. He has ambient messages and no addressed quest topics in the selected file.",
+    "Bel can carry the heart in Avernus, and the Dark Prince can wear the orb in the fortress of Hell. Other outside exchanges consume the same ingredients independently. This is an outside source lead, not a requirement to finish a whole campaign or personally defeat either boss.",
+    "No current tablet producer was found in the reviewed reset and compiled source inventory. Existing owned or supplied proof can fit the return, but the journal cannot promise a working starter. The scroll of Charisma is a legacy trash-type reward; obtaining or reading it does not establish a Charisma increase.",
+    "Nonstros has separately bound Empower Song training at normal startup. PRACTICE uses that service and its current eligibility and price; epic skill purchases are unavailable while economic accounting is active. The scroll is not a required training token. No new learned-skill step is represented by these three exchange cards.",
+    "Anne also has the native teacher flag and its separate class/runestone guidance. Her teaching service does not consume a revenge receipt or create another scalp quest. Shop stock, royal healing rooms, merchant names, forging and raid warnings remain local services or context until actual outcomes are integrated.",
+    "Only three local rooms have the actual no-ground sector. Air-themed names and copied village prose do not establish flight prerequisites by themselves. Successful arrival, flight, shared opening and current access need their own authority before they can record personal story history.",
+    "Fresh reset items are currently unavailable while accounting is active, including pelts, strap, scalps, keys and outside ingredients. Existing owned or supplied proof can prepare a return. Daily entries do not create stock, restore a departed Anne or guarantee access.",
+    "Carry the exact requested set loose. Worn strap, held scalp or orb, nested ingredients, similar names and reward copies do not replace loose proof. Historical accepted returns remain after proof is spent. All new story credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 99501,
+      "name": "the fur trader",
+      "keyword": "trader",
+      "description": "Ask yeti. Bring five exact pelts and one thick leather strap together for one girdle exchange. His registered shop sells other clothing, not those inputs.",
+      "topics": [
+        "yeti"
+      ]
+    },
+    {
+      "mob_vnum": 99520,
+      "name": "Anne, the savior",
+      "keyword": "anne",
+      "description": "Ask hi, hello, greetings or salutations, then scalp, evils, evil or revenge. Bring all six exact scalp types for the tiara; she then leaves. Her separate teacher role is not another revenge quest.",
+      "topics": [
+        "hi",
+        "hello",
+        "greetings",
+        "salutations",
+        "scalp",
+        "evils",
+        "evil",
+        "revenge"
+      ]
+    },
+    {
+      "mob_vnum": 99548,
+      "name": "Nonstros, the cloud giant bard",
+      "keyword": "nonstros",
+      "description": "Bring heart, orb and tablet together for the legacy scroll of Charisma. No current tablet producer was found. Empower Song training is separate and purchases are unavailable with active accounting; ambient echoes are not ASK topics.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99508,
+      "name": "the village leader",
+      "keyword": "leader",
+      "description": "Ask giants, city, giant or cloud. His accessible hut can stock an alternative brass key and a fragmentary note. He is a route contact, not an accepting quest giver.",
+      "topics": [
+        "giants",
+        "city",
+        "giant",
+        "cloud"
+      ]
+    },
+    {
+      "mob_vnum": 99516,
+      "name": "the quiet farmer",
+      "keyword": "quiet",
+      "description": "The quiet farmer can carry a brass key and a note pointing to the graveyard. These are route clues, not another native exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99517,
+      "name": "a diseased farmer",
+      "keyword": "diseased",
+      "description": "The diseased farmer can carry a troll scalp and a hidden note mentioning quiet. This is an alternative source, not a mandatory personal dialogue chain.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99522,
+      "name": "Gilmorock, the village sorcerer",
+      "keyword": "gilmorock",
+      "description": "Gilmorock can wear an alternative drow scalp. His sign and presence do not define another native recipe or require a particular personal kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99503,
+      "name": "a huge mountain yeti",
+      "keyword": "mountain",
+      "description": "Three selected mountain-yeti instances can each carry one exact pelt. Other names or current shared stock do not prove your own hunt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99505,
+      "name": "a huge hairy yeti",
+      "keyword": "yeti",
+      "description": "Two selected hairy-yeti instances can each carry one exact pelt. Combine current loose stock until the trader row has five; one supplied pelt is not an accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99507,
+      "name": "a cloud giant warrior",
+      "keyword": "warrior",
+      "description": "Only the selected warrior beyond the boulder wears the thick leather strap. Other warriors with this prototype have different stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99524,
+      "name": "a battle scarred Duergar",
+      "keyword": "duergar",
+      "description": "The battle scarred duergar in one hidden chamber can carry the exact duergar scalp for Anne.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99525,
+      "name": "a battle scarred Troll",
+      "keyword": "troll",
+      "description": "The battle scarred troll follows the duergar and can carry the troll scalp. The diseased farmer is an alternative carrier.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99527,
+      "name": "a battle scarred Ogre",
+      "keyword": "ogre",
+      "description": "The battle scarred ogre follows the duergar and can carry the exact ogre scalp. His follower role does not make a second receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99529,
+      "name": "a battle scarred Orc",
+      "keyword": "orc",
+      "description": "The battle scarred orc in another hidden chamber can carry the exact orc scalp for Anne.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99528,
+      "name": "a battle scarred Drow",
+      "keyword": "drow",
+      "description": "The battle scarred drow follows the orc and wears a drow scalp. Gilmorock is an alternative carrier; equipped proof still needs loose recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99526,
+      "name": "a battle scarred Illithid",
+      "keyword": "illithid",
+      "description": "The battle scarred illithid in the third hidden chamber can carry the exact illithid scalp for Anne.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99530,
+      "name": "the great flying giant",
+      "keyword": "flying",
+      "description": "The great flying giant has warning and horn lore. The reviewed local source defines no horn-triggered rescue exchange or nightly raid objective.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "five-pelts-and-strap",
+      "title": "Bring five pelts and a strap to the trader",
+      "category": "request",
+      "summary": "Prepare five exact yeti pelts and one exact thick leather strap together for one girdle return. The brass key is an optional route lead to the selected strap carrier.",
+      "contracts": [
+        {
+          "giver_vnum": 99501,
+          "completion_key": "give=I:99509,I:99509,I:99509,I:99509,I:99509,I:99510;receive=I:99503;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-99509",
+          "text": "Carry 5 × a yeti pelt loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99509
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99510",
+          "text": "Carry 1 × a thick leather strap loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99510
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99505",
+          "text": "Carry 1 × a shining silvery key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99505
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional route preparation: an existing key or shared open can provide access without recording personal key recovery or use."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 99501,
+              "completion_key": "give=I:99509,I:99509,I:99509,I:99509,I:99509,I:99510;receive=I:99503;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Current supplies, source recovery, a revealed passage, reward possession, reading or separate training do not replace this exchange. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "six-scalps-for-anne",
+      "title": "Bring six different scalps to Anne",
+      "category": "request",
+      "summary": "Prepare one each of the six exact handcrafted scalp types together for Anne's tiara. She leaves after acceptance. Alternative carriers and shared revealed passages do not impose personal hunt or SEARCH prerequisites.",
+      "contracts": [
+        {
+          "giver_vnum": 99520,
+          "completion_key": "give=I:99518,I:99519,I:99520,I:99521,I:99522,I:99523;receive=I:99516;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-99518",
+          "text": "Carry 1 × the scalp of a duergar loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99518
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99519",
+          "text": "Carry 1 × the scalp of a troll loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99519
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99520",
+          "text": "Carry 1 × the scalp of an ogre loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99520
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99521",
+          "text": "Carry 1 × the scalp of a drow loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99521
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99522",
+          "text": "Carry 1 × the scalp of an Illithid loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99522
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99523",
+          "text": "Carry 1 × the scalp of an Orc loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99523
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 99520,
+              "completion_key": "give=I:99518,I:99519,I:99520,I:99521,I:99522,I:99523;receive=I:99516;disappear=1"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Current supplies, source recovery, a revealed passage, reward possession, reading or separate training do not replace this exchange. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "legacy-charisma-scroll",
+      "title": "Bring three exact ingredients to Nonstros",
+      "category": "request",
+      "summary": "Prepare heart, orb and tablet together for the legacy scroll of Charisma. The tablet producer and reward effect need builder qualification. Empower Song training is a separate service, currently unavailable for purchases with active accounting.",
+      "contracts": [
+        {
+          "giver_vnum": 99548,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:405;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-32490",
+          "text": "Carry 1 × the still-beating heart of Bel loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-26614",
+          "text": "Carry 1 × the orb of unmaking loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-402",
+          "text": "Carry 1 × A mystic runed stone tablet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose quantity now. Supplied proof can prepare the exchange without proving your own recovery or victory; worn, held or nested proof is separate. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-99505",
+          "text": "Carry 1 × a shining silvery key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99505
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional route preparation: an existing key or shared open can provide access without recording personal key recovery or use."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 99548,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:405;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Current supplies, source recovery, a revealed passage, reward possession, reading or separate training do not replace this exchange. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

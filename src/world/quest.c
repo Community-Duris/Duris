@@ -634,7 +634,8 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl, uint64_
 
 // A private quest handoff consumes every required item in one durable commit.
 // The player keeps incomplete sets, so an NPC never holds an unsaved offering.
-constexpr size_t QUEST_DURABLE_MAX_OFFERINGS = 14;
+constexpr size_t QUEST_DURABLE_MAX_OFFERINGS =
+	zone_story_quest_production::ZONE_STORY_QUEST_MAX_DURABLE_OFFERINGS;
 constexpr size_t QUEST_DURABLE_MAX_CREDITED_PLAYERS = QUEST_REWARD_MAX_CREDITED_PIDS;
 constexpr int QUEST_EXP_TABLE_ENTRIES = 63;
 static P_char quest_reward_character_present(uint32_t pid);
@@ -654,6 +655,9 @@ struct quest_durable_context
 	int32_t player_racewar;
 	int32_t strongest_party_level;
 	uint64_t skill_eligibility_mask;
+	uint64_t daily_recipient_mask;
+	uint32_t season_id;
+	uint32_t catalog_revision;
 	char character_name[MAX_NAME_LENGTH + 1];
 };
 static_assert(sizeof(quest_durable_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
@@ -719,13 +723,36 @@ static bool capture_quest_offering_continuation(
 	const std::string *definition_id =
 		original_definition ? original_definition :
 				      zone_story_quest_production::definition_id_for(completion);
-	const int zone_number = zone_story_quest_production::zone_for_giver_vnum(GET_VNUM(mob));
+	int zone_number = -1;
+	if (definition_id)
+		for (const auto &definition :
+		     zone_story_quest_production::runtime_catalog().definitions)
+			if (definition.definition_id == *definition_id)
+			{
+				zone_number = definition.zone_number;
+				break;
+			}
 	if (!definition_id || definition_id->empty() ||
-	    definition_id->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES || zone_number <= 0 ||
+	    definition_id->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES || zone_number < 0 ||
 	    !context.credited_count ||
 	    context.credited_count > QUEST_DURABLE_MAX_CREDITED_PLAYERS ||
 	    context.party_size != context.credited_count || !context.character_name[0])
 		return false;
+	context.season_id = zone_story_quest_runtime::current_season_id();
+	context.catalog_revision = zone_story_quest_runtime::content_revision();
+	context.daily_recipient_mask = 0;
+	uint32_t daily_count = 0;
+	for (size_t i = 0; i < context.credited_count; ++i)
+	{
+		P_char recipient = quest_reward_character_present(context.credited_pids[i]);
+		if (zone_story_quest_runtime::daily_eligible(recipient, *definition_id,
+							     context.strongest_party_level,
+							     context.completed_at))
+		{
+			context.daily_recipient_mask |= UINT64_C(1) << i;
+			++daily_count;
+		}
+	}
 	size_t reward_count = 0;
 	for (const goal_data *reward = completion->receive; reward; reward = reward->next)
 	{
@@ -750,7 +777,8 @@ static bool capture_quest_offering_continuation(
 			     context.credited_count * sizeof(uint32_t) + sizeof(uint32_t) +
 			     name_length + sizeof(uint32_t) + definition_id->size() +
 			     sizeof(uint32_t) +
-			     static_cast<size_t>(xp_award_count) * 3 * sizeof(uint32_t);
+			     static_cast<size_t>(xp_award_count) * 3 * sizeof(uint32_t) +
+			     (fee_terms ? 0 : 16 + daily_count * 4);
 	if (bytes > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
 		return false;
 	continuation->kind = item_transfer_continuation_kind::quest_offering;
@@ -774,7 +802,7 @@ static bool capture_quest_offering_continuation(
 			continuation->data[offset + byte] =
 				static_cast<uint8_t>(value >> (byte * 8));
 	};
-	put32(0, 5);
+	put32(0, fee_terms ? 5 : 6);
 	put32(4, static_cast<uint32_t>(GET_PID(actor)));
 	put32(8, static_cast<uint32_t>(quester_id));
 	put32(12, static_cast<uint32_t>(completion_index));
@@ -875,6 +903,21 @@ static bool capture_quest_offering_continuation(
 	}
 	if (awards_written != xp_award_count)
 		return false;
+	if (!fee_terms)
+	{
+		offset = awards_offset + awards_written * 12;
+		put32(offset, context.season_id);
+		put32(offset + 4, context.catalog_revision);
+		put32(offset + 8, 1);
+		put32(offset + 12, daily_count);
+		offset += 16;
+		for (size_t i = 0; i < context.credited_count; ++i)
+			if (context.daily_recipient_mask & (UINT64_C(1) << i))
+			{
+				put32(offset, context.credited_pids[i]);
+				offset += 4;
+			}
+	}
 	if (fee_terms)
 	{
 		if (context.count || fee_terms->version != 6 || fee_terms->root_count)
@@ -1045,7 +1088,14 @@ static void complete_quest_offering(P_char actor, bool committed,
 				     actor);
 			return;
 		}
-		continuation.version = 5;
+		continuation.version = 6;
+		continuation.season_id = context.season_id;
+		continuation.catalog_revision = context.catalog_revision;
+		continuation.daily_policy_revision = 1;
+		for (size_t i = 0; i < context.credited_count; ++i)
+			if (context.daily_recipient_mask & (UINT64_C(1) << i))
+				continuation.daily_pids[continuation.daily_count++] =
+					context.credited_pids[i];
 		continuation.player_pid = static_cast<uint32_t>(GET_PID(actor));
 		continuation.quester_id = static_cast<uint32_t>(context.quester_id);
 		continuation.completion_index = static_cast<uint32_t>(context.completion_index);
@@ -1280,7 +1330,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 	    (!continuation.root_count && continuation.version != 6) ||
 	    continuation.root_count > continuation.roots.size())
 		return;
-	if (continuation.version == 6 &&
+	if (quest_reward_is_fee_only(continuation) &&
 	    !quest_reward_obligation_native_fee_owner::ready(offering_operation, continuation))
 		return;
 	if (!economic_history_verified)
@@ -1322,7 +1372,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 	struct quest_complete_data *completion = quest_completion_by_index(context);
 	bool tracking_complete = false;
 	const std::string tracking_id =
-		continuation.version == 6 ?
+		quest_reward_is_fee_only(continuation) ?
 			"native-fee-action-v6-" + quest_reward_operation_key(offering_operation) :
 			"legacy-offering-v1-" + std::to_string(continuation.roots[0]);
 	std::string tracking_error;
@@ -1339,6 +1389,16 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 		{
 			tracking_error = "unable to allocate frozen quest-credit recipients";
 		}
+		zone_story_quest_runtime::frozen_daily_context daily;
+		if (quest_reward_has_daily_context(continuation))
+		{
+			daily.season_id = continuation.season_id;
+			daily.catalog_revision = continuation.catalog_revision;
+			daily.policy_revision = continuation.daily_policy_revision;
+			daily.eligible_pids.assign(continuation.daily_pids.begin(),
+						   continuation.daily_pids.begin() +
+							   continuation.daily_count);
+		}
 		if (!credited_pids.empty())
 			tracking_complete =
 				zone_story_quest_runtime::record_authoritative_completion(
@@ -1350,7 +1410,9 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 					continuation.character_name, continuation.player_level,
 					continuation.player_racewar, true, continuation.party_size,
 					continuation.strongest_party_level, &tracking_error,
-					tracking_id);
+					tracking_id,
+					quest_reward_has_daily_context(continuation) ? &daily :
+										       nullptr);
 		if (!tracking_complete)
 			logit(LOG_DEBUG,
 			      "pending zone-story quest completion could not be recovered: %s",
@@ -1540,7 +1602,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			    continuation.rewards[prior].number == reward.number)
 				++duplicate_ordinal;
 		const uint64_t source_id =
-			continuation.version == 6 ?
+			quest_reward_is_fee_only(continuation) ?
 				quest_item_reward_source_id(continuation, index) :
 				quest_item_reward_source_id(continuation.roots[0],
 							    static_cast<int>(reward.number),
@@ -1593,7 +1655,7 @@ void quest_reward_recover_xp_entitlement(P_char player,
 	    continuation.rewards[reward_index].type != QUEST_GOAL_EXP ||
 	    continuation.credited_count < 2)
 		return;
-	if (continuation.version == 6 &&
+	if (quest_reward_is_fee_only(continuation) &&
 	    !quest_reward_obligation_native_fee_owner::ready(offering_operation, continuation))
 		return;
 	const uint32_t recipient_pid = static_cast<uint32_t>(GET_PID(player));
@@ -1932,6 +1994,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 				else
 					send_to_char("\n", pl);
 
+				zone_story_quest_runtime::encountered(pl, ch);
 				return (TRUE);
 			}
 		}
@@ -2979,7 +3042,7 @@ bool quest_native_frozen_continuation_owner::retire_completed(
 					critical_command_repository_verify_native_quest_in_transaction(
 						connection, state.terminal_parent->command);
 				const auto child_receipt =
-					state.terms.version == 6 ?
+					quest_reward_is_fee_only(state.terms) ?
 						critical_apply_result{} :
 						critical_command_repository_verify_native_quest_in_transaction(
 							connection, state.command);
@@ -2987,7 +3050,7 @@ bool quest_native_frozen_continuation_owner::retire_completed(
 				unsigned int error = 0;
 				proven =
 					matches(parent_context.receipt, parent_receipt) &&
-					(state.terms.version == 6 ?
+					(quest_reward_is_fee_only(state.terms) ?
 						 quest_reward_obligation_native_fee_owner::
 							 verify_in_transaction(
 								 connection,
@@ -3061,7 +3124,7 @@ bool quest_native_frozen_continuation_owner::drive(native_quest_frozen_recovery_
 			return false; // Cold or actual started/unreturned never authorizes reward repetition.
 		if (!state.started)
 		{
-			if (state.terms.version == 6 &&
+			if (quest_reward_is_fee_only(state.terms) &&
 			    !quest_reward_obligation_native_fee_owner::ready(
 				    state.command.operation_id, state.terms))
 				return false;
@@ -3216,7 +3279,9 @@ bool quest_native_frozen_continuation_owner::publish(const critical_command &com
 		    payload.native_recovery.publication_terms.disappear ||
 		    !quest_reward_continuation_decode(record.continuation.data(),
 						      record.continuation.size(), &terms) ||
-		    (terms.version != 5 && !(terms.version == 6 && payload.native_cost.fee_only)) ||
+		    (payload.native_cost.fee_only ?
+			     !quest_reward_is_fee_only(terms) :
+			     (terms.version != 5 && !quest_reward_has_daily_context(terms))) ||
 		    terms.player_pid != payload.native_recovery.player_pid)
 			return false;
 		const std::string key = quest_reward_operation_key(command.operation_id);
@@ -4194,8 +4259,10 @@ bool quest_native_gameplay_owner::restore_phase2(
 				if (!quest_reward_continuation_decode(state->continuation.data(),
 								      state->continuation.size(),
 								      &state->terms) ||
-				    (state->terms.version != 5 &&
-				     !(state->terms.version == 6 && payload.native_cost.fee_only)) ||
+				    (payload.native_cost.fee_only ?
+					     !quest_reward_is_fee_only(state->terms) :
+					     (state->terms.version != 5 &&
+					      !quest_reward_has_daily_context(state->terms))) ||
 				    state->terms.player_pid != payload.native_recovery.player_pid ||
 				    payload.native_recovery.publication_terms.disappear)
 					return false;

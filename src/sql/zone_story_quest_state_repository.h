@@ -1,6 +1,7 @@
 #ifndef ZONE_STORY_QUEST_STATE_REPOSITORY_H
 #define ZONE_STORY_QUEST_STATE_REPOSITORY_H
 
+#include "world/zone_story_quest_state_codec.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -20,10 +21,15 @@ enum class sql_zone_story_quest_state_result
 
 sql_zone_story_quest_state_result
 sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string *state,
-				std::string *error = nullptr);
+				std::string *error = nullptr, bool *legacy = nullptr);
 sql_zone_story_quest_state_result sql_zone_story_quest_state_save(uint32_t catalog_revision,
 								  const std::string &state,
 								  std::string *error = nullptr);
+
+sql_zone_story_quest_state_result
+sql_zone_story_quest_records_save(uint32_t catalog_revision,
+				  const zone_story_quest_state::changes &updates,
+				  std::string *error = nullptr);
 
 // Requires the caller's live transaction and retains its commit/rollback ownership.
 sql_zone_story_quest_state_result sql_zone_story_quest_state_remove_player_aliases(

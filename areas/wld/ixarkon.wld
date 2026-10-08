@@ -686,7 +686,7 @@ S
 &+Lin occasionally to dump food into a large feeding trough or to
 &+Ldrag a slave with a glazed look in his eye toward the dinner
 &+Ltable of a wealthy buyer.  A sturdy iron door leads out of the
-&+Lpens to the east.
+&+Lpens to the west.
 ~
 964 142639177 15
 D3
@@ -706,7 +706,7 @@ S
 &+Llead them toward the supper table of some wealthy illithid.  Once
 &+La day the illithid masters dump food into a large trough on one
 &+Lside of the room; the slaves have picked it clean since.  A
-&+Lsturdy iron door leads out of the pens to the east.
+&+Lsturdy iron door leads out of the pens to the west.
 ~
 964 142639177 15
 D3
@@ -1238,7 +1238,7 @@ gardeners scurry about the fungi shaping them under the command
 of their masters. A few dark towers rise amid the gardens, home
 to some of the cities nobles. The narrow pathway has been formed
 of many small slate cobblestones laid end on end, and continues
-to the north and west.
+to the south and west.
 ~
 964 142639169 14
 D2
@@ -1361,7 +1361,7 @@ S
 &+Wtower outside seems a dark and twisted version of the inside. A
 &+Wwind strangely blows throughout the tower; distant howls and
 &+Wscreams are echoed on the wind.  A large iron gate rests in the
-&+Weastern wall, and leads outside to the garden of fungi. A spiral
+&+Wwestern wall, and leads outside to the garden of fungi. A spiral
 &+Wstaircase leads up from the opposite side of the room.
 ~
 964 142639177 15
@@ -2193,7 +2193,7 @@ odor seems to seep from the ground here, rising on tendrils of
 steam. The ground feels faintly hot, as if an underground geyser
 was below, waiting to explode.  The cavern continues to the east;
 what looks like a campsite sits in a small depression to the
-south.
+north.
 ~
 964 142639169 13
 D0
@@ -2248,7 +2248,7 @@ on odd bumpy look.  Tiny rivulets of water flow through the
 cavern, snaking their way among the stalagmites.  A few short
 creatures can be seen walking through the cavern, no doubt
 searching for food of some kind.  A small depression forms in the
-cavern floor to the west; many of the creatures can be seen
+cavern floor to the east; many of the creatures can be seen
 gathering about it.
 ~
 964 142639169 13
@@ -2269,7 +2269,7 @@ sticky ooze.  The foul smelling substance seems to be oil welling
 up from some deep underground reservoir.  A few short creatures
 can be seen walking through the cavern, no doubt searching for
 food of some kind. They seem to be gathering at a small
-depression in the cavern to the north.
+depression in the cavern to the south.
 ~
 964 142639173 14
 D2
@@ -2347,7 +2347,7 @@ S
 &+yajoining the cavern; a rocky tunnel leads south, and a large
 &+ycrack in the northern wall seems to lead into an impossibly large
 &+ycavern.  A very narrow passage, barely a few feet high, leads
-&+yinto the western wall.
+&+yinto the eastern wall.
 ~
 964 142639173 14
 D0
@@ -2777,7 +2777,7 @@ S
 &+yby side. The Rockspire is beset with numerous tunnels snaking
 &+ythroughout the core of the mountain but most are impossible to
 &+yfind unless the Elder Brain allows them to be found. The winding
-&+ytunnel continues to the east and makes a sharp turn to head up
+&+ytunnel continues to the west and makes a sharp turn to head up
 &+yhere.
 ~
 964 142639176 15
@@ -3236,7 +3236,7 @@ S
 &+ymeans.  A great towering spire of rock dominates the eastern
 &+yportion of the cavern, rising up hundreds of feet into the vast
 &+ydarkness above.  The doorway to one dwelling is directly to the
-&+yeast; the cavern continues to the west.
+&+ywest; the cavern continues to the east.
 ~
 964 142639169 14
 D1
@@ -5066,7 +5066,7 @@ S
 &+bthe source of the water is lost up in the dark reaches of the
 &+bcavern's ceiling.  A few fish swish around in the water here,
 &+bshedding an eerie luminescent glow.  The cavern continues back to
-&+bthe west.
+&+bthe southwest.
 ~
 964 142639168 17
 D1

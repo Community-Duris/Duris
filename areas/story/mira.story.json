@@ -1,0 +1,862 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mira",
+  "coverage": "complete",
+  "introduction": "Follow the Hunters’ warning through the city and Sunweaver, assemble the keystone, return foreign treasure or a lost monkey, help the naval officer, and bring Balance his distinct trophies and tokens. Exact supplied items can skip earlier personal recovery.",
+  "orientation": [
+    "Discover Myrabolus and meet its residents to reveal their requests. These journals require active, ready accounting. Thirteen story outcomes are separate from three supporting services; asking questions and carrying materials do not finish an offering.",
+    "Enter the city northward from the Surface valley or eastward from its beach. The lagoon opens north to the ocean, and the dark forest connects south through secret bushes to Darkfall. Prepare for darkness, water and dangerous falls.",
+    "The parchment is in the locked gold chest in Roland’s empty house. At the crash site, SEARCH for the downward plank passage, OPEN it and descend; the old crate to the south holds a hidden gold key. OPEN and SEARCH the crate, then unlock and open the chest. The gold key normally breaks when used.",
+    "A palace guard carries the palace key. Beyond the gates, SEARCH for the hidden eastern passage to the Sunweaver, then open the bridge hatch to find Markam. He returns a parchment and gives one keystone half before leaving; Xavier separately exchanges a parchment for the observatory key.",
+    "The holy knight beyond the Home of the Holy’s closed curtain carries the other half. It is hidden and invisible: see invisible items before searching his body. Andryn needs both different halves. The knight’s half and assembled key can dissolve when dropped; the assembled key normally breaks when unlocking the secret treasury trapdoor.",
+    "Xavier’s observatory key opens the southern portal passage to the Hunt. The Hunt portal returns directly to that passage. Exact supplied materials can skip earlier personal collection or story stages; an earlier completed stage does not replace a material you have spent or given away.",
+    "Rico, Random, Decker and Alexis each offer a different reward for one chest of treasure from the Hunt. It is one quest item, with no container to open. Each delivery consumes its own copy. Decker leaves after his exchange; WAKE Alexis before asking about or giving her an offering.",
+    "The monkey hunter wants the hidden lost-monkey item from the Hunt, rather than the local living monkey. The naval officer wants a small wooden raft and hidden tree sap. The fixed floating life raft is a different object; Shantil’s raft shopping is currently unavailable.",
+    "Ask Balance hi, hello, howdy or hey about the three Rogue Plains tokens. All three different tokens make one offering. His drider staff and holy broadsword request is separate. His returned-letter referral is optional preparation for Seraphim in Desolate.",
+    "Paid armor crafting, shopping, smithing, epic lessons, paid storage and ticket purchases are currently unavailable with accounting active. The upstairs inn has separate rent conditions. The WaveDancer stops at the pier, but boarding still needs a valid ferry ticket."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 82500,
+      "name": "Roland",
+      "keyword": "roland",
+      "description": "Roland can wander beyond his usual city houses. His local head offering has no declared reward; the Hunt’s Roland offers a different exchange. His empty house contains the parchment chest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82507,
+      "name": "Xavier",
+      "keyword": "xavier",
+      "description": "Xavier starts at the observatory. His three separate offerings take a parchment, Krazzi’s head or the delivery copy of the planetary study. The observatory key opens his locked southern portal passage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82515,
+      "name": "Rico",
+      "keyword": "rico",
+      "description": "Rico starts at his shop. He trades one Hunt treasure item for a combat vest; this offering is separate from his currently unavailable shopping service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82516,
+      "name": "Random",
+      "keyword": "random",
+      "description": "Random starts in his home. One Hunt treasure item earns his ribbon of pride.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82518,
+      "name": "Andryn",
+      "keyword": "andryn",
+      "description": "Andryn starts at the smithy. He assembles two different keystone halves. His paid dragon-scale armor and FORGE services are currently unavailable.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82522,
+      "name": "Decker",
+      "keyword": "decker",
+      "description": "Decker starts in his martial-arts dojo. He accepts one Hunt treasure item for a war helm, then leaves.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82537,
+      "name": "Alexis",
+      "keyword": "alexis",
+      "description": "Alexis starts asleep in her bedroom, beyond the living room’s closed door. WAKE her before asking about or giving an offering. Her treasure reward is a hazy amulet.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82538,
+      "name": "Markam, the High Magistrate",
+      "keyword": "markam",
+      "description": "Markam starts in his Sunweaver quarters, beneath the bridge’s closed hatch. He returns a parchment and adds a keystone half, then leaves. A supplied parchment can satisfy his request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82543,
+      "name": "a monkey hunter",
+      "keyword": "hunter",
+      "description": "The monkey hunter starts in the northern garden and can wander. He wants the exact lost-monkey item from the Hunt; the living local monkey cannot satisfy this offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82565,
+      "name": "an orc naval officer",
+      "keyword": "officer",
+      "description": "The naval officer starts at the western beach. Bring a small wooden raft and hidden tree sap for two Squall items and coins. The fixed life raft is a different object.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82569,
+      "name": "Balance",
+      "keyword": "balance",
+      "description": "Balance starts at the pier. Ask hi, hello, howdy or hey about the Rogue Plains tokens. His staff-and-sword offering and optional returned-letter referral are separate requests.",
+      "topics": [
+        "hi",
+        "hello",
+        "howdy",
+        "hey"
+      ]
+    },
+    {
+      "mob_vnum": 82509,
+      "name": "Michal Valentyne",
+      "keyword": "knight",
+      "description": "The holy knight starts beyond the Home of the Holy’s closed curtain. His equipped whitestone broadsword and hidden, invisible keystone half serve different requests. See invisible items before searching for the half.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82514,
+      "name": "a celestial white dragon",
+      "keyword": "dragon",
+      "description": "The celestial white dragon starts at the fountain carrying a hidden huge scale. Search its body before retrieving the scale. Andryn’s paid scale offering is currently unavailable.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82508,
+      "name": "Mardoc",
+      "keyword": "mardoc",
+      "description": "Mardoc starts in his study, above the sitting room behind a closed granite door. His equipped staff is one of Balance’s two local trophies.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82572,
+      "name": "a huge su-monster",
+      "keyword": "su",
+      "description": "The huge su-monster starts in the den. Hidden tree sap there serves the naval officer; its pelt has a separate experience exchange in Ultarium.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82547,
+      "name": "Ethan",
+      "keyword": "ethan",
+      "description": "Ethan carries a masters quiver, longbow and arrows and can wander outside his city house. Acquiring his equipment is separate from these offering stories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82529,
+      "name": "Ajax",
+      "keyword": "ajax",
+      "description": "Ajax starts in his arena, behind a closed door. His training is separate from the local offering stories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82521,
+      "name": "Dutch",
+      "keyword": "dutch",
+      "description": "Dutch starts at the bank and directs currency exchange to the Royal Bank. The bank counter’s paid locker service is currently unavailable.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82511,
+      "name": "a duergar bartender",
+      "keyword": "bartender",
+      "description": "The bartender starts at the inn tavern and offers changing world quests. These are separate from the journal’s local stories. The upstairs inn room offers rent subject to its own conditions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82570,
+      "name": "a shapely waitress",
+      "keyword": "waitress",
+      "description": "The waitress tends the travelling tavern, behind a closed door. Crew hiring is a separate ship service and does not finish these offering stories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82573,
+      "name": "the dock master",
+      "keyword": "master",
+      "description": "The dock master starts at the shipyard. Ship services and the ocean route are separate from local offerings.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "roland-head-offering",
+      "title": "Roland: an unexplained head offering",
+      "category": "service",
+      "summary": "The local Roland accepts the severed head of Maximas with no declared response, reward or departure. This support entry preserves the native receipt without promising a bow, lesson or achievement. The Hunt has a different Roland with a real bow reward. Builder intent remains unresolved.",
+      "contracts": [
+        {
+          "giver_vnum": 82500,
+          "completion_key": "give=I:13357;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13357",
+          "text": "Carry the severed head of Maximas",
+          "kind": "carried_item",
+          "item_vnums": [
+            13357
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maximas in the Hunt carries this hidden proof. Search the source corpse before retrieving it. Roland starts outside his empty city house and may wander. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Roland: an unexplained head offering",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82500,
+              "completion_key": "give=I:13357;receive=;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "xavier-portal-key",
+      "title": "Xavier: answer the summons",
+      "category": "story",
+      "summary": "Bring Xavier the exact wrinkled parchment for the observatory key and his invitation to the Hunt. Markam’s earlier meeting explains the usual route, but supplied parchment also works. Accepting the key does not prove portal travel or defeating Maverick.",
+      "contracts": [
+        {
+          "giver_vnum": 82507,
+          "completion_key": "give=I:82517;receive=I:82538;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "markam-history",
+          "text": "Optional earlier route: consult Markam",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82538,
+              "completion_key": "give=I:82517;receive=I:82517,I:82518;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Markam consumes a parchment and returns the replacement parchment plus a keystone half before departing. Xavier needs a current parchment. This earlier step is optional. You still need any material you have spent or given away."
+        },
+        {
+          "id": "material-82517",
+          "text": "Carry the wrinkled parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            82517
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The parchment starts in the locked gold chest in Roland’s empty house. Search inside the crash-site crate for its hidden gold key, then unlock and open the chest. Markam also returns this kind after reading it. The key normally breaks on unlock. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Xavier: answer the summons",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82507,
+              "completion_key": "give=I:82517;receive=I:82538;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "xavier-krazzi-head",
+      "title": "Xavier: Krazzi’s proof",
+      "category": "story",
+      "summary": "Give the local Xavier the severed head of Krazzi for the robes of cosmocy. The local response is blank; the Hunt’s different Xavier explains the same material-and-reward recipe. Supplied proof does not require a personal kill or earlier portal journey.",
+      "contracts": [
+        {
+          "giver_vnum": 82507,
+          "completion_key": "give=I:13358;receive=I:13337;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13358",
+          "text": "Carry the severed head of Krazzi",
+          "kind": "carried_item",
+          "item_vnums": [
+            13358
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Krazzi in the Hunt carries this hidden proof. Search the source corpse to reveal it before retrieval. The local and Hunt Xavier are different recipients and own different receipts. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Xavier: Krazzi’s proof",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82507,
+              "completion_key": "give=I:13358;receive=I:13337;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "xavier-planetary-study",
+      "title": "Xavier: deliver the planetary study",
+      "category": "story",
+      "summary": "Deliver the exact study of planetary alignment for the horns of the bantar. Rigid in Ultarium produces this delivery copy after recovering the stolen original study and asks for delivery to Xavier. The two studies have the same name but different kinds. Supplied delivery papers skip that personal history. The native local response is blank.",
+      "contracts": [
+        {
+          "giver_vnum": 82507,
+          "completion_key": "give=I:76069;receive=I:82522;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "rigid-history",
+          "text": "Optional earlier route: help Rigid",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 76029,
+              "completion_key": "give=I:76068;receive=I:76069;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Rigid’s earlier study exchange belongs to Ultarium. It explains where the delivery copy comes from. This earlier step is optional. You still need any material you have spent or given away."
+        },
+        {
+          "id": "material-76069",
+          "text": "Carry the delivery copy of the planetary study",
+          "kind": "carried_item",
+          "item_vnums": [
+            76069
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Rigid exchanges stolen original study for delivery copy in Ultarium. Their visible names and aliases match; Xavier needs the delivery kind. The city parchment is another different item. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Xavier: deliver the planetary study",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82507,
+              "completion_key": "give=I:76069;receive=I:82522;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "rico-treasure",
+      "title": "Rico: treasure for a combat vest",
+      "category": "story",
+      "summary": "Return one treasure item to Rico for a finely stitched combat vest. His shop and native quest dispatch are separate. Shopping is unavailable while accounting is active; the accepted treasure offering remains its own outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 82515,
+          "completion_key": "give=I:13364;receive=I:13324;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13364",
+          "text": "Carry one chest of treasure",
+          "kind": "carried_item",
+          "item_vnums": [
+            13364
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Recover the treasure item from the Caverns of Armageddon, or use an exact supplied copy. Supplies are limited. This is a quest item despite its chest name; it has no separate OPEN step. Each recipient consumes a copy for a different reward. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Rico: treasure for a combat vest",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82515,
+              "completion_key": "give=I:13364;receive=I:13324;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "random-treasure",
+      "title": "Random: treasure and Hunter pride",
+      "category": "story",
+      "summary": "Give Random one treasure item for the ribbon of pride. His account of the Hunters’ success explains his gratitude; the receipt does not prove a personal campaign victory. The other three recipients have independent rewards.",
+      "contracts": [
+        {
+          "giver_vnum": 82516,
+          "completion_key": "give=I:13364;receive=I:13322;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13364",
+          "text": "Carry one chest of treasure",
+          "kind": "carried_item",
+          "item_vnums": [
+            13364
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Recover the treasure item from the Caverns of Armageddon, or use an exact supplied copy. Supplies are limited. This is a quest item despite its chest name; it has no separate OPEN step. Each recipient consumes a copy for a different reward. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Random: treasure and Hunter pride",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82516,
+              "completion_key": "give=I:13364;receive=I:13322;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "andryn-keystone",
+      "title": "Andryn: assemble the keystone",
+      "category": "story",
+      "summary": "Bring Andryn the two different keystone halves for the assembled key. They share a visible name but are different kinds. Markam’s half and the holy knight’s hidden, invisible half explain the usual route. Supplied exact halves skip personal recovery.",
+      "contracts": [
+        {
+          "giver_vnum": 82518,
+          "completion_key": "give=I:82518,I:82519;receive=I:82520;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "markam-history",
+          "text": "Optional earlier route: receive Markam’s half",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82538,
+              "completion_key": "give=I:82517;receive=I:82517,I:82518;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Markam supplies one half when he reads the parchment. The other half belongs to the holy knight; two copies of one kind are insufficient. This earlier step is optional. You still need any material you have spent or given away."
+        },
+        {
+          "id": "material-82518",
+          "text": "Carry Markam’s keystone half",
+          "kind": "carried_item",
+          "item_vnums": [
+            82518
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Markam returns this half with a replacement parchment, then leaves. The first half does not replace the holy knight’s different kind. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "material-82519",
+          "text": "Carry the holy knight’s keystone half",
+          "kind": "carried_item",
+          "item_vnums": [
+            82519
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The holy knight starts behind the ordinary closed curtain at the Home of the Holy. His half is hidden and invisible: seeing invisible items is needed for a successful source-corpse search and retrieval. It is transient and can dissolve if dropped. The assembled key is also transient and normally breaks on unlock. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Andryn: assemble the keystone",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82518,
+              "completion_key": "give=I:82518,I:82519;receive=I:82520;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "andryn-dragon-armor",
+      "title": "Andryn: paid dragon-scale armor",
+      "category": "service",
+      "summary": "Andryn declares celestial dragonscale armor for the local huge celestial dragon scale and 50,000 coin-value units. This mixed item-and-fee offering is currently unavailable with accounting active. It is support crafting, separate from his keystone story and guarded FORGE service.",
+      "contracts": [
+        {
+          "giver_vnum": 82518,
+          "completion_key": "give=C:50000,I:82542;receive=I:40738;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82542",
+          "text": "Carry the huge celestial dragon scale",
+          "kind": "carried_item",
+          "item_vnums": [
+            82542
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The celestial white dragon starts at the city fountain carrying this hidden scale. Search the source corpse to reveal it. A different scale and paid smith in Home of the Divine can produce the same armor, but that foreign recipe is not this one. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Andryn: paid dragon-scale armor",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82518,
+              "completion_key": "give=C:50000,I:82542;receive=I:40738;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "decker-treasure",
+      "title": "Decker: treasure for a war helm",
+      "category": "story",
+      "summary": "Bring Decker one treasure item for the helm of armageddon. He leaves after the exchange. His departure and later reappearance are distinct from the accepted outcome; the reward does not promise a fresh daily supply.",
+      "contracts": [
+        {
+          "giver_vnum": 82522,
+          "completion_key": "give=I:13364;receive=I:13328;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13364",
+          "text": "Carry one chest of treasure",
+          "kind": "carried_item",
+          "item_vnums": [
+            13364
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Recover the treasure item from the Caverns of Armageddon, or use an exact supplied copy. Supplies are limited. This is a quest item despite its chest name; it has no separate OPEN step. Each recipient consumes a copy for a different reward. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Decker: treasure for a war helm",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82522,
+              "completion_key": "give=I:13364;receive=I:13328;disappear=1"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "alexis-treasure",
+      "title": "Alexis: news through recovered treasure",
+      "category": "story",
+      "summary": "Give Alexis one treasure item for a hazy blue amulet. She starts asleep in the plush home’s bedroom; wake her before asking or offering. Her hope for Maveriss is narrative: this exchange does not independently verify his rescue or fate.",
+      "contracts": [
+        {
+          "giver_vnum": 82537,
+          "completion_key": "give=I:13364;receive=I:13318;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13364",
+          "text": "Carry one chest of treasure",
+          "kind": "carried_item",
+          "item_vnums": [
+            13364
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Recover the treasure item from the Caverns of Armageddon, or use an exact supplied copy. Supplies are limited. This is a quest item despite its chest name; it has no separate OPEN step. Each recipient consumes a copy for a different reward. Reach the bedroom through the ordinary closed living-room door, and WAKE Alexis if she is asleep. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Alexis: news through recovered treasure",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82537,
+              "completion_key": "give=I:13364;receive=I:13318;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "markam-parchment",
+      "title": "Markam: read the warning",
+      "category": "story",
+      "summary": "Show Markam the exact parchment. He returns the same item kind and grants a new keystone half before departing. The extra half makes this an actual story stage, even though it includes a returned input. The new parchment is not proof that the original item identity survived.",
+      "contracts": [
+        {
+          "giver_vnum": 82538,
+          "completion_key": "give=I:82517;receive=I:82517,I:82518;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82517",
+          "text": "Carry the wrinkled parchment",
+          "kind": "carried_item",
+          "item_vnums": [
+            82517
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Find the parchment in the locked gold chest in Roland’s empty house, or use an exact supplied copy. Reach Markam through the palace gates, its hidden eastern passage to the Sunweaver, and the closed bridge hatch. The portal key is not the palace key. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Markam: read the warning",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82538,
+              "completion_key": "give=I:82517;receive=I:82517,I:82518;disappear=1"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "lost-monkey",
+      "title": "The hunter: recover the lost monkey",
+      "category": "story",
+      "summary": "Return the exact lost-monkey item for a declared 20,000 coin-value reward. It is a hidden quest item from the Hunt, distinct from the local living pet monkey. The accepted hand-in does not prove personally rescuing a living creature.",
+      "contracts": [
+        {
+          "giver_vnum": 82543,
+          "completion_key": "give=I:13365;receive=C:20000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13365",
+          "text": "Carry the lost-monkey item",
+          "kind": "carried_item",
+          "item_vnums": [
+            13365
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the Hunt’s tree room to reveal this exact hidden item. The hunter starts at the northern garden and can wander. A living monkey NPC or another item with a similar name does not satisfy the recipe. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete The hunter: recover the lost monkey",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82543,
+              "completion_key": "give=I:13365;receive=C:20000;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "officer-raft-sap",
+      "title": "The naval officer: raft and tree sap",
+      "category": "story",
+      "summary": "Bring the naval officer the small wooden raft and tree sap for the blackened bracer and collar of the squall plus a declared 10,000 coin-value reward. The life-raft scenery at the beach is a different, fixed container. This hand-in does not declare repair of that container or a sailor-rescue effect.",
+      "contracts": [
+        {
+          "giver_vnum": 82565,
+          "completion_key": "give=I:431,I:82550;receive=C:10000,I:22279,I:22280;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-431",
+          "text": "Carry a small wooden raft",
+          "kind": "carried_item",
+          "item_vnums": [
+            431
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This exact boat appears in Shantil’s supply list, but BUY is unavailable with accounting active. Supplied or otherwise admitted exact stock is needed. The fixed small life raft at the beach is not the requested kind. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "material-82550",
+          "text": "Carry the wad of tree sap",
+          "kind": "carried_item",
+          "item_vnums": [
+            82550
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the su-monster den to reveal its hidden sap. The road’s southern bushes and the den’s forest entrance start secret and closed. Reveal and open those passages, then retrieve the exact sap. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete The naval officer: raft and tree sap",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82565,
+              "completion_key": "give=I:431,I:82550;receive=C:10000,I:22279,I:22280;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "balance-letter-referral",
+      "title": "Balance: an optional letter referral",
+      "category": "service",
+      "summary": "Show Balance the small letter to hear that a Seraphim in Desolate is the intended recipient. He returns the same item kind without a new material reward. This referral is support; the eventual Seraphim delivery belongs to Desolate and can use a supplied letter without this history.",
+      "contracts": [
+        {
+          "giver_vnum": 82569,
+          "completion_key": "give=I:82543;receive=I:82543;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82543",
+          "text": "Carry the small letter",
+          "kind": "carried_item",
+          "item_vnums": [
+            82543
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The letter addressed to Nansuo and signed by Ajandaner starts inside the dresser drawer in the rented room at the inn. OPEN the drawer by name despite its suppressed display, then SEARCH its contents for the hidden letter. The drawer starts closed even though its description says open. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Balance: an optional letter referral",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82569,
+              "completion_key": "give=I:82543;receive=I:82543;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "balance-paired-trophies",
+      "title": "Balance: the two local trophies",
+      "category": "story",
+      "summary": "Offer the drider’s staff and the holy knight’s whitestone broadsword together for spiked sabatons and a purple vial. This is a separate exact two-kind recipe from the three foreign tokens. Removing the source foes or possessing either trophy does not complete the outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 82569,
+          "completion_key": "give=I:82547,I:82549;receive=I:82551,I:82552;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-82547",
+          "text": "Carry the drider’s staff",
+          "kind": "carried_item",
+          "item_vnums": [
+            82547
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The drider Mardoc starts in his study above the sitting room, behind an ordinary closed granite door. His staff is equipped; retrieve and carry it loose before offering. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "material-82549",
+          "text": "Carry the whitestone broadsword",
+          "kind": "carried_item",
+          "item_vnums": [
+            82549
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The holy knight starts beyond the ordinary closed curtain at the Home of the Holy. This equipped weapon is separate from his hidden, invisible keystone half. Carry the sword loose for the offering. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Balance: the two local trophies",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82569,
+              "completion_key": "give=I:82547,I:82549;receive=I:82551,I:82552;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    },
+    {
+      "id": "balance-three-tokens",
+      "title": "Balance: the three tokens",
+      "category": "story",
+      "summary": "Bring the tokens of light, evil and undeath from Rogue Plains for the mage boots, axe, shayla and combat brace of the maelstrom. All three distinct kinds are required in one offering. Sijona’s referral explains the journey but is not a mandatory personal history. Four rewards still make one Myrabolus outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 82569,
+          "completion_key": "give=I:75825,I:75826,I:75834;receive=I:22631,I:82553,I:82554,I:82555;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-75825",
+          "text": "Carry the token of light",
+          "kind": "carried_item",
+          "item_vnums": [
+            75825
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Ebriham chieftain in Rogue Plains carries this hidden token. Search the source corpse to reveal it, or use a supplied exact copy. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "material-75826",
+          "text": "Carry the token of evil",
+          "kind": "carried_item",
+          "item_vnums": [
+            75826
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Mabus in Rogue Plains carries this hidden token. Its evil token kind differs from the similarly numbered local NPC and the other tokens. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "material-75834",
+          "text": "Carry the token of undeath",
+          "kind": "carried_item",
+          "item_vnums": [
+            75834
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The archnecromancer in Rogue Plains carries this hidden token. The optional letters, local staff/sword and earlier token-source kills are not extra inputs. Some maelstrom rewards can also be found elsewhere and used in Winterhaven; acquiring them does not complete this offering. Carry this exact item loose, rather than equipped or inside a container. An exact supplied copy is valid."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete Balance: the three tokens",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82569,
+              "completion_key": "give=I:75825,I:75826,I:75834;receive=I:22631,I:82553,I:82554,I:82555;disappear=0"
+            }
+          ],
+          "hint": "Complete this exact offering to finish the entry. Questions, possession and earlier stages do not complete it. Returning recipients and replacement supplies may need time."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

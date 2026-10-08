@@ -1,0 +1,544 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "willem",
+  "coverage": "complete",
+  "introduction": "Trace the five plaza-statue routes and exact Glory Badges to Lothrell’s memorial and lesser bloodsaber, then choose the caecilia upgrade, unicorn-horn key, minotaur letter and ooze branches or Willem’s named-skull reward. Access guidance and supplied shortcuts remain separate from accepted quest outcomes.",
+  "orientation": [
+    "The ruined city has open approaches from the Surface grasslands and Turolopolis Zoo. Lothrell’s active source is outside the city in the Surface’s grassy fertile foothills; his historical Verspin account does not place him there today. Discovering or meeting him on the Surface does not discover the ruined city.",
+    "Lothrell wants one each of the brown, green, blue, red and black Glory Badges, together. Five copies of one colour and the white badge do not replace the five exact colours. The carriers are living trapped heroes; the accepted memorial alone does not record personal rescue.",
+    "RUB the plaza’s statues to enter the five mirrored rooms. Their five badge keys open separate hatches: red up, black south, blue north, green east and brown west. SEARCH for a secret local hatch, UNLOCK it with the matching badge, then OPEN and travel. ENTER each room’s portal for a return to the centre of the Plaza of Statues. Keep needed badges for travel before giving all five to Lothrell.",
+    "The lesser bloodsaber from Lothrell can be paired with the sewer caecilia’s exact hidden stinger for Kurtukr’s upgrade. A supplied lesser blade skips that earlier route; the five-badge receipt cannot replace a blade already spent or handed away. Kurtukr follows Sprecken through holding-room dispersal, so find the actual surviving recipient.",
+    "SEARCH the shop’s lower passage or the restaurant’s secret trapdoor, OPEN it and enter the sewer. Falls above the park, beneath the flophouse, by sewer debris and at the palace chandelier can interrupt intended movement. A handled portal command, a fall or a found passage is separate from accepted arrival and source recovery.",
+    "The minotaur’s timeworn letter serves the drow emissary. His blue-ooze request gives wrappings, then removes him and his remaining possessions; killing him for the letter also removes that current ooze recipient. Plan letter recovery or a supplied copy before choosing the ooze outcome. Only one of the blue-ooze placements carries the exact blue lump.",
+    "Corwyck’s exact unicorn horn earns an iron bunker key, while one palace sentinel carries the separate crimson palace key. The jailor’s key serves four pickable cell doors. These keys normally break after successful unlocks, so reset locks may need another copy. Unlock, open, recovery and the accepted offering are distinct actions.",
+    "Willem’s loaded named skull earns the slave’s coin reward. Ordinary carved parts do not replace the exact horn, stinger or skull. Current supplies and accepted offerings do not prove a personal source kill, first recovery, rescue, fountain cleansing or collapse of the palace’s spell field. Questions and book chapters guide you without an achievement for every keyword.",
+    "Exact supplied ingredients remain valid. Cap-one stock, recipient departure, rare dispersal and traps can limit a journey; daily metadata does not promise renewal. Every new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen reward recovery remains separate."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 7103,
+      "name": "Corwyck",
+      "keyword": "corwyck",
+      "description": "Corwyck starts above the park. Ask about fountain, holy or animals for his horn clue. The horn grants an iron bunker key and experience; no accepted fountain-restoration stage follows.",
+      "topics": [
+        "fountain",
+        "hopeless",
+        "holy",
+        "item",
+        "druid",
+        "park",
+        "forest",
+        "animals"
+      ]
+    },
+    {
+      "mob_vnum": 7105,
+      "name": "Gorma",
+      "keyword": "gorma",
+      "description": "Gorma wears the red Glory Badge in a mirrored room reached by RUB the battle-ready woman’s statue at the southern end of the plaza’s row. The badge opens the upper hatch; ENTER the portal offers another return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7106,
+      "name": "Okhell",
+      "keyword": "okhell",
+      "description": "Okhell wears the black Glory Badge in a mirrored room reached by RUB the cloaked figure’s statue just south of the plaza’s centre. The badge opens the southern hatch.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7107,
+      "name": "Kalmidor",
+      "keyword": "kalmidor",
+      "description": "Kalmidor wears the blue Glory Badge in a mirrored room reached by RUB the Mountain Dwarf’s statue in the plaza’s centre. The badge opens the northern hatch.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7108,
+      "name": "Chlyridia",
+      "keyword": "chlyridia",
+      "description": "Chlyridia wears the green Glory Badge in a mirrored room reached by RUB the staff-bearing woman’s statue just north of the plaza’s centre. The badge opens the eastern hatch.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7110,
+      "name": "Ballic",
+      "keyword": "ballic",
+      "description": "Ballic wears the brown Glory Badge in a mirrored room reached by RUB the rogue’s statue at the northern end of the plaza’s row. The badge opens the western hatch.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7115,
+      "name": "a blue ooze",
+      "keyword": "ooze",
+      "description": "Four blue oozes start in a corner of the Plaza of Statues; only one placement carries the exact blue lump. Other oozes and colours do not guarantee the minotaur’s ingredient.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7120,
+      "name": "a naive adventurer",
+      "keyword": "adventurer",
+      "description": "The naive adventurer starts near the southern gate with a dusty book. LOOK at its three chapters for Turolopolis history; examination supplies guidance rather than a recorded learned-topic achievement.",
+      "topics": [
+        "willem",
+        "palace",
+        "father"
+      ]
+    },
+    {
+      "mob_vnum": 7121,
+      "name": "Lothrell",
+      "keyword": "lothrell",
+      "description": "Lothrell’s active source is in the Surface’s grassy fertile foothills. Ask about turol, story, spell and favor. His old Verspin story describes a memorial, but the five badge carriers are living heroes trapped in mirrored rooms. Bring all five exact colours together.",
+      "topics": [
+        "turol",
+        "yes",
+        "story",
+        "spell",
+        "favor"
+      ]
+    },
+    {
+      "mob_vnum": 7123,
+      "name": "a frenzied unicorn",
+      "keyword": "unicorn",
+      "description": "The mutated unicorn starts in the stables carrying the exact horn Corwyck accepts. Recover that loaded item; ordinary carved parts and the source’s title do not grant quest credit.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7124,
+      "name": "a Crimson Watch sentinel",
+      "keyword": "sentinel",
+      "description": "Two palace sentinels start at the guard post; only the second placement carries the crimson palace key. Unlock and open the northern approach. The iron bunker key is a different key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7125,
+      "name": "a drow emissary",
+      "keyword": "emissary",
+      "description": "The drow emissary starts in the crimson sitting room. Ask about brooding or fate. The exact timeworn letter gives a ribbon and experience; the minotaur’s ooze departure can discard it.",
+      "topics": [
+        "brooding",
+        "fate"
+      ]
+    },
+    {
+      "mob_vnum": 7126,
+      "name": "Kurtukr",
+      "keyword": "kurtukr",
+      "description": "Kurtukr follows Sprecken from a holding room that disperses into local houses. Ask Sprecken about bloodsaber or saber. Kurtukr upgrades an exact lesser bloodsaber with the sewer caecilia’s stinger; his current location and survival must be found.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7127,
+      "name": "Sprecken",
+      "keyword": "sprecken",
+      "description": "Sprecken begins in a holding room with Kurtukr following. He talks about his protege. Public-house dispersal is possible, while entry into a holding room with no exits can strand the current pair until their availability changes.",
+      "topics": [
+        "bloodsaber",
+        "saber"
+      ]
+    },
+    {
+      "mob_vnum": 7128,
+      "name": "Orvalus",
+      "keyword": "orvalus",
+      "description": "Orvalus has a holding-room placement with the young wood drake. This rare supporting encounter is separate from the six accepted offerings; no authored return or drake-rescue endpoint exists.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7129,
+      "name": "the caecilia",
+      "keyword": "caecilia",
+      "description": "The sewer caecilia starts in a smelly tunnel carrying a hidden stinger. Kurtukr needs that exact loaded stinger with the lesser blade. Sewer access and actual custody are separate from the upgrade receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7130,
+      "name": "an inventive minotaur",
+      "keyword": "minotaur",
+      "description": "The minotaur starts in a dead end of the sewers with a timeworn letter. Ask about horn or horns. Blue ooze earns wrappings, then he leaves with his remaining possessions discarded. Killing him to recover the letter removes that current ooze recipient.",
+      "topics": [
+        "horn",
+        "horns"
+      ]
+    },
+    {
+      "mob_vnum": 7132,
+      "name": "a Crimson Watch jailor",
+      "keyword": "jailor",
+      "description": "The withered jailor starts in the prison intersection with the jail key. Four locked cell doors are pickable; cell access does not complete a prisoner escort or the slave’s skull offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7133,
+      "name": "a thri-kreen prisoner",
+      "keyword": "prisoner",
+      "description": "The thri-kreen prisoner starts in a prison holding room with routes to the cells. Finding or opening a cell does not supply a recorded rescue or escort ending.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7134,
+      "name": "a wooddrake",
+      "keyword": "drake",
+      "description": "The young wood drake shares Orvalus’s holding-room source. It supports the setting without supplying a mapped native quest ingredient or rescue reward.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7135,
+      "name": "a holy shaman",
+      "keyword": "shaman",
+      "description": "The old thri-kreen shaman has a rare holding-room placement. Native dispersal and current survival determine whether a public encounter is available; no new lesson or lore receipt is invented.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7136,
+      "name": "Mishka",
+      "keyword": "mishka",
+      "description": "Mishka starts in a holding room with bedroom routes and several paths into a room with no exits. Ask about willem for her red-cloud account; no recorded performance, rescue or independent terminal outcome follows.",
+      "topics": [
+        "willem"
+      ]
+    },
+    {
+      "mob_vnum": 7137,
+      "name": "Jalk",
+      "keyword": "jalk",
+      "description": "Jalk follows Willem from the bedchamber. Ask about willem or winterhaven for his threats and entrapment account. Defeating or questioning a companion does not substitute for Willem’s exact skull.",
+      "topics": [
+        "willem",
+        "winterhaven"
+      ]
+    },
+    {
+      "mob_vnum": 7138,
+      "name": "Willem",
+      "keyword": "willem",
+      "description": "Willem starts in his bedchamber carrying the hidden named skull, with Jalk and Amanthia following. Ask about trap, statue, ring, glory or heroes. His threats and the book’s history support the story, while the slave accepts the exact trophy rather than a personal-kill receipt.",
+      "topics": [
+        "trap",
+        "fate",
+        "palace",
+        "gods",
+        "tharnadia",
+        "winterhaven",
+        "statue",
+        "ring",
+        "glory",
+        "hero",
+        "heroes"
+      ]
+    },
+    {
+      "mob_vnum": 7139,
+      "name": "Amanthia",
+      "keyword": "amanthia",
+      "description": "Amanthia follows Willem from the bedchamber. Her role belongs to the palace setting; no accepted rescue, relationship or independent delivery endpoint exists.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7140,
+      "name": "a servant of Willem",
+      "keyword": "slave",
+      "description": "The frightened slave starts in the servants’ quarters. Ask about slave, rest or willem for the skull request. The accepted named skull grants coins and his departure; it does not record freeing every cell or changing the palace’s spell field.",
+      "topics": [
+        "slave",
+        "rest",
+        "willem"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "corwyck-unicorn-horn",
+      "title": "Corwyck: bring the unicorn horn",
+      "category": "story",
+      "summary": "Bring Corwyck the unicorn’s exact horn for an iron key and a declared 25,000 experience. He leaves afterward. The key opens the bunker; the acceptance does not record an actual fountain cleansing or restoration of the animals.",
+      "contracts": [
+        {
+          "giver_vnum": 7103,
+          "completion_key": "give=I:7103;receive=E:25000,I:7100;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "unicorn-horn",
+          "text": "Carry the unicorn’s exact horn",
+          "kind": "carried_item",
+          "item_vnums": [
+            7103
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mutated unicorn starts in the stables carrying this horn. Search and recover its actual item rather than substituting an ordinary carved part. Corwyck begins above the park; the iron key is not the palace key. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Corwyck: bring the unicorn horn",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7103,
+              "completion_key": "give=I:7103;receive=E:25000,I:7100;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "lothrell-five-badges",
+      "title": "Lothrell: honour the five heroes",
+      "category": "story",
+      "summary": "Bring Lothrell one brown, green, blue, red and black Glory Badge together for a lesser bloodsaber and a declared 500,000 experience. He leaves afterward. Each colour is required; the white badge is not a substitute. His memorial request does not prove that you personally rescued the living trapped heroes.",
+      "contracts": [
+        {
+          "giver_vnum": 7121,
+          "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "brown-badge",
+          "text": "Carry one brown Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7124
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ballic wears the brown badge in a mirrored room reached by RUB statue at the northernmost rogue statue in the plaza. The badge also unlocks that room’s western hatch. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "green-badge",
+          "text": "Carry one green Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7116
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Chlyridia wears the green badge in a mirrored room reached by RUB statue at the staff-bearing woman just north of the plaza’s centre. The badge also unlocks that room’s eastern hatch. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "blue-badge",
+          "text": "Carry one blue Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7113
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kalmidor wears the blue badge in a mirrored room reached by RUB statue at the Mountain Dwarf in the centre of the plaza. The badge also unlocks that room’s northern hatch. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "red-badge",
+          "text": "Carry one red Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7107
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gorma wears the red badge in a mirrored room reached by RUB statue at the battle-ready woman at the southern end of the row. The badge also unlocks that room’s upper hatch. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "black-badge",
+          "text": "Carry one black Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7110
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Okhell wears the black badge in a mirrored room reached by RUB statue at the cloaked figure just south of the plaza’s centre. The badge also unlocks that room’s southern hatch. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Lothrell: honour the five heroes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7121,
+              "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "emissary-timeworn-letter",
+      "title": "The drow emissary: recover the timeworn letter",
+      "category": "story",
+      "summary": "Bring the drow emissary the exact timeworn letter for a blue ribbon laced with silver thread and a declared 50,000 experience. He leaves afterward. The letter starts hidden on the minotaur; the minotaur’s separate ooze reward does not issue it.",
+      "contracts": [
+        {
+          "giver_vnum": 7125,
+          "completion_key": "give=I:7135;receive=E:50000,I:7137;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "timeworn-letter",
+          "text": "Carry the minotaur’s timeworn letter",
+          "kind": "carried_item",
+          "item_vnums": [
+            7135
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The minotaur begins in a dead end of the sewers carrying the letter. Recovering it from his corpse removes that current ooze recipient; his departure after an ooze offering can discard the letter. Recover or arrange supplied proof before choosing that outcome. Actual recovery from a living source requires its own successful transfer. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The drow emissary: recover the timeworn letter",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7125,
+              "completion_key": "give=I:7135;receive=E:50000,I:7137;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "kurtukr-bloodsaber-upgrade",
+      "title": "Kurtukr: strengthen the bloodsaber",
+      "category": "story",
+      "summary": "Bring Kurtukr a lesser bloodsaber and the sewer caecilia’s exact stinger together for a greater bloodsaber. He remains afterward. Lothrell’s badge route is useful preparation, while an exact supplied lesser blade is equally valid.",
+      "contracts": [
+        {
+          "giver_vnum": 7126,
+          "completion_key": "give=I:7131,I:7139;receive=I:7138;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-badge-route",
+          "text": "Optional earlier route: honour Lothrell’s five heroes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7121,
+              "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Lothrell’s five-badge offering supplies the lesser bloodsaber. A supplied blade skips that earlier receipt. History does not replace a spent, equipped or handed-away blade."
+        },
+        {
+          "id": "lesser-bloodsaber",
+          "text": "Carry a lesser bloodsaber",
+          "kind": "carried_item",
+          "item_vnums": [
+            7131
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Obtain Lothrell’s exact lesser blade or a supplied copy. Unequip it for the offering. An ordinary sword or the already greater blade does not replace it. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "caecilia-stinger",
+          "text": "Carry the sewer caecilia’s exact stinger",
+          "kind": "carried_item",
+          "item_vnums": [
+            7139
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sewer caecilia starts in a smelly tunnel with the hidden stinger. Search the shop’s lower passage or the restaurant’s trapdoor, open it and enter the sewer. An ordinary carved stinger does not replace this loaded item. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Kurtukr: strengthen the bloodsaber",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7126,
+              "completion_key": "give=I:7131,I:7139;receive=I:7138;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "minotaur-blue-ooze",
+      "title": "The minotaur: supply the blue ooze",
+      "category": "story",
+      "summary": "Bring the minotaur the exact lump of blue ooze for tightly bound gauze wrappings and a declared 10,000 experience. He leaves afterward. This consumes the current recipient and can discard his timeworn letter; decide how to recover that letter before proceeding.",
+      "contracts": [
+        {
+          "giver_vnum": 7130,
+          "completion_key": "give=I:7141;receive=E:10000,I:7142;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "blue-ooze",
+          "text": "Carry the exact lump of blue ooze",
+          "kind": "carried_item",
+          "item_vnums": [
+            7141
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Several blue oozes start in a corner of the Plaza of Statues, but only one placement carries this lump. Other colours and the separate black lump do not replace it. Missing cap-one stock may need a renewed source; a shared monster name does not guarantee the ingredient. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The minotaur: supply the blue ooze",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7130,
+              "completion_key": "give=I:7141;receive=E:10000,I:7142;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    },
+    {
+      "id": "slave-willems-skull",
+      "title": "The slave: deliver Willem’s named skull",
+      "category": "story",
+      "summary": "Bring the frightened slave Willem’s exact bloodstained skull for a declared 200,000 coins. The slave leaves afterward. This is accepted proof of the request; it does not record every prisoner’s rescue, an escort or collapse of the palace’s spell field.",
+      "contracts": [
+        {
+          "giver_vnum": 7140,
+          "completion_key": "give=I:7154;receive=C:200000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "willems-skull",
+          "text": "Carry Willem’s named bloodstained skull",
+          "kind": "carried_item",
+          "item_vnums": [
+            7154
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Willem begins in his bedchamber with the hidden named skull and following companions. Recover the exact loaded trophy; an ordinary carved skull is different. The crimson key from one palace sentinel opens the palace approach. Supplied proof needs no recorded personal kill. Carry the exact item loose; worn or nested items do not count. Exact supplied items can skip personal recovery."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The slave: deliver Willem’s named skull",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7140,
+              "completion_key": "give=I:7154;receive=C:200000;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, current supplies, source kills, statue travel and later key use remain separate facts. Rewards and any recipient departure require settlement. A daily request does not promise renewed stock or a present recipient."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

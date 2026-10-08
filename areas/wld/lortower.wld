@@ -257,7 +257,7 @@ S
 ~
 1340 33587208 0 0
 D2
-&+LTo the north is a small shrine to Sargon.&n
+&+LTo the south is a small shrine to Sargon.&n
 ~
 door oak&n~
 1 0 134014
@@ -329,7 +329,7 @@ D0
 door wood&n~
 1 0 134011
 D2
-&+LTo the north is the stairs to the higher levels.&n
+&+LTo the south is the stairs to the higher levels.&n
 ~
 ~
 0 0 134017
@@ -744,7 +744,7 @@ S
 D0
 &+L   To the north is a strong black metal door.&n
 ~
-door iron sargon&n~
+door iron sargon~
 3 -2 134031
 D1
 &+LTo the east is a door that leads to some stairs.&n
@@ -853,7 +853,7 @@ D0
 0 0 134037
 D1
 ~
-double door sargon&n~
+double door sargon~
 3 -2 134041
 D2
 ~
@@ -904,7 +904,7 @@ door stone&n~
 1 0 134044
 D3
 ~
-double iron sargon&n~
+double iron sargon~
 3 -2 134040
 S
 #134042
@@ -1578,7 +1578,7 @@ S
 1340 1073774592 19 0
 D4
 ~
-door magic thothrontithos&n~
+door magic thothrontithos~
 3 -2 134083
 D5
 ~

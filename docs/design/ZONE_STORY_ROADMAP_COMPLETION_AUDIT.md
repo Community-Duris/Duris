@@ -1,0 +1,39 @@
+# Zone-story roadmap completion audit
+
+The original **220-area priority queue is fully mapped at source level**,in its original order. Every original area has a complete builder-authored mapping,a source audit and a linked comprehensive dossier in the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md). The catalog contains **232 journals**:these220 original areas plus12 preceding additional journals. This audit verifies the original queue;the schema’s complete binding coverage alone is not a claim of played completion for any journal.
+
+The [priority list](ZONE_STORY_ZONE_PRIORITIES.md),[shared implementation plan](ZONE_STORY_INTEGRATION_PLAN.md),[builder guide](../guides/ZONE_STORY_BUILDING.md) and [daily qualification reference](../reference/ZONE_STORY_QUEST_DAILY.md) retain the progression stories,custom-code prerequisites,ownership rules and concrete fair repair plans. The final [Tikitzopl dossier](zone-stories/LOST_CITY_OF_TIKITZOPL.md) closes the source queue with15 broader stories and45 owned follow-ups. No zone was removed or moved to make the queue appear complete.
+
+| Audit check | Result |
+| --- | --- |
+| Original ordered areas | 220 unique entries;priorities1..220 preserved |
+| Original journals with complete binding coverage | 220 |
+| Original source audits and linked dossiers | 220 of each;660 files pinned |
+| Remaining original area mappings | 0 |
+| Current catalog | 232 journals;1518 achievements;1406 potential daily candidates;2184 units |
+| Native catalog preservation at final checkpoint | All2668 definitions,source fingerprint and registry unchanged |
+| Earlier journal preservation at final checkpoint | All231 prior mappings unchanged |
+| Native repair at final checkpoint | None |
+| New tracking admission | Active READY accounting required |
+| Daily policy | Disabled pending independent gameplay/balance qualification |
+
+## What this completes
+
+The queue now provides comprehensive source stories and player-facing guidance for every original area. Journals can show the preparation,contacts,accepted native contracts and other guidance that existing schema can safely express. Optional inventory rows describe current custody;accepted atomic receipts own durable completion. Source recovery,gifts,dialogue knowledge,actual passage and useful recipient results remain distinct when native controllers do not yet publish those outcomes. Supplied exact materials retain native eligibility and do not acquire invented personal-kill or route prerequisites.
+
+Each dossier explains original custom-code and world dependencies,untracked intermediates,source alternatives and fair repair or adapter work. A missing hook or unclear historical intent remains an owned integration item;mapping it does not implement a new mechanic or promise a working service. Native repairs already present in the branch remain separately identified in the PR’s repair/news sections and checkpoint history. Future world/quest fixes need a separately named commit and concrete trigger,before/after,scope,balance and focused validation.
+
+## Implementation priorities after source mapping
+
+1. Qualify accounting-compatible source issuance and first actual custody with stable UID,source actor/slot,reset generation and transfer reason. Preserve the distinction between personally recovering a material and receiving a supplied copy;discovery or midnight must not create stock.
+2. Complete original authoritative item/coin settlement and cold recovery for remaining native custom grants and services. Retain active-accounting refusal until settlement is ported;listing,attempts,inventory preparation and committed rewards are separate outcomes.
+3. Pilot actual learned-answer,scripted-access and admitted-travel events with [Twin Towers Forest](zone-stories/TWIN_TOWERS_FOREST.md),[Plains of Life](zone-stories/PLAINS_OF_LIFE.md) and [Ailvio](zone-stories/AILVIO.md). These source dossiers already distinguish belt access,accepted tutorial state,animal lineage,bandaging,forage and departure from terminal exchange credit.
+4. Add intentional logical recipient/form/episode,consent or eligibility,compatible destination and saved positive benefit for living care,voluntary freedom,restoration or useful service. Ordinary combat,following,token delivery,extraction or respawn cannot substitute for those outcomes.
+5. Qualify the complete player-facing journal journey and independently balanced renewal before enabling any daily policy. Preserve original competing recipes,foreign ownership,source rarity,PvP travel rules and reward authority.
+
+## Validation and publication boundary
+
+The final exact-input catalog and compiled journey checks passed;the fresh server build remains unavailable. Publication is verified separately after commit. The source audit above verifies ordered coverage,linked dossiers and preservation;it does not qualify installed stock,live item consumption,active services or played positive recipient results. The final exact-input results and unavailable fresh server build are recorded below. No migration,deployment,accounting activation,daily enablement or merge is part of this checkpoint.
+
+
+Validation passed for the focused Tikitzopl exact-contract/source-boundary regression:one honest native sacrifice/key binding,71 contacts,no invented topics,one optional material row and45 aligned follow-ups for15 broader stories. The Python/C++ journal suite passed for all232 mappings,including physical discovery/contact,seven wrong/equipped/key/foreign/loose/surplus custody cases,same-VNUM faerie/item separation,readiness without acceptance,supplied eligibility,spent roots,replay and mapped/raw cold recovery. The full production/catalog/inventory/audit suite passed on an isolated Windows filesystem on D: with6,396 hash-verified inputs. Canonical clang-format14 and diff checks passed. A fresh maintained Linux server build could not run because WSL distribution startup failed with WSL/Service/CreateInstance/E_FAIL;this is an unavailable check,not a passing build. Server sources are unchanged from the preceding successful priority216 build,verified by Git and exact input hashes;the current changed C++ journal harness compiled and passed on Windows. All2,668 native definitions,source fingerprint,registry and231 prior mappings remain unchanged. Original220-area order is preserved;comprehensive source mapping is220/220 with none pending. Catalog totals are232 journals,1,518 achievements,1,406 potential daily candidates and2,184 units. Checked 1751 local documentation links. Seven local/registry and32 selected shared/foreign hashes,180 raw SHP,888 world/reset,442 object and235 active QST inputs were verified. Exact closure retains three incoming tuples,four fully read selected topology bodies,seven complete native/foreign recipes,one foreign type25 return,10 positive-key doors and one selected-key container. All30 selected door resets are local in the442-ZON query;the44190 producer query retains one original row. Two unchanged reference-text exceptions remain bounded. After the full run, validation prose and status sentences in three documents were updated, and one contact sentence was corrected in the journal and its generated catalog. The focused Tikitzopl regression was rerun for the wording correction. All five amended inputs were verified separately. These checks qualify source mapping,projection and synthetic receipt recovery. Played active READY discovery/contact,source stock/custody,exact consumption/key reward/save/replay,admitted travel,settled services and useful saved recipient outcomes remain pending. New tracking requires active READY accounting;daily policy remains disabled. No native repair,operational change or played qualification is claimed. The ordered220-area completion audit passed with660 original journal/audit/dossier inputs pinned;installed and played qualification remains separate.

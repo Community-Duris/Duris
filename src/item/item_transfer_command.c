@@ -747,7 +747,7 @@ bool valid_native_recovery(const item_transfer_payload &payload,
 			       item_transfer_continuation_kind::quest_offering &&
 		       quest_reward_continuation_decode(payload.continuation.data.data(),
 							payload.continuation.data.size(), &terms) &&
-		       terms.version == 5 &&
+		       (terms.version == 5 || quest_reward_has_daily_context(terms)) &&
 		       terms.root_count == recovery.consumed_root_order.size() &&
 		       std::equal(recovery.consumed_root_order.begin(),
 				  recovery.consumed_root_order.end(), terms.roots.begin());

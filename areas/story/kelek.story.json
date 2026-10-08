@@ -1,0 +1,105 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "kelek",
+  "coverage": "complete",
+  "introduction": "Follow the duergar smith’s material request through the abandoned mines and undead tomb. Exact accepted returns, current preparation, actual passage and later rewards each have their own meaning.",
+  "orientation": [
+    "The abandoned mines and undead tomb contain the smith’s request, hidden passages, a surviving dwarven camp and Kelek’s crypt. Church requests have their own Church journal.",
+    "Ask the duergar smith about mithril. Bring one chunk of mithril and one smithy hammer loose together for his jet black cloak with mithril streaks. His reward does not require defeating Kelek or repairing the forge.",
+    "The mithril chunk is declared at the bottom of a mine shaft. A zombie mountain dwarf soldier is declared wielding the smithy hammer. Supplied exact materials also fit the return; possession alone does not prove personal recovery.",
+    "Search and open the hidden routes to the smithy and dwarven camp when your character can. The lich guarding the crypt carries a crystalline key that breaks after unlocking. Actual passage and return differ from current key possession.",
+    "The dwarven cleric carries the Deliverer, whose wielded combat effect targets undead foes. Kelek carries an epic node with its own touch reward process. Neither combat equipment nor a boss death substitutes for one of these item returns.",
+    "Reset declarations are leads rather than guaranteed stock. Daily rollover does not replenish materials. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 87963,
+      "name": "a duergar smith",
+      "keyword": "smith",
+      "description": "Ask mithril; carry the exact mithril chunk and smithy hammer loose together for the cloak.",
+      "topics": [
+        "mithril"
+      ]
+    },
+    {
+      "mob_vnum": 87953,
+      "name": "a zombie of a mountain dwarf soldier",
+      "keyword": "soldier",
+      "description": "A zombie mountain dwarf soldier is declared wielding the smithy hammer. Recovering it differs from meeting or defeating him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87958,
+      "name": "the lich of a long dead mage",
+      "keyword": "lich",
+      "description": "Guards the passage into Kelek's crypt with a crystalline key. Successful unlock consumes the key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87956,
+      "name": "a dwarven cleric",
+      "keyword": "cleric",
+      "description": "At the surviving dwarven camp; declared wielder of the Deliverer. Its combat effect does not record a cure or rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87955,
+      "name": "the Wraith-Lord, Kelek",
+      "keyword": "kelek",
+      "description": "In the crypt with the epic node. Defeat, node custody and its committed touch reward remain separate.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "smithy-materials",
+      "title": "Bring materials to the duergar smith",
+      "category": "request",
+      "summary": "The smith accepts a mithril chunk and smithy hammer for his jet black cloak.",
+      "contracts": [
+        {
+          "giver_vnum": 87963,
+          "completion_key": "give=I:87961,I:87962;receive=I:87963;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87961",
+          "text": "Carry the mithril chunk loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87961
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared at the bottom of the mine shaft. Current exact material can be supplied; it does not prove your first recovery."
+        },
+        {
+          "id": "material-87962",
+          "text": "Carry the smithy hammer loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87962
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Declared wielded by a zombie mountain dwarf soldier. Unequip it before returning both materials together. This does not require a personal kill or repaired forge."
+        },
+        {
+          "id": "return",
+          "text": "Record the accepted smithy-material return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87963,
+              "completion_key": "give=I:87961,I:87962;receive=I:87963;disappear=0"
+            }
+          ],
+          "hint": "Only this accepted exact exchange records the card. Carry all its requested inputs loose together. Topics, key use, source encounters, another return and reward possession do not substitute."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
