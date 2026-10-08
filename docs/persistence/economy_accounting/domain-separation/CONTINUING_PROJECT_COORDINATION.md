@@ -114,17 +114,25 @@ generation, 27 direct inputs, 2816 existing candidate files and 30 evidence
 artifacts authenticated; eight qualified-binary controls independently pass.
 Import targets published primary, not the incompatible older R0-R14 source base.
 Auction boundary5ee22f1f8 now PASS source/design review:70 blobs,70 anchors and
-seven links independently authenticated. Architecture next owns only
-tests/async/test_auction_native_world_observation.py and
-AUCTION_WORLD_OBSERVATION_COMPONENT_HANDOFF_2026-10-08.md: actual observer/capture/
-codec providers, explicit complete forest expectations, identity/topology/refusal
-controls and focused strict sanitizer qualification on exact public primary.
-No copied observer or accepting census/capture/codec double; provider gaps remain
-explicit. No production/shared owner/quest edit or active native runner assigned.
+seven links independently authenticated. Observer component3c3eb67b8 plus required deadline correctiond8d0b5194 now PASS
+focused review there:2,816 source files/203 original artifacts and521 inputs per
+profile authenticated; coordinator reran49 O1+49 Og cases without diagnostics.
+Correction12 artifacts and actual timeout/nonzero diagnostics pass; harness/
+providers/commands unchanged. Import includes the correction. This is observer/
+capture acceptance, not SQL/publication/ACK/save/cold qualification.
+Architecture next owns only COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
+actual enrollment/claim/collection/purchase/expiry, catalog/custody/money/time,
+original receipt/current proof/native/recovery boundaries and one useful future
+reservation. Reuse R0 and existing pure preparations; exact available inputs,
+unavailable private owner/driver, collision and qualification limits are in that
+review. No production/test/shared owner/quest edit or active runner is assigned.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Primarycda8aa6f6 publishes private flat original-attempt/pet-slot compatibility
-progress, candidatebd4d4a56/128 production files, and blockers; public native
-source/migrations remain unchanged. Supported client-free flat worker/replay
+Primary31ad6ae72 publishes private retained flat-submission/prospective NBC4/NMB4
+cash-role progress, candidatebe8942cd/134 production files/72 C providers, and
+blockers; public native source/migrations remain unchanged. Source-review fixes
+cover prior-journal drain, foreign UID census, client-free keeper transforms and
+decoded retention budget. Those private contracts are reported, not available
+or executed qualification here. Supported client-free flat worker/replay
 selection already exists; SQL-client builds reject flatfile-primary. No new
 SQL-enabled flat route is required. Reported source review is not executed
 compiler/native/gameplay/recovery proof; original dispatch/producer/once-only

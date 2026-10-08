@@ -28,13 +28,17 @@ unchanged binary, disclosed doubles and tmpfs journal limits. Maintained test
 f70d1147d also passes wrapper/input/artifact review and eight independent binary
 controls; import requires the published-primary lineage, not older R0-R14.
 Auction boundary5ee22f1f8 now PASS source/design review with70 blobs/70 anchors/
-seven links authenticated. Architecture next owns only the new focused
-test_auction_native_world_observation.py and its component handoff: actual
-observer/capture/codec providers, complete explicit forests and strict identity/
-topology/refusal controls. No production/shared owner edit is assigned. Pickup
-wiring still needs genuine save/current-proof/restart owners. Primarycda8aa6f6
-reports private original flat-attempt/pet-slot progress at candidatebd4d4a56;
-public source is unchanged and native qualification unexecuted. Supported
+seven links authenticated. Observer component3c3eb67b8 plus required deadline correctiond8d0b5194 now PASS:
+coordinator authenticates2,816 source files/203 original artifacts/521 inputs per
+profile and reruns49 O1+49 Og controls without diagnostics; correction12 artifacts
+and timeout/nonzero checks pass. Import both commits. This is observer/capture
+acceptance, not SQL/publication/ACK/save/cold qualification. Architecture next owns
+only COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: reuse R0/pure preparation
+and trace actual lifecycle/catalog/custody/financial/native/recovery boundaries.
+No production/shared owner edit is assigned. Pickup still needs genuine save/
+current-proof/restart owners. Primary31ad6ae72 reports private retained flat-submit/
+NBC4/NMB4 cash-role progress at candidatebe8942cd/134 production files; public
+source is unchanged and native qualification unexecuted. Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

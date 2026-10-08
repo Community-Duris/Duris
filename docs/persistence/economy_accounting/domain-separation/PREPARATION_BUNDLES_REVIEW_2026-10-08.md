@@ -437,3 +437,81 @@ Architecture's 49-case auction observer component remains in active qualificatio
 its live jobs and worktree are preserved. No new architecture assignment or
 primary adoption wait is imposed. Actual native Goals remain BLOCKED, heartbeat
 ACTIVE, and broad primary Plans1-5/R1-R8 completion remains unresolved.
+
+## Auction observer component reviewed after deadline correction
+
+PASS for focused observer/capture acceptance at original component commit
+`3c3eb67b8253ec2b4d16524a040e4904fe0ee517` plus required orchestration correction
+`d8d0b5194967445eca02a40b736869b05abf6c34`.
+[Exact corrected observer handoff](https://github.com/Community-Duris/Duris/blob/d8d0b5194967445eca02a40b736869b05abf6c34/docs/persistence/economy_accounting/domain-separation/AUCTION_WORLD_OBSERVATION_COMPONENT_HANDOFF_2026-10-08.md)
+and [test](https://github.com/Community-Duris/Duris/blob/d8d0b5194967445eca02a40b736869b05abf6c34/tests/async/test_auction_native_world_observation.py)
+are an additive two-file bundle for the published-primary lineage. Original
+production and existing ownership-publication test remain unchanged.
+
+Coordinator read the entire 899-line original runner, complete handoff and
+correction. Independently authenticated all 2,816 exported original source/test
+files against primary Git blobs, 203 indexed final evidence files, generated
+harness, eleven whole production providers, both compiler/link profiles and
+both ELF hashes. Authenticated 521 direct/transitive input pins per profile,
+compiler and loaded-library hashes on Ubuntu. No observer/capture/census/codec/
+ownership replacement supplies acceptance. Synthetic graphs, diagnostic aborts,
+thread fixture and runtime hydration remain explicitly component inputs.
+
+Independently replayed all 49 O1 and 49 Og cases with leak-detecting ASan and
+halt/stacktrace UBSan: PASS without diagnostics, inputs unchanged. Qualified
+ELF SHA256 pins are
+`2dcd4db546944cbbb77cd285b7bfad642b09481a97e9e669c1a4cadfbde654b1` and
+`4fb9b0abcdf83973cd8952e7103d0fdb69e655d617c4e538fed2a97e33a8372a`.
+Manual complete forest expectations are independent of live baseline capture
+and supplemental pure expected helpers. Actual runtime/body, NORENT policy,
+identity/topology/cycle, literal metadata, bounds and strong output-preservation
+controls execute. Replacement first accepts the identical forest on the new
+body; live overflow retains a valid expected image, making refusal decisive.
+
+Review found missing compile/link/probe deadlines in the original runner.
+Correction bounds each compile at900 seconds, link120, probes20, and preserves
+runtime90. The corrected runner SHA256 is
+`5dd7406cff0fcbeb15ac1badb503f0314c3958becccd79784134e9f101b242b4`.
+Independently checked syntax and unchanged literal harness/providers/cases,
+flags, unit order and command/environment expressions; authenticated 12 separate
+correction artifacts. A real timed-out child returned124 after0.312 seconds
+and retained partial output/diagnostic; a nonzero child retained code7 and stderr.
+Original binary qualification labels and all original artifacts remain intact.
+No C++ rebuild was repeated for the orchestration-only correction. Accepted
+import includes both commits, not the originally unbounded runner alone.
+Private coordinator records: `D:\Dev\Temp\coordinator-auction-observer-review-20261008`.
+
+This qualifies actual observer/capture components, not SQL authority, held
+native allocation/placement/publication, NAR/ACK, save or cold recovery. Primary
+adoption is unknown. No adoption wait or new release gate is imposed.
+
+Next one bounded architecture delivery owns only
+`domain-separation/COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Reuse completed R0, existing owned policy/collection/purchase/expiry preparation,
+inventory/post-R14 findings and item/currency maps. Trace enrollment/cancellation,
+collection/listing/purchase/expiry, original complete item identity and transitive
+acquisition invalidation, time/price/capacity/racewar/wallet-bank facts, listing/
+catalog clocks and cache versus durable source, compound financial/custody atomicity,
+original command/receipt, current locked proof and native player publication/save/
+ACK/replay/cold ownership. Preserve environmental movement versus actual claim/
+destruction semantics. Do not repeat pure extraction or introduce another facade.
+
+Reserve one useful narrow future refactor or actual-provider acceptance slice only
+where source identifies a real gap; state exact paths, available providers,
+unavailable original owners/exports/current proof, controls, collision limits and
+qualification. The private439 native shutdown/Collector driver is not supplied by
+a public value interface. The next document is source/design only: no production,
+test/shared owner/export/driver/schema/registry/coverage/Plan5 or operational edit,
+native build/journal/DB/server/migration batch or private bytes in Git.
+
+Latest primary31ad6ae72 reports private retained flat-submission/prospective
+NBC4/NMB4 cash-role progress at candidatebe8942cd,134 production files/72 C
+providers. Its four corrected source-review findings concern prior player-journal
+drain, foreign UID/root/parent census, supported client-free keeper transforms and
+decoded retention budget. The private code is unavailable here; compiler/native/
+gameplay/SQL/persistence/recovery remain UNEXECUTED. Public src/migrations match
+the component's frozen source. Full flat driver/publication/ACK/cold, role-aware
+accounting/native-image participants, birth/admission/room integration, complete
+opening/shared-keeper history, activation, Plan5 and R1-R8 remain primary obligations.
+Quest fee component stays independently active. Actual native Goals remain BLOCKED,
+heartbeat ACTIVE and the broader published primary finish line unresolved.
