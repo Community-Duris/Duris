@@ -1,5 +1,41 @@
 # Double-entry economy: remaining requirements
 
+## Flat cold enrollment and exact retained capacity - 2026-10-08
+
+Private `tmp/lifecycle-shared-shop-reader-cold-holder-candidate-primary-20261008`
+SHA256 `a226828cfc3773cc4e72ad2900dc0a33801778a0d1ee1acf7be47a3129ee3cc0` now composes11 additional source-accepted slices on the
+previous147 candidate:150 production files,23 unchanged fixtures,five unchanged
+schema/manifest inputs,81 selected C providers registered once and1480 new
+authenticated dependency records. Source composition adca26 preserves the
+three unrelated local changes. No compiler/native/SQL/gameplay/persistence/
+recovery tests ran under the user's major-plan deferral.
+
+New source slices seal the real flat catalog after optional boot assignments,
+observe authentic SHOP BEFORE state in the borrowed original SQL session,
+prepare the complete unpublished original selected literal graph, measure its
+actual pool/text/description/affect allocations including binary spellbooks,
+authenticate the genuine restored outer/current/world/cash cut before once-only
+enrollment, and count all current retained holder capacities without duplicating
+embedded structures. Original32MiB charge, SQL behavior and safety gates remain.
+
+The boot seal precedes recovery/gameplay workers; the earlier logging worker
+already exists. The shared SHOP reader supplies BEFORE evidence only: native-ID
+locks, whole-budget reservation, atomic SHOP/native writes, full264-byte MBR4,
+result storage and recovery remain root-owned and unfinished. No SHOP wallet or
+native-mobile custody owner is fabricated. Cold native enrollment remains
+unwired until the full caller allocates and charges every future transition
+variant before effects. Current-holder census success is not that full charge.
+
+Root next joins preallocated immutable working forests with original finite
+effect/reload/money/custody publication and guarded ACK, then genuine registration
+and replay. UID-zero legacy pet absence remains unknown for an absent player.
+Independent Plan5 audit/backup fixes are being reviewed for narrow integration;
+their peer qualification does not cover this private native candidate. Original
+Plan1 acceptance stays in its recorded scope; Plans2-4,combinedPlan5,R1-R8 and
+release remain incomplete. This is a documentation-only source checkpoint;
+private implementation is unexecuted and unqualified. Inactive accounting,
+declined spell-path decision and activation gates stay unchanged.
+
 ## Reviewed ordinary world and flat cold census - 2026-10-08
 
 Private `tmp/lifecycle-ordinary-world-cold-census-candidate-primary-20261008`
