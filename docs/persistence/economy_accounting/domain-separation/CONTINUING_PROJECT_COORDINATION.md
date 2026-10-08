@@ -269,15 +269,18 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
-Current prioritized queue: (1)quest PRIVATE genuine SHOP cancellation hold-
-consumption refusal feasibility,(2)shared-keeper first-checkpoint decision and
-authentic retained original boot/warm disposition,(3)shared-owner history capacity
-fix-specific real DB proof,(4)genuine native source/owner/save/ACK/current/cold
-interfaces/original journeys. Keeper fact preparation stays reviewed/closed;
-architecture has no new independent task. Public maintained source unchanged;
-quest source/fixture feasibility is preparation,not a newly executable native case.
-No maps/helpers are reopened to fill time. Both actual native Goals and root Goal
-remain BLOCKED/unfinished;heartbeat ACTIVE. This is not overall completion/pause.
+Current prioritized queue: (1)primary-owned accessible integrated SHOP owner/fixture
+and legitimate late hold-consumption refusal procedure,including original fences
+present at cancellation entry;(2)shared-keeper first-checkpoint decision and
+authentic retained original boot/warm disposition;(3)shared-owner history capacity
+fix-specific real DB proof;(4)genuine native source/owner/save/ACK/current/cold
+interfaces/original journeys. Quest feasibility is now reviewed/closed at source
+scope;keeper fact preparation stays reviewed/closed. Neither chat has an active
+independent assignment while these exact inputs remain unavailable. On changed
+source/fixture/owner evidence,reassess the next useful bounded preparation or
+qualification task;no maps/helpers are reopened to fill time. Both actual native
+Goals and root Goal remain BLOCKED/unfinished;heartbeat ACTIVE. This is not
+overall completion/pause or an adoption wait.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation
@@ -294,24 +297,40 @@ unchanged;compiler/unit/native/SQL/gameplay/persistence/recovery/performance
 UNEXECUTED. Private source/adoption unknown;full qualification/keeper decisions/
 remaining producers/opening/activation remain incomplete.
 
-Quest now owns ONE PRIVATE shop-cancellation-hold-consumption-feasibility-20261008
-packet:concise FEASIBILITY.txt plus exact source/test/owner pins. Benefit: prepare
-one genuine connected regression reservation for the newly reported ordering fix,
-without duplicating implementation. Available:actual critical coordinator SHOP/
-auction cancellation,pipeline restored-publication owner/consume and existing
-generic coordinator/publication/physical fixtures. Inspect whether EXISTING genuine
-APIs can establish authentic SHOP never-admitted command/refusal/reservation/hold,
-successful cleanup then refused hold consumption,observable original fence/retry/
-hold state with no completed/journal/execution-receipt fabrication. Generic current
-test uses type::test and has no SHOP cancellation call;private constructor is a
-real ownership limit. Do not fabricate authority through true cleanup stubs,fake
-holds,friend/public-macro hacks,extracted functions or provider replacements.
-No maintained code/test/doc/patch,private source import,build/component/server/DB/
-native/broad execution now. If genuine closure is absent,return exact missing
-setup/owner dependency and future acceptance outline,not forced harness/source-
-only PASS. One private bounded D: delivery;root reviews before later assignment.
-Native Goal stays BLOCKED/unfinished,isolated WT/closed packets preserved,no
-adoption wait. Architecture keeper facts remain closed;shared decisions external.
+Quest private SHOP cancellation feasibility now PASSes independent source/fixture
+review only;connected executable case remains BLOCKED. Root authenticates the
+10,858-byte FEASIBILITY.txt (SHA256 b71eee4fc27b6a47b71f1ae045114adda3e1d65aa43dec0d841eba992cf16555),
+14 original source/test bodies,two published handoff blobs and11 critical line
+anchors against960ddd80c/current unchanged source. Private packet and review stay
+on D:;no private artifact is committed. Existing type::test fixture cannot create
+authentic accounted SHOP refusal/held owner;closed SHOP fixtures abort at genuine
+publication/restoration/private save submission. The exact leaf consumer has no
+IO/SQL/allocation fault boundary and no existing legitimate late-failure procedure
+was found. Fake holds,true cleanup stubs,private access or provider replacement
+would not close that proof. This is existing-fixture feasibility,not a claim that
+all production interleavings make consumption infallible.
+
+Root also verifies public critical_command_coordinator.c:4411/4431 releases fences
+before retained refusal delivery is marked at4415/4435. Eventual integrated
+qualification must inspect original keyed fences at cancellation entry;cancel-
+ordering checks alone cannot establish their presence. Whether private6641083b or
+its predecessors preserve delivery fences is UNKNOWN until accessible qualified
+source proves it. This public source observation is not a private-candidate defect
+or executed witness. Public SHOP cancellation4051/4058 erases before consumption;
+auction retains over consumption. Both observations remain source-only.
+
+Primary-owned prerequisites:accessible pinned integrated full flat native SHOP
+owner and genuine command/checkpoint/refusal/reservation/hold fixture;legitimate
+owner-controlled late consumer refusal with exact lifetime/integrity disposition;
+connected full original receipt/state inspection. Future ONE case captures original
+command/full refusal/hold/keyed fences,allows authentic cleanup to return,then
+requires refused consumption to preserve original state without completed-cache,
+journal/execution-receipt or durable-admission fabrication. Temporary guards must
+release;returned cleanup/notification must not repeat. Integrity poison cannot be
+reported as hold absence or a usable retry;successful retry requires its genuine
+owner resolution. No test/code/build/DB/native execution occurred or is reserved.
+Quest clean2c82835e and all sealed proofs remain preserved. Architecture keeper
+facts remain closed;shared decisions external;GoalsBLOCKED/heartbeatACTIVE.
 
 Prior primary81dcda9ca0913508e664451165b7e70c82d58540 reports privatea753f4b6:
 complete original flat cold publication owner,client-free canonicalv8 SHOP driver
