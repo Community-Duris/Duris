@@ -327,3 +327,57 @@ Quest's pair adapter remains active. Primary52b3dd103 reports private complete
 flat SHOP checkpoint retention progress at candidate4f73b841, 126 production files;
 public source/migrations remain unchanged and native qualification unexecuted.
 Original native Goals remain BLOCKED, heartbeat ACTIVE and broad finish unresolved.
+
+## Auction boundary reviewed; actual world observer acceptance next
+
+PASS for source/design scope at sole-document commit
+`5ee22f1f895af8e894cfc51c601f6698ea1e151c`.
+[Exact auction boundary](https://github.com/Community-Duris/Duris/blob/5ee22f1f895af8e894cfc51c601f6698ea1e151c/docs/persistence/economy_accounting/domain-separation/AUCTION_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md)
+was read completely. Coordinator independently authenticates all 70 Git blob
+pins, 70 source line anchors and seven context links, plus sole-file/whitespace
+checks. Maintained source is frozen at52b3dd103; owned context atf70d1147d.
+Published primarycda8aa6f6 retains the same native source and migration trees.
+
+The map correctly reuses existing pure accounting plans, borrowed SQL
+participants and original native publication ownership. Credit-first payment,
+both wallet/bank revision advances, staged refund/claim endpoints, whole custody,
+historical versus current proof and original receipt/ACK/recovery remain distinct.
+Current bid handling does not impose the finalizer's deadline check. Existing
+staff removal policy and original zero-valued endpoint absence are preserved.
+No additional facade, changed policy or active flat auction route is implemented.
+
+The latest primary documentation corrects a backend prerequisite: SQL-client
+builds reject flatfile-primary, while supported client-free builds already select
+the genuine flat worker and journal replay owner. An SQL-enabled flat route is
+not a required new implementation. Primary private original-attempt/pet-slot
+progress at candidatebd4d4a56/128 production files is reported source review;
+those private bytes and native/compiler/gameplay/recovery execution are not
+observable or qualified here. This does not close the original primary blockers.
+
+Next one bounded architecture delivery owns only
+`tests/async/test_auction_native_world_observation.py` and
+`domain-separation/AUCTION_WORLD_OBSERVATION_COMPONENT_HANDOFF_2026-10-08.md`.
+Link actual maintained auction_native_publication/player_snapshot_capture/codec
+translation units and genuine reachable providers on current public primary;
+no extracted observer/capture implementation or accepting census/codec/ownership
+double. Disclose inert fixture scaffolding. Establish link closure first; a truly
+unavailable provider must be recorded rather than replaced with an accepting stub.
+
+Use explicit manually specified complete forests in addition to pure expected
+helpers. Cover carried/detached/absent selections, unrelated inventory/equipment,
+claim insertion/list removal, original PID/runtime/body identity, conflicting
+UIDs, reciprocal room/player ownership, malformed/cyclic/reparented descendants,
+descriptor discovery, runtime-zero constraints, literal selected NORENT versus
+ordinary saved policy, ordering/string masks, bounds and unchanged refusal output.
+Preserve legitimate deduplicated discovery of the same body. Keep older tests
+and every production/shared/quest path intact. Qualify focused C++20 strict
+warning ASan/UBSan components with exact task-specific D: candidate/artifact pins.
+No SQL/server/migration/full native build or active publication/ACK/save/cold
+journey is assigned. This removes future observer acceptance work without
+supplying native authority or imposing primary adoption waits.
+
+Coordinator authentication and replay records are private under
+`D:\Dev\Temp\coordinator-auction-pair-review-20261008`.
+Quest's corrected original-pair component separately passes review and advances
+to a fee-only owner boundary reservation. Actual native Goals remain BLOCKED;
+heartbeat ACTIVE and the broader published primary finish line unresolved.

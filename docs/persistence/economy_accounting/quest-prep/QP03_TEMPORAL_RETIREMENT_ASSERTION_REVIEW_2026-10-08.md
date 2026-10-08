@@ -128,3 +128,71 @@ journal, native/gameplay/DB/server/migration/full-build batch or Plan5 duplicati
 is assigned. This removes future decoding and assertion integration work while
 genuine owner export and successful native D remain prerequisites. Actual native
 Goal status stays BLOCKED; heartbeat ACTIVE and broad finish line unchanged.
+
+## Original-pair adapter reviewed after empty-postimage correction
+
+PASS at passive component and modeled observation-agreement scope for original
+code `0ee2549cd0ddf9a8efb6315a65dd99e0fff43c69`, additive correction
+`adf64fcf432b2787d98a1a42c44e385141e74680` and corrected handoff
+`b4261edc5fc50e81bcc5d16d0a33a5c9344af2d5`.
+[Exact corrected handoff](https://github.com/Community-Duris/Duris/blob/b4261edc5fc50e81bcc5d16d0a33a5c9344af2d5/docs/persistence/economy_accounting/quest-prep/QP03_HELD_PAIR_ADAPTER_HANDOFF_2026-10-08.md)
+retains the original failed review and native execution pins. Read all four
+new code/test files and the complete handoff; correction changes only two owned
+Python files. Earlier pack/code and primary production are preserved.
+
+Coordinator initially passed all14 modeled methods but reproduced an uncovered
+defect: complete zero-byte terminal journal postimages were rejected. Maintained
+journal rewrite650-695 and confirmation477-493 permit the exact empty image.
+The additive correction permits bounded nonnegative exact integers, requires
+the canonical empty SHA256 for zero, and retains whole-image completeness and
+identical retry requirements. Four new methods cover empty success, uncertainty
+then success/latch, invalid types/sizes/digests/completeness and changed retries.
+The unfixed original bundle alone is not the accepted import.
+
+Independently authenticated1,607 maintained source/catalog/provider blobs,
+four original owned files, generated fixture, source/provider hashes, original
+exports and both linked ELF hashes, plus correction bytes and three red/green
+logs. Reader ELF SHA256 is
+`cbaa254974ac059059edeae5bdba1da8052f2b11abe13af2841f16748d517d77`.
+Coordinator replayed all33 reader invocations on that unchanged qualified binary:
+three accepted modeled carriers and30 bounded refusals PASS, with original
+exports unchanged and no sanitizer diagnostics. Actual maintained decoders and
+pair validator are linked; phase1 held decode never borrows phase2 validation.
+The generator remains an explicitly modeled structural fixture, not an owner.
+
+Coordinator independently ran18 corrected modeled methods,17 unchanged cut
+controls and13 unchanged temporal controls on Ubuntu: all PASS. Windows also
+passes18+13; the full17 cut suite requires its existing Linux fcntl dependency
+and passes on Ubuntu. No unchanged C++ compilation was repeated for this
+Python-only correction. Original strict C++20/ASan/UBSan compilation evidence
+was authenticated; qualified reader execution was independently repeated.
+Review evidence remains private under
+`D:\Dev\Temp\coordinator-auction-pair-review-20261008`.
+
+Original regular-file bounds, canonical decode/re-encode, exact original pair,
+receipts, frozen continuation, hold/publication/ACK/session/attempt/latch joins
+and external-proof labels remain. Caller values cannot authenticate exports,
+genuine original owner execution, successful quest-D physical destruction,
+cash/custody/world census or chronology. No SQL/live-journal/native gameplay
+execution or primary adoption is established. Import exact original code then
+correction and corrected handoff on compatible primary source; never replace
+primary with the prep branch's older production tree. No adoption wait is added.
+
+Next one bounded quest preparation owns only
+`NATIVE_QUEST_FEE_ONLY_OWNER_BOUNDARY_2026-10-08.md` here. Trace the actual
+fee-only payload14/continuation6 owner verification, charge/source, root absence,
+current cash authority, receipt/effects/obligation, held body/publication,
+ACK/session cleanup, guarded uncertainty and retirement. Separate this from
+QP02 item-plus-cost and the deliberately non-fee QP03 reader. Reuse existing
+blueprint/cost/held-pair findings and maintained fee tests; do not repeat catalogs.
+An actual production fee-only branch requires source/catalog support; absent or
+unproven reachability remains explicit, never a synthetic native fixture.
+
+Reserve a narrow future owned read-only adapter/assertion or actual-provider
+component test only where the trace identifies useful missing acceptance work.
+State exact proposed paths, available providers, unavailable owner exports/setup/
+census/projection, meaningful refusal controls, import and qualification. No
+production/shared owner/export/driver/schema/registry/old-oracle edit, live
+journal, DB/server/migration/build/native batch or Plan5 duplication is assigned.
+Source/blob/anchor/link and sole-file checks qualify this next document only.
+Actual blocked native Goals, active heartbeat and broader finish line remain.

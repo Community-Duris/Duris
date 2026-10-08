@@ -85,11 +85,18 @@ methods and 17 unchanged controls. Original A terminal evidence precedes observe
 later B birth and stable stale retry; selected-row absence is never global
 absence/retirement proof. Held-pair reservation7e861c68f now passes independent
 source/design review in the same review document: 36 declared blobs, 49 source
-bodies and 21 exact anchors authenticated. Quest prep next implements the owned
-read_native_quest_pair.cpp/native_quest_pair_checks.py/focused tests and
-QP03_HELD_PAIR_ADAPTER_HANDOFF_2026-10-08.md, under exact paths/limits in that
-review. This passive value reader and modeled observation joins supply no owner
-export or native authority. Existing oracles remain intact. Native mapping/
+bodies and 21 exact anchors authenticated. Quest original-pair code0ee2549cd,
+additive empty-postimage correctionadf64fcf4
+and corrected handoffb4261edc5 now PASS passive-component/modeled-join review
+there:1,607 source blobs authenticated,33 reader controls and18+17+13 assertion
+methods independently PASS. The original positive-size assertion failure remains
+historical; import includes the correction. No owner/export/native authority is
+supplied. Quest next owns only NATIVE_QUEST_FEE_ONLY_OWNER_BOUNDARY_2026-10-08.md:
+actual payload14/continuation6 charge/receipt/publication/ACK/retirement boundaries,
+distinct from item-plus-cost QP02 and non-fee QP03, and a source-grounded narrow
+future acceptance reservation. Exact inputs, unavailable original owners/setup,
+collision limits and qualification are in the same review. Existing oracles
+remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
 a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
@@ -101,15 +108,20 @@ journal limits. Maintained componentf70d1147d now passes review there: exact wra
 generation, 27 direct inputs, 2816 existing candidate files and 30 evidence
 artifacts authenticated; eight qualified-binary controls independently pass.
 Import targets published primary, not the incompatible older R0-R14 source base.
-Architecture next owns AUCTION_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md only:
-source-grounded bid/outbid/buy-now and linked claim/state/effect ownership,
-existing pure preparations, exact remaining capture/current-proof/native/recovery
-dependencies and a narrow future reservation. No production/test/shared-owner
-edit or active native runner is assigned. Genuine save/current-proof/restart
-owners still block pickup production wiring.
-Primary52b3dd103 publishes private complete flat SHOP source checkpoint retention
-progress, candidate4f73b841/126 production files, and blockers; public native
-source/migrations remain unchanged. Reported source review is not executed
+Auction boundary5ee22f1f8 now PASS source/design review:70 blobs,70 anchors and
+seven links independently authenticated. Architecture next owns only
+tests/async/test_auction_native_world_observation.py and
+AUCTION_WORLD_OBSERVATION_COMPONENT_HANDOFF_2026-10-08.md: actual observer/capture/
+codec providers, explicit complete forest expectations, identity/topology/refusal
+controls and focused strict sanitizer qualification on exact public primary.
+No copied observer or accepting census/capture/codec double; provider gaps remain
+explicit. No production/shared owner/quest edit or active native runner assigned.
+Genuine save/current-proof/restart owners still block pickup production wiring.
+Primarycda8aa6f6 publishes private flat original-attempt/pet-slot compatibility
+progress, candidatebd4d4a56/128 production files, and blockers; public native
+source/migrations remain unchanged. Supported client-free flat worker/replay
+selection already exists; SQL-client builds reject flatfile-primary. No new
+SQL-enabled flat route is required. Reported source review is not executed
 compiler/native/gameplay/recovery proof; original dispatch/producer/once-only
 commit/publication/ACK/cold and broad primary requirements remain open.
 No shared owner,
