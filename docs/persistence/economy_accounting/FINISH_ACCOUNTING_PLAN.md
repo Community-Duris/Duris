@@ -1,14 +1,15 @@
 # Finish accounting implementation plan
 
-## Complete original refining source joined - 2026-10-08
+## Craft/Forge and warm reset census source joined - 2026-10-08
 
-[Current source integration](COMPLETE_REFINING_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
-`39a35e59e83b94fbed3e96138dded14dfeb807eba256489976940f88874b46cc`:full original refining
-fee/input/outcome,SQL/flat compound participant,retained publication/replay and
-notification are source-reviewed and joined with fresh PC wallet admission and
-the warm reset/shared source. Craft/Forge is under review; Smith and full reset
-dispatch/replay/ACK/special effects remain. Major-plan execution is deferred;
-full Plans2-4/Plan5/R1-R8/activation qualification remains unproven.
+[Current source integration](CRAFT_FORGE_WARM_CENSUS_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `9a7faa28058820cbe3d6ff53cd999a3b39a9dd67377a30980c4f8bb9402ee791`:
+ordinary Craft/Forge frozen progression/cold notification, corrected warm driver
+and checked genuine pending-item census are source-reviewed and joined with
+complete refining/Plan5 source. All201 selected paths/162 source files authenticate.
+Smith, original reset retry/constructor witness/cold chronology/special routes and
+major-plan execution remain open. Maintained implementation is not promoted;
+Plans2-4/combined Plan5/R1-R8/activation/full release remain unproven.
 
 ## Watched-item capture sidework reviewed - 2026-10-08
 
