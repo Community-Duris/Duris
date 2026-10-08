@@ -1,13 +1,13 @@
 # Finish accounting implementation plan
 
-## Original flat refusal and retained cancellation source joined - 2026-10-08
+## Warm room and craft shared source joined - 2026-10-08
 
-[Current source integration](FLAT_SHOP_ORIGINAL_REFUSAL_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
-`6641083bd523f9acebbd9618f5ef01816ef40fc2f12635a4b0f03242581d1ac5`:complete original live
-flat refusal cleanup and hold-consumption-before-fence-release join the cold
-owner/driver and ordinary NMB4 admission. Execution remains deferred; notification
-continuations,shared keeper provenance,remaining producers,activation and full
-Plans2-4/Plan5/R1-R8 qualification remain. Source review is not runtime acceptance.
+[Current source integration](WARM_ROOM_CRAFT_SHARED_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
+`a685497619fca69938eb010fbee4fda2aabc2005ccbdf827feaea5b91e55d0c5`:original warm command
+preparation,shared budget exit fixes,canonical original placement recipe and pure
+craft wallet mapping are source-reviewed and composed. Full refining is under
+independent review; original reset dispatch/replay/ACK and special effects remain.
+Execution is deferred; Plans2-4/Plan5/R1-R8/activation completion is unproven.
 
 ## Watched-item capture sidework reviewed - 2026-10-08
 
