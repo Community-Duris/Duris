@@ -144,10 +144,57 @@ TABLES = (
     "CREATE TABLE account_lockers (id INT UNSIGNED,racewar TINYINT NULL) ENGINE=InnoDB",
     "CREATE TABLE private_chests (id INT UNSIGNED,locker_id INT UNSIGNED,is_public TINYINT NULL) ENGINE=InnoDB",
     "CREATE TABLE locker_chests (id INT UNSIGNED,locker_id INT UNSIGNED,is_public TINYINT NULL) ENGINE=InnoDB",
-    "CREATE TABLE saved_items (id INT UNSIGNED,item_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,room_vnum INT NULL,"
-    "container_id INT UNSIGNED NULL,obj_uid BIGINT UNSIGNED NULL,vnum INT,quantity SMALLINT UNSIGNED NULL,"
-    "weight INT NULL,extra_flags BIGINT UNSIGNED NULL,item_type TINYINT NULL,"
-    "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    """CREATE TABLE `saved_items` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_key` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `room_vnum` int DEFAULT '0',
+  `vnum` int NOT NULL,
+  `container_id` int unsigned DEFAULT NULL,
+  `quantity` smallint unsigned DEFAULT '1',
+  `weight` int DEFAULT '0',
+  `cost` int DEFAULT '0',
+  `timer` int DEFAULT '-1',
+  `extra_flags` bigint unsigned DEFAULT '0',
+  `wear_flags` int DEFAULT NULL,
+  `item_type` tinyint DEFAULT NULL,
+  `value0` int DEFAULT '0',
+  `value1` int DEFAULT '0',
+  `value2` int DEFAULT '0',
+  `value3` int DEFAULT '0',
+  `value4` int DEFAULT '0',
+  `value5` int DEFAULT '0',
+  `value6` int DEFAULT '0',
+  `value7` int DEFAULT '0',
+  `name` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `action_descr` text COLLATE utf8mb4_unicode_ci,
+  `obj_uid` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `item_material` tinyint DEFAULT NULL,
+  `bitvector1` bigint unsigned DEFAULT NULL,
+  `bitvector2` bigint unsigned DEFAULT NULL,
+  `bitvector3` bigint unsigned DEFAULT NULL,
+  `bitvector4` bigint unsigned DEFAULT NULL,
+  `bitvector5` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+    """CREATE TABLE `saved_item_affects` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `location` tinyint unsigned DEFAULT '0',
+  `modifier` int DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+    """CREATE TABLE `saved_item_extra_descr` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int unsigned NOT NULL,
+  `keyword` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+    "CREATE TABLE season_reset_state (state_id TINYINT UNSIGNED,season_epoch BIGINT UNSIGNED,reset_status VARCHAR(16)) ENGINE=InnoDB",
     "CREATE TABLE saved_item_recovery_handoff (season_epoch BIGINT UNSIGNED,source_root_id INT UNSIGNED,"
     "source_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,source_uid BIGINT UNSIGNED,source_room_vnum INT,"
     "source_row_count INT UNSIGNED,source_id_digest BINARY(32),destination_root_id INT UNSIGNED,"
@@ -1343,7 +1390,7 @@ try:
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
             for table in ("player_items", "player_pets", "player_pet_items", "corpses", "corpse_items",
-                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items", "saved_items", "saved_item_recovery_handoff", "sql_room_item_payload"):
+                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items", "saved_items", "saved_item_recovery_handoff", "sql_room_item_payload", "saved_item_affects", "saved_item_extra_descr", "season_reset_state"):
                 for alteration, restoration in (
                         (f"RENAME TABLE {table} TO {table}_hidden", f"RENAME TABLE {table}_hidden TO {table}"),
                         (f"ALTER TABLE {table} ENGINE=MyISAM", f"ALTER TABLE {table} ENGINE=InnoDB")):
@@ -2090,7 +2137,7 @@ try:
                     writer.execute("INSERT INTO corpses VALUES (5,7,9,1,10)")
                     writer.execute("INSERT INTO corpse_items VALUES (400,5,NULL,84,1,1,1,0,0,0,0,0)")
                     writer.execute("INSERT INTO siege_items VALUES (400,10,NULL,86,1,1,1,0,1,0,0,0,0)")
-                    writer.execute("INSERT INTO saved_items VALUES (400,'PRIVATE-ground',10,NULL,87,1,1,1,0,1,0,0,0,0)")
+                    writer.execute("INSERT INTO saved_items(id,item_key,room_vnum,container_id,obj_uid,vnum,quantity,weight,extra_flags,item_type,value0,value1,value2,value3) VALUES (400,'PRIVATE-ground',10,NULL,87,1,1,1,0,1,0,0,0,0)")
                     writer.execute("INSERT INTO lockers VALUES (5,0,7,NULL)")
                     writer.execute("INSERT INTO account_lockers VALUES (5,0)")
                     writer.execute("INSERT INTO private_chests VALUES (9,5,1)")

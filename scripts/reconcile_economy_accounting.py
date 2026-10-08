@@ -1697,6 +1697,105 @@ class Reconciler:
         # A live room UID may come from saved_items or exact modern payloads;
         # absence from siege alone cannot prove missing room physical authority.
 
+    def audit_saved_ground_handoffs(self, native, rows, receipts, integer) -> None:
+        """Diagnose current recovery preconditions; never grant runtime authority."""
+        names = ("saved_ground_payloads", "saved_ground_metadata_orphans",
+                 "saved_ground_recovery_state", "saved_ground_payload_coverage")
+        if not any(name in native for name in names):
+            return  # Older cuts retain the existing explicit unqualified gates.
+        if not all(name in native for name in names):
+            raise SnapshotError("incomplete saved ground payload evidence")
+        payloads, orphans, state = (self.table(native, name) for name in names[:3])
+        coverage = native[names[3]]
+        fields = {"version", "groups", "affects", "extra_descr", "orphans", "source_bytes"}
+        if (not isinstance(coverage, dict) or set(coverage) != fields or
+                any(type(coverage[key]) is not int or not 0 <= coverage[key] <= MAX_ROWS
+                    for key in fields - {"source_bytes"}) or coverage["version"] != 1 or
+                type(coverage["source_bytes"]) is not int or not 0 <= coverage["source_bytes"] <= MAX_INPUT_BYTES or
+                coverage["groups"] != len(payloads) or coverage["orphans"] != len(orphans) or
+                len(rows)+len(receipts)+len(state)+coverage["affects"]+coverage["extra_descr"] > MAX_ROWS):
+            raise SnapshotError("invalid saved ground payload coverage")
+        groups = Counter(row["key_group"] for row in rows)
+        index, totals = {}, Counter()
+        for row in payloads:
+            if set(row) != {"key_group", "items", "affects", "extra_descr", "id_digest", "payload_digest"}:
+                raise SnapshotError("invalid saved ground payload fields")
+            integer(row, "key_group", 1, 2**32-1)
+            for field in ("items", "affects", "extra_descr"):
+                integer(row, field, 0, MAX_ROWS)
+                totals[field] += row[field]
+            for field in ("id_digest", "payload_digest"):
+                value = row[field]
+                if (not isinstance(value, str) or len(value) != 64 or
+                        any(char not in "0123456789ABCDEF" for char in value)):
+                    raise SnapshotError("invalid saved ground payload digest")
+            group = row["key_group"]
+            if group in index or group not in groups or row["items"] != groups[group]:
+                raise SnapshotError("invalid saved ground payload group")
+            index[group] = row
+        if set(index) != set(groups):
+            raise SnapshotError("missing saved ground payload group")
+        physical = {row["item_id"]: row for row in rows}
+        orphan_ids = set()
+        for row in orphans:
+            if set(row) != {"table", "row_id", "item_id"} or row["table"] not in (
+                    "saved_item_affects", "saved_item_extra_descr"):
+                raise SnapshotError("invalid saved ground orphan metadata fields")
+            integer(row, "row_id", 1, 2**32-1)
+            integer(row, "item_id", 0, 2**32-1, True)
+            key = (row["table"], row["row_id"])
+            if key in orphan_ids or row["item_id"] in physical:
+                raise SnapshotError("invalid saved ground orphan metadata identity")
+            orphan_ids.add(key)
+            totals["affects" if row["table"] == "saved_item_affects" else "extra_descr"] += 1
+            self.emit("saved_ground_metadata_orphan", table=row["table"], row_id=row["row_id"])
+        if any(totals[key] != coverage[key] for key in ("affects", "extra_descr")):
+            raise SnapshotError("inconsistent saved ground metadata coverage")
+        for row in state:
+            if set(row) != {"state_id", "season_epoch", "reset_status"}:
+                raise SnapshotError("invalid saved ground recovery state fields")
+            integer(row, "state_id", 0, 255)
+            integer(row, "season_epoch", 0, 2**64-1)
+            if row["reset_status"] not in ("active", "resetting"):
+                raise SnapshotError("invalid saved ground recovery status")
+        current = (state[0]["season_epoch"] if len(state) == 1 and state[0]["state_id"] == 1 and
+                   state[0]["season_epoch"] > 0 and state[0]["reset_status"] == "active" else None)
+        if receipts and current is None:
+            self.emit("saved_ground_recovery_state_unqualified", scope="snapshot")
+        seen = set()
+        for receipt in receipts:
+            integer(receipt, "destination_key_canonical", 0, 1)
+            key = (receipt["season_epoch"], receipt["source_root_id"])
+            detail = dict(season_epoch=key[0], source_root_id=key[1])
+            if key in seen:
+                self.emit("saved_ground_duplicate_handoff", **detail)
+            seen.add(key)
+            if receipt["retired"] or receipt["season_epoch"] != current:
+                continue  # Historical payloads may legitimately change/disappear.
+            if not receipt["destination_key_canonical"]:
+                self.emit("saved_ground_destination_key_mismatch", **detail)
+            for side in ("source", "destination"):
+                group = receipt[side+"_group"]
+                payload = index.get(group)
+                if payload is None:
+                    self.emit("saved_ground_"+side+"_missing", **detail)
+                    continue
+                if payload["items"] != receipt["source_row_count"]:
+                    self.emit("saved_ground_"+side+"_count_mismatch", **detail)
+                root_id = receipt[side+"_root_id"]
+                root = physical.get(root_id)
+                if (root is None or root["key_group"] != group or group != root_id or
+                        root["parent_id"] is not None or (side == "destination" and
+                        (root["uid"] != receipt["source_uid"] or root["room_vnum"] != receipt["source_room_vnum"]))):
+                    self.emit("saved_ground_"+side+"_root_identity_mismatch", **detail)
+                for field in (("source_id_digest",) if side == "source" else ()) + (side+"_payload_digest",):
+                    expected = receipt[field]
+                    observed = payload["id_digest" if field == "source_id_digest" else "payload_digest"]
+                    if expected is None:
+                        self.emit("saved_ground_"+field+"_unknown", **detail)
+                    elif observed != expected:
+                        self.emit("saved_ground_"+field+"_mismatch", **detail)
+
     def audit_saved_ground_custody(self, backend: str, native: dict, items: dict) -> None:
         """Check legacy raw groups without promoting retained history to grants."""
         coverage = native.get("saved_ground_custody_coverage")
@@ -1759,10 +1858,10 @@ class Reconciler:
             if row["modern_history"] or row["item_id"] in historical_roots:
                 historical_groups.add(row["key_group"])
         if receipts or historical_groups:
-            # Receipts require original complete text/affect/extra-descr digests,
-            # season and destination verification. A presence marker never proves
-            # retirement, publication, current custody, or a valid duplicate.
+            # Complete current payload matches still do not prove runtime
+            # publication, retirement, custody or historical origin authority.
             self.emit("saved_ground_history_authority_unqualified", scope="snapshot")
+        self.audit_saved_ground_handoffs(native, rows, receipts, integer)
         eligible = [row for row in rows if row["key_group"] not in historical_groups]
         uid_counts = Counter(row["uid"] for row in eligible if row["uid"])
         competing = {row.get("uid") for name in ("player_items", "pet_items", "shop_items", "corpse_items",

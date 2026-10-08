@@ -45,6 +45,90 @@ def audit(native,limit=100):
 
 
 class SavedGroundCustodyAuditTests(unittest.TestCase):
+    @staticmethod
+    def handoff_packet():
+        native = packet(1)
+        native["saved_ground_items"].append(dict(native["saved_ground_items"][0],item_id=500,key_group=500))
+        native["saved_ground_handoffs"] = [dict(season_epoch=1,source_root_id=400,source_uid=81,
+            source_room_vnum=10,source_row_count=1,destination_root_id=500,retired=0,
+            source_id_digest="12"*32,source_payload_digest="34"*32,destination_payload_digest="56"*32,
+            source_group=400,destination_group=500,destination_key_canonical=1)]
+        native["saved_ground_payloads"] = [dict(key_group=group,items=1,affects=0,extra_descr=0,
+            id_digest="12"*32,payload_digest=digest*32) for group,digest in ((400,"34"),(500,"56"))]
+        native["saved_ground_metadata_orphans"] = []
+        native["saved_ground_recovery_state"] = [dict(state_id=1,season_epoch=1,reset_status="active")]
+        native["saved_ground_payload_coverage"] = dict(version=1,groups=2,affects=0,extra_descr=0,orphans=0,source_bytes=100)
+        recount(native);return native
+
+    def test_current_handoff_diagnostics_do_not_grant_runtime_authority(self):
+        baseline = dict(UNQUALIFIED,saved_ground_history_authority_unqualified=1)
+        self.assertEqual(audit(self.handoff_packet())[0],baseline)
+        for field,code in (("source_id_digest","saved_ground_source_id_digest_mismatch"),
+                           ("source_payload_digest","saved_ground_source_payload_digest_mismatch"),
+                           ("destination_payload_digest","saved_ground_destination_payload_digest_mismatch")):
+            native = self.handoff_packet();native["saved_ground_handoffs"][0][field] = "78"*32
+            for limit in (0,1,100):self.assertEqual(audit(native,limit)[0],dict(baseline,**{code:1}))
+            native["saved_ground_handoffs"][0][field] = None
+            self.assertIn(code.replace("_mismatch","_unknown"),audit(native)[0])
+        for side in ("source","destination"):
+            native=self.handoff_packet();native["saved_ground_handoffs"][0][side+"_group"]=None
+            self.assertEqual(audit(native)[0],dict(baseline,**{"saved_ground_"+side+"_missing":1}))
+            native=self.handoff_packet();native["saved_ground_items"][side=="destination"]["parent_id"]=0
+            self.assertIn("saved_ground_"+side+"_root_identity_mismatch",audit(native)[0])
+        native=self.handoff_packet();native["saved_ground_handoffs"][0]["source_row_count"]=2
+        self.assertEqual(audit(native)[0],dict(baseline,saved_ground_source_count_mismatch=1,saved_ground_destination_count_mismatch=1))
+        native=self.handoff_packet();native["saved_ground_handoffs"][0]["destination_key_canonical"]=0
+        self.assertEqual(audit(native)[0],dict(baseline,saved_ground_destination_key_mismatch=1))
+        native=self.handoff_packet();native["saved_ground_handoffs"]*=2;recount(native)
+        self.assertEqual(audit(native)[0],dict(baseline,saved_ground_duplicate_handoff=1))
+
+    def test_retired_prior_season_reset_and_orphan_metadata_scope(self):
+        baseline=dict(UNQUALIFIED,saved_ground_history_authority_unqualified=1)
+        for field,value in (("retired",1),("season_epoch",2)):
+            native=self.handoff_packet();receipt=native["saved_ground_handoffs"][0]
+            receipt.update(source_group=None,destination_group=None,destination_key_canonical=0,source_payload_digest=None)
+            receipt[field]=value;self.assertEqual(audit(native)[0],baseline)
+        for state in ([],[dict(state_id=1,season_epoch=1,reset_status="resetting")],
+                      [dict(state_id=2,season_epoch=1,reset_status="active")]):
+            native=self.handoff_packet();native["saved_ground_recovery_state"]=state
+            self.assertEqual(audit(native)[0],dict(baseline,saved_ground_recovery_state_unqualified=1))
+        native=self.handoff_packet()
+        native["saved_ground_metadata_orphans"]=[dict(table="saved_item_extra_descr",row_id=7,item_id=999)]
+        native["saved_ground_payload_coverage"].update(extra_descr=1,orphans=1)
+        self.assertEqual(audit(native)[0],dict(baseline,saved_ground_metadata_orphan=1))
+
+    def test_payload_packet_exact_representations_and_lob_preflight(self):
+        original=self.handoff_packet()
+        for name in ("saved_ground_payloads","saved_ground_metadata_orphans","saved_ground_recovery_state","saved_ground_payload_coverage"):
+            native=copy.deepcopy(original);native.pop(name)
+            with self.assertRaises(SnapshotError):audit(native,0)
+        for field in original["saved_ground_payloads"][0]:
+            for value in (None,True,1.0,[],{},"invalid"):
+                native=copy.deepcopy(original);native["saved_ground_payloads"][0][field]=value
+                with self.assertRaises(SnapshotError):audit(native,0)
+        for field in original["saved_ground_payload_coverage"]:
+            for value in (None,True,1.0,[],{},"1",-1,2**64):
+                native=copy.deepcopy(original);native["saved_ground_payload_coverage"][field]=value
+                with self.assertRaises(SnapshotError):audit(native,0)
+        for field in ("id_digest","payload_digest"):
+            native=copy.deepcopy(original);native["saved_ground_payloads"][0][field]="ab"*32
+            with self.assertRaises(SnapshotError):audit(native,0)
+        for bounds in (dict(frame_bytes=exporter.MAX_INPUT_BYTES+1,max_cell=1),
+                       dict(frame_bytes=1,max_cell=exporter.MAX_SAVED_CELL_BYTES+1)):
+            cursor=mock.Mock();cursor.fetchall.side_effect=[[
+                dict(table_name=name,column_name=column,charset=None)
+                for name,columns in exporter.SAVED_PAYLOAD_COLUMNS.items() for column in columns.split(",")],(),()]
+            cursor.fetchone.side_effect=[dict(time_zone="+00:00",system_time_zone="UTC"),bounds]
+            with self.assertRaises(exporter.ExportError):exporter.read_saved_ground_payloads(cursor,[])
+            self.assertFalse(any(call.args[0].startswith("SELECT CAST(") for call in cursor.execute.call_args_list))
+        cursor=mock.Mock();cursor.fetchall.return_value=[
+            dict(table_name=name,column_name=column,charset=None)
+            for name,columns in exporter.SAVED_PAYLOAD_COLUMNS.items() for column in columns.split(",")]
+        cursor.fetchone.return_value=dict(time_zone="+05:00",system_time_zone="UTC")
+        with self.assertRaisesRegex(exporter.ExportError,"requires a UTC session"):
+            exporter.read_saved_ground_payloads(cursor,[])
+        self.assertTrue(all(call.args[0].startswith("SELECT") for call in cursor.execute.call_args_list))
+
     def test_key_graphs_native_depth_bound_and_retained_history(self):
         self.assertEqual(audit(packet(0))[0],{})
         for count in (1,2,33,65):self.assertEqual(audit(packet(count))[0],UNQUALIFIED)
@@ -162,7 +246,9 @@ class SavedGroundCustodyAuditTests(unittest.TestCase):
         with self.assertRaises(exporter.ExportError):exporter.read_saved_ground_custody(cursor)
         self.assertEqual(cursor.execute.call_count,1)
         cursor = mock.Mock(); cursor.fetchone.return_value = dict(rows_total=0); cursor.fetchall.return_value = ()
-        self.assertEqual(exporter.read_saved_ground_custody(cursor),dict(saved_ground_items=[],saved_ground_handoffs=[],saved_ground_custody_coverage=dict(items=0,handoffs=0)))
+        with mock.patch.object(exporter,"read_saved_ground_payloads",return_value={}) as payloads:
+            self.assertEqual(exporter.read_saved_ground_custody(cursor),dict(saved_ground_items=[],saved_ground_handoffs=[],saved_ground_custody_coverage=dict(items=0,handoffs=0)))
+            payloads.assert_called_once_with(cursor,[])
         query = cursor.execute.call_args_list[-1]
         self.assertEqual(query.args[1],(MAX_ROWS+1,))
         for private in ("name","short_descr","description","action_descr"):self.assertNotIn(private,query.args[0])
@@ -394,7 +480,9 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                                     "source_row_count,source_id_digest,destination_root_id,destination_key) "
                                     "VALUES (1,400,'PRIVATE-ground',81,10,1,UNHEX(%s),500,'item.uid.81')",("12"*32,))
                             history=dict(UNQUALIFIED,saved_ground_history_authority_unqualified=1)
-                            self.assertEqual(cut("unverifiable-handoff-not-two-current-grants"),history)
+                            self.assertEqual(cut("unverifiable-handoff-not-two-current-grants"),dict(history,
+                                saved_ground_source_id_digest_mismatch=1,saved_ground_source_payload_digest_unknown=1,
+                                saved_ground_destination_payload_digest_unknown=1))
                             with owner.cursor() as cursor:
                                 cursor.execute("UPDATE saved_item_recovery_handoff SET retired_at=CURRENT_TIMESTAMP(6)")
                                 cursor.execute("DELETE FROM saved_items WHERE id=400")
@@ -429,6 +517,43 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                             with owner.cursor() as cursor:
                                 cursor.execute("UPDATE auction_item_custody SET claim_pid=7,claim_operation_id=UNHEX(%s),claimed_at=CURRENT_TIMESTAMP(6)",("12"*16,))
                             self.assertEqual(cut("claimed-auction-history-does-not-compete"),UNQUALIFIED)
+                            reset(1)
+                            with owner.cursor() as cursor:
+                                cursor.execute("UPDATE saved_items SET created_at='2020-01-01 00:00:00',updated_at='2020-01-01 00:00:00'")
+                                cursor.execute("INSERT INTO saved_item_affects(id,item_id,location,modifier) VALUES (700,400,1,-2)")
+                                cursor.execute("INSERT INTO saved_item_extra_descr(id,item_id,keyword,description) VALUES (800,400,%s,%s)",
+                                    ("PRIVATE-unicode-é-😀","PRIVATE-binary\x00-tail"))
+                            def payload_cut(label):
+                                self.assertEqual(cut(label),UNQUALIFIED)
+                                return json.loads((work/(engine+"-"+label+"-audit.json")).read_text(encoding="utf-8"))
+                            previous=payload_cut("full-payload-unicode-nul")
+                            for field,value in [(name,23) for name in (
+                                    "cost","timer","wear_flags","value4","value5","value6","value7","item_material",
+                                    "bitvector1","bitvector2","bitvector3","bitvector4","bitvector5")] + [
+                                    (name,"PRIVATE-é-😀\x00-tail") for name in ("name","short_descr","description","action_descr")] + [
+                                    ("created_at","2021-01-01 00:00:00"),("updated_at","2022-01-01 00:00:00")]:
+                                with owner.cursor() as cursor:
+                                    cursor.execute("UPDATE saved_items SET `"+field+"`=%s"+
+                                        ("" if field=="updated_at" else ",updated_at='2020-01-01 00:00:00'"), (value,))
+                                changed=payload_cut("full-payload-"+field)
+                                self.assertEqual(previous["saved_ground_items"],changed["saved_ground_items"])
+                                self.assertNotEqual(previous["saved_ground_payloads"][0]["payload_digest"],changed["saved_ground_payloads"][0]["payload_digest"])
+                                previous=changed
+                            for label,statement in (("affect-location","UPDATE saved_item_affects SET location=3"),
+                                    ("affect-modifier","UPDATE saved_item_affects SET modifier=4"),
+                                    ("extra-keyword","UPDATE saved_item_extra_descr SET keyword='PRIVATE-changed'"),
+                                    ("extra-null","UPDATE saved_item_extra_descr SET description=NULL"),
+                                    ("extra-empty","UPDATE saved_item_extra_descr SET description=''")):
+                                with owner.cursor() as cursor:cursor.execute(statement)
+                                changed=payload_cut("full-payload-"+label)
+                                self.assertNotEqual(previous["saved_ground_payloads"][0]["payload_digest"],changed["saved_ground_payloads"][0]["payload_digest"])
+                                previous=changed
+                            with owner.cursor() as cursor:
+                                cursor.execute("SET FOREIGN_KEY_CHECKS=0")
+                                try:cursor.execute("INSERT INTO saved_item_extra_descr(id,item_id,keyword) VALUES (801,999,'PRIVATE-orphan')")
+                                finally:cursor.execute("SET FOREIGN_KEY_CHECKS=1")
+                            self.assertEqual(cut("metadata-orphan-unfiltered"),dict(UNQUALIFIED,saved_ground_metadata_orphan=1))
+                            with owner.cursor() as cursor:cursor.execute("DELETE FROM saved_item_extra_descr WHERE id=801")
                             reset(0); self.assertEqual(cut("empty-retained-projection"),{})
                             with self.assertRaises(pymysql.MySQLError):
                                 with reader.cursor() as cursor:cursor.execute("UPDATE saved_items SET id=id")
@@ -446,10 +571,10 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                             for statement in statements:cursor.execute(statement)
                             for name in ("economic_epoch","economic_lineage_state"):
                                 cursor.execute("CREATE TABLE "+name+" LIKE duris_restore."+name)
-                            cursor.execute("CREATE TABLE season_reset_state(state_id INT,season_epoch BIGINT UNSIGNED) ENGINE=InnoDB")
                             cursor.execute("CREATE TABLE item_owner_revision(owner_type INT,owner_id BIGINT,owner_context_id BIGINT,revision BIGINT UNSIGNED) ENGINE=InnoDB")
                             cursor.execute("GRANT SELECT ON duris_history_markers.* TO 'auction_reader'@'localhost'")
-                            cursor.execute("INSERT INTO saved_items VALUES (400,'PRIVATE-marker',10,NULL,81,100,1,1,0,1,0,0,0,0)")
+                            cursor.execute("INSERT INTO saved_items(id,item_key,room_vnum,container_id,obj_uid,vnum,quantity,weight,extra_flags,item_type,value0,value1,value2,value3) "
+                                "VALUES (400,'PRIVATE-marker',10,NULL,81,100,1,1,0,1,0,0,0,0)")
                         marker_reader=pymysql.connect(unix_socket=env["DB_SOCKET"],user="auction_reader",password="disposable-auction-reader",
                             database="duris_history_markers",autocommit=True,cursorclass=pymysql.cursors.DictCursor)
                         with marker_reader:
@@ -524,7 +649,7 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                                     for statement in statements:cursor.execute(statement)
                                 marker_cut(label,expected)
         (work/"evidence.json").write_text(json.dumps(observations,indent=2)+"\n")
-        self.assertEqual(len(observations),112)
+        self.assertEqual(len(observations),164)
         print("SQL_SAVED_GROUND_CUSTODY_NATIVE "+json.dumps(observations,sort_keys=True),flush=True)
 
 

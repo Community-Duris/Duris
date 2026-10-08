@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -1321,11 +1322,98 @@ def read_siege_custody(cursor) -> dict:
     return {"siege_items": rows, "siege_custody_coverage": dict(items=len(rows))}
 
 
+SAVED_PAYLOAD_COLUMNS = {
+    "saved_items": "id,item_key,room_vnum,vnum,container_id,quantity,weight,cost,timer,extra_flags,wear_flags,"
+        "item_type,value0,value1,value2,value3,value4,value5,value6,value7,name,short_descr,description,"
+        "action_descr,obj_uid,created_at,updated_at,item_material,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5",
+    "saved_item_affects": "id,item_id,location,modifier",
+    "saved_item_extra_descr": "id,item_id,keyword,description"}
+MAX_SAVED_CELL_BYTES = 1024 * 1024
+
+
+def read_saved_ground_payloads(cursor, items: list[dict]) -> dict:
+    """Hash complete native-format rows independently, without exporting text.
+
+    Native SELECT-* digests depend on schema order and UTC timestamp rendering.
+    Read metadata without joins so orphans remain visible. Bound every raw cell
+    and the aggregate framed bytes before buffering any complete text values.
+    """
+    cursor.execute("SELECT TABLE_NAME AS table_name,COLUMN_NAME AS column_name,"
+        "CHARACTER_SET_NAME AS charset FROM information_schema.columns "
+        "WHERE table_schema=DATABASE() AND table_name IN "
+        "('saved_items','saved_item_affects','saved_item_extra_descr') ORDER BY table_name,ORDINAL_POSITION")
+    schema = {name: [] for name in SAVED_PAYLOAD_COLUMNS}
+    for row in cursor.fetchall():
+        if row["charset"] not in (None, "utf8mb4"):
+            raise ExportError("saved ground payload charset is unsupported")
+        schema[row["table_name"]].append(row["column_name"])
+    if any(schema[name] != columns.split(",") for name, columns in SAVED_PAYLOAD_COLUMNS.items()):
+        raise ExportError("saved ground payload schema order is unsupported")
+    # Native timestamps are rendered in UTC. A borrowed audit session must not
+    # change settings; reject incompatible formatting rather than misdiagnose.
+    cursor.execute("SELECT @@session.time_zone AS time_zone,@@system_time_zone AS system_time_zone")
+    zone = cursor.fetchone()
+    if zone is None or not (zone["time_zone"] == "+00:00" or
+            zone["time_zone"] == "SYSTEM" and zone["system_time_zone"] in ("UTC", "GMT")):
+        raise ExportError("saved ground payload capture requires a UTC session")
+    owners = {row["item_id"]: row["key_group"] for row in items}
+    counts = {group: [size, 0, 0] for group, size in Counter(owners.values()).items()}
+    orphans, metadata = [], {}
+    for ordinal, name in enumerate(SAVED_PAYLOAD_COLUMNS):
+        if not ordinal:
+            continue
+        metadata[name] = bounded(cursor, "SELECT id,item_id FROM " + name + " ORDER BY id")
+        for row in metadata[name]:
+            group = owners.get(row["item_id"])
+            if group is None:
+                orphans.append(dict(table=name, row_id=row["id"], item_id=row["item_id"]))
+            else:
+                counts[group][ordinal] += 1
+    source_bytes = sum(len(f"{ordinal}:{size}:") for sizes in counts.values()
+                       for ordinal, size in enumerate(sizes))
+    # Exact N / V<byte-count>:cell framing, including unjoined orphan metadata.
+    for name, columns in SAVED_PAYLOAD_COLUMNS.items():
+        lengths = ["OCTET_LENGTH(CAST(`" + col + "` AS BINARY))" for col in columns.split(",")]
+        frames = [f"IF({size} IS NULL,1,{size}+LENGTH(CAST({size} AS CHAR))+2)" for size in lengths]
+        maximum = ",".join(f"COALESCE({size},0)" for size in lengths)
+        cursor.execute("SELECT COALESCE(SUM(" + "+".join(frames) + "),0) AS frame_bytes,"
+            "COALESCE(MAX(GREATEST(" + maximum + ")),0) AS max_cell FROM " + name)
+        bound = cursor.fetchone()
+        if bound is None or bound["max_cell"] > MAX_SAVED_CELL_BYTES:
+            raise ExportError("saved ground payload cell exceeds audit bounds")
+        source_bytes += int(bound["frame_bytes"])
+        if source_bytes > MAX_INPUT_BYTES:
+            raise ExportError("saved ground payload source exceeds audit byte bounds")
+    digests = {group: hashlib.sha256() for group in counts}
+    for ordinal, (name, columns) in enumerate(SAVED_PAYLOAD_COLUMNS.items()):
+        for group, sizes in counts.items():
+            digests[group].update(f"{ordinal}:{sizes[ordinal]}:".encode("ascii"))
+        select = ",".join("CAST(`"+col+"` AS BINARY) AS `"+col+"`" for col in columns.split(","))
+        for row in bounded(cursor, "SELECT " + select + " FROM " + name + " ORDER BY id"):
+            group = owners.get(int(row["id"] if not ordinal else row["item_id"]))
+            if group is None:
+                continue
+            for value in row.values():
+                digests[group].update(b"N" if value is None else b"V"+str(len(value)).encode("ascii")+b":"+value)
+    ids = {group: hashlib.sha256() for group in counts}
+    for row in sorted(items, key=lambda row: row["item_id"]):
+        ids[row["key_group"]].update(f"{row['item_id']},".encode("ascii"))
+    payloads = [dict(key_group=group, items=sizes[0], affects=sizes[1], extra_descr=sizes[2],
+        id_digest=ids[group].hexdigest().upper(), payload_digest=digests[group].hexdigest().upper())
+        for group, sizes in sorted(counts.items())]
+    state = list(bounded(cursor, "SELECT state_id,season_epoch,reset_status FROM season_reset_state ORDER BY state_id"))
+    return dict(saved_ground_payloads=payloads, saved_ground_metadata_orphans=orphans,
+        saved_ground_recovery_state=state, saved_ground_payload_coverage=dict(version=1,
+            groups=len(payloads), affects=len(metadata["saved_item_affects"]),
+            extra_descr=len(metadata["saved_item_extra_descr"]), orphans=len(orphans), source_bytes=source_bytes))
+
+
 def read_saved_ground_custody(cursor) -> dict:
     """Retain raw ground rows and possible handoffs, without exporting key text."""
     cursor.execute("SELECT (SELECT COUNT(*) FROM saved_items)+"
                    "(SELECT COUNT(*) FROM saved_item_recovery_handoff)+"
-                   "(SELECT COUNT(*) FROM sql_room_item_payload) AS rows_total")
+                   "(SELECT COUNT(*) FROM sql_room_item_payload)+(SELECT COUNT(*) FROM saved_item_affects)+"
+                   "(SELECT COUNT(*) FROM saved_item_extra_descr)+(SELECT COUNT(*) FROM season_reset_state) AS rows_total")
     bound = cursor.fetchone()
     if bound is None or bound["rows_total"] > MAX_ROWS:
         raise ExportError("saved ground custody source exceeds audit bounds")
@@ -1362,13 +1450,15 @@ def read_saved_ground_custody(cursor) -> dict:
         "FROM saved_items s ORDER BY id"))
     receipts = list(bounded(cursor, "SELECT season_epoch,source_root_id,source_uid,source_room_vnum,"
         "source_row_count,destination_root_id,(retired_at IS NOT NULL) AS retired,"
+        "(BINARY destination_key=BINARY CONCAT('item.uid.',source_uid)) AS destination_key_canonical,"
         "HEX(source_id_digest) AS source_id_digest,HEX(source_payload_digest) AS source_payload_digest,"
         "HEX(destination_payload_digest) AS destination_payload_digest,"
         "(SELECT MIN(s.id) FROM saved_items s WHERE s.item_key=h.source_key) AS source_group,"
         "(SELECT MIN(s.id) FROM saved_items s WHERE s.item_key=h.destination_key) AS destination_group "
         "FROM saved_item_recovery_handoff h ORDER BY season_epoch,source_root_id"))
     return {"saved_ground_items": rows, "saved_ground_handoffs": receipts,
-            "saved_ground_custody_coverage": dict(items=len(rows), handoffs=len(receipts))}
+            "saved_ground_custody_coverage": dict(items=len(rows), handoffs=len(receipts)),
+            **read_saved_ground_payloads(cursor, rows)}
 
 
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
@@ -1770,9 +1860,10 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items',"
             "'corpses','corpse_items','lockers','private_chests','locker_items',"
             "'account_lockers','locker_chests','account_locker_items','siege_items','ships','guilds',"
-            "'saved_items','saved_item_recovery_handoff','sql_room_item_payload')")
+            "'saved_items','saved_item_recovery_handoff','sql_room_item_payload',"
+            "'saved_item_affects','saved_item_extra_descr','season_reset_state')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 37 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 40 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
@@ -1888,6 +1979,7 @@ def main() -> int:
                                          unix_socket=args.socket,
                                          password=password, database=args.database,
                                          charset="utf8mb4", autocommit=True,
+                                         init_command="SET SESSION time_zone='+00:00'",
                                          cursorclass=pymysql.cursors.DictCursor,
                                          connect_timeout=5, read_timeout=30, write_timeout=5)
             try:
