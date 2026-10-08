@@ -9,8 +9,10 @@ passes the additive captured-agreement oracle and focused controls; quest prep
 next implements separate QP03 temporal retirement/replacement assertions.
 Mapping/projector/physical and chronological native proof remain external.
 [Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
-passes blueprinta24454539; architecture next maps ordinary item-custody/subtree
-authority boundaries for later domain separation. Native C01 execution still
+passes blueprinta24454539 and item-custody mapf4d38f4eb. Architecture next traces
+the ordinary pickup publication retention gap and proposes an exact reservation,
+with private feasibility only; no shared owner or maintained code edit is approved.
+Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability
 does not establish import or native qualification. Same-cut mapping,
 physical publication, authentic setup and existing primary/Plan5 requirements

@@ -167,3 +167,57 @@ and integration boundary for a second game domain. Quest owns its separate NPC
 cost assertion delivery. Review each handoff before selecting a successor; native
 execution dependencies block only their dependent step. Existing native Goals
 remain BLOCKED and heartbeat ACTIVE; broader project completion is unproved.
+
+## Item-custody boundary review and pickup reservation investigation
+
+Disposition: PASS for source-grounded item boundary design at
+`f4d38f4eb047f29eb01187bd84f708f46c3b6928`.
+[Exact item-custody map](https://github.com/Community-Duris/Duris/blob/f4d38f4eb047f29eb01187bd84f708f46c3b6928/docs/persistence/economy_accounting/domain-separation/ITEM_CUSTODY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md)
+is Git blob `70e8cc751e01bb283629582b7572365059725ccc`, SHA256
+`84ab6c7282ff3cebf8979b807adfb400ba5152d2df8bd07dcb9ab620a127b8a8`.
+The coordinator read all 448 lines, authenticated all 37 appendix file blobs,
+resolved all five links in their exact Git trees and checked the sole-file diff
+and whitespace. Source comparison includes the actual ordinary get submission,
+common runtime registry application and pending erase/callback path. No tests,
+DB, native runtime or build were executed for this document-only review.
+
+The map preserves complete selected subtree/topology versus complete owner forest,
+historical immutable receipt versus current custody, DB authority versus native
+projection, and source/save clocks versus item/owner clocks. Existing ordinary
+SQL drop has a literal checkpoint, retained physical publisher, ACK and hold
+contract. Ordinary owned pickup can be admitted, but its actual get call supplies
+the general completion callback, without that equivalent retained publication
+contract. The common path normally erases pending work before invoking that
+callback. This is a source-supported gap to investigate, not an executed native
+failure or approval to rewrite shared owners. Existing prompt-runtime tests use
+inactive accounting and cannot close active pickup retention.
+
+Architecture's next bounded output is
+`domain-separation/ORDINARY_PICKUP_PUBLICATION_RESERVATION_2026-10-08.md` only,
+with private feasibility scratch on D:. Trace the complete original retained/
+nonretained selection, actor/body, registry, native handler, coordinator fence/
+ACK and save interactions for ordinary player_get, distinguishing locker/corpse/
+other callbacks. Freeze exact maintained preimages. Determine whether any existing
+owner already covers the apparent gap and identify the smallest genuine missing
+contract rather than assuming a fix. If feasible, use unchanged maintained
+functions and meaningful component controls to demonstrate success and callback/
+offline/topology failure ownership; disclose every stub and native-proof limit.
+An accepting authority stub or edited expected result is not a reproduction.
+
+Return exact proposed implementation/test paths, old/new ownership invariants,
+primary/private overlap dependencies, original controls and required native
+qualification. No maintained source/test change, generalized facade, new authority,
+format, observer or owner implementation is approved. Preserve existing drop,
+quest/SHOP/Plan5 boundaries and completed bundles. If execution cannot reach the
+real path without unavailable native prerequisites, retain the source-backed
+finding and precise dependency; do not invent a runtime failure or broaden tests.
+This removes uncertainty before a shared-owner change can be safely reserved.
+Quest's temporal QP03 assertion remains the one active quest delivery. Public
+native trees remain unchanged, actual native Goals BLOCKED and heartbeat ACTIVE.
+
+During publication, primary advanced to e8b8d842f with six documentation changes
+reporting private typed flat SHOP storage/proof integration (119 production files).
+Those changes are preserved. Public source/migration trees are still identical;
+producer/save-drain/dispatch/publication/ACK/recovery and shared keeper classification
+remain reported dependencies, with major qualification unexecuted. The pickup
+investigation does not modify or duplicate that private owner work.

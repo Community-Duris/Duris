@@ -85,11 +85,13 @@ stale retry; selected-row absence is never global absence/retirement proof.
 Existing oracles remain intact. Native mapping/publication, genuine D/chronology,
 full census and authentic paid setup remain unavailable. Currency blueprint
 a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
-Architecture next owns ITEM_CUSTODY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: ordinary
-carried/room moves and one complete container subtree, existing writer/native
-publication/ACK/recovery ownership, and the smallest later DB-authoritative
-facade boundary. No code or native runner with missing fixture inputs is reserved.
-Primary84a435c3d publishes only documentation of private warm/SHOP progress and
+Item-custody mapf4d38f4eb now passes source/design review in the same preparation
+review. Architecture next owns ORDINARY_PICKUP_PUBLICATION_RESERVATION_2026-10-08.md
+and private feasibility only: trace actual ordinary get retention/callback/ACK/
+save behavior, check whether an existing owner closes the source-visible gap,
+and propose the smallest exact boundary with original proof and collision limits.
+No maintained source/test change, owner rewrite or native runner is reserved.
+Primarye8b8d842f publishes documentation of private typed flat SHOP progress and
 blockers; public native source/migrations remain unchanged. No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.
