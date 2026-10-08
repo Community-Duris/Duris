@@ -81,16 +81,24 @@ bodies/63 artifacts authenticated; original/public/owned two-test controls pass.
 All37 deliberate mutations reject and nine formatting controls pass; logging
 nonzero/timeout retention passes. This proves source predicates, not runtime
 compound atomicity. Observed legacy hazards are not permanent desired policy.
-Architecture next owns CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md:
-original recipe/input/output/pouch terms and progression/save/ACK/recovery owners.
-Reuse closed R1 math/journeys; one distinct source/design seam, no requalification.
-Pickup still needs genuine save/current-proof/restart owners. Primary07c0e0398
-reports private ordinary birth storage/repository/flat cold helpers at d9eaa45b/
-143 production/77 C providers. Typed NMB4/full264-byte MBR4 and known-zero revision1
-retain original owners;shared keeper roles refuse. Actual boot wiring/cold slot/
-budget/full census/cleanup/ACK,source/admission/physical publication/shared atomic
-and broad gates remain. Public source unchanged;compiler/native/SQL/gameplay/
-persistence/recovery unexecuted. Supported
+Recipe map83038acc0 now PASS source/design review:3,455 public bodies/37 body
+pins/93 anchors/four links/11 ordering checks/22 artifacts authenticated. Reuse
+closed R1 journeys and maintained progression/ACK fixtures; no new craft runner.
+Architecture next evaluates SHOP_TRADE_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
+buy/sell/produced/cleanup compound custody,wallet,keeper stock/cash and completion
+delegation. Reuse closed quotes/acceptance/access and SHOP reviews; if already
+covered,return exact coverage/dependencies instead of a redundant document.
+Pickup still needs genuine save/current-proof/restart owners. Latest primary
+fc8a8961b reports private ordinary birth/restored outer candidate48570aec:
+147 production/79C,nine reviewed slices/13 overrides,809 dependency records/
+22 predecessor bindings. Original NMB4/NBC4/264-byte MBR4,role recensus,current
+receipt and passive-slot/command/fence/32MiB cold-stage charge remain source
+claims. Real coordinator delivery edge is critical_command_coordinator_pulse;
+never-admitted cleanup remains closed. Published-world SQL successor/full cold
+census/boot/effects/admission/shared atomic/opening/Plan5 remain incomplete.
+Public source/migrations/tests unchanged;compiler/native/SQL/gameplay/persistence/
+recovery UNEXECUTED. Private implementation is not available or qualified here.
+Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

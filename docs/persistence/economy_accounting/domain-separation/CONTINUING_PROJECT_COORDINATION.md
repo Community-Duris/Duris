@@ -154,7 +154,8 @@ No new persistence format,original-season policy or reward/ACK correction. Exact
 unavailable link/runtime dependencies stop only dependent execution; original
 native participant/world/save/checkpoint/ACK/cold/private source stays external.
 Native Goal remains BLOCKED; one bounded active delivery,primary has no adoption
-wait. Architecture recipe boundary document remains active and review pending. Existing oracles
+wait. Recipe map83038acc0 now passes source/design review; its completed coverage
+disposition supersedes the previous pending recipe assignment. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -201,24 +202,48 @@ mutations and nine formatting controls replay identically. Nonzero7/timeout124
 logging retains partial streams. Original ambiguous-NULL failure stays retained.
 Source predicates prove no runtime atomicity; legacy hazards remain comparison
 facts subject to explicit future owner-reviewed behavior decisions.
-Architecture next owns only CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md.
-Benefit: implementation-ready recipe transaction/pouch/progression authority seam.
-Available actual crafting submission/completion,continuation,pouch,item movement,
-progression/save hooks/backend receipt providers and maintained tests are inputs.
-Reuse closed R1 implementation48cdf9cb/handoff4f7fa384 and accepted SQL/flat recipe
-journeys; do not repeat material math or reopen/requalify the completed bundle.
-Trace captured original actor/input/output UIDs,recipe/discipline/XP,pouch terms,
-reservation/refusal,physical publication,business completion,retained operation
-receipt versus current config/lookup,live projection,saved receipt acknowledgment,
-replay/copyover/cold and backend uncertainty. At most one real nonduplicate future
-acceptance reservation; return existing coverage if there is no distinct gap.
-One doc only,exact source/blob/anchor/link/design checks/private proof on D:.
-No production/test/capture/decoder/schema/registry/shared driver/Plan5/FINISH/
-canonical handoff edit,new authority/format/RAM switch or compiler/DB/server/
-journal/native/broad run. Genuine original participant/current-world/publisher/
-save/ACK/cold and private-source dependencies remain external; native Goal BLOCKED.
+Recipe map83038acc0 now PASS source/design review:3,455 public bodies/37 body
+pins/93 anchors(88 unique)/four links/11 ordering checks/22 artifacts authenticated.
+Full original command versus reduced saved receipt,progression preflight/save,
+item ACK then extraction/hooks/runtime relookup and prototype/recovery dependencies
+stay distinct. Reuse closed R1 journeys and maintained progression/30-case ACK
+fixtures. No new extraction/runner is reserved; actual native proof stays external.
+Architecture next owns one bounded existing-coverage comparison and,only if useful,
+SHOP_TRADE_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md. Benefit: implementation-ready
+buy/sell/produced-purchase/cleanup delegation across custody,customer wallet,
+keeper stock/cash and original completion. Actual shop.c,shop_trade_transaction/
+preparation owner,runtime/command/recovery/world-witness/publication/accounting,
+SQL/flat participants and focused tests are available. Reuse closed R10/R12/R13/
+R14 and SHOP live-route/codec/route/source findings; private reports stay reported.
+Trace only captured participant/lifetime/current-world versus retained command,
+frozen quote/RNG/stock/outcome,produced sequence/partial progress,compound root,
+physical projection/checkpoint/ACK/replay/cold and shared keeper contention.
+Preserve one compound operation and all refusal/uncertainty; no independent domain
+commits. If already covered,return exact coverage/dependencies instead of a map.
+Otherwise publish one focused doc/exact source/blob/anchor/link/design proof and
+at most one real nonduplicate future acceptance reservation if source supports it.
+No broad inventory,price extraction,codec/live-route repair or primary rewrite.
+Existing isolated worktree/privateD: proof; no production/test/helper/capture/
+decoder/schema/registry/shared driver/Plan5/FINISH/canonical handoff edit,new
+authority/format/facade implementation/RAM switch or build/DB/server/journal/
+native/broad batch. Original participant/current-world/publisher/save/ACK/cold/
+private-source remain external. One bounded delivery; native Goal remains BLOCKED.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Latest primary07c0e0398 reports private ordinary NMB4/MBR4 SQL storage/repository
+Latest primaryfc8a8961b reports private ordinary birth/restored outer integration
+at candidate48570aec:147 production/79C,nine source-accepted slices/13 overrides,
+809 dependency records and22 predecessor bindings. Full original NMB4/NBC4/
+264-byte MBR4 spans recovery,lifetime/origin/producer; genuine role recensus and
+receipt-to-wallet checks remain. Shared/ambiguous keeper roles refuse. Original
+receipt/fence checks surround effects and ACK through actual coordinator delivery
+critical_command_coordinator_pulse. Restored flat outer binds passive slot,
+command/root/PID/epoch/reservation and immutable complete cold-stage charge under
+32MiB; exact local hold consumption follows durable ACK. Never-admitted cleanup
+stays closed. Published-world SQL successor,full cold PC/keeper/pet absence-or-
+presence proof,boot/effects/admission/shared keeper atomic CAS/opening/Plan5 remain
+open. Documentation only;private code and compiler/native/SQL/gameplay/persistence/
+recovery qualification unavailable/unexecuted. Public src/migrations/tests unchanged.
+The earlier primary07c0e0398 report remains historical below; it reports private
+ordinary NMB4/MBR4 SQL storage/repository
 dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:
 143 production files/77 C providers,23 unchanged fixtures/five schema inputs.
 Original receipt authenticates NMB4/full264-byte MBR4;known-zero revision1 and

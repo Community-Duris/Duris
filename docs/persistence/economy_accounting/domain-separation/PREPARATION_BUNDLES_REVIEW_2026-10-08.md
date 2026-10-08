@@ -1288,3 +1288,70 @@ preserve it and review its exact completed publication before assigning its next
 slice. Actual native Goals remain BLOCKED; heartbeat ACTIVE and broader primary
 completion/qualification remains unproved. No new public primary source advance
 was observed at this check.
+
+
+## Recipe completion map reviewed; shop conversion coverage comparison next
+
+Independent source/design review PASS for sole-document implementation
+`83038acc06857546a74e13f1f4ecc9a0a31a3dc3`, parent
+`3aaa617970aeae123bffe024520bc79dd81195eb`.
+[Recipe completion boundary](https://github.com/Community-Duris/Duris/blob/83038acc06857546a74e13f1f4ecc9a0a31a3dc3/docs/persistence/economy_accounting/domain-separation/CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md)
+authenticates3,455 public exported bodies/archive,37 whole-body pins,93 source
+anchors(88 unique),four links,11 source-order checks and22 indexed artifacts.
+Coordinator read the complete377-line map and actual progression save/recovery
+preflight and original ACK/extract/notification/completion ordering. Sole committed
+path/body,clean worktree and publication remote verified. Private review proof:
+`D:\Dev\Temp\coordinator-recipe-boundary-review-20261008`.
+No native/component/build/DB/server/journal/gameplay batch was executed.
+
+The retained full command binds recipe/input/output/pouch/custody terms; saved
+progression receipts carry operation,discipline and XP with PID in the envelope.
+Save completion acknowledges matching existing awards; recovery preflights missing
+live applied/unacknowledged awards before acknowledging incoming receipts.
+Progression save acknowledgment remains distinct from original item-journal ACK,
+pending-owner extraction and external business hooks. Current prototypes/allocation,
+original native world and backend remain recovery dependencies. Closed R1 material
+proof and accepted SQL/flat recipe journeys stay accepted at their exact historical
+binaries/scope. Existing progression and30-scenario ACK fixtures already cover
+component controls; no duplicate extraction or runner is justified or reserved.
+
+Next architecture delivery is a bounded comparison of existing SHOP coverage for
+the domain conversion seam. Sole potential doc is
+`domain-separation/SHOP_TRADE_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Benefit: preserve buy/sell/produced-purchase/keeper-cleanup delegation across item
+custody,customer wallet,keeper stock/cash and original completion in later modular
+conversion. Available public shop.c,shop_trade_transaction/preparation owner,
+runtime/command/recovery/world-witness/publication/accounting,SQL/flat participants
+and maintained tests supply actual inputs. Reuse closed R10/R12/R13/R14 and SHOP
+live-route/codec/route/source reviews. Separate private reported contracts from
+actual callable bodies. Restrict to original participants/lifetimes/current-world,
+frozen quote/RNG/stock/outcome,produced sequence/partial progress,compound root,
+physical projection/checkpoint/ACK/replay/cold and shared keeper contention.
+No splitting compound authority into independent domain commits. If existing
+findings already cover this seam,return precise coverage and dependencies instead
+of creating a redundant document. Otherwise one focused map with exact source/
+blob/anchor/link/design proof and at most one genuinely nonduplicate future
+acceptance reservation. No new quote extraction or live-route/codec repair.
+
+Existing isolated worktree and D: private evidence. No production/test/helper/
+capture/decoder/schema/registry/shared-driver/Plan5/FINISH/canonical handoff edit,
+new authority/format/facade implementation/RAM switch or build/DB/server/journal/
+native/broad batch. Original participant/current-world/publisher/save/ACK/cold and
+private primary source remain external. Quest's real story-runtime component
+continues; its retained initial panic-link failure led to maintained function-
+section/GC linking without a replacement non-SQL provider. Preserve its live job;
+no component result or final code review is claimed yet.
+
+New public primaryfc8a8961b281c4b53bc0f7af1459dbb131781676 changes six docs only.
+It reports private candidate48570aec/147 production/79C,nine reviewed slices/
+13 overrides,809 dependency records and22 predecessor bindings. Full ordinary
+NMB4/NBC4/264-byte MBR4 owners,role recensus,current receipt,passive flat slot,
+original command/fence/root and32MiB cold-stage charge are source-integration
+claims. Actual coordinator delivery is critical_command_coordinator_pulse;
+never-admitted cleanup remains closed. Published-world SQL successor,full cold
+PC/keeper/pet absence-or-presence proof,original boot/effects/admission,shared
+keeper atomic CAS,opening/Plan5 and combined qualification remain open.
+Public src/migrations/tests are unchanged. Compiler/native/SQL/gameplay/persistence/
+recovery execution is UNEXECUTED under major-plan deferral; implementation is
+private and unqualified. No new sideworker native interface is exposed. Actual
+Goals remain BLOCKED; heartbeat ACTIVE and broader primary finish line unresolved.
