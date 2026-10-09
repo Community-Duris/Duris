@@ -3058,3 +3058,19 @@ header inverse/tokens/preprocessor PASS;931policies/398pins authenticate, zero n
 unmapped sites. Native checks batched. Real pulse/warm/cold/scheduler/service/placement/
 activity/fault/mixed qualification remains unfinished. Protected WIP, inactive/CLOSED
 accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist; no newgate.
+
+
+## Genuine full scheduler diagnostics/native service step joined - 2026-10-09
+
+[Owning integration](NATIVE_SCHEDULER_SERVICE_STEP_ADMISSION_2026-10-09.md) joins
+actual allocator-rebind admission, full original invariant/periodic/variadic/output
+and native service predicates with real persistent pool/output/Zombie retention.
+Actual returned/succeeded markers precede fallible diagnostic refusal. Concrete
+first-use priority log finding closed using owning ORIGINAL logit profile BEFORE
+slot; sole sharedcache/originalconfig/log order intact, no duplicate/preinit/bypass.
+OriginalnewEvents prefix exception precisely recorded/reversed; corrected RAW/final
+7file inverses/tokens/preprocessor PASS;931policies/399pins authenticate (genuine
+periodic pin added), zero new/unmapped sites. Native checks batched. Four warm/cold
+pulse/activity/placement/reschedule/enrollment/fault/mixed qualification remains open.
+Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
+ACTIVE goal persist; no additional gate/full native acceptance claim.

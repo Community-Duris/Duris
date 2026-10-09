@@ -11429,3 +11429,131 @@ bool quest_mobile_native_item_stage::publish_many_bounded(
 	}
 #endif
 }
+
+bool quest_mobile_native_item_stage::publication_step_bounded(
+	size_t step, P_obj expected, quest_mobile_native_item_effect &effect,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !state_ || !nevent_is_game_thread() || !state_->published ||
+	    step >= publication_step_count() || step != state_->next_step ||
+	    state_->current_step_started || effect.started)
+		return false;
+	auto &s = *state_;
+	P_obj object = find_birth_live_object(expected, s.uid);
+	if (!object || object->R_num != s.rnum || obj_index != s.index ||
+	    obj_index[s.rnum].virtual_number != s.vnum || obj_index[s.rnum].pos != s.position)
+		return false;
+	const auto current = obj_index[s.rnum].func.obj;
+	if (((s.parsed_proclib || s.restored_bridge_request) &&
+	     current != proclib_obj_cmd_bridge) ||
+	    (!(s.parsed_proclib || s.restored_bridge_request) && current != s.original_proc &&
+	     !(object->type == ITEM_SWITCH && !s.original_proc && current == item_switch)) ||
+	    (current == proclib_obj_cmd_bridge &&
+	     !proclib_recovery_chain_stage::predecessor_matches(
+		     s.rnum, s.original_proc == proclib_obj_cmd_bridge ? s.effective_proc :
+									 s.original_proc)))
+		return false;
+	const size_t general = s.libraries.size() * 2;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		nevent_schedule_result scheduled;
+	};
+	// Actual owning scheduling result and get_scheduled's by-value return handle.
+	const size_t frame = sizeof(workspace) + sizeof(nevent_handle);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	workspace work{};
+	try
+	{
+		s.current_step_started = true;
+		effect.started = true;
+		if (step < general)
+		{
+			const size_t index = step / 2;
+			if (!(step & 1))
+			{
+				// This original safe probe already actually returned during preparation.
+				// Confirm retained facts only; never invoke it again or choose new RNG.
+				effect.returned = true;
+				effect.periodic = s.requested[index];
+				effect.succeeded = true;
+			}
+			else
+			{
+				if (!s.requested[index] || get_scheduled(object, proclib_obj_event))
+				{
+					effect.succeeded = true;
+					effect.returned = true;
+				}
+				else if (!nevent_schedule_object_bounded(
+						 proclib_obj_event, s.library_delays[index], object,
+						 &work.scheduled, &effect.returned,
+						 &effect.succeeded, reserve, context,
+						 outer_live + frame))
+					return false; // Returned native markers, if any, remain; never rerun.
+				effect.succeeded = effect.succeeded &&
+						   find_birth_live_object(expected, s.uid);
+			}
+		}
+		else if (step == general)
+		{
+			// Original object-local initialization already returned before literal
+			// capture. Only the retained ZombieGame global tail remains here.
+			effect.succeeded = !s.zombie.game_ ||
+					   s.zombie.publish_bounded(object, reserve, context,
+								    outer_live + frame);
+			effect.periodic = s.general_periodic;
+			effect.returned = true;
+			s.general_periodic = effect.periodic;
+			effect.succeeded = effect.succeeded &&
+					   find_birth_live_object(expected, s.uid);
+		}
+		else if (step == general + 1)
+		{
+			if (!s.general_periodic || get_scheduled(object, event_object_proc))
+			{
+				effect.succeeded = true;
+				effect.returned = true;
+			}
+			else if (!nevent_schedule_object_bounded(
+					 event_object_proc, s.general_delay, object,
+					 &work.scheduled, &effect.returned, &effect.succeeded,
+					 reserve, context, outer_live + frame))
+				return false; // Returned native markers, if any, remain; never rerun.
+			effect.succeeded = effect.succeeded &&
+					   find_birth_live_object(expected, s.uid);
+		}
+		else
+		{
+			if (!s.random_exit_requested || get_scheduled(object, event_random_exit))
+			{
+				effect.succeeded = true;
+				effect.returned = true;
+			}
+			else if (!nevent_schedule_object_bounded(event_random_exit, 3, object,
+								 &work.scheduled, &effect.returned,
+								 &effect.succeeded, reserve,
+								 context, outer_live + frame))
+				return false; // Returned native markers, if any, remain; never rerun.
+			effect.succeeded = effect.succeeded &&
+					   find_birth_live_object(expected, s.uid);
+		}
+		if (effect.returned && effect.succeeded)
+		{
+			++s.next_step;
+			s.current_step_started = false;
+		}
+		return effect.returned && effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

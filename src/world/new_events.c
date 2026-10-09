@@ -293,9 +293,15 @@ static bool nevent_is_player_timed(event_func_type func, P_char ch)
 			     func == event_hit_regen || func == event_ward_regen);
 }
 
-static unsigned int nevent_priority(event_func_type func, P_char ch)
+static long &nevent_player_priority_cache() noexcept
 {
 	static long player_priority = -1;
+	return player_priority;
+}
+
+static unsigned int nevent_priority(event_func_type func, P_char ch)
+{
+	long &player_priority = nevent_player_priority_cache();
 	if (player_priority < 0)
 		player_priority = nevent_config_limit("DURIS_NEVENT_PLAYER_PRIORITY", 1, 1);
 	if (player_priority > 0 && nevent_is_player_timed(func, ch))
@@ -3006,5 +3012,650 @@ bool nevent_reserve_object_schedule_slot_bounded(bool (*reserve)(size_t, void *)
 	// Genuine configured mmap request, nonfatal and before any event acquisition.
 	// Success/refusal may leave newly owned pages; caller retains current pool.
 	return mm_try_reserve_free_slot(ne_dead_event_pool);
+#endif
+}
+
+#include "core/utility.h"
+#include <memory>
+namespace
+{
+// Owning ONLY this complete scheduler diagnostic's actual node/bucket requests.
+struct object_schedule_diagnostic_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	size_t heap = 0;
+	size_t output_now = 0;
+	bool refused = false;
+	[[noreturn]] void reject()
+	{
+		refused = true;
+		throw std::bad_alloc();
+	}
+	size_t live()
+	{
+		if (!diagnostic_output_storage_bytes(&output_now) || heap > SIZE_MAX - base ||
+		    output_now > SIZE_MAX - base - heap)
+			reject();
+		return base + heap + output_now;
+	}
+	template <class... A> void debug(const char *format, A... args)
+	{
+		if (!diagnostic_debug_bounded(reserve, context, live(), format, args...))
+			reject();
+	}
+	template <class... A> void logit(const char *filename, const char *format, A... args)
+	{
+		if (!diagnostic_logit_bounded(reserve, context, live(), filename, format, args...))
+			reject();
+	}
+};
+
+// Pure original priority-cache/config inspection. No cache initialization/logging
+// occurs on this prospective path, including a later failed slot acquisition.
+bool object_schedule_priority_log_preflight(object_schedule_diagnostic_budget &budget)
+{
+	if (nevent_player_priority_cache() >= 0)
+		return true;
+	struct workspace
+	{
+		const char *raw;
+		char *end;
+		long value;
+		int saved_errno;
+		bool invalid;
+		size_t peak;
+	};
+	const size_t current = budget.live();
+	const size_t scanner = diagnostic_original_logit_preflight_object_bytes();
+	if (sizeof(workspace) > SIZE_MAX - current ||
+	    !budget.reserve(current + sizeof(workspace), budget.context))
+		return false;
+	workspace work{};
+	work.raw = getenv("DURIS_NEVENT_PLAYER_PRIORITY");
+	if (!work.raw || !*work.raw)
+		return true;
+	work.saved_errno = errno;
+	errno = 0;
+	work.value = strtol(work.raw, &work.end, 10);
+	work.invalid = errno == ERANGE || !work.end || *work.end != '\0' || work.value < 0 ||
+		       work.value > 1;
+	errno = work.saved_errno; // Pure preflight must not perturb original native order.
+	if (!work.invalid)
+		return true;
+	if (scanner > SIZE_MAX - current - sizeof(workspace) ||
+	    !budget.reserve(current + sizeof(workspace) + scanner, budget.context))
+		return false;
+	if (!diagnostic_original_logit_working_bytes(
+		    LOG_STATUS, &work.peak, "Invalid %s='%s' (allowed 0..%ld); using %ld",
+		    "DURIS_NEVENT_PLAYER_PRIORITY", work.raw, 1L, 1L))
+		return false;
+	// Scanner/workspace die before acquiring a slot. The genuine original logger
+	// peak stays admitted through actual priority initialization in original order.
+	return work.peak <= SIZE_MAX - current &&
+	       budget.reserve(current + work.peak, budget.context);
+}
+template <class T> class object_schedule_diagnostic_allocator
+{
+    public:
+	using value_type = T;
+	object_schedule_diagnostic_budget *budget;
+	explicit object_schedule_diagnostic_allocator(object_schedule_diagnostic_budget *b) noexcept
+		: budget(b)
+	{
+	}
+	template <class U> object_schedule_diagnostic_allocator(
+		const object_schedule_diagnostic_allocator<U> &other) noexcept
+		: budget(other.budget)
+	{
+	}
+	T *allocate(size_t n)
+	{
+		if (n > SIZE_MAX / sizeof(T))
+			budget->reject();
+		const size_t bytes = n * sizeof(T), current = budget->live();
+		if (bytes > SIZE_MAX - current ||
+		    sizeof(std::allocator<T>) > SIZE_MAX - current - bytes ||
+		    !budget->reserve(current + bytes + sizeof(std::allocator<T>), budget->context))
+			budget->reject();
+		T *result = std::allocator<T>{}.allocate(n);
+		budget->heap += bytes;
+		return result;
+	}
+	void deallocate(T *p, size_t n) noexcept
+	{
+		std::allocator<T>{}.deallocate(p, n);
+		budget->heap -= n * sizeof(T);
+	}
+	template <class U>
+	bool operator==(const object_schedule_diagnostic_allocator<U> &other) const noexcept
+	{
+		return budget == other.budget;
+	}
+	template <class U>
+	bool operator!=(const object_schedule_diagnostic_allocator<U> &other) const noexcept
+	{
+		return !(*this == other);
+	}
+};
+template <class T> using object_schedule_diagnostic_set =
+	std::unordered_set<T, std::hash<T>, std::equal_to<T>,
+			   object_schedule_diagnostic_allocator<T>>;
+template <class K, class V> using object_schedule_diagnostic_map =
+	std::map<K, V, std::less<K>, object_schedule_diagnostic_allocator<std::pair<const K, V>>>;
+struct object_schedule_diagnostic_message
+{
+	char message[512];
+	va_list arguments;
+};
+void nevent_integrity_problem_object_schedule_bounded(object_schedule_diagnostic_budget &budget,
+						      nevent_integrity_report *report,
+						      const char *format, ...)
+{
+	object_schedule_diagnostic_message frame;
+	if (!report)
+		return;
+	++report->errors;
+	va_start(frame.arguments, format);
+	vsnprintf(frame.message, sizeof(frame.message), format, frame.arguments);
+	va_end(frame.arguments);
+	budget.debug("check_nevents: %s", frame.message);
+}
+static bool nevent_character_link_present_bounded(P_char character, struct char_link_data *expected,
+						  bool linking_list,
+						  object_schedule_diagnostic_budget &budget)
+{
+	object_schedule_diagnostic_set<struct char_link_data *> visited{
+		object_schedule_diagnostic_allocator<struct char_link_data *>(&budget)
+	};
+	struct char_link_data *link = linking_list ? character->linking : character->linked;
+
+	for (; link; link = linking_list ? link->next_linking : link->next_linked)
+	{
+		if (!visited.insert(link).second)
+			return false;
+		if (link == expected)
+			return true;
+	}
+	return false;
+}
+static nevent_integrity_report
+nevent_inspect_invariants_object_schedule_bounded(bool emit_summary,
+						  object_schedule_diagnostic_budget &budget)
+{
+	nevent_integrity_report report = {};
+	object_schedule_diagnostic_set<P_nevent> wheel_events{
+		object_schedule_diagnostic_allocator<P_nevent>(&budget)
+	};
+	object_schedule_diagnostic_set<unsigned long long> sequences{
+		object_schedule_diagnostic_allocator<unsigned long long>(&budget)
+	};
+	object_schedule_diagnostic_set<P_char> live_characters{
+		object_schedule_diagnostic_allocator<P_char>(&budget)
+	};
+	object_schedule_diagnostic_set<P_obj> live_objects{
+		object_schedule_diagnostic_allocator<P_obj>(&budget)
+	};
+	object_schedule_diagnostic_set<P_nevent> character_events{
+		object_schedule_diagnostic_allocator<P_nevent>(&budget)
+	};
+	object_schedule_diagnostic_set<P_nevent> object_events{
+		object_schedule_diagnostic_allocator<P_nevent>(&budget)
+	};
+	object_schedule_diagnostic_map<unsigned long long, long> deferred_due_counts{
+		object_schedule_diagnostic_allocator<std::pair<const unsigned long long, long>>(
+			&budget)
+	};
+
+	for (P_char character = character_list; character; character = character->next)
+		live_characters.insert(character);
+	for (P_obj object = object_list; object; object = object->next)
+		live_objects.insert(object);
+
+	for (int bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+	{
+		P_nevent previous = NULL;
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
+		{
+			if (!wheel_events.insert(event).second)
+			{
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"event pointer %p appears more than once in the wheel",
+					(void *)event);
+				break;
+			}
+			report.wheel_count++;
+			if (event->prev_sched != previous)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has a non-reciprocal wheel previous link",
+					event->sequence);
+			if (event->element != static_cast<unsigned int>(bucket))
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu claims bucket %u but is in %d",
+					event->sequence, event->element, bucket);
+			if (event->deferral_count == 0 && nevent_bucket_for_tick(event->due_tick) !=
+								  static_cast<unsigned int>(bucket))
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu due tick %llu disagrees with bucket %d",
+					event->sequence, event->due_tick, bucket);
+			if (!event->sequence || !sequences.insert(event->sequence).second)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"event has a zero or duplicate sequence %llu",
+					event->sequence);
+			if (event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE &&
+			    event->lifecycle_state != NEVENT_LIFECYCLE_CANCEL_PENDING)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has invalid live lifecycle state %u",
+					event->sequence, event->lifecycle_state);
+			if ((event->data == NULL) != (event->data_destroy == NULL))
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has mismatched payload ownership",
+					event->sequence);
+			if (!nevent_periodic_event_is_valid(event))
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has invalid periodic registry metadata",
+					event->sequence);
+			if (event->deferral_count > 0)
+			{
+				report.deferred_count++;
+				report.deferred_cost_us = nevent_saturating_add_ull(
+					report.deferred_cost_us, event->deferred_cost_us);
+				deferred_due_counts[event->due_tick]++;
+			}
+			previous = event;
+		}
+		if (ne_schedule_tail[bucket] != previous)
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report, "bucket %d has an inconsistent tail", bucket);
+	}
+
+	for (P_char character : live_characters)
+	{
+		P_nevent previous = NULL;
+		object_schedule_diagnostic_set<P_nevent> local{
+			object_schedule_diagnostic_allocator<P_nevent>(&budget)
+		};
+		for (P_nevent owned = character->nevents; owned; owned = owned->next_char_nev)
+		{
+			if (!wheel_events.count(owned) || !local.insert(owned).second)
+			{
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"character owner id %llu has an unknown or cyclic event link",
+					character->runtime_id);
+				break;
+			}
+			report.character_links++;
+			character_events.insert(owned);
+			if (owned->ch != character || owned->prev_char_nev != previous)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has inconsistent character ownership links",
+					owned->sequence);
+			previous = owned;
+		}
+		if (character->nevents_tail != previous)
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report,
+				"character owner id %llu has an inconsistent event tail",
+				character->runtime_id);
+	}
+
+	for (P_obj object : live_objects)
+	{
+		P_nevent previous = NULL;
+		object_schedule_diagnostic_set<P_nevent> local{
+			object_schedule_diagnostic_allocator<P_nevent>(&budget)
+		};
+		for (P_nevent owned = object->nevents; owned; owned = owned->next_obj_nev)
+		{
+			if (!wheel_events.count(owned) || !local.insert(owned).second)
+			{
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"object owner vnum %d has an unknown or cyclic event link",
+					object->R_num >= 0 ? OBJ_VNUM(object) : -1);
+				break;
+			}
+			report.object_links++;
+			object_events.insert(owned);
+			if (owned->obj != object || owned->prev_obj_nev != previous)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has inconsistent object ownership links",
+					owned->sequence);
+			previous = owned;
+		}
+		if (object->nevents_tail != previous)
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report,
+				"object owner vnum %d has an inconsistent event tail",
+				object->R_num >= 0 ? OBJ_VNUM(object) : -1);
+	}
+
+	for (P_nevent event : wheel_events)
+	{
+		if (event->ch)
+		{
+			if (!live_characters.count(event->ch) && event->func != release_mob_mem)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has a non-live character owner id %llu",
+					event->sequence, event->owner_runtime_id);
+			else if (live_characters.count(event->ch) && event->owner_runtime_id &&
+				 event->ch->runtime_id != event->owner_runtime_id)
+			{
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu character identity changed from %llu to %llu",
+					event->sequence, event->owner_runtime_id,
+					event->ch->runtime_id);
+			}
+		}
+		if (event->obj)
+		{
+			if (!live_objects.count(event->obj))
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has a non-live object owner vnum %d",
+					event->sequence, event->diagnostic_obj_vnum);
+		}
+		if (event->victim)
+		{
+			const bool victim_live =
+				live_characters.count(event->victim) &&
+				(!event->victim_runtime_id ||
+				 event->victim->runtime_id == event->victim_runtime_id);
+			if (!victim_live)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has a non-live or reused victim id %llu",
+					event->sequence, event->victim_runtime_id);
+			else if (event->ch == event->victim)
+			{
+				if (event->cld)
+					nevent_integrity_problem_object_schedule_bounded(
+						budget, &report,
+						"sequence %llu has a self-target victim link",
+						event->sequence);
+			}
+			else if (!event->ch)
+				nevent_integrity_problem_object_schedule_bounded(
+					budget, &report,
+					"sequence %llu has a victim without an owner",
+					event->sequence);
+			else if (live_characters.count(event->ch))
+			{
+				const bool owner_has_link =
+					event->cld && nevent_character_link_present_bounded(
+							      event->ch, event->cld, true, budget);
+				const bool victim_has_link =
+					event->cld &&
+					nevent_character_link_present_bounded(
+						event->victim, event->cld, false, budget);
+				if (!owner_has_link || !victim_has_link)
+					nevent_integrity_problem_object_schedule_bounded(
+						budget, &report,
+						"sequence %llu is absent from a victim-link list",
+						event->sequence);
+				else if (event->cld->type != LNK_EVENT ||
+					 event->cld->linking != event->ch ||
+					 event->cld->linked != event->victim)
+					nevent_integrity_problem_object_schedule_bounded(
+						budget, &report,
+						"sequence %llu has inconsistent victim-link ownership",
+						event->sequence);
+			}
+		}
+		else if (event->cld)
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report, "sequence %llu has a victim link without a victim",
+				event->sequence);
+	}
+
+	for (P_nevent event : wheel_events)
+	{
+		if (event->ch && live_characters.count(event->ch) && !character_events.count(event))
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report,
+				"sequence %llu is absent from its character owner list",
+				event->sequence);
+		if (event->obj && live_objects.count(event->obj) && !object_events.count(event))
+			nevent_integrity_problem_object_schedule_bounded(
+				budget, &report,
+				"sequence %llu is absent from its object owner list",
+				event->sequence);
+	}
+
+	if (report.wheel_count != ne_event_counter)
+		nevent_integrity_problem_object_schedule_bounded(
+			budget, &report, "wheel count %ld differs from counter %ld",
+			report.wheel_count, ne_event_counter);
+	if (!ne_dead_event_pool ||
+	    report.wheel_count != static_cast<long>(ne_dead_event_pool->objs_used))
+		nevent_integrity_problem_object_schedule_bounded(
+			budget, &report, "wheel count %ld differs from pool usage %zu",
+			report.wheel_count, ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0);
+	if (report.deferred_count != nevent_catchup_debt ||
+	    report.deferred_cost_us != nevent_catchup_debt_estimated_us ||
+	    (deferred_due_counts.size() != nevent_deferred_due_counts.size() ||
+	     !std::equal(deferred_due_counts.begin(), deferred_due_counts.end(),
+			 nevent_deferred_due_counts.begin())))
+		nevent_integrity_problem_object_schedule_bounded(
+			budget, &report,
+			"deferred metadata disagrees with live records (count=%ld/%ld cost=%llu/%llu)",
+			report.deferred_count, nevent_catchup_debt, report.deferred_cost_us,
+			nevent_catchup_debt_estimated_us);
+	if (!nevent_periodic_integrity_errors_bounded(emit_summary, &report.periodic_errors,
+						      budget.reserve, budget.context,
+						      budget.live()))
+		budget.reject();
+	report.errors += report.periodic_errors;
+
+	if (emit_summary || report.errors)
+		budget.debug(
+			"check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld periodic_errors=%ld at %ld",
+			report.errors, report.wheel_count,
+			ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, ne_event_counter,
+			report.character_links, report.object_links, report.deferred_count,
+			report.periodic_errors, time(NULL));
+	return report;
+}
+
+} // private actual scheduler diagnostic allocation scope
+
+bool nevent_check_object_schedule_invariants_bounded(bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer_live,
+						     bool *invariants_valid) noexcept
+{
+	if (!reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	(void)invariants_valid;
+	return false;
+#else
+	const size_t local =
+		std::max(sizeof(object_schedule_diagnostic_set<P_nevent>),
+			 sizeof(object_schedule_diagnostic_set<struct char_link_data *>));
+	// Two report objects cover callee/result without relying on NRVO. Local owner
+	// set may coexist with original problem-format frame; registry/handle phase is
+	// admitted by its owning periodic provider, not duplicated here.
+	const size_t inline_bytes =
+		sizeof(object_schedule_diagnostic_budget) + 2 * sizeof(nevent_integrity_report) +
+		sizeof(object_schedule_diagnostic_message) +
+		3 * sizeof(object_schedule_diagnostic_set<P_nevent>) +
+		sizeof(object_schedule_diagnostic_set<unsigned long long>) +
+		sizeof(object_schedule_diagnostic_set<P_char>) +
+		sizeof(object_schedule_diagnostic_set<P_obj>) +
+		sizeof(object_schedule_diagnostic_map<unsigned long long, long>) + local;
+	if (inline_bytes > SIZE_MAX - outer_live || !reserve(outer_live + inline_bytes, context))
+		return false;
+	size_t output_storage;
+	if (!diagnostic_output_storage_bytes(&output_storage) || outer_live < output_storage)
+		return false;
+	object_schedule_diagnostic_budget budget{ reserve, context,
+						  outer_live - output_storage + inline_bytes };
+	try
+	{
+		const auto report = nevent_inspect_invariants_object_schedule_bounded(true, budget);
+		if (budget.refused)
+			return false;
+		if (invariants_valid)
+			*invariants_valid = report.errors == 0;
+		return true; // Original add_event ignores this completed verdict.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool nevent_schedule_object_bounded(event_func_type func, int delay, P_obj object,
+				    nevent_schedule_result *output, bool *returned, bool *succeeded,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer_live) noexcept
+{
+	if (!output || !returned || !succeeded || returned == succeeded || *returned || !reserve ||
+	    !object || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)func;
+	(void)delay;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		object_schedule_diagnostic_budget budget;
+		size_t pool_now;
+		nevent_schedule_result result;
+		workspace(bool (*r)(size_t, void *) noexcept, void *c, size_t base) noexcept
+			: budget{ r, c, base }
+			, pool_now(0)
+			, result{}
+		{
+		}
+	};
+	const size_t frame =
+		sizeof(workspace) + sizeof(nevent_schedule_result) + sizeof(nevent_handle);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	size_t initial_pool, initial_output;
+	if (!nevent_object_schedule_pool_storage_bytes(&initial_pool) ||
+	    !diagnostic_output_storage_bytes(&initial_output) || initial_pool > outer_live ||
+	    initial_output > outer_live - initial_pool)
+		return false;
+	workspace work(reserve, context, outer_live + frame - initial_output);
+	try
+	{
+		// Same original object-only validation / emitted messages before allocation.
+		if (!func)
+		{
+			work.budget.debug("add_event: No function!");
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::null_callback);
+		}
+		else if (delay < 0)
+		{
+			work.budget.debug("add_event: Delay (%d) les than zero?!", delay);
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::negative_delay);
+		}
+		else if (ne_event_sequence == ULLONG_MAX)
+		{
+			work.budget.logit(LOG_EXIT,
+					  "add_event: scheduler sequence space exhausted");
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::sequence_exhausted);
+		}
+		else
+		{
+			// The genuine configured pool and its outstanding-object/counter agreement
+			// must hold before acquiring a slot. No hidden panic/log allocation afterward.
+			if (!ne_dead_event_pool ||
+			    ne_dead_event_pool->size != sizeof(nevent_data) ||
+			    ne_dead_event_pool->next_off != offsetof(nevent_data, next_sched) ||
+			    ne_event_counter < 0 ||
+			    static_cast<size_t>(ne_event_counter) != ne_dead_event_pool->objs_used)
+				return false;
+			if (!nevent_reserve_object_schedule_slot_bounded(reserve, context,
+									 work.budget.live()) ||
+			    !nevent_object_schedule_pool_storage_bytes(&work.pool_now) ||
+			    work.pool_now < initial_pool ||
+			    work.pool_now - initial_pool > SIZE_MAX - work.budget.base)
+				return false;
+			work.budget.base += work.pool_now - initial_pool;
+			if (!object_schedule_priority_log_preflight(work.budget))
+				return false;
+			// Nonallocating equivalent of original mm_get on the genuinely pre-reserved
+			// free list: same slot order/count/zeroing; no hidden chunk mmap can occur.
+			P_nevent event = static_cast<P_nevent>(mm_try_get(ne_dead_event_pool));
+			if (!event)
+				return false;
+			event->prev_sched = event->next_sched = nullptr;
+			event->prev_char_nev = event->next_char_nev = nullptr;
+			event->prev_obj_nev = event->next_obj_nev = nullptr;
+			event->ch = nullptr;
+			event->victim = nullptr;
+			event->obj = object;
+			event->owner_runtime_id = 0;
+			event->victim_runtime_id = 0;
+			event->diagnostic_obj_vnum = OBJ_VNUM(object);
+			event->func = func;
+			event->data = nullptr;
+			event->data_destroy = nullptr;
+			event->priority = nevent_priority(func, nullptr);
+			event->deferral_count = 0;
+			event->periodic_job_id = 0;
+			event->deferred_cost_us = 0;
+			event->due_tick = nevent_add_ticks(ne_event_tick,
+							   static_cast<unsigned long long>(delay));
+			if (event->due_tick < nevent_first_eligible_tick())
+				event->due_tick = nevent_first_eligible_tick();
+			event->sequence = ++ne_event_sequence;
+			event->lifecycle_state = NEVENT_LIFECYCLE_ACTIVE;
+			event->cld = nullptr;
+			const int loc = static_cast<int>(nevent_bucket_for_tick(event->due_tick));
+			event->element = loc;
+			event->prev_obj_nev = object->nevents_tail;
+			if (object->nevents_tail)
+				object->nevents_tail->next_obj_nev = event;
+			else
+				object->nevents = event;
+			object->nevents_tail = event;
+			nevent_link_schedule(event, loc);
+			++ne_event_counter;
+			nevent_assert_pool_accounting("add_event");
+			work.result = { nevent_schedule_status::scheduled,
+					nevent_handle_from_event(event) };
+		}
+		*output = work.result;
+		*returned = true;
+		*succeeded =
+			work.result.was_scheduled(); // Both actual effect fields BEFORE diagnostics.
+		if (!work.result.was_scheduled() || !debug_event_list)
+			return true;
+		return nevent_check_object_schedule_invariants_bounded(reserve, context,
+								       work.budget.live());
+	}
+	catch (...)
+	{
+		return false;
+	}
 #endif
 }

@@ -8483,3 +8483,89 @@ bool diagnostic_logit_bounded(bool (*reserve)(size_t, void *) noexcept, void *co
 	return true;
 #endif
 }
+
+namespace
+{
+struct original_logit_profile_scan
+{
+	va_list args;
+	va_list copy;
+	int body_length;
+	int fallback_length;
+	size_t request;
+	size_t fallback_request;
+	size_t peak;
+};
+bool original_logit_profile_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - value)
+		return false;
+	value += amount;
+	return true;
+}
+}
+
+size_t diagnostic_original_logit_preflight_object_bytes() noexcept
+{
+	return sizeof(original_logit_profile_scan);
+}
+
+bool diagnostic_original_logit_working_bytes(const char *filename, size_t *output,
+					     const char *format, ...) noexcept
+{
+	if (!filename || !output || !format || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	original_logit_profile_scan scan{};
+	va_start(scan.args, format);
+	va_copy(scan.copy, scan.args);
+	scan.body_length = vsnprintf(nullptr, 0, format, scan.copy);
+	va_end(scan.copy);
+	va_end(scan.args);
+	if (scan.body_length < 0)
+		return false;
+	// ORIGINAL logit owns tbuf[MAX_STRING_LENGTH]. On every defined execution its
+	// terminated timestamp prefix is at most sizeof(tbuf)-1, including its final
+	// "::". LOG_EVENT uses an empty prefix. This fixed owning bound remains valid
+	// across clock/date changes; no timestamp snapshot or guessed padding is used.
+	scan.request = static_cast<size_t>(scan.body_length);
+	if (!original_logit_profile_add(scan.request,
+					str_cmp(filename, LOG_EVENT) ? MAX_STRING_LENGTH - 1 : 0) ||
+	    !original_logit_profile_add(scan.request, 2))
+		return false; // newline and NUL
+	// Scalar/library-private frames follow the existing request policy. Actual
+	// project-owned arrays and va_list objects are included by owning type sizeof.
+	const size_t frame = sizeof(char[MAX_STRING_LENGTH]) + sizeof(va_list);
+	scan.peak = frame;
+	if (!original_logit_profile_add(scan.peak, scan.request) ||
+	    !original_logit_profile_add(scan.peak,
+					std::max(sizeof(va_list), sizeof(char[MAX_STRING_LENGTH]))))
+		return false;
+	if (str_cmp(filename, LOG_FILE))
+	{
+		scan.fallback_length = snprintf(nullptr, 0, "failure opening logfile %s", filename);
+		if (scan.fallback_length < 0)
+			return false;
+		scan.fallback_request = static_cast<size_t>(scan.fallback_length);
+		if (!original_logit_profile_add(
+			    scan.fallback_request,
+			    str_cmp(LOG_FILE, LOG_EVENT) ? MAX_STRING_LENGTH - 1 : 0) ||
+		    !original_logit_profile_add(scan.fallback_request, 2))
+			return false;
+		// Parent body is freed BEFORE recursive LOG_FILE. Parent named frame remains;
+		// child formatter/path phases are sequential, with no deeper recursive logit.
+		size_t fallback = frame;
+		if (!original_logit_profile_add(fallback, frame) ||
+		    !original_logit_profile_add(fallback, scan.fallback_request) ||
+		    !original_logit_profile_add(
+			    fallback, std::max(sizeof(va_list), sizeof(char[MAX_STRING_LENGTH]))))
+			return false;
+		scan.peak = std::max(scan.peak, fallback);
+	}
+	*output = scan.peak;
+	return true;
+#endif
+}

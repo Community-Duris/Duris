@@ -52,4 +52,33 @@ bool nevent_object_schedule_pool_storage_bytes(size_t *) noexcept;
 // Reserves capacity only; no event acquisition/callback/UID/publication authority.
 bool nevent_reserve_object_schedule_slot_bounded(bool (*)(size_t, void *) noexcept, void *,
 						 size_t outer_live) noexcept;
+
+// Complete original fixed-registry integrity inspection and emitted logit
+// predicates; actual fixed registry input/handle footprint admitted internally.
+// Caller excludes that fixed registry footprint from outer, includes other live
+// inputs/persistent allowances, and retains peak through return. Strong verdict.
+// Native caller records returned effect before any fallible emitted diagnostic.
+bool nevent_periodic_integrity_errors_bounded(bool emit, long *, bool (*)(size_t, void *) noexcept,
+					      void *, size_t outer_live) noexcept;
+
+// Complete original check_nevents(false) including emitted problem/summary and
+// periodic diagnostics. Every private node/bucket request admitted by actual
+// allocator rebind type before allocate; output queues/pager recounted between
+// requests. Caller outer includes their initial observer ONCE. Optional verdict
+// strong on refusal; return is completion (original scheduling ignores verdict).
+// Caller records returned native effect BEFORE invoking any fallible diagnostic.
+bool nevent_check_object_schedule_invariants_bounded(bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer_live,
+						     bool *invariants_valid = nullptr) noexcept;
+
+// Genuine object-only/no-payload scheduling, complete original wheel/owner links
+// and full emitted debug diagnostic. Caller includes pool/output/Zombie globals
+// and private stage/input retention once; refresh CURRENT retention EVERY return.
+// Before action refusal leaves output/returned unchanged. Actual returned marker
+// is written before post-enrollment fallible diagnostics; false may mean already
+// scheduled, and NEVER permits rerunning the action. No new callback authority.
+bool nevent_schedule_object_bounded(event_func_type, int, P_obj, nevent_schedule_result *,
+				    bool *returned, bool *succeeded,
+				    bool (*)(size_t, void *) noexcept, void *,
+				    size_t outer_live) noexcept;
 #endif /* _SOJ_EVENTS_H_ */

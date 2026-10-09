@@ -536,3 +536,67 @@ long nevent_periodic_integrity_errors(bool emit)
 	}
 	return errors;
 }
+
+#include "world/events.h"
+#include "core/utility.h"
+
+bool nevent_periodic_integrity_errors_bounded(bool emit, long *output,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer_live) noexcept
+{
+	if (!output || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)emit;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// Actual fixed original registry inputs and the by-value handle passed to
+	// periodic_handle_matches -> nevent_handle_is_active coexist during checks.
+	const size_t frame = sizeof(periodic_jobs) + sizeof(periodic_job_count) +
+			     sizeof(periodic_current_job) + sizeof(nevent_handle);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	long errors = 0;
+	for (size_t index = 0; index < periodic_job_count; ++index)
+	{
+		const nevent_periodic_job_state *job = &periodic_jobs[index];
+		if (job->arming || job->disarming)
+			continue;
+		const bool armed = periodic_handle_matches(job);
+		if (job->enabled && !armed && !job->running)
+		{
+			++errors;
+			if (emit &&
+			    !diagnostic_logit_bounded(
+				    reserve, context, outer_live + frame, LOG_SYS,
+				    "NEVENT PERIODIC INTEGRITY: key=%s has no successor", job->key))
+				return false;
+		}
+		if (!job->enabled && (armed || job->running))
+		{
+			++errors;
+			if (emit &&
+			    !diagnostic_logit_bounded(
+				    reserve, context, outer_live + frame, LOG_SYS,
+				    "NEVENT PERIODIC INTEGRITY: disabled key=%s is still active",
+				    job->key))
+				return false;
+		}
+		if (armed && !nevent_periodic_event_is_valid(job->handle.event))
+		{
+			++errors;
+			if (emit &&
+			    !diagnostic_logit_bounded(
+				    reserve, context, outer_live + frame, LOG_SYS,
+				    "NEVENT PERIODIC INTEGRITY: key=%s has invalid event metadata",
+				    job->key))
+				return false;
+		}
+	}
+	*output = errors;
+	return true;
+#endif
+}
