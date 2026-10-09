@@ -62,4 +62,25 @@ economic_accounting_error zone_reset_item_command_build(const economic_operation
 economic_accounting_error zone_reset_item_command_decode(const critical_command &,
 							 zone_reset_item_image *) noexcept;
 
+// Prospective scratch admission for this original compiler only. Caller owns
+// metadata/image/input/profile outputs and the old command output in outer_live.
+// The callback admits an absolute peak before any original compiler allocation
+// and must retain its high-water through return/output transfer. No source,
+// factory, execution, activation or publication permission is granted.
+economic_accounting_error zone_reset_item_command_build_bounded(
+	const economic_operation_metadata &, const zone_reset_item_image &, uint64_t,
+	critical_command *, bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+	void *context, size_t outer_live_scratch) noexcept;
+
+// Passive staged bounded companion to the original complete command decoder.
+// Caller includes complete command/input, prior image output and other retained
+// storage in outer_live. Absolute reservations precede each allocating stage;
+// caller retains the maximum through nested calls and final output transfer.
+// Full literal/recipe/source/intent/canonical validation remains required and
+// success grants no lifetime, factory, admission, publication or ACK authority.
+economic_accounting_error zone_reset_item_command_decode_bounded(
+	const critical_command &, zone_reset_item_image *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept;
+
 #endif

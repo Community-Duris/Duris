@@ -129,6 +129,15 @@ class economic_gameplay_authority
 	static economic_accounting_error prepare_zone_reset_item_flat(const zone_reset_item_image &,
 								      uint64_t accepted_at_usec,
 								      critical_command *) noexcept;
+
+	// Same installed regular-flat metadata selection, with prospective callee
+	// shared-pointer/metadata and original compiler scratch admitted first.
+	// Caller includes already-live image/input/old-output storage in outer_live;
+	// callback acceptance grants no source, execution or publication authority.
+	static economic_accounting_error prepare_zone_reset_item_flat_bounded(
+		const zone_reset_item_image &, uint64_t accepted_at_usec, critical_command *,
+		bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+		size_t outer_live_scratch) noexcept;
 	static economic_accounting_error
 	prepare_native_mobile_birth(const quest_mobile_native_image &, critical_source_site,
 				    uint64_t accepted_at_usec, critical_command *output) noexcept;

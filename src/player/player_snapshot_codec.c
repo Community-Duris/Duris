@@ -753,9 +753,259 @@ player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
 	return player_snapshot_codec_result::ok;
 }
 
+namespace
+{
+// The named allocation-free scan DTO is charged by sizeof, including its profile;
+// scalar call frames, allocator metadata and library-private internals are outside
+// the existing explicit object/request policy.
+struct live_item_encoder_scan
+{
+	player_item_snapshot_list_allocation_profile profile;
+	size_t rows = 0, encoded = 0;
+	player_snapshot_codec_result result = player_snapshot_codec_result::ok;
+
+	bool add(size_t &total, size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - total)
+		{
+			result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		total += amount;
+		return true;
+	}
+	bool append(size_t count) noexcept
+	{
+		if (count > PLAYER_SNAPSHOT_MAX_BYTES - encoded)
+		{
+			result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		const size_t next = encoded + count;
+		if (profile.canonical_encoder_storage_policy_supported &&
+		    next > profile.canonical_encoded_capacity_bytes)
+		{
+			size_t capacity = encoded;
+			if (!add(capacity, std::max(encoded, count)))
+				return false;
+			size_t peak = profile.canonical_encoded_capacity_bytes;
+			if (!add(peak, capacity))
+				return false;
+			profile.canonical_encoded_capacity_bytes = capacity;
+			profile.canonical_encoded_reallocation_peak_bytes =
+				std::max(profile.canonical_encoded_reallocation_peak_bytes, peak);
+		}
+		encoded = next;
+		return true;
+	}
+	bool numbers(size_t bytes) noexcept
+	{
+		for (size_t byte = 0; byte < bytes; ++byte)
+			if (!append(1))
+				return false;
+		return true;
+	}
+	bool count(size_t value, size_t width, size_t &total, bool objects = false) noexcept
+	{
+		if (value > PLAYER_SNAPSHOT_MAX_ROWS || value > PLAYER_SNAPSHOT_MAX_ROWS - rows ||
+		    (objects && value > PLAYER_SNAPSHOT_MAX_OBJECTS) ||
+		    (width && value > SIZE_MAX / width))
+		{
+			result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		rows += value;
+		return add(total, value) && add(profile.decoded_row_storage_bytes, value * width) &&
+		       numbers(sizeof(uint32_t));
+	}
+	bool string(const std::string &value) noexcept
+	{
+		const size_t length = value.size();
+		if (length > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+		{
+			result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		if (!numbers(sizeof(uint32_t)) || !append(length) ||
+		    !add(profile.string_count, 1) || !add(profile.string_content_bytes, length))
+			return false;
+		return !profile.fresh_decode_storage_policy_supported || length <= 15 ||
+		       add(profile.decoded_string_storage_bytes, (length < 30 ? 30 : length) + 1);
+	}
+	bool scan(const std::vector<player_item_snapshot> &items) noexcept
+	{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI
+		profile.fresh_decode_storage_policy_supported = true;
+		profile.canonical_encoder_storage_policy_supported = true;
+		profile.canonical_encoder_object_bytes = sizeof(encoder);
+		profile.item_codec_decoder_object_bytes = sizeof(decoder);
+#endif
+		if (!count(items.size(), sizeof(player_item_snapshot), profile.item_count, true))
+			return false;
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const auto &row = items[index];
+			// Same original parent-before-child/depth rule, without its temporary
+			// depth vector. No UID/relationship authority is granted by this scan.
+			size_t depth = 1, ancestor = index;
+			while (true)
+			{
+				const int32_t parent = items[ancestor].parent_index;
+				if (parent < PLAYER_SNAPSHOT_NO_PARENT ||
+				    parent >= static_cast<int32_t>(ancestor) ||
+				    depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+				{
+					result = player_snapshot_codec_result::invalid_value;
+					return false;
+				}
+				if (parent == PLAYER_SNAPSHOT_NO_PARENT)
+					break;
+				ancestor = static_cast<size_t>(parent);
+				++depth;
+			}
+			if (!numbers(sizeof(int32_t) + sizeof(int16_t) + sizeof(uint64_t) +
+				     sizeof(int64_t) + sizeof(int32_t) + sizeof(int8_t) + sizeof(uint8_t)) ||
+			    !string(row.name) || !string(row.short_description) ||
+			    !string(row.description) || !string(row.action_description) ||
+			    !numbers(row.values.size() * sizeof(int32_t) +
+				     row.timers.size() * sizeof(int64_t) + 5 * sizeof(uint32_t) +
+				     sizeof(int32_t) + sizeof(int8_t) + sizeof(int32_t) +
+				     2 * sizeof(int16_t) + row.bitvectors.size() * sizeof(uint64_t)))
+				return false;
+			for (const auto &affect : row.affects)
+				if (!numbers(affect.size() * sizeof(int16_t)))
+					return false;
+			if (!count(row.dynamic_affects.size(), sizeof(player_item_dynamic_affect_snapshot),
+				   profile.dynamic_affect_count) ||
+			    !numbers(row.dynamic_affects.size() * (2 * sizeof(int16_t) + sizeof(uint64_t))) ||
+			    !count(row.extra_descriptions.size(), sizeof(player_item_extra_description_snapshot),
+				   profile.extra_description_count))
+				return false;
+			for (const auto &description : row.extra_descriptions)
+				if (!string(description.keyword) || !string(description.description) || !numbers(1) ||
+				    !count(description.spell_ids.size(), sizeof(int32_t), profile.spell_id_count) ||
+				    !numbers(description.spell_ids.size() * sizeof(int32_t)))
+					return false;
+		}
+		if (profile.fresh_decode_storage_policy_supported)
+		{
+			profile.decoded_payload_bytes = sizeof(std::vector<player_item_snapshot>);
+			if (!add(profile.decoded_payload_bytes, profile.decoded_row_storage_bytes) ||
+			    !add(profile.decoded_payload_bytes, profile.decoded_string_storage_bytes))
+				return false;
+		}
+		profile.relationship_scratch_bytes = sizeof(std::vector<size_t>);
+		if (items.size() > SIZE_MAX / sizeof(size_t) ||
+		    !add(profile.relationship_scratch_bytes, items.size() * sizeof(size_t)))
+			return false;
+		profile.canonical_encoded_bytes = encoded;
+		return true;
+	}
+};
+} // namespace
+
+size_t player_item_snapshot_list_encoder_preflight_object_bytes() noexcept
+{
+	return sizeof(live_item_encoder_scan);
+}
+
+player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
+	const std::vector<player_item_snapshot> &items,
+	player_item_snapshot_list_allocation_profile *output) noexcept
+{
+	if (!output)
+		return player_snapshot_codec_result::invalid_value;
+	live_item_encoder_scan scan;
+	if (!scan.scan(items))
+		return scan.result;
+	*output = scan.profile;
+	return player_snapshot_codec_result::ok;
+}
+
+bool player_item_snapshot_list_encoder_working_bytes(
+	const player_item_snapshot_list_allocation_profile &profile, size_t *output) noexcept
+{
+	if (!output || !profile.fresh_decode_storage_policy_supported ||
+	    !profile.canonical_encoder_storage_policy_supported)
+		return false;
+	const auto add = [](size_t &total, size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - total)
+			return false;
+		total += amount;
+		return true;
+	};
+	size_t growth = profile.canonical_encoder_object_bytes;
+	size_t validation = profile.canonical_encoder_object_bytes;
+	if (!add(growth, profile.canonical_encoded_reallocation_peak_bytes) ||
+	    !add(validation, profile.canonical_encoded_capacity_bytes) ||
+	    !add(validation, sizeof(std::vector<player_item_snapshot>)) ||
+	    !add(validation, profile.item_codec_decoder_object_bytes) ||
+	    !add(validation, profile.decoded_payload_bytes) ||
+	    !add(validation, profile.relationship_scratch_bytes))
+		return false;
+	*output = std::max({ growth, validation, profile.relationship_scratch_bytes });
+	return true;
+}
+
+player_snapshot_codec_result player_item_snapshot_list_encode_bounded(
+	const std::vector<player_item_snapshot> &items, std::vector<uint8_t> *output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (!output || !reserve_scratch_peak)
+		return player_snapshot_codec_result::invalid_value;
+	const auto admit = [&](size_t extra) noexcept
+	{
+		return extra <= SIZE_MAX - outer_live_scratch &&
+		       reserve_scratch_peak(outer_live_scratch + extra, context);
+	};
+	if (sizeof(player_item_snapshot_list_allocation_profile) >
+	    SIZE_MAX - sizeof(live_item_encoder_scan) ||
+	    !admit(sizeof(player_item_snapshot_list_allocation_profile) + sizeof(live_item_encoder_scan)))
+		return player_snapshot_codec_result::limit_exceeded;
+	player_item_snapshot_list_allocation_profile profile;
+	const auto status = player_item_snapshot_list_encoder_preflight(items, &profile);
+	if (status != player_snapshot_codec_result::ok)
+		return status;
+	if (!profile.fresh_decode_storage_policy_supported ||
+	    !profile.canonical_encoder_storage_policy_supported)
+		return player_snapshot_codec_result::unsupported_version;
+	size_t peak = 0;
+	if (!player_item_snapshot_list_encoder_working_bytes(profile, &peak))
+		return player_snapshot_codec_result::limit_exceeded;
+	const auto add = [](size_t &total, size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - total)
+			return false;
+		total += amount;
+		return true;
+	};
+	if (!add(peak, sizeof(profile)) || !admit(peak))
+		return player_snapshot_codec_result::limit_exceeded;
+	try
+	{
+		return player_item_snapshot_list_encode(items, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	catch (...)
+	{
+		return player_snapshot_codec_result::invalid_value;
+	}
+}
+
 size_t player_item_snapshot_list_decoder_object_bytes() noexcept
 {
 	return sizeof(decoder);
+}
+
+size_t player_item_snapshot_list_preflight_object_bytes() noexcept
+{
+	return sizeof(decoder) + sizeof(player_item_snapshot_list_allocation_profile);
 }
 
 player_snapshot_codec_result player_item_snapshot_list_preflight(

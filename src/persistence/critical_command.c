@@ -416,6 +416,49 @@ critical_command_codec_result critical_command_encode(const critical_command &co
 	return critical_command_codec_result::ok;
 }
 
+critical_command_codec_result critical_command_encoder_working_bytes(
+	const critical_command &command, size_t *working_bytes) noexcept
+{
+	using result = critical_command_codec_result;
+	if (!working_bytes)
+		return result::invalid;
+	size_t wire_bytes = 0;
+	if (!envelope_encoded_size(command, &wire_bytes))
+		return critical_command_native_auction_envelope(command) ? result::overflow :
+								 result::invalid;
+	if (!critical_command_envelope_valid(command))
+		return result::invalid;
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	return result::unsupported_version;
+#else
+	// Original result.reserve(wire_bytes) precedes every append. Validated exact
+	// wire size prevents all later growth; no previous buffer belongs to result.
+	if (wire_bytes > SIZE_MAX - sizeof(std::vector<uint8_t>))
+		return result::overflow;
+	*working_bytes = sizeof(std::vector<uint8_t>) + wire_bytes;
+	return result::ok;
+#endif
+}
+
+critical_command_codec_result critical_command_encode_bounded(
+	const critical_command &command, std::vector<uint8_t> *encoded,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	using result = critical_command_codec_result;
+	if (!encoded)
+		return result::invalid;
+	size_t working_bytes = 0;
+	const auto status = critical_command_encoder_working_bytes(command, &working_bytes);
+	if (status != result::ok)
+		return status;
+	if (!reserve_scratch_peak || working_bytes > SIZE_MAX - outer_live_scratch ||
+	    !reserve_scratch_peak(outer_live_scratch + working_bytes, context))
+		return result::overflow;
+	return critical_command_encode(command, encoded);
+}
+
 critical_command_codec_result critical_command_decode(const uint8_t *encoded, size_t size,
 						      critical_command *command)
 {

@@ -474,3 +474,562 @@ economic_accounting_error zone_reset_item_command_decode(const critical_command 
 		return error::corrupt_evidence;
 	}
 }
+
+
+namespace
+{
+struct room_command_bound_workspace
+{
+	player_item_snapshot_list_allocation_profile items;
+	native_mobile_birth_recipe_allocation_profile recipes;
+	size_t peak = 0, phase = 0, payload = 0, key_bytes = 0, revision_bytes = 0;
+	size_t command_heap = 0, command_wire = 0, item_working = 0;
+	size_t binding_capacity = 0, binding_peak = 0, domain_bytes = 0;
+	size_t domain_capacity = 0, domain_peak = 0;
+};
+[[maybe_unused]] bool room_bound_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+[[maybe_unused]] bool room_bound_array(size_t count, size_t unit, size_t *out) noexcept
+{
+	if (!out || (unit && count > SIZE_MAX / unit))
+		return false;
+	*out = count * unit;
+	return true;
+}
+// Original vectors are fresh with capacity==size. libstdc++13 insertion's
+// _M_check_len grows by max(size, inserted_count), with old+new coexistence.
+[[maybe_unused]] bool room_bound_prepend(size_t size, size_t tag, size_t *capacity, size_t *peak) noexcept
+{
+	*capacity = size;
+	if (!room_bound_add(*capacity, std::max(size, tag)))
+		return false;
+	*peak = size;
+	return room_bound_add(*peak, *capacity);
+}
+} // namespace
+
+economic_accounting_error zone_reset_item_command_build_bounded(
+	const economic_operation_metadata &metadata, const zone_reset_item_image &image,
+	uint64_t accepted_at_usec, critical_command *output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (!output || !accepted_at_usec)
+		return error::invalid_identity;
+	if (!reserve_scratch_peak)
+		return error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)metadata;
+	(void)image;
+	(void)context;
+	(void)outer_live_scratch;
+	return error::capacity;
+#else
+	// Wrapper profiles stay live across the original compiler. Each allocation-
+	// free validation/scan phase is admitted before entering its callee.
+	size_t base = outer_live_scratch;
+	if (!room_bound_add(base, sizeof(room_command_bound_workspace)))
+		return error::capacity;
+	size_t validation = std::max(
+		player_item_snapshot_list_encoder_preflight_object_bytes(),
+		native_mobile_birth_recipe_profile_inline_storage_bytes());
+	validation = std::max(validation,
+		 sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) +
+		 sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>));
+	size_t preliminary = base;
+	if (!room_bound_add(preliminary, validation) ||
+	    !reserve_scratch_peak(preliminary, context))
+		return error::capacity;
+	auto status = image_preflight(image);
+	if (status != error::ok)
+		return status;
+	status = metadata_check(metadata, image);
+	if (status != error::ok)
+		return status;
+	room_command_bound_workspace work;
+	const auto item_status = player_item_snapshot_list_encoder_preflight(image.items, &work.items);
+	if (item_status != player_snapshot_codec_result::ok)
+		return codec_error(item_status);
+	status = native_mobile_birth_recipe_encode_profile(image.items, image.recipes, &work.recipes);
+	if (status != error::ok)
+		return status;
+	if (!work.recipes.fresh_encode_storage_policy_supported ||
+	    !player_item_snapshot_list_encoder_working_bytes(work.items, &work.item_working))
+		return error::capacity;
+	work.payload = HEADER_BYTES;
+	size_t coin_bytes = 0;
+	if (!room_bound_array(image.coins.size(), COIN_BYTES, &coin_bytes) ||
+	    !room_bound_add(work.payload, work.items.canonical_encoded_bytes) ||
+	    !room_bound_add(work.payload, work.recipes.wire_bytes) ||
+	    !room_bound_add(work.payload, coin_bytes) ||
+	    (image.placement && !room_bound_add(work.payload, PLACEMENT_BYTES)) ||
+	    work.payload > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    !room_bound_array(image.items.size() + 2, sizeof(critical_entity_key), &work.key_bytes) ||
+	    !room_bound_array(image.items.size() + 1, sizeof(critical_expected_revision),
+			      &work.revision_bytes))
+		return error::capacity;
+	// Every following phase includes the original command candidate. The two
+	// payload vectors survive item encoding, recipe encoding and payload assembly.
+	if (!room_bound_add(base, sizeof(critical_command)))
+		return error::capacity;
+	work.peak = preliminary;
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, work.item_working))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	work.phase = base;
+	size_t recipe_working = work.recipes.encoder_inline_storage_bytes;
+	if (!room_bound_add(recipe_working, work.recipes.encoded_capacity_bytes))
+		return error::capacity;
+	recipe_working = std::max(recipe_working, work.recipes.validation_inline_storage_bytes);
+	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, work.items.canonical_encoded_capacity_bytes) ||
+	    !room_bound_add(work.phase, recipe_working))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
+	    !room_bound_add(work.phase, work.items.canonical_encoded_capacity_bytes) ||
+	    !room_bound_add(work.phase, work.recipes.encoded_capacity_bytes) ||
+	    !room_bound_add(work.phase, work.payload))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// Payload temporary vectors are now destroyed. Keys/revisions reserve once.
+	work.command_heap = work.payload;
+	if (!room_bound_add(work.command_heap, work.key_bytes) ||
+	    !room_bound_add(work.command_heap, work.revision_bytes))
+		return error::capacity;
+	work.command_wire = CRITICAL_COMMAND_HEADER_BYTES;
+	size_t key_wire = 0, revision_wire = 0;
+	if (!room_bound_array(image.items.size() + 2, CRITICAL_COMMAND_ENTITY_KEY_BYTES, &key_wire) ||
+	    !room_bound_array(image.items.size() + 1, CRITICAL_COMMAND_EXPECTED_REVISION_BYTES,
+			      &revision_wire) ||
+	    !room_bound_add(work.command_wire, key_wire) ||
+	    !room_bound_add(work.command_wire, revision_wire) ||
+	    !room_bound_add(work.command_wire, work.payload) ||
+	    work.command_wire > CRITICAL_COMMAND_MAX_ENCODED_BYTES ||
+	    !room_bound_prepend(work.command_wire, sizeof("DURIS-ECONOMIC-COMMAND-V1"),
+				&work.binding_capacity, &work.binding_peak))
+		return error::capacity;
+	// Freeze's facts and empty frozen intent coexist with the original candidate.
+	if (!room_bound_add(base, sizeof(economic_admission_facts)) ||
+	    !room_bound_add(base, sizeof(economic_frozen_intent)) ||
+	    !room_bound_add(base, work.command_heap))
+		return error::capacity;
+	// Binding projection owns exact copies of all candidate vector requests.
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(critical_command)) ||
+	    !room_bound_add(work.phase, work.command_heap) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, work.command_wire))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	size_t binding_digest_live = work.binding_capacity;
+	if (!room_bound_add(binding_digest_live, sizeof(economic_digest)))
+		return error::capacity;
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(critical_command)) ||
+	    !room_bound_add(work.phase, work.command_heap) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, std::max(work.binding_peak, binding_digest_live)))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// Binding projection is gone before domain hashing. The source byte vector
+	// and moved hash parameter objects coexist; old+new storage only at prepend.
+	work.domain_bytes = work.payload;
+	if (!room_bound_add(work.domain_bytes, 8) ||
+	    !room_bound_prepend(work.domain_bytes, sizeof("DURIS-ECONOMIC-DOMAIN-V1"),
+				&work.domain_capacity, &work.domain_peak))
+		return error::capacity;
+	// Hash local result and returned digest may be distinct without NRVO.
+	size_t domain_digest_live = work.domain_capacity;
+	if (!room_bound_add(domain_digest_live, sizeof(economic_digest)) ||
+	    !room_bound_add(domain_digest_live, sizeof(economic_digest)))
+		return error::capacity;
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, std::max(work.domain_peak, domain_digest_live)))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// Empty facts produce the exact 256-byte intent. Source encoding occurs
+	// while its fresh bytes and inline source array remain live.
+	work.phase = base;
+	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(work.phase, ECONOMIC_INTENT_HEADER_BYTES) ||
+	    !room_bound_add(work.phase, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	if (!reserve_scratch_peak(work.peak, context))
+		return error::capacity;
+	// All original semantics, wire tags, timestamps and strong output behavior
+	// stay in the original compiler. Reservation is not source/admission proof.
+	return zone_reset_item_command_build(metadata, image, accepted_at_usec, output);
+#endif
+}
+
+
+namespace
+{
+struct room_decode_workspace
+{
+	zone_reset_item_image image;
+	economic_frozen_intent intent;
+	critical_command expected;
+	std::vector<uint8_t> actual_bytes, expected_bytes;
+	size_t image_heap = 0, command_heap = 0, projection_wire = 0;
+	size_t binding_capacity = 0, binding_peak = 0;
+	size_t domain_capacity = 0, domain_peak = 0, expected_heap = 0;
+};
+
+// Empty facts are rejected only after the original decoder validates the full
+// intent. Reserve its exact potential suffix and named source/result DTOs first.
+[[maybe_unused]] bool room_intent_decode_peak(const critical_command &command,
+	size_t live, size_t *out) noexcept
+{
+	if (!room_bound_add(live, sizeof(economic_frozen_intent)) ||
+	    !room_bound_add(live, sizeof(economic_source_event)) ||
+	    !room_bound_add(live, economic_source_event_decode_object_bytes()) ||
+	    (command.accounting_intent.size() > ECONOMIC_INTENT_HEADER_BYTES &&
+	     !room_bound_add(live, command.accounting_intent.size() - ECONOMIC_INTENT_HEADER_BYTES)))
+		return false;
+	*out = live;
+	return true;
+}
+
+[[maybe_unused]] bool room_intent_verify_peak(const critical_command &command,
+	room_decode_workspace &work, size_t live, size_t *out) noexcept
+{
+	size_t keys = 0, revisions = 0;
+	if (!room_bound_array(command.keys.size(), sizeof(critical_entity_key), &keys) ||
+	    !room_bound_array(command.expected_revisions.size(), sizeof(critical_expected_revision),
+			      &revisions))
+		return false;
+	work.command_heap = command.payload.size();
+	if (!room_bound_add(work.command_heap, command.accounting_intent.size()) ||
+	    !room_bound_add(work.command_heap, keys) || !room_bound_add(work.command_heap, revisions))
+		return false;
+	// Projection.clear() retains the copied accounting-intent allocation.
+	work.projection_wire = CRITICAL_COMMAND_HEADER_BYTES;
+	if (!room_bound_array(command.keys.size(), CRITICAL_COMMAND_ENTITY_KEY_BYTES, &keys) ||
+	    !room_bound_array(command.expected_revisions.size(), CRITICAL_COMMAND_EXPECTED_REVISION_BYTES,
+			      &revisions) ||
+	    !room_bound_add(work.projection_wire, keys) ||
+	    !room_bound_add(work.projection_wire, revisions) ||
+	    !room_bound_add(work.projection_wire, command.payload.size()) ||
+	    !room_bound_prepend(work.projection_wire, sizeof("DURIS-ECONOMIC-COMMAND-V1"),
+				&work.binding_capacity, &work.binding_peak))
+		return false;
+	// Canonical intent comparison's bytes die before binding/domain hashing.
+	size_t peak = live, phase = live;
+	if (!room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, ECONOMIC_INTENT_HEADER_BYTES) ||
+	    !room_bound_add(phase, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
+		return false;
+	peak = std::max(peak, phase);
+	// verify_binding's binding result remains live across both hash helpers.
+	if (!room_bound_add(live, sizeof(economic_digest)))
+		return false;
+	phase = live;
+	if (!room_bound_add(phase, sizeof(critical_command)) ||
+	    !room_bound_add(phase, work.command_heap) ||
+	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, work.projection_wire))
+		return false;
+	peak = std::max(peak, phase);
+	size_t digest_live = work.binding_capacity;
+	if (!room_bound_add(digest_live, sizeof(economic_digest)))
+		return false;
+	phase = live;
+	if (!room_bound_add(phase, sizeof(critical_command)) ||
+	    !room_bound_add(phase, work.command_heap) ||
+	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, std::max(work.binding_peak, digest_live)))
+		return false;
+	peak = std::max(peak, phase);
+	size_t domain = command.payload.size();
+	if (!room_bound_add(domain, 8) ||
+	    !room_bound_prepend(domain, sizeof("DURIS-ECONOMIC-DOMAIN-V1"),
+				&work.domain_capacity, &work.domain_peak))
+		return false;
+	digest_live = work.domain_capacity;
+	if (!room_bound_add(digest_live, sizeof(economic_digest)) ||
+	    !room_bound_add(digest_live, sizeof(economic_digest)))
+		return false;
+	phase = live;
+	if (!room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(phase, std::max(work.domain_peak, digest_live)))
+		return false;
+	*out = std::max(peak, phase);
+	return true;
+}
+
+[[maybe_unused]] error payload_decode_bounded(std::span<const uint8_t> bytes,
+	zone_reset_item_image *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_heap)
+{
+	if (bytes.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return error::capacity;
+	if (bytes.size() < HEADER_BYTES || !std::equal(MAGIC.begin(), MAGIC.end(), bytes.begin()) ||
+	    (get(bytes.data() + 4, 2) != ZONE_RESET_ITEM_PAYLOAD_VERSION &&
+	     get(bytes.data() + 4, 2) != ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION) ||
+	    get(bytes.data() + 6, 2))
+		return error::corrupt_evidence;
+	const bool has_placement = get(bytes.data() + 4, 2) ==
+				   ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION;
+	const size_t placement_size = has_placement ? PLACEMENT_BYTES : 0;
+	if (bytes.size() - HEADER_BYTES < placement_size)
+		return error::corrupt_evidence;
+	const size_t item_size = get(bytes.data() + 96, 4),
+		     recipe_size = get(bytes.data() + 100, 4);
+	const size_t coin_count = get(bytes.data() + 104, 4),
+		     body = bytes.size() - HEADER_BYTES - placement_size;
+	if (!item_size || !recipe_size || item_size > body || recipe_size > body - item_size ||
+	    coin_count > CRITICAL_COMMAND_MAX_KEYS - 2 ||
+	    coin_count > (body - item_size - recipe_size) / COIN_BYTES ||
+	    coin_count * COIN_BYTES != body - item_size - recipe_size)
+		return error::corrupt_evidence;
+	// The original item decoder is bounded itself; additionally enforce this
+	// command's smaller key ceiling and minimum literal size before it allocates.
+	if (item_size < 4 || recipe_size < 12)
+		return error::corrupt_evidence;
+	const size_t item_count = get(bytes.data() + HEADER_BYTES, 4);
+	if (!item_count || item_count > CRITICAL_COMMAND_MAX_KEYS - 2 ||
+	    item_count > PLAYER_SNAPSHOT_MAX_OBJECTS || item_count > (item_size - 4) / 221 ||
+	    coin_count > item_count)
+		return error::corrupt_evidence;
+
+	size_t live = outer_live;
+	if (!room_bound_add(live, sizeof(zone_reset_item_image)) ||
+	    !room_bound_add(live, sizeof(player_item_snapshot_list_allocation_profile)) ||
+	    !room_bound_add(live, sizeof(native_mobile_birth_recipe_allocation_profile)))
+		return error::capacity;
+	size_t preliminary = live;
+	const size_t scan = std::max(player_item_snapshot_list_preflight_object_bytes(),
+		economic_source_event_decode_object_bytes());
+	if (!room_bound_add(preliminary, scan) || !reserve(preliminary, context))
+		return error::capacity;
+	zone_reset_item_image candidate;
+	player_item_snapshot_list_allocation_profile items;
+	native_mobile_birth_recipe_allocation_profile recipes;
+	std::copy_n(bytes.begin() + 8, candidate.operation_id.bytes.size(),
+		    candidate.operation_id.bytes.begin());
+	auto status = economic_source_event_decode(bytes.subspan(24, ECONOMIC_SOURCE_EVENT_BYTES),
+						   &candidate.reset_source);
+	if (status != error::ok)
+		return status;
+	candidate.zone_vnum =
+		std::bit_cast<int32_t>(static_cast<uint32_t>(get(bytes.data() + 72, 4)));
+	candidate.room_vnum =
+		std::bit_cast<int32_t>(static_cast<uint32_t>(get(bytes.data() + 76, 4)));
+	candidate.season_epoch = get(bytes.data() + 80, 8);
+	candidate.expected_room_revision = get(bytes.data() + 88, 8);
+
+	const auto scanned = player_item_snapshot_list_preflight(
+		bytes.data() + HEADER_BYTES, item_size, &items);
+	if (scanned != player_snapshot_codec_result::ok)
+		return codec_error(scanned);
+	if (!items.fresh_decode_storage_policy_supported ||
+	    items.decoded_payload_bytes < sizeof(std::vector<player_item_snapshot>))
+		return error::capacity;
+	size_t peak = live;
+	if (!room_bound_add(peak, items.item_codec_decoder_object_bytes) ||
+	    !room_bound_add(peak, items.decoded_payload_bytes) ||
+	    !room_bound_add(peak, items.relationship_scratch_bytes) || !reserve(peak, context))
+		return error::capacity;
+	status = codec_error(player_item_snapshot_list_decode(bytes.data() + HEADER_BYTES,
+							      item_size, &candidate.items));
+	if (status != error::ok)
+		return status;
+
+	// The literal decoder is admitted first. Full recipe validation needs those
+	// actual descriptors and runs before any recipe/library allocation.
+	const size_t item_heap = items.decoded_payload_bytes -
+		sizeof(std::vector<player_item_snapshot>);
+	peak = live;
+	if (!room_bound_add(peak, item_heap) ||
+	    !room_bound_add(peak, native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+	    !reserve(peak, context))
+		return error::capacity;
+	status = native_mobile_birth_recipe_decode_profile(
+		bytes.subspan(HEADER_BYTES + item_size, recipe_size), candidate.items, &recipes);
+	if (status != error::ok)
+		return status;
+	if (!recipes.fresh_decode_storage_policy_supported)
+		return error::capacity;
+	size_t recipe_working = recipes.decoder_inline_storage_bytes;
+	if (!room_bound_add(recipe_working, recipes.decoded_payload_bytes))
+		return error::capacity;
+	recipe_working = std::max(recipe_working, recipes.preflight_inline_storage_bytes);
+	peak = live;
+	if (!room_bound_add(peak, item_heap) || !room_bound_add(peak, recipe_working) ||
+	    !reserve(peak, context))
+		return error::capacity;
+	status = native_mobile_birth_recipe_decode(bytes.subspan(HEADER_BYTES + item_size,
+								 recipe_size),
+						   candidate.items, &candidate.recipes);
+	if (status != error::ok)
+		return status;
+
+	size_t coins_heap = 0, result_heap = item_heap;
+	if (!room_bound_array(coin_count, sizeof(zone_reset_coin_output), &coins_heap) ||
+	    !room_bound_add(result_heap, recipes.decoded_payload_bytes) ||
+	    !room_bound_add(result_heap, coins_heap))
+		return error::capacity;
+	peak = live;
+	const size_t value_working = std::max(sizeof(zone_reset_coin_output),
+		sizeof(zone_reset_room_placement_recipe));
+	if (!room_bound_add(peak, result_heap) ||
+	    !room_bound_add(peak, std::max(value_working, recipes.validation_inline_storage_bytes)) ||
+	    !reserve(peak, context))
+		return error::capacity;
+	candidate.coins.reserve(coin_count);
+	size_t offset = HEADER_BYTES + item_size + recipe_size;
+	for (size_t i = 0; i < coin_count; ++i)
+	{
+		zone_reset_coin_output coin;
+		coin.item_uid = get(bytes.data() + offset, 8);
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			coin.denominations[denomination] = std::bit_cast<int64_t>(
+				get(bytes.data() + offset + 8 + denomination * 8, 8));
+		candidate.coins.push_back(coin);
+		offset += COIN_BYTES;
+	}
+	if (has_placement)
+	{
+		if (bytes[offset + 28] > 1 || bytes[offset + 29] > 1 || bytes[offset + 30] > 1 ||
+		    bytes[offset + 31])
+			return error::corrupt_evidence;
+		zone_reset_room_placement_recipe p;
+		p.root_uid = get(bytes.data() + offset, 8);
+		p.room_vnum = std::bit_cast<int32_t>(
+			static_cast<uint32_t>(get(bytes.data() + offset + 8, 4)));
+		p.original_sector_type = std::bit_cast<int32_t>(
+			static_cast<uint32_t>(get(bytes.data() + offset + 12, 4)));
+		p.original_chance_fall = std::bit_cast<int32_t>(
+			static_cast<uint32_t>(get(bytes.data() + offset + 16, 4)));
+		p.original_z_cord = std::bit_cast<int32_t>(
+			static_cast<uint32_t>(get(bytes.data() + offset + 20, 4)));
+		p.fall_roll = static_cast<uint32_t>(get(bytes.data() + offset + 24, 4));
+		p.original_levitates = bytes[offset + 28];
+		p.fall_roll_drawn = bytes[offset + 29];
+		p.fall_selected = bytes[offset + 30];
+		candidate.placement = p;
+	}
+	status = image_preflight(candidate);
+	if (status != error::ok)
+		return status;
+	*retained_heap = result_heap;
+	*output = std::move(candidate);
+	return error::ok;
+}
+
+} // namespace
+
+economic_accounting_error zone_reset_item_command_decode_bounded(
+	const critical_command &command, zone_reset_item_image *output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (!output)
+		return error::invalid_identity;
+	if (!reserve_scratch_peak)
+		return error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)context;
+	(void)outer_live_scratch;
+	return error::capacity;
+#else
+	try
+	{
+		if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    command.type != critical_command_type::zone_reset_item_birth ||
+		    (command.payload_version != ZONE_RESET_ITEM_PAYLOAD_VERSION &&
+		     command.payload_version != ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION) ||
+		    !command.publication_required || !critical_command_envelope_valid(command))
+			return error::corrupt_evidence;
+		size_t live = outer_live_scratch;
+		if (!room_bound_add(live, sizeof(room_decode_workspace)) ||
+		    !reserve_scratch_peak(live, context))
+			return error::capacity;
+		room_decode_workspace work;
+		auto status = payload_decode_bounded(command.payload, &work.image,
+			reserve_scratch_peak, context, live, &work.image_heap);
+		if (status != error::ok)
+			return status;
+		if (!room_bound_add(live, work.image_heap))
+			return error::capacity;
+		size_t peak = 0;
+		if (!room_intent_decode_peak(command, live, &peak) ||
+		    !reserve_scratch_peak(peak, context))
+			return error::capacity;
+		status = economic_intent_decode(command.accounting_intent, &work.intent);
+		if (status != error::ok)
+			return status;
+		if (work.intent.admission.facts_version != 1 || !work.intent.admission.facts.empty())
+			return error::payload_conflict;
+		if (!room_intent_verify_peak(command, work, live, &peak) ||
+		    !reserve_scratch_peak(peak, context))
+			return error::capacity;
+		status = economic_intent_verify_binding(command, work.intent);
+		if (status != error::ok)
+			return status;
+		// Reuse the genuine bounded compiler with the decoded image/intent still
+		// live; do not duplicate its allocation arithmetic or execute a probe build.
+		status = zone_reset_item_command_build_bounded(work.intent.admission.metadata,
+			work.image, command.accepted_at_usec, &work.expected,
+			reserve_scratch_peak, context, live);
+		if (status != error::ok)
+			return status;
+		size_t keys = 0, revisions = 0;
+		if (!room_bound_array(work.expected.keys.capacity(), sizeof(critical_entity_key), &keys) ||
+		    !room_bound_array(work.expected.expected_revisions.capacity(),
+			 sizeof(critical_expected_revision), &revisions))
+			return error::capacity;
+		work.expected_heap = work.expected.payload.capacity();
+		if (!room_bound_add(work.expected_heap, work.expected.accounting_intent.capacity()) ||
+		    !room_bound_add(work.expected_heap, keys) ||
+		    !room_bound_add(work.expected_heap, revisions) ||
+		    !room_bound_add(live, work.expected_heap))
+			return error::capacity;
+		if (critical_command_encode_bounded(command, &work.actual_bytes,
+			reserve_scratch_peak, context, live) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (!room_bound_add(live, work.actual_bytes.capacity()))
+			return error::capacity;
+		if (critical_command_encode_bounded(work.expected, &work.expected_bytes,
+			reserve_scratch_peak, context, live) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (work.actual_bytes != work.expected_bytes)
+			return error::payload_conflict;
+		*output = std::move(work.image);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
