@@ -40,9 +40,28 @@ extern P_room world;
 extern P_obj object_list;
 extern int top_of_world;
 
+struct zone_reset_item_owner::flat_binding_scratch_guard
+{
+	bool active;
+	explicit flat_binding_scratch_guard(bool selected_flat) noexcept
+		: active(selected_flat)
+	{
+	}
+	~flat_binding_scratch_guard()
+	{
+		// Declared before the original capture/binding temporaries, so their
+		// storage dies before the genuine native owner's retained recensus.
+		if (active)
+			(void)quest_mobile_native_birth_owner::charge();
+	}
+};
+
 struct zone_reset_item_root_stage::implementation
 {
 	quest_mobile_native_item_stage factory;
+	std::unique_ptr<quest_mobile_native_flat_factory_scope> flat_scope;
+	bool flat_backend = false;
+	critical_operation_id flat_lineage{}, flat_epoch{};
 	shop_trade_original_procedure_binding_stage bindings;
 	zone_reset_item_root_facts facts;
 	P_obj object = nullptr;
@@ -75,6 +94,13 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 				slot, room, &source, &zone_vnum);
 	if (!observed || !zone_table || !obj_index || !world || room < 0 || room > top_of_world)
 		return output->state_ ? result::held_refusal : result::refused;
+	const std::string *selected_flat_root = nullptr;
+	if (!quest_mobile_native_birth_owner::capture_reset_backend(source, &selected_flat_root))
+		return output->state_ ? result::held_refusal : result::refused;
+	critical_operation_id flat_lineage{}, flat_epoch{};
+	if (selected_flat_root && !quest_mobile_native_birth_owner::capture_reset_flat_projection(
+					  source, &flat_lineage, &flat_epoch))
+		return output->state_ ? result::held_refusal : result::refused;
 	const zone_data *zone = nullptr;
 	for (int index = 0; index <= top_of_zone_table; ++index)
 		if (zone_table[index].number == zone_vnum)
@@ -98,6 +124,9 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 		{
 			auto state = std::make_unique<zone_reset_item_root_stage::implementation>();
 			state->slot = slot;
+			state->flat_backend = selected_flat_root != nullptr;
+			state->flat_lineage = flat_lineage;
+			state->flat_epoch = flat_epoch;
 			state->room = room;
 			state->original_percent = command.arg4;
 			state->facts.reset_source = source;
@@ -111,7 +140,10 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 			output->state_ = state.release(); // Root before every fallible preparation.
 		}
 		auto &held = *output->state_;
-		if (held.slot != slot || held.room != room || held.facts.zone_vnum != zone_vnum ||
+		if (held.flat_backend != (selected_flat_root != nullptr) ||
+		    held.flat_lineage.bytes != flat_lineage.bytes ||
+		    held.flat_epoch.bytes != flat_epoch.bytes || held.slot != slot ||
+		    held.room != room || held.facts.zone_vnum != zone_vnum ||
 		    held.facts.room_vnum != world[room].number ||
 		    held.facts.object_rnum != command.arg1 ||
 		    held.original_percent != command.arg4 ||
@@ -125,6 +157,30 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 			return held.result;
 		if (!quest_mobile_native_birth_owner::charge())
 			return result::held_refusal;
+		if (held.flat_backend)
+		{
+			if (!held.flat_scope)
+			{
+				const size_t chars = selected_flat_root->size();
+				size_t peak = sizeof(quest_mobile_native_flat_factory_scope);
+				if (chars > 15)
+				{
+					if (chars == SIZE_MAX || chars + 1 > SIZE_MAX - peak)
+						return result::held_refusal;
+					peak += chars + 1;
+				}
+				if (!quest_mobile_native_birth_owner::charge(peak))
+					return result::held_refusal;
+				// Pure provenance allocation precedes the actual factory attempt.
+				// A refusal preserves the original source/UID and can retry safely.
+				held.flat_scope.reset(new quest_mobile_native_flat_factory_scope(
+					*selected_flat_root, source));
+			}
+			if (!held.flat_scope->current() ||
+			    held.flat_scope->root_ != *selected_flat_root ||
+			    !quest_mobile_native_birth_owner::charge())
+				return result::held_refusal;
+		}
 		if (!held.operation_started)
 		{
 			held.operation_started = true;
@@ -151,9 +207,18 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 		}
 		if (!held.factory_started)
 		{
+			if (held.flat_scope && !quest_mobile_native_birth_owner::charge(
+						       held.flat_scope->retained_heap_bytes()))
+				return result::held_refusal;
 			held.factory_started = true;
-			held.factory_succeeded = quest_mobile_native_item_stage::prepare_retaining(
-				command.arg1, REAL, held.reserved_uid, &held.factory);
+			held.factory_succeeded =
+				held.flat_scope ?
+					quest_mobile_native_item_stage::prepare_retaining_flat(
+						command.arg1, REAL, held.reserved_uid,
+						*held.flat_scope, &held.factory) :
+					quest_mobile_native_item_stage::prepare_retaining(
+						command.arg1, REAL, held.reserved_uid,
+						&held.factory);
 			held.factory_returned = true;
 			held.object = held.factory.object();
 		}
@@ -165,6 +230,10 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 		}
 		if (!quest_mobile_native_birth_owner::charge())
 			return result::held_refusal; // Census the actual factory before the load roll.
+		if (held.factory.is_flat_factory() != held.flat_backend ||
+		    (held.flat_scope &&
+		     !held.factory.flat_factory_matches(held.flat_scope->root_, source)))
+			return result::held_refusal;
 		P_obj object = held.object;
 		if (!object || held.factory.object() != object ||
 		    !held.factory.owns_pending_original_target(object) ||
@@ -211,6 +280,10 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 			(void)quest_mobile_native_birth_owner::charge();
 			return held.result;
 		}
+		if (held.flat_backend &&
+		    !quest_mobile_native_birth_owner::charge(sizeof(flat_binding_scratch_guard)))
+			return result::held_refusal;
+		flat_binding_scratch_guard binding_scratch(held.flat_backend);
 		std::vector<player_item_snapshot> literal;
 		native_mobile_birth_item_recipe recipe;
 		if (player_item_snapshot_tree_capture_literal(object, &literal, nullptr) !=
@@ -251,12 +324,22 @@ zone_reset_item_owner::prepare_root(uint32_t slot, int room,
 			return result::held_refusal;
 		if (!held.bindings_prepared)
 		{
-			const auto binding = held.factory.binding_input();
-			held.bindings_prepared =
-				shop_trade_original_procedure_binding_stage::prepare_native_birth(
-					{ &binding, 1 }, held.bindings);
+			if (held.flat_backend)
+				held.bindings_prepared = prepare_single_flat_bindings(
+					held.factory, literal, recipe, held.bindings,
+					sizeof(binding_scratch) + sizeof(source) + sizeof(command) +
+						sizeof(flat_lineage) + sizeof(flat_epoch));
+			else
+			{
+				const auto binding = held.factory.binding_input();
+				held.bindings_prepared =
+					shop_trade_original_procedure_binding_stage::
+						prepare_native_birth({ &binding, 1 },
+								     held.bindings);
+			}
 		}
-		if (!quest_mobile_native_birth_owner::charge() || !held.bindings_prepared)
+		if ((!held.flat_backend && !quest_mobile_native_birth_owner::charge()) ||
+		    !held.bindings_prepared)
 			return result::held_refusal;
 		held.pure_pending = false;
 		held.result = result::captured;
@@ -324,6 +407,8 @@ bool zone_reset_item_owner::empty(const zone_reset_item_root_stage &stage) noexc
 struct zone_reset_item_child_stage::implementation
 {
 	quest_mobile_native_item_stage factory;
+	std::unique_ptr<quest_mobile_native_flat_factory_scope> flat_scope;
+	bool flat_backend = false;
 	shop_trade_original_procedure_binding_stage bindings;
 	zone_reset_item_child_facts facts;
 	P_obj object = nullptr;
@@ -349,6 +434,9 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 										    &zone_vnum);
 	if (!observed)
 		return output->state_ ? result::held_refusal : result::refused;
+	const std::string *selected_flat_root = nullptr;
+	if (!quest_mobile_native_birth_owner::capture_reset_backend(actual, &selected_flat_root))
+		return output->state_ ? result::held_refusal : result::refused;
 	if (output->state_)
 	{
 		const auto &held = *output->state_;
@@ -361,7 +449,7 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 				  held.facts.reset_scope.kind == actual.kind &&
 				  held.facts.reset_scope.sequence == actual.sequence &&
 				  held.facts.reset_scope.slot == actual.slot;
-		if (!same)
+		if (!same || held.flat_backend != (selected_flat_root != nullptr))
 			return result::held_refusal;
 		if (held.result != result::held_refusal || !held.pure_pending)
 			return held.result;
@@ -392,6 +480,7 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 			auto state =
 				std::make_unique<zone_reset_item_child_stage::implementation>();
 			state->facts.reset_scope = actual;
+			state->flat_backend = selected_flat_root != nullptr;
 			state->facts.original_command_slot = slot;
 			state->facts.zone_vnum = zone_vnum;
 			state->facts.object_rnum = command.arg1;
@@ -405,6 +494,28 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 		    held.facts.original_zone_percent != command.arg4 ||
 		    !quest_mobile_native_birth_owner::charge())
 			return result::held_refusal;
+		if (held.flat_backend)
+		{
+			if (!held.flat_scope)
+			{
+				const size_t chars = selected_flat_root->size();
+				size_t peak = sizeof(quest_mobile_native_flat_factory_scope);
+				if (chars > 15)
+				{
+					if (chars == SIZE_MAX || chars + 1 > SIZE_MAX - peak)
+						return result::held_refusal;
+					peak += chars + 1;
+				}
+				if (!quest_mobile_native_birth_owner::charge(peak))
+					return result::held_refusal;
+				held.flat_scope.reset(new quest_mobile_native_flat_factory_scope(
+					*selected_flat_root, actual));
+			}
+			if (!held.flat_scope->current() ||
+			    held.flat_scope->root_ != *selected_flat_root ||
+			    !quest_mobile_native_birth_owner::charge())
+				return result::held_refusal;
+		}
 		if (!held.reserved_uid)
 		{
 			const auto uid = item_uid_allocator_next();
@@ -419,9 +530,18 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 		}
 		if (!held.factory_started)
 		{
+			if (held.flat_scope && !quest_mobile_native_birth_owner::charge(
+						       held.flat_scope->retained_heap_bytes()))
+				return result::held_refusal;
 			held.factory_started = true;
-			held.factory_succeeded = quest_mobile_native_item_stage::prepare_retaining(
-				command.arg1, REAL, held.reserved_uid, &held.factory);
+			held.factory_succeeded =
+				held.flat_scope ?
+					quest_mobile_native_item_stage::prepare_retaining_flat(
+						command.arg1, REAL, held.reserved_uid,
+						*held.flat_scope, &held.factory) :
+					quest_mobile_native_item_stage::prepare_retaining(
+						command.arg1, REAL, held.reserved_uid,
+						&held.factory);
 			held.factory_returned = true;
 			held.object = held.factory.object();
 		}
@@ -434,6 +554,10 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 		if (!quest_mobile_native_birth_owner::charge())
 			return result::held_refusal;
 		held.object = held.factory.object();
+		if (held.factory.is_flat_factory() != held.flat_backend ||
+		    (held.flat_scope &&
+		     !held.factory.flat_factory_matches(held.flat_scope->root_, actual)))
+			return result::held_refusal;
 		P_obj object = held.object;
 		if (!object || held.factory.object() != object ||
 		    !held.factory.owns_pending_original_target(object) ||
@@ -452,6 +576,10 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 			held.result = result::native_owner_required;
 			return held.result;
 		}
+		if (held.flat_backend &&
+		    !quest_mobile_native_birth_owner::charge(sizeof(flat_binding_scratch_guard)))
+			return held.result;
+		flat_binding_scratch_guard binding_scratch(held.flat_backend);
 		std::vector<player_item_snapshot> literal;
 		native_mobile_birth_item_recipe recipe;
 		if (player_item_snapshot_tree_capture_literal(object, &literal, nullptr) !=
@@ -492,12 +620,21 @@ zone_reset_item_owner::prepare_child(uint32_t slot, zone_reset_item_child_stage 
 			return held.result;
 		if (!held.bindings_prepared)
 		{
-			const auto binding = held.factory.binding_input();
-			held.bindings_prepared =
-				shop_trade_original_procedure_binding_stage::prepare_native_birth(
-					{ &binding, 1 }, held.bindings);
+			if (held.flat_backend)
+				held.bindings_prepared = prepare_single_flat_bindings(
+					held.factory, literal, recipe, held.bindings,
+					sizeof(binding_scratch) + sizeof(actual) + sizeof(command));
+			else
+			{
+				const auto binding = held.factory.binding_input();
+				held.bindings_prepared =
+					shop_trade_original_procedure_binding_stage::
+						prepare_native_birth({ &binding, 1 },
+								     held.bindings);
+			}
 		}
-		if (!quest_mobile_native_birth_owner::charge() || !held.bindings_prepared)
+		if ((!held.flat_backend && !quest_mobile_native_birth_owner::charge()) ||
+		    !held.bindings_prepared)
 			return held.result;
 		held.pure_pending = false;
 		// Do not call itemvalue or ITEM_LOAD_CHECK: original P target/respawn
@@ -558,6 +695,16 @@ bool zone_reset_item_owner::discard_child(zone_reset_item_child_stage *stage) no
 bool zone_reset_item_owner::empty(const zone_reset_item_child_stage &stage) noexcept
 {
 	return stage.state_ == nullptr;
+}
+
+bool zone_reset_item_owner::factory_backend_current(
+	const quest_mobile_native_item_stage &factory,
+	const quest_mobile_native_flat_factory_scope *scope,
+	const economic_source_event &source) noexcept
+{
+	if (!scope)
+		return !factory.is_flat_factory();
+	return scope->current() && factory.flat_factory_matches(scope->root_, source);
 }
 
 struct zone_reset_item_owner::warm_child
@@ -629,6 +776,17 @@ struct zone_reset_item_owner::warm_registry
 };
 zone_reset_item_owner::warm_registry *zone_reset_item_owner::warm_head_ = nullptr;
 zone_reset_item_owner::warm_registry *zone_reset_item_owner::warm_current_ = nullptr;
+
+bool zone_reset_item_owner::warm_bindings_current(const warm_root &root) noexcept
+{
+	if (!root.stage.state_)
+		return false;
+	const auto &body = *root.stage.state_;
+	if (body.flat_backend != bool(body.flat_scope) ||
+	    !factory_backend_current(body.factory, body.flat_scope.get(), body.facts.reset_source))
+		return false;
+	return body.flat_backend ? root.whole_bindings.valid_flat() : root.whole_bindings.valid();
+}
 
 struct zone_reset_item_owner::warm_command_scratch
 {
@@ -718,6 +876,72 @@ bool warm_scratch_forest_heap(const std::vector<player_item_snapshot> &items,
 	return true;
 }
 } // namespace
+
+bool zone_reset_item_owner::reserve_flat_binding_scratch(size_t peak, void *) noexcept
+{
+	return quest_mobile_native_birth_owner::charge(peak);
+}
+
+bool zone_reset_item_owner::prepare_single_flat_bindings(
+	const quest_mobile_native_item_stage &factory,
+	const std::vector<player_item_snapshot> &literal,
+	const native_mobile_birth_item_recipe &recipe,
+	shop_trade_original_procedure_binding_stage &output, size_t additional_inline) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)factory;
+	(void)literal;
+	(void)recipe;
+	(void)output;
+	(void)additional_inline;
+	return false;
+#else
+	if (!factory.is_flat_factory())
+		return false;
+	// These are the original producer's still-live capture temporaries, including
+	// their actual capacities after the first literal/recipe move or a retry.
+	size_t outer = additional_inline;
+	if (!warm_scratch_add(outer, sizeof(literal)) || !warm_scratch_add(outer, sizeof(recipe)) ||
+	    !warm_scratch_add(outer, sizeof(quest_mobile_native_item_binding)) ||
+	    !warm_scratch_add(outer, sizeof(std::span<const quest_mobile_native_item_binding>)) ||
+	    !warm_scratch_array(outer, literal.capacity(), sizeof(player_item_snapshot)) ||
+	    !warm_scratch_array(outer, recipe.libraries.capacity(),
+				sizeof(native_mobile_birth_library_recipe)))
+		return false;
+	{
+		// This allocation-free census closure dies before the binding frame.
+		const auto text = [&](const std::string &value) noexcept
+		{
+			return value.capacity() <= 15 ||
+			       (value.capacity() != SIZE_MAX &&
+				warm_scratch_add(outer, value.capacity() + 1));
+		};
+		for (const auto &item : literal)
+		{
+			if (!text(item.name) || !text(item.short_description) ||
+			    !text(item.description) || !text(item.action_description) ||
+			    !warm_scratch_array(outer, item.dynamic_affects.capacity(),
+						sizeof(player_item_dynamic_affect_snapshot)) ||
+			    !warm_scratch_array(outer, item.extra_descriptions.capacity(),
+						sizeof(player_item_extra_description_snapshot)))
+				return false;
+			for (const auto &description : item.extra_descriptions)
+				if (!text(description.keyword) || !text(description.description) ||
+				    !warm_scratch_array(outer, description.spell_ids.capacity(),
+							sizeof(int32_t)))
+					return false;
+		}
+	}
+	if (!reserve_flat_binding_scratch(outer, nullptr))
+		return false;
+	const auto binding = factory.binding_input();
+	const std::span<const quest_mobile_native_item_binding> originals{ &binding, 1 };
+	// The original caller's guard recensuses only after its real inputs die.
+	return shop_trade_original_procedure_binding_stage::prepare_native_birth_flat_bounded(
+		originals, output, reserve_flat_binding_scratch, nullptr, outer);
+#endif
+}
 
 bool zone_reset_item_owner::begin_warm_command_scratch(warm_root &root) noexcept
 {
@@ -1568,6 +1792,15 @@ zone_reset_item_warm_result zone_reset_item_owner::place_warm_child(uint32_t slo
 	}
 	if (!owner || !target_factory || target == body.object)
 		return refuse(result::native_owner_required); // No foreign/self/older fallback.
+	const auto &root_body = *owner->stage.state_;
+	if (body.flat_backend != root_body.flat_backend ||
+	    body.flat_backend != bool(body.flat_scope) ||
+	    root_body.flat_backend != bool(root_body.flat_scope) ||
+	    (body.flat_scope && body.flat_scope->root_ != root_body.flat_scope->root_) ||
+	    !factory_backend_current(body.factory, body.flat_scope.get(), body.facts.reset_scope) ||
+	    !factory_backend_current(root_body.factory, root_body.flat_scope.get(),
+				     root_body.facts.reset_source))
+		return refuse(result::held_refusal);
 	const auto &operation = owner->stage.state_->facts.operation_id;
 	if (!critical_operation_id_is_zero(child.selected_root_operation) &&
 	    child.selected_root_operation.bytes != operation.bytes)
@@ -1650,8 +1883,15 @@ bool zone_reset_item_owner::seal_warm_root(warm_root &root) noexcept
 	{
 		auto &body = *root.stage.state_;
 		if (!body.object || body.factory.object() != body.object ||
-		    !body.factory.owns_pending_original_target(body.object))
+		    !body.factory.owns_pending_original_target(body.object) ||
+		    body.flat_backend != bool(body.flat_scope) ||
+		    !factory_backend_current(body.factory, body.flat_scope.get(),
+					     body.facts.reset_source))
 			return false;
+		if (body.flat_backend &&
+		    !quest_mobile_native_birth_owner::charge(sizeof(flat_binding_scratch_guard)))
+			return false;
+		flat_binding_scratch_guard binding_scratch(body.flat_backend);
 		std::unordered_map<uint64_t, quest_mobile_native_item_stage *> factories;
 		factories.reserve(root.children.size() + 1);
 		factories.emplace(body.object->obj_uid, &body.factory);
@@ -1659,6 +1899,14 @@ bool zone_reset_item_owner::seal_warm_root(warm_root &root) noexcept
 		{
 			if (child->result != zone_reset_item_warm_result::captured ||
 			    !child->stage.state_ || !child->stage.state_->object ||
+			    child->stage.state_->flat_backend != body.flat_backend ||
+			    child->stage.state_->flat_backend !=
+				    bool(child->stage.state_->flat_scope) ||
+			    (body.flat_scope &&
+			     child->stage.state_->flat_scope->root_ != body.flat_scope->root_) ||
+			    !factory_backend_current(child->stage.state_->factory,
+						     child->stage.state_->flat_scope.get(),
+						     child->stage.state_->facts.reset_scope) ||
 			    child->stage.state_->factory.object() != child->stage.state_->object ||
 			    !factories
 				     .emplace(child->stage.state_->object->obj_uid,
@@ -1743,12 +1991,42 @@ bool zone_reset_item_owner::seal_warm_root(warm_root &root) noexcept
 			if (!quest_mobile_native_birth_owner::charge())
 				return false;
 		}
-		const bool prepared =
-			shop_trade_original_procedure_binding_stage::prepare_native_birth(
-				bindings, root.whole_bindings);
+		bool prepared = false;
+		if (body.flat_backend)
+		{
+			size_t outer = sizeof(binding_scratch) + sizeof(observed) +
+				       sizeof(bindings) + sizeof(factories) +
+				       sizeof(std::span<const quest_mobile_native_item_binding>);
+			size_t observed_heap = 0;
+			if (!warm_scratch_forest_heap(observed.items, observed.recipes,
+						      observed.coins, false, &observed_heap) ||
+			    !warm_scratch_add(outer, observed_heap) ||
+			    !warm_scratch_array(outer, bindings.capacity(),
+						sizeof(quest_mobile_native_item_binding)) ||
+			    !factories.empty())
+				return false;
+			// All original UID nodes were erased by the complete literal/factory
+			// bijection. The genuine allocated bucket array remains live here.
+			if (factories.bucket_count() > 1 &&
+			    !warm_scratch_array(outer, factories.bucket_count(), sizeof(void *)))
+				return false;
+			if (!reserve_flat_binding_scratch(outer, nullptr))
+				return false;
+			const std::span<const quest_mobile_native_item_binding> originals{
+				bindings
+			};
+			prepared = shop_trade_original_procedure_binding_stage::
+				prepare_native_birth_flat_bounded(originals, root.whole_bindings,
+								  reserve_flat_binding_scratch,
+								  nullptr, outer);
+		}
+		else
+			prepared =
+				shop_trade_original_procedure_binding_stage::prepare_native_birth(
+					bindings, root.whole_bindings);
 		if (prepared)
 			root.sealed = true; // Actual prepared binding ownership precedes recensus.
-		return quest_mobile_native_birth_owner::charge() && prepared;
+		return (body.flat_backend || quest_mobile_native_birth_owner::charge()) && prepared;
 	}
 	catch (...)
 	{
@@ -1760,7 +2038,7 @@ bool zone_reset_item_owner::warm_root_current(const warm_root &root) noexcept
 {
 	if (!nevent_is_game_thread() || !root.sealed || !root.stage.state_ ||
 	    root.stage.state_->result != zone_reset_item_root_result::captured ||
-	    !root.whole_bindings.valid() || root.forest.items.empty())
+	    !warm_bindings_current(root) || root.forest.items.empty())
 		return false;
 	try
 	{
@@ -1801,7 +2079,18 @@ bool zone_reset_item_owner::warm_root_current(const warm_root &root) noexcept
 					    child->result !=
 						    zone_reset_item_warm_result::captured ||
 					    child->selected_root_operation.bytes !=
-						    held.facts.operation_id.bytes)
+						    held.facts.operation_id.bytes ||
+					    child->stage.state_->flat_backend !=
+						    held.flat_backend ||
+					    child->stage.state_->flat_backend !=
+						    bool(child->stage.state_->flat_scope) ||
+					    (held.flat_scope &&
+					     child->stage.state_->flat_scope->root_ !=
+						     held.flat_scope->root_) ||
+					    !factory_backend_current(
+						    child->stage.state_->factory,
+						    child->stage.state_->flat_scope.get(),
+						    child->stage.state_->facts.reset_scope))
 						return false;
 					factory = &child->stage.state_->factory;
 				}
@@ -1851,7 +2140,7 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 	if (!nevent_is_game_thread() || scratch.root != &root || !scratch.output ||
 	    root.preparation_owner != &scratch || !root.sealed || !root.stage.state_ ||
 	    root.stage.state_->result != zone_reset_item_root_result::captured ||
-	    !root.whole_bindings.valid() || root.forest.items.empty())
+	    !warm_bindings_current(root) || root.forest.items.empty())
 		return false;
 	try
 	{
@@ -1915,8 +2204,21 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 				    child->stage.state_->object->obj_uid == item.object_uid)
 				{
 					if (factory ||
-					    child->result != zone_reset_item_warm_result::captured ||
-					    child->selected_root_operation.bytes != held.facts.operation_id.bytes)
+					    child->result !=
+						    zone_reset_item_warm_result::captured ||
+					    child->selected_root_operation.bytes !=
+						    held.facts.operation_id.bytes ||
+					    child->stage.state_->flat_backend !=
+						    held.flat_backend ||
+					    child->stage.state_->flat_backend !=
+						    bool(child->stage.state_->flat_scope) ||
+					    (held.flat_scope &&
+					     child->stage.state_->flat_scope->root_ !=
+						     held.flat_scope->root_) ||
+					    !factory_backend_current(
+						    child->stage.state_->factory,
+						    child->stage.state_->flat_scope.get(),
+						    child->stage.state_->facts.reset_scope))
 						return false;
 					factory = &child->stage.state_->factory;
 				}
@@ -2025,9 +2327,28 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			    owned->forest.room_vnum == root->forest.room_vnum)
 				return false;
 		}
+		const auto &birth = *root->stage.state_;
 		const char *configured = persistence_mode_flatfile_root();
-		if (!configured || !*configured)
-			return false;
+		{
+			// The two actual projection IDs die before the preparation frame.
+			// Admit them alongside the observer already in inline_bytes().
+			size_t projection_live = warm_command_scratch::inline_bytes();
+			if (!warm_scratch_array(projection_live, 2,
+						sizeof(critical_operation_id)) ||
+			    !reserve_warm_command_scratch(projection_live, &scratch))
+				return false;
+			critical_operation_id current_lineage{}, current_epoch{};
+			if (!birth.flat_backend || !birth.flat_scope || !configured ||
+			    !*configured || birth.flat_scope->root_ != configured ||
+			    !economic_gameplay_authority::capture_flat_reset_projection(
+				    &current_lineage, &current_epoch) ||
+			    current_lineage.bytes != birth.flat_lineage.bytes ||
+			    current_epoch.bytes != birth.flat_epoch.bytes)
+				return false;
+		}
+		// This is the authentic retained O factory's selected root. Current
+		// configuration merely corroborates it; it cannot supply new provenance.
+		configured = birth.flat_scope->root_.c_str();
 		const size_t root_chars = std::char_traits<char>::length(configured);
 		const size_t caller_live = warm_command_scratch::inline_bytes();
 		size_t frame_live = caller_live, image_heap = 0;
@@ -2249,12 +2570,19 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		return false;
 	}
 }
-bool zone_reset_item_owner::prepare_warm_command(const critical_operation_id &operation,
-	critical_native_recovery_envelope *output, warm_command_scratch &scratch) noexcept
+bool zone_reset_item_owner::prepare_warm_command(const warm_root &root,
+						 critical_native_recovery_envelope *output,
+						 warm_command_scratch &scratch) noexcept
 {
-	if (persistence_mode_requires_mysql())
-		return prepare_warm_command_sql(operation, output);
-	return prepare_warm_command_flat(operation, output, scratch);
+	if (!root.stage.state_)
+		return false;
+	// Select the retained genuine factory backend, then let that backend's
+	// original authority guards refuse any later configuration mismatch.
+	if (!root.stage.state_->flat_backend)
+		return prepare_warm_command_sql(root.forest.operation_id, output);
+	if (scratch.root != &root)
+		return false;
+	return prepare_warm_command_flat(root.forest.operation_id, output, scratch);
 }
 
 bool zone_reset_item_owner::prepare_warm_command_sql(
@@ -3100,8 +3428,9 @@ void zone_reset_item_owner::pulse_original(bool prepare_original_resets) noexcep
 					critical_native_recovery_envelope original;
 					scratch.output = &original;
 					if (!zone_reset_item_owner::prepare_warm_command(
-						    root.forest.operation_id, &original, scratch) ||
-					    (bounded_flat && !retain_warm_command_output(scratch, original)))
+						    root, &original, scratch) ||
+					    (bounded_flat &&
+					     !retain_warm_command_output(scratch, original)))
 						continue;
 					if (zone_reset_room_publication_owner::empty(
 						    root.publication))
@@ -3586,6 +3915,14 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 		const size_t retained = value.retained_bytes();
 		return retained >= sizeof(value) && add(retained - sizeof(value));
 	};
+	const auto source_scope = [&](const quest_mobile_native_flat_factory_scope *value)
+	{
+		// This original holder uses unique_ptr, separate from the independent
+		// shared factory and binding copies counted by their own censuses.
+		return !value || (add(sizeof(*value)) && (value->root_.capacity() <= 15 ||
+							  (value->root_.capacity() != SIZE_MAX &&
+							   add(value->root_.capacity() + 1))));
+	};
 	const auto command = [&](const critical_command &value)
 	{
 		return array(value.payload.capacity(), 1) &&
@@ -3616,9 +3953,9 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 		if (!add(sizeof(value)))
 			return false;
 		const auto *body = value.stage.state_;
-		return !body ||
-		       (add(sizeof(*body)) && factory(body->factory) && binding(body->bindings) &&
-			literal(body->facts.literal) && recipe(body->facts.recipe));
+		return !body || (add(sizeof(*body)) && source_scope(body->flat_scope.get()) &&
+				 factory(body->factory) && binding(body->bindings) &&
+				 literal(body->facts.literal) && recipe(body->facts.recipe));
 	};
 	for (const auto *registry = warm_head_; registry; registry = registry->next)
 	{
@@ -3668,9 +4005,9 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 				return false;
 #endif
 			const auto *body = root.stage.state_;
-			if (body && (!add(sizeof(*body)) || !factory(body->factory) ||
-				     !binding(body->bindings) || !literal(body->facts.literal) ||
-				     !recipe(body->facts.recipe)))
+			if (body && (!add(sizeof(*body)) || !source_scope(body->flat_scope.get()) ||
+				     !factory(body->factory) || !binding(body->bindings) ||
+				     !literal(body->facts.literal) || !recipe(body->facts.recipe)))
 				return false;
 			for (const auto &item : root.forest.items)
 				if (!literal(item))

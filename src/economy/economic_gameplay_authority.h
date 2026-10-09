@@ -119,6 +119,11 @@ class economic_gameplay_authority
 	// The installed regular SQL projection supplies lineage/epoch, not provenance.
 	// This does not reserve identities, admit a command or authorize publication.
 	friend class quest_mobile_native_birth_owner;
+	// Genuine reset source owner pins the selected regular flat epoch across
+	// its original command cursor. Values are read-only and grant no source,
+	// constructor, accounting admission or publication authority.
+	static bool capture_flat_reset_projection(critical_operation_id *lineage,
+						  critical_operation_id *epoch) noexcept;
 	// Only the original O producer freezes fresh reset values. This selects the
 	// installed lineage/epoch only; the producer and atomic root still prove the
 	// real invocation, decisions, absent identities and same-root room publication.

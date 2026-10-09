@@ -520,3 +520,160 @@ int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument)
 		return FALSE;
 	return proclib_obj_proc(obj, ch, cmd, argument);
 }
+
+#include <cerrno>
+#include <new>
+#include <type_traits>
+
+bool proclib_recovery_chain_stage::prepare_bounded(
+	const std::span<const request> &requests, proclib_recovery_chain_stage &output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (!reserve_scratch_peak)
+	{
+		errno = EINVAL;
+		return false;
+	}
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)requests;
+	(void)output;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!nevent_is_game_thread() || proclib_chain_top < 0 ||
+	    proclib_chain_cap < proclib_chain_top || (proclib_chain_cap && !proclib_chain))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	// Actual distinct candidate and fresh forward-range assign. Caller already
+	// owns the source span/backing storage and old destination in outer.
+	if (sizeof(proclib_recovery_chain_stage) > SIZE_MAX - outer_live_scratch ||
+	    requests.size() > SIZE_MAX / sizeof(request))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	size_t live = outer_live_scratch + sizeof(proclib_recovery_chain_stage);
+	const size_t clone_bytes = requests.size() * sizeof(request);
+	if (clone_bytes > SIZE_MAX - live || !reserve_scratch_peak(live + clone_bytes, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	live += clone_bytes;
+	try
+	{
+		proclib_recovery_chain_stage candidate;
+		candidate.expected_ = proclib_chain;
+		candidate.expected_top_ = proclib_chain_top;
+		candidate.expected_cap_ = proclib_chain_cap;
+		// Pinned libstdc++13 forward assign into a fresh vector requests EXACTLY
+		// requests.size() rows. It allocates before the original row checks.
+		candidate.requests_.assign(requests.begin(), requests.end());
+		size_t additions = 0;
+		for (size_t i = 0; i < requests.size(); ++i)
+		{
+			const auto &value = requests[i];
+			if (value.rnum < 0 || value.previous == proclib_obj_cmd_bridge)
+			{
+				errno = EINVAL;
+				return false;
+			}
+			for (size_t j = 0; j < i; ++j)
+				if (requests[j].rnum == value.rnum)
+				{
+					errno = EINVAL;
+					return false;
+				}
+			bool present = false;
+			for (int j = 0; j < proclib_chain_top; ++j)
+				if (proclib_chain[j].rnum == value.rnum)
+				{
+					if (proclib_chain[j].prev != value.previous)
+					{
+						errno = EINVAL;
+						return false;
+					}
+					present = true;
+					break;
+				}
+			if (!present && value.previous)
+				++additions;
+		}
+		if (additions > static_cast<size_t>(INT_MAX - proclib_chain_top))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		candidate.next_top_ = proclib_chain_top + static_cast<int>(additions);
+		candidate.next_cap_ = std::max(proclib_chain_cap, candidate.next_top_);
+		if (additions)
+		{
+			if (static_cast<size_t>(candidate.next_cap_) >
+			    SIZE_MAX / sizeof(proclib_chain_ent))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			const size_t chain_bytes = static_cast<size_t>(candidate.next_cap_) *
+						   sizeof(proclib_chain_ent);
+			// The original global array stays live and unchanged. The distinct
+			// candidate clone, replacement and row assignment temporary coexist.
+			if (chain_bytes > SIZE_MAX - live ||
+			    sizeof(proclib_chain_ent) > SIZE_MAX - live - chain_bytes ||
+			    !reserve_scratch_peak(live + chain_bytes + sizeof(proclib_chain_ent),
+						  context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			candidate.allocation_ = malloc(chain_bytes);
+			if (!candidate.allocation_)
+			{
+				errno = ENOMEM;
+				return false;
+			}
+			auto *entries = static_cast<proclib_chain_ent *>(candidate.allocation_);
+			for (int j = 0; j < proclib_chain_top; ++j)
+				entries[j] = proclib_chain[j];
+			int next = proclib_chain_top;
+			for (const auto &value : requests)
+			{
+				bool present = false;
+				for (int j = 0; j < proclib_chain_top; ++j)
+					if (proclib_chain[j].rnum == value.rnum)
+					{
+						present = true;
+						break;
+					}
+				if (!present && value.previous)
+					entries[next++] = { value.rnum, value.previous };
+			}
+			if (next != candidate.next_top_)
+			{
+				errno = EINVAL;
+				return false;
+			}
+		}
+		candidate.prepared_ = true;
+		static_assert(std::is_nothrow_move_assignable_v<proclib_recovery_chain_stage>);
+		output = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EFAULT;
+		return false;
+	}
+#endif
+}

@@ -2,6 +2,7 @@
 #include "world/quest_mobile_native_birth.h"
 #include "world/zone_reset_item_owner.h"
 #include "world/db.h"
+#include "persistence/persistence_mode.h"
 #include "world/native_mobile_birth_artifact.h"
 #include "world/native_mobile_birth_procedure.h"
 #include "world/native_mobile_birth_reset_tail.h"
@@ -510,6 +511,14 @@ size_t current_birth = SIZE_MAX;
 bool replay_ready = false, reset_in_progress = false, deferred_overflow = false;
 struct original_reset_dispatch_cursor
 {
+	original_reset_dispatch_cursor() = default;
+	explicit original_reset_dispatch_cursor(const char *root, size_t length)
+		: selected_flat_root(root, length)
+	{
+	}
+	bool flat_backend = false;
+	std::string selected_flat_root;
+	critical_operation_id flat_lineage{}, flat_epoch{};
 	const reset_com *commands = nullptr;
 	int32_t zone_vnum = -1;
 	int force = 0, last_cmd = 1;
@@ -530,20 +539,23 @@ struct original_reset_dispatch_cursor
 	bool held = false, retryable = false, resume_dispatch = false, entry_pending = false;
 };
 original_reset_dispatch_cursor reset_dispatch;
-bool reset_dispatch_identity() noexcept
+} // namespace
+
+bool quest_mobile_native_birth_owner::reset_dispatch_identity() noexcept
 {
 	return reset_in_progress && replay_ready && nevent_is_game_thread() &&
-	       economic_gameplay_authority::active_regular_sql() && zone_table &&
-	       reset_zone_rnum >= 0 && reset_zone_rnum <= top_of_zone_table &&
+	       (reset_dispatch.flat_backend ? reset_flat_projection_current() :
+					      economic_gameplay_authority::active_regular_sql()) &&
+	       zone_table && reset_zone_rnum >= 0 && reset_zone_rnum <= top_of_zone_table &&
 	       reset_dispatch.commands &&
 	       zone_table[reset_zone_rnum].cmd == reset_dispatch.commands &&
 	       zone_table[reset_zone_rnum].number == reset_dispatch.zone_vnum;
 }
-bool reset_dispatch_current() noexcept
+bool quest_mobile_native_birth_owner::reset_dispatch_current() noexcept
 {
 	return reset_dispatch.valid && reset_dispatch_identity();
 }
-bool original_command_current() noexcept
+bool quest_mobile_native_birth_owner::original_command_current() noexcept
 {
 	if (!reset_dispatch_current() || !reset_dispatch.open)
 		return false;
@@ -552,6 +564,8 @@ bool original_command_current() noexcept
 	return a.command == b.command && a.if_flag == b.if_flag && a.arg1 == b.arg1 &&
 	       a.arg2 == b.arg2 && a.arg3 == b.arg3 && a.arg4 == b.arg4;
 }
+namespace
+{
 bool reset_holds_birth(const original_birth &birth) noexcept
 {
 	if (!reset_in_progress || reset_dispatch.completed)
@@ -570,7 +584,9 @@ bool reset_holds_birth(const original_birth &birth) noexcept
 			return true;
 	return false;
 }
-bool reset_invocation_ready() noexcept
+} // namespace
+
+bool quest_mobile_native_birth_owner::reset_invocation_ready() noexcept
 {
 	if (!critical_operation_id_is_zero(reset_invocation))
 		return true;
@@ -583,8 +599,10 @@ bool reset_invocation_ready() noexcept
 	reset_invocation = invocation;
 	return true;
 }
-bool reset_dispatch_source(uint32_t slot, char command, int room, bool current,
-			   economic_source_event *source, int32_t *zone_vnum) noexcept
+bool quest_mobile_native_birth_owner::reset_dispatch_source(uint32_t slot, char command, int room,
+							    bool current,
+							    economic_source_event *source,
+							    int32_t *zone_vnum) noexcept
 {
 	if (!source || !zone_vnum || !reset_dispatch_current())
 		return false;
@@ -594,6 +612,8 @@ bool reset_dispatch_source(uint32_t slot, char command, int room, bool current,
 		      !(slot < reset_dispatch.next_slot ||
 			(reset_dispatch.open && reset_dispatch.current_slot == slot)))
 		return false;
+	if (reset_dispatch.flat_backend && current && !original_command_current())
+		return false; // Exact original flat command snapshot precedes nonce capture.
 	const auto &original = reset_dispatch.commands[slot];
 	if (original.command != command ||
 	    (command == 'O' && (!world || room < 0 || room > top_of_world ||
@@ -607,6 +627,8 @@ bool reset_dispatch_source(uint32_t slot, char command, int room, bool current,
 	return true;
 }
 
+namespace
+{
 bool alchemist_choice_compatible(P_char actor,
 				 const quest_mobile_native_constructor_recipe &recipe) noexcept
 {
@@ -1000,10 +1022,19 @@ bool quest_mobile_native_birth_owner::validate_progressed_origin(
 
 bool quest_mobile_native_birth_owner::charge() noexcept
 {
+	return charge(size_t{ 0 });
+}
+
+bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcept
+{
 	try
 	{
 		size_t bytes = 0;
 		if (reset_in_progress && !add_bytes(bytes, sizeof(reset_dispatch)))
+			return false;
+		if (reset_in_progress && reset_dispatch.selected_flat_root.capacity() > 15 &&
+		    (reset_dispatch.selected_flat_root.capacity() == SIZE_MAX ||
+		     !add_bytes(bytes, reset_dispatch.selected_flat_root.capacity() + 1)))
 			return false;
 		if (!add_bytes(bytes, births.capacity() * sizeof(births[0])) ||
 		    !add_bytes(bytes, deferred.capacity() * sizeof(deferred[0])))
@@ -1120,6 +1151,8 @@ bool quest_mobile_native_birth_owner::charge() noexcept
 		size_t warm_bytes = 0;
 		if (!zone_reset_item_owner::warm_retained_size(&warm_bytes) ||
 		    !add_bytes(bytes, warm_bytes))
+			return false;
+		if (!add_bytes(bytes, prospective_scratch))
 			return false;
 		return item_native_quest_birth_budget_owner::retained_budget(bytes);
 	}
@@ -4323,4 +4356,229 @@ void quest_mobile_native_birth_pulse(bool prepare_original_resets) noexcept
 bool quest_mobile_native_birth_recovery_pulse() noexcept
 {
 	return quest_mobile_native_birth_owner::recovery_pulse();
+}
+
+// This observer reads today's actual installed projection only to reject drift
+// against the retained capsule; it supplies no source or execution permission.
+bool quest_mobile_native_birth_owner::reset_flat_projection_current() noexcept
+{
+	if (!reset_dispatch.flat_backend || reset_dispatch.selected_flat_root.empty())
+		return false;
+	const char *configured = persistence_mode_flatfile_root();
+	if (!configured || reset_dispatch.selected_flat_root != configured)
+		return false;
+	size_t scratch = 2 * sizeof(critical_operation_id);
+	const size_t observer = economic_gameplay_authority::active_regular_flat_working_bytes();
+	if (!add_bytes(scratch, observer) || !charge(scratch))
+		return false;
+	bool matches = false;
+	{
+		critical_operation_id lineage{}, epoch{};
+		matches = economic_gameplay_authority::capture_flat_reset_projection(&lineage,
+										     &epoch) &&
+			  lineage.bytes == reset_dispatch.flat_lineage.bytes &&
+			  epoch.bytes == reset_dispatch.flat_epoch.bytes;
+	}
+	const bool recensused = charge(); // observer and local IDs have died.
+	return matches && recensused;
+}
+
+bool quest_mobile_native_birth_owner::prepare_flat_reset_cursor(int zone, int force) noexcept
+{
+	if (!nevent_is_game_thread() || !replay_ready || reset_in_progress || !zone_table ||
+	    zone < 0 || zone > top_of_zone_table || !zone_table[zone].cmd)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)force;
+	return false;
+#else
+	const char *configured = persistence_mode_flatfile_root();
+	if (!configured || !*configured)
+		return false;
+	const size_t length = std::char_traits<char>::length(configured);
+	size_t root_heap = 0;
+	if (length > 15)
+	{
+		if (length == SIZE_MAX)
+			return false;
+		root_heap = length + 1; // actual fresh libstdc++13 string construction.
+	}
+	const size_t observer = economic_gameplay_authority::active_regular_flat_working_bytes();
+	size_t peak = 2 * sizeof(critical_operation_id);
+	if (!add_bytes(peak, observer) || !charge(peak))
+		return false;
+	try
+	{
+		critical_operation_id lineage{}, epoch{};
+		if (!economic_gameplay_authority::capture_flat_reset_projection(&lineage, &epoch))
+			return false;
+		peak = 2 * sizeof(critical_operation_id);
+		if (!add_bytes(peak, sizeof(original_reset_dispatch_cursor)) ||
+		    !add_bytes(peak, root_heap) || !charge(peak))
+			return false;
+		original_reset_dispatch_cursor candidate(configured, length);
+		candidate.flat_backend = true;
+		candidate.flat_lineage = lineage;
+		candidate.flat_epoch = epoch;
+		candidate.commands = zone_table[zone].cmd;
+		candidate.zone_vnum = zone_table[zone].number;
+		candidate.force = force;
+		candidate.valid = true;
+		// Prove projection/root after the fallible copy, before publishing a cursor.
+		if (!add_bytes(peak, 2 * sizeof(critical_operation_id)) ||
+		    !add_bytes(peak, observer) || !charge(peak))
+			return false;
+		critical_operation_id actual_lineage{}, actual_epoch{};
+		const char *actual_root = persistence_mode_flatfile_root();
+		if (!economic_gameplay_authority::capture_flat_reset_projection(&actual_lineage,
+										&actual_epoch) ||
+		    actual_lineage.bytes != lineage.bytes || actual_epoch.bytes != epoch.bytes ||
+		    !actual_root || candidate.selected_flat_root != actual_root ||
+		    zone_table[zone].cmd != candidate.commands ||
+		    zone_table[zone].number != candidate.zone_vnum)
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<original_reset_dispatch_cursor>);
+		reset_dispatch = std::move(candidate);
+		return true; // All temporary DTOs die before caller's retained recensus.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+// Deliberately private and not called by the existing begin_reset front door.
+// The real db dispatcher must first supply a guarded flat O/P/S cursor route;
+// exposing this early would use inactive locals and ordinary M/G/E branches.
+bool quest_mobile_native_birth_owner::begin_reset_flat(int zone, int force) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	// Match the original active-projection gate before even queueing values.
+	size_t observer_live = 2 * sizeof(critical_operation_id);
+	if (!add_bytes(observer_live,
+		       economic_gameplay_authority::active_regular_flat_working_bytes()) ||
+	    !charge(observer_live))
+		return false;
+	bool selected = false;
+	{
+		critical_operation_id lineage{}, epoch{};
+		selected = economic_gameplay_authority::capture_flat_reset_projection(&lineage,
+										      &epoch);
+	}
+	if (!charge() || !selected)
+		return false;
+	// Reentry keeps the actual selected backend/root/projection and original
+	// known-pure hold. It cannot reinterpret an existing SQL cursor as flat.
+	if (reset_dispatch.resume_dispatch)
+		return reset_dispatch.flat_backend && zone == reset_zone_rnum &&
+		       force == reset_dispatch.force && reset_resume_current() &&
+		       reset_objects_current() && charge();
+	bool held = !replay_ready || reset_in_progress;
+	if (zone_table && zone >= 0 && zone <= top_of_zone_table &&
+	    zone_reset_room_item_warm_pending_vnum(zone_table[zone].number))
+		held = true;
+	for (const auto &b : births)
+		if (b && !b->retired && b->zone == zone)
+			held = true;
+	if (held)
+	{
+		const auto found = std::find_if(deferred.begin(), deferred.end(), [&](const auto &r)
+						{ return r.zone == zone && r.force == force; });
+		if (found == deferred.end())
+		{
+			if (deferred.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS)
+			{
+				deferred_overflow = true;
+				return false;
+			}
+			size_t extra = 0;
+			if (deferred.size() == deferred.capacity())
+			{
+				size_t count = deferred.size();
+				if (std::max(count, size_t{ 1 }) > SIZE_MAX - count)
+					return false;
+				count += std::max(count, size_t{ 1 });
+				if (count > SIZE_MAX / sizeof(original_reset_request))
+					return false;
+				extra = count * sizeof(original_reset_request);
+			}
+			if (!add_bytes(extra, sizeof(original_reset_request)) || !charge(extra))
+				return false;
+			try
+			{
+				deferred.push_back({ zone, force });
+			}
+			catch (...)
+			{
+				(void)charge();
+				deferred_overflow = true;
+				return false;
+			}
+			if (!charge())
+				deferred_overflow = true;
+		}
+		return false;
+	}
+	const bool prepared = prepare_flat_reset_cursor(zone, force);
+	if (!prepared)
+	{
+		(void)charge();
+		return false;
+	}
+	reset_in_progress = true;
+	reset_zone_rnum = zone;
+	reset_invocation = {};
+	current_birth = SIZE_MAX;
+	if (!charge())
+	{
+		reset_dispatch.held = true;
+		reset_dispatch.retryable = true;
+		reset_dispatch.entry_pending = true;
+		return false;
+	}
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::capture_reset_backend(
+	const economic_source_event &source, const std::string **selected_flat_root) noexcept
+{
+	if (!selected_flat_root || !reset_dispatch_current() ||
+	    critical_operation_id_is_zero(reset_invocation) ||
+	    source.kind != economic_source_kind::world_generation ||
+	    source.source.bytes != reset_invocation.bytes ||
+	    source.generation.bytes != reset_invocation.bytes || source.sequence ||
+	    !(source.slot < reset_dispatch.next_slot ||
+	      (reset_dispatch.open && source.slot == reset_dispatch.current_slot) ||
+	      (reset_dispatch.completed && source.slot == reset_dispatch.current_slot)))
+		return false;
+	const char command = reset_dispatch.commands[source.slot].command;
+	if (command != 'O' && command != 'P' && command != 'S')
+		return false;
+	if (reset_dispatch.open && source.slot == reset_dispatch.current_slot &&
+	    !original_command_current())
+		return false;
+	if (command == 'S' &&
+	    (!reset_dispatch.completed || source.slot != reset_dispatch.current_slot))
+		return false;
+	*selected_flat_root = reset_dispatch.flat_backend ? &reset_dispatch.selected_flat_root :
+							    nullptr;
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::capture_reset_flat_projection(
+	const economic_source_event &source, critical_operation_id *lineage,
+	critical_operation_id *epoch) noexcept
+{
+	if (!lineage || !epoch || lineage == epoch)
+		return false;
+	const std::string *root = nullptr;
+	if (!capture_reset_backend(source, &root) || !root)
+		return false;
+	*lineage = reset_dispatch.flat_lineage;
+	*epoch = reset_dispatch.flat_epoch;
+	return true;
 }

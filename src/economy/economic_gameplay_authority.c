@@ -339,6 +339,23 @@ size_t economic_gameplay_authority::active_regular_flat_working_bytes() noexcept
 	return sizeof(std::shared_ptr<const admission_projection>);
 }
 
+bool economic_gameplay_authority::capture_flat_reset_projection(
+	critical_operation_id *lineage, critical_operation_id *epoch) noexcept
+{
+	if (!lineage || !epoch || lineage == epoch || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	const char *root = persistence_mode_flatfile_root();
+	const auto selected = current.load(std::memory_order_acquire);
+	if (!root || !*root || !selected || selected->scope != projection_scope::regular ||
+	    selected->scope_version || critical_operation_id_is_zero(selected->lineage) ||
+	    critical_operation_id_is_zero(selected->epoch))
+		return false;
+	*lineage = selected->lineage;
+	*epoch = selected->epoch;
+	return true;
+}
+
 economic_accounting_error
 economic_gameplay_authority::prepare_zone_reset_item(const zone_reset_item_image &original,
 						     uint64_t accepted_at_usec,
