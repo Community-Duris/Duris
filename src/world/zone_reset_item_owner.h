@@ -186,6 +186,8 @@ class zone_reset_item_owner final
 	struct warm_root;
 	static bool warm_bindings_current(const warm_root &) noexcept;
 	struct warm_command_scratch;
+	static bool flat_current_global_storage(size_t *) noexcept;
+	static bool begin_flat_command_scope(warm_command_scratch &) noexcept;
 	static bool begin_warm_command_scratch(warm_root &) noexcept;
 	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
 	static bool rebase_warm_command_scratch(warm_command_scratch &, size_t) noexcept;
