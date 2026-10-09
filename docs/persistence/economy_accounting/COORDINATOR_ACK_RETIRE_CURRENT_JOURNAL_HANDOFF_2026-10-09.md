@@ -1,0 +1,7 @@
+# Full coordinator ACK and retirement current/journal lender integration - 2026-10-09
+
+The complete ACK and retirement methods now relay original locked proofs through the actual held-mutex descriptor and genuine current lender. Their real bounded journal calls acquire coordinator before journal ownership and admit the actual coexisting lock/scalar frames. Retirement preserves the original durable transfer outside coordinator ownership, with identical arguments and order. Genuine new lock exceptions still reach the original unpin/recheck; arithmetic refusal is explicit quota_exceeded. Both complete original post-journal durable tails are byte-for-byte unchanged.
+
+Complete independent RAW and final formatted source review passed. Reanchoring preserved each full original and replacement method exactly; actual source inverses, tokens/logical preprocessing, unchanged header and protected files passed. All 400 source pins authenticate, 931 writer policies remain unchanged, zero new/unmapped sites. Evidence: tmp/coordinator-shared-ack-retire-owner-20261009, its reanchored and integrated counterparts.
+
+Startup replay and the full pulse/admission selector remain open, together with integrated native qualification. No new observer or producer selection is enabled by this slice; original default/inactive behavior remains intact. Tests stay deferred to major-plan readiness; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
