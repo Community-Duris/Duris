@@ -1193,7 +1193,7 @@ flatfile_shopkeeper_list_locked(const std::string &root, const flatfile_authorit
 flatfile_shopkeeper_result
 flatfile_shopkeeper_read_trade_after_image(const flatfile_authority_after_image &image,
 					   uint32_t shop_id, flatfile_shopkeeper_record *record,
-					   std::string *error)
+					   std::string * /*error*/)
 {
 	if (!record || image.filename != catalog_filename || image.bytes.empty() ||
 	    image.bytes.size() > catalog_maximum_bytes)
