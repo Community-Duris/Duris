@@ -1,20 +1,22 @@
 # Double-entry economy: remaining requirements
 
-## Shared warm world and flat catalog source joined - 2026-10-08
+## Shared cold world and flat custody source joined - 2026-10-08
 
-[Source integration](SHARED_WARM_WORLD_AND_FLAT_CATALOG_SOURCE_2026-10-08.md) records private coordinator/journal carrier
-selection and authentic ACK revision, full shared SQL-to-runtime projection,
-warm world/cash/keeper correspondence and original origin COMMIT/retirement,
-and borrowed-lock initial flat SHOP staging. All four source reviews passed.
-Candidate `ac4b80841462772e8676ff2d402dfea316cca992cf4a89d45e9c7506038592a1`
-joins861 provider records/39 inverses and210 bodies (171 source,30 tests,5 schema,
-4 other). Inventory is source composition only; the larger source is unpromoted.
-Actual shared producer admission and cold reconstruction stay CLOSED. Genuine
-cold affect/event ownership, flat custody/atomic receipt/current/origin/worker
-counterparts, progressed startup and complete transition budgets remain open.
-Major-plan executable qualification is deferred and required; Plans2-4/combined
-Plan5/R1-R8/release remain unfinished. Original Plan1 acceptance and inactive,
-declined-spell, production and activation gates are preserved.
+[Source integration](SHARED_COLD_WORLD_AND_FLAT_CUSTODY_SOURCE_2026-10-08.md) records three independently accepted private slices:
+initial flat custody with actual empty-owner clocks and equipped SHOP roots,
+genuine saved-affect/event ownership, and corrected original cold world recovery.
+Candidate `50af125db55837627e2965c935ce042d109f5f6c3de4314369b7e0ea65440579`
+joins584 providers/35 inverses and210 authenticated bodies (171 source,30 tests,
+5 schema,4 other). Both independent cold-world review findings are corrected;
+rejected packet48d6 stays unselected. Pure preparation budget refusal retains the
+whole actor/stock; ALL retry prefixes charge before services. Runtime/adoption,
+SQL cleanup, actual room ordering and full checkpoint proof remain required.
+The source is unpromoted/unexecuted and actual shared producer admission remains
+CLOSED. Flat atomic participant69484205 needs review corrections and is not
+selected here; genuine flat execution/authority/origin/world integration,
+progressed startup, transient budgets and major-plan qualification remain open.
+Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1 acceptance,
+inactive/declined-spell/production/activation gates and unrelated WIP are preserved.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
