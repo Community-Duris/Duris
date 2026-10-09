@@ -1,0 +1,7 @@
+# Real startup budget guard - 2026-10-09
+
+The ROOT owner now supplies a real private startup guard for the original held-mutex replay lifecycle. It charges actual caller/coordinator/global storage through its own address identity and refuses unsafe outside observation while the startup mutex is held. After unlock, its owning handoff registers the exact future coordinator observer/reserve pair, ends only its own scalar scope and performs a fresh retained charge. Cleanup adds no allocating callback; a separate refresh accounts for surviving storage after the guard dies.
+
+Complete independent RAW, strong reanchor and final formatted source review passed. The whole published ROOT C prefix, including the pulse and rollback wrapper, remains byte-exact. Inverses, tokens, logical preprocessing, protected work and authenticated registry checks passed. The registry has 400 source pins, 931 unchanged writer policies and no new or unmapped sites. Evidence: tmp/startup-root-budget-guard-integrated-20261009.
+
+The guard remains unselected until the complete actual initializer and host replay observers are joined. Full mixed accepted-set support includes genuine shared-shop NMB4 recovery; private ROOM and legacy leaves alone are insufficient. Admission and selected inactive behavior stay unchanged. Native checks remain deferred to major-plan readiness. Accounting inactive, admission CLOSED, coverage incomplete, release BLOCKED; goal ACTIVE.
