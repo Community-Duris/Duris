@@ -452,6 +452,130 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Immutable-terminal preparation reviewed; flat factory binding next - 2026-10-09
+
+Both original63de preparation packets are independently reviewed and CLOSED as
+source/design or acceptance-blueprint deliveries. All component/native cuts stay
+UNEXECUTED. Original pins/seals are preserved; no import, registration, private
+commit, primary adoption or executable qualification is claimed. Actual root Goal
+is BLOCKED unchanged; both worker completion-boundary reads report actual Goals
+BLOCKED unchanged. Continuing heartbeat remains ACTIVE at the broader finish line.
+
+Architecture: D:/Dev/Temp/published-room-immutable-terminal-authority-boundary-20261009
+contains PUBLISHED_ROOM_IMMUTABLE_TERMINAL_AUTHORITY_BOUNDARY_2026-10-09.txt,
+30852 bytes SHA25655862d5cb9d765844337de3456a8e71d20cce4d3e44df262dfcb85aa45c288cd.
+PINS126744 bytes SHAded69bda7a28991850b9fc9690593be9cd58ceeee258c9de587d4bb8da509472;
+INDEX31104 bytes SHA77609da031221202c5f26bf7e9acfbaa76447c23da352e78dfdbd03a6bd7ebb8.
+Root authenticates37 whole providers,137 exact cuts,51 complete original
+signature/body/catch spans,51 equalities,two complete C prefixes,two header
+inverses,two scoped diffs,tracked symbol search,181 sealed payloads and10 direct
+closed note/index references. Five reused sealed indexes authenticate439 payloads.
+Full note/verifier/original decoder,terminal predicate and ACK/retire boundaries
+were read. Audited metadata-only verifier and independent root authentication
+both PASS exit0. No required semantic correction remains.
+
+Quest: D:/Dev/Temp/published-room-immutable-terminal-acceptance-delta-20261009
+contains PUBLISHED_ROOM_IMMUTABLE_TERMINAL_ACCEPTANCE_DELTA_2026-10-09.txt,
+46126 bytes SHAc48e4fe51695e09519a44455d2c0928628844c3117709f39a47a521997210100.
+PINS4846969 bytes SHAf0fc7c09762bb44d567794a47e34f44bb888f9d1d09ab32a681239be172e00b6;
+INDEX669 bytes SHA3428367d99f3d22a71affe33113046ba71ca81d47c0634652e84d6b0139b98ec.
+Root authenticates62 whole providers,42 exact ranges,28 forward/inverse pairs,
+33 complete original signatures/bodies/catches with template declarations,two
+complete C prefixes,two header inverses,15 reused artifacts,two closed indexes/
+eight payloads and exact earlier ACK correction inverse/PINS/history seals.
+Full note/verifier read; audited metadata-only verifier and independent root
+authentication both PASS exit0. Disclosed pre-write wrong secure-reader path
+flatfile_io.c was corrected to actual flatfile_store.c/h;zero unresolved metadata
+errors. No required semantic correction remains; all six future cuts UNEXECUTED.
+
+Both retain immutable origin/canonical command/intent/binding/full receipt-plan-
+source-reference-result proof before secure saved terminal reading. Only actual
+saved filename absence after immutable proof transfers present=false. Full
+decoder,ordered recipe effects including noops,physical stage/runtime,terminal
+predicate and full receipt-core correlation stay mandatory. Historical success
+or saved BODY cannot supply current world/publication,full delivery/envelope/
+generation,once-only effects,checkpoint,ACK or retirement authority. Strong full
+outputs and sticky denied scratch remain explicit; bare errno is not a full
+denial oracle. Actual caller old spans/backend/root and simultaneous dynamic
+lifetimes remain outer aggregate obligations. Prior native_ack_uncertain alone
+permits eligible exact ACK journal CAS retry; native_context_uncertain refuses.
+Context/retire checkpoint has a separate native_ack_uncertain guard. Genuine
+durable terminal transfer must precede retirement. No alternate BODY/authority.
+
+New published primaryd818adbd2f7b913c5846a9a17e0ab549c1da40a1, actual parent
+coordinator61b325765509889de7fcd36c4cca9e8b0f6217cb, enables another concrete
+preparation step. Root clean-fast-forwarded and read the full70-line
+[flat factory/binding handoff](https://github.com/Community-Duris/Duris/blob/d818adbd2f7b913c5846a9a17e0ab549c1da40a1/docs/persistence/economy_accounting/ROOM_NATIVE_FLAT_FACTORY_BINDING_2026-10-09.md)
+and complete11-file production delta/private headers (17 changed paths overall).
+Raw providers,86090-byte production forward diff/exact reverse Git diff and
+original studioproclib.c byte prefix retained. Four terminal reader providers
+and original coordinator/ACK source remain byte-identical from63de; owner source
+changed. All31 quest production providers compared from63de are identical;
+three compared disposition docs changed. Old absence statements remain pinned
+historical facts, not claims about all newer code. No closed packet is repinned.
+
+Actual source adds retained flat cursor/backend root/lineage/epoch, private O/P/S
+source capture, real factory provenance, independent binding scope copies and
+bounded native procedure-chain/forest binding. Root/child factory-attempt flags
+survive later scope-copy/refusal; no SQL retag,UID reroll or retry factory attempt
+is authorized. Actual parsed/restored predecessor bridge retains priority over
+switch fallback; whole forest preserves original UID/rnum/order/provenance.
+Candidate/old output,source/root/shared ownership,map/bucket/vector/request,
+chain replacement and actual capture temporaries overlap. Scratch guard lives
+until genuine temporaries die,then retained recensus runs. Full32MiB/compiler
+ABI/capture admission remains primary-owned, not certified by this root review.
+Reported primary source/format/token/math reviews are distinct from executed
+qualification. This successor has no build/native/integrated journey evidence.
+
+Private begin_reset_flat has only declaration/definition in tracked source:
+no caller. Original public begin_reset/dispatcher flat acceptance guards remain.
+Warm/cold flat publication,dispatcher ownership,once-only effect/checkpoint,
+terminal writer/transfer/retirement and full factory/capture aggregate qualification
+are unfinished. Source availability resumes bounded preparation only; actual
+Goals and blocked native interfaces are not resumed. Private adoption is unknown.
+
+Prioritized evolving queue: one next bounded delivery per existing chat.
+1. Architecture: private PUBLISHED_ROOM_FLAT_FACTORY_BINDING_AUTHORITY_BOUNDARY_2026-10-09.txt
+   with minimal sealed metadata on D:. Map genuine retained command/state/source/
+   factory/binding authority and lifetimes; output implementation-ready owner
+   handoff obligations for future flat dispatcher/publication. Benefit: connect
+   real native factory/procedure binding to the original publication lifecycle.
+   Use d818/actual61b parent,11 changed providers and necessary original callers;
+   reuse CLOSED terminal/current/lazy-binding/compiler/native ACK maps. No quest
+   matrix,new authority,shared code,terminal writer or numeric math recertification.
+2. Quest: private PUBLISHED_ROOM_FLAT_FACTORY_BINDING_ACCEPTANCE_DELTA_2026-10-09.txt
+   with minimal sealed metadata on D:. At most six prioritized genuine future
+   acceptance cuts: pinned backend/source/slot/root-epoch drift refusal; authentic
+   factory-attempt retention with no reroll/retag; root/child forest identity;
+   parsed/restored predecessor/actual chain binding; bounded strong candidate/
+   lifetime refusal; original public guard and future publication integration.
+   Benefit: implementation-ready fixture joins for real primary native owners.
+   Use same published inputs and CLOSED quest terminal/current/native/ACK cases.
+   Mark unavailable original entry/fixture/failure controls explicitly; every
+   component/native cut UNEXECUTED. No fabricated hooks,UIDs,BODY or unsafe drift.
+3. Exact unavailable execution dependencies: private flat cursor has no caller,
+   genuine accepting dispatcher/owner fixture,actual warm/cold publication and
+   terminal writer/durable transfer,original failure controls,complete supported
+   ABI/allocator/capture32MiB and integrated native gameplay/recovery proof.
+   Missing execution blocks only dependent steps. Primary owns implementation/
+   shared contracts/math and integrated qualification; Plan5 owns its suite,
+   SQL0065/schema65 blockers and backup/restore/recovery. No duplicate work.
+4. Preserve clean5c53/2c828 worker worktrees,all CLOSED seals and live jobs. Workers
+   own only distinct private outputs; root reviews metadata/source independently
+   then publishes its three docs. No maintained/source/test/schema edit,compile/
+   preprocess/link/component/native/DB/root fixture,import/private commits/push,
+   other-chat message,adoption wait,activation/deployment/production mutation.
+   Next root reviews PENDING. Reassess at handoff,not repeated inventories.
+
+Root review/source/publication/assignment proof:
+D:/Dev/Temp/coordinator-immutable-terminal-review-20261009.
+Only these three disposition docs receive raw insertion with exact byte inverse.
+Broader required Plans1-5,applicable original R1-R8/backend/gameplay/persistence/
+recovery,required blockers/owner completion and selected sidework reviews/handoffs
+remain open. Accounting inactive/admission CLOSED/coverage incomplete/release
+BLOCKED persists. Finite preparation closure cannot finish continuing coordination.
+
+
 ## Immutable ROOM and saved terminal readers enable bounded preparation - 2026-10-09
 
 Published primary63de0d45d294979026f16b21c9eec16533beb121, actual immediate parent
