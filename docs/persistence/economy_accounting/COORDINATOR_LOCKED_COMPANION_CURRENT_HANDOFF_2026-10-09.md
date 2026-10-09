@@ -1,0 +1,7 @@
+# Full locked copy, generation, admission support and cancellation lender integration - 2026-10-09
+
+Complete copy, generation and admission-support methods now pass their real held coordinator mutex and preadmitted callback descriptor to the current lender at every locked callback. The cancellation method converts its original locked proof while keeping native cleanup outside coordinator ownership. Complete original output-success tails and the entire cancellation cleanup/marker/recheck/removal tail are byte-for-byte unchanged. Completion remains unchanged because its sole reservation precedes its lock.
+
+Complete independent RAW and final formatted source review passed. Reanchoring preserved each full original and replacement method exactly; actual source inverses, tokens/logical preprocessing, unchanged header and protected files passed. All 400 source pins authenticate, 931 writer policies remain unchanged, zero new/unmapped sites. Evidence: tmp/coordinator-shared-pure-cancel-owner-20261009, its reanchored and integrated counterparts.
+
+ACK and retirement journal companions, startup replay and the full pulse/admission selector remain open, together with integrated native qualification. No new observer or producer selection is enabled by this slice; original default/inactive behavior remains intact. Tests stay deferred to major-plan readiness; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
