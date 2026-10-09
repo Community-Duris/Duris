@@ -153,6 +153,23 @@ class zone_reset_room_publication_owner final
 				     const critical_completion &, uint64_t) noexcept;
 	static bool retire_warm(const critical_native_recovery_envelope &, uint64_t) noexcept;
 	static bool retain_terminal(const critical_native_recovery_envelope &, void *) noexcept;
+	// Same genuine selected-root lock held through terminal transfer AND guarded
+	// mixed-journal retirement. Caller owns complete original envelope, generation,
+	// UID provenance, root/lock storage and prior scratch in outer_live. No lock
+	// acquisition, phase fabrication, ACK or native execution permission here.
+	// Real storage recovers every retry and requires exact full BODY readback;
+	// failed transfer/retirement keeps original recovery/carrier/fences. Callback
+	// retains coordinator's full prefix; persistent journal attempt storage is
+	// separately counted once by aggregate, outside outer_live. Root joins remain
+	// responsible for complete physical proof, ACK and metadata lifetime.
+	struct flat_terminal_retirement;
+	static bool retain_terminal_flat_bounded(const critical_native_recovery_envelope &, void *,
+						 size_t coordinator_live) noexcept;
+	static bool retire_warm_flat_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, uint64_t origin_uid,
+		const critical_native_recovery_envelope &, uint64_t original_generation,
+		bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 	static size_t item_count(const zone_reset_room_publication_stage &) noexcept;
 	static size_t original_index(const zone_reset_room_publication_stage &, size_t) noexcept;
 	static const zone_reset_item_image *
@@ -176,6 +193,30 @@ class zone_reset_room_publication_owner final
 	static bool verify_current(const zone_reset_room_publication_stage &) noexcept;
 	static bool mark_published(zone_reset_room_publication_stage &,
 				   std::unordered_set<uint64_t> *) noexcept;
+	// Genuine warm-FLAT lifecycle companions only. Caller includes real stage,
+	// partial union, published tracker and all other capacities in outer_live.
+	// Reserve extends only the original proven partial UID union with unchanged
+	// default hash growth; retain/recount that union after every return/refusal.
+	// Consume includes initial runtime cache observer EXACTLY ONCE and admits
+	// its three actual input spans before bounded DB publication. Retain admitted
+	// peaks and refresh CURRENT cache allowance on every return, including false
+	// after a global reserve. No allocating work/callback follows DB consumption.
+	// Mark keeps full current physical/cache verification and original exact
+	// union/swap/creation-marker predicates; factory progress/release remains in
+	// original guarded terminal metadata owner. No SQL/cold/service/place wrapper,
+	// new authority or native retry permission; unsupported GCC13 ABI refuses.
+	static bool reserve_warm_consume_bounded(zone_reset_room_publication_stage &,
+						 const std::unordered_set<uint64_t> &,
+						 bool (*)(size_t, void *) noexcept, void *,
+						 size_t outer_live) noexcept;
+	static bool consume_bounded(zone_reset_room_publication_stage &,
+				    std::unordered_set<uint64_t> *,
+				    bool (*)(size_t, void *) noexcept, void *,
+				    size_t outer_live) noexcept;
+	static bool mark_published_bounded(zone_reset_room_publication_stage &,
+					   std::unordered_set<uint64_t> *,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t outer_live) noexcept;
 	static bool release_completed(zone_reset_room_publication_stage &) noexcept;
 	// Only the original root after guarded terminal transfer/retirement.
 	static bool
