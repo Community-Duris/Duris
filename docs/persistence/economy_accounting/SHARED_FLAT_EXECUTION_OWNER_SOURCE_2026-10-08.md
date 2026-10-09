@@ -184,3 +184,42 @@ aggregate integration and major-plan qualification remain. Original Plan1 record
 acceptance retains its scope; Plans2-4/combinedPlan5/R1-R8/release remain unfinished.
 This docs-only milestone preserves peer documents, unrelated WIP and inactive/
 declined-spell/production gates. The ongoing goal remains active.
+
+## Reviewed native readers and initial ROOM stages joined - 2026-10-08
+
+The next private candidate joins genuine initial ROOM world/custody stages,
+bounded lock admission, bounded native image reads and the required keeper/codec
+allocation correction. Native sizing performs no preadmission image/reference
+crypto; the original authenticated decoder runs after reservation. Actual private
+decoder objects and both simultaneously live validation-vector heads are counted.
+ROOM-only zero-VNUM adapters preserve original native creation policy; other
+owners retain their prior validation. Complete atomic execution remains separate.
+
+Candidate 02ace4ce570a352a20da2360852f8d121996b35792a1a38b8828a025daa94acd at
+tmp/lifecycle-shared-flat-reader-room-plan5-candidate-primary-20261008 has222 paths
+(183 source,30 tests,5 schema,4 other). Independent source reviews passed. The join
+authenticates539 provider records and37 raw inverse spans; incomplete native
+precursor a60da628 is selected only through required successor60941992. Keeper
+correction34e86dd2 consumes that exact codec. Evidence:
+bin/tests/shared-flat-reader-room-primary-20261008/SOURCE-INTEGRATION.json.
+
+Root has also implemented an UNSELECTED cold-reader reservation proposal5b2ff6b8,
+the required successor to696e326d. Scoped source review passed: the allocation
+policy is refused before constructing a root path on unsupported builds, and
+the actual original shared32MiB owner holds prospective callback peaks across
+nested censuses, and genuine root/lock/journal calls use bounded admission. An
+explicit final census follows destruction of reader temporaries. Full earlier
+checkpoint/carrier and later CURRENT projection/output/caller coverage remains;
+the whole cold proposal has no acceptance and is not part of the selected join.
+Full custody reading and genuine independent native flat season metadata are
+separate ongoing source streams. Existing roots must never be silently reseeded;
+the new ROOM path requires explicit enrollment and genuine captured-season proof.
+
+No build, preprocessor, executable test, gameplay, SQL/flat recovery or performance
+qualification ran. Explicit C++ storage still excludes crypto/system internals.
+Source remains private/unpromoted and shared admission CLOSED. Full original
+warm source/dispatcher, atomic native participants, world publication/origin/ACK,
+progressed startup, aggregate lifetime wiring and major-plan qualification remain.
+Original Plan1 acceptance keeps its recorded scope; Plans2-4/combinedPlan5/R1-R8/
+release remain unfinished. Peer history, unrelated WIP and inactive/declined-spell/
+production gates are preserved. The ongoing goal remains active.

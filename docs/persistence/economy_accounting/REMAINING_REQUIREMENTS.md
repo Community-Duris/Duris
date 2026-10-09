@@ -1,22 +1,21 @@
 # Double-entry economy: remaining requirements
 
-## Shared flat bounded keeper source joined - 2026-10-08
+## Shared flat readers and initial ROOM stages joined - 2026-10-08
 
-[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#bounded-storage-and-keeper-reader-successor---2026-10-08)
-records actual preallocation admission for secure files, original journals and
-complete CURRENT keeper reads, exact item encoder storage, and shorter scratch
-lifetimes. Independent source review passed; private candidate `d89f715fb9a2c8c9e75555513f9529b3841c7ec008153b2e1560a7749d36dd47`
-has220 authenticated paths (181 source,30 tests,5 schema,4 other). Source joins
-checked748 additional provider records and34 inverse spans; no executable checks
-ran. Explicit C++ storage excludes OpenSSL/system internals; full original32MiB
-aggregate/caller ownership remains required. Source is unpromoted and admission
-stays CLOSED. Full warm source/dispatcher, world publication/origin/ACK, progressed
-startup and major-plan qualification remain. Plan2 flat initial ROOM participants
-are now a parallel source stream. Its named SQL post-ACK room coin boot defect was
-already solved and qualified; current source matches that recorded provider.
-Original Plan1 acceptance stays scoped; Plans2-4/combinedPlan5/R1-R8/release remain
-unfinished. Peer documents, unrelated WIP and inactive/declined-spell/production
-gates are preserved. Goal is active.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#reviewed-native-readers-and-initial-room-stages-joined---2026-10-08)
+records private candidate `02ace4ce570a352a20da2360852f8d121996b35792a1a38b8828a025daa94acd`:222 authenticated paths
+(183 source,30 tests,5 schema,4 other). Genuine passive initial ROOM stages and
+bounded lock/native/keeper readers now meet on one source-reviewed candidate;
+539 provider records and37 exact inverse spans were checked. No executable checks
+ran and inventory proves no completion. Root's actual shared32MiB callback scope
+and bounded cold root/lock/journal proposal remains UNSELECTED until the full
+checkpoint/carrier/CURRENT projection/output census is complete. Full custody
+reading and native season enrollment continue separately. Existing roots are not
+silently reseeded; original inactive behavior and admission CLOSED are preserved.
+Full atomic participants/source/dispatcher, world publication/origin/ACK, progressed
+startup and major-plan qualification remain. Original Plan1 acceptance stays
+scoped; Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Peer docs and
+unrelated WIP are preserved; the goal is active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
