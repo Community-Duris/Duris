@@ -66818,8 +66818,8 @@
       "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804",
       "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
       "src/classes/salchemist.c": "b4230b88b2b638d1a6dcf083742a5fa168856974b019f7fb410138c77e1a81df",
-      "src/economy/economic_accounting_intent.c": "86ec2972027471720ba2e53c6dbe33118861cf9ead547101554c0a0993a105e8",
-      "src/economy/economic_accounting_intent.h": "5cb2b28e474de25c25a65a137f4d0b05868248d6f416f048f9274dec2efcd31d",
+      "src/economy/economic_accounting_intent.c": "df3e8b8ebf6621b4db61df5affe759d50d428a9613c5c6284bbdae348b5a3919",
+      "src/economy/economic_accounting_intent.h": "382f4b3cebb51b9b8b9fd5b63f5f032d7abd313badd9fd838f24071450704513",
       "src/economy/economic_accounting_types.h": "7ece1fcd2bfe0022dea37abc2329f71f6ae1ef635e0b37ee88c2c7c881c10a67",
       "src/flatfile/flatfile_item_accounting_reference.c": "e6e870283148f86b957ec3d97f075491317faf78ab26054c1b2968f284547352",
       "src/flatfile/flatfile_item_accounting_reference.h": "b7623894a25f3898995f2e4dd531b9380ba7fcb49e3b9ba05a7e5d856f8530d5"

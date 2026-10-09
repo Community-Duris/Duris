@@ -2696,3 +2696,18 @@ compiler/journal joins, actual warm/cold publication and guarded terminal/ACK/
 retirement qualification remain open. This dependency does not establish plan or
 release completion. Accounting inactive/admission CLOSED, coverage incomplete/
 release BLOCKED, preserved unrelated WIP and primary goal ACTIVE remain.
+
+
+## Intent freeze/encode dependency implemented - 2026-10-09
+
+[The intent codec slice](NATIVE_INTENT_CODEC_ADMISSION_2026-10-09.md) adds real
+owning prospective freeze/encode companions while preserving complete original
+binding/domain/metadata/source/wire proofs and strong outputs. Actual vector
+clones, tag old/new growth, digest and final encoding phases are admitted before
+allocation. Independent raw/formatted review, original C prefix/header inverse
+and token/preprocessor checks PASS. All 931 policies/393 pins authenticate; zero
+new/unmapped sites. Native builds/tests remain deferred; command integration,
+compiler/full journal/coordinator budget and real ROOM warm/cold publication/
+terminal/checkpoint/ACK qualification remain open. No plan or release completion
+is claimed. Accounting inactive/admission CLOSED, coverage incomplete/release
+BLOCKED, preserved unrelated WIP and primary goal ACTIVE remain.

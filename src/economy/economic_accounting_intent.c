@@ -518,3 +518,207 @@ economic_accounting_error economic_intent_verify_binding_bounded(
 	// Binding-only verification must not compute the later metadata digest.
 	return intent_proof_bounded(command, intent, nullptr, false, reserve, context, outer_live);
 }
+
+namespace
+{
+struct intent_freeze_bound_workspace
+{
+	size_t base = 0, peak = 0, phase = 0, clone = 0, wire = 0;
+	size_t binding_capacity = 0, binding_reallocation = 0;
+	size_t domain_size = 0, domain_capacity = 0, domain_reallocation = 0;
+	size_t nested = 0, retained = 0, encoded_size = 0;
+};
+bool intent_codec_admit(size_t base, size_t added, bool (*reserve)(size_t, void *) noexcept,
+			void *context) noexcept
+{
+	return added <= SIZE_MAX - base && reserve && reserve(base + added, context);
+}
+// This phase excludes caller intent/input/old output. Source arrays survive
+// the nested encoder result; mutable write spans belong to later phases.
+bool intent_encode_working_bytes(const economic_frozen_intent &intent, size_t &working) noexcept
+{
+	working = sizeof(std::vector<uint8_t>);
+	if (!intent_bound_add(working, ECONOMIC_INTENT_HEADER_BYTES) ||
+	    !intent_bound_add(working, intent.admission.facts.size()) ||
+	    !intent_bound_add(
+		    working,
+		    intent.admission.metadata.source_event ?
+			    std::max(2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+				     sizeof(std::span<uint8_t>)) :
+			    sizeof(std::span<uint8_t>)))
+		return false;
+	// valid() has a by-value zero() span before encoder bytes construction.
+	working = std::max(working, sizeof(std::span<const uint8_t>));
+	return true;
+}
+}
+
+economic_accounting_error economic_intent_encode_bounded(const economic_frozen_intent &intent,
+							 std::vector<uint8_t> *encoded,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	if (!encoded)
+		return error::corrupt_evidence;
+	if (!intent_codec_admit(outer_live, sizeof(std::span<const uint8_t>), reserve, context))
+		return error::capacity;
+	const auto status = valid(intent);
+	if (status != error::ok)
+		return status;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return error::capacity;
+#else
+	size_t working = 0;
+	if (!intent_encode_working_bytes(intent, working) ||
+	    !intent_codec_admit(outer_live, working, reserve, context))
+		return error::capacity;
+	try
+	{
+		return economic_intent_encode(intent, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
+
+economic_accounting_error economic_intent_freeze_bounded(const critical_command &command,
+							 const economic_admission_facts &facts,
+							 std::vector<uint8_t> *encoded,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	// Keep the original freeze predicates/order before any prospective profile.
+	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command.accounting_intent.empty())
+		return error::invalid_version;
+	if (!encoded)
+		return error::corrupt_evidence;
+	if (facts.facts.size() > ECONOMIC_INTENT_MAX_FACT_BYTES)
+		return error::capacity;
+	if (!critical_operation_id_is_zero(facts.metadata.operation_id) &&
+	    !critical_operation_id_equal(facts.metadata.operation_id, command.operation_id))
+		return error::payload_conflict;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return error::capacity;
+#else
+	const size_t max_keys = critical_command_native_auction_envelope(command) ?
+					CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+					CRITICAL_COMMAND_MAX_KEYS;
+	if (command.keys.size() > max_keys || command.expected_revisions.size() > max_keys ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return error::capacity;
+	if (!intent_codec_admit(outer_live, sizeof(intent_freeze_bound_workspace), reserve,
+				context))
+		return error::capacity;
+	intent_freeze_bound_workspace work;
+	work.base = outer_live;
+	if (!intent_bound_add(work.base, sizeof(work)) ||
+	    !intent_bound_add(work.base, sizeof(economic_frozen_intent)))
+		return error::capacity;
+	// Binding projection copies each vector by size, retaining cleared intent
+	// storage if present (the original freeze guard requires that size zero).
+	work.clone = command.payload.size();
+	if (!intent_bound_add(work.clone, command.accounting_intent.size()) ||
+	    !intent_bound_array(work.clone, command.keys.size(), sizeof(critical_entity_key)) ||
+	    !intent_bound_array(work.clone, command.expected_revisions.size(),
+				sizeof(critical_expected_revision)))
+		return error::capacity;
+	work.wire = CRITICAL_COMMAND_HEADER_BYTES;
+	if (!intent_bound_array(work.wire, command.keys.size(),
+				CRITICAL_COMMAND_ENTITY_KEY_BYTES) ||
+	    !intent_bound_array(work.wire, command.expected_revisions.size(),
+				CRITICAL_COMMAND_EXPECTED_REVISION_BYTES) ||
+	    !intent_bound_add(work.wire, command.payload.size()) ||
+	    !intent_bound_prepend(work.wire, sizeof("DURIS-ECONOMIC-COMMAND-V1"),
+				  work.binding_capacity, work.binding_reallocation))
+		return error::capacity;
+	// Original encoded output vector remains alongside the encoder's own fresh
+	// reserve; its later prepend and result digest are separate actual phases.
+	work.nested = sizeof(std::vector<uint8_t>);
+	if (!intent_bound_add(work.nested, work.wire))
+		return error::capacity;
+	work.nested = std::max(work.nested, work.binding_reallocation);
+	work.phase = work.binding_capacity;
+	if (!intent_bound_add(work.phase, sizeof(economic_digest)))
+		return error::capacity;
+	work.nested = std::max(work.nested, work.phase);
+	work.peak = work.base;
+	if (!intent_bound_add(work.peak, sizeof(critical_command)) ||
+	    !intent_bound_add(work.peak, work.clone) ||
+	    !intent_bound_add(work.peak, sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.peak, work.nested))
+		return error::capacity;
+	// Admission facts copy is made only after projection/binding buffers die.
+	work.retained = work.base;
+	if (!intent_bound_add(work.retained, facts.facts.size()))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.retained);
+	work.domain_size = command.payload.size();
+	if (!intent_bound_add(work.domain_size, 8) ||
+	    !intent_bound_prepend(work.domain_size, sizeof("DURIS-ECONOMIC-DOMAIN-V1"),
+				  work.domain_capacity, work.domain_reallocation))
+		return error::capacity;
+	// Domain put(span) precedes moved hash parameter construction. Afterwards
+	// both vector objects survive old/new prepend requests and returned digest.
+	work.phase = work.retained;
+	if (!intent_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.phase, work.domain_size) ||
+	    !intent_bound_add(work.phase, sizeof(std::span<uint8_t>)))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	work.nested = work.domain_capacity;
+	if (!intent_bound_add(work.nested, 2 * sizeof(economic_digest)))
+		return error::capacity;
+	work.nested = std::max(work.nested, work.domain_reallocation);
+	work.phase = work.retained;
+	if (!intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.phase, work.nested))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// Final intent validation span precedes fresh exact header+facts vector.
+	work.encoded_size = ECONOMIC_INTENT_HEADER_BYTES;
+	if (!intent_bound_add(work.encoded_size, facts.facts.size()))
+		return error::capacity;
+	work.nested = sizeof(std::vector<uint8_t>);
+	if (!intent_bound_add(work.nested, work.encoded_size) ||
+	    !intent_bound_add(
+		    work.nested,
+		    facts.metadata.source_event ?
+			    std::max(2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+				     sizeof(std::span<uint8_t>)) :
+			    sizeof(std::span<uint8_t>)))
+		return error::capacity;
+	work.nested = std::max(work.nested, sizeof(std::span<const uint8_t>));
+	work.phase = work.retained;
+	if (!intent_bound_add(work.phase, work.nested))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	if (!reserve(work.peak, context))
+		return error::capacity;
+	try
+	{
+		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
