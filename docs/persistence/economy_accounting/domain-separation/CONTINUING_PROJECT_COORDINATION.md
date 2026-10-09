@@ -452,6 +452,66 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Actual initial checkpoint codec triggers independent preparation - 2026-10-08
+
+Primarybe7a166faa97f7c1788abb02dc74d96673b0ec43 publishes actual passive initial
+checkpoint encode/decode in flatfile_shopkeeper_repository.c/.h. Root reads the
+complete two-file insertion diff and full
+[code milestone](../SHARED_INITIAL_CHECKPOINT_CODE_MILESTONE_2026-10-08.md).
+Parentfd8ed82bf;only these two maintained source files change,tests/async and
+migrations stay exact. Root authenticates C blob2d119572355ed6016bbf23ef79acb4cb9a85cf87,
+30,269 bytes,SHA25600ec6759363eb9487ae2d34ad54e979b2fcab0285da177325b25aea8836d233e;
+H blob0a38f29998d21a8f91a92e5ab43cb872be89b48f,2,674 bytes,
+SHA256ea43270b10fd0185bf9f5f75f02ed4c5bc3d9bc5001d3770a9c626c539a945c0.
+Source tree0bb22d215c0344a23e686f360038ab19da55d4f6. Report4,736 bytes,
+SHA256d81266feec1f9d3d8a829c4e1f02fc3b100e75ef8b7e738395dc352f4c266082.
+Root proof:D:/Dev/Temp/coordinator-initial-checkpoint-code-dispatch-20261008/dispatch.json.
+
+Observable implementation:existing DURSHOPv2 catalog codec wrapped as exactly one
+revision1 record with preflight/canonical byte checks and passive outputs. This
+framing is neither an observed whole-catalog revision nor write/source/admission/
+publication capability. Independent semantic review is PENDING. Original catalog
+read/write/trade behavior is claimed preserved and must be checked against actual
+preimages. No compiler/preprocess/product/native/DB/server qualification ran.
+Smith missing-API P1 remains unchanged;the new two-file codec does not repair it.
+
+Private combinede59b317e13073554c3ff650f986a013ad98849778cd540e0d1c6f259ae6b1bb7
+capture/carrier/worker/historical-replay claims are reported only. Newly reported
+initial receipt absent-SHOP before0/present-after1,empty owner preservation/checked
+nonempty increment,worker lifetime/shutdown correction and historical MBR4 SQL
+proof do not expose actual source. Producer invocation,complete budgets,root SQL
+dispatch/reconciliation,current proof/publication/ACK/origin and flat counterpart
+remain open. Original save time/affects/roaming authenticity remains distinct from
+canonical passive bytes. Existing-row warm/cold remains closed. No private adoption
+or full lifecycle/Plans1-5/R1-R8 completion is inferred.
+
+One bounded active delivery per chat,with independent root review before publication:
+
+- Architecture:SHARED_INITIAL_CHECKPOINT_CODEC_SOURCE_REVIEW_2026-10-08.txt,
+  exact new C/H and existing catalog/item codec source audit. Output provider/range/
+  preimage pins,concrete findings or bounded PASS,and field/framing/canonicality/
+  refusal map. Inspect pre-allocation extents/counts/overflow,one-record revision1,
+  digest/scalars,affect sorting ties/multiplicity,item masks/forest exclusions,
+  byte/allocated-memory limits,strong false/throw outputs and unchanged routes.
+- Quest:SHARED_INITIAL_CHECKPOINT_CODEC_ACCEPTANCE_DELTA_2026-10-08.txt,
+  reuse accepted initial SQL case;one smallest future original-observation to
+  canonical-bytes/replay case and necessary invalid/sentinel negatives. Distinguish
+  actual original room/time/roaming/cash/saved-affect/equipped-carried values from
+  serialized canonical fields/ordering/mask. Name real fixture suitability and
+  missing genuine owner exports. Update assertions for newly reported receipt/
+  owner/historical replay contracts without inventing their private layout/API.
+
+Available inputs:actualbe7 source,existing genuine codecs/catalog/item/keeper
+fixtures,current report and accepted closed facts. Unavailable:private detached
+producer/carrier/typed MBR4/worker/replay,real native caller and legal phase/fault/
+capacity/export/integrated provider. Missing private source blocks those dependent
+steps,not this independent source/acceptance work. Primary retains implementation,
+shared authorities and Plan5;architecture review and quest case have distinct scope.
+No maintained edits/new API/schema/friend facade,private import/patch/commit or
+compiler/preprocess/test/server/DB/native execution. Preserve packets/worktrees/
+live jobs. Actual root/native Goals remain BLOCKED,finite preparation does not
+resume them;heartbeatACTIVE and broader completion audit remains outstanding.
+
 ## Backend repair guidance and initial SHOP SQL acceptance reviewed - 2026-10-08
 
 Both bounded preparations PASS root independent review at their exact source-only
@@ -1003,20 +1063,19 @@ Smith. Existing native quest pair decoders do not decode Smith17. Any future
 bounded passive Smith reader/oracle needs genuine owner export/schema/pins first;
 no reader edit,private API/format or executable command is reserved now.
 
-Current prioritized queue:published source041 P1 missing backend API remains
-unresolved. Optional exact backend repair guidance and initial missing-SHOP SQL
-acceptance delta are independently reviewed CLOSED preparation. Architecture
-awaits actual repaired/changed backend or participant/producer/restart source;
-quest awaits genuine original factory/participant/carrier/root dispatch/typed
-finish and legal observation exports or authenticated integrated provider. Then
-actual source review or one implementation-ready acceptance delta as justified,
-genuine Smith compound/native caller/persistence/export and connected fixture,
-authentic append/receipts/measured capacity/calibrated failures,full physical/fresh
-SQL/native economics/publication/recovery,original O/P/special-placement owner and
-save/ACK,SHOP refused held-owner/legal late-consumption/fences-at-entry,keeper
-first-checkpoint/boot-warm disposition,history capacity DB and remaining journeys.
-Prior packets stay exact. No current filler delivery or adoption wait. Actual
-root/native GoalsBLOCKED/unfinished,heartbeatACTIVE;broader completion unproven.
+Current prioritized queue:architecture actualbe7 initial checkpoint codec source
+review ACTIVE and quest complementary original-observation/canonical acceptance
+delta ACTIVE,both root review PENDING. Maintained Smith missing-API P1 remains
+unresolved;optional repair guidance and initial SQL acceptance stay CLOSED. Then
+actual producer/carrier/worker/replay/root source review and genuine native caller/
+legal original-observation exports or authenticated integrated provider as made
+available,genuine Smith compound/persistence/export and fixture,authentic append/
+receipts/measured capacity/calibrated failures,full physical/fresh SQL/native
+history/publication/recovery,original O/P/special-placement owner/save/ACK,SHOP
+refused held-owner/legal late-consumption,keeper first-checkpoint/boot-warm,
+history DB and remaining journeys. Preserve all prior packets;no adoption wait or
+private-source inference. Actual root/native GoalsBLOCKED,heartbeatACTIVE;
+finite sidework/source milestone does not satisfy the broader completion audit.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation

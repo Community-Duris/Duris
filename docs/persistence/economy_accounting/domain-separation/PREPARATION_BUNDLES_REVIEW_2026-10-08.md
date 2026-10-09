@@ -2528,3 +2528,63 @@ queued with prior exact dependencies. Actual root/native Goals remain BLOCKED;
 this preparation does not resume them. Heartbeat remains ACTIVE until published
 Plans1-5/R1-R8 implementation/integrated qualification,required blocker resolution,
 owner completion disposition and selected handoffs satisfy the broader audit.
+
+## Actual initial checkpoint codec triggers independent preparation - 2026-10-08
+
+Primarybe7a166faa97f7c1788abb02dc74d96673b0ec43 publishes actual passive initial
+checkpoint encode/decode in flatfile_shopkeeper_repository.c/.h. Root reads the
+complete two-file insertion diff and full
+[code milestone](../SHARED_INITIAL_CHECKPOINT_CODE_MILESTONE_2026-10-08.md).
+Parentfd8ed82bf;only these two maintained source files change,tests/async and
+migrations stay exact. Root authenticates C blob2d119572355ed6016bbf23ef79acb4cb9a85cf87,
+30,269 bytes,SHA25600ec6759363eb9487ae2d34ad54e979b2fcab0285da177325b25aea8836d233e;
+H blob0a38f29998d21a8f91a92e5ab43cb872be89b48f,2,674 bytes,
+SHA256ea43270b10fd0185bf9f5f75f02ed4c5bc3d9bc5001d3770a9c626c539a945c0.
+Source tree0bb22d215c0344a23e686f360038ab19da55d4f6. Report4,736 bytes,
+SHA256d81266feec1f9d3d8a829c4e1f02fc3b100e75ef8b7e738395dc352f4c266082.
+Root proof:D:/Dev/Temp/coordinator-initial-checkpoint-code-dispatch-20261008/dispatch.json.
+
+Observable implementation:existing DURSHOPv2 catalog codec wrapped as exactly one
+revision1 record with preflight/canonical byte checks and passive outputs. This
+framing is neither an observed whole-catalog revision nor write/source/admission/
+publication capability. Independent semantic review is PENDING. Original catalog
+read/write/trade behavior is claimed preserved and must be checked against actual
+preimages. No compiler/preprocess/product/native/DB/server qualification ran.
+Smith missing-API P1 remains unchanged;the new two-file codec does not repair it.
+
+Private combinede59b317e13073554c3ff650f986a013ad98849778cd540e0d1c6f259ae6b1bb7
+capture/carrier/worker/historical-replay claims are reported only. Newly reported
+initial receipt absent-SHOP before0/present-after1,empty owner preservation/checked
+nonempty increment,worker lifetime/shutdown correction and historical MBR4 SQL
+proof do not expose actual source. Producer invocation,complete budgets,root SQL
+dispatch/reconciliation,current proof/publication/ACK/origin and flat counterpart
+remain open. Original save time/affects/roaming authenticity remains distinct from
+canonical passive bytes. Existing-row warm/cold remains closed. No private adoption
+or full lifecycle/Plans1-5/R1-R8 completion is inferred.
+
+One bounded active delivery per chat,with independent root review before publication:
+
+- Architecture:SHARED_INITIAL_CHECKPOINT_CODEC_SOURCE_REVIEW_2026-10-08.txt,
+  exact new C/H and existing catalog/item codec source audit. Output provider/range/
+  preimage pins,concrete findings or bounded PASS,and field/framing/canonicality/
+  refusal map. Inspect pre-allocation extents/counts/overflow,one-record revision1,
+  digest/scalars,affect sorting ties/multiplicity,item masks/forest exclusions,
+  byte/allocated-memory limits,strong false/throw outputs and unchanged routes.
+- Quest:SHARED_INITIAL_CHECKPOINT_CODEC_ACCEPTANCE_DELTA_2026-10-08.txt,
+  reuse accepted initial SQL case;one smallest future original-observation to
+  canonical-bytes/replay case and necessary invalid/sentinel negatives. Distinguish
+  actual original room/time/roaming/cash/saved-affect/equipped-carried values from
+  serialized canonical fields/ordering/mask. Name real fixture suitability and
+  missing genuine owner exports. Update assertions for newly reported receipt/
+  owner/historical replay contracts without inventing their private layout/API.
+
+Available inputs:actualbe7 source,existing genuine codecs/catalog/item/keeper
+fixtures,current report and accepted closed facts. Unavailable:private detached
+producer/carrier/typed MBR4/worker/replay,real native caller and legal phase/fault/
+capacity/export/integrated provider. Missing private source blocks those dependent
+steps,not this independent source/acceptance work. Primary retains implementation,
+shared authorities and Plan5;architecture review and quest case have distinct scope.
+No maintained edits/new API/schema/friend facade,private import/patch/commit or
+compiler/preprocess/test/server/DB/native execution. Preserve packets/worktrees/
+live jobs. Actual root/native Goals remain BLOCKED,finite preparation does not
+resume them;heartbeatACTIVE and broader completion audit remains outstanding.

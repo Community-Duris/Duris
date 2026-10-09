@@ -55,6 +55,23 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator routes newly public initial checkpoint codec - 2026-10-08
+
+Primarybe7a166fa publishes passive initial DURSHOPv2 checkpoint C/H source.
+Root reads complete diff/report and authenticates exact bodies;tests/migrations
+unchanged. Architecture now independently reviews codec bounds/canonicality/
+outputs/preservation;quest prepares one complementary original native-observation
+and canonical replay acceptance delta using closed initial SQL findings. Both
+handoffs/root reviews PENDING. Deterministic framing1 is not actual catalog clock
+or write authority. Broader privatee59b317e capture/carrier/worker/historical SQL
+receipt proof is reported only;actual source is unavailable. Native producer/
+root dispatch/reconciliation/current proof/publication/ACK/origin/flat work remain
+open. Maintained Smith missing-API P1 remains unresolved;prior accepted repair
+and initial SQL preparation stay closed. Exact hashes/ownership/dependencies in
+continuing charter. No compiler/preprocess/test/native/DB/server execution under
+major-plan deferral. Root/native GoalsBLOCKED;heartbeatACTIVE;broader required
+Plans1-5/R1-R8 integrated qualification and owner completion remain unfinished.
+
 ## Coordinator publishes backend repair guidance and initial SQL acceptance - 2026-10-08
 
 Optional source-only repair guidance PASSes independent review:13 providers,
