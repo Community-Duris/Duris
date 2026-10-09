@@ -309,6 +309,11 @@ struct critical_zone_reset_recovery_validators
 	bool (*publication_bounded)(const critical_native_recovery_envelope &,
 				    const critical_completion &, bool (*)(size_t, void *) noexcept,
 				    void *, size_t) noexcept = nullptr;
+	// Complete original initial revision/phase/no-receipt/no-progress proof.
+	// Optional companion only; ordinary initial callback/readiness is unchanged.
+	bool (*initial_bounded)(const critical_native_recovery_envelope &,
+				bool (*)(size_t, void *) noexcept, void *,
+				size_t) noexcept = nullptr;
 };
 
 // Pure auction NAR checks. All callbacks must be registered by the genuine

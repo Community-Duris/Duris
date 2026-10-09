@@ -1183,7 +1183,8 @@ int run_the_game(int port, int sslport)
 			  zone_reset_item_recovery_terminal, zone_reset_item_recovery_valid_bounded,
 			  zone_reset_item_recovery_terminal_bounded,
 			  zone_reset_item_recovery_successor_bounded,
-			  zone_reset_item_recovery_publication_bounded },
+			  zone_reset_item_recovery_publication_bounded,
+			  zone_reset_item_recovery_initial_bounded },
 			shared_native_apply, zone_reset_apply,
 			critical_extension_validator_bounded);
 	quest_mobile_native_birth_replay_ready(critical_commands_ready);

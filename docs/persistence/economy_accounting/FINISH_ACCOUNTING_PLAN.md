@@ -10219,3 +10219,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Passive ROOT recovery and complete ACK ownership implemented - 2026-10-09
 
 [ROOT registration/guard/ACK](ROOT_COLD_REGISTRATION_GUARD_ACK_2026-10-09.md) now provides genuine full canonical passive cold registration, authentic submitted/removal-retry guards and a complete rooted ACK successor preserved across later refusal. Real native execution/receipt/source authority is not fabricated. Complete RAW/final source review, exact inverses and token/logical preprocessing checks passed; 931 unchanged writer policies/400 authenticated pins, zero new/unmapped sites. Bounded boot registration, full cleanup/publication driver and same-lock submit/shared aggregate joining remain open. Native qualification stays batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Genuine bounded initial ROOM boot callback implemented - 2026-10-09
+
+[Initial proof registration](ROOM_INITIAL_BOUNDED_BOOT_REGISTRATION_2026-10-09.md) pairs an optional bounded callback with the actual full initial revision/phase/context/no-receipt/no-progress provider. Ordinary initial/readiness behavior remains unchanged and flat ROOM is not selected. Full RAW/final source review, exact recipe reanchor, tokens/logical preprocessing and inverses passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Full submit, bounded restoration registration and shared aggregate joining remain open. Native checks stay batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
