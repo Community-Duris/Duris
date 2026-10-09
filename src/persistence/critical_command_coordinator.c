@@ -58,6 +58,23 @@ class critical_room_shared_budget_lender final
 
 namespace
 {
+// Actual scoped bridge, not a lock flag or public permit. Every relay proves
+// ownership through its original unique_lock before lending current storage.
+struct room_locked_budget_callback
+{
+	const std::unique_lock<std::mutex> &lock;
+	bool (*actual_reserve)(size_t, void *) noexcept;
+	void *actual_guard;
+	static bool relay(size_t exclusive_live, void *opaque) noexcept
+	{
+		auto &callback = *static_cast<room_locked_budget_callback *>(opaque);
+		return critical_room_shared_budget_lender::reserve(callback.lock,
+								   callback.actual_reserve,
+								   callback.actual_guard,
+								   exclusive_live);
+	}
+};
+
 // Pure immutable classification only. This grants neither live publication
 // nor reservation authority; only the private pipeline owner can consume it.
 bool accounted_shop_publication(const critical_command &command) noexcept
@@ -6478,7 +6495,8 @@ bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
 	if (!room_retire_add(live, sizeof(critical_native_recovery_envelope)) ||
 	    !room_retire_add(live, sizeof(std::string)) ||
 	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
-	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(room_locked_budget_callback)) ||
 	    !reserve(live, budget_context))
 		return false;
 	uint64_t generation = 0;
@@ -6504,11 +6522,13 @@ bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
 			return false;
 		const std::string identity = operation_key(expected.command.operation_id);
 		{
-			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			std::unique_lock<std::mutex> lock(coordinator_mutex);
+			room_locked_budget_callback proof_budget{ lock, reserve, budget_context };
 			auto found = operations.find(identity);
 			if (!health.initialized || stop_requested || found == operations.end() ||
-			    !room_retire_matches_bounded(*found->second, expected, reserve,
-							 budget_context, live) ||
+			    !room_retire_matches_bounded(*found->second, expected,
+							 room_locked_budget_callback::relay,
+							 &proof_budget, live) ||
 			    found->second->publication_checkpointing ||
 			    found->second->native_ack_uncertain || !coordinator_generation ||
 			    coordinator_generation_exhausted ||
@@ -6524,10 +6544,12 @@ bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
 			    !zone_reset_validators_ready() ||
 			    !zone_reset_validators.valid_bounded ||
 			    !zone_reset_validators.successor_bounded ||
-			    !zone_reset_validators.valid_bounded(expected, reserve, budget_context,
-								 live) ||
-			    !zone_reset_validators.successor_bounded(expected, prepared, reserve,
-								     budget_context, live))
+			    !zone_reset_validators.valid_bounded(expected,
+								 room_locked_budget_callback::relay,
+								 &proof_budget, live) ||
+			    !zone_reset_validators.successor_bounded(
+				    expected, prepared, room_locked_budget_callback::relay,
+				    &proof_budget, live))
 				return false;
 			if (found->second->flat_transaction)
 			{
@@ -6562,8 +6584,30 @@ bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
 			++guarded_publications_inflight;
 			update_depth();
 		}
-		const auto result = critical_command_journal_replace_native_recovery_bounded(
-			expected, prepared, reserve, budget_context, live);
+		auto result = critical_command_journal_result::io_failure;
+		try
+		{
+			// Actual coor->journal lock order only during the original bounded
+			// provider. No outside native transfer is brought under this lock.
+			std::unique_lock<std::mutex> journal_owner(coordinator_mutex);
+			room_locked_budget_callback journal_budget{ journal_owner, reserve,
+								    budget_context };
+			size_t journal_live = live;
+			// Coexisting genuine journal provider lock_guard; the original
+			// unique_lock and relay descriptor are already in live.
+			if (room_retire_add(journal_live, sizeof(std::lock_guard<std::mutex>) +
+								  sizeof(journal_live)))
+				result = critical_command_journal_replace_native_recovery_bounded(
+					expected, prepared, room_locked_budget_callback::relay,
+					&journal_budget, journal_live);
+			else
+				result = critical_command_journal_result::quota_exceeded;
+		}
+		catch (...)
+		{
+			// Genuine new lock failure still reaches the original unpin/recheck;
+			// never strand the operation after its original pin was installed.
+		}
 		// Same original exact operation pin and nonallocating post-durable recheck.
 		// No codec/allocation/budget callback follows confirmed journal replacement.
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
