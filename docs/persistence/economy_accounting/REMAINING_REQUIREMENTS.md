@@ -3199,3 +3199,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Paired bounded ROOM admission proof registered - 2026-10-09
 
 [Actual admission/boot contract](ROOM_ADMISSION_CALLBACK_REGISTRATION_2026-10-09.md) pairs the genuine SQL full bounded decoder and original flat ROOM rejection with the coordinator's optional callback, same-lock pure support proof and every actual reset. Ordinary callback bodies/allowlist remain unchanged; no unbounded fallback/source authority. Full RAW review and reanchored/formatted tokens/PP/inverses passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full bounded submit/four-route/pool/recovery and eventual qualified selector remain open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Paired warm/cold private storage census implemented - 2026-10-09
+
+[Actual private heap observer](FLAT_PRIVATE_STORAGE_CENSUS_2026-10-09.md) supports genuine flat warm/cold provenance using actual configured MEMCHK allocation sizes, retaining failed-scope/private/vector/Zombie heap and preserving the original successful world-transfer cut. Whole pools/registry slots are excluded for later genuine paired joining; SQL observer unchanged. RAW review and formatted tokens/PP/narrow/header inverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Seventh pool selection, all paired consumers, detach/full pulse/coordinator/recovery and qualification remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
