@@ -152,6 +152,24 @@ class zone_reset_room_publication_owner final
 	static bool acknowledge_warm(const critical_native_recovery_envelope &,
 				     const critical_completion &, uint64_t) noexcept;
 	static bool retire_warm(const critical_native_recovery_envelope &, uint64_t) noexcept;
+	// Actual ROOM coordinator capability; full caller scratch survives each real
+	// bounded clone, same-phase CAS, generation observation and receipt ACK.
+	// These bridges grant no factory, source, native-effect or physical proof.
+	static bool copy_warm_bounded(const critical_command &, critical_native_recovery_envelope *,
+				      bool (*)(size_t, void *) noexcept, void *,
+				      size_t outer_live) noexcept;
+	static bool checkpoint_warm_bounded(const critical_native_recovery_envelope &,
+					    const critical_native_recovery_envelope &,
+					    uint64_t original_generation,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t outer_live) noexcept;
+	static bool generation_warm_bounded(const critical_native_recovery_envelope &, uint64_t *,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t outer_live) noexcept;
+	static bool acknowledge_warm_bounded(const critical_native_recovery_envelope &,
+					     const critical_completion &, uint64_t,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t outer_live) noexcept;
 	static bool retain_terminal(const critical_native_recovery_envelope &, void *) noexcept;
 	// Same genuine selected-root lock held through terminal transfer AND guarded
 	// mixed-journal retirement. Caller owns complete original envelope, generation,
@@ -187,6 +205,13 @@ class zone_reset_room_publication_owner final
 	static bool place(zone_reset_room_publication_stage &) noexcept;
 	static bool service_step(zone_reset_room_publication_stage &, size_t, size_t,
 				 quest_mobile_native_item_effect &) noexcept;
+	// Genuine warm-FLAT service provider; caller retains CURRENT pool/output/Zombie
+	// and private stage storage once, refreshing all on every return. Actual native
+	// returned/succeeded markers precede any post-effect diagnostic refusal.
+	static bool service_step_bounded(zone_reset_room_publication_stage &, size_t, size_t,
+					 quest_mobile_native_item_effect &,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
 	static bool rebuild_enrollment(zone_reset_room_publication_stage &, size_t,
 				       const quest_mobile_native_item_progress &,
 				       std::span<const quest_mobile_native_item_effect>) noexcept;

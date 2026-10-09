@@ -4236,3 +4236,282 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 		return false;
 	}
 }
+
+namespace
+{
+bool warm_scratch_context_heap(const zone_reset_item_recovery_context &value, bool fresh,
+			       size_t *output) noexcept
+{
+	size_t bytes = 0;
+	if (!output ||
+	    !warm_scratch_array(bytes, fresh ? value.items.size() : value.items.capacity(),
+				sizeof(zone_reset_item_recovery_item)))
+		return false;
+	for (const auto &item : value.items)
+		if (!warm_scratch_array(bytes,
+					fresh ? item.effects.size() : item.effects.capacity(),
+					sizeof(zone_reset_item_recovery_effect)))
+			return false;
+	*output = bytes;
+	return true;
+}
+}
+
+struct zone_reset_item_owner::warm_action_workspace
+{
+	zone_reset_item_recovery_context started;
+	zone_reset_item_recovery_context variant;
+	std::unique_ptr<warm_checkpoint> intent;
+	std::array<std::unique_ptr<warm_checkpoint>, 4> returned;
+};
+
+bool zone_reset_item_owner::warm_checkpoint_storage(const warm_checkpoint *writer,
+						    size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t bytes = 0, heap = 0;
+	if (writer && (!warm_scratch_add(bytes, sizeof(*writer)) ||
+		       !warm_scratch_envelope_heap(writer->expected, false, &heap) ||
+		       !warm_scratch_add(bytes, heap) ||
+		       !warm_scratch_envelope_heap(writer->successor, false, &heap) ||
+		       !warm_scratch_add(bytes, heap) ||
+		       !warm_scratch_context_heap(writer->context, false, &heap) ||
+		       !warm_scratch_add(bytes, heap)))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+bool zone_reset_item_owner::make_warm_checkpoint_bounded(
+	const critical_native_recovery_envelope &expected,
+	const zone_reset_item_recovery_context &next, std::unique_ptr<warm_checkpoint> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !output || *output || expected.revision == UINT64_MAX ||
+	    !nevent_is_game_thread() || persistence_mode_requires_mysql())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)next;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		size_t live = outer_live, envelope_heap = 0, context_heap = 0;
+		if (!warm_scratch_add(live, sizeof(std::unique_ptr<warm_checkpoint>)) ||
+		    !warm_scratch_add(live, sizeof(warm_checkpoint)) ||
+		    !warm_scratch_envelope_heap(expected, true, &envelope_heap) ||
+		    !warm_scratch_add(live, envelope_heap) ||
+		    !warm_scratch_add(live, envelope_heap) ||
+		    !warm_scratch_context_heap(next, true, &context_heap) ||
+		    !warm_scratch_add(live, context_heap) || !reserve(live, context))
+			return false;
+		auto writer = std::make_unique<warm_checkpoint>();
+		writer->expected = expected;
+		writer->successor = expected;
+		++writer->successor.revision;
+		writer->context = next;
+		// The copied old attachment coexists with the real fresh codec output.
+		if (zone_reset_item_recovery_encode_bounded(
+			    writer->successor.command, writer->context,
+			    &writer->successor.attachment, reserve, context,
+			    live) != economic_accounting_error::ok)
+			return false;
+		live = outer_live;
+		size_t retained = 0;
+		if (!warm_scratch_add(live, sizeof(writer)) ||
+		    !warm_checkpoint_storage(writer.get(), &retained) ||
+		    !warm_scratch_add(live, retained) ||
+		    !zone_reset_item_recovery_successor_bounded(writer->expected, writer->successor,
+								reserve, context, live))
+			return false;
+		*output = std::move(writer);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_item_owner::settle_warm_checkpoint_bounded(warm_root &root,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || !reserve || persistence_mode_requires_mysql())
+		return false;
+	if (!root.checkpoint)
+		return true;
+	if (!zone_reset_room_publication_owner::checkpoint_warm_bounded(
+		    root.checkpoint->expected, root.checkpoint->successor,
+		    root.coordinator_generation, reserve, context, outer_live))
+		return false;
+	// Actual durable CAS has succeeded. Both nonthrowing ownership transfers
+	// precede recensus, so a later refusal cannot lose the recorded action.
+	static_assert(std::is_nothrow_move_assignable_v<critical_native_recovery_envelope>);
+	static_assert(std::is_nothrow_move_assignable_v<zone_reset_item_recovery_context>);
+	root.original_envelope = std::move(root.checkpoint->successor);
+	root.context = std::move(root.checkpoint->context);
+	root.checkpoint.reset();
+	return reserve(outer_live, context);
+}
+
+bool zone_reset_item_owner::checkpoint_warm_context_bounded(
+	warm_root &root, const zone_reset_item_recovery_context &next,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || !reserve || persistence_mode_requires_mysql() ||
+	    root.blocked || root.original_envelope.revision == UINT64_MAX)
+		return false;
+	if (root.checkpoint)
+		return settle_warm_checkpoint_bounded(root, reserve, context, outer_live);
+	size_t live = outer_live;
+	if (!warm_scratch_add(live, sizeof(std::unique_ptr<warm_checkpoint>)) ||
+	    !reserve(live, context))
+		return false;
+	std::unique_ptr<warm_checkpoint> writer;
+	if (!make_warm_checkpoint_bounded(root.original_envelope, next, &writer, reserve, context,
+					  live))
+		return false;
+	root.checkpoint = std::move(writer);
+	// Its heap now belongs to the actual root census, not a second local charge.
+	if (!reserve(live, context))
+	{
+		root.checkpoint.reset();
+		(void)reserve(live, context);
+		return false;
+	}
+	return settle_warm_checkpoint_bounded(root, reserve, context, live);
+}
+
+int zone_reset_item_owner::prepare_warm_action_bounded(warm_root &root, uint8_t kind, size_t row,
+						       size_t step,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+	if (kind < WARM_BINDING || kind > WARM_ITEM_EFFECT || root.blocked || !reserve ||
+	    !settle_warm_checkpoint_bounded(root, reserve, context, outer_live))
+		return -1;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)row;
+	(void)step;
+	return -1;
+#else
+	try
+	{
+		// Same original once-only disposition and in-process not-attempted latch.
+		size_t live = outer_live, started_heap = 0;
+		if (!warm_scratch_add(live, sizeof(quest_mobile_native_item_effect)) ||
+		    !reserve(live, context))
+			return -1;
+		const auto existing = warm_action_value(root.context, kind, row, step);
+		if (existing.returned)
+			return existing.succeeded ? 0 : -1;
+		if (existing.started)
+			return root.action_not_attempted && root.pending_action == kind &&
+					       root.pending_row == row &&
+					       root.pending_step == step ?
+				       1 :
+				       -1;
+		if (root.action_not_attempted || root.original_envelope.revision > UINT64_MAX - 2)
+			return -1;
+		if (!warm_scratch_add(live, sizeof(warm_action_workspace)) ||
+		    !warm_scratch_context_heap(root.context, true, &started_heap) ||
+		    !warm_scratch_add(live, started_heap) ||
+		    !warm_scratch_add(live, started_heap) ||
+		    !warm_scratch_add(live, sizeof(quest_mobile_native_item_effect)) ||
+		    !reserve(live, context))
+			return -1;
+		warm_action_workspace work;
+		work.started = root.context;
+		set_warm_action(work.started, kind, row, step, { true, false, false, false });
+		work.variant = work.started;
+		if (!make_warm_checkpoint_bounded(root.original_envelope, work.started,
+						  &work.intent, reserve, context, live))
+			return -1;
+		size_t retained = 0;
+		if (!warm_checkpoint_storage(work.intent.get(), &retained) ||
+		    !warm_scratch_add(live, retained))
+			return -1;
+		for (size_t bits = 0; bits < work.returned.size(); ++bits)
+		{
+			if ((bits & 2) && kind != WARM_ITEM_EFFECT)
+				continue;
+			// All variants use the original started BODY and are constructed
+			// before the intent CAS. Selection after native return never allocates.
+			work.variant = work.started;
+			set_warm_action(work.variant, kind, row, step,
+					{ true, true, bool(bits & 1), bool(bits & 2) });
+			if (make_warm_checkpoint_bounded(work.intent->successor, work.variant,
+							 &work.returned[bits], reserve, context,
+							 live))
+			{
+				if (!warm_checkpoint_storage(work.returned[bits].get(),
+							     &retained) ||
+				    !warm_scratch_add(live, retained))
+					return -1;
+			}
+		}
+		if (!work.returned[1] && !work.returned[3])
+			return -1;
+		root.checkpoint = std::move(work.intent);
+		root.returned_writers = std::move(work.returned);
+		root.pending_action = kind;
+		root.pending_row = row;
+		root.pending_step = step;
+		root.action_not_attempted = true;
+		// Actual transferred writers are now counted once by the root registry.
+		live = outer_live;
+		if (!warm_scratch_add(live, sizeof(existing)) ||
+		    !warm_scratch_add(live, sizeof(work)) ||
+		    !warm_scratch_add(live, started_heap) ||
+		    !warm_scratch_add(live, started_heap) || !reserve(live, context))
+		{
+			root.checkpoint.reset();
+			for (auto &writer : root.returned_writers)
+				writer.reset();
+			root.action_not_attempted = false;
+			(void)reserve(live, context);
+			return -1;
+		}
+		return settle_warm_checkpoint_bounded(root, reserve, context, live) ? 1 : -1;
+	}
+	catch (...)
+	{
+		return -1;
+	}
+#endif
+}
+
+bool zone_reset_item_owner::finish_warm_action_bounded(
+	warm_root &root, const quest_mobile_native_item_effect &actual,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!actual.started)
+		return false;
+	root.action_not_attempted = false;
+	if (!actual.returned)
+	{
+		root.blocked = true;
+		return false;
+	}
+	const size_t bits = size_t(actual.succeeded) | (size_t(actual.periodic) << 1);
+	if (!root.returned_writers[bits])
+	{
+		root.blocked = true;
+		return false;
+	}
+	root.checkpoint = std::move(root.returned_writers[bits]);
+	for (auto &writer : root.returned_writers)
+		writer.reset();
+	// Actual return chooses its sealed writer before the first fallible proof,
+	// current recensus, codec, callback or I/O, including after service refusal.
+	return settle_warm_checkpoint_bounded(root, reserve, context, outer_live) &&
+	       actual.succeeded;
+}
