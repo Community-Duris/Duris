@@ -265,6 +265,86 @@ class zone_reset_room_publication_owner final
 	// Only the original root after guarded terminal transfer/retirement.
 	static bool
 	release_original_terminal_metadata(zone_reset_room_publication_stage &) noexcept;
+	// Complete private flat recovery companions. Caller includes all CURRENT
+	// literal/event pools, output, Zombie/cache/activity/pending globals ONCE,
+	// every rooted stage and complete outer locals. Callees refresh globals
+	// before each later nested handoff and on every real native return. Retain
+	// partial genuine stages and returned markers; never re-roll or retag source.
+	// These remain unselected until all paired pool census consumers join.
+	static bool read_cold_present_projection_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &original,
+		const critical_completion &receipt, zone_reset_room_publication_stage &stage,
+		bool (*reserve)(size_t, void *) noexcept, void *context,
+		size_t outer_live) noexcept;
+	static bool
+	reserve_rooted_flat_consume_bounded(zone_reset_room_publication_stage &stage,
+					    const std::unordered_set<uint64_t> &published,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept;
+	static bool place_warm_bounded(zone_reset_room_publication_stage &stage,
+				       quest_mobile_native_item_effect &effect,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer_live) noexcept;
+	static bool
+	rebuild_enrollment_bounded(zone_reset_room_publication_stage &stage, size_t at,
+				   const quest_mobile_native_item_progress &progress,
+				   const std::span<const quest_mobile_native_item_effect> &effects,
+				   bool (*reserve)(size_t, void *) noexcept, void *context,
+				   size_t outer_live) noexcept;
+	static bool
+	restore_original_missing_forest_bounded(zone_reset_room_publication_stage &held,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer_live) noexcept;
+	static bool prepare_original_completed_flat_locked_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &envelope,
+		const critical_completion &receipt, zone_reset_room_publication_stage &held,
+		bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+		size_t outer_live) noexcept;
+	static bool prepare_original_present_prefix_flat_locked_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &envelope,
+		const critical_completion &receipt, zone_reset_room_publication_stage &held,
+		zone_reset_original_room_placement_stage *placement,
+		bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+		size_t outer_live) noexcept;
+	static bool prepare_original_present_flat_locked_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &envelope,
+		const critical_completion &receipt, zone_reset_room_publication_stage &held,
+		zone_reset_original_room_placement_stage *placement,
+		bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+		size_t outer_live) noexcept;
+	static bool prepare_original_pending_flat_locked_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &envelope,
+		const critical_completion &receipt, zone_reset_room_publication_stage &held,
+		zone_reset_original_room_placement_stage *placement,
+		std::unordered_set<uint64_t> &published,
+		bool (*bindings)(const std::span<quest_mobile_native_item_stage *> &, void *,
+				 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+		void *binding_context, bool (*reserve)(size_t, void *) noexcept,
+		void *budget_context, size_t outer_live) noexcept;
+	static bool prepare_original_reconstructed_flat_locked_bounded(
+		const std::string &selected_root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &envelope,
+		const critical_completion &receipt, zone_reset_room_publication_stage &held,
+		std::unordered_set<uint64_t> &published,
+		bool (*bindings)(const std::span<quest_mobile_native_item_stage *> &, void *,
+				 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+		void *binding_context, bool (*reserve)(size_t, void *) noexcept,
+		void *budget_context, size_t outer_live) noexcept;
+	static bool place_cold_flat_bounded(zone_reset_room_publication_stage &held,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept;
+	// Genuine private flat metadata census paired with object/affect pool globals.
+	// Includes every owned cold wrapper and raw body while actually private;
+	// warm borrowed factories remain in their real ROOT census. Strong output.
+	// Original retained_size stays selected until the real pool owner joins all
+	// matching warm/cold/NPC consumers. This grants no admission or source proof.
+	static bool retained_size_excluding_literal_pools(const zone_reset_room_publication_stage &,
+							  size_t *) noexcept;
 };
 
 #endif

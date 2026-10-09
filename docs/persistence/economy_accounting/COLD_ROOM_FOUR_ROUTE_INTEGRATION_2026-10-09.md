@@ -1,0 +1,9 @@
+# Complete four-route cold room publication integration - 2026-10-09
+
+The room publication owner now defines all four genuine cold paths: pending publication, complete reconstructed forest, complete present forest and present prefix. Full original canonical command, UID, current cache/physical forest, custody, progress and receipt proofs remain. Each path invokes actual published restoration, adoption, enrollment, light and original cold-binding providers.
+
+Rooted union and private-stage adapters transfer current owned storage without duplicating the registry's charge. Each multi-provider caller refreshes the actual current global allowance before its next handoff. Topology placement, successful light work, enrollment and binding results retain their actual completion markers before later fallible diagnostics/census. A separate private pool-excluding publication observer supports the subsequent paired pool join. Original SQL/inactive bodies and existing selected six-global route remain unchanged.
+
+Independent complete four-file RAW review found one duplicate initial-to-current global adjustment; replacing the second rebase with the already-current value fixed it. Full recheck passed. Formatting preserves tokens, preprocessing and all four precise original inverses, including the publication include/private-scalar/append changes. Evidence: tmp/room-cold-four-route-owner-20261009 and tmp/room-cold-four-route-integrated-20261009. Registry remains 931 policies/399 authenticated pins with zero new/unmapped sites.
+
+These complete paths remain private and unselected until the full ROOT driver, actual shared coordinator submission/registration/cleanup and all paired pool consumers join. Seventh global selection, native gameplay/persistence/recovery and activation qualification remain open. Native tests stay deferred to major-plan readiness. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

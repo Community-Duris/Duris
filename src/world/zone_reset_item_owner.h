@@ -283,6 +283,11 @@ class zone_reset_item_owner final
 					      size_t outer_live_scratch) noexcept;
 	static bool observe_warm_forest(const critical_operation_id &,
 					zone_reset_item_warm_forest_facts *) noexcept;
+	// Real cold ordinary binding tokens only; no live flat-factory retag.
+	// Actual prepared/restored latches precede every post-native refusal.
+	static bool restore_cold_flat_bindings(const std::span<quest_mobile_native_item_stage *> &,
+					       void *, bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
 };
 
 #endif
