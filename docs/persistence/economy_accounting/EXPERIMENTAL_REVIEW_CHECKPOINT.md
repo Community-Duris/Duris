@@ -2411,3 +2411,16 @@ new/unmapped sites. Native tests stay batched. Actual output queue/pager/fanout/
 inspector/scheduler/service-step/root joins remain unfinished; no complete nativebudget
 claim. Inactive/CLOSED accounting, incomplete coverage/BLOCKED release, protected WIP
 and primary ACTIVE goal persist; no added gate.
+
+
+## Actual MEMCHK pool descriptor/list headers corrected - 2026-10-09
+
+[Owning correction](NATIVE_MEMCHK_POOL_STORAGE_CORRECTION_2026-10-09.md) resolves the
+independently found omission of two repository-owned ALLOCATION_HEADER terms from
+f0e981dec's bounded pool census. Same #ifdef MEMCHK and actual owning sizeof/checked
+arithmetic; mmap pages and original allocator/scheduler behavior unchanged. Corrected
+RAW/final inverse/tokens/preprocessor/source review PASS;931policies/397pins authenticate,
+zero new/unmapped sites. Native tests stay batched. Queue header correction is separate
+worker WIP; full scheduler/debug/service/root/warm-cold/checkpoint/ACK/budget/recovery
+qualification remains open. Protected WIP, inactive/CLOSED accounting, incomplete
+coverage/BLOCKED release and primary ACTIVE goal persist; no added gate.

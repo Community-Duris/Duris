@@ -2938,6 +2938,15 @@ bool nevent_object_schedule_pool_storage_bytes(size_t *output) noexcept
 	return false;
 #else
 	size_t bytes = sizeof(*ne_dead_event_pool) + sizeof(ne_schedule) + sizeof(ne_schedule_tail);
+#ifdef MEMCHK
+	// Both original CREATE allocations own this repository header in getmem:
+	// actual mm descriptor and its one pool-list node. These are not libc-private
+	// allocator overhead and must survive every prospective/current pool census.
+	if (sizeof(ALLOCATION_HEADER) > (SIZE_MAX - bytes) / 2)
+		return false;
+	bytes += 2 * sizeof(ALLOCATION_HEADER);
+#endif
+
 	if (ne_dead_event_pool->pages_owned > (SIZE_MAX - bytes) / 4096)
 		return false;
 	bytes += ne_dead_event_pool->pages_owned * 4096;

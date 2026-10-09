@@ -474,7 +474,7 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/new_events.c": "fece4f3d26ae75ce3a47aa1d279e90e1d8677aac34447b29cf2cbdab75912b15",
+      "src/world/new_events.c": "f91c5cc9483023ae43083b84e1dff243c73e082dd8ba36757848288cac005855",
       "src/world/object_template.h": "4197820f70a17e81ab36c1039780b0f0d150961b23210eff9f5374c9100c63a7",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
       "src/world/quest_mobile_native.c": "d95a3330125a2e14176218184f9c59df68bc5abc2c361c2fc83fffce803582f7",
