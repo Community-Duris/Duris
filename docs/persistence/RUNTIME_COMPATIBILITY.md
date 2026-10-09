@@ -1,23 +1,48 @@
 # Runtime Database Compatibility
 
-The server refuses to mutate database state or publish gameplay until the configured
-database proves the exact migration, schema, and connection contract. This is a
-read-only compatibility gate, not an automatic migration mechanism.
+For MariaDB authority, the full database compatibility gate precedes lookup
+publication, SQL UID reservation, pool startup and gameplay. The schema verifier
+is read-only, but the enclosing startup sequence first establishes lifecycle
+authority and updates connection-activity records. Boot can therefore perform
+bookkeeping writes before the full schema check. Migration application is handled
+by the launcher's guarded local path or the explicit procedures below.
+
+## Current candidate alignment limit
+
+At publication base `43807ab01`, all three migration manifests end at
+`0065_zone_reset_item_birth_origin`, sequence 65. The runtime manifest and
+compiled contract remain at `0064_auction_custody_history`, sequence 64, with
+230 sealed runtime tables. This is an existing candidate alignment gap;
+documentation publication does not repair or qualify it. Applying the complete
+manifest therefore does not match the current compiled history identity.
+Reconcile and qualify the exact source/schema pair on a disposable target before
+SQL startup. Do not skip the new migration, alter receipts, or replace sealed
+fingerprints to make the gate pass. The
+[combined candidate handoff](economy_accounting/COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md)
+records the pending build and SQL qualification boundary.
 
 ## Required installation sequence
 
-For a fresh development database, load the sealed 170-table Session 11 baseline,
-adopt that exact fingerprint, and run the immutable migration head:
+For a fresh, empty disposable loopback database, export `ENVIRONMENT=local` and
+the selected clone's connection fields as described in [README.md](../../README.md).
+Use TCP with `DB_SOCKET` unset for this example. The raw `mysql` import does not
+enforce Duris target or backup guards, so verify the exact empty target first.
+Load the sealed 170-table Session 11 baseline, adopt its exact fingerprint, and
+run the immutable migration head:
 
 ```sh
-mysql "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
+MYSQL_PWD="$DB_PASSWD" mysql --protocol=tcp \
+  --host="$DB_HOST" --port="${DB_PORT:-3306}" --user="$DB_USER" \
+  "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
 python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The migration manifest, compiled compatibility head, and runtime manifest now end
-at `0053_craft_progression`, with 225 expected runtime tables.
+The migration manifest ends at 0065; the compiled compatibility head and runtime
+manifest currently end at 0064 with 230 expected runtime tables, as described above.
+The following 0050-0053 migration and qualification notes preserve the earlier
+reviewed checkpoint rather than claiming qualification of the new tail.
 Migration 0051 preserves player item runtime state; master already applied the
 identical sealed SQL and verifier bytes as 0031. Migration 0053 adds durable
 craft progression receipts. Migration 0052 adds the
@@ -108,12 +133,26 @@ python3 scripts/migration_runner.py \
 | 51 | `0051_player_item_runtime_state` |
 | 52 | `0052_quest_item_witness_lookup` |
 | 53 | `0053_craft_progression` |
+| 54 | `0054_alchemy_publication` |
+| 55 | `0055_sql_room_item_payload` |
+| 56 | `0056_spell_ward_durability` |
+| 57 | `0057_shopkeeper_item_runtime_state` |
+| 58 | `0058_economic_baseline_command_admission_time` |
+| 59 | `0059_quest_mobile_native` |
+| 60 | `0060_native_mobile_item_owner` |
+| 61 | `0061_economic_baseline_equipment` |
+| 62 | `0062_economic_pending_claim_consumption` |
+| 63 | `0063_quest_mobile_native_birth_origin` |
+| 64 | `0064_auction_custody_history` |
+| 65 | `0065_zone_reset_item_birth_origin` |
 
 The canonical manifest continues to reject this fork before any migration runs.
-The explicit manifest appends eight steps and produces a different
-history checksum from the canonical 53-step history. All supported completed checksums
-are compiled into the boot gate; every historical row is recomputed and matched
-to its stored state. Partial histories and mixed head/state identities fail.
+The explicit manifest now appends 20 steps after the original 45 and produces a
+different history checksum from canonical accounting. The compiled gate still
+accepts its completed 0064 history, not the current 0065 manifest tail. Every
+historical row is recomputed and matched to its stored state; partial histories
+and mixed head/state identities fail. The current candidate alignment limit
+applies to this fork as well.
 
 The maintained staging qualification supports Docker by default and an explicit
 native mode for a caller-owned disposable MySQL 8.0 or MariaDB 10.11 server:
@@ -154,11 +193,13 @@ This manifest retains all 31 recorded master receipts, including descriptions,
 checksums, runner versions, and sequence numbers. Its master step 0031 points to
 accounting's `0051_player_item_runtime_state` files because their sealed bytes
 are identical. It appends accounting migrations 0031 through 0050 at sequences
-32 through 51, then 0052 and 0053 at sequences 52 and 53. Immutable migration IDs
+32 through 51, then 0052 through 0065 at sequences 52 through 65. Immutable migration IDs
 retain their assigned names; the manifest
 sequence is the application order, as it already is for the staging fork.
-The completed head is therefore `0053_craft_progression`
-at **sequence 53**, targeting the same 225-table runtime schema as canonical accounting.
+The complete manifest ends at `0065_zone_reset_item_birth_origin` at **sequence
+65**. The compiled master-prefix gate still selects 0064 and the same 230-table
+runtime schema as its canonical counterpart; the candidate alignment limit
+must be resolved before claiming complete-head boot compatibility.
 The already-applied runtime-state migration is not recorded again under 0051.
 
 Use the canonical manifest for a fresh baseline or a history matching canonical
@@ -198,14 +239,16 @@ attempting an accounting boot against the upgraded clone.
 ## Boot gate
 
 `initialize_mysql()` opens the main connection through the shared trusted connection
-constructor. Before any lookup write, item UID reservation, pool/worker startup,
-recovery replay, listener acceptance, or gameplay publication, it verifies:
+constructor and establishes runtime exclusion and economic lifecycle authority.
+Lifecycle recovery and the connection-activity reset precede the full schema check.
+Before lookup writes, SQL UID reservation, pool startup, later persistence workers,
+world recovery, listener acceptance or gameplay publication, startup requires:
 
 - the sealed baseline ID and table-name fingerprint;
 - the exact completed canonical, staging-fork, or master-upgrade history, including all seven
   immutable receipt fields in sequence order, and its matching stored count and
   checksum; checking only the last row or the stored digest is insufficient;
-- all 225 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 230 runtime-manifest tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - the exact normalized stored SHA-256 expressions on player and pet descriptions;

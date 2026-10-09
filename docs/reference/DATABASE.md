@@ -1,8 +1,22 @@
 # Database
 
-DurisMUD stores all durable state in MySQL/MariaDB. This document covers how
-the server talks to the database, what tables matter, and how schema changes
-are managed. Setup steps (creating users/databases) are in
+DurisMUD selects one persistence backend for the whole server. The default
+`mariadb-primary` mode stores durable player and domain state in MySQL/MariaDB.
+A client-free build can instead select `flatfile-primary` and store that state
+under `FLATFILE_STATE_DIR`. Mixed per-write failover is rejected. Typed player
+and critical-command journals also retain durable local recovery records;
+Redis supplies optional caches and world recovery. See
+[ARCHITECTURE.md](ARCHITECTURE.md#persistence) for the backend boundaries.
+
+This reference describes implementation base
+`7f3da9c3a1b2b423da85a24abab603d8cdbee149` on `codex/docs-cleanup`, reviewed on
+October 7, 2026. The architecture guide's
+[newer branch implementations](ARCHITECTURE.md#newer-branch-implementations)
+section identifies separately reviewed accounting, telemetry, and quest work;
+documentation updates do not integrate those implementations.
+
+The SQL connections, tables, and schema procedures below apply to
+`mariadb-primary`. Setup steps (creating users/databases) are in
 [README.md](../../README.md#3-create-a-development-database). An entity-relationship
 diagram of the core tables is in
 [diagrams/duris-database-model.html](../diagrams/duris-database-model.html);
@@ -11,30 +25,34 @@ manifests rather than presented as a column-complete schema reference.
 
 ## Connections and selection
 
-See [CONFIGURATION.md](../operations/CONFIGURATION.md) for the complete environment-variable
-reference. In particular, `DB_NAME` is the requested name, while the runtime
-port safety rule can redirect an implicit production name to `duris_dev` on a
-non-`7777` port.
+See [CONFIGURATION.md](../operations/CONFIGURATION.md#persistence) for runtime
+environment and target-validation details. `DB_NAME` is the requested database;
+the resolved target is subject to both the port safety redirect and the allowlist.
 
-The server requires explicit `DB_HOST`, `DB_USER`, `DB_PASSWD`, and `DB_NAME`
-values from the process environment after loading `.env`; `DB_PORT` is optional
+In `mariadb-primary`, the server requires explicit `DB_HOST`, `DB_USER`,
+`DB_PASSWD`, and `DB_NAME` values from the process environment after loading
+`.env`; `DB_PORT` is optional
 and must be valid when present. It has no compiled credential or target
 defaults. The resolved `host/database` pair must also appear in
 `DB_ALLOWED_TARGETS`; remote TCP targets require verified TLS. See
 [CONFIGURATION.md](../operations/CONFIGURATION.md) for parsing, trust-boundary, and precedence
 details.
 
-The listen port applies a production safety redirect in
+The production-role plain-telnet port is configured by `DURIS_PRODUCTION_PORT`,
+defaulting to `7777`. The listen port applies an additional safety redirect in
 `sql_persistence_db_name()` (`src/sql/sql.c`):
 
 | Condition | Effective database |
 |------|----------|
-| Port `7777` | Requested `DB_NAME` (normally `duris`) |
+| Configured production-role port | Requested `DB_NAME` |
 | Any other port, requested name `duris` or `duris_prod` | `duris_dev` |
 | Any other port, another requested name | Requested `DB_NAME` |
 
-Never point a test run at production: use a non-7777 port, a development
-credential, and a disposable database for all development.
+With `ENVIRONMENT=production`, SQL configuration also refuses a listen port that
+differs from the configured production-role port. For development, use
+`ENVIRONMENT=local`, a different port, development credentials, and an explicitly
+allowlisted disposable database. The port redirect does not make production
+credentials safe to reuse locally.
 
 Connection architecture:
 
@@ -44,20 +62,31 @@ Connection architecture:
 - **Connection pool** (`src/sql/sql_pool.c`) - bounded, individually owned connections used
   by typed load, snapshot, critical-command, outbox, maintenance, locker, and retained
   compatibility workers. Acquire/release is mutex and condition-variable based.
+- **Optional telemetry writer** - owns a private connection opened by
+  `sql_open_telemetry_connection()` with `TELEMETRY_DB_USER` and
+  `TELEMETRY_DB_PASSWD`. It uses the same resolved target, allowlist, and verified
+  connection factory, without borrowing the main connection or pool or falling
+  back to the gameplay credentials.
 - **Failure behavior** - typed routes return unavailable, retryable, or fenced outcomes
-  when a connection cannot be acquired. Only explicitly retained legacy item/scalar/
-  large compatibility producers have the historical synchronous fallback.
+  when a connection cannot be acquired. Player login has explicit synchronous load
+  fallback paths; retained legacy item/scalar/large compatibility producers also
+  retain synchronous fallback paths. A pooled connection does not by itself imply
+  execution on a worker thread.
 
-Every connection uses `utf8mb4`, UTC, READ-COMMITTED isolation, strict SQL modes, and
-10-second connect/read/write deadlines. Remote targets require enforced TLS and CA
+The verified connection factory establishes `utf8mb4`, UTC, strict SQL modes, and
+READ-COMMITTED as the session isolation default. When the player-load repository
+opens its own consistent read transaction, it requests `REPEATABLE READ` for that
+transaction. Main and pooled connections have 10-second connect/read/write
+timeouts; telemetry's private connection has 2-second connect/read/write timeouts
+and a 2-second InnoDB lock-wait timeout. Remote targets require enforced TLS and CA
 verification; a protected local loopback/socket path is the only plaintext exception.
 
 ## Persistence execution boundaries
 
 | Boundary | Identity and ordering | Durable unit | Failure behavior |
 |----------|-----------------------|--------------|------------------|
-| Player load | Unique request ID, one PID | One consistent read transaction returning owned typed rows | Required-component, limit, timeout, cancellation, or stale result publishes no character |
-| Player checkpoint | PID plus monotonic revision | Journaled immutable snapshot and revision-guarded component transaction | Retry/coalesce by PID; exact ACK only; terminal action retains live state on failure |
+| Player load | Unique request ID, one PID | Consistent read transaction returning owned typed rows and explicit load outcome | Core identity/status and the death-recovery gate remain mandatory; secondary failures can admit a degraded character with ordinary saves fenced |
+| Player checkpoint | PID plus monotonic revision | Journaled immutable snapshot and revision-guarded component transaction | Coalesce by PID; matching revision/component ACKs; attached operations require exact success; terminal release follows caller policy |
 | Critical command | Stable 128-bit operation ID plus sorted entity keys | Inbox, typed domain rows/ledgers, result, and outbox in one transaction | Duplicate/ambiguity rereads result; affected gameplay stays fenced through retry |
 | Item ownership | Operation ID plus item UID | Current owner, immutable ownership ledger, both revisions, and outbox | Guarded expected-owner mismatch fails without partial movement |
 | Maintenance | Stable job/work ID plus continuation | Bounded row/time batch and success-last cursor | Retryable failure retains cursor; permanent failure is visible; lifecycle slot is disabled |
@@ -104,17 +133,23 @@ write access. See [api/durisweb.md](api/durisweb.md).
 
 ## Persistence observability
 
-All shared MySQL execution paths record bounded, metadata-only metrics. Wrapper
-calls receive a compile-time `file:function:line` site; worker executors use an
-explicit semantic site. Context distinguishes the main thread and the relevant
-event, locker, or player-save worker. Statement classification records only a
-kind such as `select`, `insert`, or `transaction`, never SQL bytes or values.
+The shared SQL wrappers and instrumented worker executors record bounded,
+metadata-only metrics. Wrapper calls receive a compile-time `file:function:line`
+site; worker executors supply a source or semantic site. Context distinguishes
+the main process, forked child, and event, locker, player-save, or player-load
+worker. Statement classification records only a kind such as `select`, `insert`,
+or `transaction`, never SQL bytes or values.
 
 The fixed-capacity registry aggregates calls, failures, total and maximum
 latency, and bounded latency buckets. When new sites exceed capacity, an
 overflow counter increases instead of allocating memory. Snapshots are copied
 under a short lock and sorted after unlock. Query execution never holds the
 metrics lock and the record path performs no filesystem or network I/O.
+
+This registry covers instrumented calls. Raw client calls, including some schema
+preflight queries, bypass it. The telemetry repository executes SQL directly on
+its private connection and exposes separate bounded transport/health counters;
+its queries do not populate this per-site registry.
 
 Redis workers and the remaining shared boot/recovery/maintenance command adapter expose
 separate bounded local health snapshots. Shared commands retain only a redacted subsystem
@@ -136,17 +171,24 @@ transaction, replay, or idempotency identifiers.
 
 - `migrations/bootstrap_legacy_baseline.sql` - historical legacy input only; it is not
   the current install contract.
-- `migrations/bootstrap_multithread_safe.sql` - the sealed 170-table fresh-install
-  baseline for this branch.
+- `migrations/bootstrap_multithread_safe.sql` - fresh-install input containing the
+  sealed 170-table baseline inventory. This is a required-table set, not an exact
+  count of every table created by the bootstrap: it also precreates some later
+  migration tables, and baseline adoption permits additional tables. The current
+  runtime inventory is checked separately below.
 - `migrations/schema_migration_v*.sql` -- incremental upgrades, versioned
   (accounts, hardcore, pets, obj UIDs, locker changes, ships/guilds retirements, ...).
 - `migrations/run_migration.sh` -- the legacy additive upgrade/baseline-adoption path;
   re-runnable by design.
 - `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
   immutable manifest-driven path for every migration after the verified Session 11
-  baseline. The current immutable head adds the `kingdom_realms` table, completing
-  the 174-table boot contract. See
-  [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md).
+  baseline. The current manifest head is `0065_zone_reset_item_birth_origin` at
+  sequence 65. The compiled/runtime head remains `0064_auction_custody_history`
+  at sequence 64 with the 230-table runtime compatibility contract.
+  Manifest/runtime alignment remains pending; a full manifest application is
+  not proof of current SQL boot compatibility. See
+  [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md) and
+  [RUNTIME_COMPATIBILITY.md](../persistence/RUNTIME_COMPATIBILITY.md).
 - `migrations/runtime_compatibility_manifest.json` and
   `migrations/verify_runtime_compatibility.sh` -- the read-only pre-boot contract for
   migration history, full metadata shape, storage engine, collation, and supported
@@ -156,16 +198,24 @@ transaction, replay, or idempotency identifiers.
 ### Applying schema changes
 
 The commands below mutate schema or migration history unless marked read-only. Qualify them only
-against an empty disposable database or a backed-up development clone whose resolved
-`host/database` is explicitly allow-listed. Stop the game and every other writer first.
+against an empty disposable database or a backed-up development clone. Confirm the
+resolved host, port, and database against the approved target before connecting, and
+set the tool's allow-list where supported. Stop the game and every other writer first.
 Never use production for migration discovery, replay, or validation; after clone qualification,
 the runbook defines the separately authorized, backup-bound immutable production application.
 
+These are operator requirements; the tools do not all enforce them. For the local
+examples, use an isolated loopback target. The raw `mysql` command and Python runner
+read exported process settings; the Python runner does not load `.env` itself.
+`MIGRATION_ENV_FILE` selects configuration only for the legacy shell runner, not the
+other tools listed here.
+
 ```bash
-# Empty disposable database only. Load with the explicit .env target shown in README.
-# This is a mutating operation.
+# Empty disposable loopback database only. Export the selected clone settings as in README.
+# Mutates schema; raw mysql does not enforce Duris target or backup checks.
 MYSQL_PWD="$DB_PASSWD" mysql --host="$DB_HOST" --port="${DB_PORT:-3306}" \
   --user="$DB_USER" "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
+# Mutates baseline history, then applies pending immutable schema/history changes.
 python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 
@@ -177,10 +227,11 @@ python3 scripts/migration_runner.py run
 # Keep this owner-readable clone configuration separate from the server's .env.
 MIGRATION_ENV_FILE=/path/to/owner-readable-clone.env ./migrations/run_migration.sh
 
-# After an adopted baseline, apply immutable post-baseline migrations:
+# With the clone settings exported again after legacy adoption, apply immutable migrations:
 python3 scripts/migration_runner.py run
 
 # After exact clone qualification, owner authorization, writer shutdown, and a fresh backup only:
+# Export the separately approved production settings before this mutating command.
 python3 scripts/migration_runner.py run \
   --confirm-production-target "$DB_HOST/$DB_NAME" \
   --production-backup /absolute/path/to/fresh-production.sql.gz
@@ -189,18 +240,41 @@ python3 scripts/migration_runner.py run \
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-Scoped persistence/auction repair tools exist for archive-restored clones:
+Scoped persistence/auction repair tools exist for archive-restored clones. Select
+the isolated loopback clone using their configuration rules below:
 
 ```bash
+# Read-only database verification.
 ./migrations/verify_persistence_contract.sh
+# Mutates schema, then verifies it; replace the placeholder with the exact clone name.
 ./migrations/apply_persistence_contract.sh --confirm-db <clone_db_name>
 ```
 
-Rules of thumb (enforced by repo conventions):
+Configuration and enforced safeguards differ by entry point:
+
+| Tool | Configuration source | Enforced checks and limits |
+|------|----------------------|----------------------------|
+| Raw bootstrap `mysql` command | Exported `DB_*` values in the command | No Duris role, allow-list, backup, or writer checks; the operator must select the empty isolated target. |
+| `scripts/migration_runner.py` | Process environment only | Non-production SQL commands require a local/development/dev/test role and loopback host and reject production-named databases. Production `run` requires exact `host/database` confirmation and `DB_ALLOWED_TARGETS` membership, a validated backup, and no other target-database connections at its preflight. Remote production connections require verified TLS with a CA file. See the immutable migration runbook for the complete procedure. |
+| `migrations/run_migration.sh` | `MIGRATION_ENV_FILE`, else `migrations/.env`, else repository `.env` | Archive-column preflight and fail-closed steps; no early role/loopback/SQL allow-list or verified-TLS gate before DDL. Its verified baseline-adoption gate comes after the schema steps. It can leave partially committed DDL on failure. |
+| `migrations/verify_persistence_contract.sh`, `migrations/apply_persistence_contract.sh` | Process environment if `DB_HOST`, `DB_USER`, `DB_PASSWD`, and `DB_NAME` are all present; otherwise `migrations/.env`, then repository `.env` | Apply checks `--confirm-db` against both `DB_NAME` and the selected SQL database. Neither tool enforces clone isolation, a role/allow-list, backup validation, or writer shutdown. |
+| `migrations/verify_runtime_compatibility.sh` | Process environment when `DB_HOST` is present; otherwise repository `.env` | Read-only schema/history checks; does not enforce a role/target allow-list or backup/writer preflight. |
+
+The scoped persistence tools and runtime compatibility verifier use
+`--ssl-mode=PREFERRED`, or `--skip-ssl` on clients without that option, for TCP
+connections. They do not inherit the server's verified-TLS policy. The legacy runner
+also does not set verified-TLS options. Keep these examples on the isolated loopback
+clone; a remote operation needs a separately reviewed connection procedure.
+
+Migration rules:
 
 - Migrations live in `migrations/` -- that directory is authoritative.
-- Keep them additive, guarded (`IF NOT EXISTS` / conditional columns), and
-  re-runnable.
+- Never edit an applied immutable migration's SQL/verifier body, manifest identity,
+  or checksums. Append a new manifest step for a new change and preserve the sealed
+  history.
+- Keep new schema changes additive and guarded where practical. The legacy upgrade
+  path is re-runnable by design; that does not permit rewriting applied immutable
+  steps or bypassing their history checks.
 - Never run against a live database: back up, restore into a clone, validate
   replay against the clone first.
 - Schema changes should come with a focused regression test where practical
@@ -209,19 +283,33 @@ Rules of thumb (enforced by repo conventions):
 
 ## Tables worth knowing
 
+These rows describe SQL storage roles in this checkout. The runtime compatibility
+manifest provides the exact inventory; accounting coverage, activation, and release
+qualification requirements remain in
+[ECONOMY_ACCOUNTING.md](../persistence/ECONOMY_ACCOUNTING.md) and its delivery plan.
+
 | Table | Content |
 |-------|---------|
 | `player_data`, player component tables, `accounts`, `account_characters` | Character/account state and identity |
 | `pages`, `mud_info` | Help system content, MOTD/news/wizlist (see [HELP_SYSTEM.md](../content/HELP_SYSTEM.md)) |
 | `critical_operation_inbox` result fields, `critical_outbox` | Idempotent critical operations and delivery state |
 | `item_current_owner`, `item_ownership_ledger` | Authoritative item custody and immutable ownership history |
+| `currency_wallet_baseline`, `currency_bank_baseline`, `currency_ledger`, `epic_balance_baseline`, `epic_ledger` | Opening wallet/bank/epic balances and committed deltas used to reconcile the materialized gameplay balances |
+| `economic_epoch`, `economic_lineage_state`, `economic_account_mapping`, `economic_baseline_*`, `economic_sql_*` | Accounting lineage/epoch and account identities, baseline reservations/witnesses, and guarded SQL installation/activation evidence |
+| `economic_accounting_*`, `economic_pending_claim_source` | Typed operation receipts, account effects, coin postings, child-operation and item references, and source-claim/allocation evidence for implemented accounting routes |
 | player revision/domain tables | Current revisioned snapshot and transactional gameplay state |
+| `player_death_disposition`, `player_death_custody`, `player_death_conflict_evidence`, `player_death_restitution_*` | Durable death disposition and custody, conflict evidence, and reviewed restitution receipts, staged items, delivery, and resume state |
+| `quest_reward_obligation`, `quest_reward_xp_entitlement` | Frozen reward continuation attached to the committed offering, acknowledgement state, and per-recipient XP entitlements recoverable at login |
+| `player_spell_effect_receipt`, `player_craft_progression` | Spell-effect receipts committed with player state; craft terms frozen in the item root and marked applied with the owning player snapshot |
+| `saved_item_recovery_handoff` | Durable replacement-graph acknowledgement required before retiring the named saved-item source root |
+| `collector_catalog_state`, `collector_deaths`, `collector_listings`, `collector_ledger`, `collector_reconciliation_quarantine` | Collector catalog revision, death/listing authority records and held payloads, transaction history, and unresolved reconciliation evidence |
+| `telemetry_*` | Observation configuration, sessions/intervals, encounter/combat summaries, derived rollups/reward projections, and quarantine; these records do not authorize gameplay balance or custody changes |
 | archive/export/erasure tables | Guarded lifecycle job, evidence, package, request, and tombstone state |
 | `mud_schema_baselines`, `mud_schema_history`, `mud_schema_migration_state`, `lookup_dataset_state` | Migration and runtime compatibility identity |
 | persistence event tables | Remaining bounded compatibility events; not the player/critical authority |
 | frag leaderboard tables | Auto-populated as players log in and save |
-| `corpses`, `corpse_items` | Player corpses across restarts (see below) |
-| `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and part of the 174-table runtime boot contract, whose metadata fingerprints are sealed over it |
+| `corpses`, `corpse_items`, `corpse_item_affects`, `corpse_item_extra_descr`, `corpse_catalog_state` | Revisioned player corpses and contained payloads across restarts, plus the catalog revision used to serialize corpse changes (see below) |
+| `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and included in the current runtime compatibility inventory and sealed metadata fingerprints |
 | `towns`, `kingdom_land`, `siege_items`, `siege_item_affects`, `siege_item_extra_descr` | Retired siege-era schema tombstones retained in the lifecycle and compatibility manifests. Runtime SQL must not revive them; the current kingdom system owns `kingdom_realms` instead. |
 
 ### Player corpses
@@ -231,6 +319,14 @@ contents. `sql_save_corpse()` deletes and reinserts the row on every save, so
 `created_at` is the last save time, not the death time -- the stable
 `save_id` (corpse value 6) is the incident identifier and decodes to the death
 timestamp.
+
+Current SQL corpse persistence also carries `corpses.corpse_revision` and the
+singleton `corpse_catalog_state.catalog_revision`. The save path locks the catalog
+and commits its revision advance with the corpse/item graph. Typed lifecycle
+commands in `src/persistence/corpse_lifecycle_repository.c` handle release,
+destruction, resurrection, and follower creation through the critical-command
+transaction, coordinating corpse/catalog revisions with item-custody transfers
+and other required domain effects before live publication.
 
 Beyond `player_name`, `save_id`, `room_vnum` and the display strings, the table
 stores the corpse's own `name` (owner keywords), `weight`, and values 0-5 and 7:
@@ -250,9 +346,11 @@ rather than inventing values; the loader has runtime fallbacks for them. New
 corpses store the complete state.
 
 Two conventions in `sql_load_all_corpses()` are worth preserving. The loader
-reads **named result columns, not numeric indexes**, and asserts the expected
-field count so a query edit cannot silently shift the mapping: the display
-fields were off by one from the day they were added (April 2026) and shifted
+uses **named enum constants for positional numeric indexes** (`CORPSE_COL_*`) and
+checks the result field count against `CORPSE_COL_COUNT`. The SELECT order and enum
+order must stay aligned: the count check rejects a different column count but
+cannot detect a reorder with the same count. The display fields were off by one
+from the day they were added (April 2026) and shifted
 again when `ci.obj_uid`/`ci.item_condition` were inserted ahead of them, which
 made every restored corpse display as the first contained item's condition
 (`100`) and then persisted that back to SQL on the next save. And when an item
@@ -262,19 +360,41 @@ not applied to a different object.
 
 ## Consistent player load
 
-Existing-character login is asynchronous. `src/player/player_load_pipeline.c` owns one
-bounded request queue and worker; `src/player/player_load_repository.c` borrows one validated
-pool connection and opens a consistent read transaction. Required status, skills,
-affects, current item ownership, item metadata, pet rows, and pet item metadata are
-loaded in bounded set-based queries into owned DTOs. The worker never creates or
-traverses live `P_char` or `P_obj` instances.
+Existing-character login normally submits to the bounded queue and worker in
+`src/player/player_load_pipeline.c`. Account character selection and legacy login
+also have explicit `player_load_pipeline_execute_sync()` paths when submission is
+refused or selected outcomes require a retry. The SQL synchronous path borrows a
+pool connection and runs repository reads on the calling thread.
 
-The game thread accepts a completion only when request identity and PID still match,
-the durable revision is current, every required component succeeded, all configured
-row/byte/depth limits hold, and the item/pet graphs validate. ID maps provide linear
-assembly. Cancellation, timeout, missing component, malformed graph, overflow, and
-stale completion all discard the DTO and fail login cleanly; no partial character is
-published. The standalone database harness is
+`src/player/player_load_repository.c` opens a consistent read transaction and
+loads status, skills, affects, current item ownership, item metadata, pet rows,
+and pet item metadata through set-based queries into owned DTOs. The worker never
+creates or traverses live `P_char` or `P_obj` instances. Publication and any
+degraded-state decisions during materialization belong to the game thread.
+
+Admission distinguishes three outcomes:
+
+- **Normal load** - request identity and PID match, core status is valid, requested
+  components and configured limits pass, and the item/pet graphs validate. ID maps
+  provide linear assembly.
+- **Degraded admission** - valid core identity/status can survive selected failures
+  in secondary components, items, pets, gameplay reads, bank state, or recovery
+  projections. A deadline or budget failure after core loading can also produce an
+  explicitly degraded result. The affected state is omitted or quarantined, and
+  `CHAR_RFLAG_LOAD_DEGRADED` fences ordinary checkpoints and terminal saves so an
+  incomplete runtime projection cannot overwrite durable state.
+- **Refused load** - invalid identity, schema, or core status cannot be admitted.
+  Unresolved death-recovery conflicts or an unavailable death-recovery gate also
+  refuse normal loading. Completions that no longer match the pending request are
+  discarded; selected failure outcomes may be retried synchronously before the
+  caller decides whether login can proceed.
+
+An otherwise valid load with missing item payloads retains its valid remaining
+graph and sets `CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP`. Ordinary saves remain fenced.
+The narrow terminal-save exception is an immutable typed death disposition that
+records the captured graph and quarantines matching durable custody; it still
+requires an applied-state acknowledgement. Other degraded loads cannot use that
+exception. The standalone database harness is
 `tests/async/run_player_load_repository_mysql.sh`.
 
 ## Critical transactions and current item ownership
@@ -282,17 +402,42 @@ published. The standalone database harness is
 The critical-command repository uses prepared statements and a stable 128-bit
 operation ID. In one InnoDB transaction it creates or rereads the inbox identity,
 locks domain rows in deterministic key order, applies typed state and ledger changes,
-stores the canonical result, and inserts any outbox record. Duplicate delivery returns
-the stored result. If commit acknowledgement is ambiguous, the coordinator rereads by
-operation ID instead of replaying an unidentifiable mutation.
+stores the canonical result, and inserts any outbox record. Exact duplicate delivery
+with matching command identity returns the stored result after any required checks of
+retained evidence; conflicting reuse of the operation ID fails. If commit acknowledgement
+is ambiguous, the coordinator rereads by operation ID instead of replaying an
+unidentifiable mutation.
 
 `item_current_owner` is the authoritative custody row for each item UID.
 `item_ownership_ledger` records immutable transfers, and ownership operations also
 advance the affected inventory/domain revisions and outbox state in the same critical
-transaction. Expected-owner mismatch, missing parent, invalid containment, duplicate
+transaction. Expected-owner mismatch, missing parent, invalid containment, conflicting
 operation identity, or write failure rolls back without publishing in-memory movement.
-Use the read-only reconciliation scripts in `migrations/reconcile_*.sh`; do not repair
-ledgers by hand.
+Use a named reconciliation tool and mode; the `reconcile_` prefix does not imply
+read-only behavior. Do not repair ledgers by hand.
+
+| Tool/mode under `migrations/` | Effect | Configuration source |
+|-------------------------------|--------|----------------------|
+| `reconcile_epic_balances.sh`, `reconcile_currency_balances.sh` | Reports balance/baseline/ledger mismatches without database writes. | Sources repository `.env` when present, overriding matching process values; otherwise uses process settings. |
+| `reconcile_item_ownership.sh`, `reconcile_auction_transactions.sh` | Reports custody/revision/quarantine drift without durable table changes. Item reconciliation also invokes nesting `--check`, which creates and populates connection-local temporary tables. | Always sources repository `.env`. |
+| `reconcile_coin_custody_pair.sh --classify /absolute/private/pair.tsv` | Reads candidate evidence without durable database changes and writes an owner-only local artifact; refuses to overwrite an existing artifact. | Process environment when `DB_HOST` is present; otherwise repository `.env`. |
+| `reconcile_coin_custody_pair.sh --apply /absolute/private/pair.tsv SHA256` | Mutates a reviewed `player_items.obj_uid` projection in a guarded transaction and writes a local receipt. | Same as classify; additional clone-only gates apply below. |
+
+The epic/currency reports have no role or SQL target allow-list gate. Item/auction
+reports require environment and database names containing `dev`, `local`, or `test`;
+that name check does not prove clone isolation. All four reports use preferred TLS
+or disable TLS according to client support, rather than enforcing server identity
+verification for their own queries. Use them on an isolated loopback clone with the
+checkout's configuration selected deliberately; `MIGRATION_ENV_FILE` does not select
+their target.
+
+Coin-custody apply requires a development/local/test role, one of `duris_dev`,
+`duris_local`, or `duris_test`, an exact `DB_ALLOWED_TARGETS` entry in
+`host:port/database` form, an owner-only reviewed artifact with the supplied SHA-256,
+`WRITERS_QUIESCED=TRUE`, and a nonempty `COIN_CUSTODY_BACKUP_ID`. These last two values
+are operator declarations, not proof that writers stopped or that a backup is valid.
+The script checks live row evidence and CHECK-constraint enforcement before its
+guarded correction. Both modes require verified TLS with a CA file for a remote host.
 
 `root_item_uid` and `parent_item_uid` make containment part of that authority, not a
 derived convenience. A transfer refuses any subtree whose recorded nesting disagrees
@@ -303,9 +448,19 @@ dropped, and its contents un-nest on the next login. Every command that reparent
 generic-ownership item must therefore submit a transfer, including a move within a
 single owner. `migrations/reconcile_item_ownership.sh` reports such drift as
 `nesting_mismatch`, and `migrations/repair_item_nesting.sh` repairs it from the saved
-container linkage (`--check` reports without writing). The repair rewrites only
+container linkage. `--check` reports without changing durable tables, but creates and
+populates connection-local temporary tables; it needs permission to use them. The
+default invocation mutates nesting. The repair rewrites only
 `parent_item_uid` and `root_item_uid`, never ownership or `item_revision`, which stay
 ledger-derived.
+
+Nesting repair always sources repository `.env`; it does not honor
+`MIGRATION_ENV_FILE` or provide an `--env-file` option. Rehearse from an isolated clone
+checkout whose own `.env` selects the development clone. Its environment/database
+name guards check for `dev`, `local`, or `test`, and remote hosts require verified TLS
+with a CA file. It does not enforce the server's `DB_ALLOWED_TARGETS` gate or validate
+backup and writer shutdown. Follow the clone and production-correction requirements
+below even when the name checks pass.
 
 For production-safe read-only classification, use:
 
@@ -360,10 +515,14 @@ allows canonical mutation.
 
 `migrations/data_lifecycle_manifest.json` inventories every database and non-database
 store and classifies subject mapping, purpose, season behavior, retention, archive,
-export, erasure, and protected exceptions. Validation fails closed on missing stores or
-pending destructive rules. Archive, export, and erasure schemas and operator scripts
-are implemented, but canonical mutation remains disabled where controller decisions
-are pending. This is an engineering control record, not legal advice. See
+export, erasure, and protected exceptions. Inventory validation rejects missing stores
+or inconsistent policy metadata, but accepts the intentionally pending decisions and
+requires destructive rules to remain disabled. Passing that check establishes a valid
+inventory, not permission to perform destructive work. The separate destructive
+preflight refuses execution while approval is pending. Archive, export, and erasure
+schemas and operator scripts are implemented, but canonical mutation remains disabled
+where controller decisions are pending. This is an engineering control record, not
+legal advice. See
 [DATA_LIFECYCLE.md](../persistence/DATA_LIFECYCLE.md), [LIFECYCLE_ARCHIVE.md](../persistence/LIFECYCLE_ARCHIVE.md),
 [PERSONAL_DATA_EXPORT.md](../persistence/PERSONAL_DATA_EXPORT.md), and
 [ACCOUNT_ERASURE.md](../persistence/ACCOUNT_ERASURE.md).
@@ -404,16 +563,48 @@ submitted to the bounded 256-PID keyed worker queue. Same-PID work is ordered an
 coalesced, while different PIDs may apply concurrently.
 
 The repository locks the durable revision before replacing component rows. A stale
-revision cannot replace a newer one. Ambiguous commits are reconciled by rereading the
-durable revision, and exact completion alone clears the matching component state and
-journal record. Replay suppresses duplicate PID/revision records, quarantines corrupt
-frames, and stops fail-closed when durable application cannot proceed.
+revision cannot replace a newer one. Ambiguous commits are reconciled against the
+durable revision and any attached operation receipts. Worker completions acknowledge
+only the matching inflight request revision and component mask, preserving newer
+dirty state. A save carrying a death disposition, quest XP, spell-effect, or craft
+receipt requires success at that exact requested revision before acknowledging the
+attached operation to live state.
 
-Camp, rent, death, idle/link-loss cleanup, ghost extraction, locker departure,
-copyover, shutdown, and reboot use the same terminal fence. Live state may be released
-only after the exact database ACK or an explicit durable journal handoff. Copyover and
-shutdown quiesce and drain both player and world pipelines; failure cancels the
-transition and resumes the live game loop.
+Journal retirement has a separate proof policy. Ordinary snapshots superseded by a
+verified durable revision may be retired. An obsolete non-death frame carrying
+operation receipts may be retired only after every attached operation is explicitly
+verified; a newer revision alone is insufficient. Successful retirement of a death
+disposition requires exact request proof. Replay orders records by PID and revision,
+suppresses exact duplicate payloads, and preserves corruption evidence under the
+journal's quarantine policy.
+Retryable or ambiguous application results stop the current replay pass. Other
+application failures or missing operation proof can retain the evidence in protected
+PID quarantine and continue with unrelated players. Unresolved retained quarantine,
+scan failures, or failure to retain the required evidence can still block replay. See
+[PLAYER_SAVE_JOURNAL.md](../persistence/PLAYER_SAVE_JOURNAL.md).
+
+Terminal callers choose the durability policy; the save-intent name alone does not
+define it. An applied-state acknowledgement is named `database_acknowledged` in the
+API; in a client-free flatfile build it confirms the selected native backend's commit.
+A `journal_durable` result confirms a synced recovery record, without proving that
+the backend has applied it.
+
+| Terminal route | Required durability |
+|----------------|---------------------|
+| Camp or inn rent through `persistence_save_character_terminal()` | Applied-state acknowledgement within the 5-second wait; journal-only handoff is disabled. |
+| Typed death disposition through `player_save_pipeline_terminal_death()` or its resume path | Exact pinned request, revision, and component acknowledgement; journal-only handoff is disabled and retries preserve the immutable request. |
+| Copyover through `persistence_save_character_terminal_database_acknowledged()` | Applied-state acknowledgement within the 5-second wait, followed by the required lifecycle drains. |
+| Other calls to the generic terminal helper, including `RENT_LINKDEAD`, `RENT_CRASH`, and the ordinary `RENT_DEATH` checkpoint path | Applied-state acknowledgement or explicitly permitted journal handoff within the 2-second wait. The client-free flatfile build disables journal-only handoff. |
+| Client-free flatfile terminal writes through `writeCharacter()` | Applied-state acknowledgement within the 5-second wait; journal-only handoff is disabled. |
+| Ordinary shutdown or reboot | Per-player `RENT_CRASH` terminal policy, followed by the required lifecycle drains. |
+
+Copyover and ordinary shutdown quiesce and drain the relevant critical-command,
+outbox, player, and world-recovery pipelines. The player pipeline drain waits for
+accepted append work, including the journal dispatcher's inflight record, to become
+journal-durable; it does not establish that every queued worker save is applied.
+Failure of a required terminal save or drain cancels the transition and resumes the
+live game loop. A player transition that lacks its required durability retains live
+state for retry. See [PLAYER_SAVE_PIPELINE.md](../persistence/PLAYER_SAVE_PIPELINE.md).
 
 ## Player replacement components
 
@@ -435,5 +626,8 @@ replacement contract. These are save semantics only; no table or index shape cha
   troubleshooting steps are in [README.md](../../README.md#troubleshooting), and
   the effective database host, port, and selected database are logged before
   the connection is opened.
-- The cycle script records boot/shutdown timestamps and stop reasons into the
-  database for reboot tracking ([RUNBOOK.md](../operations/RUNBOOK.md)).
+- `scripts/cycle_mud.sh` attempts to insert boot/shutdown timestamps and stop reasons
+  into `server_reboots` after exit in the SQL-required modes (`mariadb-primary` and
+  `mariadb-primary-flatfile-fallback`). `flatfile-primary` skips this SQL bookkeeping.
+  The insert is best-effort: the launcher prints its reboot-log message without
+  checking whether the insert succeeded ([RUNBOOK.md](../operations/RUNBOOK.md)).
