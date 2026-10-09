@@ -2847,6 +2847,154 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Warm global retention pair reviewed CLOSED; refusal and completion pair selected - 2026-10-09
+
+Both original PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt
+and PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_ACCEPTANCE_DELTA_2026-10-09.txt independently
+SOURCE/DESIGN/METADATA PASS; finite reviews CLOSED without correction, repin or reseal.
+Preserve fixed rootGd62faf935fdcda1312e0de9dee87cd6766f73f8d /
+actual parentPe45b395475a6bec8ded9a1717beba53921966baf and scalar budget
+S660704b285418c24e422514890a713eacfffe506 /
+actual parent217d7933e643c3eccbfc15898355bd0e9a1de340; selected charterc605 remains
+their original authority. Root evidence D:/Dev/Temp/coordinator-warm-global-review-20261009
+authenticates raw providers/full definitions/catches/scopes/equalities/whole inverses/
+strict indices/minimal CLOSED references and audited read-only default verifier stdout
+matching each exact receipt. Architecture:24 whole providers,103 cuts,12 original
+definition equalities,six changed definitions,five new definitions,21 structure scopes,
+four full reconstructions/eight raw diffs/two unique header inverses,six CURRENT changes,
+20 observer/helper definitions,19 owning controls,two whole budget equalities,six minimal
+CLOSED references,two source censuses/one finite delivery assessment,142 indexed payloads.
+Quest:29 providers,64 complete functions,17 scopes,eight owning ranges,nine equalities,
+four whole transitions/raw diffs,two budget and ten current continuities,15 minimal
+CLOSED principals/three strict original indices,strict four-payload index.
+Original principal seals:
+- Architecture PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt: 38373/80d9038076b30fcd0ed116331f5107f6c362feb8d8a3e2da1e6f4cf1ddbd0190
+- Architecture PINS.json: 148310/e25aa5efc339d9415ebe667a072a9d253258eb93e59812ece8215f482f6ab2d8
+- Architecture INDEX.json: 23656/ed7f69a80dfdbe7b4c9f210927aa46a05b9c194c8f6b356f039064c15e4ced95
+- Architecture verify.py: 31422/f35199b4d768c67d75985995842120efe04ee84583dbb2428ed433293d9c85f5
+- Architecture VERIFICATION.json: 2285/4093af18a3017ef66759603b3dd36032284b51f3bb2ae7fb8832bb6e8621eb19
+- Quest PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_ACCEPTANCE_DELTA_2026-10-09.txt: 26763/0c772541c59c49c20b77c0d7c1060b99d283214f38bc553bd73d243cf83b7538
+- Quest PINS.json: 7658076/98db0c199a4cac00ea2f1d61f4ad30c198601c0a343beb9fea35607e29768fe6
+- Quest INDEX.json: 672/731252e8f54331aaf137ac35619f89f5fbc3100f403a2aa49d35cf37806e8e2a
+- Quest verify.py: 17328/b9d03817fa73065eeb8d26aa5504ab757d8700c5e85aa6c3161fe0de74536ae7
+- Quest VERIFICATION.json: 3137/b950a0e1b18c4827caa85ea65105f876abf00b5ade571ab36944dfac6595279f
+
+Design preserves real membership/source/slot/selected authority and actual guard
+address/static observer registration before provider work; six distinct initial/CURRENT
+owners once with pending/deferred maps excluded by pool/activity; actual caller/input/
+output/held capacities; max reserve/previous root scalar and conservative cache retention
+on refusal. CURRENT invalid owner/scope/observation returns SIZE_MAX. Exact first-declared
+guard outlives returned envelope/provider locals; scalar root clear -> exact scope end ->
+outside charge has no intervening allocation/callback. Static observer persists after
+scope end; the guard covers the unsubmitted preparation block, not the entire pulse.
+Original SQL/null/inactive guards, callback coordinator/journal mutex exclusions,
+persistent journal attempt separately once and scratch death before recensus remain.
+All GG1-GG4 component/native UNEXECUTED; genuine commands UNAVAILABLE. No full pulse,
+aggregate/32MiB/request math/ABI/allocator/native qualification or private adoption.
+No correction or sealed packet mutation required. Truncated initial root presentation
+was reread in exact chunks before the full read-only verifier audit.
+
+One bounded next delivery per existing authorized chat:
+
+1. SELECT architecture PUBLISHED_ROOM_REFUSAL_COMPLETION_AUTHORITY_BOUNDARY_2026-10-09.txt
+   in D:/Dev/Temp/published-room-refusal-completion-authority-boundary-20261009;
+   quest PUBLISHED_ROOM_REFUSAL_COMPLETION_ACCEPTANCE_DELTA_2026-10-09.txt
+   in D:/Dev/Temp/published-room-refusal-completion-acceptance-delta-20261009.
+   Fixed refusal sourceF4babbc3ad94040fc1c235f6a9c7121a0e52fe746 /
+   actual parentea2852667aab72277644db90b35918acdad3388a; completion source
+   Cd15a94ed464e4173efc3d182de0b5d4698950e62 / actual parentF4babbc3.
+   Full critical_command_coordinator C/H, original cancel_refusal/get_completed/
+   operation_key/native receipt/full BODY equality/canonical clone and complete
+   room_retire_matches_bounded/room_checkpoint_heap/typed/disposition/fence/phase/
+   operation-state/health/generation/lifecycle controls and full source inverses.
+   Pin actual original zone_reset_item_owner pulse/cleanup_refusal and publication
+   cancel_warm forwarding at C as integration context; they still use unbounded
+   methods. Reuse minimal original GG/CK/CG closed references, no broad inventory.
+   Future benefit: implementation-ready refusal cleanup/caller markers/lifetime
+   and complete original receipt lookup integration, avoiding native effect reruns.
+   Architecture maps authority/state/request/output/callback/lifetime; quest four
+   RF acceptance cuts: RF1 original typed/receipt/generation/full native BODY gates,
+   fixed/live clone/key/equality coexistence admission and pre-pin refusal;
+   RF2 actual pinned operation/two counters, genuine cleanup outside mutex with full
+   prefix, distinct caller-owned called/succeeded markers surviving native cleanup;
+   RF3 full pointer/generation/original state/receipt late recheck, counter release,
+   real latch/removal/fence/health tail, false after successful cleanup preserves
+   returned effect and cannot authorize repeat cleanup; RF4 original pending-first/
+   completed-cache second full fixed receipt lookup, binary key admission before
+   allocation, unchanged output on false and no invented health/type/generation/
+   receipt gates or ACK/delivery/source/terminal entitlement.
+   Keep actual marker-reset/alias/null and ABI guards; original canonical comparison
+   is pre-pin, final matches has actual original metadata/receipt law, not a fabricated
+   second encoder. Cleanup context and markers must remain owned after native-owner
+   disposal. No allocating encoder/reserve/owner callback after successful cleanup.
+   Reserve may run under coordinator mutex and must acquire neither coordinator nor
+   journal mutex. Scratch dies before retained recensus, real outputs/markers/held
+   owners survive as required, persistent journal attempt separately once outside outer.
+   Original native cleanup has partial started/returned semantics, not arbitrary rollback.
+   All RF component/native UNEXECUTED/genuine commands UNAVAILABLE until authentic
+   owner/legal refusal/fault/capture/current binary/schema/aggregate fixtures exist.
+   Private D: packet only; strict INDEX/deterministic pure read-only verifier/exact
+   receipt/full definitions/catches/scopes/raw inverses and independent root review.
+   Primary/Plan5 own maintained math/admission/authority/contracts/qualification;
+   no product/native/compiler/DB execution, fixture copies or private commits/import.
+2. QUEUE cold restoration/shape/CURRENT/adoption/enrollment/detach/light markers,
+   paired warm/cold literal-pool exclusions and four-route pulse; owning identity
+   queue/submission/coordinator census; real root writers/CK/ACK/service/scheduler/
+   placement/activity; diagnostics/service effects; financial command/compiler/
+   result/recovery; full caller/capture/aggregate integration. Reassess meaningful
+   successors at delivery, one active task per chat, no sealed repin/reopen/adoption
+   wait/broad inventories or invented work. Missing native inputs block only execution.
+
+Root current-source review authenticates eight whole-provider forward/inverses for
+f50f7151f97e81f969ffd20989e7626f04e33d56 / parenta3b11410,
+ea2852667aab72277644db90b35918acdad3388a / parentf50f7151,
+F4babbc3 / parentea2852667 and Cd15a94ed / parentF4babbc3. Nine whole GG root/budget/
+six-observer providers unchanged; all three owned prior inserted sections preserved.
+Root reads all four complete handoffs/headers and all162 added refusal/completion C
+lines, complete original refusal/lookup/receipt/matcher/heap/fence controls and actual
+original root cleanup plus caller/forwarding context. Cold shape/adoption/enrollment
+C semantic review NOT PERFORMED; original full encoder/native cleanup/allocator/math/
+aggregate qualification NOT PERFORMED. Private RAW/token/preprocessor/policy/source-
+pin claims REPORTED ONLY. Bounded refusal/completion are private published leaves,
+not yet used by full accepting ROOM root or genuine native qualification.
+
+Late63a5fbaf04849ee579aad66e249d465bcc681c41 / parentCd15 adds genuine ROOM-only
+paired bounded SQL/flat admission callback registration and private support proof.
+Root reads full handoff/headers/all five-file changed code and authenticates five
+whole inverses, both selected refusal/completion bodies and complete diagnostic
+observer unchanged, three owned sections preserved. Full original boot/init/shutdown/
+admission C semantic review NOT PERFORMED. SQL full decoder proof and unchanged flat
+bank/item allowlist refusal are source only; current flat ROOM remains unsupported,
+not an accepting route. Queue admission/submission integration separately at next
+handoff; no expansion or repin of selected refusal/completion packet. No native proof.
+
+Earlier14d23/ab1/a3 queue event preserves its five inverses/nine GG equalities and
+source-only scope. Genuine cold native restoration, owning current-light and ABI-
+specific actual identity queue observation source exists; universal pool census,
+native cleanup/adoption/enrollment/four-route/submission/recovery joining remains open.
+No current source silently repins CLOSED GG or any older packet.
+
+Unavailable dependent execution: authentic full accepting warm/cold root/pulse/
+submission/recovery with original UID/CURRENT/projection/context/service/placement/
+effect/SAME borrowed lock/lifetime; genuine owner/capture/legal failure/restart fixtures,
+current ELF/schema and full caller/aggregate/ABI/allocator proof. Available leaves
+enable bounded source preparation only. Primary private progress/adoption unobservable.
+Preserve CLOSED GG/CG/CK/SAME-lock original seals and scanner correction/history;
+lifecycle hydration-allocation clarification; CURRENT/warm/constructor141-file history;
+terminal/factory CURRENT-RETAINED correction/history; immutable and earlier bundles.
+Preserve both isolated clean worker checkouts/jobs/services/evidence and quest clean
+unpublished mergef4e20219113fdaee7d3ead787418d89683e05590. Historical Oct7 human
+scope/provenance answer remains pending as observed; genuinely new human instructions
+take priority. Old component/build/SQL reports UNREVIEWED root; no reset/revert/kill/
+delete/restart or deferred product/DB execution authorized by root.
+
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion.
+Root only three owned coordination docs/read-only metadata/source, no private artifact
+commit/import/activation/deploy/production mutation/other-chat messaging. Broad Plans1-5/
+R1-R8/backend/gameplay/persistence/recovery/owner completion audit open; accounting
+inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat ACTIVE until
+broad completion audit/user pause, quiet unchanged/non-actionable notifications.
+
 ## Carrier and generation pair reviewed CLOSED; warm global retention pair selected - 2026-10-09
 
 Both original PUBLISHED_ROOM_CARRIER_GENERATION_AUTHORITY_BOUNDARY_2026-10-09.txt
