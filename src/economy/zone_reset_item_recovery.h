@@ -113,4 +113,19 @@ economic_accounting_error zone_reset_item_recovery_terminal_body_decode_bounded(
 	void *context, size_t outer_live_scratch,
 	size_t *retained_context_heap_bytes = nullptr) noexcept;
 
+// Complete original successor/publication predicates using real owning bounded
+// command/context/image passes. Caller owns both envelopes/current receipt and
+// their heaps in outer; these values grant no delivery, effect, ACK or generation.
+// Both full contexts coexist across monotonic transition; publication preserves
+// complete terminal BODY, canonical result/revision and original economic core.
+// Original SQL/inactive validators remain exact; unsupported decode ABI refuses.
+bool zone_reset_item_recovery_successor_bounded(const critical_native_recovery_envelope &,
+						const critical_native_recovery_envelope &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t outer_live) noexcept;
+bool zone_reset_item_recovery_publication_bounded(const critical_native_recovery_envelope &,
+						  const critical_completion &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t outer_live) noexcept;
+
 #endif
