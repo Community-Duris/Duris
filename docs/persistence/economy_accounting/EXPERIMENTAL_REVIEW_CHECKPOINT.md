@@ -2110,3 +2110,20 @@ and complete command/compiler/journal joins, genuine warm/cold publication and
 guarded terminal transfer/retirement remain open. This source-only slice does
 not establish plan or release completion. Accounting inactive/admission CLOSED,
 coverage incomplete/release BLOCKED and primary goal ACTIVE persist.
+
+
+## Genuine flat ROOM warm publication preparation joined - 2026-10-09
+
+[The source handoff](ROOM_FLAT_WARM_PUBLICATION_PREPARATION_2026-10-09.md)
+joins private bounded preparation to the actual pulse with genuine retained O/P
+factories, full literal/placement/original-command proofs and prospective caller/
+candidate/codec storage. It also closes retained-command projection retries,
+including already-prepared publication after a retryable submit refusal, without
+rebinding the original CAS. Independent raw/corrected/formatted source reviews,
+patch inverses, token/preprocessor and exact original SQL body checks PASS.
+All 931 policies/393 pins authenticate; zero new/unmapped sites. Native builds/
+tests remain deferred. Actual warm/cold publication, full journal/coordinator
+retirement budget, same-root-lock terminal callback and integrated qualification
+remain open. The flat front door stays closed; no plan/release completion is
+claimed. Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED,
+preserved unrelated WIP and primary goal ACTIVE remain.

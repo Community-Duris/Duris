@@ -61,6 +61,18 @@ class zone_reset_room_publication_owner final
 				 std::span<quest_mobile_native_item_stage *>,
 				 zone_reset_original_room_placement_stage *,
 				 zone_reset_room_publication_stage *) noexcept;
+	// Real warm root lends its retained flat factory tokens and exact O/P sources.
+	// Root/source values are comparisons only. Caller proves closed registry,
+	// whole binding, current projection and exact retained original command, and
+	// admits all caller inputs/output/span objects in outer_live through return.
+	// Candidate and full capture/codec requests are prospective; no publication.
+	static bool prepare_warm_flat_bounded(const critical_command &, const std::string &,
+					      const std::span<quest_mobile_native_item_stage *> &,
+					      const std::span<const economic_source_event> &,
+					      zone_reset_original_room_placement_stage *,
+					      zone_reset_room_publication_stage *,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t outer_live) noexcept;
 	// Same current original envelope and delivered receipt as the shared driver.
 	// Adopt only a complete already-present forest whose original native actions
 	// all returned successfully. Never restores a body or repeats native effects.

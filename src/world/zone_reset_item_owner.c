@@ -2295,6 +2295,25 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		    source.slot != root->slot || root->slot >= invocation->stop_slot ||
 		    root->forest.zone_vnum != invocation->zone_vnum)
 			return false;
+		const auto &birth = *root->stage.state_;
+		const char *configured = persistence_mode_flatfile_root();
+		{
+			// The two actual projection IDs die before the preparation frame.
+			// Admit them alongside the observer already in inline_bytes().
+			size_t projection_live = warm_command_scratch::inline_bytes();
+			if (!warm_scratch_array(projection_live, 2,
+						sizeof(critical_operation_id)) ||
+			    !reserve_warm_command_scratch(projection_live, &scratch))
+				return false;
+			critical_operation_id current_lineage{}, current_epoch{};
+			if (!birth.flat_backend || !birth.flat_scope || !configured ||
+			    !*configured || birth.flat_scope->root_ != configured ||
+			    !economic_gameplay_authority::capture_flat_reset_projection(
+				    &current_lineage, &current_epoch) ||
+			    current_lineage.bytes != birth.flat_lineage.bytes ||
+			    current_epoch.bytes != birth.flat_epoch.bytes)
+				return false;
+		}
 		if (!root->original_envelope.attachment.empty())
 		{
 			const size_t caller_live = warm_command_scratch::inline_bytes();
@@ -2325,25 +2344,6 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 				break;
 			if (owned->stage.state_ && owned->sealed &&
 			    owned->forest.room_vnum == root->forest.room_vnum)
-				return false;
-		}
-		const auto &birth = *root->stage.state_;
-		const char *configured = persistence_mode_flatfile_root();
-		{
-			// The two actual projection IDs die before the preparation frame.
-			// Admit them alongside the observer already in inline_bytes().
-			size_t projection_live = warm_command_scratch::inline_bytes();
-			if (!warm_scratch_array(projection_live, 2,
-						sizeof(critical_operation_id)) ||
-			    !reserve_warm_command_scratch(projection_live, &scratch))
-				return false;
-			critical_operation_id current_lineage{}, current_epoch{};
-			if (!birth.flat_backend || !birth.flat_scope || !configured ||
-			    !*configured || birth.flat_scope->root_ != configured ||
-			    !economic_gameplay_authority::capture_flat_reset_projection(
-				    &current_lineage, &current_epoch) ||
-			    current_lineage.bytes != birth.flat_lineage.bytes ||
-			    current_epoch.bytes != birth.flat_epoch.bytes)
 				return false;
 		}
 		// This is the authentic retained O factory's selected root. Current
@@ -3435,42 +3435,60 @@ void zone_reset_item_owner::pulse_original(bool prepare_original_resets) noexcep
 					if (zone_reset_room_publication_owner::empty(
 						    root.publication))
 					{
-						std::vector<quest_mobile_native_item_stage *>
-							factories;
-						factories.reserve(root.forest.items.size());
-						for (const auto &item : root.forest.items)
+						if (bounded_flat)
 						{
-							quest_mobile_native_item_stage *factory =
-								nullptr;
-							if (root.stage.state_ &&
-							    root.stage.state_->object &&
-							    root.stage.state_->object->obj_uid ==
-								    item.object_uid)
-								factory =
-									&root.stage.state_->factory;
-							for (const auto &child : root.children)
-								if (child->stage.state_ &&
-								    child->stage.state_->object &&
-								    child->stage.state_->object
+							if (!prepare_warm_publication_flat(
+								    root, original, scratch))
+								continue;
+						}
+						else
+						{
+							std::vector<quest_mobile_native_item_stage *>
+								factories;
+							factories.reserve(root.forest.items.size());
+							for (const auto &item : root.forest.items)
+							{
+								quest_mobile_native_item_stage
+									*factory = nullptr;
+								if (root.stage.state_ &&
+								    root.stage.state_->object &&
+								    root.stage.state_->object
 										    ->obj_uid ==
 									    item.object_uid)
-								{
-									if (factory)
-										throw EILSEQ;
 									factory =
-										&child->stage
-											 .state_
+										&root.stage.state_
 											 ->factory;
-								}
-							if (!factory)
-								throw EILSEQ;
-							factories.push_back(factory);
+								for (const auto &child :
+								     root.children)
+									if (child->stage.state_ &&
+									    child->stage.state_
+										    ->object &&
+									    child->stage.state_
+											    ->object
+											    ->obj_uid ==
+										    item.object_uid)
+									{
+										if (factory)
+											throw EILSEQ;
+										factory =
+											&child->stage
+												 .state_
+												 ->factory;
+									}
+								if (!factory)
+									throw EILSEQ;
+								factories.push_back(factory);
+							}
+							if (!zone_reset_room_publication_owner::
+								    prepare_warm(
+									    original.command,
+									    factories,
+									    &root.placement,
+									    &root.publication) ||
+							    !quest_mobile_native_birth_owner::
+								    charge())
+								continue;
 						}
-						if (!zone_reset_room_publication_owner::prepare_warm(
-							    original.command, factories,
-							    &root.placement, &root.publication) ||
-						    !quest_mobile_native_birth_owner::charge())
-							continue;
 					}
 					const auto result =
 						zone_reset_room_publication_owner::submit_warm(
@@ -4076,4 +4094,145 @@ bool zone_reset_item_owner::pending_items(int rnum, size_t *output) noexcept
 	}
 	*output = observed;
 	return true;
+}
+
+bool zone_reset_item_owner::prepare_warm_publication_flat(
+	warm_root &root, const critical_native_recovery_envelope &original,
+	warm_command_scratch &scratch) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    scratch.root != &root || scratch.output != &original ||
+	    root.preparation_owner != &scratch || root.cold || root.blocked || root.retired ||
+	    !root.sealed || !root.stage.state_ ||
+	    !zone_reset_room_publication_owner::empty(root.publication))
+		return false;
+	try
+	{
+		warm_registry *invocation = nullptr;
+		for (auto *registry = warm_head_; registry; registry = registry->next)
+			for (const auto &owned : registry->roots)
+				if (owned.get() == &root)
+				{
+					if (invocation || !registry->closed ||
+					    !registry->dispatcher_completed || registry->blocked ||
+					    registry->sealing_pending)
+						return false;
+					invocation = registry;
+				}
+		const auto &held = *root.stage.state_;
+		const auto &source = root.forest.reset_source;
+		const char *configured = persistence_mode_flatfile_root();
+		if (!invocation || !held.flat_backend || !held.flat_scope || !configured ||
+		    !*configured || held.flat_scope->root_ != configured ||
+		    !warm_bindings_current(root) || source.kind != invocation->invocation.kind ||
+		    source.source.bytes != invocation->invocation.source.bytes ||
+		    source.generation.bytes != invocation->invocation.generation.bytes ||
+		    source.sequence != invocation->invocation.sequence ||
+		    source.slot != root.slot || root.slot >= invocation->stop_slot ||
+		    root.forest.zone_vnum != invocation->zone_vnum ||
+		    original.command.operation_id.bytes !=
+			    root.original_envelope.command.operation_id.bytes ||
+		    original.revision != root.original_envelope.revision ||
+		    original.phase != root.original_envelope.phase ||
+		    original.attachment != root.original_envelope.attachment ||
+		    root.canonical_command.empty())
+			return false;
+		size_t base = warm_command_scratch::inline_bytes(), envelope_heap = 0;
+		if (!warm_scratch_envelope_heap(original, false, &envelope_heap) ||
+		    !warm_scratch_add(base, envelope_heap))
+			return false;
+		{
+			// Recheck the actual retained projection even on original-command retries.
+			size_t projection_live = base;
+			if (!warm_scratch_array(projection_live, 2,
+						sizeof(critical_operation_id)) ||
+			    !reserve_warm_command_scratch(projection_live, &scratch))
+				return false;
+			critical_operation_id lineage{}, epoch{};
+			if (!economic_gameplay_authority::capture_flat_reset_projection(&lineage,
+											&epoch) ||
+			    lineage.bytes != held.flat_lineage.bytes ||
+			    epoch.bytes != held.flat_epoch.bytes)
+				return false;
+		}
+		size_t caller_live = base;
+		if (!warm_scratch_add(caller_live,
+				      sizeof(std::vector<quest_mobile_native_item_stage *>)) ||
+		    !warm_scratch_add(caller_live, sizeof(std::vector<economic_source_event>)) ||
+		    !warm_scratch_add(caller_live, sizeof(std::vector<uint8_t>)) ||
+		    !warm_scratch_add(caller_live,
+				      sizeof(std::span<quest_mobile_native_item_stage *>)) ||
+		    !warm_scratch_add(caller_live,
+				      sizeof(std::span<const economic_source_event>)) ||
+		    !reserve_warm_command_scratch(caller_live, &scratch))
+			return false;
+		{
+			std::vector<quest_mobile_native_item_stage *> factories;
+			std::vector<economic_source_event> sources;
+			std::vector<uint8_t> canonical;
+			if (critical_command_encode_bounded(
+				    original.command, &canonical, reserve_warm_command_scratch,
+				    &scratch, caller_live) != critical_command_codec_result::ok)
+				return false;
+			if (canonical != root.canonical_command ||
+			    !warm_scratch_add(caller_live, canonical.capacity()) ||
+			    !warm_root_current_bounded(root, scratch, caller_live) ||
+			    !warm_scratch_array(caller_live, root.forest.items.size(),
+						sizeof(quest_mobile_native_item_stage *)) ||
+			    !warm_scratch_array(caller_live, root.forest.items.size(),
+						sizeof(economic_source_event)) ||
+			    !reserve_warm_command_scratch(caller_live, &scratch))
+				return false;
+			factories.reserve(root.forest.items.size());
+			sources.reserve(root.forest.items.size());
+			for (const auto &item : root.forest.items)
+			{
+				quest_mobile_native_item_stage *factory = nullptr;
+				const economic_source_event *actual_source = nullptr;
+				if (held.object && held.object->obj_uid == item.object_uid)
+				{
+					factory = &root.stage.state_->factory;
+					actual_source = &held.facts.reset_source;
+				}
+				for (const auto &child : root.children)
+					if (child->stage.state_ && child->stage.state_->object &&
+					    child->stage.state_->object->obj_uid == item.object_uid)
+					{
+						const auto &body = *child->stage.state_;
+						if (factory ||
+						    child->result !=
+							    zone_reset_item_warm_result::captured ||
+						    child->selected_root_operation.bytes !=
+							    held.facts.operation_id.bytes ||
+						    !body.flat_backend || !body.flat_scope ||
+						    body.flat_scope->root_ !=
+							    held.flat_scope->root_ ||
+						    !factory_backend_current(
+							    body.factory, body.flat_scope.get(),
+							    body.facts.reset_scope))
+							return false;
+						factory = &child->stage.state_->factory;
+						actual_source = &body.facts.reset_scope;
+					}
+				if (!factory || !actual_source)
+					return false;
+				factories.push_back(factory);
+				sources.push_back(*actual_source);
+			}
+			const std::span<quest_mobile_native_item_stage *> factory_rows{ factories };
+			const std::span<const economic_source_event> source_rows{ sources };
+			if (!zone_reset_room_publication_owner::prepare_warm_flat_bounded(
+				    original.command, held.flat_scope->root_, factory_rows,
+				    source_rows, &root.placement, &root.publication,
+				    reserve_warm_command_scratch, &scratch, caller_live))
+				return false;
+		}
+		// The candidate and all local vector/span storage have died; publication
+		// metadata now belongs to the actual root census, exactly once.
+		return rebase_warm_command_scratch(scratch, base);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
