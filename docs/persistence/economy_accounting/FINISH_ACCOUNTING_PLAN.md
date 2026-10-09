@@ -9270,3 +9270,17 @@ RAW/final Cprefix/header/registration inverses/tokens/preprocessor PASS;931polic
 ACK/copy/generation/warm/cold/scheduler/service/fault/mixed qualification remain open.
 Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
 ACTIVE goal persist; no newgate/full native acceptance claim.
+
+
+## Full ROOM receipt-authenticated bounded ACK joined - 2026-10-09
+
+[Owning integration](ROOM_COORDINATOR_ACK_ADMISSION_2026-10-09.md) joins complete
+original physical-publication/receipt/delivery/generation/domain proofs to actual
+bounded mixed-journal execution->continuation CAS. Both envelope clones and actual
+operation_key move-assignment temporary are admitted; concrete review finding closed.
+Sticky uncertain retry/nonallocating post-CAS transition preserve ROOM terminal
+fences. Corrected RAW/final Cprefix/header/registration inverses/tokens/preprocessor
+PASS;931policies/398pins authenticate, zero new/unmapped sites. Native checks batched.
+Pulse/copy/generation/warm/cold/scheduler/service/placement/fault/mixed qualification
+remain open. Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED
+release and ACTIVE goal persist; no added gate or full native acceptance claim.
