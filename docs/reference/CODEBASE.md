@@ -8,12 +8,14 @@ live in subsystem directories, and includes use paths qualified from `src/`
 conventions: `act*.c` files group player commands, `do_<name>` functions are
 commands, and `specs.*.c` files hold special procedures.
 
-Source scope: implementation base
-`7f3da9c3a1b2b423da85a24abab603d8cdbee149`, reviewed on October 7, 2026,
-on `codex/docs-cleanup`. Documentation edits on this branch do not integrate
-newer runtime work. See the architecture guide's
+Source scope: publication onto `experimental-accounting` at implementation base
+`626e338461cbd803d69b64cccb2d3849b01a5fff`, reviewed on October 9, 2026.
+The architecture guide's
 [newer branch implementations](ARCHITECTURE.md#newer-branch-implementations)
-for separately reviewed implementations and proposals.
+preserve the separately reviewed October 7 snapshots; the current publication
+base already includes the transport, poll-based networking and account-load work
+identified there. Documentation publication does not qualify combined runtime
+behavior.
 
 Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATABASE.md](DATABASE.md).
 

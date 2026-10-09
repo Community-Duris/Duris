@@ -4,8 +4,8 @@ Read the selected guides in the [project documentation library](https://communit
 See [Project website](guides/GITHUB_PAGES.md) for publishing and local development.
 
 Setup and first boot live in the root [README](../README.md); its Quick start is the
-onboarding path. This directory holds the verified development, architecture,
-operations, database, and builder references.
+onboarding path. This directory holds development, architecture, operations,
+database and builder references, together with dated records and proposals.
 
 ```
 docs/
@@ -44,7 +44,7 @@ docs/
 | [WORLD_RECOVERY_PIPELINE.md](persistence/WORLD_RECOVERY_PIPELINE.md) | Immutable world generations and exact acknowledgement. |
 | [CRITICAL_COMMAND_PIPELINE.md](persistence/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, transaction, journal, outbox, replay, and fences. |
 | [IMMUTABLE_MIGRATIONS.md](persistence/IMMUTABLE_MIGRATIONS.md) | Honest baseline adoption and checksummed ordered migration history. |
-| [RUNTIME_COMPATIBILITY.md](persistence/RUNTIME_COMPATIBILITY.md) | Pre-write schema verification and atomic lookup publication. |
+| [RUNTIME_COMPATIBILITY.md](persistence/RUNTIME_COMPATIBILITY.md) | SQL runtime schema gates, accepted migration histories, and atomic lookup publication. |
 | [DATA_LIFECYCLE.md](persistence/DATA_LIFECYCLE.md) | Complete store inventory and pending-policy boundary. |
 | [LIFECYCLE_ARCHIVE.md](persistence/LIFECYCLE_ARCHIVE.md) | Bounded archive state machine and disabled canonical scheduler. |
 | [PERSONAL_DATA_EXPORT.md](persistence/PERSONAL_DATA_EXPORT.md) | Authenticated package contract and pending activation. |
@@ -57,7 +57,7 @@ docs/
 
 | Document | Purpose |
 |----------|---------|
-| [COLLECTOR_OF_ANTIQUITIES.md](design/COLLECTOR_OF_ANTIQUITIES.md) | Collector lifecycle policy, authorities, runtime publication, and the disabled-by-default promotion evidence. |
+| [COLLECTOR_OF_ANTIQUITIES.md](design/COLLECTOR_OF_ANTIQUITIES.md) | Collector lifecycle policy, authorities, runtime publication, and qualification before enablement. |
 
 ## guides/ - daily development
 
@@ -78,7 +78,7 @@ docs/
 | Document | Purpose |
 |----------|---------|
 | [RUNBOOK.md](operations/RUNBOOK.md) | Safe startup, migration, backup, restore, recovery, reconciliation, and the release boundary. |
-| [PRODUCTION_DEPLOYMENT.md](operations/PRODUCTION_DEPLOYMENT.md) | Live production topology, service and helper locations, Cloudflare Tunnel, and TLS setup. |
+| [PRODUCTION_DEPLOYMENT.md](operations/PRODUCTION_DEPLOYMENT.md) | Dated production topology and verification limits for services, Cloudflare Tunnel, and TLS. |
 | [DOCKER.md](operations/DOCKER.md) | End-to-end local Compose deployment, persistent data, upgrades, and reset boundaries. |
 | [CONFIGURATION.md](operations/CONFIGURATION.md) | Runtime variables, Redis, listeners, proxy handling, and diagnostics. |
 | [SECURITY_BASELINE.md](operations/SECURITY_BASELINE.md) | Generated dependency baseline and its validation. |
@@ -88,7 +88,7 @@ docs/
 
 | Document | Purpose |
 |----------|---------|
-| [HELP_SYSTEM.md](content/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
+| [HELP_SYSTEM.md](content/HELP_SYSTEM.md) | Help catalog sources, asynchronous SQL refresh, local fallback, and rendering. |
 | [HELP_STYLE_GUIDE.md](content/HELP_STYLE_GUIDE.md) | House style for help entries. |
 | [AREA_OBJECT_FORMAT.md](content/AREA_OBJECT_FORMAT.md) | Area object file format and bitvector compatibility. |
 | [STUDIOPROC.md](content/STUDIOPROC.md) | Studio proc design and the reasoning behind it. |

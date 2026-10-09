@@ -8,12 +8,13 @@ and critical-command journals also retain durable local recovery records;
 Redis supplies optional caches and world recovery. See
 [ARCHITECTURE.md](ARCHITECTURE.md#persistence) for the backend boundaries.
 
-This reference describes implementation base
-`7f3da9c3a1b2b423da85a24abab603d8cdbee149` on `codex/docs-cleanup`, reviewed on
-October 7, 2026. The architecture guide's
+This reference was updated for publication onto `experimental-accounting` at
+implementation base `626e338461cbd803d69b64cccb2d3849b01a5fff` on October 9, 2026.
+The architecture guide's
 [newer branch implementations](ARCHITECTURE.md#newer-branch-implementations)
-section identifies separately reviewed accounting, telemetry, and quest work;
-documentation updates do not integrate those implementations.
+section preserves the separately reviewed October 7 snapshots. Current migration
+and runtime-gate pins below describe the publication base; a documentation update
+does not qualify the combined implementation.
 
 The SQL connections, tables, and schema procedures below apply to
 `mariadb-primary`. Setup steps (creating users/databases) are in

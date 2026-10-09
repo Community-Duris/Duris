@@ -1,6 +1,6 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
-## Independent history and namespace qualified — 2026-10-07
+## Independent history and namespace qualified â€” 2026-10-07
 
 [Primary integration](../PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
 adds catalogue-required consecutive history and captured physical-namespace

@@ -26,7 +26,7 @@ the two updated source-pin values with their predecessor values recovers each
 original JSON object exactly. Candidate objects still match; every declared
 source pin matches its actual file. No route, status, evidence policy, mandatory
 test, activation field or producer behavior changes. The shared request in
-[the original handoff](PLAN5_CURRENT61_SOURCE_PIN_HANDOFF_2026-10-05.md) is resolved.
+[the original handoff](https://github.com/Community-Duris/Duris/blob/75349a0c7012251cdbbe6d72bf0cf7e09fe2dd69/docs/persistence/economy_accounting/PLAN5_CURRENT61_SOURCE_PIN_HANDOFF_2026-10-05.md) is resolved.
 
 ## Actual original verification
 
@@ -59,7 +59,7 @@ are recorded after commit in the delivery receipt.
 
 ## Remaining work and curator packet
 
-The [current61 native/build/legacy report](PLAN5_CURRENT61_BUILD_AUDIT_AND_LEGACY_QUALIFICATION_2026-10-05.md)
+The [current61 native/build/legacy report](https://github.com/Community-Duris/Duris/blob/bd1795faa948e99c7a7605daecda49c00851b6b2/docs/persistence/economy_accounting/PLAN5_CURRENT61_BUILD_AUDIT_AND_LEGACY_QUALIFICATION_2026-10-05.md)
 retains its exact native source, both-engine outcomes,6468-artifact seal and
 scope. The four original retention/managed-restore handles remain unchanged;
 no terminal result has been received during the Docker/WSL infrastructure stall.
