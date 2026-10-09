@@ -70,7 +70,7 @@
 ### Connections
 
 - Read `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and `DB_NAME` from the environment; never hardcode or log their values.
-- MySQL or MariaDB with InnoDB is the durable system of record.
+- In `mariadb-primary`, MySQL or MariaDB with InnoDB is the durable system of record; `flatfile-primary` uses its private native repositories and a matching client-free build.
 - Set and verify `utf8mb4`, time zone, isolation level, SQL mode, and bounded connect/read/write deadlines on every connection.
 - Require native TLS or a protected local socket/tunnel for non-local database hosts.
 - Heal failed pool slots asynchronously and expose acquisition, execution, retry, and oldest-work age.
@@ -175,7 +175,7 @@
 | Type safety and compiler | g++ C++20 with `-Werror` | `make -C src` |
 | Focused tests | Python/Bash | `tests/async/test_*.py`, `tests/async/run_*.sh` |
 | Full tests | Make | `make test-all` |
-| Observability | Bounded persistence telemetry and redacted logs | `src/persistence_observability.*`, log-hygiene regressions |
+| Observability | Bounded persistence telemetry and redacted logs | `src/persistence/persistence_observability.*`, log-hygiene regressions |
 | Database tests | Isolated MySQL/Docker | `make test-db` and DB-specific wrappers |
 | Git hooks | Repository hook installer | `./scripts/install-hooks.sh` |
 | Database | MySQL/MariaDB | `.env`, `migrations/run_migration.sh` |
@@ -188,11 +188,13 @@
 | Code Quality | configured | `.github/workflows/quality.yml` |
 | Build & Test | configured | `.github/workflows/build.yml` |
 | Security | configured | `.github/workflows/security.yml` |
-| Integration | not configured | - |
-| Operations | not configured | `.github/dependabot.yml` provides dependency updates only |
+| Integration | telemetry SQL engine matrix and synthetic restore qualification | `.github/workflows/quality.yml`, `.github/workflows/backup-recovery.yml` |
+| Operations | public-health probes and scheduled disposable backup recovery | `.github/workflows/production-uptime.yml`, `.github/workflows/backup-recovery.yml` |
 
-Build & Test and Security run on pushes to `master` and on pull requests targeting
-`master`; Code Quality additionally runs on pushes to any branch. The local
+Build & Test, Security and Code Quality run on pushes to `master` and on pull
+requests targeting `master`. Backup recovery also has a weekly schedule and manual
+entry point; production uptime probes have a ten-minute schedule and manual entry
+point. These workflows have different evidence boundaries. The local
 equivalents are `./scripts/format.sh --check`,
 `python3 tests/async/test_compiler_warning_profile.py`, `make test-all`, and
 `make security-check`.
@@ -201,8 +203,8 @@ equivalents are `./scripts/format.sh --check`,
 
 | Component | Provider | Details |
 |-----------|----------|---------|
-| Hosting | externally managed | No repository-owned production target is declared |
-| Database | MySQL/MariaDB | Required at boot; pooled readiness is exposed without a blocking query |
+| Hosting | externally managed | Service templates and a dated topology record are maintained in `docs/operations/PRODUCTION_DEPLOYMENT.md`; current host state requires operator verification |
+| Persistence | Selected native backend | MySQL/MariaDB in `mariadb-primary`, or private state in `flatfile-primary`; SQL pooled readiness is exposed without a blocking query |
 | Health | DurisMUD WebSocket listener | `GET /health` on `DURIS_WEBSOCKET_PORT` (default 4050); JSON status; `scripts/healthcheck.sh` probe |
 
 ## When In Doubt

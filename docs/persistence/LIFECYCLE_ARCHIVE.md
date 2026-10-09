@@ -33,8 +33,11 @@ against production as part of development or validation.
 
 `scripts/lifecycle_archive.py` defines the typed planner and batch state machine. Stable
 job and batch IDs bind the policy ID/version/checksum, store, action, cutoff, starting
-cursor, upper bound, and sequence. Every copy is constrained to at most 256 rows,
-1 MiB, and 500 ms; checked-in defaults are tighter.
+cursor, upper bound, and sequence. The planner's maximum budgets are 256 rows,
+1 MiB of payload, and 500 ms; checked-in defaults are tighter. The synthetic
+`copy(rows, run_usec)` boundary validates row/payload counts and the caller-supplied
+elapsed time. It does not run a database copy or measure a live operation's duration.
+A future active adapter must measure and enforce its wall-time budget.
 
 The transition is:
 

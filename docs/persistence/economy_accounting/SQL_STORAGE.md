@@ -15,11 +15,12 @@ an additive unique index on the existing ledger so its composite foreign key
 binds the exact legacy event, UID and revision. Existing balance/custody stores
 remain authoritative; there is no mutable global mint/sink total.
 
-`0030` belongs to telemetry quarantine on this baseline. The accounting migration
-is provisionally `0031`; allocation must be checked again before merge. Bootstrap,
-immutable verification, runtime metadata and lifecycle registration must agree
-on both MySQL and MariaDB before this increment is review-ready. Historical
-whole-schema fingerprints cannot be reused on the newer base. No baseline,
+The canonical accounting migration is `0031_economy_accounting`; `0030` is telemetry
+quarantine in that history. The provisional allocation described by this increment
+has landed. Current accepted histories, head and fingerprints are maintained in
+[runtime compatibility](../RUNTIME_COMPATIBILITY.md). Bootstrap, immutable verification,
+runtime metadata and lifecycle registration must agree on both supported engines;
+historical whole-schema fingerprints cannot be reused on a newer base. No baseline,
 active epoch, mapping or gameplay value is seeded by this schema.
 
 ## Identity-lock helper

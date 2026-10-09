@@ -1,11 +1,18 @@
 # Configuration
 
-Duris reads environment settings from `.env` in the data directory during
-startup. The parser accepts one `KEY=VALUE` assignment per line; blank lines and
-lines beginning with `#` are ignored. Values are not shell-expanded or
-quote-aware, so do not wrap values in quotes. Existing process environment
-variables are preserved because `.env` only supplies variables that are not
-already set.
+When started directly, Duris reads `.env` in the server's data directory during
+startup. Its parser accepts one literal `KEY=VALUE` assignment per line; blank
+lines and lines beginning with `#` are ignored. Values are not shell-expanded or
+quote-aware, and quotation marks become part of the value. Existing process
+environment variables are preserved because this loader only supplies variables
+that are not already set.
+
+`scripts/cycle_mud.sh` first changes to the repository root and sources its `.env`
+as Bash with automatic export enabled. File assignments can replace inherited
+environment values, and Bash interprets quoting and shell syntax. The server's
+loader then preserves the resulting environment. Use unquoted assignments whose
+values work with both parsers. For values that require quoting, set them in the
+launching process environment and omit those keys from `.env`.
 
 Start from [`.env.example`](../../.env.example):
 
@@ -21,9 +28,10 @@ beyond owner read/write (`0600`).
 
 ## Output profiles
 
-`DURIS_OUTPUT_PROFILES_FILE` optionally names an absolute path to a versioned JSON
-configuration of channel profiles, dictionaries, and foreground recipes. Startup
-loads it once before gameplay; an absent setting uses Preserve, and an invalid
+`DURIS_OUTPUT_PROFILES_FILE` optionally names a versioned JSON configuration of
+channel profiles, dictionaries, and foreground recipes. An absolute path is
+recommended; relative paths resolve from the server's data directory. Startup
+loads the file once before gameplay; an absent setting uses Preserve, and an invalid
 initial file logs a diagnostic and uses the same fallback. Explicit reload APIs
 publish complete validated snapshots and retain the previous snapshot on failure.
 Message rendering performs no configuration I/O. See the
@@ -31,34 +39,41 @@ Message rendering performs no configuration I/O. See the
 [versioned sample](../examples/output-profiles-v1.json) for the schema and bounds.
 
 Loading a profile does not opt existing callers into styling. Callers still need
-an explicit output context; animation effects and player preference commands are
-separate follow-up work.
+an explicit output context. Animation recipes and player preferences are
+implemented for adopted contexts. `toggle color` provides channel choices,
+previews, and resets; `toggle color motion off|on` controls decorative animation.
+With motion off, animated output uses a stable frame.
 
 ## Telemetry runtime
 
-Telemetry is opt-in at the server boundary. The parent startup path should pass
-`telemetry_runtime_options_from_environment()` to `telemetry_runtime_init()`;
-this source performs no database access, and reads only the reviewed property
-catalog at bootstrap. `TELEMETRY_ENABLED` must be an accepted true value
-(`TRUE`, `1`, `YES`, or `ON`) before any telemetry worker starts. Unset, false,
-malformed, or out-of-range values fail closed to the default-disabled snapshot.
+Telemetry is opt-in at the server boundary. Startup calls
+`telemetry_runtime_init(telemetry_runtime_options_from_environment())` before
+gameplay. Environment parsing and reviewed property-catalog loading perform no
+database access; the enabled transport worker owns its private SQL repository
+connection. `TELEMETRY_ENABLED` must be an accepted true value (`TRUE`, `1`, `YES`,
+or `ON`) before any telemetry worker starts. Unset, false, malformed, or
+out-of-range values fail closed to the default-disabled snapshot.
 A client-free (`__NO_MYSQL__`) build always returns `flatfile_disabled` and
 remains disabled, even when the opt-in variable is true.
 
 | Variable | Default when opted in | Accepted values / range | Meaning |
 | --- | --- | --- | --- |
-| `TELEMETRY_ENABLED` | disabled | `TRUE`/`1`/`YES`/`ON`; false equivalents disable | Explicitly opt into the SQL telemetry writer. |
+| `TELEMETRY_ENABLED` | disabled | `TRUE`/`1`/`YES`/`ON` enable; `FALSE`/`0`/`NO`/`OFF` disable | Explicitly opt into the SQL telemetry writer. |
 | `TELEMETRY_BACKEND` | `sql` on SQL builds | `sql`, `flatfile_disabled`, `disabled`, `off` | Select SQL or the deliberate disabled backend; flat-file is not an observational sink. |
 | `TELEMETRY_PROPERTY_CATALOG_FILE` | required for enabled SQL | owner-readable reviewed catalog path | Full effective-property digest to stable property-version mapping; missing or invalid input disables telemetry only. |
 | `TELEMETRY_CONFIG_REVISION` | `1` | positive `uint64` | Reviewed effective configuration revision floor. |
 | `TELEMETRY_BUILD_VERSION`, `TELEMETRY_CONTENT_VERSION` | `1` | positive `uint32` | Versioned inputs included in the config identity. |
 | `TELEMETRY_CLASSIFIER_VERSION`, `TELEMETRY_POLICY_VERSION` | `1` | positive `uint32` | Classifier/policy identities attached to observations. |
 | `TELEMETRY_SEASON_ID`, `TELEMETRY_ENVIRONMENT_ID` | `1` | positive `uint64` | Scope identity carried by session records. |
-| `TELEMETRY_INTERVAL_USEC` | proposal default | `1` through the proposal maximum | Activity interval cadence. |
-| `TELEMETRY_CHECKPOINT_INTERVAL_USEC` | `300000000` | `1` through the proposal maximum | Cumulative session checkpoint cadence. |
-| `TELEMETRY_ACTIVE_WINDOW_USEC` | proposal default | `1` through the proposal maximum | Recent-evidence active window. |
-| `TELEMETRY_CONTEXT_SEGMENTS_PER_MINUTE` | proposal default | `1` through the configured cap | Context segment rate cap. |
-| `TELEMETRY_PULSE_SLOT_COUNT` | `1` | `1` through the configured cap | Number of staggered pulse cohorts. |
+| `TELEMETRY_INTERVAL_USEC` | `60000000` (60 seconds) | `1`-`3600000000` | Activity interval cadence. |
+| `TELEMETRY_CHECKPOINT_INTERVAL_USEC` | `300000000` (5 minutes) | `1`-`3600000000` | Cumulative session checkpoint cadence. |
+| `TELEMETRY_ACTIVE_WINDOW_USEC` | `300000000` (5 minutes) | `1`-`3600000000` | Recent-evidence active window. |
+| `TELEMETRY_CONTEXT_SEGMENTS_PER_MINUTE` | `8` | `1`-`64` | Context segment rate cap. |
+| `TELEMETRY_PULSE_SLOT_COUNT` | `1` | `1`-`256` | Number of staggered pulse cohorts. |
+
+The three `_USEC` ranges run from one microsecond through one hour. Boolean and
+backend names are case-insensitive; an unset or empty `TELEMETRY_ENABLED` disables
+telemetry.
 
 The catalog is a reviewed, preloaded text file. Blank lines and lines beginning
 with `#` are ignored; every other line must contain exactly four whitespace-
@@ -104,26 +119,31 @@ and transport teardown, and may block on an in-flight repository callback.
 Call it from the off-game-thread process-lifetime shutdown path, before
 `shutdown_mysql()` or process return; it is not a hard bounded shutdown step.
 
-Copyover version 15 stores one bounded telemetry handoff per preserved telnet
-session. Save accounts through the handoff cut and writes only value data;
-recover allocates a new process-local connection and resumes the logical session.
-Legacy copyover versions and failed handoff capture use an explicit absent
+Telemetry handoffs were introduced in native copyover version 15 and remain in
+the current version 17. The writer emits version 17; the reader supports versions
+12-17 and reads telemetry framing for version 15 and later. Each preserved telnet
+session has one bounded handoff entry. Save accounts through the handoff cut and
+writes only value data; recover allocates a new process-local connection and
+resumes the logical session. Versions 12-14 have no telemetry trailer. Older
+formats and missing or rejected individual handoffs use an explicit absent
 handoff, so the next observation marks an unclosed tail instead of inventing
 continuity. Telemetry resume failure is logged and never rejects the game-state
-copyover. Before writing candidate handoffs, synchronous copyover requests a
-worker-owned flush and waits at most 250ms. It writes absent handoffs unless
-all admitted records are acknowledged without permanent rejection. This wait
-never issues SQL or stops/joins the worker on the game thread; a failed copyover
-can continue using the same runtime.
+copyover. An invalid telemetry header or truncated telemetry section rejects
+copyover recovery because the following world section cannot be read safely.
+Before writing candidate handoffs, synchronous copyover requests a worker-owned
+flush and waits at most 250ms. It writes absent handoffs unless all admitted
+records are acknowledged without permanent rejection. This wait never issues
+SQL or stops/joins the worker on the game thread; a failed copyover can continue
+using the same runtime.
 
 ## Persistence
 
 `PERSISTENCE_MODE` selects one whole-server authority. It defaults to
-`mariadb-primary`. The accepted values are `mariadb-primary`,
-`mariadb-primary-flatfile-fallback`, and `flatfile-primary`. A MariaDB client build accepts
-`mariadb-primary`; a client-free flat build accepts `flatfile-primary`. The legacy mixed
-fallback token is recognized for a clear diagnostic but fails closed because mixed
-per-operation authority transfer is not supported.
+`mariadb-primary`. The supported choices are `mariadb-primary` for a SQL-client
+build and `flatfile-primary` for a client-free flat build with a private
+`FLATFILE_STATE_DIR`. Names are case-sensitive. The legacy
+`mariadb-primary-flatfile-fallback` token is recognized for a clear diagnostic but
+rejected by the server; mixed per-operation authority transfer is not supported.
 
 | Variable | Requirement | Meaning |
 | --- | --- | --- |
@@ -140,12 +160,16 @@ per-operation authority transfer is not supported.
 | `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
 | `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
 | `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |
-| `PLAYER_SAVE_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for revisioned player snapshots. |
-| `CRITICAL_COMMAND_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for non-coalescing critical commands. |
+| `PLAYER_SAVE_JOURNAL_DIR` | Required for the player-save pipeline, including mini mode | Absolute server-user-owned `0700` directory for revisioned player snapshots. |
+| `CRITICAL_COMMAND_JOURNAL_DIR` | Required for the critical-command pipeline, including mini mode | Server-user-owned `0700` directory for non-coalescing critical commands; use an absolute path. |
 | `MAINTENANCE_STATE_FILE` | Optional; `bin/server/maintenance-scheduler.state` | Durable scheduler cursor/completion state; parent directory must be server-user controlled. |
 
-`scripts/cycle_mud.sh --check-config` validates the selected mode without starting the
-server. Add `--production` to require `ENVIRONMENT=production` and the production-port
+`scripts/cycle_mud.sh --check-config` checks the launcher's environment requirements
+without starting the server or invoking its persistence-mode selector. The launcher
+currently recognizes the unsupported `mariadb-primary-flatfile-fallback` token and
+can report success when both SQL and flat-file settings are supplied; that result
+does not establish support in the binary. Select one of the two supported authorities
+above. Add `--production` to require `ENVIRONMENT=production` and the production-port
 runtime role; the production systemd unit always supplies that flag. `--production`
 cannot be combined with `--dev` or `--minimal`. In `flatfile-primary`, the launcher
 does not require database settings, run migrations or schema checks, invoke MySQL
@@ -174,24 +198,40 @@ explicitly. Every connection must establish the same verified session contract:
 `utf8mb4`, time zone `+00:00`, `READ-COMMITTED`, and `STRICT_TRANS_TABLES`,
 `ERROR_FOR_DIVISION_BY_ZERO`, and `NO_ENGINE_SUBSTITUTION`. Loopback TCP and an
 explicit local-role socket are treated as protected local transport. Any other host
-requires enforced TLS, CA verification, and a negotiated cipher. Boot also requires a
-supported MySQL 8.0 or MariaDB 10.11 normalized metadata fingerprint before mutation.
+requires enforced TLS, CA verification, and a negotiated cipher. MariaDB boot also requires a
+supported MySQL 8.0 or MariaDB 10.11 normalized metadata fingerprint before lookup
+publication, SQL UID reservation, and pool startup. SQL lifecycle recovery and
+connection-activity bookkeeping occur before this full schema/fingerprint check.
 
-Both journal directories are mandatory for normal operation. They must be absolute,
-owned by the server user, and mode `0700` or stricter; their files are permission
-checked, checksummed, size bounded, and fail closed on corruption or quota exhaustion.
-Do not place either directory under a shared or automatically cleaned temporary path.
+Both journal settings are required for their respective persistence pipelines,
+which are initialized in mini mode too. Initialization failure is logged and
+reported to staff, and startup can continue with the affected pipeline unavailable;
+a running server does not establish healthy saving or critical-command persistence.
+The affected pipeline's operations fail closed.
+
+Use absolute paths for both journals. The player-save pipeline rejects relative
+paths; the critical-command initializer currently permits them, resolving from
+the server's data directory. Directories must be owned by the server user and
+mode `0700` or stricter; their files are permission checked, checksummed, size
+bounded, and fail closed on corruption or quota exhaustion. Do not place either
+directory under a shared or automatically cleaned temporary path.
 
 ## Redis
 
 Redis is optional. It is disabled unless `REDIS=TRUE` (case-insensitive).
-When enabled, it stores floor-drop recovery data, object UID state, caches, and
-optional immutable world-recovery generations. Player dirty state remains local to the
-revisioned player-save pipeline and typed journal.
+When enabled, Redis holds floor-drop recovery records, caches, presence state,
+and optional immutable world-recovery generations. It carries presence and
+donation events. Item UID allocation belongs to SQL or the native flat-file
+allocator; recovery records carry item identities. Player dirty state remains
+local to the revisioned player-save pipeline and typed journal.
+
+The current Redis runtime requires a nonzero SQL season epoch at startup. The
+client-free build returns zero for that epoch, so setting `REDIS=TRUE` does not
+activate the current Redis runtime in a client-free flat-file build.
 
 | Variable | Default | Accepted values / range | Meaning |
 | --- | --- | --- | --- |
-| `REDIS` | disabled | `TRUE` enables it | Enable Redis integration. |
+| `REDIS` | disabled | `TRUE` (case-insensitive) enables it | Enable Redis integration. |
 | `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis TCP host. Must be empty when `REDIS_SOCKET` is set. |
 | `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port. Must be empty when `REDIS_SOCKET` is set; an explicitly invalid TCP value disables Redis at boot. |
 | `REDIS_SOCKET` | empty | Absolute path, at most 107 bytes | Optional local Unix socket used instead of TCP. It is mutually exclusive with `REDIS_HOST`/`REDIS_PORT` and with TLS. Every runtime worker uses the same socket through the shared adapter. |
@@ -204,17 +244,25 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_CACHE_USERNAME`, `REDIS_CACHE_PASSWORD` | local fallback | Complete ACL pair | Reconstructible content-cache identity. Required in production. |
 | `REDIS_DONATION_USERNAME`, `REDIS_DONATION_PASSWORD` | local fallback | Complete ACL pair | Donation subscription identity. Required in production only when the subscriber is enabled. |
 | `REDIS_MAINTENANCE_USERNAME`, `REDIS_MAINTENANCE_PASSWORD` | local fallback | Complete ACL pair | Retired ship cleanup, pwipe, and stopped-server destructive-maintenance identity. Required in production. The shell helper passes its password through `REDISCLI_AUTH`, not a command argument. |
-| `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every TCP runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback TCP target. Unix sockets require `FALSE`. |
+| `REDIS_TLS` | `FALSE` in the server | `TRUE` or `FALSE`, case-insensitive in the server; exact uppercase for shell cleanup | Enables verified TLS for every TCP runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback TCP target. Unix sockets require `FALSE`. |
 | `REDIS_CA_CERT` | empty | Readable CA bundle | Required when Redis TLS is enabled and used for peer verification. |
 | `REDIS_TLS_SERVER_NAME` | `REDIS_HOST` | Certificate DNS name | Optional runtime SNI and certificate-name override, useful when connecting by IP to a certificate issued for a DNS name. |
 | `REDIS_ALLOWED_TARGETS` | none | Comma-separated exact `host:port/database` or `unix:/absolute/socket/database` values | Required destructive-maintenance allow-list. |
-| `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
+| `REDIS_WORLD_STATE` | disabled | `TRUE` (case-insensitive) enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
 | `REDIS_WORLD_STATE_SECRET` | none | `32`-`256` bytes | Independent HMAC key required when world recovery is enabled. It authenticates the manifest and complete generation payload; do not reuse Redis, database, donation, or DurisWeb credentials. |
 | `REDIS_WORLD_STATE_SECRET_PREVIOUS` | empty | `32`-`256` bytes | Optional previous recovery HMAC key accepted only for reading and cleanup during a bounded rotation window. New generations are always signed by the current key. |
-| `REDIS_DONATION_SUBSCRIBER` | disabled | Exact `TRUE` enables it | Subscribe to authenticated external donation notices. No polling job or subscriber connection exists by default. |
+| `REDIS_DONATION_SUBSCRIBER` | disabled | `TRUE` (case-insensitive) enables it | Subscribe to authenticated external donation notices. No polling job or subscriber connection exists by default. |
 | `REDIS_DONATION_SECRET` | none | At least 32 bytes | Independent HMAC key required when the donation subscriber is enabled. Do not reuse a Redis, database, or DurisWeb secret. |
+
+The server reads `REDIS`, `REDIS_WORLD_STATE`, and `REDIS_DONATION_SUBSCRIBER`
+case-insensitively; values other than `TRUE` leave those features disabled.
+For `REDIS_TLS`, unset or empty selects `FALSE`; any other nonempty value must
+be `TRUE` or `FALSE`, case-insensitively. Invalid TLS values disable Redis
+during configuration. The shell cleanup helper requires an explicit uppercase
+`REDIS_TLS=TRUE` or `REDIS_TLS=FALSE`. Use uppercase values in a `.env` shared
+by the server and maintenance tooling.
 
 World recovery is intentionally separate from player saves and reconstructible caches.
 At boot the server constructs immutable connection settings for each subsystem. In
@@ -242,52 +290,102 @@ and retired Duris surfaces, but it must not have access to other applications' p
 Test the exact ACL rules on a disposable Redis instance before deployment; Redis command
 categories and Lua ACL behavior can differ across supported server versions.
 
-At boot, one publisher claims a renewable 10-minute writer lease. Each background
-publication verifies that lease and expected prior pointer, writes the immutable
-sequence-keyed payload, advances the current pointer and diagnostic metadata, consumes
-the pre-capture floor hash, and renews the lease in one atomic Lua compare-and-set. A
-stale or second writer cannot publish. The single script also reduces background Redis
-round trips compared with a watched transaction.
+World publication uses a renewable 10-minute writer lease. The recovery worker
+first stages the immutable generation in chunks of at most 1 MiB, using keys
+qualified by sequence and upload token, with an expiry on each chunk. It then
+uses one Lua compare-and-set to verify the writer token and expected prior
+pointer and atomically publish the authenticated 120-byte manifest, advance
+the current pointer and diagnostic metadata, consume the pre-capture floor
+hash and index, and renew the lease. The current pointer selects the staged
+generation; payload uploads occur in separate Redis commands. A stale writer
+or stale prior pointer is rejected before the publication swap.
 All of those keys use `<REDIS_NAMESPACE>:season:<epoch>:` with the active SQL season epoch captured at
 boot. An old process can therefore write only its abandoned epoch after a reset; it cannot
 create a snapshot visible to the new season.
-Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
-checksum validate. It combines the generation with versioned binary floor records,
-validates the full semantic graph, and batch-reconciles every custody-bearing item UID
-against SQL before creating any entity. Authenticated reconstructible world-pop objects
-are restored without inventing SQL custody, while SQL-restored player corpses are excluded.
-A failed or stale generation is retained for diagnosis and the
-server performs a full normal zone boot.
+Boot authenticates the generation manifest and verifies the generation's SHA-256
+digest before accepting its schema, exact sequence, age, size, record framing,
+completeness, and CRC32. It combines the generation with separately loaded binary
+floor records, validates the full semantic graph, and batch-reconciles every item
+marked `authority_required` against SQL before creating any entity. Reconstructible
+world-pop objects without that marker are restored without inventing SQL custody,
+while SQL-restored player corpses are excluded from generation capture.
 
-World generations are capped at 128 MiB and stored in at most 128 chunks of 1 MiB each.
-The floor payload remains capped at 16 MiB, and the combined generation-plus-floor read
-budget remains 128 MiB. Restore checks the value length inside Redis
-before transfer. Each published generation receives a TTL of at least one hour or four
-times `REDIS_WORLD_STATE_MAX_AGE`, whichever is greater, so abandoned generations expire.
-The background publisher scales its write timeout for the blob size, up to five seconds;
-this does not extend the game-loop Redis command deadline.
+The separate `WRF5` floor-delta records are not covered by the generation's HMAC and
+have no independent HMAC. They must pass format, root-UID, hierarchy, duplicate,
+and applicable SQL custody checks. Rejected recovery falls back to a full normal
+zone boot. The rejection path does not consume the generation, but any remaining
+generation artifacts can expire or be replaced or cleaned up later; diagnostic
+retention is not guaranteed.
 
-Graceful shutdown preserves the latest valid world generation for restart recovery. After
-all world and floor work drains, the fenced writer records a one-use clean-shutdown marker
-for that exact sequence. The next boot consumes the marker and reports `clean restart`
-only when the validated current generation matches; otherwise it reports `crash`
-recovery. Successful restore consumes that generation without disabling future snapshots.
+World generations are capped at 128 MiB and stored in at most 128 chunks of 1 MiB
+each. The accepted floor object payload is capped at 16 MiB, and generation plus
+floor object payload is capped at 128 MiB; the floor total excludes each record's
+five-byte `WRF5:` prefix. These are accepted encoded-payload ceilings, not a limit
+on peak process memory. Redis replies, decoded records, and recovery-planning
+allocations add memory beyond those totals.
 
-Floor deltas use a separate background worker bounded to eight batches and 16 MiB. Each
-batch holds at most 2,048 mutations, each value is capped at 256 KiB, and keys are capped
-at 128 bytes. Each value is a binary tree of at most 12 identity-preserving items; larger
-trees fail capture closed rather than being truncated. Before world capture, an ordered
-worker barrier confirms all earlier deltas and pauses later publication; the generation
-handoff deletes the acknowledged hash atomically, then post-barrier deltas resume.
-Gameplay performs bounded fixed-memory serialization but no Redis socket, SQL, disk,
-process, or logging I/O for floor drops, pickups, or snapshot preflight.
+Generation reads issue separate `STRLEN` and `GET` commands, then validate the
+received length. Floor `HMGET` pages are validated after receipt. Changed or
+oversized replies can therefore already have been transferred before rejection.
+Every manifest and chunk receives a TTL of at least one hour or four times
+`REDIS_WORLD_STATE_MAX_AGE`, whichever is greater.
 
-World capture is an explicitly fuzzy crash-recovery snapshot with a hard five-minute
-capture deadline. It keeps the existing 64-step/2-ms per-pulse gameplay budget; an expired
-capture is discarded and retried later rather than published. NPC inventory/equipment and
-carried gold are excluded from recovery, while all floor-item UIDs must pass complete SQL
-custody reconciliation before any recovery entity is created. `REDIS_WORLD_STATE_MAX_AGE`
-still controls how old a completed durable generation may be when boot attempts restore.
+The generation reader and background publisher request a minimum 500 ms command
+timeout, which is 500 ms with the current shared runtime settings. This applies
+to individual commands, not the complete multi-command upload, and does not
+change the shared runtime connection deadlines.
+
+Ordinary shutdown does not consume the current generation. Any retained
+artifacts remain subject to their TTL. After eligible non-pwipe, non-copyover-quiesced
+shutdowns drain world and floor work, the fenced writer attempts to record an
+expiring clean-shutdown marker for the current sequence. A completed drain means
+the work has finished; it does not prove that the last capture or publication
+succeeded. Marker failure is logged without cancelling teardown.
+
+The next boot attempts to read and consume that marker once. A matching valid
+generation is labelled `clean restart`; recovery without a matching marker is
+labelled `crash` recovery. After successful materialization, boot attempts fenced
+consumption of the exact current generation. Consumption failure is logged while
+boot continues. Boot attempts to re-enable periodic publication for the new process.
+
+Floor deltas use a separate background worker with at most eight queued jobs and
+16 MiB of accounted value bytes. Each mutation batch holds at most 2,048
+mutations, each submitted value is capped at 2 MiB, and keys are capped at
+128 bytes. Recovery object trees contain at most 512 identity-preserving items;
+larger or otherwise invalid trees fail capture rather than being truncated.
+These worker-queue limits do not bound all pending gameplay storage or process
+memory.
+
+Worker transactions group at most 64 mutations. The grouping code targets
+1 MiB of value bytes, but that is not a hard ceiling in the current implementation:
+a larger first value is allowed, and unsigned subtraction can then admit further
+values into the same group. See [WORLD_RECOVERY_FORMAT.md](../persistence/WORLD_RECOVERY_FORMAT.md)
+for the detailed limits.
+
+Before world capture, a successful ordered barrier confirms earlier floor work
+and pauses later worker publication. The Lua publication commit clears the stable
+pre-capture hash and index; successful and failed completions both resume later
+work. The server can commit publication even if the reply is lost.
+
+Gameplay copies bounded native records and enqueues owned batches; portable
+encoding and Redis commands run on the worker. Capture and enqueue paths use
+dynamic allocations. Preflight, rejected trees, expiry, other capture failures,
+and a full retry buffer can synchronously write log files through `logit`.
+
+World capture is a fuzzy crash-recovery snapshot timestamped when capture starts.
+The game thread attempts at most 1,024 capture steps per pulse and checks a
+two-millisecond deadline between steps; a step already in progress is not
+interrupted when that deadline passes. At the start of each capture pulse, an
+active capture aged five minutes or more is discarded with a failure completion;
+later periodic requests can retry. This expiry check does not run within a
+capture step or again when the capture is queued for publication.
+
+NPC inventory and equipment are absent from the snapshot payload, and NPC gold
+is captured as zero. Restore separately reconstructs applicable zone-defined
+NPC items after materialization. Recovery items marked `authority_required`
+require SQL custody reconciliation before any recovery entities are created.
+`REDIS_WORLD_STATE_MAX_AGE` independently limits the age of the capture-start
+timestamp when boot attempts recovery.
 
 The in-game `redis` and `redis detailed` commands read bounded local worker/pipeline
 telemetry only; they never query Redis. Shared boot, recovery, and stopped-server
@@ -335,9 +433,15 @@ all three Duris patterns are empty afterward, and leaves
 unrelated application keys intact. Missing `redis-cli`, connection failure, unexpected replies, wrong
 confirmation, or a failed postflight returns nonzero.
 
-Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure may
-degrade a report, while a world-generation failure preserves the prior generation and
-floor deltas. Neither case authorizes a synchronous player save or journal deletion.
+Shared runtime Redis connections use a 250 ms connect timeout and a 100 ms
+command timeout; generation reads and publication use the minimum 500 ms
+command timeout described above. A cache failure may degrade a report.
+A rejected publication compare-and-set leaves the current pointer and floor
+hash/index unchanged by that script, but a timeout or lost reply can be
+reported after Redis has committed the pointer swap and floor clear.
+A reported publication failure therefore does not prove that the previous
+generation or floor deltas were preserved. Redis failures do not authorize
+a synchronous player save or journal deletion.
 
 Presence login/logout updates use a dedicated worker with a fixed 1,024-job queue, bounded
 timeouts, and exponential reconnect backoff. Gameplay paths only encode the bounded JSON
@@ -435,6 +539,13 @@ craft-pouch contract is in [CHAOS_MODE.md](../reference/CHAOS_MODE.md).
 | `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. Production requires at least 32 characters and rejects the public example placeholder. See the DurisWeb API reference. |
 | `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. In production it must be empty or at least 32 characters and non-placeholder; remove it after every backend has switched. |
 | `DURISWEB_PRIVATE_PRESENCE` | Exact `TRUE` opts the authenticated backend into account names, IP addresses, client metadata, and invisible staff presence. The default WebSocket and Redis presence feeds omit them. |
+| `DURIS_TRUSTED_PROXY_IP` | One numeric IPv4 or IPv6 address matched against the immediate socket peer for WebSocket forwarding. An unset or invalid value, or a nonmatching peer, leaves forwarded addresses untrusted. This accepts one address, not a list or CIDR range. |
+
+For a trusted WebSocket peer, the HTTP handshake accepts the validated first
+address in `X-Forwarded-For`. The WebSocket accept path also invokes a PROXY
+protocol v1 parser for that trusted peer. Plain and TLS telnet do not invoke
+that parser or read HTTP forwarding headers; they retain the immediate socket
+peer address.
 
 ### DurisWeb hook toggles
 
@@ -463,7 +574,6 @@ DurisWeb's ingestion, not the MUD's `LOG_COMM` operational logging. The other
 website-only ids (`flag_parsing`, `guild_parsing`, `zone_builder_parsing`, and
 `process_control`) likewise have no MUD property; `terminal` is always-on and
 controlled only by its permission and live-session checks.
-| `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
 WebSocket and `GET /health` listen on `DURIS_WEBSOCKET_PORT` (default `4050`).
 In production, the WebSocket listener must use loopback, the trusted proxy and
@@ -482,24 +592,39 @@ run `./scripts/generate_localhost_cert.sh` to create an ignored machine-local fa
 That fallback is accepted only with the explicit local role and an exact loopback
 listener, and its key must also be owner-controlled and mode `0600` or stricter.
 
-The WebSocket command table also carries the two account-recovery commands. `request_reset`
-answers an `error` (not available) while the mail feature below is disabled; `complete_reset`
-does not consult the switch and, since no code can exist then, answers `Invalid or expired
-reset code` like any other code failure. `request_reset` takes `{"account": "<name>"}` and
-answers `{"type": "account", "action": "reset_requested"}` for every name that passes the
-length check, whether or not the account exists or a mail was queued (an unknown name is
-charged against the address window exactly like an account without an email address); the
-only other answers are an `error` for a rate-limited address (wait 10 minutes), the shared
-register-bucket `error` (too many requests), an `error` when the feature is disabled, and an
-`auth` failure for a service connection. `complete_reset` takes `{"account": "<name>", "code": "<32 hex digits;
-dashes, spaces, and letter case are ignored>", "newPassword": "<at least 6 characters>"}`
-and answers `{"type": "account", "action": "reset_completed"}` on success, after which the
-client issues an ordinary `login`; every code-related failure is the single `error` text
-`Invalid or expired reset code`, a missing field is `Missing reset fields`, and a short
-password is reported before the code is examined. Both commands sit behind the existing
-register and login rate buckets. Echo control has no meaning on this transport: hiding the
-password field, and rendering the "a code may have been sent; one per account per 10
-minutes" meaning of the telnet text, is the client's job.
+The WebSocket command table carries `request_reset` and `complete_reset` for
+player connections. Both first reject DurisWeb service connections with an
+`auth` failure. `request_reset` then checks the shared registration rate limits;
+`complete_reset` checks the shared login rate limits. These checks cover the
+descriptor and client address and run before request fields are validated.
+A rate-limit rejection returns an account `error`: `Too many requests; try
+again later` for requests, or `Too many attempts; try again later` for completion.
+
+`request_reset` takes `{"account": "<name>"}`. After the checks above, disabled
+mail returns an unavailable `error`. With mail enabled, the usual reply is
+`{"type": "account", "action": "reset_requested"}`, whether or not a message
+was queued. Missing or non-string account fields and names outside 3-20 bytes
+also receive that reply. The separate mail-request address window applies
+after account-name validation; valid names for unknown or unreadable accounts
+consume it like accounts without email. Reaching that limit returns an `error`
+asking the client to wait 10 minutes.
+
+`complete_reset` takes `{"account": "<name>", "code": "<32 hex digits; dashes,
+spaces, and letter case are ignored>", "newPassword": "<at least 6 characters>"}`.
+After service and rate checks, missing or non-string fields return
+`Missing reset fields`; a short password returns `Password must be at least
+6 characters` before the code is checked. Code-related failures use the single
+`Invalid or expired reset code` error. Completion does not check `MAIL_ENABLED`;
+with mail disabled at boot, requests that reach code validation have no issued
+code to accept and receive that uniform code error.
+
+An accepted code starts asynchronous password work. Submission can return
+`Password service is busy; try again later`; later failures can return
+`Failed to hash password` or `Failed to save password change`. Success returns
+`{"type": "account", "action": "reset_completed"}`; the client then issues an
+ordinary `login`. Echo control has no meaning on this transport: the client
+hides the password field and renders the uniform meaning that a code may have
+been sent, with at most one code mailed per account every 10 minutes.
 
 ## Account recovery mail
 
@@ -524,12 +649,12 @@ feature for the whole run, the server boots normally, and `logs/log/status` name
 offending key, never its value. Certificate verification uses the system CA bundle and
 cannot be disabled; there is no CA override and no verification switch.
 
-Shell safety: `.env` values are bash-sourced by `scripts/cycle_mud.sh` (`set -a; source
-.env`) and read unquoted by the server's own loader in `src/core/env_file.c` (255-byte
-lines, no quoting or escaping, `setenv(name, value, 0)` so a variable already present in
-the environment wins). Use only shell-safe characters in every `MAIL_*` value -- no
-spaces, quotes, `$`, backticks, `;`, `#`, or `!`. A relay application password is the
-intended shape; the server cannot detect a value that Bash has already reinterpreted.
+Shell safety: the launcher and direct-server loading rules above also apply to
+`MAIL_*` settings. For values supplied through `.env`, use only shell-safe
+characters -- no spaces, quotes, `$`, backticks, `;`, `#`, or `!`. A relay application
+password is the intended shape; the server cannot detect a value that Bash has
+already reinterpreted. Supply values that require quoting through the launching
+process environment and omit their assignments from `.env`.
 
 The controls are compile-time constants in `src/account/account_recovery.h` and are
 deliberately not environment-tunable: a code lives 15 minutes (`ACCOUNT_RECOVERY_TTL_SEC`),
@@ -540,11 +665,15 @@ uniform code error until it reconnects), and one client address may
 request 5 codes per 10 minutes (`ACCOUNT_RECOVERY_HOST_MAX_REQUESTS` over
 `ACCOUNT_RECOVERY_HOST_WINDOW_SEC`; IPv6 clients are keyed by their /64 prefix). The mail
 queue holds 256 messages and each send is bounded to 10 s connect / 20 s total with no
-retry. The per-address window is keyed by the connection's peer address as the server sees
-it: behind a TCP proxy that does not supply the PROXY protocol, every telnet player shares
-one 5-per-10-minute budget, so such a deployment must raise
-`ACCOUNT_RECOVERY_HOST_MAX_REQUESTS` (a reviewed source change) or accept the shared limit.
-Whether production telnet is proxied is therefore something the operator must know.
+retry.
+
+The per-address window uses the effective client address stored on the
+descriptor. WebSocket can obtain that address through the trusted forwarding
+paths above. Plain and TLS telnet retain the immediate socket peer address, so
+players behind one telnet proxy share a single five-per-ten-minute reset-request
+budget. Supplying PROXY protocol does not give those telnet listeners a separate
+client address in the current implementation. Such a deployment needs a reviewed
+change to `ACCOUNT_RECOVERY_HOST_MAX_REQUESTS` or acceptance of the shared limit.
 
 Copyover and restart contract: codes, cooldowns, and queued mail live only in process
 memory. A copyover or restart discards them, the player-facing text says so, and the
@@ -555,17 +684,18 @@ described in [RUNBOOK.md](RUNBOOK.md#logs) and
 
 ## Diagnostics
 
-Diagnostic switches are opt-in and are read once when the relevant subsystem
-initializes. They can be noisy, so enable them only while investigating a
-specific issue and restart the server after changing them.
+Diagnostic switches are opt-in and can be noisy. Their read points differ, and
+several helpers cache the first value they observe. Set them before startup,
+use them only while investigating a specific issue, and restart the server
+after changing their environment values.
 
-| Variable | Value | Output / scope |
-| --- | --- | --- |
-| `SQL_TRACE` | any non-empty value except `0`, `false`, or `off` | Metadata-only SQL execution events in the normal logs. |
-| `GET_TRACE` | any non-empty value except `0`, `false`, or `off` | Debug logging for object pickup paths. |
-| `DURIS_ZONE_RESET_TRACE` | positive integer | Zone-reset tracing. |
-| `DURIS_CORPSE_TRACE` | any non-empty value except `0` | Corpse decay tracing. |
-| `DURIS_ACCEPT_DEBUG` | variable present, including an empty value | Connection-accept debug counters. |
+| Variable | Value | Output / scope | Read point |
+| --- | --- | --- | --- |
+| `SQL_TRACE` | any non-empty value except `0`, `false`, or `off` | Metadata-only SQL execution events in the normal logs. | First SQL trace check; cached. |
+| `GET_TRACE` | any non-empty value except `0`, `false`, or `off` | Debug logging for object pickup paths. | First pickup trace check; cached. |
+| `DURIS_ZONE_RESET_TRACE` | positive integer | Zone-reset tracing. | First zone-reset trace check; cached. |
+| `DURIS_CORPSE_TRACE` | any non-empty value except `0` | Corpse decay and dracolich lifecycle tracing. | The necromancy helper caches its first check; each decay callback reads the environment again. |
+| `DURIS_ACCEPT_DEBUG` | variable present, including an empty value | Connection-accept debug counters. | Game-loop entry. |
 
 `SQL_TRACE` never writes query text, bound values, MySQL error prose, account or
 player values, or per-query files. Each event contains only a process-local
@@ -580,12 +710,13 @@ these switches from `.env` when the investigation ends.
 
 ### Event-wheel limits
 
-These are tuning knobs rather than traces, read by `nevent_config_limit()` when
-the event system initializes:
+These settings are read by `nevent_config_limit()` through accessors that cache
+each value on first use. Configure them before startup and restart the server
+after changing them.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
-| `DURIS_NEVENT_BUDGET_USEC` | `25000` (25 ms) | Wall-clock budget for event callbacks per pulse. |
+| `DURIS_NEVENT_BUDGET_USEC` | `25000` (25 ms) | Cooperative wall-clock budget for event processing per pulse. |
 | `DURIS_NEVENT_MAX_CALLBACKS` | `4000` | Callback count cap per pulse. |
 | `DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC` | `5000` | Maximum time-budget extension while repaying deferred work. |
 | `DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS` | `4000` | Maximum callback-cap extension while repaying deferred work. |
@@ -593,11 +724,16 @@ the event system initializes:
 | `DURIS_NEVENT_TRACE_PLAYER` | `0` | Set to `1` for per-player deadline timing logs. |
 | `DURIS_NEVENT_ANALYTICS` | `0` | Set to `1` for 300-pulse scheduler and callback analytics. |
 
-The wall-clock budget is intended to be the binding limit. Setting the callback
-cap low enough that pulses end well inside the time budget starves the wheel and
-builds a deferred backlog. A zero budget or callback cap disables that one
-limit; zeroing both makes the scheduler intentionally unbounded and emits a
-warning. Budget and callback values are limited to `0..1000000`, and boolean
+The time budget is cooperative. The scheduler checks elapsed time after each
+completed callback and periodically while scanning future work. It does not
+interrupt a callback that runs past the budget. After budget exhaustion,
+remaining due callbacks can be deferred to a later pulse while retaining
+their original deadlines.
+
+A low callback cap can end pulses before the time budget is spent and build
+a deferred backlog under load. A zero budget or callback cap disables that
+one limit; zeroing both makes the scheduler intentionally unbounded and emits
+a warning. Budget and callback values are limited to `0..1000000`, and boolean
 switches to `0..1`; invalid values fall back to their defaults. See
 [ARCHITECTURE.md](../reference/ARCHITECTURE.md#event-wheel).
 
@@ -617,16 +753,30 @@ shipped configuration.
 
 ## Precedence and verification
 
-1. The launching process environment has precedence over `.env`.
-2. `.env` values are loaded from the server's data directory, normally the
-   repository root or the directory supplied with `-d`.
-3. Missing values required by the selected persistence mode fail closed; no database
-   credentials or names have compiled defaults.
-4. The resolved database target must be present in `DB_ALLOWED_TARGETS` before
-   a connection is attempted. Logs report validation categories without
-   printing credentials or target values.
-5. Boot verifies the connection and complete schema/migration contract before lookup
-   publication, UID reservation, workers, listeners, or gameplay.
+1. A direct server start preserves the launching process environment. The
+   `scripts/cycle_mud.sh` launcher first sources the repository-root `.env` as
+   Bash, so its assignments can replace inherited values before the server starts.
+2. The server loads literal `.env` assignments from its data directory, normally
+   the repository root or the directory supplied with `-d`, and preserves values
+   already in its environment, including those exported by the launcher.
+3. The server validates the selected persistence mode against the build.
+   `mariadb-primary` requires a MariaDB client build; `flatfile-primary`
+   requires the client-free build. The mixed-fallback token is refused.
+4. In `mariadb-primary`, required database values must be present, with no
+   compiled credentials or database-name defaults. The resolved target must
+   match `DB_ALLOWED_TARGETS` before connecting. Database validation logs
+   report categories without printing credentials or target values.
+5. MariaDB startup acquires runtime authority, performs lifecycle recovery
+   and connection-activity bookkeeping, then verifies the complete schema and
+   migration contract. That verification precedes active-season loading,
+   lookup publication, SQL UID reservation, pool startup, later persistence
+   workers, listeners, and gameplay. The persistence log worker starts before
+   SQL initialization.
+6. In `flatfile-primary`, startup validates or provisions the private absolute
+   `FLATFILE_STATE_DIR` and its required directories, resets flat-file IP
+   activity, reserves a flat-file UID range, and hydrates the system item-owner
+   revision. These checks use native flat-file authority; startup skips the
+   SQL connection, allow-list, and schema path.
 
 A configuration change generally requires a restart. Database credentials and
 Redis settings are read before normal gameplay initialization; creation flags

@@ -4,8 +4,10 @@ The private `flatfile_accounting_baseline_storage` stage retains a complete EAB1
 witness, EAI1-bound opening plan, original common accounting receipt and per-epoch
 account/item reservations in one existing shared authority transaction. It never
 mutates native balances, allocates UIDs or writes a second item custody ledger.
-Only the future lifecycle transaction owner may invoke it in production. No
-current command admission, native source proof or domain activation is added.
+This guide describes the storage milestone. The implemented private lifecycle owner in
+[`flatfile_accounting_lifecycle_transaction.c`](../../../src/flatfile/flatfile_accounting_lifecycle_transaction.c)
+now initializes and stages these records before guarded epoch selection. Storage tests
+alone do not qualify operator admission, complete native-source coverage or gameplay activation.
 
 ## Authority obligations
 
@@ -19,7 +21,10 @@ absence still cannot prove never-initialized state after an incomplete restore.
 A prepared witness is not an activation capability. The caller must not expose
 this stage to arbitrary command input or accept caller-supplied source hashes as
 proof of native state. Backend selection, per-domain coverage, safe pause and
-activation remain pending. The SQL baseline storage counterpart is also pending.
+activation must be established by the lifecycle owner and qualified routes. The
+[SQL counterpart](SQL_BASELINE_STORAGE.md) and [SQL lifecycle owner](SQL_LIFECYCLE_OWNER.md)
+are implemented private components; their scope limits and the current
+[delivery status](DELIVERY_PLAN.md) apply.
 
 ## Files and bounds
 
@@ -101,17 +106,21 @@ not prove a successful opening.
 All three baseline file classes are registered in the lifecycle manifest and
 covered by the backup fixture. The existing shared transaction journal is also
 registered as their recovery dependency; this adds no journal format or new
-journal file. The lifecycle inventory has 34 non-database stores, with destructive
-rules still disabled. Backup tests preserve the baseline files and pending
+journal file. The current inventory and approval status are maintained in
+[`DATA_LIFECYCLE.md`](../DATA_LIFECYCLE.md); the 34-store count at this storage
+milestone is historical. Backup tests preserve the baseline files and pending
 journal; they do not establish a complete semantic baseline restore.
 
 Recovery must precede native source capture and staging. These metadata reads
-can recover an existing journal, so a future lifecycle caller must not supply
+can recover an existing journal, so the lifecycle caller must not supply
 native after-images prepared before that recovery. The shared commit continues
 to refuse overwriting a pending journal. Neither namespace absence nor a caller's
 nonzero boundary hash authorizes initialization or activation.
 
 ## Focused result
+
+The following results belong to this storage increment; they are not a fresh
+qualification of later lifecycle or gameplay integration.
 
 The native ASan/UBSan baseline suite passes all 41 restart boundaries (19 during
 initialization, 22 during batch commit/recovery), 606 staging and 419 lookup

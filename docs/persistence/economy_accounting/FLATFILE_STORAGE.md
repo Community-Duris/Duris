@@ -10,8 +10,9 @@ or applied. The critical coordinator remains the only admission/retry mechanism.
 The evidence directory is `FLATFILE_ROOT/economic-evidence`, owner-only. Store
 number 7 extends the existing v2 authority journal without changing earlier
 store numbers or v1/v2 framing. Generic runtime commit rejects this reserved
-store. Only private staging/commit methods, accessible to future typed bank and
-lifecycle owners, may publish its after-images. The test-only friend is absent
+store. Only private staging/commit methods, accessible to the typed bank and
+lifecycle owners, may publish its after-images. See [flatfile bank](FLATFILE_BANK.md)
+and [baseline retention](BASELINE_STORAGE.md) for those implemented consumers. The test-only friend is absent
 from production builds. Recovery can replay reserved operations from its
 checksummed journal. An older binary must refuse an unknown store and retain the
 journal; it cannot safely run against newly activated accounting state.

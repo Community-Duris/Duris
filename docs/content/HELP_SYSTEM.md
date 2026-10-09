@@ -104,7 +104,8 @@ precedence - individual `lib/information` pages, then `help_index`, then
 `duris_help_parsed.hlp` - and provides case-insensitive exact and substring
 searches without a database connection. Missing or structurally invalid source
 catalogs fail closed with the normal help-system error instead of silently
-returning the former disabled stub.
+returning the former disabled stub. Restart after changing these sources;
+`page help` reports that the flat-file build uses its startup catalog.
 
 The flat narrative catalog initializes on the first help lookup and remains
 fixed until restart. It uses literal substrings rather than SQL wildcards and
@@ -116,20 +117,21 @@ category metadata; invalid chains can fall back to displaying redirect text.
 queues refresh and `page help status` reports generation, readiness, pending
 work, and the last error; see [Help catalog operation](../operations/help-cache.md).
 
-The same client-free content path serves the existing `mud_info` callers for
-motd, news, wizmotd, credits, FAQ, rules, and wizlist directly from their
-allow-listed `lib/information/` files. This keeps boot/login and information
-commands functional without changing the database-backed lookup path.
+Other informational content has separate serving paths. Flat-file builds read
+allow-listed `lib/information/` files instead of `mud_info`; `credits`, `faq`,
+and `wizlist` use a separate background cache on both backends. See
+[Informational page cache](../operations/information-cache.md) for its refresh
+commands and [Help catalog operation](../operations/help-cache.md) for help
+cache limits and failure handling.
 
 ## Content pipeline
 
 ```
-lib/information/*          help/                      database
-|- motd, news, faq    -+   |- duris_help.hlp          +-------------+
-|- help, rules, ...   |-->|- duris_help_parsed.hlp ->| pages       |
-+- hints.txt, help_index  +- (parsed inline by the    | mud_info    |
-                             import script)           +-------------+
-        scripts/import_help_to_prod.sh
+lib/information/* ------------------+
+docs/lib/information/hints.txt ------+--> scripts/import_help_to_prod.sh
+help/duris_help_parsed.hlp ----------+                 |
+                                                      +--> pages
+                                                      +--> mud_info
 ```
 
 `scripts/import_help_to_prod.sh`:
@@ -164,14 +166,21 @@ lib/information/*          help/                      database
   `PURGE (Spell)` stores page title `PURGE`; quoted titles keep everything
   inside the quotes - `"ECHO (IMMORTAL)"` stores the full string. Use
   quoting whenever you need parentheses in a page title.
+- In MySQL builds, greater gods run `page help` after an import to queue a
+  help-catalog refresh, then `page help status` to confirm that the generation
+  advances. Queuing is not completion. An idle worker also refreshes
+  automatically every 60 seconds; a blocked load can delay freshness.
 - motd/news/wizmotd are cached into memory at boot (`src/world/db.c`) and re-read
-  only by the greater-god `page` path (`src/cmd/actcomm.c`). After
-  importing new copies, run `page` or restart; otherwise players keep
-  seeing the old text.
-- Content is hex-encoded into `DELETE`+`INSERT` SQL so arbitrary text survives;
-  supports `--dry-run`. The whole import is staged into one InnoDB transaction,
-  including optional cleanup; errors roll it back. No migrations are needed for
-  ordinary content imports.
+  by the bare `page` command (greater god, `src/cmd/actcomm.c`). After importing
+  new copies, run `page` or restart. `page help` and `page help status` return
+  before this legacy reload and do not refresh those boot-cached strings.
+- Content is hex-encoded into SQL so arbitrary text survives. The script stages
+  all three import sections and optional cleanup in one transaction, requires
+  existing InnoDB `pages` and `mud_info` tables, and commits only after generation
+  and SQL execution succeed. A SQL error rolls back the import on disconnect.
+  The help loader's single query sees the old or new committed catalog, not an
+  intermediate delete/insert state. `--dry-run` generates a preview without
+  applying the transaction.
 - `lib/information/help_index` carries many immortal-command entries
   (see the audit for current registration gaps), written against the
   command implementations in `src/`. Bare-command titles
@@ -194,6 +203,7 @@ lib/information/*          help/                      database
   `--clean` also removes database-only titles. Capture and reconcile changes
   before reimporting. See the warning above before importing to a shared or
   remote database.
+- Flat-file help changes require a restart instead of a database import.
 - Command attribute changes go in
   `docs/lib/information/command_attributes.txt` and require a server restart
   (loaded once at boot).

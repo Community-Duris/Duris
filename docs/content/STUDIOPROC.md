@@ -1,8 +1,12 @@
 # studioproc — builder-authored procs
 
 This document is for reviewers and for whoever maintains this next. It
-explains what was added, why each piece is shaped the way it is, and what
-was deliberately left out. The builder-facing grammar reference is
+explains the original implementation, why each piece was shaped that way, and what
+was deliberately left out. Footprint, line anchors and proposed follow-ups below
+are historical design notes. Current symbols and bounds live in
+[`studioproc.h`](../../src/mob/studioproc.h) and
+[`studioproc.c`](../../src/mob/studioproc.c); the later object action extension is
+covered by [studio item abilities](../reference/STUDIO_ITEM_ABILITIES.md). The builder-facing grammar reference is
 `docs/legacy/src/howto_trg.txt`; this is the design and the reasoning behind it.
 
 ## The problem
@@ -28,7 +32,7 @@ After that, the engine's own dispatch does all the work — there is no
 scripting VM, no interpreter thread, and no new dispatch machinery.
 
 **The rule that governs everything here: the C is primitives only, and a
-proc is data.** The module implements fourteen actions, nineteen
+proc is data.** The current header defines twenty-five action kinds, nineteen
 conditions and sixteen events. Behaviours are composed from those in the
 data file. A new behaviour is a new record, never a new C function; if
 something cannot be composed, the correct fix is to generalise a
@@ -90,7 +94,7 @@ Every anchor predates 2020, so future merges carry five one-liners.
 
 New files: `src/mob/studioproc.c` (the parser, binder, dispatch and
 primitives), `src/mob/studioproc.h` (the public surface — boot, the three
-generic procs, the three hook entry points), and `docs/legacy/src/howto_trg.txt`
+generic procs, the hook entry points), and `docs/legacy/src/howto_trg.txt`
 (the builder reference, written in the shape of `docs/legacy/src/howto_add.txt`).
 
 ## Reading order
@@ -114,7 +118,7 @@ above the code), `the 'do' primitive` (~856), `per-instance state`
 
 All of these are enforced in C and none are optional.
 
-- Caps of 24 actions, 8 conditions and 32 triggers per record.
+- Caps of 24 actions and 8 conditions per trigger, and 32 triggers per record.
 - A per-trigger re-entrancy latch and a recursion depth ceiling of 4, so
   `do` cannot recurse away.
 - `do` refuses any command with a non-zero `minimum_level` or the
@@ -218,8 +222,9 @@ tool. This subsystem touches and replaces none of them.
 
 ## Verifying it yourself
 
-Build from a pristine `git archive` of the branch: `cd src && make -j16`.
-Expect exit 0 and 225 objects, with your warning set unchanged.
+Use an isolated local/development checkout and the current [build guide](../guides/BUILDING.md).
+Require a successful build and inspect diagnostics; the original 225-object count
+and warning set are not a current build contract.
 
 Boot with no `areas/world.trg` present — the entire feature is one line
 in the status log, `STUDIOPROC: no areas/world.trg, proc engine idle.`,

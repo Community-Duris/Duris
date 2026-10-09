@@ -1,6 +1,6 @@
 # Baseline genesis preparation
 
-`economic_baseline_prepare` is the pure bounded compiler for a future quiesced
+`economic_baseline_prepare` is the pure bounded compiler for a quiesced
 cutover owner. It consumes a single batch of already resolved account lifetimes
 and complete item forests, and returns an immutable native witness plus an
 existing canonical accounting plan. It does not collect native data, establish
@@ -126,10 +126,12 @@ coverage adds independent Python reference bytes, every fixture truncation, head
 reserved/count/row mutations, noncanonical ordering, moved-from refusal, a maximum
 combined holdings/item frame and allocation failure during both encode and decode.
 
-Still required: native SQL/flatfile cutover owners; complete source collection and
-preflight; a durable quiesced maintenance boundary; stable lifetime allocation; resumable unique
-openings and progress; atomic receipts/witness storage; per-domain activation,
-boot/writer compatibility, safe pause, and disposable crash/restart rehearsals.
+The private native lifecycle and retention components now exist; see
+[flatfile baseline storage](BASELINE_STORAGE.md), [SQL baseline storage](SQL_BASELINE_STORAGE.md)
+and [SQL lifecycle owner](SQL_LIFECYCLE_OWNER.md). Their implementation does not prove
+complete source collection, game-wide writer coverage, activation, safe pause or a
+qualified cutover/restore rehearsal. The [delivery plan](DELIVERY_PLAN.md) maintains
+those remaining requirements.
 Gameplay admission still refuses baseline commands.
 
 ## Durable command binding

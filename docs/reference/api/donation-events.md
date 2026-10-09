@@ -13,12 +13,18 @@ must use the same explicit `duris:<environment>:<deployment>` namespace as the s
 | `schema_version` | Integer `1`. |
 | `event_id` | Unique 16-64 character identifier containing only letters, digits, `_`, or `-`. |
 | `issued_at` | Integer Unix timestamp within 300 seconds of server time. |
-| `amount_cents` | Integer from `1` through `100000000`; floating-point amounts are rejected. |
+| `amount_cents` | Integer value from `1` through `100000000`; fractional values are rejected. |
 | `currency` | Three uppercase ASCII letters. |
 | `is_public` | JSON boolean. |
 | `character_name` | Optional string up to 32 bytes; required for public notices. |
 | `message` | Optional string up to 256 bytes. |
 | `signature` | Lower- or uppercase 64-character hex HMAC-SHA256. |
+
+The complete JSON envelope must not exceed 4,096 bytes.
+
+Numeric fields must parse to finite integral values within their allowed ranges.
+Decimal or exponent spellings such as `1250.0` and `1.25e3` are accepted for
+`amount_cents`; a fractional value such as `1250.5` is rejected.
 
 Names and messages must be printable ASCII and cannot contain `&`, which is the game's
 color-control prefix.
@@ -37,6 +43,10 @@ v1
 <message or empty>
 ```
 
+Write `issued_at` and `amount_cents` in the signed text as base-10 integers with no
+decimal point or exponent. For example, JSON amounts `1250`, `1250.0`, and `1.25e3`
+all use `1250` in the signed text.
+
 Use `REDIS_DONATION_SECRET` as the HMAC-SHA256 key and hex-encode the 32-byte digest.
 The server compares signatures in constant time, rejects event IDs already seen by the
 current process, and retains a bounded window of 256 IDs. The timestamp window limits
@@ -48,7 +58,11 @@ cannot deliver an old-season event into the new game.
 
 The subscriber worker owns all Redis connection, subscription, socket, validation, and
 reconnect work. It retains at most 64 validated events and drops excess events with a
-health counter. The simulation thread dequeues at most eight events per game pulse and
-performs no Redis work. Reconnect delays are exponential and capped at 60 seconds. Pub/sub
-remains at-most-once; if delivery guarantees become necessary, move this envelope to a
-durable stream keyed by the same stable event ID.
+health counter. The simulation thread's `donation-message-poll` job runs on a nominal
+one-second fixed-delay interval, dequeues at most eight events per invocation, and
+performs no Redis work. While `donation_delivery` is disabled, the same bounded loop
+discards dequeued events and logs one summary only when it drops any. Changing the hook
+does not immediately flush the entire queue; notices can remain queued when it is
+re-enabled. Reconnect delays are exponential and capped at 60 seconds. Pub/sub remains
+at-most-once; if delivery guarantees become necessary, move this envelope to a durable
+stream keyed by the same stable event ID.

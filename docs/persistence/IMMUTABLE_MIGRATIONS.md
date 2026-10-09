@@ -52,10 +52,19 @@ passed on a disposable clone, an owner-authorized production `run` additionally 
 `--production-backup /absolute/path.sql.gz`. Production baseline adoption remains prohibited, and
 the runner refuses to apply while another connection is using the configured database.
 
-The current immutable head is `0032_economic_baseline`. After it is applied,
-the database contains the 215-table runtime boot contract, and the history
-singleton records applied count 32 plus the exact history checksum. If a pre-b029
-launcher already created the legacy `server_reboots`
+The current immutable manifest head is `0065_zone_reset_item_birth_origin` at
+sequence 65. The compiled gate and runtime manifest still describe
+`0064_auction_custody_history` at sequence 64 and the 230-table runtime
+compatibility contract. **Manifest/runtime alignment remains pending in the
+October 9 implementation candidate.** Applying the complete manifest does not
+by itself produce a database accepted by that compiled gate. Reconcile the
+candidate pins and qualify the exact source/schema pair on an isolated target;
+do not omit migration 0065, edit receipts, or invent metadata fingerprints to
+force admission. See
+[Runtime database compatibility](RUNTIME_COMPATIBILITY.md) for the complete
+current contract.
+
+If a pre-b029 launcher already created the legacy `server_reboots`
 shape, 0004 copies every lifecycle row into the canonical table and atomically
 swaps it into place; an interrupted conversion can be retried without making the
 legacy table unavailable or duplicating rows. 0006 creates the guild kingdom
@@ -92,7 +101,7 @@ correction; its latency benefit is not yet measured on a representative clone,
 which remains the open half of that backlog item.
 
 `kingdom_realms` is part of the boot contract's *table list*:
-`runtime_compatibility_manifest.json` counts 215 runtime tables and both
+`runtime_compatibility_manifest.json` counts 230 runtime tables and both
 normalized metadata fingerprints are sealed over an inventory that includes it,
 so on the database backend the gate proves the table's engine, collation,
 columns and indexes before gameplay publishes. `kingdom_initialize()` still
@@ -100,16 +109,16 @@ disables kingdoms for the boot when it cannot read the table, which remains
 reachable on the flat-file build, where no boot gate stands in front of it. The
 *ledger* is fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
-`RUNTIME_MIGRATION_HEAD_ID = "0032_economic_baseline"` with sequence 32, and
+`RUNTIME_MIGRATION_HEAD_ID = "0064_auction_custody_history"` with sequence 64, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
-`mud_schema_history` row, its two checksums, and `applied_count=32` in
+`mud_schema_history` row, its two checksums, and `applied_count=64` in
 `mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at
 head `0014_telemetry_storage` therefore refuses to boot, aborting with
 `COMPAT-E002`. An operator upgrading an existing database must apply the pending
-migrations with
-`python3 scripts/migration_runner.py run`, which applies the SQL, runs the
-verifier, and only then writes the history row and advances the head, before
-starting the server.
+migrations with `python3 scripts/migration_runner.py run`, which applies the SQL,
+runs the verifier, and only then writes the history row and advances the head.
+The manifest/runtime mismatch above must be resolved and the aligned candidate
+qualified before starting this SQL server against a fully upgraded schema.
 
 The remaining registered steps add the kingdom garrison roster (0009),
 committed coin-pile custody payloads (0010), player death disposition and custody
@@ -118,12 +127,13 @@ one InnoDB table keyed by the stone's globally allocated UID, with a foreign
 key to the critical-operation inbox. An existing database at head 0011 must
 apply that step and all subsequent manifest migrations before deploying the current server.
 
-Migration 0013 preserves generated pet state, and 0014 adds telemetry storage. Migration 0015 adds the independent
-physical-item mana authority, keyed by UID and versioned separately from owner
-snapshots. An existing database at head 0014 must apply 0015 and all subsequent
-manifest migrations before the current binary boots, even when item actions remain
-disabled. This additive table has no
-owner foreign key or cascade: extraction and old snapshots must not remove its
+Migration 0013 preserves generated pet state, and 0014 adds telemetry storage.
+Migration 0015 adds character output preferences. Migration 0016 adds the
+independent physical-item mana authority, keyed by UID and versioned separately
+from owner snapshots. An existing database at head 0014 must apply 0015 and all
+subsequent manifest migrations before the current binary boots, even when item
+actions remain disabled. The artifact-mana table has no owner foreign key or
+cascade: extraction and old snapshots must not remove its
 replay fence. See [artifact mana](../reference/ARTIFACT_MANA.md) for the resource,
 crash-window and rollback contracts.
 

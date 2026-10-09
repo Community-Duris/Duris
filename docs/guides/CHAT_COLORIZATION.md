@@ -26,9 +26,11 @@ alliance, racewar, auction and immortal broadcasts retain their existing output
 until explicitly adopted. The registry does not infer a channel from text or log
 flags. A hard Preserve caller bypasses all added styling.
 
-The terminal rendering is distinct from GMCP `Comm.Channel`. Structured client
-presentation and consistent transformed message content are tracked by issue
-#288; terminal ANSI alone does not complete separate web-pane support.
+The terminal rendering is distinct from GMCP `Comm.Channel`. The server's structured
+presentation snapshot for say, tell/reply and player guild chat is now implemented;
+see [structured chat colorization](STRUCTURED_CHAT_COLORIZATION.md) for the wire
+contract, client integration record and compatibility limits. Other chat routes
+retain their stated adoption boundaries.
 
 Validation uses the production send/act/queue/pager code and actual tell/reply
 commands. It covers independently colored recipients and echoes, default/reset,

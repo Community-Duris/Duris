@@ -16,7 +16,7 @@ The short version is:
   first be retained in a `legacy_import_*` archive;
 - source values that the current runtime schema cannot represent are retained in a raw
   archive before a compatible runtime projection is produced; and
-- the game still requires an exact 174-table positive runtime contract. Extra imported
+- the game still requires an exact 225-table positive runtime contract. Extra imported
   tables do not weaken that check.
 
 Never point this process at production. The importer deliberately accepts only a loopback,
@@ -27,10 +27,10 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | Term | Meaning |
 | --- | --- |
 | Source table | A base table restored directly from the supplied dump. |
-| Runtime table | One of the 174 canonical game tables required by the current server. |
+| Runtime table | One of the 225 canonical game tables required by the current server. |
 | Extension table | A source table used by the website, administration tools, or an older subsystem, but not owned by the game runtime contract. |
 | Preservation archive | A `legacy_import_*` table containing source rows that cannot remain verbatim in a canonical runtime table. |
-| Legacy migration | The additive 145-step upgrade in `migrations/run_migration.sh`. |
+| Legacy migration | The additive 150-step upgrade in `migrations/run_migration.sh`. |
 | Immutable migration | A checksummed post-baseline migration in `migrations/immutable/`. |
 
 ## End-to-end flow
@@ -40,15 +40,14 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | 1. Validate | Check the environment file, dump, target, permissions, and explicit `--replace` acknowledgment. | Stop before touching the database. |
 | 2. Quiesce check | Refuse the import if another connection is using the target database. | Stop before backup or replacement. |
 | 3. Backup | Write an owner-only `mysqldump` of the current target, including routines, events, and triggers. | Stop before replacement. |
-| 4. Replace | Drop target views/tables and stream the source dump into the same database. | Restore the backup when the failure is caught by the importer. |
-| 5. Converge | Run the legacy migration, adopt/advance the immutable ledger, and reach migration head `0008_statistics_date_index`. | Restore the backup when the failure is caught by the importer. |
-| 6. Verify runtime | Check the migration ledger and the exact metadata of all 174 runtime tables for MySQL 8 or MariaDB 10.11. | Restore the backup. |
-| 7. Verify preservation | Require all source tables, reject unexplained row loss, validate known archives, and require extension-table row counts to remain equal. | Restore the backup. |
-| 8. Verify materialization | Resolve the active object/mobile sources and reject selectable character item topology, pet bounds, unknown prototypes, or pet/owner room mismatches that the runtime materializers would refuse. | Restore the backup before the database can be exposed to gameplay. |
+| 4. Replace | Drop target views/tables and stream the source dump into the same database. | Attempt backup restore on a caught failure. |
+| 5. Converge | Run the legacy migration, adopt/advance the immutable ledger to `0053_craft_progression`, and establish eligible character baselines. | Attempt backup restore on a caught failure. |
+| 6. Verify runtime | Check the migration ledger and the exact metadata of all 225 runtime tables for MySQL 8 or MariaDB 10.11. | Attempt backup restore on a caught failure. |
+| 7. Verify preservation | Require all source tables, reject unexplained row loss, validate known archive counts, and require extension-table row counts to remain equal. | Attempt backup restore on a caught failure. |
+| 8. Verify materialization | Resolve the active object/mobile sources and reject selectable character item topology, pet bounds, unknown prototypes, or pet/owner room mismatches that the runtime materializers would refuse. | Attempt backup restore on a caught failure; keep writers stopped until recovery and verification succeed. |
 
 The implementation entrypoint is
-[`scripts/import_legacy_dump.py`](../../scripts/import_legacy_dump.py). The commands it runs,
-in order, are:
+[`scripts/import_legacy_dump.py`](../../scripts/import_legacy_dump.py). Its subprocess commands, in order, are:
 
 ```text
 migrations/run_migration.sh
@@ -56,6 +55,11 @@ scripts/migration_runner.py run
 migrations/verify_runtime_compatibility.sh
 scripts/character_materialization_readiness.py
 ```
+
+Between the immutable runner and runtime verifier, the importer calls
+`establish_character_baselines`: it fills missing wallet, epic and frag baselines
+only for eligible characters without conflicting ledger history, then checks readiness.
+Source-row preservation is checked before the final materialization command.
 
 ## Safety gates
 
@@ -155,12 +159,12 @@ canonical table is the source of truth for current server operation.
 The current schema contract has two layers:
 
 1. The Session 11 baseline requires a positive inventory of 170 canonical tables.
-2. Immutable migrations add `lookup_dataset_state`, `season_reset_state`,
-   `server_reboots`, and `kingdom_realms`, yielding 174 runtime tables. The head
-   is `0008_statistics_date_index`; migrations 0007 and 0008 modify existing
-   runtime tables without changing that count. Convergence must reach 0008:
-   both the head's ledger identity and the 174-table inventory are enforced at
-   boot.
+2. Immutable migrations advance that baseline to the current 225-table runtime
+   inventory and head `0053_craft_progression` (53 migrations in the canonical
+   history). Both the accepted ledger identity and complete runtime metadata
+   contract are enforced at boot. See [runtime compatibility](RUNTIME_COMPATIBILITY.md)
+   for the accepted branch histories; unrelated source tables do not count toward
+   the required inventory.
 
 The baseline and runtime checks ask whether every required table and its expected metadata
 is present. They do not require unrelated tables to be absent. This distinction lets a
@@ -195,7 +199,7 @@ lifecycle rows.
 | Source/runtime overlap | 112 tables |
 | Source extension inventory | 78 tables |
 | Immediate post-migration inventory | 254 base tables, 1,773,767 rows |
-| Runtime contract | 173 tables; migration count 5 at `0005_level_cap_singleton`, the head on the run date. The current head is `0008_statistics_date_index` at count 8 with 174 runtime tables; a repeat of this import today must converge to it. |
+| Runtime contract | 173 tables; migration count 5 at `0005_level_cap_singleton`, the head on the run date. These are historical counts; a new import must meet the current contract above. |
 | Added preservation archives | Three: two item-description archives and the reboot archive |
 | Missing source tables | None |
 | Unexpected source row reductions | None |
@@ -345,7 +349,9 @@ systemctl --user is-active duris-mud.service
 ```
 
 The second command should report `inactive`. The importer independently checks live
-database connections and refuses to proceed if another one remains.
+database connections and refuses to proceed if another one remains. This preflight is
+a snapshot, not a lock excluding new connections; keep every writer stopped throughout
+replacement, verification and recovery.
 
 ### 3. Protect and identify the dump
 
@@ -376,7 +382,7 @@ python3 scripts/character_materialization_readiness.py --env-file .env
 ```
 
 It reports aggregate counts only. A nonzero finding count prevents import completion and
-causes the importer to restore its pre-import backup. The gate resolves prototypes from
+causes the importer to attempt restoration of its pre-import backup. The gate resolves prototypes from
 the active `areas/AREA` object and mobile sources, applies saved item-type overrides when
 checking parent topology, and enforces the runtime pet bounds and owner-room equality.
 
@@ -477,7 +483,7 @@ The importer automatically proves:
 
 - every source base table remains present;
 - no source table has fewer rows unless it uses a known archive rule;
-- required deduplication archives contain enough rows to reconstruct the source;
+- required deduplication archives meet the expected row-count bounds;
 - each source extension table has the same row count after migration;
 - the immutable ledger is complete and internally checksummed; and
 - every runtime table matches the expected engine, collation, columns, defaults, indexes,
@@ -497,8 +503,10 @@ post-import snapshot.
 ## Failure and recovery
 
 If a normal import, migration, or verification command fails after replacement begins,
-the importer drops the partial target objects and restores the pre-import backup. It
-reports the original failure after recovery.
+the importer attempts to drop the partial target objects and restore the pre-import
+backup. It reports the original failure after a successful restore. This handles caught
+exceptions, including `KeyboardInterrupt`; an abrupt process or host termination can
+leave partial state and requires recovery from the named backup before services restart.
 
 If automatic restore also fails, the error prints the exact backup path. Keep the game
 stopped, preserve both the source dump and backup, and restore only after reconfirming the
