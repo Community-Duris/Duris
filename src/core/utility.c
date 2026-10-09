@@ -8341,3 +8341,145 @@ bool diagnostic_format_variadic_message_bounded(const char *prefix, const char *
 	return true;
 #endif
 }
+
+bool diagnostic_debug_bounded(bool (*reserve)(size_t, void *) noexcept, void *context,
+			      size_t outer_live, const char *format, ...) noexcept
+{
+	if (!reserve || !format || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		va_list args;
+		char *buffer;
+		size_t payload, initial_output, current_output;
+	};
+	if (sizeof(workspace) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(workspace), context))
+		return false;
+	workspace work{};
+	if (!diagnostic_output_storage_bytes(&work.initial_output) ||
+	    outer_live < work.initial_output)
+		return false;
+	va_start(work.args, format);
+	const bool formatted = diagnostic_format_variadic_message_bounded(
+		"&+C*** DEBUG:&n ", "\n", format, work.args, &work.buffer, reserve, context,
+		outer_live + sizeof(workspace), &work.payload);
+	va_end(work.args);
+	if (!formatted)
+		return false;
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (!d->connected && d->character && IS_TRUSTED(d->character) &&
+		    IS_SET(d->character->specials.act, PLR_DEBUG))
+		{
+			// Original send_to_char is a no-op for a recipient with no descriptor.
+			if (!d->character->desc)
+				continue;
+			if (!diagnostic_output_storage_bytes(&work.current_output))
+			{
+				free(work.buffer);
+				return false;
+			}
+			const size_t base = outer_live - work.initial_output;
+			if (work.current_output > SIZE_MAX - base ||
+			    sizeof(workspace) > SIZE_MAX - base - work.current_output ||
+			    work.payload >
+				    SIZE_MAX - base - work.current_output - sizeof(workspace))
+			{
+				free(work.buffer);
+				return false;
+			}
+			if (!diagnostic_send_to_char_bounded(
+				    work.buffer, d->character, reserve, context,
+				    base + work.current_output + sizeof(workspace) + work.payload))
+			{
+				free(work.buffer);
+				return false;
+			}
+		}
+	}
+	free(work.buffer);
+	return true;
+#endif
+}
+
+bool diagnostic_logit_bounded(bool (*reserve)(size_t, void *) noexcept, void *context,
+			      size_t outer_live, const char *filename, const char *format,
+			      ...) noexcept
+{
+	if (!reserve || !filename || !format || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		char timestamp[MAX_STRING_LENGTH];
+		va_list args;
+		char *buffer;
+		FILE *file;
+		time_t time;
+		size_t payload;
+	};
+	// Original path-creation's actual named path buffer can coexist with this
+	// workspace and its formatted body. Scalar/libc-private frames are excluded.
+	if (sizeof(workspace) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(workspace), context))
+		return false;
+	workspace work{};
+	va_start(work.args, format);
+	work.time = time(0);
+	bzero(work.timestamp, sizeof(work.timestamp));
+	if (str_cmp(filename, LOG_EVENT))
+	{
+		strcpy(work.timestamp, asctime(localtime(&work.time)));
+		work.timestamp[strlen(work.timestamp) - 1] = 0;
+		strcat(work.timestamp, "::");
+	}
+	if (str_cmp(filename, LOG_DEBUG))
+		++debugcount;
+	const bool formatted = diagnostic_format_variadic_message_bounded(
+		work.timestamp, "\n", format, work.args, &work.buffer, reserve, context,
+		outer_live + sizeof(workspace), &work.payload);
+	va_end(work.args);
+	if (!formatted)
+		return false;
+	// Complete next original filesystem phases are admitted BEFORE fopen/mkdir.
+	if (work.payload > SIZE_MAX - outer_live - sizeof(workspace) ||
+	    MAX_STRING_LENGTH > SIZE_MAX - outer_live - sizeof(workspace) - work.payload ||
+	    !reserve(outer_live + sizeof(workspace) + work.payload + MAX_STRING_LENGTH, context))
+	{
+		free(work.buffer);
+		return false;
+	}
+	work.file = fopen(filename, "a");
+	if (!work.file && errno == ENOENT && create_log_parent_directories(filename))
+		work.file = fopen(filename, "a");
+	if (!work.file)
+	{
+		free(work.buffer);
+		if (str_cmp(filename, LOG_FILE))
+			return diagnostic_logit_bounded(reserve, context,
+							outer_live + sizeof(workspace), LOG_FILE,
+							"failure opening logfile %s", filename);
+		return true; // Original LOG_FILE failure stops recursion without an output.
+	}
+	if (!(debugcount % 500))
+		rewind(work.file);
+	fputs(work.buffer, work.file);
+	fclose(work.file);
+	if (!str_cmp(filename, LOG_EXIT))
+		fputs(work.buffer, stderr);
+	free(work.buffer);
+	return true;
+#endif
+}
