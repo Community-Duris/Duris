@@ -459,6 +459,21 @@ class critical_zone_reset_item_publication_owner final
 	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
 					       uint64_t *, bool (*)(size_t, void *) noexcept,
 					       void *, size_t outer_live) noexcept;
+	// Complete original delivered never-admitted cleanup and fence removal.
+	// Cleanup runs outside the coordinator mutex with its operation pinned and
+	// the complete live prefix; reserve may run under the original mutex and
+	// must not acquire coordinator/journal locks. Context, markers and caller
+	// prefix must survive the genuine cleanup's destruction of its native owner.
+	// Markers precede later lock/rechecks; false after successful cleanup must
+	// never authorize repeating that native effect. No journal rewrite or ACK.
+	static bool cancel_refusal_bounded(const critical_native_recovery_envelope &,
+					   const critical_completion &, uint64_t,
+					   bool (*)(const critical_command &,
+						    const critical_completion &, void *,
+						    size_t) noexcept,
+					   void *cleanup_context, bool (*)(size_t, void *) noexcept,
+					   void *budget_context, size_t outer_live,
+					   bool *cleanup_called, bool *cleanup_succeeded) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.

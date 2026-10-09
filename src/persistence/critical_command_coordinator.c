@@ -6707,3 +6707,119 @@ bool critical_zone_reset_item_publication_owner::observe_generation_bounded(
 	}
 #endif
 }
+
+bool critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
+	const critical_native_recovery_envelope &original, const critical_completion &expected,
+	uint64_t generation,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &, void *,
+			       size_t) noexcept,
+	void *cleanup_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer, bool *cleanup_called, bool *cleanup_succeeded) noexcept
+{
+	if (cleanup_called)
+		*cleanup_called = false;
+	if (cleanup_succeeded)
+		*cleanup_succeeded = false;
+	if (!native_cleanup || !reserve || !cleanup_called || !cleanup_succeeded ||
+	    cleanup_called == cleanup_succeeded || !generation ||
+	    !zone_reset_typed_command(original.command) ||
+	    expected.operation_id.bytes != original.command.operation_id.bytes ||
+	    !critical_completion_disposition_valid(expected) ||
+	    expected.disposition != critical_completion_disposition::never_admitted)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	std::string identity;
+	critical_native_recovery_envelope frozen;
+	critical_completion receipt = expected;
+	operation_state *pinned = nullptr;
+	const auto matches = [&](const operation_state &state) noexcept
+	{
+		return operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+		       state.retain_until_publication && state.native &&
+		       state.native->revision == frozen.revision &&
+		       state.native->phase == frozen.phase &&
+		       state.native->attachment == frozen.attachment &&
+		       native_receipt_equal(state.admission_failure_completion, receipt);
+	};
+	size_t live = outer;
+	// Every owned fixed object and the original operation_key allocation remain
+	// live through cleanup. Sequential locks/fence lookups share one reservation.
+	// Receipt is a fixed inline value, including its complete result/correlation.
+	if (!room_retire_add(live, sizeof(identity)) ||
+	    !room_retire_add(live, original.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(frozen)) || !room_retire_add(live, sizeof(receipt)) ||
+	    !room_retire_add(live, sizeof(matches)) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !room_retire_add(live, 2 * sizeof(std::array<char, 9>)) ||
+	    !room_retire_add(live, sizeof(std::string_view)) || !reserve(live, budget_context))
+		return false;
+	try
+	{
+		// The genuine cleanup can destroy the caller's native owner. Freeze every
+		// command/BODY byte and receipt before its operation is pinned.
+		size_t copy_live = live;
+		if (!room_checkpoint_heap(original, true, copy_live) ||
+		    !reserve(copy_live, budget_context))
+			return false;
+		frozen = original;
+		if (!room_checkpoint_heap(frozen, false, live))
+			return false;
+		// Original move assignment materializes a return string alongside identity;
+		// the heap request belongs to live, the return object's inline storage here.
+		size_t key_live = live;
+		if (!room_retire_add(key_live, sizeof(std::string)) ||
+		    !reserve(key_live, budget_context))
+			return false;
+		identity = operation_key(frozen.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || found->second->publication_checkpointing ||
+		    !health.initialized || coordinator_generation != generation ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !matches(*found->second) ||
+		    !room_retire_matches_bounded(*found->second, frozen, reserve, budget_context,
+						 live))
+			return false;
+		pinned = found->second.get();
+		pinned->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// Relay the full current coordinator prefix to the actual native owner.
+	// Marker/context storage must belong to a caller frame surviving cleanup.
+	*cleanup_called = true;
+	const bool cleaned = native_cleanup(frozen.command, receipt, cleanup_context, live);
+	*cleanup_succeeded = cleaned;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	--publication_checkpoints_inflight;
+	--guarded_publications_inflight;
+	publication_checkpoint_finished.notify_all();
+	auto found = operations.find(identity);
+	if (found == operations.end() || coordinator_generation != generation ||
+	    found->second.get() != pinned)
+		return false;
+	const bool same = found->second->publication_checkpointing && matches(*found->second);
+	found->second->publication_checkpointing = false;
+	if (!cleaned || !same || !health.initialized || coordinator_generation_exhausted ||
+	    stop_requested ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+		return false;
+	// Exact original delivered never-admitted owner: no journal or ACK authority.
+	// All post-cleanup checks, latch rollback and successful removal are original
+	// nonallocating work; no codec, reserve or owner callback runs in this tail.
+	remove_fences(identity, found->second->command);
+	operations.erase(found);
+	update_depth();
+	work_available.notify_all();
+	return true;
+#endif
+}
