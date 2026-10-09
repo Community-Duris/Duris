@@ -83,4 +83,19 @@ bool native_mobile_birth_constructor_recipe_encode_blob(
 bool native_mobile_birth_constructor_recipe_decode(
 	std::span<const uint8_t>, quest_mobile_native_constructor_recipe *) noexcept;
 
+// Prospective companions for the original complete NBC1/NBC2/NBC3 codecs.
+// Caller owns/admit inputs, old outputs and inline output objects in outer_live,
+// and retains the callback's absolute simultaneous peak through return/transfer.
+// Encoder admission includes actual original writer/range-vector phases; decoder
+// includes its actual allocation-free named objects. Fresh vector request policy
+// requires GCC13 libstdc++ C++11 ABI; unsupported policy refuses. Strong output.
+// A callback refusal returns false (ENOBUFS); semantic false is not authority.
+bool native_mobile_birth_constructor_recipe_encode_blob_bounded(
+	const quest_mobile_native_constructor_recipe &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+bool native_mobile_birth_constructor_recipe_decode_bounded(const std::span<const uint8_t> &,
+							   quest_mobile_native_constructor_recipe *,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t outer_live) noexcept;
+
 #endif
