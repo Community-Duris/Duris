@@ -3,14 +3,20 @@
 Phase 02 non-idempotent gameplay work uses one bounded command contract. Each command
 has a cryptographically random 128-bit operation ID, a schema and payload version, a
 categorical source site and deadline, sorted affected entity keys, optional expected
-revisions, and owned payload bytes. It contains no live game pointers, SQL, Redis keys,
-paths, account names, or character names.
+revisions, and owned payload bytes. Supported typed commands carry data rather than
+live game pointers or executable SQL. The envelope's ordering metadata is numeric,
+but domain payloads can include bounded account names, item descriptions or other
+saved content; currency commands, for example, encode an account name. Keep journal
+and receipt payloads protected. Metadata-only health output does not make those
+payloads safe to publish.
 
-The generic destination stores command identity and result in an InnoDB inbox, applies
-a typed test-domain mutation, and creates its notification in the same transaction.
-Production gameplay producers remain disabled until their individual Phase 02 domain
-sessions. Outside mini mode, startup requires `CRITICAL_COMMAND_JOURNAL_DIR` and the
-verified critical-command schema; failure leaves critical gameplay stopped.
+The generic SQL test destination stores command identity and result in an InnoDB inbox,
+applies a typed test-domain mutation, and creates its notification in the same transaction.
+Gameplay domains now have typed destinations selected through the persistence backend;
+see the [Phase 02 routes](../gates/PHASE02_DOMAIN_GATE.md). This does not qualify the
+separate [economy accounting cutover](ECONOMY_ACCOUNTING.md). Outside mini mode, startup
+requires `CRITICAL_COMMAND_JOURNAL_DIR`; SQL startup also requires its verified schema.
+Failure leaves critical gameplay stopped.
 
 ## Acceptance and execution
 
@@ -67,8 +73,9 @@ reported; exhausted retryable work stays blocked and fenced for operator recover
 
 The journal directory must be owned by the server user and mode `0700`; its regular
 file is mode `0600` and opened without following symlinks. Records have magic, version,
-length, operation ID, canonical command bytes, and CRC32. Appends are synchronized and
-durable before returning. Exact checkpoint rewrites a temporary file, syncs it, renames
+length, operation ID, canonical command bytes, and CRC32. The low-level append returns
+success only after synchronization; the coordinator's asynchronous `submit()` returns
+`awaiting_durability` before that acknowledgement. Exact checkpoint rewrites a temporary file, syncs it, renames
 it, and syncs the directory.
 
 Startup validates the complete journal before replay. Truncation, bad framing,
@@ -134,7 +141,9 @@ guarded local development database, `tests/async/run_critical_command_schema_mys
 ## Epic balance destination
 
 Epic awards and spends use command type `epic` with one player key, a signed delta,
-typed reason, optional reason ID, and a funds-required flag. The repository creates a
+typed reason, optional reason ID, and a funds-required flag. The following row-level
+contract describes the SQL destination; native flatfile uses its authority journal and
+retained receipts. The SQL repository creates a
 baseline lazily when needed, locks `player_data`, validates the revision and funds,
 updates balance/revision, inserts one immutable ledger row, stores the exact result,
 and emits its outbox row in the same transaction. Duplicate and ambiguous replay return

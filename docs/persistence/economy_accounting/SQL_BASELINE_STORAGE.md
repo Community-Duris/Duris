@@ -3,7 +3,9 @@
 Migration 0032 adds three InnoDB stores for complete baseline witnesses and
 per-epoch opening reservations. It creates no epochs, mappings, game balances,
 item identities, coverage records or activation state. The private SQL batch transaction owner now writes these stores atomically;
-its production lifecycle caller and native-source authorization remain pending. This storage milestone
+the [SQL lifecycle owner](SQL_LIFECYCLE_OWNER.md) now calls it during staged baseline
+installation. Complete native-source authorization and gameplay activation remain
+subject to that owner's scope limits and the [delivery plan](DELIVERY_PLAN.md). This storage milestone
 does not qualify #479 or activate any gameplay writer.
 
 ## Durable records
@@ -33,9 +35,10 @@ reservation. There is no second item custody ledger or mutable economic total.
 
 ## Implemented private transaction owner
 
-`economic_sql_baseline_transaction` is private to the future
+`economic_sql_baseline_transaction` is private to
 `economic_sql_accounting_lifecycle_transaction`; only test builds add test access.
-It has no production caller or coordinator admission. `apply` and `reconcile`
+The lifecycle owner calls its initialization, apply and reconciliation methods.
+The baseline component has no direct coordinator admission. `apply` and `reconcile`
 require a reconnect-disabled READ COMMITTED connection without an existing
 transaction. They own START/COMMIT/rollback and verify the same session before
 returning. A missing or ambiguous original receipt stays retryable under that ID.
@@ -74,7 +77,7 @@ reconciles the same original ID. A rollback attempt is made on every other exit;
 an unusable connection must be discarded by its caller. Allocation failure is
 retryable, including command-encoder overflow caused by allocation failure.
 
-The future lifecycle caller still must authenticate the operator, establish and
+The lifecycle caller still must authenticate the operator, establish and
 retain the quiesced maintenance/consistent revision boundary, resolve mappings, verify
 complete source and custody coverage, and enforce restore/activation policy.
 This private persistence API does not confer those capabilities. Aggregate epoch
@@ -87,6 +90,10 @@ not defeat those boundaries. Existing controller and disclosure decisions remain
 pending; no administrative privilege or purge policy is invented by this change.
 
 ## Registration and validation
+
+The following registration history describes the 0032 increment. The current
+head and inventory are maintained in [runtime compatibility](../RUNTIME_COMPATIBILITY.md);
+the historical branch allocation and table counts below are not today's merge target.
 
 The current bootstrap includes the additive DDL; immutable 0001-0031 bytes and the
 sealed 170-table baseline remain unchanged. New migration 0032 follows this

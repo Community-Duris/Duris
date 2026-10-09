@@ -40,8 +40,9 @@ src/item/item_command_policy.h owns the shared command decisions:
 - item_get_source_owner() validates the physical live topology against the
   runtime owner registry. It walks nested containment with a bounded cycle
   guard, accepts only the actor's room/custody, and preserves explicit virtual
-  authorities (locker, auction, shopkeeper, and collector). NPC custody and
-  nowhere placement have no durable source authority.
+  authorities (locker, auction, shopkeeper, and collector). Generic NPC custody and
+  nowhere placement have no durable source authority; controlled durable pets use
+  their separate typed custody route.
 - item_command_resolve_put_destination() is the one put destination resolver
   for single and bulk puts. A locker chest is a virtual owner and therefore
   has no live parent target; an ordinary container must have an active runtime
@@ -62,8 +63,10 @@ item_movement_transaction; this change does not create a second transaction
 framework.
 
 The command policy deliberately does not manufacture an owner for unsupported
-NPC custody. The existing explicit refusal for a generic PC-to-NPC give remains
-in place until a durable mobile-custody authority exists. That safety boundary
+NPC custody. A controlled, charmed pet with a durable pet UID in the owner's room
+has a typed give/return route with completion-time identity checks; see
+[pet custody](../operations/PET_CUSTODY.md). Other PC-to-NPC durable gives remain
+refused. That safety boundary
 is preferable to moving the live object into a location that cannot be
 reconstructed after save, reconnect, or recovery.
 

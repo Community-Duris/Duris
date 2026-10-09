@@ -3,8 +3,12 @@
 Phase 02 gameplay mutations use bounded, schema-versioned critical commands. The
 coordinator assigns or preserves a 128-bit operation ID, journals before worker
 eligibility, fences every declared entity key, and publishes an exact completion only
-after the repository resolves the commit. The database transaction owns inbox dedupe,
-current state, immutable ledgers/outcomes, and any durable outbox record.
+after the repository resolves the commit. On SQL authority, the database transaction
+owns inbox dedupe, current state, immutable ledgers/outcomes, and any durable outbox
+record. Native flatfile routes use their own authority transactions and retained receipts.
+The table below names the SQL stores; it is not a complete backend support matrix.
+See [architecture](../reference/ARCHITECTURE.md) for current backend boundaries and
+[economy accounting](../persistence/ECONOMY_ACCOUNTING.md) for its separate activation status.
 
 ## Active durable routes
 
@@ -39,7 +43,7 @@ execute record payloads. Preserve the reported digest in the incident record.
 
 ## Reconciliation and recovery
 
-On an explicitly local/development/test database, run:
+For the SQL domain checks, on an explicitly local/development/test database, run:
 
 ```bash
 migrations/reconcile_phase02_domains.sh

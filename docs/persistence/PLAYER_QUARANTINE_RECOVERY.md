@@ -108,12 +108,16 @@ The existing archive cap is 512 MiB, including the new extension. It admits at
 most 65,536 recovery records. Each record has 1–64 commands, each bounded by the
 existing 512 KiB critical-command codec; baseline and replacement each use the
 4 MiB player codec bound; authority evidence is at most 1 MiB; backend identity
-and account are at most 256 and 50 bytes. Every archived frame passes its native
-header/checksum/codec checks; one candidate is limited to 16,384 frames.
+and account are at most 256 and 50 bytes. Every frame selected for a recovery
+candidate must pass its native header/checksum/codec checks and satisfy the
+supported ordinary runtime-terminal eligibility rules; one candidate is limited
+to 16,384 frames. Archive preservation alone does not establish recovery eligibility.
 
-Boot uses a three-second budget checked between records. Native reads retain
-their request deadlines; it does not interrupt a filesystem operation or native
-SQL call already in progress. Records not verified within that budget stay
+After archive loading and initial collection/validation of resolved records,
+boot starts a three-second native revalidation budget checked between records.
+The earlier work is outside that budget. Native reads retain their request
+deadlines; the budget does not interrupt a filesystem operation or native SQL
+call already in progress. Records not verified within that budget stay
 fenced for stopped recovery. `quarantined_bytes` continues to report preserved
 original frame bytes, not the complete archive file size. This is bounded recovery
 qualification, not #490's integrated latency/storage workload qualification.

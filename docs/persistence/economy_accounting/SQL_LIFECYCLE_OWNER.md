@@ -1,6 +1,15 @@
 # SQL wallet, shared-bank and coin-pile lifecycle owner
 
+**Status: wallet/shared-bank mappings and UID-keyed coin-pile opening balances implemented; runtime activation and complete writer authority remain unfinished.**
+
 The owner creates a durable maintenance receipt and a complete baseline for SQL-native wallets, shared banks, and active coin piles in `item_current_owner`. Coin-pile accounts use the never-reused item UID directly; they do not receive a second mapping row. Wallet and bank mapping IDs are allocated around active pile UIDs so the baseline's account identity reservations remain distinct. Installation leaves `economic_lineage_state.active_epoch` NULL. A separate guarded activation API exists for complete route evidence; production has no registered verifier and cannot select an epoch yet.
+
+## Implementation and schema
+
+- SQL owner: `src/persistence/economic_sql_accounting_lifecycle_transaction.{h,c}`.
+- Admission/writer gate: `src/persistence/economic_sql_lifecycle_guard.{h,c}`.
+- Additive owner schema: [immutable migration 0033](../../../migrations/immutable/0033_economic_sql_lifecycle_owner.sql), mirrored by [the standalone SQL increment](../../../migrations/economic_sql_lifecycle_owner.sql) and fresh bootstrap. The initial 0033 increment did not install the private gameplay cache; guarded activation and runtime recovery are later owner capabilities.
+- Behavioral fixture: [the native SQL harness](../../../tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp), invoked by `tests/async/run_economic_sql_lifecycle_owner_mysql.sh` and `tests/async/test_economic_sql_lifecycle_owner_contract.py`.
 
 ## Trusted boundary and call order
 
@@ -41,7 +50,7 @@ if (economic_sql_currency_writer_guard::acquire(connection, &writer_guard))
 // BEGIN/updates/COMMIT or ROLLBACK; writer_guard remains in scope throughout.
 ```
 
-The owner and guard modules are included in `src/Makefile`; client-free builds expose refusing `ENOTSUP` implementations. Production boot holds the runtime guard through admission and recovers an active cache only from durable evidence. Source-complete legacy-writer coverage remains unfinished. The SQL critical dispatcher holds the legacy writer guard for schema-v1 item, coin, auction, collector, corpse and restitution commands, from before `START TRANSACTION` through commit, rollback or replay return. It refuses staged phases 1/2, any non-NULL active epoch, and missing/unreadable lifecycle schema. It does not fabricate an accounting root for a legacy inbox ID. Every affected writer must participate before these locks establish a complete runtime exclusion boundary. An available advisory lock is not proof that an older, uninstrumented MUD is stopped.
+The owner and guard modules are included in `src/Makefile`; client-free builds expose refusing `ENOTSUP` implementations. Production boot in [the SQL runtime owner](../../../src/sql/sql_economic_runtime.c) holds the runtime guard through admission and recovers an active cache only from durable evidence. Source-complete legacy-writer coverage remains unfinished. The SQL critical dispatcher holds the legacy writer guard for schema-v1 item, coin, auction, collector, corpse and restitution commands, from before `START TRANSACTION` through commit, rollback or replay return. It refuses staged phases 1/2, any non-NULL active epoch, and missing/unreadable lifecycle schema. It does not fabricate an accounting root for a legacy inbox ID. Every affected writer must participate before these locks establish a complete runtime exclusion boundary. An available advisory lock is not proof that an older, uninstrumented MUD is stopped.
 
 ## Durable state and replay behavior
 
@@ -86,3 +95,9 @@ ECONOMIC_SQL_LIFECYCLE_DB_IMAGE=mysql:8.0 \
 ```
 
 The SQL runner imports fresh bootstrap, removes/replays the lifecycle schema and global decision migration, then runs a C++ ASan/UBSan harness. It exercises complete wallet/bank/item-row enumeration, mapping ID separation from colliding pile UIDs, UID-keyed coin-pile balances and postings for every active pile, refusal of invalid or unresolved coin custody, fail-without-partial-writes, baseline receipt read-back, writer serialization, exact and conflicting replay, and staged runtime refusal. Its synthetic route manifest tests incomplete-evidence refusal, activation, active recovery, exact retry, pause, and paused-runtime refusal only in a disposable schema. The separate client-free test checks that unsupported-backend calls cannot issue authority or mappings. These are component contracts, not game-wide producer coverage or live activation approval.
+
+The harness's `lifecycle_receipt_before_selection` trigger rejects phase-2 selection unless both the committed critical baseline receipt and matching baseline witness already exist. This checks receipt ordering at the update boundary rather than only inspecting final rows.
+
+## Historical pre-owner RED evidence
+
+The previous source-contract failure and its original log remain represented in repository history at the pre-owner baseline. The test path now invokes the disposable SQL behavioral suite instead of asserting source-name presence; the old RED checks are not retained as a substitute for runtime evidence.
