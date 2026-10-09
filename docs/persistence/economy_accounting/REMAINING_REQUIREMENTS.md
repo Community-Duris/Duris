@@ -2743,3 +2743,18 @@ recovery/full journal/coordinator and actual ROOM warm/cold publication/terminal
 checkpoint/ACK qualification remain open. Accounting inactive/admission CLOSED,
 coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist;
 no plan/release completion is claimed.
+
+
+## Ordinary/shared cash-role compiler dependency implemented - 2026-10-09
+
+[The cash-role compiler source](NATIVE_CASH_ROLE_COMPILER_ADMISSION_2026-10-09.md)
+adds both real bounded overloads preserving full ordinary v4-to-v3 wallet accounting
+and shared SHOP participant/parent/equipped-root effects. Full metadata and repeated
+normalization remain required; prospective actual workspace/clone/row/plan requests
+precede allocation. Independent raw/final review, whole original C prefix/header
+inverse and token/preprocessor checks PASS. All 931 policies/393 pins authenticate;
+zero new/unmapped sites. Native builds/tests remain deferred. Result/recovery/full
+mixed-journal/coordinator and real ROOM warm/cold publication/terminal/checkpoint/
+ACK qualification remain open. No plan or release completion is claimed. Accounting
+inactive/admission CLOSED, coverage incomplete/release BLOCKED, protected WIP and
+primary goal ACTIVE persist.
