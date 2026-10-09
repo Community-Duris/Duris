@@ -230,6 +230,11 @@ class zone_reset_item_owner final
 	static bool prepare_warm_command_flat(const critical_operation_id &,
 					      critical_native_recovery_envelope *, warm_command_scratch &) noexcept;
 	static bool warm_root_current(const warm_root &) noexcept;
+	// Same complete native/factory/custody observation, with prospective
+	// capture/codec/selected-UID scratch under the real pulse's private guard.
+	// Keeps original binding/backend predicates; it grants no new admission.
+	static bool warm_root_current_bounded(const warm_root &, warm_command_scratch &,
+					      size_t outer_live_scratch) noexcept;
 	static bool observe_warm_forest(const critical_operation_id &,
 					zone_reset_item_warm_forest_facts *) noexcept;
 };

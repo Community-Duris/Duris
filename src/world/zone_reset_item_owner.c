@@ -1845,6 +1845,118 @@ bool zone_reset_item_owner::warm_root_current(const warm_root &root) noexcept
 	}
 }
 
+bool zone_reset_item_owner::warm_root_current_bounded(
+	const warm_root &root, warm_command_scratch &scratch, size_t outer_live_scratch) noexcept
+{
+	if (!nevent_is_game_thread() || scratch.root != &root || !scratch.output ||
+	    root.preparation_owner != &scratch || !root.sealed || !root.stage.state_ ||
+	    root.stage.state_->result != zone_reset_item_root_result::captured ||
+	    !root.whole_bindings.valid() || root.forest.items.empty())
+		return false;
+	try
+	{
+		// matches_source owns two output arrays and its sequential encoder a
+		// third canonical array. They die before the native capture vectors.
+		size_t placement_live = outer_live_scratch;
+		if (!warm_scratch_array(placement_live, 3,
+			    sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
+		    !reserve_warm_command_scratch(placement_live, &scratch))
+			return false;
+		const auto &held = *root.stage.state_;
+		if (!root.placement_captured ||
+		    !root.placement.matches_source(root.forest.reset_source))
+			return false;
+		if (!held.object || held.factory.object() != held.object ||
+		    !held.factory.owns_pending_original_target(held.object) ||
+		    root.forest.operation_id.bytes != held.facts.operation_id.bytes ||
+		    root.forest.zone_vnum != held.facts.zone_vnum ||
+		    root.forest.room_vnum != held.facts.room_vnum ||
+		    root.forest.items.size() != root.children.size() + 1 ||
+		    root.forest.recipes.size() != root.forest.items.size())
+			return false;
+		// Named vectors remain live through the final physical-list check. The
+		// per-item progress local and read_progress's aggregate RHS can overlap.
+		size_t live = outer_live_scratch;
+		if (!warm_scratch_add(live, sizeof(std::vector<player_item_snapshot>)) ||
+		    !warm_scratch_array(live, 2, sizeof(std::vector<uint8_t>)) ||
+		    !warm_scratch_add(live, sizeof(std::vector<uint64_t>)) ||
+		    !warm_scratch_add(live, sizeof(std::vector<item_ownership_runtime_entry>)) ||
+		    !warm_scratch_array(live, 2, sizeof(quest_mobile_native_item_progress)) ||
+		    !reserve_warm_command_scratch(live, &scratch))
+			return false;
+		std::vector<player_item_snapshot> actual;
+		std::vector<uint8_t> before, current;
+		size_t actual_heap = 0;
+		if (player_item_snapshot_tree_capture_literal_bounded(held.object, &actual, nullptr,
+			    reserve_warm_command_scratch, &scratch, live, &actual_heap) !=
+			    player_snapshot_capture_result::ok ||
+		    !warm_scratch_add(live, actual_heap) ||
+		    player_item_snapshot_list_encode_bounded(root.forest.items, &before,
+			    reserve_warm_command_scratch, &scratch, live) !=
+			    player_snapshot_codec_result::ok ||
+		    !warm_scratch_add(live, before.capacity()) ||
+		    player_item_snapshot_list_encode_bounded(actual, &current,
+			    reserve_warm_command_scratch, &scratch, live) !=
+			    player_snapshot_codec_result::ok ||
+		    !warm_scratch_add(live, current.capacity()) || current != before)
+			return false;
+		std::vector<uint64_t> selected;
+		if (!warm_scratch_array(live, actual.size(), sizeof(uint64_t)) ||
+		    !reserve_warm_command_scratch(live, &scratch))
+			return false;
+		selected.reserve(actual.size());
+		for (const auto &item : actual)
+		{
+			quest_mobile_native_item_stage *factory = nullptr;
+			if (item.object_uid == held.object->obj_uid)
+				factory = &root.stage.state_->factory;
+			for (const auto &child : root.children)
+				if (child->stage.state_ && child->stage.state_->object &&
+				    child->stage.state_->object->obj_uid == item.object_uid)
+				{
+					if (factory ||
+					    child->result != zone_reset_item_warm_result::captured ||
+					    child->selected_root_operation.bytes != held.facts.operation_id.bytes)
+						return false;
+					factory = &child->stage.state_->factory;
+				}
+			quest_mobile_native_item_progress progress{};
+			if (!factory || !factory->owns_pending_original_target(factory->object()) ||
+			    !factory->read_progress(&progress) || progress.admitted ||
+			    progress.published || progress.next_step || progress.current_step_started)
+				return false;
+			selected.push_back(item.object_uid);
+		}
+		std::sort(selected.begin(), selected.end());
+		std::vector<item_ownership_runtime_entry> cached;
+		// Preserve the full foreign-root/parent union, not just selected owners.
+		if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+			    selected, ITEM_TRANSFER_MAX_ITEMS, &cached,
+			    reserve_warm_command_scratch, &scratch, live) || !cached.empty())
+			return false;
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (object->prev != previous ||
+			    std::find(selected.begin(), selected.end(), object->obj_uid) != selected.end())
+				return false;
+			previous = object;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool zone_reset_item_owner::prepare_warm_command_flat(
 	const critical_operation_id &operation, critical_native_recovery_envelope *output,
 	warm_command_scratch &scratch) noexcept
@@ -1870,7 +1982,8 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 					root = owned.get();
 					invocation = registry;
 				}
-		if (!root || root != scratch.root || !invocation || !warm_root_current(*root))
+		if (!root || root != scratch.root || !invocation ||
+		    !warm_root_current_bounded(*root, scratch, warm_command_scratch::inline_bytes()))
 			return false;
 		const auto &source = root->forest.reset_source;
 		if (source.source.bytes != invocation->invocation.source.bytes ||
@@ -1939,7 +2052,14 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		image.recipes = root->forest.recipes;
 		image.coins = root->forest.coins;
 		zone_reset_room_placement_recipe placement;
-		if (!root->placement_captured ||
+		// Comparison arrays die before recipe() constructs its candidate DTO;
+		// both phases overlap the already-cloned image and caller-owned locals.
+		size_t placement_live = frame_live;
+		if (!warm_scratch_add(placement_live, std::max(
+			    3 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+			    sizeof(zone_reset_room_placement_recipe))) ||
+		    !reserve_warm_command_scratch(placement_live, &scratch) ||
+		    !root->placement_captured ||
 		    !root->placement.matches_source(image.reset_source) ||
 		    !root->placement.recipe(&placement))
 			return false;
@@ -1957,8 +2077,8 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			// One actual recovered selected-root freeze. Values never grant
 			// source, constructor, execution or publication permission.
 			// Recovered providers and codecs below reserve their real scratch.
-			// Native recapture and publication observation/preparation still need
-			// bounded companions before the original 32 MiB gate can be qualified.
+			// Native recapture below is bounded as well. Genuine INITIAL observation
+			// and publication preparation still need their own transitive bounds.
 			size_t lock_live = frame_live;
 			if (!warm_scratch_add(lock_live, sizeof(flatfile_authority_lock)) ||
 			    !reserve_warm_command_scratch(lock_live, &scratch))
@@ -2038,7 +2158,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 				return false;
 			// The filtered owner read supplies ONLY its genuine counter. Full
 			// history/empty-context/born-UID/world topology proof follows below.
-			if (!warm_root_current(*root) ||
+			if (!warm_root_current_bounded(*root, scratch, storage_live) ||
 			    economic_gameplay_authority::prepare_zone_reset_item_flat_bounded(
 				    image, root->stage.state_->facts.accepted_at_usec,
 				    &original.command, reserve_warm_command_scratch,
@@ -2090,7 +2210,8 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 				    reserve_warm_command_scratch, &scratch, storage_live) ||
 			    flatfile_zone_reset_item_publication_storage::observe_initial_locked(
 				    selected_root, lock, original) != 0 ||
-			    !warm_root_current(*root) || !lock.matches(selected_root) ||
+			    !warm_root_current_bounded(*root, scratch, storage_live) ||
+			    !lock.matches(selected_root) ||
 			    persistence_mode_requires_mysql() ||
 			    !economic_gameplay_authority::active_regular_flat())
 				return false;
@@ -2098,7 +2219,11 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			if (!still_configured || selected_root != still_configured)
 				return false;
 		} // Release genuine root lock before retaining/delivering the capsule.
-		if (!warm_root_current(*root))
+		size_t lockless_live = frame_live, original_heap = 0;
+		if (!warm_scratch_envelope_heap(original, false, &original_heap) ||
+		    !warm_scratch_add(lockless_live, original_heap) ||
+		    !warm_scratch_add(lockless_live, canonical.capacity()) ||
+		    !warm_root_current_bounded(*root, scratch, lockless_live))
 			return false;
 		root->original_envelope = std::move(original);
 		root->canonical_command = std::move(canonical);

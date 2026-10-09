@@ -345,8 +345,8 @@
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
       "src/item/item_movement_transaction.c": "3f49f5b213d30f3527da954147a7ea463dfe40cc70a6a6fae5b31165849189b4",
       "src/item/item_movement_transaction.h": "f35cbc759dc15abce5b8972ca919babfd5f4c8ea41c75ec73a5c26c2473c9339",
-      "src/item/item_ownership_runtime.c": "f1d50e1450027e6dbddab1a2bc74cae529a489148f3e8d92153ee47765731927",
-      "src/item/item_ownership_runtime.h": "30c9afa0af47818a9dcae6d4f2c03bb31f56746ead99fae04af6344277220cd9",
+      "src/item/item_ownership_runtime.c": "83e097f4307b0d5f495ad491343a8e7b3a568eedaa5f2fb30d5d1453bdc3eb8e",
+      "src/item/item_ownership_runtime.h": "f3f38a09ac2b3a820454327ca8db8788a54f53623c93ee7b8ec34e68d25da2ee",
       "src/item/item_transfer_command.c": "f60a0906736ea6214051c2dbc59dbd5318a580e70363da5ef2d92c7f131ceb31",
       "src/item/item_transfer_command.h": "8522cbc17a29330113b685b8a4188cde4ec975d63c02e87cdeb327be4b481211",
       "src/item/item_transfer_repository.c": "e005e1a2b5460f01939026072f4c226b770841c1a03382bc59bea62ff99cd6ff",
@@ -434,8 +434,8 @@
       "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
       "src/player/player_save_pipeline.c": "89ed8f0a98c8631f2e4fe3cc9938b73decbe6c2662ef70dc8129b622aa4d5c6d",
       "src/player/player_save_pipeline.h": "e3611b2f8117adf7b236c96232953973664f3120eac0883773747e4ace43457b",
-      "src/player/player_snapshot_capture.c": "70e8dc17384d4969ce9741e09f6cb8b17d39da354afbd7662e6deb9404d6cd66",
-      "src/player/player_snapshot_capture.h": "9718d08c6b5e52a9a63d6fba836949f57dacd518f961d5d63ceb54f3fb8d845c",
+      "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
+      "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
       "src/player/player_snapshot_codec.c": "ca048d0d00e9285a809b57b340eaef5cc6edf45b4b038dee8f81a30a6ec1bbe6",
       "src/player/player_snapshot_codec.h": "1db86b7efcf860b3c0abb8eee7603ec7bc9adfb1c26bda8b10f473e359faf2bb",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
@@ -483,8 +483,8 @@
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
-      "src/world/zone_reset_item_owner.c": "0a1a1ac89144a043b8ed3da4448726e770175d538332cdb715d2106679cff2b7",
-      "src/world/zone_reset_item_owner.h": "89ba2a8cbe645b55c475f82730b04a706baed5df67fa6c5be5294d3a41d80a15",
+      "src/world/zone_reset_item_owner.c": "8db132a6d3bf0b57f5fecb33b8304bd904a72a2091bb16336d68ca759280115a",
+      "src/world/zone_reset_item_owner.h": "8f88b2ff91901ee6e01c0730d0b0d99760aa4d92dfbcb49eb0d1e7fd19ce53ff",
       "src/world/zone_reset_room_nesting.h": "d078e8fbf8ff0938796b47bc3d34a72b8aa57f17e43cbb510c2037e408dfa418",
       "src/world/zone_reset_room_publication.c": "c7316638f93e56db0509e43b4502dace1fd2e6029bf179c0c019d57799793389",
       "src/world/zone_reset_room_publication.h": "4c5bd0f2ffe5d40e0f7a4a14775e4766aeb994cf6deb59055b5ee5cacc580cba",
@@ -35165,7 +35165,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          634
+          700
         ],
         "file": "src/item/item_ownership_runtime.c",
         "function": "item_ownership_runtime_peek_owner_revision",
