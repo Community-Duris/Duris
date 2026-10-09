@@ -2995,3 +2995,28 @@ Plan5/release gates remain. No new schema/interface. Raw seal 7440a4937818e84549
 Prior follow-up prefix exact; curator-ready; primary-local notebook nonblocking;
 application/import/ack unclaimed. No primary push, activation, production,
 autocorrection, deploy, merge or cross-chat message.
+
+
+## 2026-10-08: maintained Smith source and current provenance qualification
+
+Sole local/remote codex/accounting-plan5; base 791207feca81ca88538317b0124398f31006328e; result is this
+containing commit. Receipt: D:/Dev/Tests/Duris/accounting-plan5/maintained-smith-source-20261008/delivery/result.json.
+New tested primary d836ea1c419a2b685d71a196ec2cf408764f4324; composed source f83fc1b4fd66e5630900227473a2efaa002447d7; archive
+d5235ba37153920146d0d55cff4dc61b8e136e1a897e270d2f42bffc1e52edf1. Native tree ae5dc43f80b192d954b52bf40b7333f8dbb9ebfb replaces historical 833d;
+schema 64 and all 27 overlays remain exact. Four published native changes enable
+source-only revalidation; original major-plan compiler/native/persistence deferral
+is preserved. 73 original methods: 72 PASS / 1 provenance FAIL, zero errors/skips.
+Default contract CLI exit 0; release exit 1; matrix --check exit 1. Current 242 pins:
+207 raw matches, 31 current CRLF mismatches, four proven older-content pins. Exact
+four current replacements and complete existing-field owner repair:
+PLAN5_MAINTAINED_SMITH_SOURCE_QUALIFICATION_2026-10-08.md. Application gameplay.c
+hash is current CRLF;published raw LF hash differs without semantic corruption.
+All pinned archive bytes equal Git. Prior 31 raw replacements remain valid;
+old gameplay.c row is superseded. Matrix only retains three prior line moves.
+Zero unmapped lexical sites / 788 release blockers remain; no shared repair or new
+schema/interface. No compile/preprocess/native/database/server/gameplay runs,
+prior binaries or private combined source qualification. Raw seal 15cc525a79ede1285b43e38cf5332226b2c30ea0aaef3d55a044e6d4ee620759.
+Prior follow-up prefix exact;curator-ready;local notebook nonblocking; import/ack/
+application unclaimed. Native opt-ins,shared recipes,erasure,real journeys,
+retention/custody,budgets and combined Plan5/R1-R8/release remain open. No primary
+push, activation, production, autocorrection, deploy, merge or cross-chat message.
