@@ -452,6 +452,77 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Deferred regression review finds integration startup blocker - 2026-10-09
+
+Both selected b4965e22 preparation deliveries are independently reviewed and CLOSED
+at their declared scope. Architecture review establishes F1 P1:the new temporary
+manual regression registration creates an unconditional integration-matrix startup
+failure. This is a source-derived finding,NOT an executed failure. The written
+C++ assertions remain source-consistent for their implemented cases;no compile,
+link,test/native/resource PASS follows. Quest current-SQL/native correspondence
+delta PASSes bounded acceptance preparation;private implementation remains unseen.
+
+F1 trigger:regression_manifest.json376 classifies the new INITIAL script as manual.
+run_integration_matrix.py65-69 requires EVERY manual owner to appear in a covers
+set,but integration_manifest.json has no cover for this script. Root independently
+derives complete sets from raw JSON:parent missing=[],b496 missing only
+test_flatfile_shopkeeper_initial_checkpoint.py. The exact557-byte insertion inverse
+restores the entire parent;integration manifest is unchanged. main248-259 validates
+workload BEFORE engine/match filtering and --list;unrelated selections therefore
+reach the same omission. Ordinary core/native exclusion does preserve deferral,
+but cannot avoid this independent matrix gate. No matrix command was executed.
+F1 is unresolved;Smith missing-API P1 also remains unresolved on unchanged source.
+
+Architecture private note:22,087 bytes,SHA256
+fdf51c604964527c630c8d0d3253b57fe07e75434af61dc6fa184fc33bd888e0.
+Root authenticates38 provider records/40 new and reused ranges,28 preserved closed
+files and three indexed artifacts. Sixteen standalone providers remain exact;
+no newly omitted provider is established by source review. Complete field equality,
+correct affect comparator order/duplicate multiplicity,checksum-valid malformed
+oracles,chosen full-output sentinels,selected bounds and disposable v1/v2 cases
+match actual codec semantics. Useful unsorted refusal sentinel,earlier bitvector
+tie precedence,aggregate-byte boundary and longer valid-v1 cases are extensions,
+not false existing oracles. Actual mask0/name4096 preservation already exists.
+Byte limits do not establish peak/transition memory or genuine native provenance.
+
+Quest private note:30,318 bytes,SHA256
+a92911f17caf52882df9c8801a99090822f8171f4579f091cadadfb0f7e13d7e.
+Root authenticates18 raw public providers/four preserved closed inputs and checks
+actual SQL row id->object UID,child parent ROW id/sidecar item_id versus custody
+UID routing,original borrowed session/transaction,bounded locking reads,payload
+presence/nullness,saved affect multiplicity and timestamp branches. The accepted
+delta extends one original-birth case with independent original O,historical H,
+current protected SQL S,current native W and legal later-replay L facts. Six
+focused wrong-but-consistent controls retain genuine owner/lifecycle prerequisites.
+Storage-managed timestamps,legacy projections and legal later clocks need actual
+policy;neither canonical bytes nor matching fabricated summaries prove authority.
+Reported c0a18186 plus required75c1aab5 is still not inspected private source.
+No current shared SQL/native/publication/ACK/recovery acceptance is claimed.
+
+Current prioritized queue:architecture next PRIVATE
+INITIAL_CODEC_TEMPORARY_DEFERRAL_REPAIR_RESERVATION_2026-10-09.txt with exact proposed
+patch/preimages under D:/Dev/Temp/initial-codec-temporary-deferral-repair-reservation-20261009/.
+Prepare the smallest explicit distinction between temporary execution deferral
+and genuine required manual-fixture ownership. Preserve default existing-owner
+behavior,complete inventory,manual core/native exclusion,all database/recovery/
+also-profile requirements and real manual native economic_restore_mobile_grammar
+coverage. No blanket native exclusion,fake cover,premature manual removal or
+script-name bypass. Give exact byte inverse/source-metadata truth table for root
+review;no maintained edit/import/commit or executable qualification authorized by
+this reservation. Primary/Plan5 retains scheduler code and eventual qualification.
+Quest delivery stays CLOSED/event-dependent on real changed producer/carrier/current
+observer/root/flat source,legal original/current/publication/ACK/replay exports or
+materially changed contracts. Do not duplicate architecture repair or invent filler.
+
+Root proof:D:/Dev/Temp/coordinator-current-sql-correspondence-review-20261009/
+review.py,review.json,architecture-review.py,architecture-review.json and publish.py.
+All compiler/preprocessor/test/build/DB/gameplay execution remains NOT RUN under
+major-plan deferral. Private artifacts and clean isolated worktrees stay preserved;
+only three coordinator-owned disposition docs publish. Actual Goals remain BLOCKED
+and unfinished;finite reviews do not resume them. Heartbeat remains ACTIVE through
+the broader required Plans1-5/R1-R8/integrated qualification,blockers and published
+owner completion audit. No adoption wait or new release requirement is imposed.
+
 ## Deferred INITIAL regression and current SQL proof assignments - 2026-10-09
 
 Published b4965e22aba49b970f72f881d695e1bcd9a58acf adds actual maintained
