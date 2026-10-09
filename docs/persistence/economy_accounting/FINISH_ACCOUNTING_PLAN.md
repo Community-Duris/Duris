@@ -142,6 +142,97 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Primary metadata repair supersedes optional patch; executable checkpoint reported - 2026-10-09
+
+Actual published 4f45070807ac9bc86501bf81613b7b4b643bc2b9 implements the finite
+BS-R1 metadata reservation repair in maintained source. Root reads both exact
+diffs: reader first checks/admit outer_live_scratch+sizeof(struct stat) before
+directory open/metadata inspection, then carries that metadata_live into its
+checked fresh vector head/file-byte peak. Helper-directory and later file stat
+lifetimes do not overlap. Lock acquisition checks two individual stat terms
+before fresh strings/locking and directly includes sys/stat.h. Same-FD security,
+strong outputs, caps/ABI refusal and original ownership/recovery remain intact.
+Finite BS-R1 source omission is resolved; native tests/actual ABI/capacity/caller
+aggregate32MiB are unqualified and remain required. No accepting gate is opened.
+
+New reader behavior has two possible admission phases. Early callback denial
+returns ENOBUFS/io_error before any genuine filesystem/ENOENT/metadata observation;
+it cannot grant absence authority. If early admission succeeds, real missing file,
+invalid metadata and I/O retain their own outcomes. For a valid file, later
+callback admits metadata plus vector head and declared size before fresh storage.
+The original callback-count/error-precedence assertions belong to old source;
+the optional old patch preserved that later-only position. Real outer reservation
+retention/restoration and nested recovery remain actual caller obligations.
+
+Architecture optional BOUNDED_STORAGE_STAT_ADMISSION_REPAIR_2026-10-09.txt:
+D:/Dev/Temp/bounded-storage-stat-admission-repair-20261009/.
+Note 14,569 bytes, SHA256
+a2c6c26a602652c51911ba1d926fb963ce488f57ca887534c19dccf3dc6eaa87.
+PINS 43,059 bytes, SHA256
+233dc91e583a4ea42e24603067c0bdbbb55c04f1fc12399c7b770eb33b7ed687.
+Optional diff 1,852 bytes, SHA256
+e0c68007dabfb299d4b6deadfd57a92b2af1e03f71dd8ba2153100f08812f5a5.
+Root full note/verifier/diff read and independent authentication PASS: two
+providers/five reservations/six historical comparisons/three atoms/three hunks,
+exact forward/reverse patch and replacement inverses, seven reused inputs/ten
+indexed payloads, preserved clean H5c53e1e. PASS finite old-E source/byte review.
+Disposition CLOSED, SUPERSEDED, NOT IMPORTED. Neither current primary blob matches
+the sealed old preimage or optional afterimage. Preserve the packet; do not rebase,
+transplant or impose adoption of a redundant alternative to the actual repair.
+Primary's independent-review report is distinct from root's actual source review.
+
+Executable checkpoint published by fb57ac879, exact source ec632155cca4a781a3014eba9a71815011f50ddd:
+COMBINED_EXECUTABLE_CANDIDATE_CHECKPOINT_2026-10-09.md REPORTS fresh strict GCC13.3
+SQL and client-free flat production compile/link PASS, original flags preserved.
+SQL binary SHA256
+1f6ef03d605b56273b781f9bd61a4e8cd71abac1e3f31ba0f71b0f48becac034;
+flat binary SHA256
+5f3337ff1abaf2e2a87521ae2a511f09802e7adac70cba20fab5e9b8b2086b3f.
+Owner reports tracked inactive flat boot preflight PASS for health/shutdown,
+UID-authority refusal and controlled missing-world/disposable topology. Private
+corrected linker-script aliases resolve genuine installed libraries; retained
+failure/retry logs and binary hashes are published in the handoff. Root reads
+published results, not private binaries/logs: the named BUILD-RESULTS.json is not
+available in our shared checkout. These are owner-reported executed results,
+not independent root execution or accepting gameplay/accounting qualification.
+SQL disposable schema65/service smoke remains UNAVAILABLE due Docker prerequisite.
+This supersedes earlier pending status for ec632 ONLY; later 4f repair remains
+unqualified. Plans2-4/fullPlan5/R1-R8/release and original gates stay open.
+
+Evolving priority after source repair and optional handoff:
+1. Architecture ONE bounded source-grounded two-stage component/native boundary
+   acceptance delta in
+   D:/Dev/Temp/bs-r1-published-two-stage-admission-acceptance-delta-20261009/,
+   BS_R1_PUBLISHED_TWO_STAGE_ADMISSION_ACCEPTANCE_DELTA_2026-10-09.txt plus exact
+   source cuts/pins/metadata proof. Make fixture observations implementation-ready
+   for early denial/admitted genuine ENOENT/invalid metadata/I/O, later vector
+   refusal/success with actual incoming capacity, and lock refusal/cleanup under
+   actual absolute reservation/lifetimes. Reuse CLOSED B1/B2/B4, no broad repeat.
+   Exact Git searches found no direct use of these two APIs in published tests;
+   that is not a claim all possible coverage is absent. Inputs: actual 4f bodies,
+   public passive callback contract and historical phase limitation. Unavailable:
+   supported-ABI native observations/capacity, exact maintained fixture integration/
+   private overlap and full authentic caller owner. No invented registered runner
+   or authority-bearing fixture. A component observer grants no accepting native
+   source/world/ACK or caller32MiB proof. Root review required; primary owns tests,
+   builds and qualification; Plan5 owns restore. No shared source duplication.
+2. Quest INITIAL/ROOM readiness remains CLOSED and event-dependent on genuine
+   accepting producer/fault/private-owner/source/world/terminal capability.
+   The reported inactive executable checkpoint supplies no such capability;
+   no duplicate blueprint or synthetic accepting journey is authorized. Preserved
+   native cuts remain UNEXECUTED; SQL smoke/schema and successor qualification
+   limitations remain explicit. Workers received only these bounded corrections.
+
+All sealed bundles, worktrees/branches/jobs and private artifacts are preserved.
+No private patch commit/import, maintained helper change, product/native/build/DB
+execution, root provisioning/enrollment/restore, activation/deployment or other
+chat messages by coordination. Root changes only its three owned plan/review docs.
+Actual Goals remain BLOCKED unchanged; preparation is not resumption. Required
+Plans1-5/applicable original R1-R8/integrated qualification/resolved blockers and
+owner completion disposition remain unmet. Heartbeat remains ACTIVE.
+Root independent authentication, source/semantic and exact publication inverse:
+D:/Dev/Temp/coordinator-stat-repair-disposition-20261009/.
+
 ## Bounded storage finding and INITIAL freeze independently reviewed - 2026-10-09
 
 Both selected packets now PASS independent root source/factual review and are
