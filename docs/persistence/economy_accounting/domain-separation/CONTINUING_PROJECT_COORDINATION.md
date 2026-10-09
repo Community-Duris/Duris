@@ -473,9 +473,19 @@ bodies (previously two pipeline and one authority call). This is a narrow source
 presence observation, not compiler evidence or review of all successor semantics.
 F1 required INITIAL matrix-owner source fix remains reviewed at its prior scope.
 
-SQL/client-free compile/link and isolated inactive smoke results are still PENDING
-in the published handoff. Original schema manifests terminate at 0065, bootstrap
-alone is insufficient. SQL smoke still needs genuine disposable schema-65 restore,
+Primary follow-up 73195295e1384d7c3aae31107e644a9a8c612b99 changes only two
+craft callers, writer source pins/coverage and the candidate handoff. The handoff
+REPORTS both fresh compilers stopped at the same Harvester missing-field aggregate
+initializer error; four non-refinement aggregates now explicitly initialize the
+three refinement fields, and affected objects compiled on both unchanged strict
+production profiles. Root reads/authenticates that actual two-caller delta but
+does not reproduce compiler results. Full SQL/client-free link and inactive smoke
+remain PENDING. Read-only WSL SQL-fixture prerequisite checks reportedly failed:
+Docker integration unavailable, image availability unknown, no service/smoke start.
+All 19 selected source provider bodies remain exact between 25b863da and 73195295;
+both live assignments keep their original exact pin and are not restarted.
+Original schema manifests terminate at 0065, bootstrap alone is insufficient.
+SQL smoke still needs genuine disposable schema-65 restore,
 private daemon/socket and the existing restore qualification owner; no fabricated
 marker or shared service. Primary retains this executable checkpoint and repairs.
 General flat ROOM admission remains excluded; callback registration is not source
