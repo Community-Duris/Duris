@@ -455,6 +455,29 @@ class quest_mobile_native_item_stage
 	bool capture_container_shell(quest_mobile_native_container_shell *) noexcept;
 	quest_mobile_native_item_binding binding_input() const noexcept;
 	size_t retained_bytes() const noexcept;
+	// Genuine frozen flat cold restoration only: no live factory retag/RNG.
+	// Outer includes CURRENT object/affect pools and Zombie registry ONCE, all
+	// existing inputs/output stages. Refresh globals + stage on EVERY return.
+	static bool restore_bounded(const player_item_snapshot &,
+				    const native_mobile_birth_item_recipe &,
+				    quest_mobile_native_item_stage *,
+				    bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_bound_bounded(const player_item_snapshot &,
+					  const native_mobile_birth_item_recipe &,
+					  quest_mobile_native_item_stage *,
+					  bool (*)(size_t, void *) noexcept, void *,
+					  size_t) noexcept;
+	static bool restore_rebind_bounded(const player_item_snapshot &,
+					   const native_mobile_birth_item_recipe &,
+					   quest_mobile_native_item_stage *,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
+	// Actual private bounded-cold metadata + raw heap, includes inline stage;
+	// excludes pooled slots/pages and reserved pointer already in registry capacity.
+	// Body leaves private allowance only at original full successful publication.
+	// Strong scalar output; original retained_bytes observation remains unchanged.
+	bool retained_bytes_excluding_literal_pools(size_t *) const noexcept;
+
 	bool capture_recipe(const player_item_snapshot &,
 			    native_mobile_birth_item_recipe *) const noexcept;
 	static bool restore(const player_item_snapshot &, const native_mobile_birth_item_recipe &,
