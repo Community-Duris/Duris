@@ -2847,6 +2847,77 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Warm-world report opens two bounded preparation deltas - 2026-10-09
+
+Primary ebea519b62f5b775e23b88eb9a59101acd75fc2a publishes the complete65-line
+SHARED_WARM_WORLD_AND_FLAT_CATALOG_SOURCE_2026-10-08.md,read by root. Its four
+changed paths are docs only;actual src/tests/migrations trees remain identical
+to a20478a28. Reported private candidate
+ac4b80841462772e8676ff2d402dfea316cca992cf4a89d45e9c7506038592a1 selects210
+bodies(171 source,30 tests,5 schema,4 other),with packets f5180fc8,c6d98f49,
+9430ebb5,bb4efc31 totaling861 provider records/39 inverses. These are reported
+source/composition contracts;private bodies are unavailable and independently
+uninspected. No compiler/preprocessor/test/build/SQL/flat/native/gameplay/recovery/
+performance qualification is reported or performed here.
+
+New reported contracts bind shared zero-wallet MBR4 metadata,detached recapture,
+once-only owners and fresh runtime proof on each retry. Exact native actor/SHOP/
+room/global membership,cash denominations,saved-affect multiset,roaming and full
+reciprocal literal forest matter. Empty stock preserves absent versus genuine
+present-zero/nonzero owner clocks;ACK binds canonical receipt and max(1,genuine
+owner AFTER) under original generation/fences. There is no actor saveclock;
+original saved_at needs actual persisted locked proof. Any-effect failure stays
+held/unknown without cache erasure. Final proof and confirmed rollback precede
+ACK;confirmed original origin COMMIT/cleanup precedes journal retirement.
+Flat initial-catalog staging borrows the recovered root lock,preserves unrelated
+values,uses missing-catalog revision1 or actual existing clock+1,and preserves
+legacy signed-1 cash policy without claiming identical legacy raw framing.
+Stage success itself performs no write/recovery/commit/publication.
+
+Current prioritized bounded queue,one active private delivery per existing chat:
+
+1. Architecture:COLD_SAVED_AFFECT_EVENT_OWNERSHIP_FACTS_2026-10-09.txt under
+   D:/Dev/Temp/cold-saved-affect-event-ownership-facts-20261009/.
+   Trace actual balance_affects/event scheduling/coalescing,affected-node pool,
+   dispatch/cancellation/extraction/direct cleanup and restore/reset providers.
+   Distinguish detached state,queued or executing work and real native effects;
+   flags0 does not imply eventless restoration. Reuse closed keeper/INITIAL facts;
+   add only missing factual service/event lifetime,cleanup and original progress
+   constraints. Benefit:implementation-ready source facts for primary's open cold
+   saved-affect owner,without implementing or duplicating its private work.
+2. Quest:SHARED_WARM_WORLD_ACK_ACCEPTANCE_DELTA_2026-10-09.txt under
+   D:/Dev/Temp/shared-warm-world-ack-acceptance-delta-20261009/.
+   Extend the existing ONE original missing-SHOP birth with a small incremental
+   legal phase/binding table and discriminating retry/refusal controls for the
+   newly reported runtime/world/empty-owner/cash-denomination/ACK obligations.
+   Reuse closed INITIAL,current-SQL and terminal-origin controls;do not recopy
+   their inventories. Benefit:future integration can separate frozen original,
+   fresh runtime/world proof,canonical receipt and genuine guarded ACK.
+
+Available inputs are actual public native affect/event/lifetime/restore providers,
+ordinary runtime/cash/custody/SQL/coordinator ACK/world membership,passive codec
+and closed sealed packets. Exact public blobs/hashes/ranges and private evidence
+hashes are required for independent root review. Unavailable dependencies remain
+private ac4b808 bodies,genuine shared attempt/lifetime/progress/cleanup and legal
+original/current/publication/ACK/fault exports,plus execution authorization.
+Missing private source blocks only its dependent implementation/qualification.
+No invented owner/API/cursor/schema/fixture or duplicate primary/Plan5 work.
+Primary owns shared cold service/event implementation,flat custody/atomic bundle,
+origin/worker/world counterparts,transition budgets and integrated qualification.
+Workers own only their private notes/evidence;no src/tests/migrations/shared-doc
+edits,private artifact commits or executable qualification are assigned.
+
+Both assignments dispatched after unchanged compact idle snapshots at revision29;
+no live work was restarted. Both deliveries and root reviews are PENDING. F1
+integration-startup P1 and Smith missing-API P1 remain open on unchanged source;
+the reviewed optional repair proposals remain closed/available with adoption
+unknown,no adoption wait. Reassess each handoff for an actual next independent
+gap;otherwise retain precise dependencies and event monitoring,without filler.
+Actual root/native Goals remain BLOCKED/unfinished;these preparation assignments
+do not resume them. Heartbeat remains ACTIVE until the broader published required
+Plans1-5/R1-R8/integrated qualification,blockers and owner completion audit passes.
+Root dispatch/source proof:D:/Dev/Temp/coordinator-warm-world-cold-affect-dispatch-20261009/.
+
 ## Temporary deferral repair and terminal-origin preparation reviewed - 2026-10-09
 
 Both finite private deliveries now PASS independent root review at declared
