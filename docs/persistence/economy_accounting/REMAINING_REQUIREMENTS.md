@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## BS-R1 metadata reservations implemented - 2026-10-09
+
+Bounded read/lock helpers now reserve the actual simultaneously live file metadata
+before inspection/allocation, retaining the reader metadata term in its vector
+peak. Independent source review passed; policies, caps, security/ABI/error guards
+and closed admission are preserved. This finite source omission is resolved.
+Native boundary tests remain in the major-plan batch; ec632's successful inactive
+build/boot checkpoint predates and does not qualify this repair. Full caller32MiB,
+accepting native journeys, publication/terminal/ACK and release gates remain open.
+
 ## Genuine flat ROOM atomic writer and producer joined - 2026-10-09
 
 [Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#genuine-flat-room-atomic-writer-and-producer-joined---2026-10-09)

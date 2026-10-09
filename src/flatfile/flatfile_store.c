@@ -390,6 +390,15 @@ flatfile_read_result flatfile_read_bounded(const std::string &directory, const s
 		errno = EINVAL;
 		return flatfile_read_result::invalid;
 	}
+	// The directory helper and same-FD file inspection each use one stat;
+	// their lifetimes do not overlap. Reserve it before either inspection.
+	if (outer_live_scratch > SIZE_MAX - sizeof(struct stat) ||
+	    !reserve_scratch_peak(outer_live_scratch + sizeof(struct stat), context))
+	{
+		errno = ENOBUFS;
+		return flatfile_read_result::io_error;
+	}
+	const size_t metadata_live = outer_live_scratch + sizeof(struct stat);
 	const int directory_fd =
 		open(directory.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
 	if (directory_fd < 0)
@@ -430,11 +439,12 @@ flatfile_read_result flatfile_read_bounded(const std::string &directory, const s
 	}
 	const size_t size = static_cast<size_t>(info.st_size);
 	// The original output and caller-owned paths are included in outer_live_scratch.
+	// The inspected file stat remains live alongside the fresh vector.
 	// A fresh vector reserve is exactly the requested allocation under pinned
 	// libstdc++13. This is an explicit implementation contract, not portable C++.
-	if (outer_live_scratch > SIZE_MAX - sizeof(std::vector<uint8_t>) ||
-	    size > SIZE_MAX - outer_live_scratch - sizeof(std::vector<uint8_t>) ||
-	    !reserve_scratch_peak(outer_live_scratch + sizeof(std::vector<uint8_t>) + size,
+	if (metadata_live > SIZE_MAX - sizeof(std::vector<uint8_t>) ||
+	    size > SIZE_MAX - metadata_live - sizeof(std::vector<uint8_t>) ||
+	    !reserve_scratch_peak(metadata_live + sizeof(std::vector<uint8_t>) + size,
 				  context))
 	{
 		close(file_fd);

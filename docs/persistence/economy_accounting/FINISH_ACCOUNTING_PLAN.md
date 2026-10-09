@@ -1,5 +1,18 @@
 # Finish accounting implementation plan
 
+## BS-R1 metadata reservations implemented - 2026-10-09
+
+The bounded file reader now reserves one actual `sizeof(struct stat)` before
+inspection and includes it in the fresh-vector peak. Bounded authority locking
+reserves both simultaneously live helper metadata objects before its string
+allocations and lock acquisition. Checked arithmetic, original caps, same-FD
+security, ABI refusal and strong outputs remain intact. Independent source review
+passed. Source pins and coordinates are refreshed without writer-policy promotion.
+Tests and native boundary qualification remain deferred to the major-plan batch;
+the earlier ec632 executable checkpoint does not qualify this successor. The
+original full prospective32MiB, accepting native journeys and release gates stay
+open. This resolves the finite BS-R1 source omission, not complete budget coverage.
+
 ## Executable checkpoint passed - 2026-10-09
 
 [Exact candidate results](COMBINED_EXECUTABLE_CANDIDATE_CHECKPOINT_2026-10-09.md)
