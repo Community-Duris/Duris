@@ -3046,3 +3046,15 @@ PASS;931policies/398pins authenticate, zero new/unmapped sites. Native checks ba
 Pulse/copy/generation/warm/cold/scheduler/service/placement/fault/mixed qualification
 remain open. Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED
 release and ACTIVE goal persist; no added gate or full native acceptance claim.
+
+
+## Full ROOM current carrier/generation admission implemented - 2026-10-09
+
+[Owning helpers](ROOM_CARRIER_GENERATION_ADMISSION_2026-10-09.md) preserve complete
+phase1/phase2 current-context guards and canonical/domain proof, preadmit actual
+fresh clone from real current vectors, and keep strong output. Generation retains
+original native/BODY/lifetime/health/checkpoint/lifecycle checks. RAW/final Cprefix/
+header inverse/tokens/preprocessor PASS;931policies/398pins authenticate, zero new/
+unmapped sites. Native checks batched. Real pulse/warm/cold/scheduler/service/placement/
+activity/fault/mixed qualification remains unfinished. Protected WIP, inactive/CLOSED
+accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist; no newgate.

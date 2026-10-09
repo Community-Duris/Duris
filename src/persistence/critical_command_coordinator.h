@@ -449,6 +449,16 @@ class critical_zone_reset_item_publication_owner final
 					const critical_completion &, uint64_t,
 					bool (*)(size_t, void *) noexcept, void *,
 					size_t outer_live) noexcept;
+	// Full current native carrier copy and original generation observation.
+	// Strong outputs, complete original command/BODY proof and actual fresh
+	// clone/key/codec storage; no new delivery/source/ACK authority.
+	static bool copy_context_bounded(const critical_command &,
+					 critical_native_recovery_envelope *,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
+	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
+					       uint64_t *, bool (*)(size_t, void *) noexcept,
+					       void *, size_t outer_live) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.
