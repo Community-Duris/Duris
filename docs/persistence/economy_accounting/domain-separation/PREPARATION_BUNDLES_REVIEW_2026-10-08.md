@@ -2847,6 +2847,67 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Cold prefix and adoption acceptance follow-up selected - 2026-10-09
+
+Published50b62aeb16ea1a4f414b2d0433588bd34d98f292 adds a private source REPORT,
+SHARED_COLD_WORLD_AND_FLAT_CUSTODY_SOURCE_2026-10-08.md. Root reads the full report
+and changed finish/remaining dispositions. Actual src/tests/migrations trees are
+unchanged from reviewed0fd8790c9. No private source body or execution is available.
+Report selects candidate50af125db55837627e2965c935ce042d109f5f6c3de4314369b7e0ea65440579:
+custody720cd5a1(168 providers/6 inverses),affects a09f949e(229/13),corrected cold
+world0bff80f4(187/16),total584/35. Rejected world48d6 is not accepted:reported
+fresh adoption used unassigned owner runtime and historical retry omitted charging.
+These are reported corrections,not independently reviewed code or executed proof.
+
+Prioritized queue:ONE new active quest acceptance-preparation delivery;architecture
+cold-affect facts and all prior packets remain CLOSED. New sole quest output:
+D:/Dev/Temp/shared-cold-prefix-adoption-acceptance-delta-20261009/
+SHARED_COLD_PREFIX_ADOPTION_ACCEPTANCE_DELTA_2026-10-09.txt,
+plus raw source/range/artifact pins,index and self-verification in that directory.
+Benefit:implementation-ready discriminating legal cuts for the two reported fixes
+and cold prefix/event lifetime/order mistakes once genuine owner hooks arrive.
+Reuse the closed warm-world ACK,retry/terminal-origin,original INITIAL/current-SQL
+and architecture cold-affect facts;extend the SAME original missing-SHOP journey.
+
+Selected deltas:independently observe actual runtime before fresh adoption;validate
+the complete existing keeper without replaying saved affects. Prefix0/1 installs
+before room entry and parks the exact generated balance event on EVERY exit;
+historical prefix2+ installs after actual original-room restoration before periodic
+rearm. Actual original step1 returns success before event resume/step2 selection.
+NOWHERE preentry and authenticated pending destination remain honest separate facts.
+Only returned owned cancellation permits resume;stale/missing-generation/nonreturned
+service stays held/unknown. No erase/extract rollback or original resampling.
+Pure affect prepare success immediately retains the WHOLE actor/stock;pure budget
+refusal has owned retry disposition. ALL prefix retries charge retained/prospective
+node/event resources BEFORE any item/room/affect/event service,including after
+publication consumes the actor pointer. Full literal cash/roam/affect multiset/
+reciprocal checkpoint,confirmed same-session SQL rollback and final world/ACK/origin
+obligations reuse the closed packets. Proposed native controls remain UNEXECUTED.
+
+Available:50b report,unchanged published native precedents and sealed closed pins.
+Unavailable:private candidate/service bodies;actual shared cold actor/attempt/
+adoption/cancellation/progress/cleanup APIs;legal original fixture and native
+producer/phase/fault exports. No invented hook,accepting adapter or private-code
+review claim. Missing inputs block dependent execution,not this narrow preparation.
+Quest owns only its private D: note/evidence;root independent factual/source and
+acceptance review is required before finite closure. Preserve both isolated clean
+worktrees. No maintained source/tests/coverage/manifest/contracts edits or duplicate
+primary/Plan5 implementation. No repository imports,compiler/preprocessor,tests,
+build,SQL/flat/native/gameplay/recovery/event execution;stdlib raw Git/hash only.
+
+Architecture stays closed/event-dependent;no separate repeated map is selected.
+Private flat atomic participant69484205 remains reported NOT SELECTED:whole-catalog
+CURRENT custody and exact retained-envelope receipt binding need primary-owned
+correction. Watch that publication and actual native owner inputs;do not duplicate
+the private repair. Format8 active SHOP equipped-root compatibility is reported,
+not executed. Producer admission and existing release gates remain closed.
+F1 integration-startup and Smith missing-API P1 remain unresolved;optional reviewed
+guidance remains available without adoption wait. Actual root/worker Goals remain
+BLOCKED/unfinished;this finite preparation is not Goal resumption. Heartbeat ACTIVE.
+Plans1-5/applicable original R1-R8/integrated qualification,required blockers and
+published owner completion disposition remain the broader unfinished finish line.
+Root dispatch/source-tree proof:D:/Dev/Temp/coordinator-cold-prefix-dispatch-20261009/.
+
 ## Cold affect ownership and warm-world ACK preparation reviewed - 2026-10-09
 
 Both ebea519b preparation deliveries now PASS independent root source/factual and
