@@ -3224,3 +3224,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Actual coordinator retained storage implemented - 2026-10-09
 
 [Coordinator retained storage](COORDINATOR_CURRENT_RETAINED_STORAGE_2026-10-09.md) now observes actual command/maps/fences/pending/completion/worker capacities under the coordinator mutex and the immutable prepared participant reports. The private outside-lock caller gets a strong passive snapshot, not an admission lease. Full RAW/final source review, tokens/logical preprocessing, exact inverses and protected files passed; 931 policies/400 authenticated pins (new completion-header pin), zero new/unmapped sites. Full submission and once-only same-lock ROOT/journal handoff remain open. Native qualification stays batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Passive ROOT recovery and complete ACK ownership implemented - 2026-10-09
+
+[ROOT registration/guard/ACK](ROOT_COLD_REGISTRATION_GUARD_ACK_2026-10-09.md) now provides genuine full canonical passive cold registration, authentic submitted/removal-retry guards and a complete rooted ACK successor preserved across later refusal. Real native execution/receipt/source authority is not fabricated. Complete RAW/final source review, exact inverses and token/logical preprocessing checks passed; 931 unchanged writer policies/400 authenticated pins, zero new/unmapped sites. Bounded boot registration, full cleanup/publication driver and same-lock submit/shared aggregate joining remain open. Native qualification stays batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

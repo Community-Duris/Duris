@@ -4662,3 +4662,234 @@ bool zone_reset_item_owner::restore_cold_flat_bindings(
 		return false;
 	}
 }
+
+struct zone_reset_item_owner::cold_registration_workspace
+{
+	std::vector<uint8_t> canonical;
+	zone_reset_item_image image;
+	zone_reset_item_recovery_context recovery;
+	std::span<const uint8_t> attachment;
+	std::unique_ptr<warm_registry> registry;
+	std::unique_ptr<warm_root> root;
+};
+
+bool zone_reset_item_owner::restore_original_bounded(
+	const critical_native_recovery_envelope &original, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Genuine coordinator owns mutex/admission. NO coordinator reentry, pulse
+	// charge, SQL, factory construction, RNG/UID issue, invented S witness or
+	// physical publication occurs in this passive metadata registration.
+	if (!reserve ||
+	    !zone_reset_item_recovery_valid_bounded(original, reserve, context, outer_live))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		size_t live = outer_live;
+		if (!warm_scratch_add(live, sizeof(cold_registration_workspace)) ||
+		    !reserve(live, context))
+			return false;
+		cold_registration_workspace work;
+		if (critical_command_encode_bounded(original.command, &work.canonical, reserve,
+						    context,
+						    live) != critical_command_codec_result::ok ||
+		    !warm_scratch_add(live, work.canonical.capacity()))
+			return false;
+		size_t image_heap = 0, recovery_heap = 0;
+		if (zone_reset_item_command_decode_bounded(original.command, &work.image, reserve,
+							   context,
+							   live) != economic_accounting_error::ok ||
+		    !warm_scratch_forest_heap(work.image.items, work.image.recipes,
+					      work.image.coins, false, &image_heap) ||
+		    !warm_scratch_add(live, image_heap))
+			return false;
+		work.attachment = original.attachment;
+		if (zone_reset_item_recovery_decode_bounded(
+			    original.command, work.attachment, &work.recovery, reserve, context,
+			    live, &recovery_heap) != economic_accounting_error::ok ||
+		    !warm_scratch_add(live, recovery_heap))
+			return false;
+		for (const auto *registry = warm_head_; registry; registry = registry->next)
+			for (const auto &root : registry->roots)
+				if (root->forest.operation_id.bytes ==
+				    original.command.operation_id.bytes)
+					return root->canonical_command == work.canonical &&
+					       root->original_envelope.revision ==
+						       original.revision &&
+					       root->original_envelope.phase == original.phase &&
+					       root->original_envelope.attachment ==
+						       original.attachment;
+		if (!warm_scratch_add(live, sizeof(warm_registry)) || !reserve(live, context))
+			return false;
+		work.registry = std::make_unique<warm_registry>();
+		if (!warm_scratch_add(live, sizeof(warm_root)) || !reserve(live, context))
+			return false;
+		work.root = std::make_unique<warm_root>();
+		size_t envelope_heap = 0;
+		if (!warm_scratch_add(live, sizeof(critical_native_recovery_envelope)) ||
+		    !warm_scratch_envelope_heap(original, true, &envelope_heap) ||
+		    !warm_scratch_add(live, envelope_heap) || !reserve(live, context))
+			return false;
+		critical_native_recovery_envelope retained(original);
+		work.root->original_envelope = std::move(retained);
+		work.root->canonical_command = std::move(work.canonical);
+		work.root->context = std::move(work.recovery);
+		work.root->forest.operation_id = work.image.operation_id;
+		work.root->forest.reset_source = work.image.reset_source;
+		work.root->forest.zone_vnum = work.image.zone_vnum;
+		work.root->forest.room_vnum = work.image.room_vnum;
+		work.root->forest.items = std::move(work.image.items);
+		work.root->forest.recipes = std::move(work.image.recipes);
+		work.root->forest.coins = std::move(work.image.coins);
+		work.root->cold = true;
+		work.root->submitted = true;
+		work.root->sealed = true;
+		work.root->slot = work.image.reset_source.slot;
+		work.registry->zone_vnum = work.image.zone_vnum;
+		work.registry->invocation = work.image.reset_source;
+		work.registry->closed = true;
+		// Preserve original rooted inline-string census allowance before attachment.
+		// Actual large string heap is already counted; only embedded <=15-byte text
+		// adds this original conservative field allowance at the ownership cut.
+		for (const auto &item : work.root->forest.items)
+		{
+			const auto inline_text = [&](const std::string &text) noexcept {
+				return text.capacity() > 15 ||
+				       warm_scratch_add(live, text.capacity() + 1);
+			};
+			if (!inline_text(item.name) || !inline_text(item.short_description) ||
+			    !inline_text(item.description) || !inline_text(item.action_description))
+				return false;
+			for (const auto &description : item.extra_descriptions)
+				if (!inline_text(description.keyword) ||
+				    !inline_text(description.description))
+					return false;
+		}
+		// Exact genuine one-root vector growth; no dispatcher_completed/S fabricated.
+		if (!warm_scratch_add(live, sizeof(std::unique_ptr<warm_root>)) ||
+		    !reserve(live, context))
+			return false;
+		work.registry->roots.push_back(std::move(work.root));
+		// All real storage is admitted before this allocation-free ownership transfer.
+		// Caller refreshes actual native registry retention on every returned cut;
+		// no outside pulse charge or allocating/fallible callback follows attachment.
+		work.registry->next = warm_head_;
+		warm_head_ = work.registry.release();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelope &original,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept
+{
+	return zone_reset_item_owner::restore_original_bounded(original, reserve, context,
+							       outer_live);
+}
+
+bool zone_reset_item_owner::begin_submitted_flat_scratch(warm_root &root) noexcept
+{
+	if (!root.cold && !root.refusal_cleanup_returned)
+		return begin_warm_command_scratch(root);
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    root.preparation_owner || root.preparation_scratch || !root.submitted || !root.sealed ||
+	    root.blocked || root.retired || root.canonical_command.empty() ||
+	    root.original_envelope.command.operation_id.bytes != root.forest.operation_id.bytes)
+		return false;
+	if (!root.cold &&
+	    (!root.completed ||
+	     root.completion.disposition != critical_completion_disposition::never_admitted ||
+	     root.stage.state_ || !zone_reset_room_publication_owner::empty(root.publication)))
+		return false;
+	warm_registry *actual = nullptr;
+	for (auto *registry = warm_head_; registry; registry = registry->next)
+		for (const auto &owned : registry->roots)
+			if (owned.get() == &root)
+			{
+				if (actual || !registry->closed || registry->blocked ||
+				    registry->sealing_pending)
+					return false;
+				actual = registry;
+			}
+	// Passive cold replay carries NO captured live O/P or S/dispatcher witness.
+	// A genuinely completed no-admission cleanup instead retains its authentic
+	// warm source/closed S boundary, plus emitted destruction-return latch, for
+	// coordinator removal only. Neither branch fabricates a factory or old body.
+	// Full carrier/receipt/generation are checked by the owning actual driver.
+	const auto &source = root.forest.reset_source;
+	if (!actual || source.source.bytes != actual->invocation.source.bytes ||
+	    source.generation.bytes != actual->invocation.generation.bytes ||
+	    source.kind != actual->invocation.kind ||
+	    source.sequence != actual->invocation.sequence || source.slot != root.slot ||
+	    root.forest.zone_vnum != actual->zone_vnum ||
+	    (root.cold ? source.slot != actual->invocation.slot :
+			 (!actual->dispatcher_completed || root.slot >= actual->stop_slot)))
+		return false;
+	root.preparation_scratch = warm_command_scratch::inline_bytes();
+	if (!quest_mobile_native_birth_owner::charge())
+	{
+		root.preparation_scratch = 0;
+		return false;
+	}
+	if (!economic_gameplay_authority::active_regular_flat())
+	{
+		root.preparation_scratch = 0;
+		(void)quest_mobile_native_birth_owner::charge();
+		return false;
+	}
+	return true;
+#endif
+}
+
+bool zone_reset_item_owner::prepare_flat_ack_successor_bounded(
+	warm_root &root, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	if (!reserve || !root.submitted || !root.completed || root.blocked ||
+	    root.original_envelope.phase != critical_native_recovery_phase::execution_pending ||
+	    root.original_envelope.revision == UINT64_MAX)
+		return false;
+	if (root.ack_successor)
+		return zone_reset_item_recovery_successor_bounded(
+			root.original_envelope, *root.ack_successor, reserve, context, outer_live);
+	try
+	{
+		size_t live = outer_live, heap = 0;
+		if (!warm_scratch_add(live,
+				      sizeof(std::unique_ptr<critical_native_recovery_envelope>)) ||
+		    !warm_scratch_add(live, sizeof(critical_native_recovery_envelope)) ||
+		    !warm_scratch_envelope_heap(root.original_envelope, true, &heap) ||
+		    !warm_scratch_add(live, heap) || !reserve(live, context))
+			return false;
+		auto successor =
+			std::make_unique<critical_native_recovery_envelope>(root.original_envelope);
+		++successor->revision;
+		successor->phase = critical_native_recovery_phase::continuation_pending;
+		// Original full monotonic BODY/receipt/state predicate; no synthetic phase ACK.
+		if (!zone_reset_item_recovery_successor_bounded(root.original_envelope, *successor,
+								reserve, context, live))
+			return false;
+		root.ack_successor = std::move(successor);
+		// Actual root now owns clone once. Only live unique_ptr frame remains in outer;
+		// a refusal retains original exact ACK successor for normal retry.
+		live = outer_live;
+		return warm_scratch_add(live, sizeof(successor)) && reserve(live, context);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
