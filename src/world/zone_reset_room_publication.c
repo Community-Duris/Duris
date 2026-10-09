@@ -3060,3 +3060,66 @@ bool zone_reset_room_publication_owner::mark_published_bounded(
 	}
 	return true;
 }
+
+// The callback borrows the caller's genuine selected-root lock. It never
+// acquires a second lock, invents an envelope, or drops the coordinator prefix.
+struct zone_reset_room_publication_owner::flat_terminal_retirement
+{
+	const std::string &root;
+	const flatfile_authority_lock &lock;
+	uint64_t origin_uid;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *budget_context;
+};
+
+bool zone_reset_room_publication_owner::retain_terminal_flat_bounded(
+	const critical_native_recovery_envelope &expected, void *context,
+	size_t coordinator_live) noexcept
+{
+	const auto *transfer = static_cast<const flat_terminal_retirement *>(context);
+	if (!transfer || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    !transfer->reserve || !transfer->lock.matches(transfer->root))
+		return false;
+	// The real storage owner recovers on EVERY attempt under this same lock,
+	// authenticates immutable origin/full terminal BODY and receipt, and requires
+	// complete apply/unlink plus exact readback before reporting durable transfer.
+	// Refusal leaves the guarded coordinator's real carrier/fences intact.
+	return flatfile_zone_reset_item_publication_storage::retain_terminal_locked_bounded(
+		       transfer->root, transfer->lock, transfer->origin_uid, expected,
+		       transfer->reserve, transfer->budget_context, coordinator_live) == 0;
+}
+
+bool zone_reset_room_publication_owner::retire_warm_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock, uint64_t origin_uid,
+	const critical_native_recovery_envelope &expected, uint64_t original_generation,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || !reserve ||
+	    selected_root.empty() || !origin_uid || origin_uid == UINT64_MAX ||
+	    !original_generation || !lock.matches(selected_root))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)expected;
+	(void)budget_context;
+	(void)outer_live;
+	return false;
+#else
+	// References borrow already-counted root/lock and actual expected carrier.
+	// Admit this complete named callback frame BEFORE construction and keep it
+	// in the prefix through coordinator validation, terminal transfer and journal.
+	size_t live = outer_live;
+	if (!room_prepare_add(live, sizeof(flat_terminal_retirement)) ||
+	    !reserve(live, budget_context))
+		return false;
+	flat_terminal_retirement transfer{ selected_root, lock, origin_uid, reserve,
+					   budget_context };
+	// The owning coordinator pins original operation/generation/physical release,
+	// proves full phase/revision/BODY, relays its identity/scratch to our callback,
+	// retires the complete mixed journal, then releases only confirmed fences.
+	// No budget callback or allocating revalidation follows confirmed retirement.
+	return critical_zone_reset_item_publication_owner::retire_bounded(
+		expected, original_generation, retain_terminal_flat_bounded, &transfer, reserve,
+		budget_context, live);
+#endif
+}
