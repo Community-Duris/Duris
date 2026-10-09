@@ -81,6 +81,17 @@ class proclib_recovery_chain_stage
 		obj_proc_type previous;
 	};
 	static bool prepare(std::span<const request>, proclib_recovery_chain_stage &) noexcept;
+	// Same original game-thread/global/duplicate/predecessor proof and strong
+	// output, with prospective candidate/clone/chain storage admission. Callback
+	// is nonallocating and nonmutating; caller includes the actual input span,
+	// requests backing storage and old output/heap in outer and holds the peak
+	// through return. No binding, parser, callback service or native authority.
+	// ENOBUFS storage refusal/overflow, ENOMEM allocation failure, ENOTSUP ABI;
+	// original chain-count limit refuses EOVERFLOW. Existing methods unchanged.
+	static bool prepare_bounded(const std::span<const request> &,
+				    proclib_recovery_chain_stage &,
+				    bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *,
+				    size_t outer_live_scratch) noexcept;
 	static bool predecessor_matches(int, obj_proc_type) noexcept;
 	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;

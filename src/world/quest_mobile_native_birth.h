@@ -2,6 +2,7 @@
 #define QUEST_MOBILE_NATIVE_BIRTH_H
 
 #include "core/structs.h"
+#include <string>
 #include "persistence/critical_command_coordinator.h"
 
 // Passive replay and game-thread lifecycle entry points. Neither values nor
@@ -103,6 +104,15 @@ class quest_mobile_native_birth_owner final
 	friend void quest_mobile_native_birth_pulse(bool) noexcept;
 	friend bool quest_mobile_native_birth_recovery_pulse() noexcept;
 	static bool begin_reset(int zone, int force) noexcept;
+	static bool begin_reset_flat(int zone, int force) noexcept;
+	static bool prepare_flat_reset_cursor(int zone, int force) noexcept;
+	static bool reset_flat_projection_current() noexcept;
+	static bool reset_dispatch_identity() noexcept;
+	static bool reset_dispatch_current() noexcept;
+	static bool original_command_current() noexcept;
+	static bool reset_invocation_ready() noexcept;
+	static bool reset_dispatch_source(uint32_t, char, int, bool, economic_source_event *,
+					  int32_t *) noexcept;
 	static quest_mobile_original_reset_locals *original_reset_locals(int, int) noexcept;
 	// Genuine open-slot hold only. Retryable means the actual dispatcher has not
 	// entered its next effect; unknown/returned-failure cuts are retained closed.
@@ -119,6 +129,14 @@ class quest_mobile_native_birth_owner final
 	// Source observations share the existing lazy invocation with M and grant no
 	// source claim, SQL, constructor, publication or ACK authority.
 	friend class zone_reset_item_owner;
+	// Exact original captured nonce/cursor only. Strong output on refusal;
+	// SQL returns null, flat borrows the immutable cursor-owned selected root.
+	// Borrow ends when the actual cursor finishes/replaces; caller owns copies.
+	static bool capture_reset_backend(const economic_source_event &,
+					  const std::string **selected_flat_root) noexcept;
+	static bool capture_reset_flat_projection(const economic_source_event &,
+						  critical_operation_id *lineage,
+						  critical_operation_id *epoch) noexcept;
 	static bool capture_room_reset_source(uint32_t command_slot, int room_rnum,
 					      economic_source_event *, int32_t *zone_vnum) noexcept;
 	static bool capture_retained_room_reset_source(uint32_t, int, economic_source_event *,
@@ -162,6 +180,8 @@ class quest_mobile_native_birth_owner final
 	static void pulse_policy(bool prepare_original_resets, bool recovery_only) noexcept;
 	static bool recovery_pulse() noexcept;
 	static bool charge() noexcept;
+	// Lifetime allowance in the same aggregate budget; call charge() after scratch dies.
+	static bool charge(size_t prospective_scratch) noexcept;
 	static bool discard(size_t) noexcept;
 	static bool publish(size_t, bool allow_reconstruction = false) noexcept;
 	static bool recover_cold(size_t, bool allow_reconstruction) noexcept;
