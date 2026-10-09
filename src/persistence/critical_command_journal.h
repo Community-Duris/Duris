@@ -120,4 +120,20 @@ critical_command_journal_health critical_command_journal_health_copy(void);
 const char *critical_command_journal_result_name(critical_command_journal_result result);
 void critical_command_journal_reset_for_tests(void);
 
+// Full original single native continuation retirement, with prospective owning
+// mixed-journal decode and exact rewrite/uncertainty confirmation. Caller input,
+// old outputs and inline context remain in outer. Callback must count the
+// published persistent rewrite storage exactly once separately from outer and
+// must not acquire journal/coordinator mutexes; it runs under journal mutex.
+// No source/ACK/execution proof or absence-based retirement is granted.
+// After return, drop the call scratch before refreshing aggregate retention:
+// post-rename uncertainty promotes already-admitted vectors without allocation.
+critical_command_journal_result
+critical_command_journal_retire_native_recovery_bounded(const critical_native_recovery_envelope &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t outer_live) noexcept;
+// Allocation-free atomic visibility of actual persistent attempt storage.
+// It is a census hook, not an independent concurrent admission protocol.
+size_t critical_command_journal_native_rewrite_storage_bytes() noexcept;
+
 #endif

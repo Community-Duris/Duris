@@ -348,7 +348,7 @@
       "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "3f49f5b213d30f3527da954147a7ea463dfe40cc70a6a6fae5b31165849189b4",
+      "src/item/item_movement_transaction.c": "37808bd48dd2a9a47d92263656d4234928669d9c2de366123bf23c9a899b306a",
       "src/item/item_movement_transaction.h": "f35cbc759dc15abce5b8972ca919babfd5f4c8ea41c75ec73a5c26c2473c9339",
       "src/item/item_ownership_runtime.c": "83e097f4307b0d5f495ad491343a8e7b3a568eedaa5f2fb30d5d1453bdc3eb8e",
       "src/item/item_ownership_runtime.h": "f3f38a09ac2b3a820454327ca8db8788a54f53623c93ee7b8ec34e68d25da2ee",
@@ -373,8 +373,8 @@
       "src/persistence/critical_command.h": "6064c1da68d806c3b9e48d715d0991346fb6a6a45692dd51838740044a381a71",
       "src/persistence/critical_command_coordinator.c": "e9d4de885a58ec1e14a9fc75077b01410b9e8646eca8c72415692e61a0b75e9a",
       "src/persistence/critical_command_coordinator.h": "3af2527f6dbbc04c6c982bd0f23a77214756a6c9424f593af9a499f89c688308",
-      "src/persistence/critical_command_journal.c": "ba99b23afc72f7a4e29a91827ecfdea1cca0763eee78e703c3d725e62d964977",
-      "src/persistence/critical_command_journal.h": "a905b7a89a680dfeb521a7d8ce1444b5bc9e54bf400d605a17aa30430db6c33e",
+      "src/persistence/critical_command_journal.c": "415facf420791248aa7199cadcdc8762dfbba9dff5663250c47670e9bf5c7cbd",
+      "src/persistence/critical_command_journal.h": "bf0d6786eb64e638a8927d426eefeff1098fb7a4f370536cfb2a1bc2914d4fa1",
       "src/persistence/critical_command_repository.c": "d6fed863a38e6254d14e8a893f5a6d7b23b7536dd39397bc37ec078c16630dc3",
       "src/persistence/critical_command_repository.h": "321ebf1e9e9299079c100fe2c921f2e0c02d06e335499990b7650e82bc1eefef",
       "src/persistence/critical_outbox.c": "767038ebacb1892fc0e79c29be0b128fcbf5bc8d694650ca5f0031c83cd6103a",
@@ -54811,7 +54811,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7724
+          7728
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",
