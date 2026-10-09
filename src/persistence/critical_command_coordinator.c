@@ -6797,7 +6797,8 @@ bool critical_zone_reset_item_publication_owner::copy_context_bounded(
 	if (!room_retire_add(live, sizeof(critical_native_recovery_envelope)) ||
 	    !room_retire_add(live, sizeof(std::string)) ||
 	    !room_retire_add(live, command.operation_id.bytes.size() + 1) ||
-	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+	    !room_retire_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(room_locked_budget_callback)) || !reserve(live, context))
 		return false;
 	try
 	{
@@ -6805,14 +6806,16 @@ bool critical_zone_reset_item_publication_owner::copy_context_bounded(
 		// One same-lock lookup preserves both complete predicates and proofs.
 		const std::string identity = operation_key(command.operation_id);
 		critical_native_recovery_envelope copy;
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		std::unique_lock<std::mutex> lock(coordinator_mutex);
+		room_locked_budget_callback locked_budget{ lock, reserve, context };
 		const auto found = operations.find(identity);
 		if (!health.initialized || stop_requested || found == operations.end() ||
 		    !found->second->native || found->second->publication_checkpointing ||
 		    found->second->native_context_uncertain ||
 		    found->second->native_ack_uncertain ||
-		    !room_checkpoint_equal_bounded(command, found->second->command, reserve,
-						   context, live))
+		    !room_checkpoint_equal_bounded(command, found->second->command,
+						   room_locked_budget_callback::relay,
+						   &locked_budget, live))
 			return false;
 		const auto &state = *found->second;
 		const auto phase = state.native->phase;
@@ -6834,7 +6837,7 @@ bool critical_zone_reset_item_publication_owner::copy_context_bounded(
 		    !room_retire_add(live, current.payload.size()) ||
 		    !room_retire_add(live, current.accounting_intent.size()) ||
 		    !room_retire_add(live, state.native->attachment.size()) ||
-		    !reserve(live, context))
+		    !room_locked_budget_callback::relay(live, &locked_budget))
 			return false;
 		// Same original native_envelope field copies into one actual fresh object.
 		// Direct fields avoid a separate uncharged return carrier or fabricated BODY.
@@ -6843,7 +6846,8 @@ bool critical_zone_reset_item_publication_owner::copy_context_bounded(
 		copy.phase = phase;
 		copy.attachment = state.native->attachment;
 		if (!zone_reset_validators_ready() || !zone_reset_validators.valid_bounded ||
-		    !zone_reset_validators.valid_bounded(copy, reserve, context, live))
+		    !zone_reset_validators.valid_bounded(copy, room_locked_budget_callback::relay,
+							 &locked_budget, live))
 			return false;
 		*output = std::move(copy);
 		return true;
@@ -6868,15 +6872,18 @@ bool critical_zone_reset_item_publication_owner::observe_generation_bounded(
 	size_t live = outer;
 	if (!room_retire_add(live, sizeof(std::string)) ||
 	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
-	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+	    !room_retire_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(room_locked_budget_callback)) || !reserve(live, context))
 		return false;
 	try
 	{
 		const std::string identity = operation_key(expected.command.operation_id);
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		std::unique_lock<std::mutex> lock(coordinator_mutex);
+		room_locked_budget_callback locked_budget{ lock, reserve, context };
 		const auto found = operations.find(identity);
 		if (found == operations.end() || !found->second->retain_until_publication ||
-		    !room_retire_matches_bounded(*found->second, expected, reserve, context,
+		    !room_retire_matches_bounded(*found->second, expected,
+						 room_locked_budget_callback::relay, &locked_budget,
 						 live) ||
 		    !health.initialized || !coordinator_generation ||
 		    coordinator_generation_exhausted || stop_requested ||
@@ -6938,7 +6945,8 @@ bool critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
 	    !room_retire_add(live, original.command.operation_id.bytes.size() + 1) ||
 	    !room_retire_add(live, sizeof(frozen)) || !room_retire_add(live, sizeof(receipt)) ||
 	    !room_retire_add(live, sizeof(matches)) ||
-	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(room_locked_budget_callback)) ||
 	    !room_retire_add(live, 2 * sizeof(std::array<char, 9>)) ||
 	    !room_retire_add(live, sizeof(std::string_view)) || !reserve(live, budget_context))
 		return false;
@@ -6960,7 +6968,8 @@ bool critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
 		    !reserve(key_live, budget_context))
 			return false;
 		identity = operation_key(frozen.command.operation_id);
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		std::unique_lock<std::mutex> lock(coordinator_mutex);
+		room_locked_budget_callback locked_budget{ lock, reserve, budget_context };
 		auto found = operations.find(identity);
 		if (found == operations.end() || found->second->publication_checkpointing ||
 		    !health.initialized || coordinator_generation != generation ||
@@ -6968,7 +6977,8 @@ bool critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
 		    (lifecycle_guard_active &&
 		     lifecycle_guard_thread != std::this_thread::get_id()) ||
 		    !matches(*found->second) ||
-		    !room_retire_matches_bounded(*found->second, frozen, reserve, budget_context,
+		    !room_retire_matches_bounded(*found->second, frozen,
+						 room_locked_budget_callback::relay, &locked_budget,
 						 live))
 			return false;
 		pinned = found->second.get();
@@ -7063,11 +7073,13 @@ bool critical_zone_reset_item_publication_owner::admission_supported_bounded(
 	if (!reserve || command.type != critical_command_type::zone_reset_item_birth)
 		return false;
 	size_t live = outer;
-	if (!room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+	if (!room_retire_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(room_locked_budget_callback)) || !reserve(live, context))
 		return false;
 	try
 	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		std::unique_lock<std::mutex> lock(coordinator_mutex);
+		room_locked_budget_callback locked_budget{ lock, reserve, context };
 		// Same original execution_supported predicates, specialized only to ROOM.
 		// The original callback remains mandatory. Never fall back to invoking its
 		// unbounded allocator when the paired prospective provider is absent.
@@ -7076,7 +7088,8 @@ bool critical_zone_reset_item_publication_owner::admission_supported_bounded(
 		return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 		       critical_command_envelope_valid(command) && extension_validator_callback &&
 		       extension_validator_bounded_callback &&
-		       extension_validator_bounded_callback(command, reserve, context, live);
+		       extension_validator_bounded_callback(
+			       command, room_locked_budget_callback::relay, &locked_budget, live);
 	}
 	catch (...)
 	{
