@@ -3189,3 +3189,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Authentic bounded refusal cleanup implemented - 2026-10-09
 
 [Owning coordinator refusal companion](COORDINATOR_REFUSAL_CLEANUP_ADMISSION_2026-10-09.md) preserves full native/receipt/generation/delivery/lifecycle guards, preadmits actual clone/key/canonical proof and pins genuine cleanup outside the mutex. Distinct actual called/succeeded markers survive later removal failure; original nonallocating removal/fence tail remains, no journal/ACK added. RAW review and reanchored/formatted tokens/PP/prefix/header inverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Actual native cleanup/full pulse and other submission/recovery joins remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
+
+
+## Original bounded completion lookup implemented - 2026-10-09
+
+[Private completion provider](COORDINATOR_COMPLETION_READBACK_ADMISSION_2026-10-09.md) preadmits actual frame/lock/binary-key storage and preserves original same-mutex publication-pending precedence/cache fallback with strong full output and no extra gates. RAW review and exact reanchored/formatted tokens/PP/prefix/header inverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full pulse/submission/backend/recovery joining remains open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
