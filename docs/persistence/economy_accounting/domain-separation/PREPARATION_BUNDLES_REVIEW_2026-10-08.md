@@ -2847,6 +2847,147 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Cold registration and ACK pair reviewed CLOSED; shared CURRENT ownership pair selected - 2026-10-09
+
+Both original PUBLISHED_ROOT_COLD_REGISTRATION_ACK_AUTHORITY_BOUNDARY_2026-10-09.txt
+and PUBLISHED_ROOT_COLD_REGISTRATION_ACK_ACCEPTANCE_DELTA_2026-10-09.txt independently
+SOURCE/DESIGN/METADATA PASS; reviews CLOSED without correction, repin or reseal.
+Fixed T985e86daf24fe784a17d21ca16bec703fc9265b5 / actual parent
+P29e31cc87bdbdf72aaf4944ef17d1f58fc35a5e9; original charterc146 and both distinct
+finite ef6 delivery contexts remain sealed. Quest's unavailable local ef6 object
+is correctly recorded separately from the actual remote observation and fixed
+known B source, not certified as a source equality. Root has authenticated current
+published successors separately; neither packet is repinned to that current code.
+Root proof D:/Dev/Temp/coordinator-cold-registration-ack-review-20261009 authenticates
+strict indexes, raw Git providers, complete signatures/bodies/catches/scopes,
+original equalities, whole inverses, unique header insertions and minimal CLOSED
+principals. Fully read/audited pure stdlib/read-only Git default verifiers reproduce
+both exact stored receipts. Architecture:33 providers,187 cuts,22 original full
+equalities,four new definitions,40 scopes,70 owning controls,27 dependency whole
+equalities,20 CURRENT observer equalities,two whole inverses,three header insertions,
+eight minimal principals,234 indexed payloads. Quest:25 providers,100 full functions,
+19 scopes,one owning charter range,19 equalities,14 continuities,two whole inverses,
+one original ROOT C prefix,four minimal original contexts and four-payload index.
+Exact original principal seals:
+- Architecture INDEX.json: 38872/f70aea6bbda37128bd419021ae8e5d4a1a51ecc1d2033c41c400752084947a0c
+- Architecture PINS.json: 279692/566cdb52c249175a381b595a9f334939eace5c4039b018b573952bff1387f0f0
+- Architecture PUBLISHED_ROOT_COLD_REGISTRATION_ACK_AUTHORITY_BOUNDARY_2026-10-09.txt: 47528/52db1a36d70b5b91e0f090c9ea7df7d05a988387aaae52b8818993e5956f2029
+- Architecture VERIFICATION.json: 2639/d0876183aea7c5b910381999d4f125035aa8f7952ef46fd6acbc6a60496027d0
+- Architecture verify.py: 33360/3bfb7622cab4f5e2a2086d457328400b305837124d4e8805ba2736468bf1fc8c
+- Quest INDEX.json: 672/b26cd15140134e12c171c46f61afad2396b661286ef7bb8fceff1004768f7bc6
+- Quest PINS.json: 5815268/59508f5a59d3834a23e33bfe5ca7b8a35dc8a6791d71e8bc4d60baac3c7a18bb
+- Quest PUBLISHED_ROOT_COLD_REGISTRATION_ACK_ACCEPTANCE_DELTA_2026-10-09.txt: 34325/75d717a620dfa472b81850b374567eb2a385c3eefec80a88c772d3c9811e4c0b
+- Quest VERIFICATION.json: 3999/d98399d169dc2b237b2cccf01ed555a4211ebe07aa181dbef4ff03a5ce81789a
+- Quest verify.py: 21555/69ef955a789e906c52544a57077994f1e195a27930501104769b38b02633473b
+
+RK preserves full canonical/image/recovery/duplicate equality before real passive
+attachment, actual nonthrowing link tail and every-return lender CURRENT recensus.
+Ordinary warm, cold and genuinely returned warm cleanup guard branches remain
+distinct; no invented dispatcher/S/live O/P/receipt/generation gate. Full driver
+receipt/carrier/physical proof remains separate. Complete expected successor is
+validated before rooting; final reserve false retains that exact ACK candidate,
+and retry revalidates without native rerun. Provider/output death precedes guard
+release and retained recensus; no lock-taking snapshot under coordinator/journal
+locks, passive native/SQL/RNG/UID effect or metadata-granted ACK/release authority.
+All RK1-RK4 component/native UNEXECUTED, genuine commands UNAVAILABLE.
+Root metadata reader corrected only its private parser: complete owning regions
+are raw ranges, not functions; late RF multiline return/signature and final newline
+cuts require exact original boundaries. No worker or maintained payload changed.
+
+Current source-only reassessment: optional passive restore registration
+64d3cd99f60c76892a0658c36d9fea4f7dda54f9 / actual parent
+ef6a9dc00212056f87b3d98ba16602fff16cad19; coherent opt-in seven-owner literal pairing
+ba5ecac8a028cca407085480f61482ae08a04b42 / actual parent64d3;
+shared CURRENT ownership provider09d1c439c7a641e262d7062600763f0ac9dfdb9e / actual
+parentba5e; ROOT consumerc04f1778b2714b80ac2ac6a52a10e615066cb767 / actual parent09d1.
+Root read all four handoffs/full changed C/H, full shared capacity/global-scope and
+ROOT reserve/rebase/release controls; twelve whole-provider forward/inverses and
+eight complete RK/original/RF controls authenticate, three prior owned sections
+preserved. Full original boot/init/replay/coordinator/native/math/ABI/allocator/
+aggregate qualification NOT PERFORMED. Private RAW/token/preprocessor/policy/
+source-pin/review claims REPORTED ONLY. Published optional bounded callback exists;
+actual bounded replay invocation and startup shared journal-prefix remain open.
+Seven-policy and shared ROOT consumer exist; genuine coordinator lender, all locked
+companion conversions/coordinator-before-journal paths/full selector remain open.
+No private primary progress, adoption or native qualification is inferred.
+
+One bounded next delivery per existing authorized chat:
+
+1. SELECT architecture PUBLISHED_SHARED_COORDINATOR_CURRENT_OWNERSHIP_AUTHORITY_BOUNDARY_2026-10-09.txt
+   under D:/Dev/Temp/published-shared-coordinator-current-ownership-authority-boundary-20261009;
+   quest PUBLISHED_SHARED_COORDINATOR_CURRENT_OWNERSHIP_ACCEPTANCE_DELTA_2026-10-09.txt
+   under D:/Dev/Temp/published-shared-coordinator-current-ownership-acceptance-delta-20261009.
+   Fixed ROOT consumer Cc04f1778b2714b80ac2ac6a52a10e615066cb767 / actual parent
+   S09d1c439c7a641e262d7062600763f0ac9dfdb9e; provider S / actual parent
+   Lba5ecac8a028cca407085480f61482ae08a04b42; paired policy L / actual parent
+   R64d3cd99f60c76892a0658c36d9fea4f7dda54f9. Complete item_movement_transaction
+   C/H scope owner/new five slots/full preparation_capacity; actual ROOT guard,
+   full-seven begin/current/reserve/rebase/retain/release and publication observer
+   bridge; original passive current_storage_bytes and exact under-lock census;
+   actual global begin/end/persistent policy and paired ROOT/publication pool
+   exclusion controls. Pin complete functions/scopes/helpers and whole source
+   inverses at each actual transition, original SQL/six/unregistered controls.
+   Reuse minimal CLOSED RK/GG references only, not recursive earlier inventories.
+   Future benefit: implementation-ready same-lock lender-to-real-ROOT storage split
+   and strong refusal/lifetime acceptance, preventing CURRENT coordinator bytes
+   from entering retained ROOT/birth high-water cache. Architecture maps exact
+   authority/state/request/output/lifetime; quest four SC legal acceptance cuts:
+   SC1 genuine full-seven guard/global observer/literal policy and exact outside
+   observer/reserve registration before first charge; default six/SQL/unregistered
+   controls and authentic refusal without fabricated pointer or policy flags.
+   SC2 actual lender/reserve/guard/game-thread identity, nonnesting borrow, current
+   bytes under original mutex, authentic full-to-exclusive prefix subtraction,
+   strong scalar output/refusal and preserved ROOT max/previous charge law.
+   SC3 five actual slots once, borrowed current bytes once during callback and
+   fresh passive observer outside; no locking observer under held coordinator or
+   journal mutex, no lease/atomic snapshot, no coordinator bytes cached in ROOT.
+   SC4 exact lender end clears lender/guard/bytes together; guard/output death and
+   scalar clear -> exact global end -> outside charge; persistent observers/
+   ownership policy, reset-before-replay refusal during guard/borrow and original
+   unregistered behavior. No native rerun, synthesized lender/guard, accepting stub,
+   constant observer/reserve or duplicated primary math/ABI/container policy.
+   All SC component/native UNEXECUTED, genuine commands UNAVAILABLE until authentic
+   owner/lender/legal fault/capture/native ELF/schema/full aggregate proof exists.
+   Actual missing lender/caller conversions and full selector/pulse/replay joining
+   block dependent execution only. No implementation of those shared owned paths.
+   Private deterministic pure stdlib/read-only Git packet, strict INDEX, exact
+   receipt and root independent review; no private artifact import/commit, source
+   mutation, compiler/preprocessor/product/native/DB/fixture execution. Preserve
+   one active delivery per chat and current immutable pins; reassess at delivery.
+
+2. QUEUE separately actual coordinator lender and every locked companion/full
+   replay journal-prefix invocation, ROOT full pulse/submission/physical ACK/
+   refusal once-only cleanup and shared journal aggregate. Existing cdbf bounded
+   submit, ef6 receipt/cleanup callers, T passive registration/ACK leaves and 64d
+   callback slot/boot registration are available source, not missing leaves.
+   Remaining integration/qualification belongs to primary; no duplicate work.
+3. QUEUE cold four-route restore/shape/CURRENT/adopt/enroll/detach/light markers,
+   paired pool/slot ownership/NPC consumers and actual original allocator/ABI
+   qualification; native/current capture/legal failures/restart and major batch
+   integrated evidence. Financial command/compiler/result/recovery and diagnostics/
+   scheduler/service/placement/activity lifetime remain separately queued.
+4. Preserve all CLOSED RK/RF/GG/CG/CK/SAME-lock original pins, receipts/seals/history;
+   scanner unchecked-close correction/242 original files; lifecycle hydration
+   allocation clarification; CURRENT/warm/constructor declaration-order correction/
+   141 original files; terminal TR UNEXECUTED, factory CURRENT/RETAINED history,
+   immutable and every earlier bundle. No reopen, repin, inventory or adoption wait.
+5. Preserve isolated checkouts, jobs/services/build evidence and quest unpublished
+   mergef4e20219113fdaee7d3ead787418d89683e05590. Oct7 attachment e7c381c7/Pasted
+   text.txt genuinely newer human scope/provenance answer remains pending as
+   observed; actual newer human instructions take priority. Prior component PASS/
+   QP04 FAIL/SQL-flat private-ready build reports remain root UNREVIEWED; no current
+   ELF/genuine gameplay/SQL capture qualification or resumed native interface.
+
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/SQL0065/schema65/32MiB/
+ABI/allocator/owner completion audit remains open. Primary owns maintained
+implementation/math/admission/authorities/contracts/qualification; Plan5 retains
+backend/recovery/release. Root only three owned docs/read-only source metadata,
+no other-chat messages, private commits/import/compiler/preprocessor/native/
+product/DB/deploy/activation/production mutation. Accounting inactive/admission
+CLOSED/coverage incomplete/release BLOCKED. Heartbeat ACTIVE until broad audit or
+user pause; quiet unchanged/non-actionable state, notify meaningful changes.
+
 ## Refusal and completion pair reviewed CLOSED; cold registration and ACK pair selected - 2026-10-09
 
 Both original PUBLISHED_ROOM_REFUSAL_COMPLETION_AUTHORITY_BOUNDARY_2026-10-09.txt
