@@ -273,9 +273,14 @@ class item_native_quest_birth_budget_owner final
 class item_native_quest_global_budget_scope_owner final
 {
 	friend class zone_reset_item_owner;
-	static bool begin(const void *actual_guard,
-			  bool (*current_storage)(size_t *) noexcept) noexcept;
+	friend class zone_reset_room_publication_owner;
+	friend class quest_mobile_native_birth_owner;
+	// True only when the actual registered observer owns whole literal pools.
+	// The selecting ROOT must join all paired private consumers at this cut.
+	static bool begin(const void *actual_guard, bool (*current_storage)(size_t *) noexcept,
+			  bool includes_literal_pool = false) noexcept;
 	static bool end(const void *actual_guard) noexcept;
+	static bool literal_pool_owned() noexcept;
 };
 
 class item_native_quest_gameplay_publication_owner final
