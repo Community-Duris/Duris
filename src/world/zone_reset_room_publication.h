@@ -153,6 +153,23 @@ class zone_reset_room_publication_owner final
 				     const critical_completion &, uint64_t) noexcept;
 	static bool retire_warm(const critical_native_recovery_envelope &, uint64_t) noexcept;
 	static bool retain_terminal(const critical_native_recovery_envelope &, void *) noexcept;
+	// Same genuine selected-root lock held through terminal transfer AND guarded
+	// mixed-journal retirement. Caller owns complete original envelope, generation,
+	// UID provenance, root/lock storage and prior scratch in outer_live. No lock
+	// acquisition, phase fabrication, ACK or native execution permission here.
+	// Real storage recovers every retry and requires exact full BODY readback;
+	// failed transfer/retirement keeps original recovery/carrier/fences. Callback
+	// retains coordinator's full prefix; persistent journal attempt storage is
+	// separately counted once by aggregate, outside outer_live. Root joins remain
+	// responsible for complete physical proof, ACK and metadata lifetime.
+	struct flat_terminal_retirement;
+	static bool retain_terminal_flat_bounded(const critical_native_recovery_envelope &, void *,
+						 size_t coordinator_live) noexcept;
+	static bool retire_warm_flat_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, uint64_t origin_uid,
+		const critical_native_recovery_envelope &, uint64_t original_generation,
+		bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 	static size_t item_count(const zone_reset_room_publication_stage &) noexcept;
 	static size_t original_index(const zone_reset_room_publication_stage &, size_t) noexcept;
 	static const zone_reset_item_image *

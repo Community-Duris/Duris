@@ -8963,3 +8963,19 @@ batched. Actual full warm/cold root/context/effect/checkpoint/ACK/retirement joi
 and existing native/mixed qualification remain open. Methods remain uncalled.
 Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED, protected
 WIP and primary goal ACTIVE persist; no plan/release completion claim.
+
+
+## Same-lock terminal and coordinator retirement dependency joined - 2026-10-09
+
+[Actual source handoff](ROOM_SAME_LOCK_RETIREMENT_JOIN_2026-10-09.md) supplies genuine
+full flat terminal retention as the complete bounded coordinator callback. Actual
+named root/lock references/UID/reserve/context frame is admitted before construction;
+coordinator's whole live prefix reaches the real writer unchanged. Same borrowed
+lock survives complete retry recovery/full origin/BODY/receipt/apply/unlink/readback
+and full mixed-journal retirement. Original operation/generation/phase/revision/
+physical-release/lifecycle/uncertainty guards and only-confirmed fence release remain;
+no allocating/fallible work follows success. RAW/final source/prefix/inverse/tokens
+PASS; 931 policies/393 pins authenticate, zero new/unmapped sites. Native tests stay
+batched. Actual full warm/cold root/context/effect/checkpoint/ACK join remains open;
+private handoff remains uncalled. Accounting inactive/admission CLOSED, coverage
+incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.
