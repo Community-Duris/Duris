@@ -2847,6 +2847,82 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Bounded read storage facts reviewed; quest acceptance selected - 2026-10-09
+
+Architecture's SHARED_FLAT_BOUNDED_READ_STORAGE_FACTS_2026-10-09.txt now PASSes
+independent root source/factual review and is CLOSED at finite scope. Directory:
+D:/Dev/Temp/shared-flat-bounded-read-storage-facts-20261009/.
+Corrected note29,985 bytes,SHA256
+736e54c0bac1ab6a7d04e61530be2ac9c97bfe8c26965bc4871225c241625e9d.
+PINS.json132,936 bytes,SHA256
+6e10915c535d6673a824f1fde2d7a55cdc3193a76176483633816c384ed51af8.
+Root authenticates14 public providers/49 raw ranges/nine unchanged source comparisons,
+27 closed artifacts,ten original-current identities and18 indexed payloads. Nine
+identities unchanged;historical pipeline difference disclosed,not requalified.
+One root-requested paragraph correction fixes read diagnostic ordering: every
+allocating diagnostic in flatfile_read follows closure of acquired descriptors.
+Separate write/remove ordering is not attributed to the reader. Its non-noexcept/
+local resize catch scope remains precise. All five original sealed files preserved
+outside final packet;root verifies exact forward/inverse paragraph replacement
+and unchanged PINS/verifier/verification. Initial root indexed-hash assertion while
+correction was in progress is retained;stable final authentication PASS,no controls
+weakened. Metadata authentication is not execution of product acceptance controls.
+
+Root reads full original/corrected note,verifier/pins and actual secure read,
+authenticated journal decoder/recovery,keeper parsing/validation and item codec
+bodies/types. Same-FD file metadata/declared size precedes resize;ordinary clear
+retains capacity and refusal does not promise old bytes. Original journal digest
+precedes operation allocation;full file plus all decoded operations coexist through
+apply/removal. Complete CURRENT keeper decode includes unrelated records/global
+UID uniqueness and per-record equipment/item roundtrip storage. Four item strings
+are encoded regardless of mask;relationship allocation precedes encoder try and
+final byte/aggregate validation follows encoding. Wire geometry is not heap peak.
+Pre-apply refusal preserves journal;unlink-success followed by failed directory
+sync can leave journal absent without settling original durability. Source facts
+match;no private sizing/caller implementation,allocator measurement or native
+qualification is supplied. Existing retained-proposal F3 remains CLOSED/distinct.
+
+Prioritized queue:architecture CLOSED/event-dependent;ONE new quest PRIVATE delta
+of the SAME original missing-SHOP journey. Sole output:
+D:/Dev/Temp/shared-flat-bounded-read-acceptance-delta-20261009/
+SHARED_FLAT_BOUNDED_READ_ACCEPTANCE_DELTA_2026-10-09.txt,
+plus exact public/range/reused-artifact pins,index and metadata-only verifier.
+Benefit:implementation-ready genuine acceptance for reported bounded file/journal/
+CURRENT keeper readers and original full32MiB caller integration,without a new
+runner,accepting adapter,duplicate primary/Plan5 sizing owner or F1-F4 rewrite.
+
+B1 binds authentic callback/root/worker/attempt/lock/reservation to same-FD metadata
+and size BEFORE controlled allocation;observe real capacities/output promises,
+not_found/invalid/I/O/budget outcomes distinctly. B2 observes structural scan and
+reservation BEFORE ORIGINAL authenticated journal decode and ANY apply;denial
+preserves journal/promised output and cannot skip checksum/field/extent/duplicate
+validation. B3 includes unrelated CURRENT keeper records/items/affects/global UID/
+equipment/full roundtrip in real overlapping storage,even for empty selected stock;
+use actual pinned allocator requests,not wire sizes or summed historical temporaries.
+B4 observes authentic destruction/move/retention and charge ownership exactly once
+at custody transition,including caller retained proposal/envelope/native overlaps;
+pre-apply denial versus destination publication/final unlink-sync uncertainty and
+settled original reconciliation remain distinct. Reuse full original/current/cold/
+Smith/terminal/worker controls;absence alone cannot certify durable completion.
+All future legal observation controls UNEXECUTED;no made-up phase hooks or fixtures.
+
+Available:reviewed corrected facts/exact providers,reportbf494 and closed original
+journey packets. Missing:selected private bounded/journal/item/keeper/lifetime/
+reader and aggregate caller bodies;pinned allocator observations;genuine original
+shared producer/callback/native fixture/legal budget/fault exports/world/origin/ACK.
+These block dependent execution only. Quest owns private D: note/evidence;root
+independent acceptance/source review before closure. No maintained edits,imports,
+patches/private commits,compiler/preprocessor/tests/build/DB/server/native/gameplay/
+recovery/event/performance or activation. Preserve isolated worktrees/jobs/bundles.
+Primary retains shared sizing/integration/qualification and separate Plan2 flat
+initial ROOM stream;Plan5 ownership unchanged,no adoption wait. Published readiness
+P1/F1 remain unresolved;private source reports are not verified maintained adoption.
+Actual continuing Goals remain BLOCKED/unfinished;preparation is not resumption.
+Required Plans1-5/applicable original R1-R8/integrated qualification/blockers/owner
+completion disposition remain unfinished;heartbeat ACTIVE.
+Root proof:D:/Dev/Temp/coordinator-bounded-read-storage-review-20261009/review.py,
+authentication.json,semantic-review.json,publication inverse and remote identity.
+
 ## Bounded storage source preparation selected - 2026-10-09
 
 New publishedbf4942f9fd09364188b7af1a31f33bd2b82b9a11 adds48 report lines to
