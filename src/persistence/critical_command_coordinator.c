@@ -331,6 +331,7 @@ critical_apply_fn apply_callback = nullptr;
 critical_shared_native_apply_fn shared_native_apply_callback = nullptr;
 critical_zone_reset_item_apply_fn zone_reset_apply_callback = nullptr;
 critical_extension_validator_fn extension_validator_callback = nullptr;
+critical_extension_validator_bounded_fn extension_validator_bounded_callback = nullptr;
 critical_native_recovery_observer_fn native_replay_observer_callback = nullptr;
 critical_native_recovery_publication_validator_fn native_publication_validator_callback = nullptr;
 critical_native_birth_recovery_validators native_birth_validators;
@@ -2211,7 +2212,8 @@ bool critical_command_coordinator_init(
 	critical_native_auction_recovery_validators auction_validators,
 	critical_zone_reset_recovery_validators reset_validators,
 	critical_shared_native_apply_fn shared_native_apply,
-	critical_zone_reset_item_apply_fn zone_reset_apply)
+	critical_zone_reset_item_apply_fn zone_reset_apply,
+	critical_extension_validator_bounded_fn extension_validator_bounded)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -2244,6 +2246,7 @@ bool critical_command_coordinator_init(
 	shared_native_apply_callback = shared_native_apply;
 	zone_reset_apply_callback = zone_reset_apply;
 	extension_validator_callback = extension_validator;
+	extension_validator_bounded_callback = extension_validator_bounded;
 	native_replay_observer_callback = native_replay_observer;
 	native_publication_validator_callback = native_publication_validator;
 	native_birth_validators = birth_validators;
@@ -2271,6 +2274,7 @@ bool critical_command_coordinator_init(
 		shared_native_apply_callback = nullptr;
 		zone_reset_apply_callback = nullptr;
 		extension_validator_callback = nullptr;
+		extension_validator_bounded_callback = nullptr;
 		native_replay_observer_callback = nullptr;
 		native_publication_validator_callback = nullptr;
 		native_birth_validators = {};
@@ -2305,6 +2309,7 @@ bool critical_command_coordinator_init(
 		shared_native_apply_callback = nullptr;
 		zone_reset_apply_callback = nullptr;
 		extension_validator_callback = nullptr;
+		extension_validator_bounded_callback = nullptr;
 		critical_command_journal_shutdown();
 		return false;
 	}
@@ -2402,6 +2407,7 @@ bool critical_command_coordinator_shutdown(void)
 	shared_native_apply_callback = nullptr;
 	zone_reset_apply_callback = nullptr;
 	extension_validator_callback = nullptr;
+	extension_validator_bounded_callback = nullptr;
 	native_replay_observer_callback = nullptr;
 	native_publication_validator_callback = nullptr;
 	native_birth_validators = {};
@@ -6868,4 +6874,32 @@ bool critical_zone_reset_item_publication_owner::completion_bounded(
 		return false;
 	}
 #endif
+}
+
+bool critical_zone_reset_item_publication_owner::admission_supported_bounded(
+	const critical_command &command, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer) noexcept
+{
+	if (!reserve || command.type != critical_command_type::zone_reset_item_birth)
+		return false;
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		// Same original execution_supported predicates, specialized only to ROOM.
+		// The original callback remains mandatory. Never fall back to invoking its
+		// unbounded allocator when the paired prospective provider is absent.
+		if (critical_command_valid(command))
+			return true;
+		return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		       critical_command_envelope_valid(command) && extension_validator_callback &&
+		       extension_validator_bounded_callback &&
+		       extension_validator_bounded_callback(command, reserve, context, live);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

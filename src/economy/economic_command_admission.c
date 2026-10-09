@@ -253,3 +253,45 @@ bool economic_flatfile_command_admission_supported(const critical_command &comma
 		command.type == critical_command_type::item_transfer) &&
 	       economic_command_admission_supported(command);
 }
+
+bool economic_room_command_admission_supported_bounded(const critical_command &command,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer) noexcept
+{
+	// Complete projection of the original SQL ROOM branch only. Other command
+	// families are deliberately outside this bounded provider's scope.
+	if (!reserve || command.type != critical_command_type::zone_reset_item_birth ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return false;
+#ifdef __NO_MYSQL__
+	(void)context;
+	(void)outer;
+	// Exact original SQL ROOM support refusal in the flat build.
+	return false;
+#else
+	if (outer > SIZE_MAX - sizeof(zone_reset_item_image) ||
+	    !reserve(outer + sizeof(zone_reset_item_image), context))
+		return false;
+	zone_reset_item_image original;
+	// Owning full decoder retains the original publication/payload/literal,
+	// recipe/source/intent binding and complete canonical command comparison.
+	return zone_reset_item_command_decode_bounded(command, &original, reserve, context,
+						      outer + sizeof(zone_reset_item_image)) ==
+	       economic_accounting_error::ok;
+#endif
+}
+
+bool economic_flatfile_room_command_admission_supported_bounded(
+	const critical_command &command, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer) noexcept
+{
+	if (!reserve || command.type != critical_command_type::zone_reset_item_birth)
+		return false;
+	// The original flat callback's SHOP/collector/account-bank/native-quest
+	// branches do not match ROOM. Its decisive final bank/item allowlist remains
+	// unchanged; type22 never reaches a decoder or becomes admitted here.
+	return (command.type == critical_command_type::account_bank ||
+		command.type == critical_command_type::item_transfer) &&
+	       economic_room_command_admission_supported_bounded(command, reserve, context, outer);
+}

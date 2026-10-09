@@ -3194,3 +3194,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Original bounded completion lookup implemented - 2026-10-09
 
 [Private completion provider](COORDINATOR_COMPLETION_READBACK_ADMISSION_2026-10-09.md) preadmits actual frame/lock/binary-key storage and preserves original same-mutex publication-pending precedence/cache fallback with strong full output and no extra gates. RAW review and exact reanchored/formatted tokens/PP/prefix/header inverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full pulse/submission/backend/recovery joining remains open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
+
+
+## Paired bounded ROOM admission proof registered - 2026-10-09
+
+[Actual admission/boot contract](ROOM_ADMISSION_CALLBACK_REGISTRATION_2026-10-09.md) pairs the genuine SQL full bounded decoder and original flat ROOM rejection with the coordinator's optional callback, same-lock pure support proof and every actual reset. Ordinary callback bodies/allowlist remain unchanged; no unbounded fallback/source authority. Full RAW review and reanchored/formatted tokens/PP/inverses passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full bounded submit/four-route/pool/recovery and eventual qualified selector remain open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

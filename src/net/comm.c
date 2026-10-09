@@ -1146,11 +1146,15 @@ int run_the_game(int port, int sslport)
 	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr;
 	critical_extension_validator_fn critical_extension_validator =
 		economic_command_admission_supported;
+	critical_extension_validator_bounded_fn critical_extension_validator_bounded =
+		economic_room_command_admission_supported_bounded;
 #ifdef __NO_MYSQL__
 	critical_apply = flatfile_accounting_apply_selected;
 	shared_native_apply = critical_command_repository_apply_shared_native_flat;
 	zone_reset_apply = critical_command_repository_apply_zone_reset_item_flat;
 	critical_extension_validator = economic_flatfile_command_admission_supported;
+	critical_extension_validator_bounded =
+		economic_flatfile_room_command_admission_supported_bounded;
 #else
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
@@ -1180,7 +1184,8 @@ int run_the_game(int port, int sslport)
 			  zone_reset_item_recovery_terminal_bounded,
 			  zone_reset_item_recovery_successor_bounded,
 			  zone_reset_item_recovery_publication_bounded },
-			shared_native_apply, zone_reset_apply);
+			shared_native_apply, zone_reset_apply,
+			critical_extension_validator_bounded);
 	quest_mobile_native_birth_replay_ready(critical_commands_ready);
 	zone_reset_room_item_replay_ready(critical_commands_ready);
 	if (!critical_commands_ready)
