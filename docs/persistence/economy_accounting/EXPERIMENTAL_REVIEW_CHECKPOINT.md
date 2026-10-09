@@ -2615,3 +2615,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Owning cold room light bridge implemented - 2026-10-09
 
 [Private light bridge](COLD_ROOM_LIGHT_BRIDGE_2026-10-09.md) invokes the genuine full observer with original game-thread/world/backend/range guards and strong output. Full RAW review and formatted token/preprocessor/prefix/header inverse checks passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full cold placement retains separate actual topology/light progress and refreshes current output on every return; driver integration remains open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
+
+
+## Actual coordinator queue storage implemented - 2026-10-09
+
+[Owning identity queues](COORDINATOR_IDENTITY_QUEUE_STORAGE_2026-10-09.md) preserve ordinary default-allocator deque behavior while exposing actual pinned-ABI current map/block/string storage and original next-push sequential allocation peaks. RAW source review and formatted token/preprocessor/exact class-and-two-type inverse checks passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full bounded submit, coordinator ownership joining and registered backend/initial/recovery integration remain open. Native compilation/tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
