@@ -1,17 +1,18 @@
 # Experimental accounting review checkpoint
 
-## Maintained Smith flat readiness implementation - 2026-10-08
+## Shared initial SQL participant source integrated - 2026-10-08
 
-[Source milestone](SMITH_MAINTAINED_FLAT_READINESS_2026-10-08.md) applies the four
-reviewed Smith flat-profile/wallet-observer files with required retained-capacity
-correction. Genuine original queue, journal, selected flat writer, revision ACK
-and hold remain the owners; original32MiB and SQL/inactive policies are preserved.
-Source review, formatting, provider/inverse and application checks passed.
-Execution remains deferred until major-plan readiness. The broader private
-source manifest is `e9459d7ba0a90b11c930743e1767a7ac877d39df7898219410c650353e28332d`;
-its actual equipped SHOP birth correspondence is source-reviewed and unpromoted.
-Full Smith/shared-birth carriers, Plans2-4/combinedPlan5/R1-R8/release remain open;
-the original Plan1 acceptance retains its recorded scope. Goal active; gates closed.
+[Source integration](SHARED_INITIAL_SQL_SOURCE_INTEGRATION_2026-10-08.md) records
+private combined candidate `3b6555b6346977f644a92cf21d4006b1e96017a688a20a8867796b5fc0e5c30f`.
+Initial missing-SHOP SQL persistence and the required origin/capacity corrections
+passed independent source review; all209 selected bodies,543 provider records
+and9 reversible spans authenticate. Existing-row warm/cold paths stay closed.
+Original detached checkpoint capture and restart-durable room/time/roaming/affects,
+root transaction/recovery/publication/ACK and the flat counterpart remain open.
+Maintained Smith code0411528f0 retains its separate scope. No runtime checks ran;
+major-plan qualification remains deferred. The broader source is unpromoted.
+Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1 acceptance
+keeps its recorded scope. Inactive behavior and activation gates are preserved.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
