@@ -8356,3 +8356,19 @@ Compiler/result/recovery/full mixed-journal/coordinator and actual ROOM warm/col
 publication/terminal/checkpoint/ACK qualification remain open. No plan or release
 completion is claimed; accounting inactive/admission CLOSED, coverage incomplete/
 release BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Genuine v3 wallet compiler dependency implemented - 2026-10-09
+
+[The compiler source slice](NATIVE_V3_WALLET_COMPILER_ADMISSION_2026-10-09.md)
+adds an explicitly v3-scoped bounded companion for the actual cash-role projection.
+Full original command/wallet/cash/metadata/item/effect/normalized-plan proofs remain
+required. Historical v1/v2 original compiler behavior is unchanged. Actual scoped
+DTOs, vector old/new requests, posting initializer-list and normalization phases
+are prospective. Independent raw/final review, full C prefix/header inverse and
+token/preprocessor checks PASS. All 931 policies/393 pins authenticate; zero new/
+unmapped sites. Native builds/tests remain deferred. Cash-role compiler/result/
+recovery/full journal/coordinator and actual ROOM warm/cold publication/terminal/
+checkpoint/ACK qualification remain open. Accounting inactive/admission CLOSED,
+coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist;
+no plan/release completion is claimed.

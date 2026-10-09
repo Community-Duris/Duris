@@ -23,4 +23,17 @@ native_mobile_birth_accounting_compile(const critical_command &,
 				       const economic_account_key &original_native_wallet,
 				       economic_accounting_plan *) noexcept;
 
+// Prospective compiler for the genuine v3 cash-role projection only. Historical
+// v1/v2 remain handled by the unchanged original compiler; this companion returns
+// unresolved for them and grants no additional source or execution authority.
+// Caller includes inputs/old outputs/inline output plan in outer_live, retaining
+// the admitted absolute simultaneous peak through transfer. Full original wallet,
+// cash/effects/item DFS/metadata and normalized-plan proof remain required.
+// Supported requests require GCC13 libstdc++ C++11 ABI. Plan and optional scalar
+// are strong; actual transferred heap scalar excludes the caller inline plan.
+economic_accounting_error native_mobile_birth_accounting_compile_v3_bounded(
+	const critical_command &, const economic_account_key &original_native_wallet,
+	economic_accounting_plan *, bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
+
 #endif
