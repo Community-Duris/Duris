@@ -2073,3 +2073,155 @@ unsigned int flatfile_zone_reset_item_publication_storage::read_terminal_locked_
 	}
 #endif
 }
+
+unsigned int flatfile_zone_reset_item_publication_storage::retain_terminal_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	const critical_native_recovery_envelope &expected,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (!reserve_scratch_peak)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)uid;
+	(void)expected;
+	(void)context;
+	(void)outer_live_scratch;
+	return ENOTSUP;
+#else
+	if (root.empty() || !uid || uid == UINT64_MAX || !lock.matches(root) ||
+	    expected.phase != critical_native_recovery_phase::continuation_pending ||
+	    !expected.revision)
+		return EINVAL;
+	struct terminal_retention_workspace
+	{
+		retained_terminal saved;
+		zone_reset_item_recovery_context expected_context;
+		std::span<const uint8_t> wire;
+		std::string directory, filename;
+		std::vector<flatfile_authority_operation> operations;
+		std::vector<uint8_t> readback;
+		flatfile_authority_commit_outcome outcome =
+			flatfile_authority_commit_outcome::not_published;
+	};
+	size_t live = outer_live_scratch;
+	if (!observation_storage_add(live, sizeof(terminal_retention_workspace)) ||
+	    !observation_storage_add(live, sizeof(initial_observation_reservation)) ||
+	    !reserve_scratch_peak(live, context))
+		return ENOBUFS;
+	initial_observation_reservation reservation{ reserve_scratch_peak, context };
+	try
+	{
+		terminal_retention_workspace work;
+		auto reserve = initial_observation_reserve;
+		void *state = &reservation;
+		// Complete original terminal envelope proof; no revision, envelope,
+		// receipt, effect checkpoint or coordinator generation is fabricated.
+		need(zone_reset_item_recovery_valid_bounded(expected, reserve, state, live),
+		     EINVAL);
+		// A prior lost reply may leave the authority journal pending. Recover
+		// before reading/staging anything under this SAME borrowed lock; never
+		// overwrite a pending journal or replay a prestaged after-image.
+		const auto recovery = flatfile_authority_transaction_recover_bounded(
+			root, lock, reserve, state, live);
+		need(recovery == flatfile_authority_transaction_result::ok ||
+			     recovery == flatfile_authority_transaction_result::not_found,
+		     recovery == flatfile_authority_transaction_result::invalid ? EILSEQ : EIO);
+		size_t saved_heap = 0;
+		checked(read_terminal_locked_bounded(root, lock, uid, &work.saved, reserve, state,
+						     live, &saved_heap));
+		need(observation_storage_add(live, saved_heap), ENOBUFS);
+		observation_command_equal_bounded(expected.command, work.saved.origin.original,
+						  reserve, state, live);
+		work.wire = expected.attachment;
+		size_t expected_heap = 0;
+		checked(zone_reset_item_recovery_terminal_body_decode_bounded(
+			work.saved.origin.original, work.wire, &work.expected_context, reserve,
+			state, live, &expected_heap));
+		need(observation_storage_add(live, expected_heap), ENOBUFS);
+		need(receipt_core_equal(work.expected_context.receipt, work.saved.core));
+		if (work.saved.present)
+		{
+			need(work.saved.canonical == expected.attachment);
+			need(lock.matches(root), EINVAL);
+			need(!reservation.rejected, ENOBUFS);
+			return 0;
+		}
+		saved_terminal_paths_bounded(root, uid, &work.directory, &work.filename, reserve,
+					     state, live);
+		need((work.directory.capacity() <= 15 ||
+		      (work.directory.capacity() != SIZE_MAX &&
+		       observation_storage_add(live, work.directory.capacity() + 1))) &&
+			     (work.filename.capacity() <= 15 ||
+			      (work.filename.capacity() != SIZE_MAX &&
+			       observation_storage_add(live, work.filename.capacity() + 1))),
+		     ENOBUFS);
+		// Fresh reserve(1) is one real operation backing array. Its default
+		// string/vector are empty; clones are separately admitted below.
+		size_t peak = live;
+		need(observation_storage_add(peak, sizeof(flatfile_authority_operation)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		work.operations.reserve(1);
+		need(observation_storage_rows(live, work.operations.capacity(),
+					      sizeof(flatfile_authority_operation)),
+		     ENOBUFS);
+		work.operations.emplace_back();
+		auto &operation = work.operations.front();
+		operation.store = flatfile_authority_store::domains;
+		operation.kind = flatfile_authority_operation_kind::write;
+		// Pinned fresh string assignment uses _M_create's growth from SSO15.
+		size_t name_request = work.filename.size();
+		if (name_request > 15 && name_request < 30)
+			name_request = 30;
+		peak = live;
+		need((name_request <= 15 || (name_request != SIZE_MAX &&
+					     observation_storage_add(peak, name_request + 1))) &&
+			     observation_storage_add(peak, expected.attachment.size()) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		operation.filename.assign(work.filename);
+		operation.bytes.assign(expected.attachment.begin(), expected.attachment.end());
+		need((operation.filename.capacity() <= 15 ||
+		      (operation.filename.capacity() != SIZE_MAX &&
+		       observation_storage_add(live, operation.filename.capacity() + 1))) &&
+			     observation_storage_add(live, operation.bytes.capacity()),
+		     ENOBUFS);
+		need(lock.matches(root), EINVAL);
+		const auto committed =
+			flatfile_authority_transaction_commit_operations_with_outcome_bounded(
+				root, lock, work.operations, &work.outcome, reserve, state, live);
+		// 'committed' outcome proves durable JOURNAL publication only. A failed
+		// apply/unlink/sync is not terminal retention: return refusal and keep
+		// the coordinator journal/carrier/fences for genuine recovered retry.
+		need(committed == flatfile_authority_transaction_result::ok &&
+			     work.outcome == flatfile_authority_commit_outcome::committed,
+		     EIO);
+		const auto read =
+			flatfile_read_bounded(work.directory, work.filename,
+					      CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES,
+					      &work.readback, reserve, state, live);
+		need(read == flatfile_read_result::ok,
+		     read == flatfile_read_result::io_error ? EIO : EILSEQ);
+		need(work.readback == expected.attachment);
+		need(lock.matches(root), EINVAL);
+		need(!reservation.rejected, ENOBUFS);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return reservation.rejected ? ENOBUFS : error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return reservation.rejected ? ENOBUFS : ENOMEM;
+	}
+	catch (...)
+	{
+		return reservation.rejected ? ENOBUFS : EFAULT;
+	}
+#endif
+}
