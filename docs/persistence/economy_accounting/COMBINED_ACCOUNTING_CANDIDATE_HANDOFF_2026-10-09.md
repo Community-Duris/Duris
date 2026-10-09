@@ -53,7 +53,20 @@ a shared service or fabricated restore marker. If that prerequisite is unavailab
 record SQL smoke as unavailable while publishing available build/flat results.
 The broader backup suite remains with Plan 5 and the major qualification batch.
 
-Current compile/link/smoke results are pending. Full player, persistence,
+Published source `25b863da7727b57c30901cf271a8fa555c9ee954` reached both fresh
+production compilers. Both stopped at the same missing-field initializer error
+in the Harvester caller. The complete repair explicitly initializes refinement
+fields in all four non-refinement aggregates (Harvester, poison and both Encrust
+outcomes); affected `drannak.c` and `salchemist.c` objects now compile with the
+unchanged strict production flags on both SQL and flatfile. No new writer sites
+or policies are introduced. Full candidate link and smoke remain pending.
+Evidence and exact commands: `bin/tests/combined-accounting-candidate-primary-20261009/native/`
+and `bin/tests/combined-accounting-candidate-primary-20261009/craft-initializer-repair/`.
+The existing disposable SQL fixture also requires Docker access; its read-only
+WSL prerequisite checks failed because Docker integration is unavailable.
+Image availability is unknown. No SQL smoke or service was started.
+
+Full player, persistence,
 crash/recovery, dual-engine migration, reconciliation and release qualification
 remain in the original acceptance batches. No production data, service or
 accounting activation is part of this handoff.

@@ -440,7 +440,10 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 				.discipline = craft_recipe_discipline::harvester,
 				.recipe_vnum = VOBJ_GREATER_ORB_MAGIC,
 				.pouch_mutation = {},
-				.output_count = 1
+				.output_count = 1,
+				.refine_cost = {},
+				.refine_root_order = {},
+				.refine_material_name = {}
 			};
 			item_movement_reject reject = item_movement_reject::none;
 			if (!item_movement_transaction_submit_craft(
