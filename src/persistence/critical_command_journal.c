@@ -2023,3 +2023,445 @@ critical_command_journal_result critical_command_journal_replace_native_recovery
 	}
 #endif
 }
+
+#include <type_traits>
+
+namespace
+{
+// Called only under the actual journal owner. Keep the uncertainty carrier's
+// published storage separate; its existing aggregate term owns active inline
+// state and all retained attempt vector capacities once.
+bool journal_startup_storage_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+
+bool journal_startup_current_metadata_locked(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t bytes = 0;
+	if (!journal_startup_storage_add(bytes, sizeof(journal_mutex)) ||
+	    !journal_startup_storage_add(bytes, sizeof(journal_directory)) ||
+	    !journal_startup_storage_add(bytes, sizeof(journal_path)) ||
+	    !journal_startup_storage_add(bytes, sizeof(journal_quota)) ||
+	    !journal_startup_storage_add(bytes, sizeof(health)) ||
+	    !journal_startup_storage_add(bytes, sizeof(native_rewrite_storage)) ||
+	    !journal_startup_storage_add(bytes, sizeof(journal_has_native)) ||
+	    (!native_rewrite_uncertain.active &&
+	     !journal_startup_storage_add(bytes, sizeof(native_rewrite_uncertain))) ||
+	    journal_directory.capacity() == SIZE_MAX || journal_path.capacity() == SIZE_MAX ||
+	    (journal_directory.capacity() > 15 &&
+	     !journal_startup_storage_add(bytes, journal_directory.capacity() + 1)) ||
+	    (journal_path.capacity() > 15 &&
+	     !journal_startup_storage_add(bytes, journal_path.capacity() + 1)))
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool journal_startup_metadata(size_t &bytes) noexcept
+{
+	size_t current = 0;
+	return journal_startup_current_metadata_locked(&current) &&
+	       journal_admit_add(bytes, current);
+}
+
+// Real scoped output carrier is destroyed before its actual journal guard.
+// It performs no allocation, reserve callback, health update or promotion.
+struct journal_startup_metadata_snapshot
+{
+	size_t *output;
+	~journal_startup_metadata_snapshot() noexcept
+	{
+		(void)journal_startup_current_metadata_locked(output);
+	}
+};
+
+// All helper observations above require actual journal ownership; this private
+// getter creates that ownership for the later root startup caller afresh.
+} // metadata helpers
+
+bool critical_startup_journal_budget_owner::current_metadata_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		return journal_startup_current_metadata_locked(output);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+namespace
+{
+
+// Exact installed GCC13 basic_string::_M_create growth. The source-proven
+// request is refused explicitly when outside the existing admission ceiling;
+// no allocating length_error/bad_alloc is manufactured on refusal.
+bool journal_startup_string_request(size_t wanted, size_t old_capacity, size_t *new_capacity,
+				    size_t *request) noexcept
+{
+	if (!new_capacity || !request || wanted > CRITICAL_COORDINATOR_MAX_BYTES ||
+	    old_capacity > CRITICAL_COORDINATOR_MAX_BYTES)
+		return false;
+	if (wanted <= old_capacity)
+	{
+		*new_capacity = old_capacity;
+		*request = 0;
+		return true;
+	}
+	size_t capacity = wanted;
+	if (old_capacity > CRITICAL_COORDINATOR_MAX_BYTES / 2)
+		return false;
+	if (capacity < 2 * old_capacity)
+		capacity = 2 * old_capacity;
+	if (capacity >= CRITICAL_COORDINATOR_MAX_BYTES)
+		return false;
+	*new_capacity = capacity;
+	*request = capacity + 1;
+	return true;
+}
+
+struct journal_startup_init_workspace
+{
+	journal_admission_budget budget;
+	std::vector<journal_frame> frames;
+	size_t base = 0, live = 0, directory_size = 0, capacity = 0, request = 0;
+	size_t first_size = 0, first_capacity = 0, first_request = 0;
+	size_t final_size = 0, final_capacity = 0, final_request = 0;
+};
+
+struct journal_startup_replay_workspace
+{
+	journal_admission_budget budget;
+	std::vector<journal_frame> frames;
+	size_t base = 0, live = 0;
+	bool accepted = false;
+};
+
+static_assert(std::is_nothrow_move_constructible_v<critical_command> &&
+	      std::is_nothrow_move_assignable_v<critical_command> &&
+	      std::is_nothrow_move_constructible_v<critical_native_recovery_envelope> &&
+	      std::is_nothrow_move_assignable_v<critical_native_recovery_envelope>);
+
+bool journal_startup_frames(const std::vector<journal_frame> &frames, size_t &live) noexcept
+{
+	if (!journal_admit_array(live, frames.capacity(), sizeof(journal_frame)))
+		return false;
+	for (const auto &frame : frames)
+		if (!journal_frame_heap(frame, live))
+			return false;
+	return true;
+}
+} // actual startup ownership and requests
+
+bool critical_command_journal_init_bounded(const char *directory, size_t quota_bytes,
+					   bool (*reserve)(size_t, void *) noexcept,
+					   void *budget_context, size_t outer_live,
+					   size_t *current_journal_metadata_bytes) noexcept
+{
+	if (!directory || !*directory || !quota_bytes || !reserve)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+		if (health.initialized)
+			return false;
+		health = {};
+		native_rewrite_uncertain = {};
+		publish_native_rewrite_storage();
+		journal_has_native = false;
+		try
+		{
+			journal_startup_init_workspace work{ { reserve, budget_context } };
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !journal_admit_add(work.base, sizeof(struct stat)) ||
+			    !journal_startup_metadata(work.base) ||
+			    !work.budget.admit(work.base, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.directory_size = std::strlen(directory);
+			work.live = work.base;
+			if (!journal_startup_string_request(work.directory_size,
+							    journal_directory.capacity(),
+							    &work.capacity, &work.request) ||
+			    !journal_admit_add(work.live, work.request) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			journal_directory = directory; // Exact original assignment/request.
+			if (mkdir(directory, 0700) != 0 && errno != EEXIST)
+			{
+				health.last_result = critical_command_journal_result::io_failure;
+				++health.io_failures;
+				return false;
+			}
+			if (!safe_directory(journal_directory))
+			{
+				health.last_result =
+					critical_command_journal_result::unsafe_permissions;
+				return false;
+			}
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !journal_admit_add(work.base, sizeof(struct stat)) ||
+			    !journal_startup_metadata(work.base))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.first_size = journal_directory.size();
+			work.final_size = work.first_size;
+			// Installed lvalue operator+ uses a fresh __str_concat reserve; the
+			// following rvalue operator+ appends to that actual result. Admit old
+			// and new heaps during append mutation, before the exact expression.
+			if (!journal_admit_add(work.first_size, 1) ||
+			    !journal_admit_add(work.final_size, 1) ||
+			    !journal_admit_add(work.final_size, std::strlen(JOURNAL_FILE)) ||
+			    !journal_startup_string_request(work.first_size, 15,
+							    &work.first_capacity,
+							    &work.first_request) ||
+			    !journal_startup_string_request(work.final_size, work.first_capacity,
+							    &work.final_capacity,
+							    &work.final_request))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.live = work.base;
+			if (!journal_admit_add(work.live, 2 * sizeof(std::string)) ||
+			    !journal_admit_add(work.live, 2 * sizeof(std::allocator<char>)) ||
+			    !journal_admit_add(work.live, work.first_request) ||
+			    !journal_admit_add(work.live, work.final_request) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			journal_path = journal_directory + "/" + JOURNAL_FILE;
+			journal_quota = quota_bytes;
+			const int fd = open(journal_path.c_str(),
+					    O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC | O_NOFOLLOW,
+					    0600);
+			if (fd < 0)
+			{
+				health.last_result = critical_command_journal_result::io_failure;
+				++health.io_failures;
+				return false;
+			}
+			close(fd);
+			if (!safe_regular(journal_path, 0600))
+			{
+				health.last_result =
+					critical_command_journal_result::unsafe_permissions;
+				return false;
+			}
+			health.initialized = true;
+			// Concatenation carriers and replaced old path storage have died.
+			// Reobserve the actual persistent strings before the complete first scan.
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !journal_startup_metadata(work.base))
+			{
+				health.initialized = false;
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			const auto result =
+				journal_scan_admitted(&work.frames, work.budget, work.base);
+			if (result != critical_command_journal_result::ok)
+			{
+				health.initialized = false;
+				record_result(result);
+				return false;
+			}
+			health.last_result = critical_command_journal_result::ok;
+			update_health(work.frames);
+			return true;
+		}
+		catch (...)
+		{
+			health.initialized = false;
+			record_result(critical_command_journal_result::quota_exceeded);
+			return false;
+		}
+	}
+	catch (...)
+	{
+		// Real mutex acquisition failed; no unlocked journal mutation.
+		return false;
+	}
+#endif
+}
+
+critical_command_journal_result critical_command_journal_replay_with_native_bounded(
+	critical_command_replay_bounded_fn legacy_replay,
+	critical_native_recovery_replay_bounded_fn native_replay, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes) noexcept
+{
+	if (!legacy_replay || !native_replay || !reserve)
+		return critical_command_journal_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	try
+	{
+		journal_startup_replay_workspace work{ { reserve, budget_context } };
+		{
+			std::lock_guard<std::mutex> lock(journal_mutex);
+			journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+			if (!health.initialized)
+				return critical_command_journal_result::not_initialized;
+			// Full original uncertainty refusal precedes every registration.
+			if (health.append_uncertain || native_rewrite_uncertain.active)
+				return critical_command_journal_result::append_uncertain;
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_startup_metadata(work.base))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			work.live = work.base;
+			if (!journal_admit_add(work.live, sizeof(lock)) ||
+			    !journal_admit_add(work.live, sizeof(snapshot)) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			const auto result =
+				journal_scan_admitted(&work.frames, work.budget, work.live);
+			if (result != critical_command_journal_result::ok)
+			{
+				record_result(result);
+				return result;
+			}
+			++health.replays;
+		}
+		// Original startup caller keeps coordinator ownership. The journal lock
+		// is released exactly before callbacks; no outside coor getter is called.
+		for (auto &frame : work.frames)
+		{
+			if (frame.native)
+			{
+				work.live = work.base;
+				// Local envelope and original by-value parameter coexist. Full
+				// current frame heap remains owned once before their nonallocating moves.
+				if (!journal_admit_add(
+					    work.live,
+					    2 * sizeof(critical_native_recovery_envelope)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				critical_native_recovery_envelope envelope;
+				envelope.command = std::move(frame.command);
+				envelope.revision = frame.native_revision;
+				envelope.phase = frame.native_phase;
+				envelope.attachment = std::move(frame.native_attachment);
+				// Recount actual moved-from frames and authentic current envelope.
+				// Its next move transfers this heap to the by-value parameter once.
+				work.live = work.base;
+				if (!journal_admit_add(
+					    work.live,
+					    2 * sizeof(critical_native_recovery_envelope)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !journal_command_heap(envelope.command, false, work.live) ||
+				    !journal_admit_add(work.live, envelope.attachment.capacity()) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				work.accepted = native_replay(std::move(envelope), original_context,
+							      reserve, budget_context, work.live);
+			}
+			else
+			{
+				work.live = work.base;
+				if (!journal_admit_add(work.live, sizeof(critical_command)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				// Original by-value parameter steals only this frame's command heap.
+				// Parameter inline and all other retained frame capacities are admitted.
+				work.accepted = legacy_replay(std::move(frame.command),
+							      original_context, reserve,
+							      budget_context, work.live);
+			}
+			if (!work.accepted)
+			{
+				std::lock_guard<std::mutex> lock(journal_mutex);
+				journal_startup_metadata_snapshot snapshot{
+					current_journal_metadata_bytes
+				};
+				health.last_result =
+					critical_command_journal_result::replay_blocked;
+				return critical_command_journal_result::replay_blocked;
+			}
+		}
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+		health.last_result = critical_command_journal_result::ok;
+		return critical_command_journal_result::ok;
+	}
+	catch (...)
+	{
+		// No callback throws through its noexcept interface. An actual mutex or
+		// construction failure grants no registration and performs no unlocked write.
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
+}
