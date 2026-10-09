@@ -9661,3 +9661,15 @@ RAW/final source review, C prefixes/header inverses/tokens/preprocessing passed;
 931 policies/399 pins authenticate with zero new/unmapped sites. Native tests remain
 batched. Cold restore/submission/global/placement/recovery integration is unfinished;
 inactive/CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist.
+
+
+## Original room placement/activity/rescheduling joined - 2026-10-09
+
+[Six real providers](NATIVE_PLACEMENT_ACTIVITY_ADMISSION_2026-10-09.md) preserve
+original witness/list/light/topology/corpse/RNG/wake and pending-flush semantics.
+Explicit immediate bool refusal closes the unadmitted exception-allocation finding;
+partial native effects remain marked and batch cleanup preserves retained work.
+Corrected RAW/final source review/prefix/inverse/tokens/preprocessing passed;
+931 policies/399 pins authenticate, zero new/unmapped sites. Native tests batched.
+Full warm/cold pulse/submission/recovery qualification remains unfinished; inactive/
+CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal remain.

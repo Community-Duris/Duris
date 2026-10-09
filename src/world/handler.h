@@ -117,6 +117,11 @@ class zone_reset_original_room_placement_stage final
 	bool recipe(zone_reset_room_placement_recipe *) const noexcept;
 	bool matches_source(const economic_source_event &) const noexcept;
 	bool place(quest_mobile_native_item_effect &) noexcept;
+	// Genuine original standard/no-fall active-native tail. Caller owns CURRENT
+	// output/activity/pending-deferred once plus witness/inputs; refresh all owners
+	// on EVERY return. Begun witness and partial native effects cannot be retried.
+	bool place_bounded(quest_mobile_native_item_effect &, bool (*)(size_t, void *) noexcept,
+			   void *, size_t outer_live) noexcept;
 	size_t retained_bytes() const noexcept { return sizeof(*this); }
 	economic_source_event source_ = {};
 	P_obj object_ = nullptr;

@@ -7758,3 +7758,300 @@ bool zone_reset_room_local_nesting::detach(P_obj child, P_obj target, P_obj root
 	child->next_content = nullptr;
 	return true;
 }
+
+#include "core/utility.h"
+namespace
+{
+struct native_reset_light_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	size_t initial;
+	template <class... A> bool debug(const char *format, A... args) noexcept
+	{
+		// Global queue/pager capacity can grow between successive real diagnostics.
+		size_t current;
+		return diagnostic_output_storage_bytes(&current) && current <= SIZE_MAX - base &&
+		       diagnostic_debug_bounded(reserve, context, base + current, format, args...);
+	}
+};
+bool native_reset_room_light_bounded(int room_nr, int flag, int *output,
+				     bool (*reserve)(size_t, void *) noexcept, void *context,
+				     size_t outer_live) noexcept
+{
+	if (!output || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)room_nr;
+	(void)flag;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (sizeof(native_reset_light_budget) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(native_reset_light_budget), context))
+		return false;
+	native_reset_light_budget budget{ reserve, context,
+					  outer_live + sizeof(native_reset_light_budget), 0 };
+	if (!diagnostic_output_storage_bytes(&budget.initial) || budget.initial > outer_live)
+		return false;
+	budget.base -= budget.initial;
+	P_char t_ch = NULL;
+	P_obj t_obj = NULL;
+	int amt = 0, rroom = -1;
+
+	if (room_nr < 0)
+	{
+		{
+			*output = -1;
+			return true;
+		}
+	}
+
+	if (flag == REAL)
+	{
+		rroom = room_nr;
+	}
+	else if (room_nr < top_of_world)
+	{
+		rroom = real_room(room_nr);
+	}
+	else
+	{
+		{
+			*output = -1;
+			return true;
+		}
+	}
+
+	if (rroom == NOWHERE)
+	{
+		{
+			*output = -1;
+			return true;
+		}
+	}
+
+	amt = 0;
+
+	/* No.. surface maps are not always lit.. there's no magic torch in every room.
+	 * In fact, we're only counting light sources from equipment here now.
+	 * Sunlight/Fireplane/etc is handled elsewhere. - Lohrr
+	  if( IS_SURFACE_MAP(rroom) )
+	    amt += 1;
+
+	  //if (world[rroom].sector_type == SECT_INSIDE)
+	  //{
+	  if (IS_ROOM(rroom, DARK))
+	    amt -= 2;
+
+	    if (IS_ROOM(rroom, MAGIC_DARK ))
+	      amt -= 1;
+	    //else
+	      //amt++; // give them a little light
+	  //}
+	  //else if (IS_ROOM(rroom, DARK))
+	    //amt--;
+
+	  //if (IS_ROOM(rroom, MAGIC_DARK))
+	  //{
+	//    world[rroom].light = -1;
+	//    { *output = -1; return true; }
+	    //amt = -1;
+	    //amt--;
+	  //}
+	  if (IS_ROOM(rroom, MAGIC_LIGHT))
+	    amt += 4;
+
+	  if (world[rroom].sector_type == SECT_FIREPLANE)
+	    amt += 4;
+	  if (world[rroom].sector_type == SECT_UNDRWLD_LIQMITH)
+	    amt += 2;
+	  int dirty_loop_fix = 0;
+	*/
+
+	// Add the number of lights on each person.
+	for (t_ch = world[rroom].people; t_ch; t_ch = t_ch->next_in_room)
+	{
+		if (t_ch->light > 0)
+		{
+			amt += t_ch->light;
+		}
+		if (t_ch == t_ch->next_in_room)
+		{
+			if (!budget.debug("Buggy char '%s' in room list twice, room %d.",
+					  J_NAME(t_ch), rroom))
+				return false;
+			break;
+		}
+	}
+
+	/*
+	 * lit items in room count
+	 */
+	for (t_obj = world[rroom].contents; t_obj; t_obj = t_obj->next_content)
+	{
+		if (IS_SET(t_obj->extra_flags, ITEM_LIT))
+		{
+			if (rroom == 59)
+				if (!budget.debug("t_obj: %s, lit", t_obj->short_description))
+					return false;
+			amt++;
+		}
+		else if ((t_obj->type == ITEM_LIGHT) && (t_obj->value[2] == -1))
+		{
+			if (rroom == 59)
+				if (!budget.debug("t_obj: %s, light", t_obj->short_description))
+					return false;
+			amt++;
+		}
+	}
+
+	/*
+	 * have to do something about ambient (sun) light, not sure what yet
+	 */
+	/*
+	  if (dark)
+	    amt = BOUNDED(-1, amt, 1);
+	*/
+
+	world[rroom].light = BOUNDED(-1, amt, 127);
+
+	*output = world[rroom].light;
+	return true;
+#endif
+}
+
+} // owning original ROOM light/diagnostic leaf
+
+#include <initializer_list>
+
+namespace
+{
+struct original_room_placement_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	size_t initial_output, initial_activity, initial_pending;
+	size_t current_output, current_activity, current_pending;
+	int light;
+	bool live(size_t *output) noexcept
+	{
+		if (!diagnostic_output_storage_bytes(&current_output) ||
+		    !world_activity_storage_bytes(&current_activity) ||
+		    !nevent_native_reschedule_storage_bytes(&current_pending))
+			return false;
+		size_t bytes = base;
+		for (size_t amount : { current_output, current_activity, current_pending })
+		{
+			if (amount > SIZE_MAX - bytes)
+				return false;
+			bytes += amount;
+		}
+		*output = bytes;
+		return true;
+	}
+};
+// Sole genuine standard/no-fall witness domain. Its original stage guard proves
+// water/transient/artifact/PC-corpse branches unreachable; active accounting proves
+// original legacy coin merge unreachable. Full original ordinary entry unchanged.
+bool original_room_placement_tail_bounded(P_obj object, int room,
+					  original_room_placement_budget &budget) noexcept
+{
+	object->loc_p = LOC_ROOM;
+	object->loc.room = room;
+	if (world[room].contents && world[room].contents->R_num == object->R_num)
+	{
+		object->next_content = world[room].contents;
+		world[room].contents = object;
+	}
+	else
+	{
+		P_obj previous = world[room].contents;
+		while (previous)
+		{
+			if (previous->next_content &&
+			    previous->next_content->R_num == object->R_num)
+			{
+				object->next_content = previous->next_content;
+				previous->next_content = object;
+				break;
+			}
+			previous = previous->next_content;
+		}
+		if (!previous)
+		{
+			object->next_content = world[room].contents;
+			world[object->loc.room].contents = object;
+		}
+	}
+	size_t live;
+	if (IS_SET(object->extra_flags, ITEM_LIT) ||
+	    (object->type == ITEM_LIGHT && object->value[2] == -1))
+		if (!budget.live(&live) ||
+		    !native_reset_room_light_bounded(room, REAL, &budget.light, budget.reserve,
+						     budget.context, live))
+			return false;
+	if (!budget.live(&live) ||
+	    !world_activity_object_enter_bounded(object, budget.reserve, budget.context, live))
+		return false;
+	return true;
+}
+}
+
+bool zone_reset_original_room_placement_stage::place_bounded(
+	quest_mobile_native_item_effect &effect, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+
+	if (!valid_ || effect.started || effect.returned || effect.succeeded || effect.periodic ||
+	    !nevent_is_game_thread() || !economic_gameplay_authority::active() || falls_ ||
+	    !original_reset_standard_room(object_, room_) || object_->obj_uid != uid_ ||
+	    object_->R_num != rnum_ || world[room_].number != room_vnum_ ||
+	    world[room_].sector_type != sector_ || world[room_].chance_fall != chance_ ||
+	    object_->z_cord != z_ ||
+	    bool(IS_SET(object_->extra_flags, ITEM_LEVITATES)) != levitates_)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// Actual live() range backing/initializer object must coexist with workspace
+	// during recensus; scalar loop fields follow the existing source-frame policy.
+	const size_t frame = sizeof(original_room_placement_budget) +
+			     sizeof(std::initializer_list<size_t>) + sizeof(std::array<size_t, 3>);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	original_room_placement_budget budget{ reserve, context, outer_live + frame, 0, 0, 0, 0, 0,
+					       0,	0 };
+	if (!diagnostic_output_storage_bytes(&budget.initial_output) ||
+	    !world_activity_storage_bytes(&budget.initial_activity) ||
+	    !nevent_native_reschedule_storage_bytes(&budget.initial_pending) ||
+	    budget.initial_output > outer_live ||
+	    budget.initial_activity > outer_live - budget.initial_output ||
+	    budget.initial_pending > outer_live - budget.initial_output - budget.initial_activity)
+		return false;
+	budget.base -= budget.initial_output + budget.initial_activity + budget.initial_pending;
+	try
+	{
+		effect.started = true;
+		valid_ = false; // Same original consumed witness, including partial/refused tail.
+		if (!original_room_placement_tail_bounded(object_, room_, budget))
+			return false;
+		effect.succeeded = OBJ_ROOM(object_) && object_->loc.room == room_;
+		effect.returned = true;
+		return effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
