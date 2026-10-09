@@ -13115,3 +13115,171 @@ bool quest_mobile_native_item_stage::rebuild_enrollment_bounded(
 	}
 #endif
 }
+
+bool quest_mobile_native_item_stage::room_graph_ready_bounded(
+	const std::span<quest_mobile_native_item_stage *> &input_stages,
+	quest_mobile_native_item_stage &root, quest_mobile_native_item_stage &child,
+	quest_mobile_native_item_stage &target, bool detaching,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)input_stages;
+	(void)root;
+	(void)child;
+	(void)target;
+	(void)detaching;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	const auto &stages = input_stages;
+
+	if (!nevent_is_game_thread() || !obj_index || stages.empty() ||
+	    stages.size() > ITEM_TRANSFER_MAX_ITEMS || &root == &child || &child == &target)
+		return false;
+	try
+	{
+		struct workspace
+		{
+			std::span<quest_mobile_native_item_stage *> stages;
+			std::vector<bool> linked;
+			size_t index(P_obj object) const noexcept
+			{
+				for (size_t i = 0; i < stages.size(); ++i)
+					if (stages[i]->state_->object == object)
+						return i;
+				return stages.size();
+			}
+			bool has_uid(uint64_t uid) const noexcept
+			{
+				for (const auto *stage : stages)
+					if (stage->state_->uid == uid)
+						return true;
+				return false;
+			}
+		};
+		const size_t bits = CHAR_BIT * sizeof(std::_Bit_type);
+		const size_t words = stages.size() / bits + bool(stages.size() % bits);
+		size_t prospective = outer_live;
+		if (!reserve || !cold_birth_add(prospective, sizeof(workspace)) ||
+		    !cold_birth_rows(prospective, words, sizeof(std::_Bit_type)) ||
+		    !reserve(prospective, context))
+			return false;
+		workspace work{ stages, {} };
+		work.linked.assign(stages.size(), false);
+		auto &linked = work.linked;
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			if (!stages[i] || !stages[i]->state_)
+				return false;
+			const auto &s = *stages[i]->state_;
+			const P_obj object = s.object;
+			if (!s.preparation_completed || s.admitted || s.published ||
+			    s.metadata_borrowed_world || s.current_step_started || s.next_step ||
+			    s.shell_probe_started || s.rebuilding_enrollment || !object || !s.uid ||
+			    object->obj_uid != s.uid || object->R_num != s.rnum ||
+			    s.index != obj_index || s.rnum < 0 || s.rnum > top_of_objt ||
+			    obj_index[s.rnum].virtual_number != s.vnum ||
+			    obj_index[s.rnum].pos != s.position ||
+			    obj_index[s.rnum].func.obj != s.original_proc || object->next ||
+			    object->prev || object->nevents || object->nevents_tail ||
+			    IS_ARTIFACT(object) || object->type == ITEM_CORPSE)
+				return false;
+			for (size_t previous = 0; previous < i; ++previous)
+				if (stages[previous]->state_->object == object ||
+				    stages[previous]->state_->uid == s.uid)
+					return false;
+		}
+		if (!root.state_ || !child.state_ || !target.state_)
+			return false;
+		const size_t root_index = work.index(root.state_->object);
+		const size_t child_index = work.index(child.state_->object);
+		const size_t target_index = work.index(target.state_->object);
+		if (root_index == stages.size() || child_index == stages.size() ||
+		    target_index == stages.size() || stages[root_index] != &root ||
+		    stages[child_index] != &child || stages[target_index] != &target)
+			return false;
+		const P_obj actual_root = root.state_->object, actual_child = child.state_->object;
+		if (actual_root->loc_p != LOC_NOWHERE || actual_root->loc.room != NOWHERE ||
+		    actual_root->next_content ||
+		    (!detaching &&
+		     (actual_child->loc_p != LOC_NOWHERE || actual_child->loc.room != NOWHERE ||
+		      actual_child->contains || actual_child->next_content)) ||
+		    (detaching && (actual_child->loc_p != LOC_INSIDE ||
+				   actual_child->loc.inside != target.state_->object)))
+			return false;
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			P_obj object = stages[i]->state_->object;
+			if (object != actual_root && (detaching || object != actual_child) &&
+			    (object->loc_p != LOC_INSIDE ||
+			     work.index(object->loc.inside) == stages.size()))
+				return false;
+			for (P_obj nested = object->contains; nested; nested = nested->next_content)
+			{
+				const size_t found = work.index(nested);
+				if (found == stages.size() || linked[found] ||
+				    nested->loc_p != LOC_INSIDE || nested->loc.inside != object)
+					return false;
+				linked[found] = true;
+			}
+		}
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			P_obj object = stages[i]->state_->object;
+			const bool needs_parent = object != actual_root &&
+						  (detaching || object != actual_child);
+			if (linked[i] != needs_parent)
+				return false;
+			if (!needs_parent)
+				continue;
+			size_t depth = 0;
+			for (P_obj node = object; node != actual_root; node = node->loc.inside)
+				if (++depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+				    node->loc_p != LOC_INSIDE ||
+				    work.index(node->loc.inside) == stages.size())
+					return false;
+		}
+		// Every selected real UID/pointer must still be absent from live world.
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj live = object_list; live; live = live->next)
+		{
+			if (live->prev != previous || work.index(live) != stages.size() ||
+			    work.has_uid(live->obj_uid))
+				return false;
+			previous = live;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::detach_room_bounded(
+	const std::span<quest_mobile_native_item_stage *> &stages,
+	quest_mobile_native_item_stage &root, quest_mobile_native_item_stage &child,
+	quest_mobile_native_item_stage &target, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	size_t mutation = zone_reset_room_local_nesting::mutation_working_bytes();
+	if (!reserve || !cold_birth_add(mutation, outer_live) || !reserve(mutation, context))
+		return false;
+	// Two sequential phase maxima; graph locals/heap die before original scalar
+	// mutation. Both actual requests admitted before any private topology effect.
+	return room_graph_ready_bounded(stages, root, child, target, true, reserve, context,
+					outer_live) &&
+	       zone_reset_room_local_nesting::detach(child.state_->object, target.state_->object,
+						     root.state_->object);
+}

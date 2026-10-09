@@ -440,6 +440,22 @@ class quest_mobile_native_item_stage
 				quest_mobile_native_item_stage &root,
 				quest_mobile_native_item_stage &child,
 				quest_mobile_native_item_stage &target) noexcept;
+	// Genuine complete private-tree proof plus original scalar detach. Outer owns
+	// all input/stage/global retention; retain admitted phase high-water through
+	// return. No effect on budget/proof refusal; no callbacks after unlink.
+	// Pinned GCC13 libstdc++ policy; grants no source/publication authority.
+	static bool detach_room_bounded(const std::span<quest_mobile_native_item_stage *> &,
+					quest_mobile_native_item_stage &,
+					quest_mobile_native_item_stage &,
+					quest_mobile_native_item_stage &,
+					bool (*)(size_t, void *) noexcept, void *,
+					size_t outer_live) noexcept;
+	static bool room_graph_ready_bounded(const std::span<quest_mobile_native_item_stage *> &,
+					     quest_mobile_native_item_stage &,
+					     quest_mobile_native_item_stage &,
+					     quest_mobile_native_item_stage &, bool detaching,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t outer_live) noexcept;
 	static bool room_graph_ready(std::span<quest_mobile_native_item_stage *>,
 				     quest_mobile_native_item_stage &root,
 				     quest_mobile_native_item_stage &child,

@@ -8066,3 +8066,10 @@ bool zone_reset_original_room_placement_stage::current_light_bounded(
 	       room >= 0 && room <= top_of_world &&
 	       native_reset_room_light_bounded(room, REAL, output, reserve, context, outer_live);
 }
+
+size_t zone_reset_room_local_nesting::mutation_working_bytes() noexcept
+{
+	// Actual owning weight_fits path. Original nest/detach and add_weight bodies
+	// remain unchanged; the subsequent NOWHERE-root propagation is scalar only.
+	return sizeof(std::array<P_obj, PLAYER_SNAPSHOT_MAX_DEPTH>);
+}

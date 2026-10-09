@@ -2660,3 +2660,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Actual coordinator table ownership implemented - 2026-10-09
 
 [Owning map storage](COORDINATOR_NATIVE_MAP_STORAGE_2026-10-09.md) retains the exact supported original table/defaultallocator/hash/cache/primepolicy and ordinary algorithms while observing current storage and the real copied insertion policy. No layoutcast, guessed hiddenstate or probeallocation. Full RAW review and formattedtokens/PP/preciseclass2typeinverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full coordinator retained census/initial callback/native submit/shared-root joining remains open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Complete native room detach implemented - 2026-10-09
+
+[Owning bounded forest detach](NATIVE_ROOM_DETACH_ADMISSION_2026-10-09.md) preserves full UID/template/topology/depth/world-absence proof and admits actual bitvector/handler working requests before allocation or mutation. Graph locals die before original unlink/weight tail; no allocation/callback after effect. Full RAW review and formattedtokens/PP/twoCprefix/twoheaderinverse passed; 931 policies/399 pins authenticate, zero new/unmapped sites. Genuine ROOT refusal cleanup/receipt/passive registration/submit and native qualification remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
