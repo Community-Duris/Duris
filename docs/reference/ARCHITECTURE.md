@@ -8,7 +8,7 @@ telnet, TLS telnet, or WebSocket. The selected persistence backend owns durable
 player and domain state; Redis optionally supplies caches and world recovery.
 
 This guide incorporates the documentation audit into `experimental-accounting`
-at implementation base `43807ab01fce32d10e6976739772d454618233c1`, reviewed on
+at implementation base `626e338461cbd803d69b64cccb2d3849b01a5fff`, reviewed on
 October 9, 2026. The dated architecture assessment preserves its earlier source
 pins; the [branch snapshots](#newer-branch-implementations) below retain that
 historical review boundary. Documentation publication does not qualify the

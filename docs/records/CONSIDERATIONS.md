@@ -3,6 +3,15 @@
 > Institutional memory for AI assistants. Updated between phases via carryforward.
 > **Line budget**: 600 max | **Last updated**: Phase 03 (2026-08-27)
 
+Documentation review note (2026-10-09): the phase labels and outcomes below are
+retained carryforward records. They are not a current deployment qualification.
+Use [ARCHITECTURE.md](../reference/ARCHITECTURE.md) and
+[RUNTIME_COMPATIBILITY.md](../persistence/RUNTIME_COMPATIBILITY.md) for current
+execution boundaries: SQL lifecycle recovery and connection bookkeeping can
+write before the full schema gate. The repository now has service templates,
+health workflows and a [dated deployment tracker](../operations/PRODUCTION_DEPLOYMENT.md);
+actual host state still requires fresh operator evidence.
+
 ---
 
 ## Active Concerns

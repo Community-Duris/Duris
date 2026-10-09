@@ -234,7 +234,7 @@ def generate(inventory_path: Path, spdx_path: Path, rootfs_path: Path) -> None:
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
         "name": f"DurisMUD-{version}-direct-dependencies",
-        "documentNamespace": f"https://github.com/LuminariMUD/DurisMUD/sbom/{namespace_hash}",
+        "documentNamespace": f"https://github.com/Community-Duris/Duris/sbom/{namespace_hash}",
         "creationInfo": {"created": created, "creators": ["Tool: generate_security_sbom.py"]},
         "documentDescribes": ["SPDXRef-Package-DurisMUD"],
         "packages": packages,

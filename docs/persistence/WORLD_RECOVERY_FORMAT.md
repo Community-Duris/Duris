@@ -161,8 +161,8 @@ The per-record ceiling is 2 MiB, retaining the 512-item tree limit. Floor
 records use the same object-payload ceiling, with the separate five-byte `WRF5:`
 prefix. Generation and total floor payload budgets are listed above.
 
-File copyover version 17 stores each ground object as a native `uint32_t` byte
-length followed by the bounded native world-recovery object tree and its live
+Legacy native file copyover version 17 stores each ground object as a native
+`uint32_t` byte length followed by the bounded native world-recovery object tree and its live
 custody entries. One native `item_ownership_runtime_entry` follows for each item
 marked `WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED`, in tree traversal order; no
 entry is emitted for an item absent from the runtime ledger. The byte length
@@ -177,16 +177,20 @@ corresponding custody entries, materializes the objects, then atomically hydrate
 the runtime ledger. A hydration conflict rolls back newly created objects.
 This path does not call SQL room reconciliation, including in flatfile-primary
 or no-MySQL builds. Redis retains its room-only capture and SQL reconciliation
-rules. Copyover remains an ABI-local process handoff, unlike the portable Redis
-wire format; its custody entries are not a replacement for durable persistence.
+rules. Current file copyover version 18 uses explicit little-endian fields,
+typed records and a whole-file checksum; only the legacy native 12-17 formats
+remain ABI-local. Its custody entries are not a replacement for durable
+persistence. Portable copyover uses the existing explicit world object encoder
+and a 62-byte custody encoding; see [copyover format](COPYOVER_FORMAT.md).
 Native file copyover uses a separate carried-item layout. Redis NPC records omit
 inventory and equipment. Invalid or truncated object trees or custody records
 fail recovery instead of restoring a partial corpse.
 
-The copyover writer emits version 17. The reader accepts header versions 12-17,
-using version-specific mobile and descriptor widths and gated extensions; it
-does not translate arbitrary older native object layouts. Version-10/11 copyover
-files are rejected. Redis generations with a world schema other than 13 and
+The copyover writer emits portable version 18. The reader accepts that portable
+format and native header versions 12-17 on the known compatible legacy ABI,
+using version-specific mobile and descriptor widths and gated extensions for
+native files. It does not translate arbitrary older native object layouts.
+Version-10/11 copyover files are rejected. Redis generations with a world schema other than 13 and
 floor records with `WRF4:` or an older item layout are also rejected; the `WRF5:`
 prefix alone does not make an old item layout compatible. When upgrading from
 an incompatible native object layout, use a cold restart and expect normal zone

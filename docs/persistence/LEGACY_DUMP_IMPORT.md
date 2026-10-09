@@ -16,7 +16,7 @@ The short version is:
   first be retained in a `legacy_import_*` archive;
 - source values that the current runtime schema cannot represent are retained in a raw
   archive before a compatible runtime projection is produced; and
-- the game still requires an exact 225-table positive runtime contract. Extra imported
+- the game still requires an exact 230-table positive runtime contract. Extra imported
   tables do not weaken that check.
 
 Never point this process at production. The importer deliberately accepts only a loopback,
@@ -27,11 +27,23 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | Term | Meaning |
 | --- | --- |
 | Source table | A base table restored directly from the supplied dump. |
-| Runtime table | One of the 225 canonical game tables required by the current server. |
+| Runtime table | One of the 230 canonical game tables required by the current server. |
 | Extension table | A source table used by the website, administration tools, or an older subsystem, but not owned by the game runtime contract. |
 | Preservation archive | A `legacy_import_*` table containing source rows that cannot remain verbatim in a canonical runtime table. |
 | Legacy migration | The additive 150-step upgrade in `migrations/run_migration.sh`. |
 | Immutable migration | A checksummed post-baseline migration in `migrations/immutable/`. |
+
+## Current candidate prerequisite
+
+At the October 9 publication base, the immutable manifest ends at
+`0065_zone_reset_item_birth_origin` (sequence 65), while the compiled gate and
+runtime manifest still require `0064_auction_custody_history` (sequence 64) and
+230 tables. The full immutable runner and that gate are not an aligned candidate.
+Resolve and qualify the exact source/schema pair before a new import; the
+importer's final verifier does not make this mismatch safe or repair it. See
+[runtime compatibility](RUNTIME_COMPATIBILITY.md#current-candidate-alignment-limit).
+The flow below describes the importer, not a successful qualification of this
+candidate. No import or migration was executed for this documentation update.
 
 ## End-to-end flow
 
@@ -41,8 +53,8 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | 2. Quiesce check | Refuse the import if another connection is using the target database. | Stop before backup or replacement. |
 | 3. Backup | Write an owner-only `mysqldump` of the current target, including routines, events, and triggers. | Stop before replacement. |
 | 4. Replace | Drop target views/tables and stream the source dump into the same database. | Attempt backup restore on a caught failure. |
-| 5. Converge | Run the legacy migration, adopt/advance the immutable ledger to `0053_craft_progression`, and establish eligible character baselines. | Attempt backup restore on a caught failure. |
-| 6. Verify runtime | Check the migration ledger and the exact metadata of all 225 runtime tables for MySQL 8 or MariaDB 10.11. | Attempt backup restore on a caught failure. |
+| 5. Converge | Run the legacy migration, adopt/advance the selected immutable manifest (currently through `0065_zone_reset_item_birth_origin`), and establish eligible character baselines. | Attempt backup restore on a caught failure. |
+| 6. Verify runtime | Check the migration ledger and the exact metadata of all 230 tables in the sealed runtime contract for MySQL 8 or MariaDB 10.11. | Attempt backup restore on a caught failure. |
 | 7. Verify preservation | Require all source tables, reject unexplained row loss, validate known archive counts, and require extension-table row counts to remain equal. | Attempt backup restore on a caught failure. |
 | 8. Verify materialization | Resolve the active object/mobile sources and reject selectable character item topology, pet bounds, unknown prototypes, or pet/owner room mismatches that the runtime materializers would refuse. | Attempt backup restore on a caught failure; keep writers stopped until recovery and verification succeed. |
 
@@ -159,12 +171,14 @@ canonical table is the source of truth for current server operation.
 The current schema contract has two layers:
 
 1. The Session 11 baseline requires a positive inventory of 170 canonical tables.
-2. Immutable migrations advance that baseline to the current 225-table runtime
-   inventory and head `0053_craft_progression` (53 migrations in the canonical
-   history). Both the accepted ledger identity and complete runtime metadata
-   contract are enforced at boot. See [runtime compatibility](RUNTIME_COMPATIBILITY.md)
-   for the accepted branch histories; unrelated source tables do not count toward
-   the required inventory.
+2. The immutable manifest currently has 65 migrations, ending at
+   `0065_zone_reset_item_birth_origin`. The separately sealed runtime metadata
+   contract contains 230 tables and still names `0064_auction_custody_history`
+   at sequence 64. Both the accepted ledger identity and complete runtime
+   metadata contract are enforced at boot; this candidate's pins must be aligned
+   and qualified before an import can establish runtime readiness. See
+   [runtime compatibility](RUNTIME_COMPATIBILITY.md) for the accepted branch
+   histories. Unrelated source tables do not count toward the required inventory.
 
 The baseline and runtime checks ask whether every required table and its expected metadata
 is present. They do not require unrelated tables to be absent. This distinction lets a

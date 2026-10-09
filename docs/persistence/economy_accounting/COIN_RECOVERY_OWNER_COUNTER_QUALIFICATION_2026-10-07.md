@@ -1,4 +1,4 @@
-# Ordinary coin recovery owner counters — 2026-10-07
+# Ordinary coin recovery owner counters â€” 2026-10-07
 
 The retained ordinary-coin publisher checked both endpoint owner revisions but
 only hydrated the destination item. A cold cache after complete pickup could

@@ -119,10 +119,12 @@ and transport teardown, and may block on an in-flight repository callback.
 Call it from the off-game-thread process-lifetime shutdown path, before
 `shutdown_mysql()` or process return; it is not a hard bounded shutdown step.
 
-Telemetry handoffs were introduced in native copyover version 15 and remain in
-the current version 17. The writer emits version 17; the reader supports versions
-12-17 and reads telemetry framing for version 15 and later. Each preserved telnet
-session has one bounded handoff entry. Save accounts through the handoff cut and
+Telemetry handoffs were introduced in native copyover version 15. The current
+writer emits portable version 18, with one bounded telemetry record per preserved
+descriptor. The reader also supports native versions 12-17 on the compatible
+legacy ABI; those versions include telemetry framing from version 15 onward.
+See [copyover format](../persistence/COPYOVER_FORMAT.md) for the current record
+layout and legacy compatibility bounds. Save accounts through the handoff cut and
 writes only value data; recover allocates a new process-local connection and
 resumes the logical session. Versions 12-14 have no telemetry trailer. Older
 formats and missing or rejected individual handoffs use an explicit absent
