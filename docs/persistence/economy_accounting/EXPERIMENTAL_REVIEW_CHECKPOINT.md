@@ -2323,3 +2323,20 @@ join and full warm/cold/context/effects/checkpoint/ACK qualification remain open
 new capability remains uncalled. No plan/release completion claim. Accounting
 inactive/admission CLOSED, coverage incomplete/release BLOCKED, protected WIP and
 primary goal ACTIVE persist.
+
+
+## Genuine warm-flat publication lifecycle dependency implemented - 2026-10-09
+
+[Source handoff](WARM_FLAT_PUBLICATION_LIFECYCLE_ADMISSION_2026-10-09.md) adds complete
+private partial-union reservation, real bounded DB consumption and full physical/
+cache proof followed by exact original published marking. Actual pinned default
+prime/node/old-new bucket requests precede insertions; partial retry semantics are
+preserved. Three span DTOs precede DB publication; no fallible callback follows
+successful hydration/native consumption. Caller retains CURRENT union/cache on
+EVERY return; initial cache is included exactly once. Original service/placement/
+metadata-release guards remain. RAW/final source/prefix/inverse/tokens PASS;
+931 policies/393 pins authenticate, zero new/unmapped sites. Native tests remain
+batched. Actual full warm/cold root/context/effect/checkpoint/ACK/retirement joins
+and existing native/mixed qualification remain open. Methods remain uncalled.
+Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED, protected
+WIP and primary goal ACTIVE persist; no plan/release completion claim.
