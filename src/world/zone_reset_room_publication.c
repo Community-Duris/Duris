@@ -1966,6 +1966,17 @@ zone_reset_room_publication_owner::submit_warm(critical_native_recovery_envelope
 {
 	return critical_zone_reset_item_publication_owner::submit(std::move(envelope));
 }
+
+critical_submit_result zone_reset_room_publication_owner::submit_warm_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *current_coordinator_bytes) noexcept
+{
+	// Actual privileged capability: caller outer excludes ALL coordinator storage.
+	// Genuine callbacks run under its original mutex; output is a snapshot, not a lease.
+	return critical_zone_reset_item_publication_owner::submit_bounded(
+		envelope, reserve, context, outer_live, current_coordinator_bytes);
+}
+
 bool zone_reset_room_publication_owner::copy_warm(
 	const critical_command &command, critical_native_recovery_envelope *output) noexcept
 {

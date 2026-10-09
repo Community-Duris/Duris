@@ -170,6 +170,13 @@ class zone_reset_room_publication_owner final
 	// policy. Actual locked callbacks must use the paired coordinator lender.
 	static bool current_coordinator_storage(size_t *) noexcept;
 	static critical_submit_result submit_warm(critical_native_recovery_envelope);
+	// Genuine const-reference admission bridge. Full caller outer excludes
+	// coordinator storage; current output is a snapshot and never a lease.
+
+	static critical_submit_result
+	submit_warm_bounded(const critical_native_recovery_envelope &,
+			    bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+			    size_t *current_coordinator_bytes) noexcept;
 	static bool copy_warm(const critical_command &,
 			      critical_native_recovery_envelope *) noexcept;
 	static bool checkpoint_warm(const critical_native_recovery_envelope &,
