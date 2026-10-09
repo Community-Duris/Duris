@@ -3075,3 +3075,36 @@ notebook remains nonblocking, application/import/ack unclaimed. Accounting stays
 inactive; wallet-root ITEM_MONEY exclusions and declined inactive spell path stay.
 Only HEAD:refs/heads/codex/accounting-plan5 is pushed. No activation, production,
 autocorrection, primary push, deployment, merge or cross-chat message.
+
+## Schema-65 source compatibility and shared test gates - 2026-10-09
+
+Owned base `3328f4c194cc0e2184dcb33f92808a3510dfe67d`; sole local/remote branch `codex/accounting-plan5`.
+[Exact new-source qualification](PLAN5_SCHEMA65_SOURCE_QUALIFICATION_2026-10-09.md)
+freezes primary `c5910719018c42260bc54166a81462c212b22d08` and its 27-owned-overlay composition.
+Current native `b098d2bbf1403a8dfc27af0abb15f4bd903c598e`, migration `a22d54a28286200f09d91d11cb0cbd8c782b0b82` (65).
+The 17 existing reader/operator modules have 456 passes/20 explicit skips and no
+failures/errors. Full19-module composition is 549 methods:526 pass,2 failures,
+1 error,20 skips. Untouched published control is73 methods:71 pass,1 failure,
+1 error,0 skips; both shared failures reproduce without owned substitution.
+No compiler/native/DB/server/gameplay/recovery execution or broad release proof.
+
+Published393 source pins all match raw Git; published matrix check passes. Older
+242-pin CRLF/stale-content and missing-API source findings are superseded for this
+source. Two exact shared test requests preserve genuine ROOM creation/record site
+ownership and use existing function-owned bandage anchors. Primary owns repairs.
+Overlay changes7 selected pins and2 backup coordinates; this expected composition
+provenance drift requires reviewed adoption and exact repinning, not primary
+metadata correction. Eleven owned paths remain absent from the smaller candidate.
+Default validators pass; release still blocks on missing executable evidence.
+Draft931-route census,791 release blockers, broad native/dual-engine recovery,
+six-source durable erasure and full32MiB/measured budgets remain incomplete.
+Published local schema65 SQL prerequisite failures stay with primary; named SQL
+post-ACK room-coin defect is solved within its recorded scope, not a current gate.
+
+Raw evidence `D:/Dev/Tests/Duris/accounting-plan5/combined-reader-source-20261009-c591071`;
+seal `7274780063ceb007724386d4a2531841f673478a063dbbffa1983ac99f4800bf`; post-push `delivery/result.json` binds result/remote and all
+sealed files. Notebook nonblocking; curator/import/application/ack unclaimed.
+All27 owned bodies and7 historical tips preserved; no branch switch or primary
+push,activation,production mutation,autocorrection,deploy or merge. Goal remains
+active/fullscopeunfinished. This additive curator packet supersedes only named
+old source findings, never historical native evidence or original completion gates.
