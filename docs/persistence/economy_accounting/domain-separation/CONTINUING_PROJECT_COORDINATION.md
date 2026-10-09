@@ -452,6 +452,98 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Flat Smith review finds missing backend API; acceptance preparation closed - 2026-10-08
+
+Root independently reviews both deliveries against actual maintained0411528f076f219a81ed2dc028460c0f4d166713.
+Architecture preparation delivery is accepted;its maintained source verdict is
+FAIL with one P1. The new persistence_mode_sql_enabled() call has no maintained
+declaration,definition or macro. Complete tracked-tree git grep returns only the
+three calls:player_save_pipeline.c2308/2324 and economic_gameplay_authority.c409.
+Root reads the complete persistence_mode C/H contract and selected callback cuts.
+These compiled function bodies contain an undeclared nondependent C++ name in
+both client configurations. This is a source-derived build blocker,not a measured
+compiler failure;the primary major-plan compiler/preprocessing/test deferral is
+preserved. Do not infer runnable flat Smith readiness from source publication.
+
+Exact architecture delivery SMITH_MAINTAINED_FLAT_READINESS_SOURCE_REVIEW_2026-10-08.txt:
+16,330 bytes,SHA256f9da3df7127cc312e2946646527bfbefd3b9a91eeacdaa438259e96a47e47251.
+Root authenticates16 providers/51 new ranges,four parent preimages,18 unchanged
+reused providers/ranges and10 closed artifacts;116 ranges including reused proof.
+PINS.json55,242 bytes,SHA25620a5d9796ca421fc09f49d79852e26886c088de4409c9c07840c75528bdd91d3;
+INDEX.json828 bytes,SHA256236b36a176ef4487ed4f3fc911b26f86b131a51f0bf9224452dbd86bbbff3af6.
+Observer LF/CRLF report provenance is preserved. Selected backend/callback,
+passive wallet projection,actor/context/epoch,three root/account allocated-capacity
+cuts,begin/enqueue/ACK/hold/cancel/output and lifecycle source boundaries are
+reviewed. Helper account-name equality does not authenticate actual membership;
+no second native defect is asserted without the genuine compound owner.
+Retained slot budget is not a peak transient/worker budget. ACK component/body
+proof is not whole persisted/native/physical state proof. No native execution.
+
+Quest SMITH_FLAT_READINESS_ACCEPTANCE_DELTA_2026-10-08.txt PASSes bounded independent
+source/acceptance preparation review:33,909 bytes,SHA25617e47f43bd8e49367c9c52ac2fc4a5b7fc5f2c5b2ac476d30fd1771c74b77ae5.
+Root authenticates all30 raw-Git pins and7 unchanged closed artifacts. It defines
+one future genuine flat begin/queue/journal/selected writer/delivered ACK/hold/
+observation case;new negatives reuse accepted SQL/body/full-image findings.
+Client-free flat positive and client-enabled flat configuration refusal remain
+separate actual contracts. Pre-install output sentinels differ from installed
+original token exposed before enqueue failure/exception. Real held reservation
+and final context validation precede output moves;copied epoch/generation fields
+are not capabilities. Measured spare root/account capacities must distinguish
+Tlen<=32MiB<Tcap from canonical-body retention and exclude replaced slot exactly.
+A fabricated buffer or borrowed-lock-incompatible inspector cannot qualify this.
+Existing fixtures lack the genuine Smith owner and legal phase exports;pointer
+selection alone does not prove selected writer invocation. Finite preparation is
+CLOSED;no accepting facade,new observer schema,runner or native pass is claimed.
+
+Root proof:D:/Dev/Temp/coordinator-flat-smith-source-and-acceptance-review-20261008/review.json
+and missing-api-git-grep.txt. Both original worktree heads remain clean and intact.
+Only three coordinator-owned documents are published;private artifacts stay local.
+
+One architecture delivery is now active:SMITH_BACKEND_GUARD_REPAIR_FEASIBILITY_2026-10-08.txt,
+private source-only exact replacement-hunk proposals for all three missing calls,
+supported mode/build truth table,failed/unconfigured selection and ordinary SQL/
+flat observer implications. Available inputs:actual041 contract,compile-mode and
+selected callback source,existing configuration/selection fixtures and closed
+review. requires_mysql() means active_mode != FLATFILE_PRIMARY;it is not a query
+for linked client capability. Do not substitute it blindly or add a declaration
+without an implementation. Preserve supported backend policy and authority;
+prefer existing contracts over a new API. Primary owns the final implementation
+and any unresolved contract choice. Root independently reviews optional guidance
+before publication. No maintained/shared-authority edit,private import/commit,
+compiler/preprocessing/product/DB/server run or Plan5 duplication is authorized.
+
+Publication preflight observes2644da52c020e6af96a9590c1177921dd3466ebe,
+[shared initial SQL source integration](../SHARED_INITIAL_SQL_SOURCE_INTEGRATION_2026-10-08.md).
+Its source/tests/migration trees remain exact041. The private combined candidate
+3b6555b6346977f644a92cf21d4006b1e96017a688a20a8867796b5fc0e5c30f and193/195/155
+provider slices are reported only;no actual private source/adoption is inspected.
+The report does not repair the published missing API. It supplies a distinct
+useful quest acceptance input after flat preparation closure. One bounded quest
+delivery is active:SHARED_INITIAL_SHOP_SQL_ACCEPTANCE_DELTA_2026-10-08.txt,
+one future genuinely missing-SHOP native birth journey with empty/nonempty stock
+variants only for real owner presence/clock. Reuse closed keeper/source/attempt
+facts and actual public SQL/native/physical fixtures. Label native-ID AND original
+birth-operation immutable-origin absence,full BEFORE,recheck/attempt/initial DML,
+equipped/carried literals/sidecars/affects and owner-clock claims as reported
+private behavior awaiting actual source. Prepare concrete observation/negative
+cuts and restart preservation of extra original room/time/roaming/affects inputs;
+identify authentic fixture coverage without inventing layout/API/runner or results.
+Benefit:implementation-ready acceptance and missing-export requirements for the
+unfinished detached producer and restart carrier. Private borrowed DTO/participant,
+real producer/carrier,distinct dispatch,typed inbox/outbox/transaction finish and
+integrated provider remain unavailable. Primary retains all implementation;
+architecture alone owns backend repair feasibility. Root review is PENDING.
+No compile/preprocess/test/DB/server run,private import/commit or Plan5 duplication.
+Flat Smith next event remains changed contract,genuine owner/legal phase exports
+or integrated provider;append/hold/fault cuts,actual spare-capacity occupancy and
+full persisted/physical/native-history/recovery remain precise dependencies.
+Neither preparation imposes an adoption wait or claims native Goal resumption.
+Broader original O/P/special placement,SHOP held refusal/late consumption,keeper
+first-checkpoint and history DB dependencies remain queued. Actual root/native
+Goals remain BLOCKED and unfinished;finite source preparation does not resume
+them. Heartbeat remains ACTIVE. Required Plans1-5/R1-R8 integrated qualification,
+required blockers and published owner completion disposition remain unresolved.
+
 ## Maintained flat Smith source arrives; room-P preparation reviewed - 2026-10-08
 
 Primary0411528f076f219a81ed2dc028460c0f4d166713 publishes the actual four-file
@@ -794,17 +886,21 @@ Smith. Existing native quest pair decoders do not decode Smith17. Any future
 bounded passive Smith reader/oracle needs genuine owner export/schema/pins first;
 no reader edit,private API/format or executable command is reserved now.
 
-Current prioritized queue:architecture actual041 maintained flat Smith readiness
-source review and quest complementary flat-context/hold/capacity acceptance delta,
-both PENDING independent handoff/review;then genuine Smith compound/native caller/
-persistence/export and connected fixture,authentic pending-append/receipts/measured
-capacity/calibrated failures,full physical/fresh SQL/native economics/publication/
-recovery,original O/P/special-placement owner and save/ACK,SHOP refused held-owner/
-legal late-consumption/fences-at-entry,keeper first-checkpoint/boot-warm disposition,
-history capacity DB proof and remaining native journeys. Room-P target/continuation,
-flat-image/O admission and4e26 correspondence/retention preparations are CLOSED at
-their reviewed scopes;prior packets stay exact. Native GoalsBLOCKED/unfinished,
-heartbeatACTIVE;no adoption wait,execution qualification or overall completion.
+Current prioritized queue:architecture source-only missing backend API repair
+feasibility proposal ACTIVE,root independent review/publication PENDING;confirmed
+actual041 P1 remains unresolved until primary publishes a valid repair. Quest
+flat-readiness acceptance preparation is CLOSED;new2644 report triggers one
+shared initial missing-SHOP SQL acceptance delta ACTIVE,root review PENDING,using
+public baseline plus explicitly reported private contracts. Then genuine
+Smith compound/native caller/persistence/export and connected fixture,authentic
+pending-append/receipts/measured capacity/calibrated failures,full physical/fresh
+SQL/native economics/publication/recovery,original O/P/special-placement owner and
+save/ACK,SHOP refused held-owner/legal late-consumption/fences-at-entry,keeper
+first-checkpoint/boot-warm disposition,history capacity DB proof and remaining
+native journeys. Actual041 source review and complementary acceptance deliveries
+are CLOSED at their reviewed scopes;underlying source FAIL one P1,not qualified.
+Room-P,flat-image/O and4e26 preparations and all prior packets stay exact. Native
+GoalsBLOCKED/unfinished,heartbeatACTIVE;no adoption wait or overall completion.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation
