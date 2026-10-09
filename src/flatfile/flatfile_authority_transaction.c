@@ -915,3 +915,326 @@ flatfile_authority_transaction_recover_bounded(const std::string &root,
 	}
 #endif
 }
+
+namespace
+{
+// Exact pinned libstdc++13 fresh reserve request, excluding inline SSO storage.
+bool commit_string_request(size_t length, size_t &bytes) noexcept
+{
+	bytes = 0;
+	if (length <= 15)
+		return true;
+	const size_t capacity = std::max(size_t{ 30 }, length);
+	if (capacity == SIZE_MAX)
+		return false;
+	bytes = capacity + 1;
+	return true;
+}
+
+struct commit_vector_growth
+{
+	size_t size = 0, capacity = 0, peak = 0;
+	bool insert(size_t count) noexcept
+	{
+		if (count > SIZE_MAX - size)
+			return false;
+		if (count > capacity - size)
+		{
+			const size_t growth = std::max(size, count);
+			if (growth > SIZE_MAX - size || size + growth > SIZE_MAX - capacity)
+				return false;
+			const size_t replacement = size + growth;
+			peak = std::max(peak, capacity + replacement);
+			capacity = replacement;
+		}
+		size += count;
+		peak = std::max(peak, capacity);
+		return true;
+	}
+	bool number(size_t width) noexcept
+	{
+		for (size_t i = 0; i < width; ++i)
+			if (!insert(1))
+				return false;
+		return true;
+	}
+};
+
+struct bounded_commit_workspace
+{
+	std::vector<uint8_t> pending, journal;
+	std::string directory, journal_name, apply_directory;
+	commit_vector_growth payload, file;
+	size_t encoder_peak = 0, apply_length = 0;
+};
+
+bool commit_admit(size_t base, size_t extra, flatfile_scratch_reserve_fn reserve,
+		  void *context) noexcept
+{
+	if (extra > SIZE_MAX - base || !reserve || !reserve(base + extra, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	return true;
+}
+
+flatfile_authority_transaction_result
+bounded_commit_profile(bounded_commit_workspace &work, const std::string &root,
+		       const std::vector<flatfile_authority_operation> &operations, size_t base,
+		       flatfile_scratch_reserve_fn reserve, void *context)
+{
+	if (operations.empty() || operations.size() > transaction_maximum_images)
+		return flatfile_authority_transaction_result::invalid;
+	// Validate in the original order, after the caller's pending-journal check.
+	// The real original validator's literal input and returned path objects are
+	// admitted before invoking it, including its actual append allocation.
+	size_t payload_length = sizeof(uint16_t);
+	for (size_t index = 0; index < operations.size(); ++index)
+	{
+		const auto &operation = operations[index];
+		const char *suffix = bounded_store_suffix(operation.store);
+		size_t validation_heap = 0;
+		if (suffix && !commit_string_request(4 + strlen(suffix), validation_heap))
+		{
+			errno = ENOBUFS;
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+		}
+		size_t validation = 2 * sizeof(std::string);
+		if (!bounded_add(validation, validation_heap) ||
+		    !commit_admit(base, validation, reserve, context))
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+		if (!valid_operation(operation))
+			return flatfile_authority_transaction_result::invalid;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (operations[prior].store == operation.store &&
+			    operations[prior].filename == operation.filename)
+				return flatfile_authority_transaction_result::invalid;
+		if (!bounded_add(payload_length, sizeof(operation.store) + sizeof(operation.kind) +
+							 sizeof(uint16_t) + sizeof(uint32_t)) ||
+		    !bounded_add(payload_length, operation.filename.size()) ||
+		    !bounded_add(payload_length, operation.bytes.size()))
+		{
+			errno = ENOBUFS;
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+		}
+		size_t length = root.size();
+		if (!bounded_add(length, strlen(suffix)))
+		{
+			errno = ENOBUFS;
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+		}
+		work.apply_length = std::max(work.apply_length, length);
+	}
+	constexpr size_t header =
+		transaction_magic.size() + 2 * sizeof(uint32_t) + SHA256_DIGEST_LENGTH;
+	if (payload_length > transaction_maximum_bytes ||
+	    header > transaction_maximum_bytes - payload_length)
+		return flatfile_authority_transaction_result::invalid;
+	// Replay actual encoder number() single-byte pushes and raw() forward-range
+	// insert requests. Old/new backing storage coexists only during growth.
+	if (!work.payload.number(sizeof(uint16_t)))
+		return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+	for (const auto &operation : operations)
+	{
+		size_t validation_heap = 0, validation = sizeof(encoder);
+		if (!commit_string_request(4 + strlen(bounded_store_suffix(operation.store)),
+					   validation_heap) ||
+		    !bounded_add(validation, work.payload.capacity) ||
+		    !bounded_add(validation, 2 * sizeof(std::string)) ||
+		    !bounded_add(validation, validation_heap))
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+		work.encoder_peak = std::max(work.encoder_peak, validation);
+		if (!work.payload.number(sizeof(operation.store)) ||
+		    !work.payload.number(sizeof(operation.kind)) ||
+		    !work.payload.number(sizeof(uint16_t)) ||
+		    !work.payload.insert(operation.filename.size()) ||
+		    !work.payload.number(sizeof(uint32_t)) ||
+		    !work.payload.insert(operation.bytes.size()))
+			return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+	}
+	size_t payload_peak = sizeof(encoder);
+	if (!bounded_add(payload_peak, work.payload.peak))
+		return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+	work.encoder_peak = std::max(work.encoder_peak, payload_peak);
+	if (!work.file.insert(transaction_magic.size()) ||
+	    !work.file.number(sizeof(transaction_version)) || !work.file.number(sizeof(uint32_t)) ||
+	    !work.file.insert(SHA256_DIGEST_LENGTH) || !work.file.insert(work.payload.size))
+		return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+	size_t file_peak = 2 * sizeof(encoder) + sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>);
+	if (!bounded_add(file_peak, work.payload.capacity) ||
+	    !bounded_add(file_peak, work.file.peak))
+		return (errno = ENOBUFS, flatfile_authority_transaction_result::io_error);
+	work.encoder_peak = std::max(work.encoder_peak, file_peak);
+	return flatfile_authority_transaction_result::ok;
+}
+} // namespace
+
+flatfile_authority_transaction_result flatfile_accounting_storage::commit_with_outcome_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations,
+	flatfile_authority_commit_outcome *outcome,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)operations;
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return flatfile_authority_transaction_result::io_error;
+#else
+	if (!lock.owns(root))
+		return flatfile_authority_transaction_result::invalid;
+	try
+	{
+		size_t base = outer_live_scratch, directory_length = root.size(),
+		       directory_bytes = 0, name_bytes = 0;
+		if (!bounded_add(directory_length, strlen("/domains")) ||
+		    !commit_string_request(directory_length, directory_bytes) ||
+		    !commit_string_request(strlen(transaction_filename), name_bytes) ||
+		    !bounded_add(base, sizeof(bounded_commit_workspace)) ||
+		    !bounded_add(base, directory_bytes) || !bounded_add(base, name_bytes) ||
+		    !commit_admit(base, 0, reserve_scratch_peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_authority_transaction_result::io_error;
+		}
+		bounded_commit_workspace work;
+		work.directory.reserve(directory_length);
+		work.directory.assign(root);
+		work.directory.append("/domains");
+		work.journal_name.reserve(strlen(transaction_filename));
+		work.journal_name.assign(transaction_filename);
+		// Same secure complete read: any present/corrupt pending journal refuses.
+		// Never recover here after the caller already staged after-images.
+		const auto read = flatfile_read_bounded(work.directory, work.journal_name,
+							transaction_maximum_bytes, &work.pending,
+							reserve_scratch_peak, context, base);
+		if (read != flatfile_read_result::not_found)
+			return read == flatfile_read_result::io_error ?
+				       flatfile_authority_transaction_result::io_error :
+				       flatfile_authority_transaction_result::invalid;
+		errno = 0;
+		const auto profile = bounded_commit_profile(work, root, operations, base,
+							    reserve_scratch_peak, context);
+		if (profile != flatfile_authority_transaction_result::ok)
+			return profile;
+		if (!commit_admit(base, work.encoder_peak, reserve_scratch_peak, context))
+			return flatfile_authority_transaction_result::io_error;
+		errno = 0;
+		if (!encode_transaction(operations, &work.journal))
+			return errno == ENOMEM ? flatfile_authority_transaction_result::io_error :
+						 flatfile_authority_transaction_result::invalid;
+#ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+		if (getenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT"))
+			return flatfile_authority_transaction_result::io_error;
+#endif
+		// Reserve the actual reusable largest apply path and every atomic leaf
+		// frame BEFORE publication. No subsequent apply can fail budget admission.
+		size_t apply_bytes = 0, apply_base = base;
+		if (!commit_string_request(work.apply_length, apply_bytes) ||
+		    !bounded_add(apply_base, work.journal.capacity()) ||
+		    !bounded_add(apply_base, apply_bytes) ||
+		    !commit_admit(apply_base,
+				  std::max(flatfile_atomic_write_working_bytes(),
+					   flatfile_atomic_remove_working_bytes()),
+				  reserve_scratch_peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_authority_transaction_result::io_error;
+		}
+		work.apply_directory.reserve(work.apply_length);
+		bool published = false, durable = false;
+		try
+		{
+			durable = flatfile_atomic_write_with_publication(work.directory,
+									 work.journal_name,
+									 work.journal, nullptr,
+									 &published);
+		}
+		catch (const std::bad_alloc &)
+		{
+			if (outcome && published)
+				*outcome = flatfile_authority_commit_outcome::publication_uncertain;
+			throw;
+		}
+		if (!durable)
+		{
+			if (outcome && published)
+				*outcome = flatfile_authority_commit_outcome::publication_uncertain;
+			return flatfile_authority_transaction_result::io_error;
+		}
+		if (outcome)
+			*outcome = flatfile_authority_commit_outcome::committed;
+#ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+		if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL"))
+			return flatfile_authority_transaction_result::io_error;
+#endif
+		for (size_t index = 0; index < operations.size(); ++index)
+		{
+			const auto &operation = operations[index];
+			work.apply_directory.assign(root);
+			work.apply_directory.append(bounded_store_suffix(operation.store));
+			const bool applied =
+				operation.kind == flatfile_authority_operation_kind::write ?
+					flatfile_atomic_write(work.apply_directory,
+							      operation.filename, operation.bytes,
+							      nullptr) :
+					flatfile_atomic_remove(work.apply_directory,
+							       operation.filename, true, nullptr);
+			if (!applied)
+				return flatfile_authority_transaction_result::io_error;
+#ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+			if (const char *stop = getenv(
+				    "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION"))
+			{
+				char *end = nullptr;
+				const auto boundary = strtoul(stop, &end, 10);
+				if (end && !*end && boundary == index + 1)
+					return flatfile_authority_transaction_result::io_error;
+			}
+			if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE") &&
+			    index == 0)
+				return flatfile_authority_transaction_result::io_error;
+#endif
+		}
+		return flatfile_atomic_remove(work.directory, work.journal_name, false, nullptr) ?
+			       flatfile_authority_transaction_result::ok :
+			       flatfile_authority_transaction_result::io_error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_authority_transaction_result::io_error;
+	}
+	catch (...)
+	{
+		errno = EOVERFLOW;
+		return flatfile_authority_transaction_result::io_error;
+	}
+#endif
+}
+
+flatfile_authority_transaction_result
+flatfile_authority_transaction_commit_operations_with_outcome_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations,
+	flatfile_authority_commit_outcome *outcome,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
+	for (const auto &operation : operations)
+		if (operation.store == flatfile_authority_store::economic_evidence)
+			return flatfile_authority_transaction_result::invalid;
+	return flatfile_accounting_storage::commit_with_outcome_bounded(
+		root, lock, operations, outcome, reserve_scratch_peak, context, outer_live_scratch);
+}

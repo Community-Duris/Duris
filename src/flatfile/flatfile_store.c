@@ -481,3 +481,16 @@ flatfile_read_result flatfile_read_bounded(const std::string &directory, const s
 	}
 #endif
 }
+
+size_t flatfile_atomic_write_working_bytes() noexcept
+{
+	// private_directory's stat dies before the original temporary-name array.
+	// Null diagnostics give the original writer no explicit C++ heap requests.
+	return std::max(sizeof(struct stat), sizeof(char[256]));
+}
+
+size_t flatfile_atomic_remove_working_bytes() noexcept
+{
+	// The directory inspection and remove target metadata frames are sequential.
+	return sizeof(struct stat);
+}

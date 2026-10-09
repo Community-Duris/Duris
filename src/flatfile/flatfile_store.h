@@ -44,4 +44,12 @@ flatfile_read_result flatfile_read_bounded(const std::string &directory, const s
 					   flatfile_scratch_reserve_fn reserve_scratch_peak,
 					   void *context, size_t outer_live_scratch) noexcept;
 
+// Actual explicit working objects of the original atomic methods with NULL
+// diagnostics: private directory/target metadata and temporary-name array.
+// No C++ heap request is made by those original leaves in this mode. Caller
+// admits the scalar footprint plus all live input storage BEFORE invoking a
+// leaf and retains it through return; no IO or storage authority is granted.
+size_t flatfile_atomic_write_working_bytes() noexcept;
+size_t flatfile_atomic_remove_working_bytes() noexcept;
+
 #endif

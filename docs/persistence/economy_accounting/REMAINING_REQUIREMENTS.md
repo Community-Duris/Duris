@@ -2606,3 +2606,25 @@ and native gameplay/persistence/recovery qualification remain unfinished.
 Tests/builds stay in the major-plan batch. Independent Plan5 and R1–R8 gates
 remain open; unrelated WIP is preserved. Accounting stays inactive, admission
 CLOSED, coverage incomplete, release BLOCKED and the primary goal ACTIVE.
+
+
+## ROOM terminal BODY retention and bounded commit — 2026-10-09
+
+[The seven-file storage integration](ROOM_TERMINAL_RETENTION_STORAGE_2026-10-09.md)
+adds complete original terminal/history authentication, recovery before every
+fresh retry and exact-body idempotent/conflict proof under the same borrowed
+root lock. Genuine prospective authority commit preserves all original store,
+encoding, publication/apply/fault/unlink and outcome semantics. Journal-only
+committed outcome is insufficient: complete result and exact secure readback
+precede retention success. Independent raw/final formatted source review,
+three complete original C prefixes, header inverses and token/preprocessor
+checks pass. All 931 policies and 393 pins retain scope; zero new/unmapped
+lexical sites does not establish accounting completion.
+
+Actual warm/cold publication callback, guarded journal retirement/ACK,
+complete journal/validator and capture/factory aggregate budgeting and native
+qualification remain open. Original mixed-journal validators and envelope/
+generation/fence ownership cannot be bypassed. Tests/builds remain in the
+major-plan batch; combined Plan5 and R1–R8 gates remain unfinished. Unrelated
+WIP is preserved. Accounting stays inactive, admission CLOSED, coverage
+incomplete, release BLOCKED and the primary goal ACTIVE.
