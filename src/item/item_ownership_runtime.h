@@ -128,6 +128,20 @@ class item_ownership_runtime_published_native_observer final
 	friend class shop_trade_current_runtime_owner;
 	static bool snapshot_links(std::span<const uint64_t> selected_uids, size_t limit,
 				   std::vector<item_ownership_runtime_entry> *output) noexcept;
+	// Same passive full-link projection with prospective storage admission.
+	// Callback is nonallocating and preserves the serialized registry/selection
+	// through count and original capture. Outer includes registry, input span,
+	// prior output and context; hold admitted peak until callee temporaries die.
+	// Named project objects/requested row capacity are modeled; scalar/closure
+	// frames and library-private sort/iterator internals follow codec policy.
+	// Optional retained output counts transferred row requests, excluding the
+	// caller's inline vector. Both outputs strong on refusal. No runtime permit.
+	// Pinned libstdc++13 C++11 ABI request policy; otherwise ENOTSUP refusal.
+	static bool snapshot_links_bounded(
+	    std::span<const uint64_t> selected_uids, size_t limit,
+	    std::vector<item_ownership_runtime_entry> *output,
+	    bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 #endif

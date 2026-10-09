@@ -40,6 +40,11 @@ and carries it through subsequent callback checks, including refused growth.
 
 ## Evidence and limits
 
+The subsequent [native current-check checkpoint](ROOM_NATIVE_CURRENT_SCRATCH_ADMISSION_2026-10-09.md)
+joins literal capture and full runtime-link observation to the four preparation
+cuts. Its remaining backend and publication gates are recorded separately; it
+does not qualify this milestone or complete the whole aggregate budget.
+
 Independent source review passed the providers, INITIAL contracts and joined
 caller/guard lifetimes. Exact source inverses and pin evidence are retained under
 `tmp/room-provider-integration-primary-20261009/`. Original leaf bodies and SQL

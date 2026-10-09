@@ -1,5 +1,17 @@
 # Double-entry economy: remaining requirements
 
+## ROOM bounded native current checks - 2026-10-09
+
+[Source checkpoint](ROOM_NATIVE_CURRENT_SCRATCH_ADMISSION_2026-10-09.md)
+joins actual native recapture and full foreign root/parent runtime-link projection
+with prospective codec/selected-UID/caller storage at all four preparation cuts.
+Independent source review passes; this successor remains unbuilt/untested.
+INITIAL observation, publication/submission internals and full aggregate/native/
+recovery/release qualification remain open. Root/child/forest binding and warm
+publication still have genuine SQL-only backend gaps; complete flat counterparts
+must preserve factory tokens and once-only receipt/checkpoint/ACK ownership.
+Admission stays CLOSED; independent binding/world-stage WIP is excluded.
+
 ## ROOM provider and INITIAL caller admission - 2026-10-09
 
 [Source integration](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)

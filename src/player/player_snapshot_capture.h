@@ -49,4 +49,17 @@ player_death_snapshot_capture(P_char ch, P_obj corpse, P_obj wallet_pile,
 			      const std::vector<critical_operation_id> &unresolved_operations,
 			      player_snapshot *snapshot_out);
 
+// Prospective literal-tree storage admission only; no identity/source authority.
+// Callback is nonallocating and must preserve the physical graph throughout the
+// allocation-free scan and original capture. Caller includes live graph, old
+// output and context in outer; retains admitted peaks through transfer. Optional
+// retained output is transferred row capacity/string/nested-vector requests,
+// excluding the caller's inline output vector. All outputs strong on refusal.
+// Existing estimated bytes retain their original capture_budget meaning.
+// Requires pinned libstdc++13 C++11 ABI allocation request policy.
+player_snapshot_capture_result player_item_snapshot_tree_capture_literal_bounded(
+    P_obj root, std::vector<player_item_snapshot> *items_out, size_t *estimated_bytes_out,
+    bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
+
 #endif

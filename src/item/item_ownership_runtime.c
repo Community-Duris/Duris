@@ -210,6 +210,72 @@ bool item_ownership_runtime_published_native_observer::snapshot_links(
 	}
 }
 
+bool item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+    std::span<const uint64_t> selected_uids, size_t limit,
+    std::vector<item_ownership_runtime_entry> *output,
+    bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (!output || !reserve_scratch_peak || !limit || limit > ITEM_OWNERSHIP_RUNTIME_MAX ||
+	    selected_uids.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+		return false;
+	uint64_t previous = 0;
+	for (const auto uid : selected_uids)
+	{
+		if (!uid || uid == UINT64_MAX || uid <= previous)
+			return false;
+		previous = uid;
+	}
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+    !_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return false;
+#else
+	// The original scalar-only registry traversal counts before its first
+	// allocation. The serialized source must stay unchanged through both passes.
+	const auto selected = [&](uint64_t uid) noexcept
+	{ return std::binary_search(selected_uids.begin(), selected_uids.end(), uid); };
+	size_t count = 0;
+	for (const auto &[uid, entry] : entries)
+	{
+		(void)uid;
+		if (entry.state == item_custody_state::active &&
+		    (selected(entry.item_uid) || selected(entry.root_item_uid) ||
+		     (entry.parent_item_uid && selected(entry.parent_item_uid))))
+		{
+			if (count >= limit)
+				return false;
+			++count;
+		}
+	}
+	constexpr size_t fixed = sizeof(std::vector<item_ownership_runtime_entry>);
+	if (count > SIZE_MAX / sizeof(item_ownership_runtime_entry))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	const size_t retained = count * sizeof(item_ownership_runtime_entry);
+	if (fixed > SIZE_MAX - outer_live_scratch ||
+	    retained > SIZE_MAX - outer_live_scratch - fixed ||
+	    !reserve_scratch_peak(outer_live_scratch + fixed + retained, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	// GCC13 fresh reserve requests exactly count rows; push_back copies directly
+	// into them with no growth or nested allocations. Original sorting/UID-link
+	// semantics and its strong transfer/refusal behavior remain authoritative.
+	if (!snapshot_links(selected_uids, limit, output))
+		return false;
+	if (retained_output_payload_bytes)
+		*retained_output_payload_bytes = retained;
+	return true;
+#endif
+}
+
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry)
 {
 	if (!entry.item_uid || !entry.root_item_uid || !item_owner_identity_valid(entry.owner) ||

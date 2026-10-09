@@ -1,5 +1,17 @@
 # Finish accounting implementation plan
 
+## ROOM bounded native current checks - 2026-10-09
+
+[Native caller checkpoint](ROOM_NATIVE_CURRENT_SCRATCH_ADMISSION_2026-10-09.md)
+joins bounded literal capture, full runtime-link observation and both comparison
+buffers into all four real flat preparation checks. Independent source review
+passes; original SQL/current-check bodies and admission guards survive. Tests/builds
+remain in the major-plan batch. INITIAL observation and publication/submission
+bounds remain open. Real flat factory binding and publication still use SQL-only
+methods: genuine private flat counterparts and consistent retained backend proof
+are required before accepting qualification. Separate binding/world-stage WIP is
+excluded. The full goal remains active; no release or coverage promotion occurs.
+
 ## ROOM provider and INITIAL caller admission - 2026-10-09
 
 [Joined caller checkpoint](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)

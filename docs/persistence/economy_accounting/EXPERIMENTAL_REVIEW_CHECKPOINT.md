@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Bounded genuine ROOM native current observation - 2026-10-09
+
+[Current source checkpoint](ROOM_NATIVE_CURRENT_SCRATCH_ADMISSION_2026-10-09.md)
+records the independently reviewed bounded literal capture, full runtime-link
+reader and all four genuine caller allowances. Source inverses/pins authenticate;
+931 policies, 388 pins, original SQL/current-check bodies and CLOSED admission
+are preserved. This successor is unbuilt/untested under major-plan batching.
+INITIAL observation and publication/submission bounds remain; actual flat binding
+and publication still encounter SQL-only methods requiring genuine counterparts.
+Separate binding/world-stage WIP is excluded. Full32MiB/native/recovery/release
+qualification is open; original Plan1 acceptance stays scoped, Plans2-4/full5/R1-R8
+remain unfinished. The goal stays active.
+
 ## Joined ROOM provider and INITIAL caller source - 2026-10-09
 
 [Current source checkpoint](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
