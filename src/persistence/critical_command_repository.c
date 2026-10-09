@@ -4981,8 +4981,8 @@ critical_apply_result critical_command_repository_apply_shared_native_from_pool(
 				command, owner.attachment(), &original);
 			if (error != economic_accounting_error::ok)
 				return { critical_apply_outcome::retryable_failure, 0,
-					 error == economic_accounting_error::capacity ? ENOMEM :
-											EILSEQ };
+					 static_cast<unsigned int>(
+					 error == economic_accounting_error::capacity ? ENOMEM : EILSEQ) };
 			if (!flatfile_shopkeeper_initial_checkpoint_decode(
 				    original.original_checkpoint, &checkpoint))
 				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
