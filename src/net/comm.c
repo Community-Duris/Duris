@@ -399,6 +399,18 @@ critical_gameplay_restore_native_envelope(const critical_native_recovery_envelop
 		return item_movement_transaction_restore_native_recovery(envelope);
 	return false;
 }
+// Full owning ROOM passive companion only. Keep the original dispatcher and
+// every unrelated family/backend path unchanged. The genuine provider owns
+// complete canonical/domain/duplicate/clone/registry proof and admission.
+static bool critical_gameplay_restore_room_native_envelope_bounded(
+	const critical_native_recovery_envelope &envelope, void *replay_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	(void)replay_context; // Original ROOM branch ignores the existing context.
+	return envelope.command.type == critical_command_type::zone_reset_item_birth &&
+	       zone_reset_room_item_restore_bounded(envelope, reserve, budget_context, outer_live);
+}
+
 static bool
 critical_gameplay_native_publication_body_valid(const critical_native_recovery_envelope &envelope,
 						const critical_completion &completion) noexcept
@@ -1185,8 +1197,8 @@ int run_the_game(int port, int sslport)
 			  zone_reset_item_recovery_successor_bounded,
 			  zone_reset_item_recovery_publication_bounded,
 			  zone_reset_item_recovery_initial_bounded },
-			shared_native_apply, zone_reset_apply,
-			critical_extension_validator_bounded);
+			shared_native_apply, zone_reset_apply, critical_extension_validator_bounded,
+			critical_gameplay_restore_room_native_envelope_bounded);
 	quest_mobile_native_birth_replay_ready(critical_commands_ready);
 	zone_reset_room_item_replay_ready(critical_commands_ready);
 	if (!critical_commands_ready)

@@ -3249,3 +3249,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Genuine ROOM receipt/cancellation/native cleanup joined - 2026-10-09
 
 [Receipt and cleanup integration](ROOM_RECEIPT_CANCELLATION_NATIVE_CLEANUP_2026-10-09.md) now calls real bounded coordinator providers, authenticates the original full proofs and uses real detach before reverse stage disposal. Genuine destruction/receipt outcomes become sticky before later recensus; separate cleanup/removal markers preserve safe removal retry without repeating native work. CURRENT rebases retain all caller_extra. Full RAW/final review, both original C prefixes/header inverses and tokens/logical preprocessing passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Whole ROOT/pool selector, shared coordinator/journal and recovery-prefix joins remain open. Native checks batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Optional genuine bounded passive restoration callback registered - 2026-10-09
+
+[Passive restoration registration](PASSIVE_ROOM_BOUNDED_RESTORE_CALLBACK_REGISTRATION_2026-10-09.md) joins the real optional default-null callback/storage/reset/boot registration and complete bounded ROOM provider forwarding. Original full multi-family dispatcher and replay insertion remain unchanged; bounded invocation is not selected. Full RAW/final review, exact inverses/original bodies/tokens/logical preprocessing passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Authentic journal frames/full replay insertion/shared ROOT prefix remain genuine integration dependencies. Native checks batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
