@@ -196,6 +196,141 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Carrier and generation pair reviewed CLOSED; warm global retention pair selected - 2026-10-09
+
+Both original PUBLISHED_ROOM_CARRIER_GENERATION_AUTHORITY_BOUNDARY_2026-10-09.txt
+and PUBLISHED_ROOM_CARRIER_GENERATION_ACCEPTANCE_DELTA_2026-10-09.txt independently
+SOURCE/DESIGN/METADATA PASS; finite reviews CLOSED without correction, repin or
+reseal. Preserve original E9e9d6a746c82cabbc6f92cfd18695bfb678ea2a6f /
+actual parentBb7ab3dcdd9dd3810d711cbf6cf00b813c703cc24 and optional complete two
+ROOM forwards at48b86806b890ce48fc7da19573190c7a351e80aa /
+actual parent660704b285418c24e422514890a713eacfffe506. Each packet's own published
+selection charter, actual parents and separate d62 delivery context remain sealed;
+architecture R actual first parent3c8857 is distinct from primary9f525 frontier.
+Root proof D:/Dev/Temp/coordinator-carrier-generation-review-20261009 contains
+independent raw provider/function/structure/control/equality/whole inverse/index/
+minimal CLOSED-reference authentication and audited pure read-only default verifier
+stdout matching each original receipt byte-for-byte. Architecture authenticates
+13 providers,109 exact cuts,16 original equalities,23 structures,36 domain controls,
+six existing leaves,two complete optional forwards/declarations,three registration
+controls,two whole inverses/four diffs/eight unchanged dependencies,original6/current12
+text sites,four minimal CLOSED references and133 indexed payloads. Quest authenticates
+28 providers,62 complete functions,nine scopes,27 equalities,two whole inverses/raw
+diffs,whole111-line C append/10-line header insertion,ten d62 continuities,two late
+context diffs,three text-scope censuses,ten minimal CLOSED principals/two strict
+indices and four indexed payloads. Principal original seals:
+- Architecture PUBLISHED_ROOM_CARRIER_GENERATION_AUTHORITY_BOUNDARY_2026-10-09.txt: 35794/8be8cd2786070900507900d77f63a72157a53ce6000f4bf69238f3d4797718a0
+- Architecture PINS.json: 131513/e17e45dd3c45ca66542f095935e858445f3c6ed6295aae66825fed3aeece6d60
+- Architecture INDEX.json: 21622/6bc7f95231a6aca059fb78780321c64f2725685b13fbb4c8289d5b87a78e558b
+- Architecture verify.py: 32101/e938966aebe487039483df91cb1aff015c2c7e0d13fb477eeffb5c9d80c3bd24
+- Architecture VERIFICATION.json: 2252/76e8bb58779c637885b3b20c20e7f0450f1c1fd11d02cbbb7685d2523cdc0cf3
+- Quest PUBLISHED_ROOM_CARRIER_GENERATION_ACCEPTANCE_DELTA_2026-10-09.txt: 25237/4f2e03f571bceac0ddbd0371e6e26ea5d861029de8d8bf09eac519e3be053bcd
+- Quest PINS.json: 8194425/db0336bfbe501874a38496ea19a6af08d964983ae16f9c0d45f411121622f10c
+- Quest INDEX.json: 669/bde04e3851eaaf613f1ae1ad54cc92045c90a5546692414bd56f9bddcc4fffd5
+- Quest verify.py: 16503/78341196c7fa628228f67d8db200cc44436d639c93550433452adbda9e087412
+- Quest VERIFICATION.json: 2838/093d6f988a8399cea3e1ade3ac408e2e3a1736a88019840bccb7816828a89252
+
+Design review preserves actual typed/full canonical/domain proof and strong output;
+copy's context/ACK uncertainty and execution/publication versus continuation/physical
+eligibility, with no added generation/lifecycle gate; generation's full envelope/
+retention/health/nonzero/exhaustion/checkpoint/lifecycle guards, with no copy-only
+uncertainty/phase/domain gates. Separate mutex acquisitions are not atomic or an
+operation reservation. Authentic full expected/proposed successor/delivered receipt/
+generation and original owners survive uncertainty; ordinary fresh-copy refusal
+cannot replace held retry inputs. Next entry and late CAS still revalidate full
+state. Actual clone/old output/canonical/domain/identity/request lifetimes and caller
+retained capacities persist; scratch dies before aggregate recensus. Outputs grant
+no source/physical/service/delivery/ACK/terminal lifetime authority. All CG1-CG4
+component/native UNEXECUTED; genuine commands UNAVAILABLE. No native/32MiB/request
+math/ABI/allocator qualification or private adoption follows. Truncated initial
+root presentation was reread exactly before verifier audit; no product ran.
+
+One bounded next delivery per authorized existing chat:
+
+1. SELECT architecture PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt
+   in D:/Dev/Temp/published-warm-root-global-retention-authority-boundary-20261009,
+   and quest PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_ACCEPTANCE_DELTA_2026-10-09.txt
+   in D:/Dev/Temp/published-warm-root-global-retention-acceptance-delta-20261009.
+   Fixed root sourceGd62faf935fdcda1312e0de9dee87cd6766f73f8d /
+   actual parentPe45b395475a6bec8ded9a1717beba53921966baf; actual ROOT guard/CURRENT/
+   begin/rebase/reserve/retain/release controls in zone_reset_item_owner C/H,
+   plus budget sourceS660704b285418c24e422514890a713eacfffe506 /
+   actual parent217d7933e643c3eccbfc15898355bd0e9a1de340 in item_movement_transaction C/H.
+   Authenticate whole budget equality atG and actual six observer definitions/scopes
+   atG: event pool/wheel, pending/deferred maps, diagnostic output/pager, Zombie
+   registry, runtime cache and activity. Pin original membership/source/selected
+   authority predicates and actual caller declaration order; full original scopes,
+   helper controls, six changed CURRENT caller baselines and byte inverses required.
+   Future benefit is implementation-ready guard-to-root/global ownership and legal
+   refusal/retention/lifetime acceptance, without duplicating maintained arithmetic.
+   Architecture maps authority/state/request/lifetime and owner exclusions; quest
+   specifies four GG cuts: GG1 authentic warm membership/source/ABI/game-thread/flat/
+   selected authority and real address/observer registration before provider work;
+   GG2 actual six-owner initial/CURRENT census once, distinct pending maps, caller
+   heads/output/held capacities plus nested callback/refusal/rebase ownership;
+   GG3 refusal/partial capacity retention/current recensus and retained conservative
+   charge, with no native rerun or observer-granted source/UID/action authority;
+   GG4 original local destructor order and clear root scalar -> exact scope end ->
+   outside charge, no allocation/callback between transitions and persistent observer
+   after guard, with SQL/null controls preserved. Full caller scratch dies before
+   retention census; outputs/persistent journal attempt remain real owners exactly once.
+   Preserve begin original root/registry/source checks, current_bytes strong/refusal
+   semantics, max/previous restoration, nonreentrant same-static-observer law and
+   no lock-recursive budget observation. No artificial guard pointers/owner flags,
+   active backend/phase changes, native fixtures, constant-true observers or math clone.
+   All GG component/native UNEXECUTED/genuine commands UNAVAILABLE until genuine
+   owner/legal fault/capture/current binary/schema/aggregate prerequisites exist.
+   Private D: packet only, deterministic read-only verifier/strict INDEX/exact receipt;
+   independently reviewed by root. No maintained source/authority/math/policy/coverage/
+   primary/Plan5 edits, product/compiler/native/DB execution or private commits/import.
+2. Separately QUEUE root writers/CK/ACK/service/scheduler/placement/activity, cold
+   restoration/adoption/enrollment/pools and four-route pulse, diagnostic/service
+   lifetime, financial command/compiler/result/recovery and full caller/capture/
+   aggregate integration. Reassess current source at delivery; no second active task,
+   sealed repin/reopen/busywork/broad inventory/adoption wait.
+
+Root source reassessment: d62's two whole inverses/nine selected equalities/three
+owned sections authenticated in prior heartbeat proof. This handoff reads complete
+original begin/rebase/reserve/retain/release guard controls, actual pulse declaration
+cut, static scope begin/end/outside-capacity control and all six observer bodies.
+This is bounded source understanding, not full root/observer arithmetic/allocator/
+native aggregate qualification. Root-owner C prefix is not preserved by d62's edits.
+
+Late a52c349dafbc80e7e4312a5691effc612929f143 / parentd62 adds genuine private cold
+Zombie restore: root reads full handoff/header/all82 added C lines, authenticates two
+whole provider inverses and ten selected controls unchanged. Full original Zombie
+constructor/restore C semantic review NOT PERFORMED. New
+bcfbe3f2c163983d37c17a9244bfd1b90667423d / parenta52 adds frozen literal/raw allocator/
+object-affect pool reservation/acquisition and CURRENT pool observer. Root reads full
+handoff/header and authenticates three whole provider inverses/six selected control
+equalities; literal allocator C semantic review NOT PERFORMED. Actual cold pool
+source is now available; cold pool-excluding stage/global integration remains separately
+queued, not added to this fixed six-owner warm map or silently certified complete.
+Whole pool/slot-excluding census must follow actual native ownership, with no extra
+perpetual world-inventory gate. All primary private review/policy/token/source-pin/
+preprocessor claims remain reported; full cold/four-route pulse remains open/unselected.
+
+Unavailable dependent execution: authentic full integrated warm/cold root/pulse/
+submission/recovery with original UID/CURRENT/projection/context/service/placement/
+effect/SAME borrowed lock/lifetime; genuine owner/capture/legal fault/restart fixture
+sources and current ELF/schema/full caller/aggregate/ABI/allocator proof. Available
+leaves enable bounded preparation only. Primary/Plan5 ownership unchanged; private
+primary progress/adoption is not observable. Preserve CLOSED CG/CK/SAME-lock original
+seals, scanner correction/history, lifecycle hydration-allocation clarification,
+CURRENT/warm/constructor141-file history, terminal/factory CURRENT-RETAINED history,
+immutable packets and all earlier completed bundles, isolated jobs/checkouts/evidence.
+Quest clean unpublished mergef4e20219113fdaee7d3ead787418d89683e05590 and pending
+historical Oct7 human scope/provenance question remain preserved; genuine new human
+instructions take priority. Old component/build/SQL claims remain UNREVIEWED root;
+no reset/revert/kill/delete/restart or deferred product/DB execution by root.
+
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion.
+Root publishes only three owned coordination docs and read-only source/metadata;
+no private artifact commit/import/deployment/activation/production mutation.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/owner completion audit open;
+accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat
+ACTIVE, quiet for unchanged/non-actionable state. Finite closure is not project completion.
+
 ## Architecture checkpoint and ACK reviewed CLOSED; carrier and generation pair selected - 2026-10-09
 
 This supersedes the active architecture checkpoint/ACK disposition in the prior
