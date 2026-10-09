@@ -40,4 +40,20 @@ economic_accounting_error native_mobile_birth_cash_role_accounting_compile(
 	const critical_command &, const native_mobile_birth_shared_shop_participant &,
 	economic_accounting_plan *) noexcept;
 
+// Complete prospective NBC4 wallet/shared companions. Caller includes input,
+// old output and inline output plan storage in outer_live and holds the admitted
+// absolute simultaneous peak through transfer. Full original role/metadata,
+// genuine wallet projection or SHOP participant/forest proof and normalization
+// remain required; no inferred wallet/source/CAS/publication authority is added.
+// Supported requests require GCC13 libstdc++ C++11 ABI. Both output plan and
+// optional actual transferred heap scalar (excluding inline plan) remain strong.
+economic_accounting_error native_mobile_birth_cash_role_accounting_compile_bounded(
+	const critical_command &, const economic_account_key &original_native_wallet,
+	economic_accounting_plan *, bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_accounting_compile_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	economic_accounting_plan *, bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
+
 #endif

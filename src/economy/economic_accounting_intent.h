@@ -59,4 +59,20 @@ economic_intent_verify_binding_bounded(const critical_command &, const economic_
 				       bool (*reserve_scratch_peak)(size_t, void *) noexcept,
 				       void *context, size_t outer_live) noexcept;
 
+// Genuine prospective encode/freeze companions. Caller includes input storage,
+// old outputs and inline outputs in outer_live and retains the admitted absolute
+// simultaneous peak through transfer. Full original metadata/binding/domain
+// and intent wire semantics remain authoritative; no source/execution authority.
+// Fresh copy/reserve/prepend requests require GCC13 libstdc++ C++11 ABI. Strong
+// outputs on semantic, budget, unsupported-policy and allocation refusal.
+economic_accounting_error economic_intent_encode_bounded(const economic_frozen_intent &,
+							 std::vector<uint8_t> *,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t outer_live) noexcept;
+economic_accounting_error economic_intent_freeze_bounded(const critical_command &,
+							 const economic_admission_facts &,
+							 std::vector<uint8_t> *,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t outer_live) noexcept;
+
 #endif

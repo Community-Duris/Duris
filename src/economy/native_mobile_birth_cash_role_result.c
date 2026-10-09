@@ -257,3 +257,275 @@ bool native_mobile_birth_cash_role_result_matches(
 		       error::ok &&
 	       equal(expected, result);
 }
+
+#include <type_traits>
+#include <utility>
+
+namespace
+{
+bool role_result_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+bool role_result_admit(size_t base, size_t extra, bool (*reserve)(size_t, void *) noexcept,
+		       void *context) noexcept
+{
+	return extra <= SIZE_MAX - base && reserve && reserve(base + extra, context);
+}
+struct role_result_build_workspace
+{
+	quest_mobile_native_image image;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	economic_accounting_plan expected;
+	std::vector<uint8_t> expected_bytes, plan_bytes, image_bytes;
+	native_mobile_birth_cash_role_result candidate;
+	native_mobile_birth_cash_role_recipe_bytes role_bytes;
+	economic_accounting_plan_allocation_profile profile;
+	size_t image_heap = 0, recipe_heap = 0, expected_heap = 0;
+};
+struct role_result_build_live
+{
+	role_result_build_workspace &work;
+	size_t base;
+	bool bytes(size_t &out) const noexcept
+	{
+		out = base;
+		return role_result_add(out, work.image_heap) &&
+		       role_result_add(out, work.recipe_heap) &&
+		       role_result_add(out, work.expected_heap) &&
+		       role_result_add(out, work.expected_bytes.capacity()) &&
+		       role_result_add(out, work.plan_bytes.capacity()) &&
+		       role_result_add(out, work.image_bytes.capacity());
+	}
+};
+error role_result_plan_encode_bounded(const economic_accounting_plan &plan,
+				      std::vector<uint8_t> *output,
+				      economic_accounting_plan_allocation_profile &profile,
+				      bool (*reserve)(size_t, void *) noexcept, void *context,
+				      size_t outer) noexcept
+{
+	if (!role_result_admit(outer, economic_plan_allocation_preflight_working_bytes(), reserve,
+			       context))
+		return error::capacity;
+	auto status = economic_plan_allocation_preflight(plan, &profile);
+	if (status != error::ok)
+		return status;
+	if (!profile.storage_policy_supported ||
+	    !role_result_admit(outer, profile.encode_working_bytes, reserve, context))
+		return error::capacity;
+	return economic_plan_encode(plan, output);
+}
+error role_result_role_encode_bounded(const native_mobile_birth_cash_role_recipe &role,
+				      native_mobile_birth_cash_role_recipe_bytes *output,
+				      bool (*reserve)(size_t, void *) noexcept, void *context,
+				      size_t outer) noexcept
+{
+	if (!output || !native_mobile_birth_cash_role_recipe_valid(role))
+		return error::capacity;
+	struct workspace
+	{
+		std::vector<uint8_t> original;
+		native_mobile_birth_cash_role_recipe_bytes candidate{};
+	};
+	size_t base = outer;
+	if (!role_result_add(base, sizeof(workspace)) ||
+	    !role_result_admit(base, 0, reserve, context))
+		return error::capacity;
+	workspace work;
+	if (!native_mobile_birth_constructor_recipe_encode_blob_bounded(
+		    role.original, &work.original, reserve, context, base) ||
+	    work.original.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES)
+		return error::capacity;
+	work.candidate[0] = 'N';
+	work.candidate[1] = 'B';
+	work.candidate[2] = 'C';
+	work.candidate[3] = '4';
+	work.candidate[4] = NATIVE_MOBILE_BIRTH_CASH_ROLE_RECIPE_VERSION;
+	std::copy(work.original.begin(), work.original.end(), work.candidate.begin() + 8);
+	constexpr size_t offset = 8 + NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES;
+	work.candidate[offset] = static_cast<uint8_t>(role.role);
+	for (size_t i = 0; i < 4; ++i)
+		work.candidate[offset + 1 + i] =
+			static_cast<uint8_t>(role.configured_shop_matches >> (8 * i));
+	*output = work.candidate;
+	return error::ok;
+}
+error role_result_build_bounded(const critical_command &command, const economic_account_key *wallet,
+				const native_mobile_birth_shared_shop_participant *shared,
+				const economic_accounting_plan &plan,
+				native_mobile_birth_cash_role_result *output,
+				bool (*reserve)(size_t, void *) noexcept, void *context,
+				size_t outer) noexcept
+{
+	if (!output || bool(wallet) == bool(shared))
+		return error::invalid_identity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)plan;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return error::unresolved;
+#else
+	size_t base = outer;
+	if (!role_result_add(base, sizeof(role_result_build_workspace)) ||
+	    !role_result_add(base, sizeof(role_result_build_live)) ||
+	    !role_result_admit(base, 0, reserve, context))
+		return error::capacity;
+	try
+	{
+		role_result_build_workspace work;
+		role_result_build_live live{ work, base };
+		auto status = native_mobile_birth_cash_role_command_decode_bounded(
+			command, &work.image, &work.recipes, &work.role, reserve, context, base,
+			&work.image_heap, &work.recipe_heap);
+		if (status != error::ok)
+			return status;
+		size_t current = 0;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = wallet ? native_mobile_birth_cash_role_accounting_compile_bounded(
+					  command, *wallet, &work.expected, reserve, context,
+					  current, &work.expected_heap) :
+				  native_mobile_birth_cash_role_accounting_compile_bounded(
+					  command, *shared, &work.expected, reserve, context,
+					  current, &work.expected_heap);
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = role_result_plan_encode_bounded(work.expected, &work.expected_bytes,
+							 work.profile, reserve, context, current);
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = role_result_plan_encode_bounded(plan, &work.plan_bytes, work.profile,
+							 reserve, context, current);
+		if (status != error::ok)
+			return status;
+		if (work.expected_bytes != work.plan_bytes)
+			return error::payload_conflict;
+		auto &candidate = work.candidate;
+		candidate.role = work.role.role;
+		candidate.mobile_instance_id = work.image.reference.mobile_instance_id;
+		candidate.mobile_revision = work.image.reference.mobile_revision;
+		candidate.stock_revision = work.image.reference.stock_revision;
+		candidate.cash_revision = work.image.cash->revision;
+		if (wallet)
+		{
+			candidate.wallet_mapping_id = wallet->authority_id;
+			candidate.item_owner_id = work.image.reference.mobile_instance_id;
+			candidate.item_owner_revision = 1;
+		}
+		else
+		{
+			candidate.shared = *shared;
+			candidate.item_owner_id = item_shopkeeper_owner_id(shared->shop_id);
+			candidate.item_owner_revision = shared->owner_revision_after;
+		}
+		if (!live.bytes(current))
+			return error::capacity;
+		const auto image_status = quest_mobile_native_image_encode_bounded(
+			work.image, &work.image_bytes, reserve, context, current);
+		if (image_status != player_snapshot_codec_result::ok)
+			return image_status == player_snapshot_codec_result::allocation_failure ||
+					       image_status ==
+						       player_snapshot_codec_result::limit_exceeded ?
+				       error::capacity :
+				       error::corrupt_evidence;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = role_result_role_encode_bounded(work.role, &work.role_bytes, reserve,
+							 context, current);
+		if (status != error::ok)
+			return status;
+		if (!SHA256(work.image_bytes.data(), work.image_bytes.size(),
+			    candidate.image_digest.data()) ||
+		    !SHA256(command.payload.data(), command.payload.size(),
+			    candidate.payload_digest.data()) ||
+		    !SHA256(work.role_bytes.data(), work.role_bytes.size(),
+			    candidate.role_digest.data()) ||
+		    !SHA256(work.plan_bytes.data(), work.plan_bytes.size(),
+			    candidate.plan_digest.data()) ||
+		    !valid(candidate))
+			return error::corrupt_evidence;
+		static_assert(
+			std::is_nothrow_copy_assignable_v<native_mobile_birth_cash_role_result>);
+		*output = candidate;
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
+bool role_result_matches_bounded(const critical_command &command,
+				 const economic_account_key *wallet,
+				 const native_mobile_birth_shared_shop_participant *shared,
+				 const economic_accounting_plan &plan,
+				 const native_mobile_birth_cash_role_result &result,
+				 bool (*reserve)(size_t, void *) noexcept, void *context,
+				 size_t outer) noexcept
+{
+	size_t base = outer;
+	if (!role_result_add(base, sizeof(native_mobile_birth_cash_role_result)) ||
+	    !role_result_admit(base, 0, reserve, context))
+		return false;
+	native_mobile_birth_cash_role_result expected;
+	if (role_result_build_bounded(command, wallet, shared, plan, &expected, reserve, context,
+				      base) != error::ok)
+		return false;
+	// equal() retains both output arrays; original fixed encoder's own bytes,
+	// seven-field and four-clock arrays coexist through its complete encode.
+	constexpr size_t equality =
+		3 * sizeof(std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>) +
+		sizeof(uint64_t[7]) + sizeof(uint64_t[4]);
+	if (!role_result_admit(base, equality, reserve, context))
+		return false;
+	return equal(expected, result);
+}
+}
+
+economic_accounting_error native_mobile_birth_cash_role_result_build_bounded(
+	const critical_command &command, const economic_account_key &wallet,
+	const economic_accounting_plan &plan, native_mobile_birth_cash_role_result *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return role_result_build_bounded(command, &wallet, nullptr, plan, output, reserve, context,
+					 outer_live);
+}
+economic_accounting_error native_mobile_birth_cash_role_result_build_bounded(
+	const critical_command &command, const native_mobile_birth_shared_shop_participant &shared,
+	const economic_accounting_plan &plan, native_mobile_birth_cash_role_result *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return role_result_build_bounded(command, nullptr, &shared, plan, output, reserve, context,
+					 outer_live);
+}
+bool native_mobile_birth_cash_role_result_matches_bounded(
+	const critical_command &command, const economic_account_key &wallet,
+	const economic_accounting_plan &plan, const native_mobile_birth_cash_role_result &result,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return role_result_matches_bounded(command, &wallet, nullptr, plan, result, reserve,
+					   context, outer_live);
+}
+bool native_mobile_birth_cash_role_result_matches_bounded(
+	const critical_command &command, const native_mobile_birth_shared_shop_participant &shared,
+	const economic_accounting_plan &plan, const native_mobile_birth_cash_role_result &result,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return role_result_matches_bounded(command, nullptr, &shared, plan, result, reserve,
+					   context, outer_live);
+}
