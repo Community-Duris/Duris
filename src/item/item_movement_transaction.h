@@ -264,6 +264,20 @@ class item_native_quest_birth_budget_owner final
 	static bool retained_budget(size_t actual_birth_bytes) noexcept;
 };
 
+// Private pure byte-accounting handoff for the one actual bounded flat ROOT
+// guard. Inside scope ROOT scratch counts complete globals once; outside scope
+// aggregate observes CURRENT persistent bytes. Observer has static lifetime,
+// performs no allocations and takes no coordinator/journal locks. Actual ROOT
+// clears scalar scratch before end, then charge(0), without callbacks between.
+// No source/publication/activation/native retry capability follows.
+class item_native_quest_global_budget_scope_owner final
+{
+	friend class zone_reset_item_owner;
+	static bool begin(const void *actual_guard,
+			  bool (*current_storage)(size_t *) noexcept) noexcept;
+	static bool end(const void *actual_guard) noexcept;
+};
+
 class item_native_quest_gameplay_publication_owner final
 {
     private:

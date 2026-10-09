@@ -48277,17 +48277,17 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          7969,
+          7988,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          7856,
+          7875,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          7911,
+          7930,
           "item_publication"
         ]
       ],
@@ -57476,7 +57476,7 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 7969,
+      "line": 7988,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, TRUE);"
     },
@@ -57536,13 +57536,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 7856,
+      "line": 7875,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 7911,
+      "line": 7930,
       "family": "item_publication",
       "excerpt": "const auto placed = obj_to_char_checked(root, mobile);"
     },
@@ -66511,8 +66511,8 @@
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "37808bd48dd2a9a47d92263656d4234928669d9c2de366123bf23c9a899b306a",
-      "src/item/item_movement_transaction.h": "f35cbc759dc15abce5b8972ca919babfd5f4c8ea41c75ec73a5c26c2473c9339",
+      "src/item/item_movement_transaction.c": "e63629b5cb5d699e5ae2e6a7b8131b217e25939ab5f46e5986f891500069aa50",
+      "src/item/item_movement_transaction.h": "942dfbb99b91a338bcc01a6deb9d16bd2f1a9323e66abfaeab5d9b71cf407060",
       "src/item/item_ownership_runtime.c": "ceeaf4c2086369bf7d249408def297d673492c4032deddfb31db78d6edce261d",
       "src/item/item_ownership_runtime.h": "7c625f1dca7e066c64df5666d489cdabab3a28645836e06e44ab8a574b625650",
       "src/item/item_transfer_command.c": "f60a0906736ea6214051c2dbc59dbd5318a580e70363da5ef2d92c7f131ceb31",

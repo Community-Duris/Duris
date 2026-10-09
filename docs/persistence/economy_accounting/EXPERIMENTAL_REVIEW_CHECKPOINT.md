@@ -2520,3 +2520,15 @@ periodic pin added), zero new/unmapped sites. Native checks batched. Four warm/c
 pulse/activity/placement/reschedule/enrollment/fault/mixed qualification remains open.
 Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
 ACTIVE goal persist; no additional gate/full native acceptance claim.
+
+
+## Native global preparation scope contract - 2026-10-09
+
+[Shared contract](NATIVE_GLOBAL_BUDGET_SCOPE_2026-10-09.md) retains actual current
+globals outside an owning guard and counts them once inside genuine root scratch.
+Private game-thread begin/end reject reentry/mismatched ownership without callbacks.
+The actual complete observer/pulse join is still pending. RAW/final source inverses,
+tokens/preprocessing and review passed; 931 policies/399 source pins authenticate,
+zero new/unmapped sites. Native tests stay batched. Four warm/cold integration and
+runtime/recovery qualification remain open; inactive/CLOSED accounting, incomplete
+coverage/BLOCKED release and ACTIVE goal remain. No additional gate or full acceptance.
