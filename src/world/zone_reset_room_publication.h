@@ -109,6 +109,25 @@ class zone_reset_room_publication_owner final
 		std::unordered_set<uint64_t> &,
 		bool (*)(std::span<quest_mobile_native_item_stage *>, void *) noexcept, void *,
 		bool (*)() noexcept) noexcept;
+	// Private recovered flat metadata only. No live factory scope is fabricated.
+	// Caller already owns the recovery carrier, selected-root lock and actual
+	// retained stage in its census. Refresh CURRENT rooted/global retention on
+	// every return, including partial metadata growth or decoder refusal.
+	static bool prepare_cold_shape_bounded(const std::string &,
+					       const critical_native_recovery_envelope &,
+					       zone_reset_room_publication_stage &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live) noexcept;
+	// Full original ordered literal/custody/current projection observation under
+	// the same genuine recovered flat lock and successful receipt. No restoration,
+	// binding, enrollment, cache hydration, placement or ACK authority is granted.
+	static bool refresh_cold_flat_locked_bounded(const std::string &,
+						     const flatfile_authority_lock &,
+						     const critical_native_recovery_envelope &,
+						     const critical_completion &,
+						     zone_reset_room_publication_stage &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer_live) noexcept;
 	static bool restore_original_missing_forest(zone_reset_room_publication_stage &,
 						    bool (*)() noexcept) noexcept;
 	static bool pending_items(const zone_reset_room_publication_stage &, int,

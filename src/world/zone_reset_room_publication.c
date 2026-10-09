@@ -3171,3 +3171,395 @@ bool zone_reset_room_publication_owner::acknowledge_warm_bounded(
 	return critical_zone_reset_item_publication_owner::acknowledge_bounded(
 		expected, receipt, original_generation, reserve, context, outer_live);
 }
+
+namespace
+{
+bool room_command_fresh_heap(const critical_command &command, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	if (!output ||
+	    !room_prepare_array(bytes, command.keys.size(), sizeof(critical_entity_key)) ||
+	    !room_prepare_array(bytes, command.expected_revisions.size(),
+				sizeof(critical_expected_revision)) ||
+	    !room_prepare_add(bytes, command.payload.size()) ||
+	    !room_prepare_add(bytes, command.accounting_intent.size()))
+		return false;
+	*output = bytes;
+	return true;
+}
+bool room_command_equal_bounded(const critical_command &left, const critical_command &right,
+				bool (*reserve)(size_t, void *) noexcept, void *context,
+				size_t outer_live) noexcept
+{
+	size_t live = outer_live;
+	if (!reserve || !room_prepare_array(live, 2, sizeof(std::vector<uint8_t>)) ||
+	    !reserve(live, context))
+		return false;
+	std::vector<uint8_t> a, b;
+	return critical_command_encode_bounded(left, &a, reserve, context, live) ==
+		       critical_command_codec_result::ok &&
+	       room_prepare_add(live, a.capacity()) &&
+	       critical_command_encode_bounded(right, &b, reserve, context, live) ==
+		       critical_command_codec_result::ok &&
+	       a == b;
+}
+}
+
+bool zone_reset_room_publication_owner::prepare_cold_shape_bounded(
+	const std::string &selected_root, const critical_native_recovery_envelope &envelope,
+	zone_reset_room_publication_stage &held, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    selected_root.empty() ||
+	    !zone_reset_item_recovery_valid_bounded(envelope, reserve, context, outer_live))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		if (!held.state_)
+		{
+			size_t create_live = outer_live;
+			if (!room_prepare_add(
+				    create_live,
+				    sizeof(zone_reset_room_publication_stage::implementation)) ||
+			    !reserve(create_live, context))
+				return false;
+			held.state_ = new zone_reset_room_publication_stage::implementation;
+			held.state_->warm = true;
+			held.state_->flat_backend = true;
+			held.state_->cold_adoption = true;
+			// Retain exactly the real partial metadata root before first growth.
+			if (!reserve(outer_live, context))
+				return false;
+		}
+		auto &state = *held.state_;
+		if (!state.warm || !state.flat_backend || !state.cold_adoption)
+			return false;
+		if (state.selected_root.empty())
+		{
+			size_t text_live = outer_live;
+			if (!room_prepare_add(text_live, sizeof(std::string)) ||
+			    (selected_root.size() > 15 &&
+			     (selected_root.size() == SIZE_MAX ||
+			      !room_prepare_add(text_live, selected_root.size() + 1))) ||
+			    !reserve(text_live, context))
+				return false;
+			std::string retained_root(selected_root);
+			state.selected_root = std::move(retained_root);
+		}
+		else if (state.selected_root != selected_root)
+			return false;
+		if (!state.cold_command.payload.empty())
+		{
+			if (!room_command_equal_bounded(state.cold_command, envelope.command,
+							reserve, context, outer_live))
+				return false;
+		}
+		else
+		{
+			size_t command_live = outer_live, heap = 0;
+			if (!room_prepare_add(command_live, sizeof(critical_command)) ||
+			    !room_command_fresh_heap(envelope.command, &heap) ||
+			    !room_prepare_add(command_live, heap) ||
+			    !reserve(command_live, context))
+				return false;
+			critical_command retained_command(envelope.command);
+			state.cold_command = std::move(retained_command);
+		}
+		if (state.cold_shape)
+			return reserve(outer_live, context);
+		// Real full command decoder, with actual old output retained in rooted
+		// census. No forest or constructor recipe inferred from surviving UIDs.
+		if (zone_reset_item_command_decode_bounded(envelope.command, &state.original,
+							   reserve, context, outer_live) !=
+		    economic_accounting_error::ok)
+			return false;
+		const size_t count = state.original.items.size();
+		state.room = real_room(state.original.room_vnum);
+		if (!count || count > ITEM_TRANSFER_MAX_ITEMS || !world || state.room < 0 ||
+		    state.room > top_of_world)
+			return false;
+		// Our only partial growth states are empty or this immutable full count.
+		// Refuse a foreign shape before relying on fresh/exact vector allocation.
+		if ((!state.objects.empty() && state.objects.size() != count) ||
+		    (!state.stage_pointers.empty() && state.stage_pointers.size() != count) ||
+		    (!state.stages.empty() && state.stages.size() != count) ||
+		    (!state.original_indices.empty() && state.original_indices.size() != count))
+			return false;
+		// Each preceding successful vector growth is already in the actual root
+		// census. Old/new overlap is admitted only for the next real request.
+		{
+			size_t phase = outer_live;
+			if ((count > state.objects.capacity() &&
+			     !room_prepare_array(phase, count, sizeof(P_obj))) ||
+			    !reserve(phase, context))
+				return false;
+			state.objects.resize(count);
+		}
+		{
+			size_t phase = outer_live;
+			if ((count > state.stage_pointers.capacity() &&
+			     !room_prepare_array(phase, count,
+						 sizeof(quest_mobile_native_item_stage *))) ||
+			    !reserve(phase, context))
+				return false;
+			state.stage_pointers.resize(count);
+		}
+		{
+			size_t phase = outer_live;
+			if ((count > state.stages.capacity() &&
+			     !room_prepare_array(
+				     phase, count,
+				     sizeof(std::unique_ptr<quest_mobile_native_item_stage>))) ||
+			    !reserve(phase, context))
+				return false;
+			state.stages.resize(count);
+		}
+		{
+			size_t phase = outer_live;
+			if ((count > state.original_indices.capacity() &&
+			     !room_prepare_array(phase, count, sizeof(size_t))) ||
+			    !reserve(phase, context))
+				return false;
+			state.original_indices.resize(count);
+		}
+		for (size_t at = 0; at < count; ++at)
+			state.original_indices[at] = at;
+		state.cold_shape = true;
+		return reserve(outer_live, context);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+struct room_cold_refresh_workspace : room_refresh_workspace
+{
+	std::vector<uint8_t> command_a, command_b;
+};
+}
+
+bool zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	zone_reset_room_publication_stage &stage, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !nevent_is_game_thread() || !reserve || !lock.matches(selected_root) ||
+	    stage.state_->selected_root != selected_root || !stage.state_->cold_adoption ||
+	    !stage.state_->cold_shape ||
+	    receipt.operation_id.bytes != original.command.operation_id.bytes ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied) ||
+	    receipt.error_code || receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_RESULT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		auto &state = *stage.state_;
+		const size_t count = state.original.items.size();
+		if (!count || count > ITEM_TRANSFER_MAX_ITEMS || state.objects.size() != count ||
+		    state.stage_pointers.size() != count ||
+		    state.original.operation_id.bytes != original.command.operation_id.bytes ||
+		    state.original.expected_room_revision == UINT64_MAX ||
+		    receipt.durable_revision != state.original.expected_room_revision + 1)
+			return false;
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_cold_refresh_workspace)) ||
+		    !reserve(live, context))
+			return false;
+		room_cold_refresh_workspace work;
+		if (critical_command_encode_bounded(state.cold_command, &work.command_a, reserve,
+						    context,
+						    live) != critical_command_codec_result::ok ||
+		    !room_prepare_add(live, work.command_a.capacity()) ||
+		    critical_command_encode_bounded(original.command, &work.command_b, reserve,
+						    context,
+						    live) != critical_command_codec_result::ok ||
+		    !room_prepare_add(live, work.command_b.capacity()) ||
+		    work.command_a != work.command_b)
+			return false;
+		size_t projection_heap = 0;
+		if (flatfile_zone_reset_item_publication_storage::read_locked_bounded(
+			    selected_root, lock, original, receipt, &work.projection, reserve,
+			    context, live, &projection_heap) != 0 ||
+		    !room_prepare_add(live, projection_heap) ||
+		    work.projection.room.room_vnum != state.original.room_vnum ||
+		    work.projection.room.revision != receipt.durable_revision ||
+		    work.projection.custody.size() != count)
+			return false;
+		// The provider authenticates the WHOLE room and custody history. Select each
+		// original UID exactly once; prior unrelated room forests remain untouched.
+		if (!room_prepare_array(live, count, sizeof(player_item_snapshot)) ||
+		    !room_prepare_array(live, count, sizeof(player_load_item_identity)) ||
+		    !room_prepare_array(live, count, sizeof(item_ownership_runtime_entry)))
+			return false;
+		for (const auto &item : state.original.items)
+		{
+			size_t heap = 0;
+			if (!room_snapshot_fresh_heap(item, &heap) || !room_prepare_add(live, heap))
+				return false;
+		}
+		if (!reserve(live, context))
+			return false;
+		work.ordered.owner = { item_owner_type::room,
+				       static_cast<uint64_t>(state.original.room_vnum), 0 };
+		work.ordered.owner_revision = work.projection.room.revision;
+		work.ordered.items.reserve(count);
+		work.ordered.identities.reserve(count);
+		work.custody.reserve(count);
+		for (size_t at = 0; at < count; ++at)
+		{
+			const auto &item = state.original.items[at];
+			const size_t row =
+				room_uid_index(work.projection.room.items, item.object_uid);
+			if (room_uid_index(state.original.items, item.object_uid) != at ||
+			    row == SIZE_MAX ||
+			    !room_same_item_bounded(work.projection.room.items[row], item, reserve,
+						    context, live))
+				return false;
+			size_t match = SIZE_MAX;
+			for (size_t i = 0; i < work.projection.custody.size(); ++i)
+				if (work.projection.custody[i].item_uid == item.object_uid)
+				{
+					if (match != SIZE_MAX)
+						return false;
+					match = i;
+				}
+			if (match == SIZE_MAX || item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(at))
+				return false;
+			const auto &identity = work.projection.custody[match];
+			const uint64_t parent =
+				item.parent_index < 0 ?
+					0 :
+					state.original.items[item.parent_index].object_uid;
+			if (identity.root_item_uid != state.original.items[0].object_uid ||
+			    identity.parent_item_uid != parent || identity.item_revision != 1 ||
+			    identity.vnum != item.vnum ||
+			    identity.state != item_custody_state::active ||
+			    !item_owner_identity_equal(identity.owner, work.ordered.owner))
+				return false;
+			// Only actual DTO temporaries overlap these three non-growing pushes.
+			size_t row_live = live;
+			if (!room_prepare_add(row_live, sizeof(player_load_item_identity)) ||
+			    !room_prepare_add(row_live, sizeof(item_ownership_runtime_entry)) ||
+			    !reserve(row_live, context))
+				return false;
+			player_load_item_identity projected{};
+			projected.item_uid = identity.item_uid;
+			projected.root_item_uid = identity.root_item_uid;
+			projected.parent_item_uid = identity.parent_item_uid;
+			projected.owner = identity.owner;
+			projected.item_revision = identity.item_revision;
+			projected.owner_revision = work.ordered.owner_revision;
+			projected.state = identity.state;
+			work.ordered.items.push_back(item);
+			work.ordered.identities.push_back(projected);
+			work.custody.push_back(
+				{ identity.item_uid, identity.root_item_uid,
+				  identity.parent_item_uid, identity.owner, identity.item_revision,
+				  work.ordered.owner_revision, item.vnum, identity.state });
+		}
+		if (!state.consumed)
+		{
+			if (!state.cold_reconstruction || state.cold_forest_ready)
+			{
+				size_t native_heap = 0;
+				if (player_item_snapshot_tree_capture_literal_bounded(
+					    state.objects[0], &work.native, nullptr, reserve,
+					    context, live,
+					    &native_heap) != player_snapshot_capture_result::ok ||
+				    !room_prepare_add(live, native_heap) ||
+				    player_item_snapshot_list_encode_bounded(
+					    work.native, &work.a, reserve, context, live) !=
+					    player_snapshot_codec_result::ok ||
+				    !room_prepare_add(live, work.a.capacity()) ||
+				    player_item_snapshot_list_encode_bounded(
+					    state.original.items, &work.b, reserve, context,
+					    live) != player_snapshot_codec_result::ok ||
+				    !room_prepare_add(live, work.b.capacity()) || work.a != work.b)
+					return false;
+				size_t progress_live = live;
+				if (!room_prepare_array(progress_live, 2,
+							sizeof(quest_mobile_native_item_progress)) ||
+				    !reserve(progress_live, context))
+					return false;
+				for (size_t at = 0; at < count; ++at)
+				{
+					auto *factory = state.stage_pointers[at];
+					quest_mobile_native_item_progress progress{};
+					if (!factory || factory->object() != state.objects[at] ||
+					    (!state.cold_reconstruction &&
+					     !factory->owns_pending_original_target(
+						     state.objects[at])) ||
+					    !factory->read_progress(&progress) ||
+					    progress.admitted != state.admitted ||
+					    progress.published || progress.next_step ||
+					    progress.current_step_started)
+						return false;
+				}
+			}
+			if (!room_absent_native(state.original.items) ||
+			    !room_prepare_array(live, count, sizeof(uint64_t)) ||
+			    !reserve(live, context))
+				return false;
+			work.uids.reserve(count);
+			for (const auto &item : state.original.items)
+				work.uids.push_back(item.object_uid);
+			std::sort(work.uids.begin(), work.uids.end());
+			size_t observer_live = live;
+			if (!room_prepare_array(observer_live, 2,
+						sizeof(std::span<const uint64_t>)) ||
+			    !reserve(observer_live, context))
+				return false;
+			if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+				    work.uids, ITEM_TRANSFER_MAX_ITEMS, &work.runtime, reserve,
+				    context, observer_live) ||
+			    !work.runtime.empty())
+				return false;
+		}
+		else
+		{
+			if (state.graph.owner_revision != work.ordered.owner_revision ||
+			    state.custody.size() != work.custody.size())
+				return false;
+			for (size_t at = 0; at < count; ++at)
+				if (!same_custody(state.custody[at], work.custody[at]))
+					return false;
+			if (!verify_warm_flat_current_bounded(stage, reserve, context, live))
+				return false;
+		}
+		// Preserved inline-text census allowance precedes nonthrowing transfer.
+		for (const auto &item : work.ordered.items)
+			if (!room_snapshot_inline_census(item, live))
+				return false;
+		if (!lock.matches(selected_root) || !reserve(live, context))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<sql_room_item_graph>);
+		state.graph = std::move(work.ordered);
+		state.custody = std::move(work.custody);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
