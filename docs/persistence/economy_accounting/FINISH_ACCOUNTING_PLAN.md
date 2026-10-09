@@ -196,6 +196,162 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## CURRENT refresh reviewed CLOSED; warm-flat lifecycle selected - 2026-10-09
+
+Root independently reviews both original ROOM CURRENT preparation packets at
+b55d9b6730800e2f58eabdf93a99c26b86f8cb85 and actual parent
+d47a7530e8a9064af6a83a5dce38c8143764f8bc, selected by eb9f813cb6daef41a6c87152e16cbba8b1390129.
+Disposition: SOURCE/DESIGN/METADATA PASS; independent finite review CLOSED.
+Evidence: D:/Dev/Temp/coordinator-current-refresh-review-20261009. Root authenticates
+whole original Git providers, exact signatures/bodies/catches/scopes, selected raw
+cuts, complete original equality, forward/inverse reconstructions, strict all-payload
+indexes, original SQL controls and exact CLOSED references. Both fully read/audited
+stdlib read-only verifiers reproduce their sealed receipts byte-for-byte. No source
+correction is required; no runtime, product, compiler, DB, native or fixture runs occur.
+Original pins and all packet bytes remain sealed,not repinned to successors.
+
+Architecture: D:/Dev/Temp/published-room-flat-current-refresh-authority-boundary-20261009.
+16 complete providers,57 cuts,30 complete original equalities,seven new definitions,
+seven structure scopes,two whole-provider reconstructions,two unique header inverses,
+three complete SQL controls,ten unchanged dependencies,two warm-source reuse and
+two successor continuity witnesses,eight minimal CLOSED seals authenticate.
+The strict index authenticates all81 payloads,with INDEX sealed separately.
+Principal architecture seals (bytes/SHA256):
+- PUBLISHED_ROOM_FLAT_CURRENT_REFRESH_AUTHORITY_BOUNDARY_2026-10-09.txt: 29958/63e2ef0eb466b544061a1aedbc6c90cd1a394ed343a527d759b9099238e70bb6
+- PINS.json: 76709/5ec8cdac3e00478de74700d165fd22b5744e21c8def3924360279f20eec355e7
+- INDEX.json: 13834/d96b335ba7c719ce4727d4a4fb0b3a040c010410d92dc5aa55814950c8f3e10b
+- verify.py: 26129/f3b11e92784a58f54a90ae6d6e2f3b038ec95bee36181ecad3ce942a7efdb5a9
+- VERIFICATION.json: 1868/daf8fa60005ec68823d9a84e50a3cbeae7a9ee0ea342376720ac86729a494fb3
+
+Quest: D:/Dev/Temp/published-room-flat-current-refresh-acceptance-delta-20261009.
+24 complete providers,66 exact ranges,38 complete original equalities,seven new
+definitions,20 complete scopes,two whole-provider inverses with three added segments,
+four raw diffs,18 unchanged dependencies,six complete SQL controls,two exact entry
+censuses and18 minimal CLOSED seals authenticate. Three small historical indexes
+and two original literal index entries retain their own limits. Three disclosed
+pre-seal metadata/editor errors are resolved; no discarded product outcome exists.
+All CR1-CR4 component/native cuts remain UNEXECUTED; genuine commands UNAVAILABLE.
+Principal quest seals (bytes/SHA256):
+- PUBLISHED_ROOM_FLAT_CURRENT_REFRESH_ACCEPTANCE_DELTA_2026-10-09.txt: 33119/d5a2fd73e4f293ed5aeb0e5dd15e85429ac2ed2f76fecc9aad63e6d7ab6a0a90
+- PINS.json: 4548338/123d9984eaea36a9d9e88c28cf86554157ca30cbee43278c868885b847c4d627
+- INDEX.json: 671/0346bdaf38e8740b20b16191ea476b1e9c7136c987ab3a72a77b4de555b8a522
+- verify.py: 15246/c78e7f54114101af132f1af49ded0dd976927488df72b5a26e3760571c172964
+- VERIFICATION.json: 1918/31c32803620e66792ac3fee7900e707153372b1f08f0fb3f416c85c4685ab3c7
+
+Both notes preserve complete same borrowed-lock/original-envelope/execution-receipt
+and full-room/catalog/custody proof before selecting the original born forest.
+Valid earlier unrelated room forests remain permitted. Detached proof uses genuine
+factory/source/root/progress,whole literal tree,global absence and full item/root/
+parent active observer union. Consumed proof uses real global identity/prev/cycles,
+actual room next_content cycle/location/root occurrence,parent/canonical capture,
+full runtime union and exact graph/entry/current owner revision. No nonexistent
+room prev-link check is claimed. Original same_custody remains <= owner revision;
+additional exact revision checks are separate. Both notes preserve two simultaneous
+observer descriptors,actual deep copies/workspaces/projection/both encodes and
+strong prior graph/custody on refusal. Success transfers proof metadata only.
+No native placement/effect/checkpoint/ACK/retirement or aggregate32MiB/ABI/allocator
+qualification follows from source/metadata review. Actual accepting root/fixtures
+are still required. The pending October7 human scope answer is not resolved here.
+
+Published successors assessed separately from original CLOSED CURRENT packets:
+0ca2c66b07fe8cfde462ed0fa1159e479495d6cf actual parenteb9f813cb6daef41a6c87152e16cbba8b1390129
+adds actual cache-storage observation and bounded atomic hydration.
+ac99b021ec2e10f46ded47ea3b74b317e12b380e actual parent0ca2c66b07fe8cfde462ed0fa1159e479495d6cf
+adds genuine bounded DB forest publication. Root reads all304/277 appended C lines,
+headers and complete original hydrate/publish controls; full original C-prefix/
+header inverses authenticate. Full factory/prototype/procedure/forest/global/cache/
+reset-order proof precedes hydration and the original irreversible native tail.
+Cache content rollback preserves original contents; rehash bucket growth can
+survive refusal. Caller initial actual cache includes both maps exactly once;
+refresh/retain current cache on EVERY return. No reserve/budget callback follows
+first hydration mutation or successful native consumption. Callback and serialized
+cache/source ownership remain caller responsibilities; census grants no authority.
+Root does not recertify primary request arithmetic/profile/ABI/allocator math.
+
+9fe4d77fbab9658c3df7e2456a11f48a41e12fa9 actual parentac99b021ec2e10f46ded47ea3b74b317e12b380e
+adds guarded-retirement scratch-prefix relay,owning terminal predicate and genuine
+server bounded callback registration. Root reads complete handoff,headers and exact
+registration change; all nine providers across these three successors have exact
+whole forward/inverse reconstruction and actual parent proof. The original first
+five registration callbacks remain;two bounded callbacks append. Guarded relay
+semantic C review is NOT PERFORMED by root. Primary private source/policy/token/
+preprocessor reports remain reported,not executed native proof. Actual root callback
+and SAME borrowed-lock terminal writer joining remain open as its handoff states.
+
+c404a442219eff17e074add45745938ac0ab7bd3 actual parent9fe4d77fbab9658c3df7e2456a11f48a41e12fa9
+adds genuine private warm-flat reserve/consume/mark companions. Root reads all223
+appended C lines,header,complete original reserve/consume/mark controls and full
+handoff. Both complete original prefix/header insertion inverses authenticate;
+original ac99 publisher and0ca hydration providers remain unchanged. Original
+b55 CURRENT definitions remain intact inside the full original prefix. Private
+lifecycle companions have no accepting ROOM root call at this pin. Source reduces
+publisher/lifecycle dependencies only; actual warm/cold/context/effects/checkpoints/
+ACK/terminal integration,persistent cache/union ownership and qualification remain.
+
+Prioritized evolving queue; exact next ownership,one bounded delivery per chat:
+1. Architecture owns private
+   PUBLISHED_WARM_FLAT_LIFECYCLE_AUTHORITY_BOUNDARY_2026-10-09.txt under
+   D:/Dev/Temp/published-warm-flat-lifecycle-authority-boundary-20261009.
+   Map genuine reserve-to-consume-to-mark ownership/state and irreversible boundary:
+   partial next_published retry subset/insert order,actual initial union/cache census,
+   three consume input spans and publisher/observer/hydration scopes,cache content
+   rollback versus persistent capacity growth,full marking/current proof and exact
+   swap/creation-marker tail. Benefit: native root can later join these genuine
+   companions with correct retained state/refusal handling,without phantom rollback
+   or authority inferred from UID sets. Do not duplicate primary math/admission.
+2. Quest owns private
+   PUBLISHED_WARM_FLAT_LIFECYCLE_ACCEPTANCE_DELTA_2026-10-09.txt under
+   D:/Dev/Temp/published-warm-flat-lifecycle-acceptance-delta-20261009.
+   Four implementation-ready cuts: partial-union refusal/retry/subset; actual
+   factory/forest/global/cache hydration-to-consumption; every-return cache/union
+   recensus and pre-consumption allocation/refusal/rollback; placed CURRENT marking,
+   idempotence/unchanged original tail and separate release/effect/ACK dependencies.
+   State genuine setup/owner invocation/fault prerequisite,full oracle and forbidden
+   substitutes for each. All component/native cuts stay UNEXECUTED/commands UNAVAILABLE.
+3. Both use original c404a442219eff17e074add45745938ac0ab7bd3 and actual parent
+   9fe4d77fbab9658c3df7e2456a11f48a41e12fa9. Available inputs: complete
+   src/world/zone_reset_room_publication.c/.h lifecycle methods/actual original
+   reserve/consume/mark/retained/release controls; original publisher at ac99/0ca
+   actual pair src/world/db.c/.h; hydration at0ca/eb9f pair
+   src/item/item_ownership_runtime.c/.h and smallest genuine observer/stage/reset-order
+   controls. Fixed dependency commits are source context,not accepting fixtures.
+   Reuse minimal exact CLOSED CURRENT/warm/factory/terminal/literal references.
+   Require full originals/signatures/bodies/catches/scopes,scoped raw forward/inverse
+   proof,exact unchanged SQL/original controls,irreversible tail equality,strict
+   all-payload index,audited read-only verifier and exact receipt. Root review pending.
+4. Exact unavailable dependent execution: actual accepting flat root,authentic owner
+   stage/forest/global/runtime fixture and legal fault controls,SAME borrowed-lock
+   warm/cold context,service/placement/effects/checkpoint/ACK/terminal writer join,
+   persistent cache/union retention and full caller/capture/coordinator/journal
+   aggregate admission. Source preparation remains useful without these fixtures.
+   No fake root/factory/observer,manual positive flags/UID authority,copied fixture,
+   new runner or maintained implementation/test/math/profile edit. No preprocess/
+   compiler/product/native/DB execution,private artifact import/registration/commit/
+   publication,deployment or activation. Primary owns implementation/contracts/math/
+   admission/integration/qualification;Plan5 owns suite/SQL/recovery. Workers own
+   only distinct private directories;root publishes only its three coordination docs.
+5. Queued separately: original full command/compiler/result/recovery integration
+   boundaries and now-available journal/guarded relay/SAME-lock terminal prefix,
+   retained uncertainty/fence/capture preparation. Reassess actual source at each
+   delivery; do not expand this lifecycle task or impose adoption waits.
+
+Preserve every CLOSED seal: CURRENT originalb55/d47;warm4a168/c153;
+constructor3890/c591 including corrected declaration order and original141-file
+history;terminal43ecc/a18bb(TR1-6 UNEXECUTED);factoryd818 CURRENT/RETAINED correction/
+history;immutable63de and all earlier bundles. Preserve quest unpublished merge
+f4e20219113fdaee7d3ead787418d89683e05590 and all isolated jobs/build/service evidence.
+October7 scope/provenance clarification remains PENDING as observed; genuine newer
+human instructions take priority. Prior product/build/component PASS/QP04 FAIL
+claims remain UNREVIEWED root,no genuine gameplay/SQL capture/current ELF proof.
+No reset/revert/kill/restart/delete or further product/DB execution authorized here.
+
+Actual Goal remains BLOCKED unchanged; no resumption/replacement/completion.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/SQL0065/schema65/Plan5/
+aggregate32MiB/ABI/allocator/owner completion remains open. Finite packet review
+does not pass the broad completion audit. Heartbeat ACTIVE;accounting inactive/
+admission CLOSED/coverage incomplete/release BLOCKED. Preserve controls and quiet
+unchanged-state notifications;no other chats,production mutation or private commits.
+
 ## ROOM warm preparation reviewed CLOSED; CURRENT refresh selected - 2026-10-09
 
 Root independently reviews both private ROOM warm-preparation packets at original
