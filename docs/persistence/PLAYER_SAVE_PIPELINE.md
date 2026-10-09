@@ -5,7 +5,8 @@ Ordinary player checkpoints use one revisioned pipeline:
 1. The game thread marks the affected component bits and seals a bounded immutable
    snapshot only when dirty work exists.
 2. A bounded dispatcher appends and syncs the typed journal record.
-3. The keyed worker applies the snapshot through the revision-guarded repository.
+3. The keyed worker applies the snapshot through the selected revision-guarded SQL
+   or flat-file repository. Startup journal replay uses the same repository selection.
 4. The game pulse consumes typed completions; the worker checkpoints the journal only
    after durable revision evidence.
 
@@ -16,10 +17,18 @@ durability state. The old Redis dirty set and player-save fork are disabled.
 ## Configuration And Health
 
 `PLAYER_SAVE_JOURNAL_DIR` is required and must be an absolute, server-user-owned path.
-Startup fails closed when the journal or worker cannot start. `world persistence`
-reports bounded coordinator depth/bytes, high-water marks, captures, coalescing,
-unchanged checkpoints, append failures, overload, dispatch, completion, and replay
-state. Output contains no player identity or snapshot value.
+If the journal or worker cannot initialize, boot logs and reports the failure and
+continues; nonterminal saves fail closed.
+
+The dispatcher replays the journal before processing new appends. Ordinary SQL
+snapshot reads and the shared character-materialization path remain blocked until
+startup replay completes successfully. Initialization failure, blocked replay, and
+pipeline shutdown leave this readiness gate closed. Recovery-only queries retain
+their separate authorization gate and do not materialize characters.
+
+`world persistence` reports bounded coordinator depth/bytes, high-water marks,
+captures, coalescing, unchanged checkpoints, append failures, overload, dispatch,
+completion, and replay state. Output contains no player identity or snapshot value.
 
 For a refused save, degraded load, or quarantine, use the avatar-only
 `world persistence diagnose player <pid>` report and the read-only
@@ -36,12 +45,20 @@ separates event severity from the immortal audience selected by `level`:
 | --- | --- | --- |
 | `persistence_severity::ok` | `outcome=ok` | `LOG_FILE` and `LOG_WIZ` file records |
 | `persistence_severity::info` | `outcome=info` | `LOG_FILE` and `LOG_WIZ` file records |
-| `persistence_severity::alert` | `outcome=alert` | Both file records and the existing red immortal broadcast |
+| `persistence_severity::alert` | `outcome=alert` | Both file records and a rate-limited red immortal broadcast |
 
 `persistence_alert(...)` remains an alert-only compatibility entry point. Unknown
 severity values also alert. Both entry points use the same category sanitization
 and numeric-only detail filtering; owner, item UID and event ID arguments are
 omitted from the output at every severity.
+
+Repeated alert broadcasts with the same retained key are suppressed for 30 seconds.
+The bounded cache holds 256 keys, formed from sanitized domain, owner, item UID,
+event ID, action, and formatted alert text. Distinct identifiers or details can
+produce separate broadcasts, and cache eviction can remove a key's suppression
+state. The next eligible occurrence for a retained key includes the suppressed
+count and age when repeats were suppressed; no separate timer sends a summary.
+Every report still attempts file admission before the broadcast rate-limit check.
 
 Use `ok` after a successful durable operation and `info` for expected progress.
 Death recovery/disposition completion and durable disposition recording are `ok`.
@@ -66,12 +83,12 @@ truncate long numeric details. The worker receives only copied text and enqueue
 time; it never accesses characters, descriptors, or the legacy `logit` formatter.
 
 A full or contended queue rejects the new file record and increments `rejected`;
-there is no synchronous fallback. Alert broadcasts still run immediately even if
-file admission fails. `world persistence` exposes cumulative accepted/completed,
-rejected, and independent file/wiz failure counters. The game pulse broadcasts a
-reporting-delivery alert when failures increase or pending delivery makes no progress
-for 30 seconds, at most once per 30 seconds. These notices do not re-enter the queue.
-Counters remain inspectable when no immortal was online for the notice.
+there is no synchronous fallback. File admission failure does not prevent an alert
+broadcast that is eligible under the rate limit. `world persistence` exposes cumulative
+accepted/completed, rejected, and independent file/wiz failure counters. The game pulse
+broadcasts a reporting-delivery alert when failures increase or pending delivery makes
+no progress for 30 seconds, at most once per 30 seconds. These notices do not re-enter
+the queue. Counters remain inspectable when no immortal was online for the notice.
 
 The worker creates missing parent directories, opens each sink with append and
 close-on-exec, and accepts only regular files. Open, short-write, write, and close
@@ -99,11 +116,14 @@ Validate routing and privacy with `python3 tests/async/test_persistence_severity
 Destructive player transitions mark and capture a fresh full revision with the
 current terminal intent and room behind a fixed-capacity terminal fence. An ACKed
 nonterminal retry or an older pending full snapshot cannot authorize a new camp.
-A caller may extract the character only after the exact
-revision receives a database acknowledgement or, where explicitly allowed, after its
-journal record has been synced. Older completions cannot release a newer fence. A
-deadline failure keeps the fence and dirty revision retryable; later mutations advance
-that same fence instead of becoming untracked.
+A caller may extract the character only after the exact revision receives an
+acknowledgement from the selected SQL or flat-file authority or, where explicitly
+allowed, after its journal record has been synced. The typed result
+`database_acknowledged` also represents a flat-file authority acknowledgement.
+Older completions cannot release a newer fence. A deadline failure keeps the fence
+and dirty revision retryable. For ordinary non-death terminal saves, later mutations
+advance that same fence instead of becoming untracked. Retained disputed-death
+requests follow the stricter [death-fence rules below](#disputed-player-deaths).
 
 Copyover and ordinary shutdown quiesce new checkpoint admission and wait to a bounded
 deadline until every accepted snapshot is journal-durable. The drain includes a record
@@ -118,11 +138,24 @@ recovery. Locker fallback behavior remains a separate compatibility boundary.
 
 ## Compatibility Boundary
 
-New characters without a durable PID, locker characters, and Phase 02 critical
-transactions retain their explicit legacy compatibility route for now. Synchronous
-transactional compatibility saves advance `save_revision` in the same transaction,
-fencing every older immutable snapshot. They are not treated as an exactly-once
-gameplay command; Phase 02 replaces them with operation-keyed domains.
+In SQL builds, `writeCharacter()` retains synchronous player-save paths for initial
+durable baselines, calls already inside an SQL transaction, and other direct saves
+outside the nonterminal checkpoint path. A positive PID alone does not establish a
+durable baseline. Locker characters use their separate locker save path. In flat-file
+builds, initial player baselines and terminal saves wait for the revisioned pipeline's
+authority acknowledgement.
+
+Committed SQL compatibility saves advance `save_revision` in the same transaction,
+fencing older immutable snapshots. `sql_save_player()` acknowledges the revision and
+clears dirty state only when it owns and successfully commits the transaction. A
+caller-owned transaction can still roll back after the function returns, so its
+revision and dirty state remain pending.
+
+Operation-keyed critical commands are already implemented for wallet/bank, epic,
+and item-movement routes. Their admission, operation receipts, and live publication
+follow the [critical-command contract](CRITICAL_COMMAND_PIPELINE.md). Exactly-once
+gameplay claims depend on that operation-specific evidence; checkpoint or
+compatibility-save acknowledgement alone does not establish it.
 
 ## Deferred and manual saves
 
@@ -131,8 +164,14 @@ and manual acknowledgement checks from the game-loop persistence path, independe
 of world-event debt. It attempts at most 32 due deferred saves per call with a
 round-robin cursor and checks the bounded 512-slot manual-status table. Deferred
 slots use monotonic due times and character runtime identities so storage reuse
-cannot apply work to a different character. Manual completion still requires
-acknowledgement within the existing 30-second deadline.
+cannot apply work to a different character.
+
+Manual-save feedback uses a 30-second timeout measured from the request, before
+deferred capture. Each status poll checks acknowledgement first, so an acknowledged
+save can report completion even when polled after that interval. Otherwise, expiry
+reports failure and retires the feedback status. It does not cancel pending deferred,
+worker, or journal work; the save can still complete later. The retired status does
+not emit a later completion message.
 
 A failed camp retains the live character and permits automatic nonterminal retry;
 a later camp must capture its own intent again. Flat-file terminal saves require
@@ -152,8 +191,16 @@ same effects with `player-deaths/<pid>-<revision>.death` in its recoverable
 authority transaction. Successfully transferred corpse-owned items stay active;
 quarantine includes remaining durable-only descendants.
 
-Release requires durability for the death revision. Capture/admission failure,
-a missing corpse, or a failed durability fence retains live assets for retry.
+Once captured and retained, the death request is pinned in memory. Retries resume
+the same revision, operation ID, corpse and wallet identities, payload, and attached
+receipts. New checkpoint dirty marks and revision changes are refused while it is
+pinned. Retention in memory alone is not durable evidence.
+
+Release requires a successful `applied` or `already_applied` acknowledgement from
+the selected authority for the exact retained revision, matching components and
+request identity. A newer or stale completion, or a synced journal alone, cannot
+release the character. Capture/admission failure, a missing corpse, or a failed
+durability fence retains live assets for retry.
 If event admission fails, the live player's fallback due time is serviced by the
 game pulse. A two-second terminal wait is one attempt's budget, not a bound on
 total death recovery. Restart replay applies journaled death evidence idempotently;
@@ -192,9 +239,13 @@ latency, pending currency, and the final corpse snapshot still contribute.
 
 `test_corpse_creation_batch.py` runs production admission, codec, registry, and
 publication code under ASan/UBSan with nested 1/15/100-root fixtures, refusals,
-pending coin work, stale topology, and duplicate completions. The combat journey
-also runs with boons enabled and checks ordinary recovery, conservation, disputed
-custody evidence before release, and exactly-once death consequences on restart.
+pending coin work, stale topology, and duplicate completions. The SQL and flat-file
+combat journeys include boons-enabled variants and check ordinary recovery,
+conservation, disputed custody evidence before release, and exactly-once death
+consequences on restart. The default MariaDB dispute fixture explicitly repairs
+its injected conflict before requiring release; its PASS establishes recovery
+after fixture repair. Unassisted conflict recovery has a
+[separate guarded qualification path](economy_accounting/DEATH_CONFLICT_ACCEPTANCE.md).
 
 The [corpse batch verification guide](../operations/corpse-creation-batches.md)
 documents the real MariaDB character journey, isolated database setup, and the

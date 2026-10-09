@@ -2,7 +2,9 @@
 
 Canonical account erasure is **not enabled**. The lifecycle manifest has no approved
 destructive actions, every store's controller decision remains pending, and inspection
-reports all 194 stores as `retain` with `request_state=blocked_by_policy`.
+reports every manifest store as `retain` with `request_state=blocked_by_policy`.
+Use the [lifecycle inventory](DATA_LIFECYCLE.md) and inspection command below for
+current coverage; the store count grows as durable classes are registered.
 
 Session 10 defines the safety boundary that any future approved adapter must satisfy.
 It is an engineering control, not legal advice or approval to erase records.
@@ -11,8 +13,8 @@ It is an engineering control, not legal advice or approval to erase records.
 
 Account-menu option 7 implements a narrower operational deletion path. It permanently
 removes the selected persistence backend's login credential, character authorities,
-and live character/account state. It does **not** activate the canonical 194-store
-privacy-erasure manifest, create a legal erasure tombstone, or claim that retained
+and live character/account state. It does **not** activate canonical manifest-wide
+privacy erasure, create a legal erasure tombstone, or claim that retained
 history and backups contain no direct identifiers.
 
 The player must re-enter the account password and then type the exact, case-sensitive
