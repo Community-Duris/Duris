@@ -452,6 +452,32 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Executable candidate scheduling dependency - 2026-10-09
+
+Published272211d596c7d8b3a4c06595d64699d22abf81c1 changes only the finish plan.
+Its dated next-primary-handoff section prioritizes publishing one executable
+combined candidate after the current bounded primary source join/review,then
+SQL and required client-free compile/link plus the smallest existing isolated
+inactive boot/shutdown smoke. This supersedes blanket deferral only for that
+bounded primary checkpoint;broader qualification remains batched,shared admission
+closed,and original Plans1-5/R1-R8/flat parity/release holds remain required.
+No combined source,binary,executed smoke or native fixture is supplied by this
+scheduling-only publication. Actual src/tests/migrations/scripts and primary
+source report are unchanged. Private source/progress/adoption remain unobservable.
+
+Preserve the ONE native-season quest preparation already in flight and its exact
+ownership/missing interfaces;finish/review that bounded handoff without restart
+or expansion. Architecture and older packets remain CLOSED/event-dependent.
+Next priority is reassessment of the actual published combined commit,interfaces,
+caller joins,build/manifest blockers and candidate handoff to select concrete
+independent integration/review work. Do not invent speculative tasks to replace
+unavailable candidate prerequisites or duplicate primary/Plan5 qualification.
+No helper execution,build,boot,DB,root seeding or operational enrollment is started
+by this scheduling observation. Actual Goals remain BLOCKED;preparation is not
+resumption. Broader completion unmet;heartbeat ACTIVE. Raw scheduling/identity proof:
+D:/Dev/Temp/coordinator-executable-candidate-scheduling-20261009/reassessment.json,
+finish-plan.raw,scheduling.diff and exact coordination-publication inverse.
+
 ## Fresh-root authority facts reviewed; native season acceptance selected - 2026-10-09
 
 Architecture's FLAT_ROOT_GENESIS_ENROLLMENT_AUTHORITY_FACTS_2026-10-09.txt now
