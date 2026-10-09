@@ -11557,3 +11557,241 @@ bool quest_mobile_native_item_stage::publication_step_bounded(
 	}
 #endif
 }
+
+bool shop_trade_original_procedure_binding_stage::prepare_native_birth_cold_flat_bounded(
+	const std::span<const quest_mobile_native_item_binding> &originals,
+	shop_trade_original_procedure_binding_stage &output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (output.prepared_ && !output.flat_)
+		return false;
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    originals.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	using number_map = std::map<int, size_t>;
+	using uid_set = std::unordered_set<uint64_t>;
+	using chain_request = proclib_recovery_chain_stage::request;
+	constexpr size_t map_node_bytes = sizeof(std::_Rb_tree_node<number_map::value_type>);
+	constexpr size_t uid_node_bytes =
+		sizeof(std::__detail::_Hash_node<
+			uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>);
+	struct workspace
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		number_map by_number;
+		uid_set uids;
+		std::vector<chain_request> requests;
+		std::__detail::_Prime_rehash_policy uid_policy;
+		std::pair<bool, size_t> uid_growth{};
+	};
+	struct live_state
+	{
+		workspace &work;
+		size_t fixed;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		bool bytes(size_t &total) const noexcept
+		{
+			total = fixed;
+			const size_t retained = work.candidate.retained_bytes();
+			if (!retained || retained < sizeof(work.candidate) ||
+			    retained - sizeof(work.candidate) > SIZE_MAX - total)
+				return false;
+			total += retained - sizeof(work.candidate);
+			if (work.by_number.size() > (SIZE_MAX - total) / map_node_bytes)
+				return false;
+			total += work.by_number.size() * map_node_bytes;
+			if (work.uids.size() > (SIZE_MAX - total) / uid_node_bytes)
+				return false;
+			total += work.uids.size() * uid_node_bytes;
+			if (work.uids.bucket_count() > 1)
+			{
+				if (work.uids.bucket_count() >
+				    (SIZE_MAX - total) / sizeof(std::__detail::_Hash_node_base *))
+					return false;
+				total += work.uids.bucket_count() *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (work.requests.capacity() > (SIZE_MAX - total) / sizeof(chain_request))
+				return false;
+			total += work.requests.capacity() * sizeof(chain_request);
+			return true;
+		}
+		bool admit(size_t extra) const noexcept
+		{
+			size_t total = 0;
+			if (!bytes(total) || extra > SIZE_MAX - total || !reserve ||
+			    !reserve(total + extra, context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			return true;
+		}
+		// GCC 13 vector's actual single-element push request. Its old backing
+		// storage is already live in bytes(); replacement storage coexists.
+		bool push(size_t size, size_t capacity, size_t width, size_t temporary,
+			  size_t &extra) const noexcept
+		{
+			if (temporary > SIZE_MAX - extra)
+				return false;
+			extra += temporary;
+			if (size != capacity)
+				return true;
+			const size_t growth = std::max(size, size_t{ 1 });
+			if (growth > SIZE_MAX - size || size + growth > (SIZE_MAX - extra) / width)
+				return false;
+			extra += (size + growth) * width;
+			return true;
+		}
+	};
+	constexpr size_t inline_bytes = sizeof(workspace) + sizeof(live_state);
+	if (inline_bytes > SIZE_MAX - outer_live_scratch || !reserve_scratch_peak ||
+	    !reserve_scratch_peak(outer_live_scratch + inline_bytes, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	try
+	{
+		workspace work;
+		live_state live{ work, outer_live_scratch + inline_bytes, reserve_scratch_peak,
+				 context };
+		auto &candidate = work.candidate;
+		for (const auto &original : originals)
+		{
+			// Actual restored ordinary factory input, never a fabricated live-flat scope.
+			if (original.flat_factory_ || original.flat_scope_)
+				return false;
+			size_t extra = 0;
+			const auto *prototype = flatfile_coin_boot_templates::find(original.vnum_);
+			P_obj object = original.object_;
+			if (!object || !prototype || !original.uid_ ||
+			    work.uids.find(original.uid_) != work.uids.end())
+				return false;
+			work.uid_growth = work.uid_policy._M_need_rehash(work.uids.bucket_count(),
+									 work.uids.size(), 1);
+			extra = uid_node_bytes + sizeof(decltype(work.uids.insert(original.uid_)));
+			if (work.uid_growth.first)
+			{
+				if (work.uid_growth.second >
+				    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				extra += work.uid_growth.second *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (!live.admit(extra))
+				return false;
+			if (!work.uids.insert(original.uid_).second ||
+			    object->obj_uid != original.uid_ || object->R_num != original.rnum_ ||
+			    prototype->R_num != original.rnum_ ||
+			    obj_index[original.rnum_].pos != original.position_ ||
+			    obj_index[original.rnum_].func.obj != original.before_ ||
+			    (original.parsed_proclib_ &&
+			     !IS_SET(object->extra_flags, ITEM_PROCLIB)))
+				return false;
+			auto found = std::lower_bound(recovery_object_templates.begin(),
+						      recovery_object_templates.end(),
+						      original.vnum_,
+						      [](const auto &entry, int value)
+						      { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != original.vnum_ || &found->prototype != prototype ||
+			    found->special != original.before_)
+				return false;
+			const size_t position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			// Duplicate R_num lookup does not allocate a speculative map node.
+			// Distinct entries preserve the original first-occurrence ordering.
+			auto located = work.by_number.find(original.rnum_);
+			if (located == work.by_number.end())
+			{
+				if (!live.admit(
+					    map_node_bytes +
+					    sizeof(decltype(work.by_number.emplace(
+						    original.rnum_, candidate.bindings_.size())))))
+					return false;
+				work.by_number.emplace(original.rnum_, candidate.bindings_.size());
+				located = work.by_number.find(original.rnum_);
+				extra = 0;
+				if (!live.push(candidate.bindings_.size(),
+					       candidate.bindings_.capacity(), sizeof(binding),
+					       sizeof(binding), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			}
+			auto &binding = candidate.bindings_[located->second];
+			if ((original.parsed_proclib_ || original.restored_bridge_request_) &&
+			    binding.after != proclib_obj_cmd_bridge)
+			{
+				binding.predecessor = binding.after;
+				binding.chain_needed = true;
+				binding.after = proclib_obj_cmd_bridge;
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+			{
+				size_t extra = 0;
+				if (!live.push(work.requests.size(), work.requests.capacity(),
+					       sizeof(chain_request), sizeof(chain_request), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				work.requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+			}
+		if (!live.admit(sizeof(std::span<const chain_request>)))
+			return false;
+		const std::span<const chain_request> requests(work.requests);
+		size_t chain_outer = 0;
+		if (!live.bytes(chain_outer) || sizeof(requests) > SIZE_MAX - chain_outer)
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		chain_outer += sizeof(requests);
+		if (!proclib_recovery_chain_stage::prepare_bounded(
+			    requests, candidate.chain_, reserve_scratch_peak, context, chain_outer))
+			return false;
+		candidate.flat_ = true;
+		candidate.native_flat_ =
+			false; // Earned cold catalog proof, not live-token provenance.
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+#else
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
