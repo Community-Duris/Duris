@@ -143,4 +143,20 @@ flatfile_authority_transaction_recover_bounded(const std::string &root,
 					       flatfile_scratch_reserve_fn reserve_scratch_peak,
 					       void *context, size_t outer_live_scratch) noexcept;
 
+// Distinct prospective commit with the original pending-journal refusal, full
+// canonical journal encoding, publication/apply/fault/unlink order and outcome.
+// Public callers retain the original economic_evidence prohibition; only the
+// existing private typed storage boundary can include that entitled store.
+// Null diagnostics avoid allocating error strings. Caller includes the input
+// root/lock/operations and their capacities, output/context and already-live
+// storage in outer, and holds the admitted maximum through return. All apply
+// path/atomic storage is admitted BEFORE journal publication; later failure
+// preserves committed/uncertain outcome exactly as the original algorithm.
+// ENOBUFS refusal/overflow, ENOMEM allocation, ENOTSUP pinned request policy.
+flatfile_authority_transaction_result
+flatfile_authority_transaction_commit_operations_with_outcome_bounded(
+	const std::string &, const flatfile_authority_lock &,
+	const std::vector<flatfile_authority_operation> &, flatfile_authority_commit_outcome *,
+	flatfile_scratch_reserve_fn, void *, size_t outer_live_scratch) noexcept;
+
 #endif

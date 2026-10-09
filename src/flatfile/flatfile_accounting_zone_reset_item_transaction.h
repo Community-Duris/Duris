@@ -128,6 +128,16 @@ class flatfile_zone_reset_item_publication_storage final
 	read_terminal_locked_bounded(const std::string &, const flatfile_authority_lock &, uint64_t,
 				     retained_terminal *, flatfile_scratch_reserve_fn, void *,
 				     size_t, size_t *retained_terminal_heap = nullptr) noexcept;
+	// Genuine terminal callback only: complete original phase/BODY and immutable
+	// success proof. Recover first on every attempt under SAME borrowed root lock,
+	// then idempotently retain exact BODY. Conflict refuses; no synthetic envelope.
+	// Full apply/unlink success and exact readback precede success; journal-only
+	// committed outcome is insufficient. Caller retains scratch through callback,
+	// and failure must keep coordinator recovery/carrier/fences. No lock acquired.
+	static unsigned int
+	retain_terminal_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				       uint64_t, const critical_native_recovery_envelope &,
+				       flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 	// SAME genuine recovered configured-root lock and original full carrier.
 	// Passive stored proof only; no constructor, source/execution/ACK authority,
 	// acquisition/recovery/write/commit or live mutation. Strong outputs.

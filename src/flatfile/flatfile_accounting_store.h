@@ -87,6 +87,12 @@ class flatfile_accounting_storage
 		const std::string &, const flatfile_authority_lock &,
 		const std::vector<flatfile_authority_operation> &, std::string *,
 		flatfile_authority_commit_outcome *);
+	friend flatfile_authority_transaction_result
+	flatfile_authority_transaction_commit_operations_with_outcome_bounded(
+		const std::string &, const flatfile_authority_lock &,
+		const std::vector<flatfile_authority_operation> &,
+		flatfile_authority_commit_outcome *, flatfile_scratch_reserve_fn, void *,
+		size_t) noexcept;
 	static flatfile_accounting_status
 	initialize_bucket(const std::string &, const flatfile_authority_lock &,
 			  const critical_operation_id &, size_t bucket,
@@ -132,6 +138,14 @@ class flatfile_accounting_storage
 	commit_with_outcome(const std::string &, const flatfile_authority_lock &,
 			    const std::vector<flatfile_authority_operation> &, std::string *,
 			    flatfile_authority_commit_outcome *);
+	// Same existing typed evidence entitlement and outcome algorithm; prospective
+	// storage only, no new source/binding/admission authority or diagnostics.
+	static flatfile_authority_transaction_result
+	commit_with_outcome_bounded(const std::string &, const flatfile_authority_lock &,
+				    const std::vector<flatfile_authority_operation> &,
+				    flatfile_authority_commit_outcome *,
+				    flatfile_scratch_reserve_fn, void *,
+				    size_t outer_live_scratch) noexcept;
 };
 
 // Passive prospective storage admission for the complete authenticated lookup.
