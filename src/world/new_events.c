@@ -2925,3 +2925,77 @@ void register_func_call(void *func, uint64_t duration_us)
 }
 
 #endif
+
+extern struct mm_ds_list *mmds_list;
+
+// Only the retained event-pool / wheel storage used by object-only scheduling.
+bool nevent_object_schedule_pool_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread() || !ne_dead_event_pool)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t bytes = sizeof(*ne_dead_event_pool) + sizeof(ne_schedule) + sizeof(ne_schedule_tail);
+	if (ne_dead_event_pool->pages_owned > (SIZE_MAX - bytes) / 4096)
+		return false;
+	bytes += ne_dead_event_pool->pages_owned * 4096;
+	// The actual descriptor was created with one global pool-list node.
+	bool found = false;
+	for (const auto *entry = mmds_list; entry; entry = entry->next)
+		if (entry->mmds == ne_dead_event_pool)
+		{
+			if (found || sizeof(*entry) > SIZE_MAX - bytes)
+				return false;
+			bytes += sizeof(*entry);
+			found = true;
+		}
+	if (!found)
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool nevent_reserve_object_schedule_slot_bounded(bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !nevent_is_game_thread() || !ne_dead_event_pool)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		size_t current;
+		size_t prospective;
+	};
+	if (sizeof(workspace) + sizeof(size_t) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(workspace) + sizeof(size_t), context))
+		return false;
+	workspace work{};
+	if (!nevent_object_schedule_pool_storage_bytes(&work.current) || outer_live < work.current)
+		return false;
+	work.prospective = work.current;
+	if (!ne_dead_event_pool->head)
+	{
+		if (ne_dead_event_pool->chunk_size <= 0 ||
+		    static_cast<size_t>(ne_dead_event_pool->chunk_size) >
+			    (SIZE_MAX - work.prospective) / 4096)
+			return false;
+		work.prospective += static_cast<size_t>(ne_dead_event_pool->chunk_size) * 4096;
+	}
+	const size_t base = outer_live - work.current;
+	if (work.prospective > SIZE_MAX - base ||
+	    sizeof(workspace) > SIZE_MAX - base - work.prospective ||
+	    !reserve(base + work.prospective + sizeof(workspace), context))
+		return false;
+	// Genuine configured mmap request, nonfatal and before any event acquisition.
+	// Success/refusal may leave newly owned pages; caller retains current pool.
+	return mm_try_reserve_free_slot(ne_dead_event_pool);
+#endif
+}

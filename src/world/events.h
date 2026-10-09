@@ -43,4 +43,13 @@ class nevent_reschedule_batch
 
 #define LOOP_EVENTS_OBJ(var, e_list) for ((var) = (e_list); (var); (var) = (var)->next_obj_nev)
 
+// Serialized exact pool descriptor/list node/mmap pages + inline wheel arrays.
+// Other scheduler registries, diagnostics and payloads are excluded. Strong output.
+bool nevent_object_schedule_pool_storage_bytes(size_t *) noexcept;
+// Caller outer includes the current observer EXACTLY ONCE plus all live inputs.
+// Retain admitted peak through return and refresh pool allowance on EVERY return,
+// including failure: configured chunk capacity belongs to the scheduler globally.
+// Reserves capacity only; no event acquisition/callback/UID/publication authority.
+bool nevent_reserve_object_schedule_slot_bounded(bool (*)(size_t, void *) noexcept, void *,
+						 size_t outer_live) noexcept;
 #endif /* _SOJ_EVENTS_H_ */

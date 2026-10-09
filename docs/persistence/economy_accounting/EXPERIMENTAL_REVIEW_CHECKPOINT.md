@@ -2385,3 +2385,16 @@ sites. Native tests stay batched. Coordinator checkpoint/successor registration/
 journal replacement and full warm/cold root/effect/placement joins remain unfinished;
 private predicates remain uncalled. Protected WIP, inactive/CLOSED accounting, coverage
 incomplete/release BLOCKED and primary ACTIVE goal persist; no completion claim.
+
+
+## Actual configured native event-pool reservation implemented - 2026-10-09
+
+[Owning source](NATIVE_EVENT_POOL_RESERVATION_2026-10-09.md) counts actual descriptor/
+pool-list node/pages/wheel/tail storage and admits exact configured mmap growth
+before the original nonfatal pool provider. No event or sequence acquired. Caller
+includes initial pool once and retains CURRENT capacity on every return. Independent
+RAW/final original-prefix/header-inverse/tokens/preprocessor PASS;931policies/395pins
+authenticate with zero new/unmapped sites. Native tests stay batched. Complete
+scheduler/diagnostic/output/service-step/root admission remains open; no bypass,
+stub or wholebudget claim. Inactive/CLOSED accounting, incomplete coverage/BLOCKED
+release, protected WIP and primary ACTIVE goal persist.
