@@ -12595,6 +12595,25 @@ bool quest_mobile_native_item_stage::restore_rebind_bounded(
 #endif
 }
 
+namespace
+{
+bool flat_private_malloc_request(const void *body, size_t &bytes) noexcept
+{
+	if (!body)
+		return true;
+#ifdef MEMCHK
+	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	if (header->body != body || !header->size || !cold_birth_add(bytes, header->size) ||
+	    !cold_birth_add(bytes, sizeof(ALLOCATION_HEADER)))
+		return false;
+	return true;
+#else
+	(void)bytes;
+	return false;
+#endif
+}
+}
 bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 	size_t *output) const noexcept
 {
@@ -12606,8 +12625,9 @@ bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 		return true;
 	}
 	const auto &s = *state_;
-	if (!s.bounded_cold_literal || s.flat_factory || s.flat_scope ||
-	    (s.object && s.published) || (!s.object && !s.published))
+	if ((!s.bounded_cold_literal && !s.flat_factory) ||
+	    (s.bounded_cold_literal && s.flat_factory) || (s.object && s.published) ||
+	    (!s.object && !s.published))
 		return false;
 	size_t bytes = sizeof(*this) + sizeof(implementation);
 	if (!cold_birth_rows(bytes, s.parsed_descriptions.capacity(), sizeof(extra_descr_data *)) ||
@@ -12616,15 +12636,59 @@ bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 	    !cold_birth_add(bytes, s.requested.capacity() / CHAR_BIT +
 					   bool(s.requested.capacity() % CHAR_BIT)))
 		return false;
+	if (s.flat_scope)
+	{
+		const size_t scope = s.flat_scope->retained_heap_bytes();
+		if (!scope || !cold_birth_add(bytes, scope))
+			return false;
+	}
 	if (s.zombie.game_ &&
 	    (!cold_birth_add(bytes, sizeof(ZombieGame)) ||
 	     !cold_birth_rows(bytes, s.zombie.game_->zombies.capacity(), sizeof(P_char))))
 		return false;
-	// Only the genuine successful original publication transfer consumes the
-	// private literal body. Raw strings/exdesc MEMCHK are still private before it;
-	// pooled slots/pages are always owned by the separately retained global pools.
-	if (s.object && !cold_birth_add(bytes, s.bounded_literal_raw_heap))
-		return false;
+	if (s.object)
+	{
+		if (s.bounded_cold_literal)
+		{
+			if (!cold_birth_add(bytes, s.bounded_literal_raw_heap))
+				return false;
+		}
+		else
+		{
+			// Actual canonical MEMCHK policy exposes the repository-owned request size,
+			// including native-created or mutated binary descriptions. No libc usable
+			// size or current strlen is substituted for original live allocation size.
+			if (s.object->name != s.shared[0] &&
+			    !flat_private_malloc_request(s.object->name, bytes))
+				return false;
+			if (s.object->short_description != s.shared[1] &&
+			    !flat_private_malloc_request(s.object->short_description, bytes))
+				return false;
+			if (s.object->description != s.shared[2] &&
+			    !flat_private_malloc_request(s.object->description, bytes))
+				return false;
+			if (s.object->action_description != s.shared[3] &&
+			    !flat_private_malloc_request(s.object->action_description, bytes))
+				return false;
+			const extra_descr_data *slow = s.object->ex_description,
+					       *fast = s.object->ex_description;
+			while (fast && fast->next)
+			{
+				slow = slow->next;
+				fast = fast->next->next;
+				if (slow == fast)
+					return false;
+			}
+			for (const auto *d = s.object->ex_description; d; d = d->next)
+				if (!flat_private_malloc_request(d, bytes) ||
+				    !flat_private_malloc_request(d->keyword, bytes) ||
+				    !flat_private_malloc_request(d->description, bytes))
+					return false;
+		}
+	}
+	// Pooled object/affect slots are covered by CURRENT shared pool observer.
+	// Only original genuine successful published/object-null cut transfers BODY
+	// out of private retention; metadata/scope/private game remain until release.
 	*output = bytes;
 	return true;
 }

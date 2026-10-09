@@ -1,4 +1,8 @@
 #include "world/zone_reset_room_publication.h"
+#include "player/inert_item_stage.h"
+#include "specs/specs.venthix.h"
+#include "net/comm.h"
+#include "world/world_activity.h"
 #include "world/handler.h"
 #include "persistence/economic_sql_zone_reset_item_transaction.h"
 #ifndef __NO_MYSQL__
@@ -55,6 +59,7 @@ struct zone_reset_room_publication_stage::implementation
 	bool cold_reconstruction = false, cold_forest_ready = false;
 	bool cold_pending = false, cold_pending_ready = false;
 	bool cold_present_ready = false;
+	bool cold_light_ready = false;
 	size_t cold_enrollment_next = 0;
 	zone_reset_original_room_placement_stage *original_placement = nullptr;
 };
@@ -3562,4 +3567,1262 @@ bool zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
 		return false;
 	}
 #endif
+}
+
+namespace
+{
+// The complete private candidate caller owns these actual globals ONCE in
+// outer. Native providers replace their subsets during each call. Between
+// calls, rebase the caller's historical prefix onto all CURRENT observers;
+// retained admission peaks never serve as a later callee's initial baseline.
+struct room_cold_current_globals
+{
+	size_t initial = 0;
+	static bool observe(size_t *output) noexcept
+	{
+		if (!output || !nevent_is_game_thread())
+			return false;
+		size_t bytes = 0, current = 0;
+		if (!native_mobile_birth_literal_pool_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !nevent_object_schedule_pool_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !nevent_native_reschedule_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !diagnostic_output_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !quest_mobile_native_zombie_registry_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !item_ownership_runtime_cache_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) || !world_activity_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current))
+			return false;
+		*output = bytes;
+		return true;
+	}
+	bool begin(size_t &outer, bool (*reserve)(size_t, void *) noexcept, void *context) noexcept
+	{
+		return reserve && observe(&initial) && outer >= initial &&
+		       room_prepare_add(outer, sizeof(*this)) && reserve(outer, context);
+	}
+	size_t current(size_t historical) const noexcept
+	{
+		size_t globals = 0;
+		if (historical < initial || !observe(&globals) ||
+		    !room_prepare_add(globals, historical - initial))
+			return SIZE_MAX;
+		return globals;
+	}
+};
+}
+
+bool zone_reset_room_publication_owner::read_cold_present_projection_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	zone_reset_room_publication_stage &stage, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, context))
+		return false;
+	if (!stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !nevent_is_game_thread() || !reserve || !lock.matches(selected_root) ||
+	    stage.state_->selected_root != selected_root || !stage.state_->cold_adoption ||
+	    !stage.state_->cold_shape || stage.state_->cold_reconstruction ||
+	    stage.state_->cold_pending ||
+	    receipt.operation_id.bytes != original.command.operation_id.bytes ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied) ||
+	    receipt.error_code || receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_RESULT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		auto &state = *stage.state_;
+		const size_t count = state.original.items.size();
+		if (!count || count > ITEM_TRANSFER_MAX_ITEMS || state.objects.size() != count ||
+		    state.stage_pointers.size() != count ||
+		    state.original.operation_id.bytes != original.command.operation_id.bytes ||
+		    state.original.expected_room_revision == UINT64_MAX ||
+		    receipt.durable_revision != state.original.expected_room_revision + 1)
+			return false;
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_cold_refresh_workspace)) ||
+		    !reserve(globals.current(live), context))
+			return false;
+		room_cold_refresh_workspace work;
+		if (critical_command_encode_bounded(state.cold_command, &work.command_a, reserve,
+						    context, globals.current(live)) !=
+			    critical_command_codec_result::ok ||
+		    !room_prepare_add(live, work.command_a.capacity()) ||
+		    critical_command_encode_bounded(original.command, &work.command_b, reserve,
+						    context, globals.current(live)) !=
+			    critical_command_codec_result::ok ||
+		    !room_prepare_add(live, work.command_b.capacity()) ||
+		    work.command_a != work.command_b)
+			return false;
+		size_t projection_heap = 0;
+		if (flatfile_zone_reset_item_publication_storage::read_locked_bounded(
+			    selected_root, lock, original, receipt, &work.projection, reserve,
+			    context, globals.current(live), &projection_heap) != 0 ||
+		    !room_prepare_add(live, projection_heap) ||
+		    work.projection.room.room_vnum != state.original.room_vnum ||
+		    work.projection.room.revision != receipt.durable_revision ||
+		    work.projection.custody.size() != count)
+			return false;
+		// The provider authenticates the WHOLE room and custody history. Select each
+		// original UID exactly once; prior unrelated room forests remain untouched.
+		if (!room_prepare_array(live, count, sizeof(player_item_snapshot)) ||
+		    !room_prepare_array(live, count, sizeof(player_load_item_identity)) ||
+		    !room_prepare_array(live, count, sizeof(item_ownership_runtime_entry)))
+			return false;
+		for (const auto &item : state.original.items)
+		{
+			size_t heap = 0;
+			if (!room_snapshot_fresh_heap(item, &heap) || !room_prepare_add(live, heap))
+				return false;
+		}
+		if (!reserve(globals.current(live), context))
+			return false;
+		work.ordered.owner = { item_owner_type::room,
+				       static_cast<uint64_t>(state.original.room_vnum), 0 };
+		work.ordered.owner_revision = work.projection.room.revision;
+		work.ordered.items.reserve(count);
+		work.ordered.identities.reserve(count);
+		work.custody.reserve(count);
+		for (size_t at = 0; at < count; ++at)
+		{
+			const auto &item = state.original.items[at];
+			const size_t row =
+				room_uid_index(work.projection.room.items, item.object_uid);
+			if (room_uid_index(state.original.items, item.object_uid) != at ||
+			    row == SIZE_MAX ||
+			    !room_same_item_bounded(work.projection.room.items[row], item, reserve,
+						    context, globals.current(live)))
+				return false;
+			size_t match = SIZE_MAX;
+			for (size_t i = 0; i < work.projection.custody.size(); ++i)
+				if (work.projection.custody[i].item_uid == item.object_uid)
+				{
+					if (match != SIZE_MAX)
+						return false;
+					match = i;
+				}
+			if (match == SIZE_MAX || item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(at))
+				return false;
+			const auto &identity = work.projection.custody[match];
+			const uint64_t parent =
+				item.parent_index < 0 ?
+					0 :
+					state.original.items[item.parent_index].object_uid;
+			if (identity.root_item_uid != state.original.items[0].object_uid ||
+			    identity.parent_item_uid != parent || identity.item_revision != 1 ||
+			    identity.vnum != item.vnum ||
+			    identity.state != item_custody_state::active ||
+			    !item_owner_identity_equal(identity.owner, work.ordered.owner))
+				return false;
+			// Only actual DTO temporaries overlap these three non-growing pushes.
+			size_t row_live = live;
+			if (!room_prepare_add(row_live, sizeof(player_load_item_identity)) ||
+			    !room_prepare_add(row_live, sizeof(item_ownership_runtime_entry)) ||
+			    !reserve(row_live, context))
+				return false;
+			player_load_item_identity projected{};
+			projected.item_uid = identity.item_uid;
+			projected.root_item_uid = identity.root_item_uid;
+			projected.parent_item_uid = identity.parent_item_uid;
+			projected.owner = identity.owner;
+			projected.item_revision = identity.item_revision;
+			projected.owner_revision = work.ordered.owner_revision;
+			projected.state = identity.state;
+			work.ordered.items.push_back(item);
+			work.ordered.identities.push_back(projected);
+			work.custody.push_back(
+				{ identity.item_uid, identity.root_item_uid,
+				  identity.parent_item_uid, identity.owner, identity.item_revision,
+				  work.ordered.owner_revision, item.vnum, identity.state });
+		}
+		// Preserved inline-text census allowance precedes nonthrowing transfer.
+		for (const auto &item : work.ordered.items)
+			if (!room_snapshot_inline_census(item, live))
+				return false;
+		if (!lock.matches(selected_root) || !reserve(globals.current(live), context))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<sql_room_item_graph>);
+		state.graph = std::move(work.ordered);
+		state.custody = std::move(work.custody);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+// The native registry already owns this persistent union. Owning union leaf
+// needs its CURRENT baseline in outer for allocation overlap; strip precisely
+// that same CURRENT heap before relaying scratch to the registry aggregate.
+struct room_rooted_union_budget
+{
+	const std::unordered_set<uint64_t> &values;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	static bool admit(size_t bytes, void *opaque) noexcept
+	{
+		auto *self = static_cast<room_rooted_union_budget *>(opaque);
+		size_t current = 0;
+		return self && self->reserve && room_union_heap(self->values, current) &&
+		       bytes >= current && self->reserve(bytes - current, self->context);
+	}
+};
+#endif
+}
+
+bool zone_reset_room_publication_owner::reserve_rooted_flat_consume_bounded(
+	zone_reset_room_publication_stage &stage, const std::unordered_set<uint64_t> &published,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    stage.state_->consumed || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer_live, heap = 0;
+	if (!room_prepare_add(live, sizeof(room_rooted_union_budget)) ||
+	    !room_union_heap(stage.state_->next_published, heap) || !reserve(live, context) ||
+	    !room_prepare_add(live, heap))
+		return false;
+	room_rooted_union_budget budget{ stage.state_->next_published, reserve, context };
+	return reserve_warm_consume_bounded(stage, published, room_rooted_union_budget::admit,
+					    &budget, live);
+#endif
+}
+
+bool zone_reset_room_publication_owner::place_warm_bounded(zone_reset_room_publication_stage &stage,
+							   quest_mobile_native_item_effect &effect,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept
+{
+	if (!reserve || !stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !stage.state_->original_placement ||
+	    !verify_warm_flat_current_bounded(stage, reserve, context, outer_live))
+		return false;
+	auto &state = *stage.state_;
+	if (state.placed || state.placement_started || state.placement_returned)
+		return false;
+	size_t live = outer_live;
+	if (!room_prepare_add(live, sizeof(quest_mobile_native_item_progress)) ||
+	    !reserve(live, context))
+		return false;
+	for (auto *factory : state.stage_pointers)
+	{
+		quest_mobile_native_item_progress progress{};
+		if (!factory || !factory->read_progress(&progress) || !progress.admitted ||
+		    !progress.published || progress.current_step_started ||
+		    progress.next_step != factory->publication_step_count())
+			return false;
+	}
+	const bool placed =
+		state.original_placement->place_bounded(effect, reserve, context, outer_live);
+	// Real returned markers precede every post-effect proof/census/callback.
+	// Original handler consumed its private witness before its genuine native tail.
+	state.placement_started = effect.started;
+	state.placement_returned = effect.returned;
+	if (placed && effect.started && effect.returned && effect.succeeded)
+		state.placed = true;
+	return placed;
+}
+
+namespace
+{
+struct room_rooted_stage_budget
+{
+	const quest_mobile_native_item_stage &stage;
+	bool (*measure)(const quest_mobile_native_item_stage &, size_t *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	static bool admit(size_t bytes, void *opaque) noexcept
+	{
+		auto *self = static_cast<room_rooted_stage_budget *>(opaque);
+		size_t current = 0;
+		return self && self->measure && self->reserve &&
+		       self->measure(self->stage, &current) && bytes >= current &&
+		       self->reserve(bytes - current, self->context);
+	}
+};
+}
+
+bool zone_reset_room_publication_owner::rebuild_enrollment_bounded(
+	zone_reset_room_publication_stage &stage, size_t at,
+	const quest_mobile_native_item_progress &progress,
+	const std::span<const quest_mobile_native_item_effect> &effects,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !stage.state_->consumed || at >= stage.state_->stage_pointers.size())
+		return false;
+	auto &state = *stage.state_;
+	auto *factory = state.stage_pointers[at];
+	if (!factory)
+		return false;
+	size_t live = outer_live, metadata = 0;
+	if (!room_prepare_add(live, sizeof(room_rooted_stage_budget)) ||
+	    !factory->retained_bytes_excluding_literal_pools(&metadata) ||
+	    !reserve(live, context) || !room_prepare_add(live, metadata))
+		return false;
+	// Genuine DB replay owns CURRENT stage in each callee prefix. Native registry
+	// already owns it, so strip that SAME current value before root scratch census.
+	room_rooted_stage_budget budget{
+		*factory, [](const quest_mobile_native_item_stage &value, size_t *bytes) noexcept
+		{ return value.retained_bytes_excluding_literal_pools(bytes); }, reserve, context
+	};
+	return factory->rebuild_enrollment_bounded(
+		state.objects[at], state.original.recipes[state.original_indices[at]], progress,
+		effects, room_rooted_stage_budget::admit, &budget, live);
+}
+
+bool zone_reset_room_publication_owner::restore_original_missing_forest_bounded(
+	zone_reset_room_publication_stage &held, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, context))
+		return false;
+	if (!held.state_ || !reserve || !nevent_is_game_thread() || !held.state_->warm ||
+	    !held.state_->flat_backend || !held.state_->cold_reconstruction ||
+	    !held.state_->cold_shape || persistence_mode_requires_mysql())
+		return false;
+	auto &state = *held.state_;
+	if (state.cold_forest_ready)
+		return true;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		for (size_t at = 0; at < state.original.items.size(); ++at)
+		{
+			if (!state.stages[at])
+			{
+				size_t create_live = outer_live;
+				if (!room_prepare_add(create_live,
+						      sizeof(quest_mobile_native_item_stage)) ||
+				    !reserve(globals.current(create_live), context))
+					return false;
+				state.stages[at] =
+					std::make_unique<quest_mobile_native_item_stage>();
+				// Handle is now rooted in the original publication metadata census.
+				if (!reserve(globals.current(outer_live), context))
+					return false;
+			}
+			auto &factory = *state.stages[at];
+			if (factory.empty())
+			{
+				size_t literal_heap = 0, restore_live = outer_live;
+				if (!room_snapshot_fresh_heap(state.original.items[at],
+							      &literal_heap) ||
+				    !room_prepare_add(restore_live, sizeof(player_item_snapshot)) ||
+				    !room_prepare_add(restore_live, literal_heap) ||
+				    !reserve(globals.current(restore_live), context))
+					return false;
+				auto literal = state.original.items[at];
+				literal.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				literal.equipment_slot = 0;
+				const auto &recipe = state.original.recipes[at];
+				// Same original frozen-body fallback sequence. A real retained
+				// partial restore prevents trying a different body/predecessor path.
+				const bool restored =
+					quest_mobile_native_item_stage::restore_bounded(
+						literal, recipe, &factory, reserve, context,
+						globals.current(restore_live)) ||
+					(factory.empty() &&
+					 quest_mobile_native_item_stage::restore_bound_bounded(
+						 literal, recipe, &factory, reserve, context,
+						 globals.current(restore_live))) ||
+					(factory.empty() &&
+					 quest_mobile_native_item_stage::restore_rebind_bounded(
+						 literal, recipe, &factory, reserve, context,
+						 globals.current(restore_live)));
+				if (!reserve(globals.current(restore_live), context) || !restored)
+					return false;
+			}
+			size_t progress_live = outer_live;
+			if (!room_prepare_add(progress_live,
+					      sizeof(quest_mobile_native_item_progress)) ||
+			    !reserve(globals.current(progress_live), context))
+				return false;
+			P_obj object = factory.object();
+			quest_mobile_native_item_progress progress{};
+			if (!object || object->obj_uid != state.original.items[at].object_uid ||
+			    object->next || object->prev || object->contains ||
+			    object->next_content || object->loc_p != LOC_NOWHERE ||
+			    object->loc.room != NOWHERE || !factory.read_progress(&progress) ||
+			    progress.admitted || progress.published || progress.next_step ||
+			    progress.current_step_started)
+				return false;
+			state.objects[at] = object;
+			state.stage_pointers[at] = &factory;
+		}
+		size_t topology_live = outer_live;
+		if (!room_prepare_add(topology_live, sizeof(std::vector<P_obj>)) ||
+		    !room_prepare_array(topology_live, state.objects.size(), sizeof(P_obj)) ||
+		    !reserve(globals.current(topology_live), context))
+			return false;
+		std::vector<P_obj> tails(state.objects.size(), nullptr);
+		// Exact original cold child order. No obj_to_obj callbacks, weight
+		// mutation, load decisions, construction or source/RNG is replayed.
+		for (size_t at = 1; at < state.objects.size(); ++at)
+		{
+			const auto parent =
+				static_cast<size_t>(state.original.items[at].parent_index);
+			P_obj object = state.objects[at], container = state.objects[parent];
+			object->loc_p = LOC_INSIDE;
+			object->loc.inside = container;
+			if (tails[parent])
+				tails[parent]->next_content = object;
+			else
+				container->contains = object;
+			tails[parent] = object;
+		}
+		state.cold_forest_ready = true;
+		return reserve(globals.current(topology_live), context);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+struct room_cold_adoption_workspace
+{
+	zone_reset_item_recovery_context recovery;
+	std::span<const uint8_t> attachment;
+	std::vector<uint8_t> seen;
+	std::span<const quest_mobile_native_item_effect> effects_view;
+	quest_mobile_native_item_progress progress{};
+	zone_reset_room_placement_recipe recorded{};
+};
+}
+
+bool zone_reset_room_publication_owner::prepare_original_completed_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &envelope, const critical_completion &receipt,
+	zone_reset_room_publication_stage &held, bool (*reserve)(size_t, void *) noexcept,
+	void *budget_context, size_t outer_live) noexcept
+{
+	// Same original complete terminal predicate, with real prospective decoder.
+	return zone_reset_item_recovery_publication_bounded(envelope, receipt, reserve,
+							    budget_context, outer_live) &&
+	       prepare_original_present_flat_locked_bounded(selected_root, lock, envelope, receipt,
+							    held, nullptr, reserve, budget_context,
+							    outer_live);
+}
+
+bool zone_reset_room_publication_owner::prepare_original_present_prefix_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &envelope, const critical_completion &receipt,
+	zone_reset_room_publication_stage &held,
+	zone_reset_original_room_placement_stage *placement,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	return zone_reset_item_recovery_valid_bounded(envelope, reserve, budget_context,
+						      outer_live) &&
+	       prepare_original_present_flat_locked_bounded(selected_root, lock, envelope, receipt,
+							    held, placement, reserve,
+							    budget_context, outer_live);
+}
+
+bool zone_reset_room_publication_owner::prepare_original_present_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &envelope, const critical_completion &receipt,
+	zone_reset_room_publication_stage &held,
+	zone_reset_original_room_placement_stage *placement,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, budget_context))
+		return false;
+	if ((held.state_ && (held.state_->cold_reconstruction || held.state_->cold_pending)) ||
+	    !reserve || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    !lock.matches(selected_root) ||
+	    !zone_reset_item_recovery_valid_bounded(envelope, reserve, budget_context,
+						    globals.current(outer_live)))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		if (held.state_ && held.state_->cold_present_ready)
+			return held.state_->warm && held.state_->cold_adoption &&
+			       held.state_->flat_backend && !held.state_->cold_reconstruction &&
+			       !held.state_->cold_pending &&
+			       room_command_equal_bounded(held.state_->cold_command,
+							  envelope.command, reserve, budget_context,
+							  globals.current(outer_live)) &&
+			       refresh_cold_flat_locked_bounded(selected_root, lock, envelope,
+								receipt, held, reserve,
+								budget_context,
+								globals.current(outer_live)) &&
+			       reserve(globals.current(outer_live), budget_context);
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_cold_adoption_workspace)) ||
+		    !reserve(globals.current(live), budget_context))
+			return false;
+		room_cold_adoption_workspace work;
+		work.attachment = envelope.attachment;
+		size_t recovery_heap = 0;
+		if (zone_reset_item_recovery_decode_bounded(
+			    envelope.command, work.attachment, &work.recovery, reserve,
+			    budget_context, globals.current(live),
+			    &recovery_heap) != economic_accounting_error::ok ||
+		    !room_prepare_add(live, recovery_heap) || !work.recovery.receipt_present ||
+		    !prepare_cold_shape_bounded(selected_root, envelope, held, reserve,
+						budget_context, globals.current(live)))
+			return false;
+		auto &state = *held.state_;
+		const auto &original = state.original;
+		const auto &recovery = work.recovery;
+		if (original.items.empty() || recovery.items.size() != original.items.size())
+			return false;
+		const auto completed = [](const zone_reset_item_recovery_action &action)
+		{ return action.started && action.returned && action.succeeded; };
+		if (!completed(recovery.whole_binding) || !completed(recovery.batch_publication) ||
+		    (recovery.room_placement.started && !completed(recovery.room_placement)) ||
+		    (!completed(recovery.room_placement) &&
+		     (!placement || !original.placement || original.placement->fall_selected)))
+			return false;
+		for (size_t at = 0; at < recovery.items.size(); ++at)
+		{
+			const auto &item = recovery.items[at];
+			if (item.object_uid != original.items[at].object_uid || !item.admitted ||
+			    !item.published || item.current_step_started ||
+			    item.effects.size() != original.recipes[at].libraries.size() * 2 + 3)
+				return false;
+			for (size_t step = 0; step < item.effects.size(); ++step)
+			{
+				const auto &effect = item.effects[step];
+				if (step < item.next_step ? (!effect.started || !effect.returned ||
+							     !effect.succeeded) :
+							    (effect.started || effect.returned ||
+							     effect.succeeded || effect.periodic))
+					return false;
+			}
+		}
+		if (!room_command_equal_bounded(state.cold_command, envelope.command, reserve,
+						budget_context, globals.current(live)) ||
+		    !read_cold_present_projection_bounded(selected_root, lock, envelope, receipt,
+							  held, reserve, budget_context,
+							  globals.current(live)))
+			return false;
+		// Authenticate every actual selected native lifetime BEFORE dereferencing.
+		// Observed partial metadata never licenses missing-body reconstruction.
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		if (!room_prepare_add(live, original.items.size()) ||
+		    !reserve(globals.current(live), budget_context))
+			return false;
+		work.seen.resize(original.items.size(), 0);
+		P_obj previous = nullptr;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (object->prev != previous)
+				return false;
+			previous = object;
+			for (size_t at = 0; at < original.items.size(); ++at)
+				if (object->obj_uid == original.items[at].object_uid)
+				{
+					if (work.seen[at] ||
+					    (state.objects[at] && state.objects[at] != object))
+						return false;
+					work.seen[at] = 1;
+					state.objects[at] = object;
+				}
+		}
+		if (std::find(work.seen.begin(), work.seen.end(), 0) != work.seen.end())
+			return false;
+		state.consumed = true;
+		state.placed = completed(recovery.room_placement);
+		if (!reserve(globals.current(live), budget_context) ||
+		    !verify_warm_flat_current_bounded(held, reserve, budget_context,
+						      globals.current(live)) ||
+		    !refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt, held,
+						      reserve, budget_context,
+						      globals.current(live)))
+			return false;
+		state.admitted = true;
+		state.placement_started = recovery.room_placement.started;
+		state.placement_returned = recovery.room_placement.returned;
+		for (size_t at = 0; at < original.items.size(); ++at)
+		{
+			if (!state.stages[at])
+			{
+				size_t create_live = live;
+				if (!room_prepare_add(create_live,
+						      sizeof(quest_mobile_native_item_stage)) ||
+				    !reserve(globals.current(create_live), budget_context))
+					return false;
+				state.stages[at] =
+					std::make_unique<quest_mobile_native_item_stage>();
+				if (!reserve(globals.current(live), budget_context))
+					return false;
+			}
+			if (state.stages[at]->empty())
+			{
+				const auto &saved = recovery.items[at];
+				work.progress = { saved.next_step, false, saved.admitted,
+						  saved.published };
+				// Use a fresh exact-sized effect vector per row; prior row allocation is
+				// destroyed before the next row, preserving full prospective growth.
+				size_t effects_live = live;
+				if (!room_prepare_add(effects_live,
+						      sizeof(quest_mobile_native_item_effect)) ||
+				    !room_prepare_add(
+					    effects_live,
+					    sizeof(std::vector<quest_mobile_native_item_effect>)) ||
+				    !room_prepare_array(effects_live, saved.effects.size(),
+							sizeof(quest_mobile_native_item_effect)) ||
+				    !reserve(globals.current(effects_live), budget_context))
+					return false;
+				std::vector<quest_mobile_native_item_effect> effects;
+				effects.reserve(saved.effects.size());
+				for (const auto &effect : saved.effects)
+					effects.push_back({ effect.started, effect.returned,
+							    effect.succeeded, effect.periodic });
+				work.effects_view = effects;
+				const bool adopted =
+					quest_mobile_native_item_stage::adopt_published_bounded(
+						original.items[at], original.recipes[at],
+						state.objects[at], work.progress, work.effects_view,
+						state.stages[at].get(), reserve, budget_context,
+						globals.current(effects_live));
+				// Actual partial adoption stays rooted before any fallible post-call census.
+				if (!reserve(globals.current(effects_live), budget_context) ||
+				    !adopted)
+					return false;
+			}
+			state.stage_pointers[at] = state.stages[at].get();
+			work.progress = {};
+			if (!state.stage_pointers[at]->read_progress(&work.progress) ||
+			    !work.progress.admitted || !work.progress.published ||
+			    work.progress.current_step_started ||
+			    work.progress.next_step != recovery.items[at].next_step)
+				return false;
+		}
+		if (!state.placed)
+		{
+			if (!placement->recipe(&work.recorded))
+			{
+				if (!zone_reset_original_room_placement_stage::restore(
+					    *state.original.placement, state.objects[0],
+					    state.original.reset_source, placement))
+					return false;
+			}
+			else if (work.recorded != *state.original.placement)
+				return false;
+			if (!placement->matches_source(state.original.reset_source))
+				return false;
+			state.original_placement = placement;
+		}
+		if (!state.bookkeeping_published)
+		{
+			size_t heap = 0;
+			if (!room_union_heap(state.next_published, heap))
+				return false;
+			size_t fixed = globals.current(live);
+			if (!room_prepare_add(fixed, sizeof(room_rooted_union_budget)) ||
+			    !room_prepare_add(fixed, sizeof(room_union_workspace)) ||
+			    !room_prepare_add(fixed, sizeof(room_union_live)) ||
+			    !room_prepare_add(fixed, sizeof(std::pair<bool, size_t>)) ||
+			    !reserve(fixed, budget_context))
+				return false;
+			room_rooted_union_budget parent_budget{ state.next_published, reserve,
+								budget_context };
+			size_t union_live = fixed;
+			if (!room_prepare_add(union_live, heap) ||
+			    !room_rooted_union_budget::admit(union_live, &parent_budget))
+				return false;
+			room_union_workspace union_work;
+			room_union_live union_budget{ state.next_published, fixed };
+			for (const auto &item : state.graph.items)
+				if (!room_union_insert_bounded(
+					    state.next_published, item.object_uid, union_work,
+					    union_budget, room_rooted_union_budget::admit,
+					    &parent_budget))
+					return false;
+		}
+		if (!lock.matches(selected_root) ||
+		    !refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt, held,
+						      reserve, budget_context,
+						      globals.current(live)) ||
+		    !verify_warm_flat_current_bounded(held, reserve, budget_context,
+						      globals.current(live)))
+			return false;
+		state.cold_present_ready = true;
+		return reserve(globals.current(live), budget_context) &&
+		       lock.matches(selected_root);
+	}
+	catch (...)
+	{
+		(void)reserve(globals.current(outer_live), budget_context);
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+struct room_cold_missing_workspace
+{
+	zone_reset_item_recovery_context recovery;
+	std::span<const uint8_t> attachment;
+	std::span<quest_mobile_native_item_stage *> bindings_view;
+	std::span<const quest_mobile_native_item_effect> effects_view;
+	quest_mobile_native_item_progress progress{};
+	zone_reset_room_placement_recipe recorded{};
+};
+}
+
+bool zone_reset_room_publication_owner::prepare_original_pending_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &envelope, const critical_completion &receipt,
+	zone_reset_room_publication_stage &held,
+	zone_reset_original_room_placement_stage *placement,
+	std::unordered_set<uint64_t> &published,
+	bool (*bindings)(const std::span<quest_mobile_native_item_stage *> &, void *,
+			 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+	void *binding_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, budget_context))
+		return false;
+	if (!placement || !bindings || !reserve || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql() || !lock.matches(selected_root) ||
+	    !zone_reset_item_recovery_valid_bounded(envelope, reserve, budget_context,
+						    globals.current(outer_live)))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		if (held.state_ && held.state_->cold_pending_ready)
+			return held.state_->flat_backend && held.state_->cold_pending &&
+			       room_command_equal_bounded(held.state_->cold_command,
+							  envelope.command, reserve, budget_context,
+							  globals.current(outer_live)) &&
+			       refresh_cold_flat_locked_bounded(selected_root, lock, envelope,
+								receipt, held, reserve,
+								budget_context,
+								globals.current(outer_live)) &&
+			       reserve(globals.current(outer_live), budget_context);
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_cold_missing_workspace)) ||
+		    !reserve(globals.current(live), budget_context))
+			return false;
+		room_cold_missing_workspace work;
+		work.attachment = envelope.attachment;
+		size_t recovery_heap = 0;
+		if (zone_reset_item_recovery_decode_bounded(
+			    envelope.command, work.attachment, &work.recovery, reserve,
+			    budget_context, globals.current(live),
+			    &recovery_heap) != economic_accounting_error::ok ||
+		    !room_prepare_add(live, recovery_heap) || !work.recovery.receipt_present ||
+		    !prepare_cold_shape_bounded(selected_root, envelope, held, reserve,
+						budget_context, globals.current(live)))
+			return false;
+		auto &state = *held.state_;
+		const auto &recovery = work.recovery;
+		const auto &original = state.original;
+		if ((!recovery.room_placement.succeeded &&
+		     (!original.placement || original.placement->fall_selected)) ||
+		    (recovery.whole_binding.started &&
+		     (!recovery.whole_binding.returned || !recovery.whole_binding.succeeded)) ||
+		    (recovery.batch_publication.started &&
+		     (!recovery.batch_publication.returned ||
+		      !recovery.batch_publication.succeeded)) ||
+		    (recovery.room_placement.started &&
+		     (!recovery.room_placement.returned || !recovery.room_placement.succeeded)))
+			return false;
+		for (const auto &item : recovery.items)
+		{
+			if (item.current_step_started)
+				return false;
+			for (size_t step = 0; step < item.effects.size(); ++step)
+			{
+				const auto &effect = item.effects[step];
+				if (step < item.next_step ? (!effect.started || !effect.returned ||
+							     !effect.succeeded) :
+							    (effect.started || effect.returned ||
+							     effect.succeeded || effect.periodic))
+					return false;
+			}
+		}
+		if (!state.cold_pending)
+		{
+			if (!state.warm || !state.flat_backend || !state.cold_adoption ||
+			    !state.cold_shape || state.admitted || state.consumed || state.placed ||
+			    state.cold_reconstruction ||
+			    !room_command_equal_bounded(state.cold_command, envelope.command,
+							reserve, budget_context,
+							globals.current(live)))
+				return false;
+			for (const auto &factory : state.stages)
+				if (factory && !factory->empty())
+					return false;
+			for (const P_obj object : state.objects)
+				if (object)
+					return false;
+			if (!room_absent_native(state.original.items))
+				return false;
+			state.cold_pending = true;
+			state.cold_reconstruction = true;
+		}
+		if (!room_command_equal_bounded(state.cold_command, envelope.command, reserve,
+						budget_context, globals.current(live)) ||
+		    !refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt, held,
+						      reserve, budget_context,
+						      globals.current(live)) ||
+		    !reserve(globals.current(live), budget_context) ||
+		    !restore_original_missing_forest_bounded(held, reserve, budget_context,
+							     globals.current(live)) ||
+		    !refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt, held,
+						      reserve, budget_context,
+						      globals.current(live)))
+			return false;
+		work.bindings_view = state.stage_pointers;
+		const bool bound = bindings(work.bindings_view, binding_context, reserve,
+					    budget_context, globals.current(live));
+		if (!reserve(globals.current(live), budget_context) || !bound ||
+		    !lock.matches(selected_root))
+			return false;
+		if (recovery.batch_publication.succeeded)
+		{
+			// Rebuild actual current publication from authentic recorded success,
+			// without issuing the original batch action again to the journal driver.
+			if (!state.consumed)
+			{
+				if (!retain_admitted(held))
+					return false;
+				const bool reserved = reserve_rooted_flat_consume_bounded(
+					held, published, reserve, budget_context,
+					globals.current(live));
+				if (!reserve(globals.current(live), budget_context) || !reserved ||
+				    !lock.matches(selected_root))
+					return false;
+				const bool consumed = consume_bounded(held, &published, reserve,
+								      budget_context,
+								      globals.current(live));
+				if (!reserve(globals.current(live), budget_context) || !consumed)
+					return false;
+			}
+			if (!lock.matches(selected_root) ||
+			    !verify_warm_flat_current_bounded(held, reserve, budget_context,
+							      globals.current(live)))
+				return false;
+			while (state.cold_enrollment_next < recovery.items.size())
+			{
+				const size_t at = state.cold_enrollment_next;
+				const auto &saved = recovery.items[at];
+				work.progress = { saved.next_step, saved.current_step_started,
+						  saved.admitted, saved.published };
+				size_t effects_live = live;
+				if (!room_prepare_add(effects_live,
+						      sizeof(quest_mobile_native_item_effect)) ||
+				    !room_prepare_add(
+					    effects_live,
+					    sizeof(std::vector<quest_mobile_native_item_effect>)) ||
+				    !room_prepare_array(effects_live, saved.effects.size(),
+							sizeof(quest_mobile_native_item_effect)) ||
+				    !reserve(globals.current(effects_live), budget_context))
+					return false;
+				std::vector<quest_mobile_native_item_effect> effects;
+				effects.reserve(saved.effects.size());
+				for (const auto &effect : saved.effects)
+					effects.push_back({ effect.started, effect.returned,
+							    effect.succeeded, effect.periodic });
+				work.effects_view = effects;
+				if (!lock.matches(selected_root))
+					return false;
+				const bool rebuilt = rebuild_enrollment_bounded(
+					held, at, work.progress, work.effects_view, reserve,
+					budget_context, globals.current(effects_live));
+				if (rebuilt)
+					++state.cold_enrollment_next; // Actual return recorded before fallible census.
+				if (!reserve(globals.current(effects_live), budget_context) ||
+				    !rebuilt)
+					return false;
+			}
+		}
+		if (recovery.room_placement.succeeded)
+		{
+			if (!lock.matches(selected_root) ||
+			    !place_cold_flat_bounded(held, reserve, budget_context,
+						     globals.current(live)) ||
+			    !verify_warm_flat_current_bounded(held, reserve, budget_context,
+							      globals.current(live)))
+				return false;
+			state.placement_started = recovery.room_placement.started;
+			state.placement_returned = recovery.room_placement.returned;
+		}
+		else
+		{
+			if (!placement->recipe(&work.recorded))
+			{
+				if (!zone_reset_original_room_placement_stage::restore(
+					    *state.original.placement, state.objects[0],
+					    state.original.reset_source, placement))
+					return false;
+			}
+			else if (work.recorded != *state.original.placement)
+				return false;
+			if (!placement->matches_source(state.original.reset_source))
+				return false;
+			state.original_placement = placement;
+		}
+		state.cold_pending_ready = true;
+		return refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt,
+							held, reserve, budget_context,
+							globals.current(live)) &&
+		       reserve(globals.current(live), budget_context) &&
+		       lock.matches(selected_root);
+	}
+	catch (...)
+	{
+		(void)reserve(globals.current(outer_live), budget_context);
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_room_publication_owner::prepare_original_reconstructed_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &envelope, const critical_completion &receipt,
+	zone_reset_room_publication_stage &held, std::unordered_set<uint64_t> &published,
+	bool (*bindings)(const std::span<quest_mobile_native_item_stage *> &, void *,
+			 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+	void *binding_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, budget_context))
+		return false;
+	if (!held.state_ || held.state_->cold_pending || !held.state_->warm ||
+	    !held.state_->flat_backend || !held.state_->cold_adoption || !held.state_->cold_shape ||
+	    !bindings || !reserve || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql() || !lock.matches(selected_root) ||
+	    !zone_reset_item_recovery_publication_bounded(
+		    envelope, receipt, reserve, budget_context, globals.current(outer_live)))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		auto &state = *held.state_;
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_cold_missing_workspace)) ||
+		    !reserve(globals.current(live), budget_context))
+			return false;
+		room_cold_missing_workspace work;
+		work.attachment = envelope.attachment;
+		size_t recovery_heap = 0;
+		if (!room_command_equal_bounded(state.cold_command, envelope.command, reserve,
+						budget_context, globals.current(live)) ||
+		    zone_reset_item_recovery_decode_bounded(
+			    envelope.command, work.attachment, &work.recovery, reserve,
+			    budget_context, globals.current(live),
+			    &recovery_heap) != economic_accounting_error::ok ||
+		    !room_prepare_add(live, recovery_heap) ||
+		    work.recovery.items.size() != state.original.items.size())
+			return false;
+		const auto &recovery = work.recovery;
+		if (!state.cold_reconstruction)
+		{
+			// A partial actual lifetime/adoption is retained and can never be replaced.
+			for (const auto &factory : state.stages)
+				if (factory && !factory->empty())
+					return false;
+			for (const P_obj object : state.objects)
+				if (object)
+					return false;
+			if (!room_absent_native(state.original.items))
+				return false;
+			state.cold_reconstruction = true;
+		}
+		if (!refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt, held,
+						      reserve, budget_context,
+						      globals.current(live)) ||
+		    !reserve(globals.current(live), budget_context) ||
+		    !restore_original_missing_forest_bounded(held, reserve, budget_context,
+							     globals.current(live)))
+			return false;
+		if (!state.consumed)
+		{
+			if (!refresh_cold_flat_locked_bounded(
+				    selected_root, lock, envelope, receipt, held, reserve,
+				    budget_context, globals.current(live)))
+				return false;
+			work.bindings_view = state.stage_pointers;
+			const bool bound = bindings(work.bindings_view, binding_context, reserve,
+						    budget_context, globals.current(live));
+			if (!reserve(globals.current(live), budget_context) || !bound ||
+			    !retain_admitted(held))
+				return false;
+			const bool reserved = reserve_rooted_flat_consume_bounded(
+				held, published, reserve, budget_context, globals.current(live));
+			if (!reserve(globals.current(live), budget_context) || !reserved ||
+			    !lock.matches(selected_root))
+				return false;
+			const bool consumed = consume_bounded(
+				held, &published, reserve, budget_context, globals.current(live));
+			if (!reserve(globals.current(live), budget_context) || !consumed)
+				return false;
+		}
+		for (size_t at = 0; at < recovery.items.size(); ++at)
+		{
+			const auto &saved = recovery.items[at];
+			work.progress = { saved.next_step, saved.current_step_started,
+					  saved.admitted, saved.published };
+			size_t effects_live = live;
+			if (!room_prepare_add(effects_live,
+					      sizeof(quest_mobile_native_item_effect)) ||
+			    !room_prepare_add(
+				    effects_live,
+				    sizeof(std::vector<quest_mobile_native_item_effect>)) ||
+			    !room_prepare_array(effects_live, saved.effects.size(),
+						sizeof(quest_mobile_native_item_effect)) ||
+			    !reserve(globals.current(effects_live), budget_context))
+				return false;
+			std::vector<quest_mobile_native_item_effect> effects;
+			effects.reserve(saved.effects.size());
+			for (const auto &effect : saved.effects)
+				effects.push_back({ effect.started, effect.returned,
+						    effect.succeeded, effect.periodic });
+			work.effects_view = effects;
+			if (!lock.matches(selected_root))
+				return false;
+			const bool rebuilt = rebuild_enrollment_bounded(
+				held, at, work.progress, work.effects_view, reserve, budget_context,
+				globals.current(effects_live));
+			if (!reserve(globals.current(effects_live), budget_context) || !rebuilt)
+				return false;
+		}
+		if (!lock.matches(selected_root) ||
+		    !place_cold_flat_bounded(held, reserve, budget_context,
+					     globals.current(live)) ||
+		    !verify_warm_flat_current_bounded(held, reserve, budget_context,
+						      globals.current(live)))
+			return false;
+		state.placement_started = recovery.room_placement.started;
+		state.placement_returned = recovery.room_placement.returned;
+		return lock.matches(selected_root) &&
+		       refresh_cold_flat_locked_bounded(selected_root, lock, envelope, receipt,
+							held, reserve, budget_context,
+							globals.current(live)) &&
+		       reserve(globals.current(live), budget_context);
+	}
+	catch (...)
+	{
+		(void)reserve(globals.current(outer_live), budget_context);
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_room_publication_owner::place_cold_flat_bounded(
+	zone_reset_room_publication_stage &held, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	room_cold_current_globals globals;
+	if (!globals.begin(outer_live, reserve, context))
+		return false;
+	if (!reserve || !held.state_ || !held.state_->warm || !held.state_->flat_backend ||
+	    !held.state_->cold_adoption || !held.state_->cold_reconstruction ||
+	    !verify_warm_flat_current_bounded(held, reserve, context, globals.current(outer_live)))
+		return false;
+	auto &state = *held.state_;
+	if (state.placed && state.cold_light_ready)
+		return true;
+	size_t live = outer_live;
+	if (!room_prepare_add(live, sizeof(quest_mobile_native_item_progress)) ||
+	    !room_prepare_add(live, sizeof(int)) || !reserve(globals.current(live), context))
+		return false;
+	if (!state.placed)
+	{
+		for (const auto *item : state.stage_pointers)
+		{
+			quest_mobile_native_item_progress progress{};
+			if (!item || !item->read_progress(&progress) || !progress.admitted ||
+			    !progress.published || progress.current_step_started ||
+			    progress.next_step != item->publication_step_count())
+				return false;
+		}
+		P_obj object = state.objects[0];
+		// Exact original persisted topology prepend, without reset/drop/coin/decay/fall.
+		object->loc_p = LOC_ROOM;
+		object->loc.room = state.room;
+		object->next_content = world[state.room].contents;
+		world[state.room].contents = object;
+		state.placed =
+			true; // Actual topology marker BEFORE the following fallible light phase.
+	}
+	P_obj object = state.objects[0];
+	if (IS_SET(object->extra_flags, ITEM_LIT) ||
+	    (object->type == ITEM_LIGHT && object->value[2] == -1))
+	{
+		int light = 0;
+		const bool observed =
+			zone_reset_original_room_placement_stage::current_light_bounded(
+				state.room, &light, reserve, context, globals.current(live));
+		if (observed)
+			state.cold_light_ready = true;
+		// A refusal retains placed=true and light_ready=false. Retry only unfinished
+		// current-light observation; it never prepends the actual forest again.
+		return reserve(globals.current(live), context) && observed;
+	}
+	state.cold_light_ready = true;
+	return reserve(globals.current(live), context);
+}
+
+// Private paired-pool census; selected only by the real registered pool owner.
+// Original retained_size and all ordinary SQL observers remain unchanged.
+bool zone_reset_room_publication_owner::retained_size_excluding_literal_pools(
+	const zone_reset_room_publication_stage &stage, size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	if (!stage.state_)
+	{
+		*output = 0;
+		return true;
+	}
+	const auto &state = *stage.state_;
+	// Warm factories remain counted exactly once by their original warm root.
+	// This measures the real publication metadata, not a second factory owner.
+	if (!state.warm || (!state.stages.empty() && !state.cold_adoption))
+		return false;
+	size_t bytes = sizeof(state);
+	const auto add = [&](size_t amount)
+	{
+		if (amount > CRITICAL_COORDINATOR_MAX_BYTES - bytes)
+			return false;
+		bytes += amount;
+		return true;
+	};
+	const auto array = [&](size_t count, size_t unit)
+	{ return (!unit || count <= CRITICAL_COORDINATOR_MAX_BYTES / unit) && add(count * unit); };
+	const auto text = [&](const std::string &value)
+	{ return value.capacity() != SIZE_MAX && add(value.capacity() + 1); };
+	const auto item = [&](const player_item_snapshot &value)
+	{
+		if (!text(value.name) || !text(value.short_description) ||
+		    !text(value.description) || !text(value.action_description) ||
+		    !array(value.dynamic_affects.capacity(),
+			   sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !array(value.extra_descriptions.capacity(),
+			   sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : value.extra_descriptions)
+			if (!text(description.keyword) || !text(description.description) ||
+			    !array(description.spell_ids.capacity(), sizeof(int32_t)))
+				return false;
+		return true;
+	};
+	const auto command = [&](const critical_command &value)
+	{
+		return array(value.payload.capacity(), 1) &&
+		       array(value.accounting_intent.capacity(), 1) &&
+		       array(value.keys.capacity(), sizeof(critical_entity_key)) &&
+		       array(value.expected_revisions.capacity(),
+			     sizeof(critical_expected_revision));
+	};
+	if ((state.selected_root.capacity() > 15 && !text(state.selected_root)) ||
+	    !array(state.factory_sources.capacity(), sizeof(economic_source_event)) ||
+	    !array(state.objects.capacity(), sizeof(P_obj)) ||
+	    !array(state.stage_pointers.capacity(), sizeof(quest_mobile_native_item_stage *)) ||
+	    !array(state.original_indices.capacity(), sizeof(size_t)) ||
+	    !array(state.custody.capacity(), sizeof(item_ownership_runtime_entry)) ||
+	    !array(state.stages.capacity(),
+		   sizeof(std::unique_ptr<quest_mobile_native_item_stage>)) ||
+	    !array(state.graph.items.capacity(), sizeof(player_item_snapshot)) ||
+	    !array(state.graph.identities.capacity(), sizeof(player_load_item_identity)) ||
+	    !array(state.original.items.capacity(), sizeof(player_item_snapshot)) ||
+	    !array(state.original.recipes.capacity(), sizeof(native_mobile_birth_item_recipe)) ||
+	    !array(state.original.coins.capacity(), sizeof(zone_reset_coin_output)) ||
+	    !array(state.cold_terminal.capacity(), 1) ||
+	    !array(state.cold_progress.capacity(), sizeof(quest_mobile_native_item_progress)) ||
+	    !array(state.cold_effects.capacity(),
+		   sizeof(std::vector<quest_mobile_native_item_effect>)))
+		return false;
+	// Warm borrowed stages remain in their actual root census. Cold adoption
+	// owns only these actual native metadata wrappers and their measured heaps.
+	for (const auto &factory : state.stages)
+		if (factory)
+		{
+			size_t retained = sizeof(*factory);
+			if ((!factory->empty() &&
+			     !factory->retained_bytes_excluding_literal_pools(&retained)) ||
+			    retained < sizeof(*factory) || !add(retained))
+				return false;
+		}
+	for (const auto &effects : state.cold_effects)
+		if (!array(effects.capacity(), sizeof(quest_mobile_native_item_effect)))
+			return false;
+	for (const auto &value : state.graph.items)
+		if (!item(value))
+			return false;
+	for (const auto &value : state.original.items)
+		if (!item(value))
+			return false;
+	for (const auto &value : state.original.recipes)
+		if (!array(value.libraries.capacity(), sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	if (state.cold_adoption && !command(state.cold_command))
+		return false;
+	if (state.graph.creation_origin && !command(state.graph.creation_origin->original))
+		return false;
+#ifdef __GLIBCXX__
+	if ((state.next_published.bucket_count() > 1 &&
+	     !array(state.next_published.bucket_count(), sizeof(void *))) ||
+	    !array(state.next_published.size(), sizeof(std::__detail::_Hash_node<uint64_t, false>)))
+		return false;
+#else
+	// The supported actual server allocator ABI is measured, never guessed.
+	if (!state.next_published.empty() || state.next_published.bucket_count() > 1)
+		return false;
+#endif
+	*output = bytes;
+	return true;
 }
