@@ -3,6 +3,7 @@
 #include "persistence/critical_command_journal.h"
 #include "economy/native_mobile_birth_recovery.h"
 #include "economy/native_mobile_birth_cash_role_command.h"
+#include "economy/zone_reset_item_command.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -159,7 +160,8 @@ bool native_command_valid(const critical_command &command)
 		  command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)) ||
 		(command.type == critical_command_type::auction && command.payload_version == 2) ||
 		(command.type == critical_command_type::zone_reset_item_birth &&
-		 command.payload_version == 1);
+		 (command.payload_version == ZONE_RESET_ITEM_PAYLOAD_VERSION ||
+		  command.payload_version == ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION));
 	return route && command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	       command.publication_required && critical_command_envelope_valid(command);
 }
