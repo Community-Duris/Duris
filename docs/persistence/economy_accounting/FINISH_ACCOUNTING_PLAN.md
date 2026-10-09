@@ -9842,3 +9842,15 @@ precise modification inverses/tokens/preprocessing passed; 931 policies/399 pins
 authenticate, zero new/unmapped sites. Full cold/pulse plus literal object/affect
 pool integration and native qualification stay open. Tests batched; inactive/CLOSED
 accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
+
+
+## Original frozen Zombie restoration admission implemented - 2026-10-09
+
+[Owning cold provider](COLD_ZOMBIE_RESTORE_ADMISSION_2026-10-09.md) preserves
+complete original off-state/UID/collision/reservation/ID guards and preadmits actual
+private-game plus reserve(n) old/new registry requests. Strong output/nonfallible
+ownership tail; current storage recounted every return. RAW/final source review/
+prefix/inverse/tokens/preprocessing passed; 931 policies/399 pins authenticate,
+zero new/unmapped sites. Full cold DB/four-route/pulse/recovery remains open;
+tests stay batched, inactive/CLOSED accounting, coverage incomplete, release
+BLOCKED and primary goal ACTIVE. No additional gate or full acceptance claim.
