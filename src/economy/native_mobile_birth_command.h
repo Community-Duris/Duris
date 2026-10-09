@@ -72,4 +72,25 @@ native_mobile_birth_command_decode(const critical_command &, quest_mobile_native
 				   std::vector<native_mobile_birth_item_recipe> *,
 				   quest_mobile_native_constructor_recipe *) noexcept;
 
+// Prospective v3 companions for aggregate caller-owned scratch admission.
+// Inputs, prior outputs and caller inline output objects belong to outer_live;
+// reserve observes absolute simultaneous object/request bytes and must retain
+// the admitted maximum through output transfer. Supported requests require
+// GCC13 libstdc++ C++11 ABI; unsupported policy refuses without mutation.
+// These structural codecs grant no source, factory, execution or ACK authority.
+economic_accounting_error native_mobile_birth_command_build_bounded(
+	const economic_operation_metadata &, const quest_mobile_native_image &,
+	const std::span<const native_mobile_birth_item_recipe> &,
+	const quest_mobile_native_constructor_recipe &, critical_source_site,
+	uint64_t accepted_at_usec, critical_command *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+// Requires genuine v3. Optional scalars are exact transferred heap requests,
+// excluding caller inline image/recipe-vector objects; all outputs are strong.
+economic_accounting_error native_mobile_birth_command_decode_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, quest_mobile_native_constructor_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_image_heap_bytes = nullptr,
+	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
+
 #endif
