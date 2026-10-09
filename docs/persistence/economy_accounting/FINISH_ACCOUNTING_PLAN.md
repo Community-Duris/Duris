@@ -8340,3 +8340,19 @@ compiler/full journal/coordinator budget and real ROOM warm/cold publication/
 terminal/checkpoint/ACK qualification remain open. No plan or release completion
 is claimed. Accounting inactive/admission CLOSED, coverage incomplete/release
 BLOCKED, preserved unrelated WIP and primary goal ACTIVE remain.
+
+
+## Complete native birth command codec source joined - 2026-10-09
+
+[The command source handoff](NATIVE_BIRTH_COMMAND_ADMISSION_2026-10-09.md)
+joins four real bounded v3/v4 ordinary/shared-SHOP build/decode definitions to
+published constructor/image/intent providers. Full original outer/inner binding,
+constructor/recipe/image, genuine rebuild and canonical equality proofs remain
+required. Actual caller/request/old-output/transfer peaks are prospective; both
+original full C prefixes and header inverses authenticate. Independent raw/final
+source review and token/preprocessor checks PASS. All 931 policies/393 pins and
+zero new/unmapped sites retain scope. Native builds/tests remain deferred.
+Compiler/result/recovery/full mixed-journal/coordinator and actual ROOM warm/cold
+publication/terminal/checkpoint/ACK qualification remain open. No plan or release
+completion is claimed; accounting inactive/admission CLOSED, coverage incomplete/
+release BLOCKED, protected WIP and primary goal ACTIVE persist.

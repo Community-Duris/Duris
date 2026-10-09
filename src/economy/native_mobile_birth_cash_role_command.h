@@ -26,4 +26,21 @@ native_mobile_birth_cash_role_command_decode(const critical_command &, quest_mob
 					     std::vector<native_mobile_birth_item_recipe> *,
 					     native_mobile_birth_cash_role_recipe *) noexcept;
 
+// Prospective v4 companions retain full original outer/inner intent and
+// canonical rebuild proof. Inputs, prior outputs and inline outputs belong to
+// outer_live; caller retains the admitted absolute simultaneous peak through
+// transfer. Supported request policy is GCC13 libstdc++ C++11 ABI. No authority.
+economic_accounting_error native_mobile_birth_cash_role_command_build_bounded(
+	const economic_operation_metadata &, const quest_mobile_native_image &,
+	const std::span<const native_mobile_birth_item_recipe> &,
+	const native_mobile_birth_cash_role_recipe &, critical_source_site,
+	uint64_t accepted_at_usec, critical_command *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_command_decode_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, native_mobile_birth_cash_role_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_image_heap_bytes = nullptr,
+	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
+
 #endif
