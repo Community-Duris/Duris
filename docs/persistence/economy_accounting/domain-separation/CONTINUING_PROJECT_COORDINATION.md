@@ -452,6 +452,87 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Temporary deferral repair and terminal-origin preparation reviewed - 2026-10-09
+
+Both finite private deliveries now PASS independent root review at declared
+source/metadata or acceptance-preparation scope. Neither is applied code,executed
+qualification,private implementation review or overall completion. F1 integration
+startup P1 and Smith missing-API P1 remain unresolved in maintained source.
+
+Architecture INITIAL_CODEC_TEMPORARY_DEFERRAL_REPAIR_RESERVATION_2026-10-09.txt:
+12,618 bytes,SHA25634cc9ac4f0ac2f8f7d5ed50bdc83d886fc0b53f389e5b665b371fa98781aa102.
+Exact PROPOSED.patch:7,535 bytes,SHA256
+85de521763abf7bab89bd506441c472b8c1c9debf047af0e08d145e9fa57f99a.
+Private directory:D:/Dev/Temp/initial-codec-temporary-deferral-repair-reservation-20261009/.
+Root authenticates13 indexed artifacts,eight raw public input providers/14 ranges,
+four sealed predecessor files and all four complete pre/post images. Five unified
+diff hunks reconstruct full postimages from exact context/removals/additions/counts;
+preimages and inverse identities agree. All eight inputs remain byte-identical at
+current3f8b6d2ef and proposed bases c994d3bf/b4965e22. No git apply/import occurred.
+
+Reviewed optional primary-owned correction reserves exactly four paths:
+
+- tests/regression_inventory.py:append temporary_deferral:bool=False after existing
+  dataclass fields;strictly reject non-bool marker and True unless manual/native.
+  Existing reason/discovery/profile/resource validation and select stay intact.
+- tests/run_integration_matrix.py:change only manual required-owner arm to
+  (manual AND NOT temporary_deferral);retain database/recovery and database
+  also_profiles arms,missing-cover refusal and validation-before-filter ordering.
+- tests/regression_manifest.json:mark only INITIAL script temporary_deferral=true;
+  retain manual=true and original estimates;readiness reason removes all THREE
+  manual,temporary_deferral,reason fields. Native qualification remains required.
+- tests/async/test_root_test_harness.py:extend existing coverage contract and add
+  focused default/invalid-placement/readiness assertions. No new script/fixture,
+  integration cover,compiler recipe,shared authority or native behavior changes.
+
+Root independently derives all complete owner sets and six profile selections.
+Before:only missing owner is INITIAL. Proposed:no missing owners;required set is
+exact original parent set. Every genuine owner survives,including manual native
+economic_restore_mobile_grammar;database/recovery/also-database cannot be exempted.
+All six selected sets remain exact.40 logical metadata combinations corroborate
+valid placement/default behavior;readiness removal restores INITIAL core/native
+selection. Keeping marker=True while removing manual fails validation. These are
+stdlib JSON/set/byte derivations,not execution of inventory/select/workload/tests.
+Prepared tests and actual Python import/syntax/matrix listing/native qualification
+are UNEXECUTED. Primary owns any maintained adoption/qualification;no adoption wait
+is imposed and the exact private optional patch is not committed here.
+
+Quest SHARED_CHECKPOINT_RETRY_TERMINAL_ORIGIN_ACCEPTANCE_DELTA_2026-10-09.txt:
+33,294 bytes,SHA25632eaafda072d5b86b023ac46bb62467dcb9479867b88262c7e8700c667e932d9.
+Root authenticates17 raw public providers/three preserved closed inputs and reads
+actual ordinary origin retain/read,original COMMIT/cleanup,passive duplicate replay,
+default ambiguous replacement,coordinator transfer/journal retirement and recovery
+contracts. Five incremental legal controls cover once-only original-time/passive
+retry,full-envelope versus command-only replay,immediate read-only uncertainty and
+later same-ID inbox fence,possible post-INSERT retention/COMMIT/retirement failures,
+and stale delivery versus legitimate later history. Original checkpoint bytes stay
+immutable;progress attachments and genuine new delivery diagnostics may evolve
+only under authentic successor/current-owner rules. No private offsets/API invented.
+
+Origin helper success/INSERT is not original COMMIT;idle or later rollback cannot
+settle an uncertain attempted COMMIT. Confirmed original transfer precedes exact
+journal retirement;both must succeed before carrier/fence release. Historical
+receipt precedes final current locks;bounded peek grants no final authority and
+legitimate later clocks require separate fresh role/world proof. Actual reported
+private ad42513/de2e35a5/corrected2dde3fbd/1c506593 remain uninspected. Legal real
+producer/passive-fault/worker/SQL/terminal/retirement exports are unavailable;
+all proposed native controls remain UNEXECUTED. Ordinary providers are precedent,
+not an accessible shared caller or flat counterpart.
+
+Current prioritized queue:both deliveries CLOSED;optional exact F1 correction
+available,actual adoption/qualification unknown. Reassess actual scheduler/manifest/
+test changes or new shared producer/coordinator/role cash/SHOP/custody/affects/world/
+ACK/origin/flat source/contracts and genuine legal phase exports. Complete transition
+budgets/integrated qualification stay primary/Plan5-owned. No independent fresh
+implementation seam on unchanged public inputs;preserve packets/worktrees/jobs and
+monitor events without repeating maps,inventories or filler assignments.
+Root proof:D:/Dev/Temp/coordinator-deferral-repair-terminal-origin-review-20261009/
+review.py,review.json,publish.py. Only coordinator-owned disposition docs publish;
+private notes/patch/preimages stay on D:. No repository imports,compiler/preprocessor,
+test/build/DB/gameplay execution. Actual root/native Goals remain BLOCKED/unfinished;
+finite reviews do not resume them. Heartbeat ACTIVE until broader published required
+Plans1-5/R1-R8/integrated qualification,blockers and owner completion audit passes.
+
 ## Concurrent private producer/worker/origin report; bounded follow-up - 2026-10-09
 
 Primary0ebbaf8e4f13c1664f7ffbee6682a01a0886a554 publishes a64-line source
