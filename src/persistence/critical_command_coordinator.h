@@ -330,6 +330,13 @@ struct critical_native_auction_recovery_validators
 // It runs under the coordinator mutex and must not call coordinator APIs.
 // The caller must pair it with an apply function supporting the same routes.
 using critical_extension_validator_fn = bool (*)(const critical_command &) noexcept;
+// Optional ROOM-only prospective companion, paired with the selected original
+// callback. Full absolute prefix is forwarded; reserve may run under the
+// coordinator mutex and must not acquire coordinator/journal locks. Other
+// command families remain outside this bounded companion's scope.
+using critical_extension_validator_bounded_fn = bool (*)(const critical_command &,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t) noexcept;
 
 bool critical_command_coordinator_init(
 	const char *journal_directory, critical_apply_fn apply, void *context,
@@ -343,7 +350,8 @@ bool critical_command_coordinator_init(
 	critical_native_auction_recovery_validators auction_validators = {},
 	critical_zone_reset_recovery_validators reset_validators = {},
 	critical_shared_native_apply_fn shared_native_apply = nullptr,
-	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr);
+	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr,
+	critical_extension_validator_bounded_fn extension_validator_bounded = nullptr);
 // Separate original owner capabilities: continuation owners cannot submit or
 // cross physical ACK. Opaque context carries no source/SQL/publication authority.
 // Only the original birth owner can cross this physical publication boundary.
@@ -459,6 +467,12 @@ class critical_zone_reset_item_publication_owner final
 	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
 					       uint64_t *, bool (*)(size_t, void *) noexcept,
 					       void *, size_t outer_live) noexcept;
+	// ROOM-only complete support proof through the bounded callback paired with
+	// the actually selected original admission callback. Pure same-lock proof;
+	// no admission, source, delivery, execution or activation authority.
+	static bool admission_supported_bounded(const critical_command &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t outer_live) noexcept;
 	// Original same-lock pending-publication/completed-cache receipt lookup.
 	// Actual binary-key string/lock storage is admitted before construction;
 	// fixed caller-owned output belongs to outer and remains unchanged on false.
