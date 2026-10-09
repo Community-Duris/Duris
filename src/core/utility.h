@@ -67,4 +67,14 @@ bool diagnostic_debug_bounded(bool (*)(size_t, void *) noexcept, void *, size_t,
 			      ...) noexcept __attribute__((format(printf, 4, 5)));
 bool diagnostic_logit_bounded(bool (*)(size_t, void *) noexcept, void *, size_t, const char *,
 			      const char *, ...) noexcept __attribute__((format(printf, 5, 6)));
+// Allocation-free owning profile for ORIGINAL logit, including original body
+// malloc, timestamp/va_list, parent-directory path and one-hop freed-body fallback.
+// Timestamp payload uses the ORIGINAL terminated tbuf fixed-buffer bound, valid
+// across clock changes. No logging/cache mutation. Strong output/unsupported refusal.
+// Caller preadmits preflight_object_bytes BEFORE this helper, owns input strings
+// and outer storage, and retains admitted original working peak through logit.
+size_t diagnostic_original_logit_preflight_object_bytes() noexcept;
+bool diagnostic_original_logit_working_bytes(const char *, size_t *, const char *, ...) noexcept
+	__attribute__((format(printf, 3, 4)));
+
 #endif // _UTILITY_H_
