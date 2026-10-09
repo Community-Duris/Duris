@@ -796,22 +796,23 @@ struct zone_reset_item_owner::warm_command_scratch
 	critical_native_recovery_envelope *output = nullptr;
 	bool global_scope = false;
 	bool literal_pool_scope = false;
-	size_t current_bytes() const noexcept;
+	size_t current_bytes(size_t caller_extra = 0) const noexcept;
 	static size_t inline_bytes() noexcept
 	{
 		return sizeof(warm_command_scratch) + sizeof(critical_native_recovery_envelope) +
 		       economic_gameplay_authority::active_regular_flat_working_bytes();
 	}
-	explicit warm_command_scratch(warm_root *original,
-				      bool includes_literal_pool = false) noexcept
+	explicit warm_command_scratch(warm_root *original, bool includes_literal_pool = false,
+				      size_t caller_extra = 0) noexcept
 		: root(original)
 		, literal_pool_scope(includes_literal_pool)
 	{
 		if (root)
 		{
 			root->preparation_owner = this; // begin admitted this object before construction.
-			if (!(literal_pool_scope ? begin_full_flat_command_scope(*this) :
-						   begin_flat_command_scope(*this)))
+			if (!(literal_pool_scope ?
+				      begin_full_flat_command_scope(*this, caller_extra) :
+				      begin_flat_command_scope(*this)))
 				root = nullptr;
 		}
 	}
@@ -956,7 +957,8 @@ bool zone_reset_item_owner::prepare_single_flat_bindings(
 #endif
 }
 
-bool zone_reset_item_owner::begin_warm_command_scratch(warm_root &root) noexcept
+bool zone_reset_item_owner::begin_warm_command_scratch(warm_root &root,
+						       size_t caller_extra) noexcept
 {
 #if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
 	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
@@ -989,6 +991,11 @@ bool zone_reset_item_owner::begin_warm_command_scratch(warm_root &root) noexcept
 	    root.forest.operation_id.bytes != root.stage.state_->facts.operation_id.bytes)
 		return false;
 	root.preparation_scratch = warm_command_scratch::inline_bytes();
+	if (!warm_scratch_add(root.preparation_scratch, caller_extra))
+	{
+		root.preparation_scratch = 0;
+		return false;
+	}
 	if (!quest_mobile_native_birth_owner::charge())
 	{
 		root.preparation_scratch = 0; // Failed admission never updates the budget cache.
@@ -1041,12 +1048,13 @@ bool zone_reset_item_owner::reserve_warm_command_scratch(size_t bytes, void *con
 					   std::max(exclusive, scratch->root->preparation_scratch));
 }
 
-bool zone_reset_item_owner::retain_warm_command_output(warm_command_scratch &scratch,
-	const critical_native_recovery_envelope &output) noexcept
+bool zone_reset_item_owner::retain_warm_command_output(
+	warm_command_scratch &scratch, const critical_native_recovery_envelope &output,
+	size_t caller_extra) noexcept
 {
 	if (scratch.output != &output)
 		return false;
-	size_t bytes = scratch.current_bytes(), heap = 0;
+	size_t bytes = scratch.current_bytes(caller_extra), heap = 0;
 	return warm_scratch_envelope_heap(output, false, &heap) &&
 	       warm_scratch_add(bytes, heap) && rebase_warm_command_scratch(scratch, bytes);
 }
@@ -2285,9 +2293,10 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 	}
 }
 
-bool zone_reset_item_owner::prepare_warm_command_flat(
-	const critical_operation_id &operation, critical_native_recovery_envelope *output,
-	warm_command_scratch &scratch) noexcept
+bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_id &operation,
+						      critical_native_recovery_envelope *output,
+						      warm_command_scratch &scratch,
+						      size_t caller_extra) noexcept
 {
 	if (!output || !nevent_is_game_thread() || critical_operation_id_is_zero(operation) ||
 	    scratch.output != output || !scratch.root ||
@@ -2311,7 +2320,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 					invocation = registry;
 				}
 		if (!root || root != scratch.root || !invocation ||
-		    !warm_root_current_bounded(*root, scratch, scratch.current_bytes()))
+		    !warm_root_current_bounded(*root, scratch, scratch.current_bytes(caller_extra)))
 			return false;
 		const auto &source = root->forest.reset_source;
 		if (source.source.bytes != invocation->invocation.source.bytes ||
@@ -2326,7 +2335,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		{
 			// The two actual projection IDs die before the preparation frame.
 			// Admit them alongside the observer already in inline_bytes().
-			size_t projection_live = scratch.current_bytes();
+			size_t projection_live = scratch.current_bytes(caller_extra);
 			if (!warm_scratch_array(projection_live, 2,
 						sizeof(critical_operation_id)) ||
 			    !reserve_warm_command_scratch(projection_live, &scratch))
@@ -2342,7 +2351,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		}
 		if (!root->original_envelope.attachment.empty())
 		{
-			const size_t caller_live = scratch.current_bytes();
+			const size_t caller_live = scratch.current_bytes(caller_extra);
 			size_t clone_live = caller_live, clone_heap = 0;
 			if (!zone_reset_item_recovery_initial_bounded(root->original_envelope,
 				    reserve_warm_command_scratch, &scratch, caller_live) ||
@@ -2376,7 +2385,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		// configuration merely corroborates it; it cannot supply new provenance.
 		configured = birth.flat_scope->root_.c_str();
 		const size_t root_chars = std::char_traits<char>::length(configured);
-		const size_t caller_live = scratch.current_bytes();
+		const size_t caller_live = scratch.current_bytes(caller_extra);
 		size_t frame_live = caller_live, image_heap = 0;
 		if (!warm_scratch_add(frame_live, sizeof(zone_reset_item_image)) ||
 		    !warm_scratch_add(frame_live, sizeof(zone_reset_room_placement_recipe)) ||
@@ -2598,7 +2607,8 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 }
 bool zone_reset_item_owner::prepare_warm_command(const warm_root &root,
 						 critical_native_recovery_envelope *output,
-						 warm_command_scratch &scratch) noexcept
+						 warm_command_scratch &scratch,
+						 size_t caller_extra) noexcept
 {
 	if (!root.stage.state_)
 		return false;
@@ -2608,7 +2618,7 @@ bool zone_reset_item_owner::prepare_warm_command(const warm_root &root,
 		return prepare_warm_command_sql(root.forest.operation_id, output);
 	if (scratch.root != &root)
 		return false;
-	return prepare_warm_command_flat(root.forest.operation_id, output, scratch);
+	return prepare_warm_command_flat(root.forest.operation_id, output, scratch, caller_extra);
 }
 
 bool zone_reset_item_owner::prepare_warm_command_sql(
@@ -4132,7 +4142,7 @@ bool zone_reset_item_owner::pending_items(int rnum, size_t *output) noexcept
 
 bool zone_reset_item_owner::prepare_warm_publication_flat(
 	warm_root &root, const critical_native_recovery_envelope &original,
-	warm_command_scratch &scratch) noexcept
+	warm_command_scratch &scratch, size_t caller_extra) noexcept
 {
 	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
 	    scratch.root != &root || scratch.output != &original ||
@@ -4171,7 +4181,7 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 		    original.attachment != root.original_envelope.attachment ||
 		    root.canonical_command.empty())
 			return false;
-		size_t base = scratch.current_bytes(), envelope_heap = 0;
+		size_t base = scratch.current_bytes(caller_extra), envelope_heap = 0;
 		if (!warm_scratch_envelope_heap(original, false, &envelope_heap) ||
 		    !warm_scratch_add(base, envelope_heap))
 			return false;
@@ -4574,7 +4584,8 @@ bool zone_reset_item_owner::flat_current_global_storage(size_t *output) noexcept
 	return true;
 }
 
-size_t zone_reset_item_owner::warm_command_scratch::current_bytes() const noexcept
+size_t
+zone_reset_item_owner::warm_command_scratch::current_bytes(size_t caller_extra) const noexcept
 {
 	size_t current = 0, bytes = inline_bytes();
 	return root && global_scope && root->preparation_owner == this &&
@@ -4583,7 +4594,8 @@ size_t zone_reset_item_owner::warm_command_scratch::current_bytes() const noexce
 						 literal_pool_owned() &&
 					 flat_current_global_storage_with_literal_pools(&current)) :
 					flat_current_global_storage(&current)) &&
-			       warm_scratch_add(bytes, current) ?
+			       warm_scratch_add(bytes, current) &&
+			       warm_scratch_add(bytes, caller_extra) ?
 		       bytes :
 		       SIZE_MAX;
 }
@@ -4634,7 +4646,8 @@ bool zone_reset_item_owner::flat_current_global_storage_with_literal_pools(size_
 	return true;
 }
 
-bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &scratch) noexcept
+bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &scratch,
+							  size_t caller_extra) noexcept
 {
 	if (!scratch.root || scratch.root->preparation_owner != &scratch ||
 	    !scratch.literal_pool_scope)
@@ -4658,6 +4671,7 @@ bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &
 	if (item_native_quest_coordinator_budget_scope_owner::register_observer(
 		    &scratch, zone_reset_room_publication_owner::current_coordinator_storage,
 		    reserve_warm_command_scratch) &&
+	    warm_scratch_add(live, caller_extra) &&
 	    flat_current_global_storage_with_literal_pools(&current) &&
 	    warm_scratch_add(live, current))
 	{
@@ -4875,10 +4889,11 @@ bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelop
 							       outer_live);
 }
 
-bool zone_reset_item_owner::begin_submitted_flat_scratch(warm_root &root) noexcept
+bool zone_reset_item_owner::begin_submitted_flat_scratch(warm_root &root,
+							 size_t caller_extra) noexcept
 {
 	if (!root.cold && !root.refusal_cleanup_returned)
-		return begin_warm_command_scratch(root);
+		return begin_warm_command_scratch(root, caller_extra);
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI
 	return false;
@@ -4918,6 +4933,11 @@ bool zone_reset_item_owner::begin_submitted_flat_scratch(warm_root &root) noexce
 			 (!actual->dispatcher_completed || root.slot >= actual->stop_slot)))
 		return false;
 	root.preparation_scratch = warm_command_scratch::inline_bytes();
+	if (!warm_scratch_add(root.preparation_scratch, caller_extra))
+	{
+		root.preparation_scratch = 0;
+		return false;
+	}
 	if (!quest_mobile_native_birth_owner::charge())
 	{
 		root.preparation_scratch = 0;
@@ -5717,4 +5737,217 @@ bool zone_reset_room_item_restore_startup_bounded(const critical_native_recovery
 {
 	return zone_reset_item_owner::restore_startup_original_bounded(original, reserve, context,
 								       outer_live);
+}
+
+struct zone_reset_item_owner::flat_pulse_workspace
+{
+	size_t live = 0;
+	size_t current_coordinator_snapshot = 0;
+	critical_submit_result submission = critical_submit_result::unavailable;
+	critical_completion receipt{};
+	bool receipt_available = false;
+	bool prepared = false;
+	bool retained = false;
+	bool refresh(warm_command_scratch &scratch) noexcept
+	{
+		// This actual frame is separately owned; the guard already owns output inline.
+		// Keep it throughout every prep/submit/receipt/publication handoff and refusal.
+		size_t current = scratch.current_bytes(sizeof(*this)), heap = 0;
+		if (!scratch.output || !warm_scratch_envelope_heap(*scratch.output, false, &heap) ||
+		    !warm_scratch_add(current, heap) ||
+		    !rebase_warm_command_scratch(scratch, current))
+			return false;
+		live = current;
+		return true;
+	}
+};
+
+void zone_reset_item_owner::pulse_flat_bounded(bool prepare_original_resets) noexcept
+{
+	if (!nevent_is_game_thread() || !replay_ready_)
+		return;
+	// The private candidate never selects itself. Other original modes retain
+	// their complete original pulse, including SQL/inactive behavior and guards.
+	if (persistence_mode_requires_mysql() ||
+	    !economic_gameplay_authority::active_regular_flat())
+	{
+		pulse_original(prepare_original_resets);
+		return;
+	}
+	try
+	{
+		for (auto *registry = warm_head_; registry; registry = registry->next)
+		{
+			if (registry->sealing_pending &&
+			    (!prepare_original_resets ||
+			     economic_gameplay_authority::active_sql_recovery() ||
+			     !finish_closed_warm_capture(*registry)))
+				continue;
+			for (auto &owned : registry->roots)
+			{
+				auto &root = *owned;
+				if (root.retired)
+				{
+					(void)release_retired(root);
+					continue;
+				}
+				if (root.blocked)
+					continue;
+				if (!root.submitted &&
+				    (!prepare_original_resets || root.cold || !registry->closed ||
+				     !registry->dispatcher_completed || registry->blocked ||
+				     registry->sealing_pending || !root.sealed ||
+				     economic_gameplay_authority::active_sql_recovery()))
+					continue;
+
+				// Admit the actual future fixed frame before either guard or output/frame
+				// construction. This is a byte allowance, never source/execution authority.
+				if (!(root.submitted ? begin_submitted_flat_scratch(
+							       root, sizeof(flat_pulse_workspace)) :
+						       begin_warm_command_scratch(
+							       root, sizeof(flat_pulse_workspace))))
+					continue;
+				// FIRST genuine registration chooses seven owners; no legacy-six switch.
+				// Guard dies last, after frame and output, before original registry pruning.
+				warm_command_scratch scratch(&root, true,
+							     sizeof(flat_pulse_workspace));
+				if (!scratch.root || !scratch.global_scope ||
+				    !scratch.literal_pool_scope)
+					continue;
+				critical_native_recovery_envelope original;
+				scratch.output = &original;
+				flat_pulse_workspace work;
+				if (!work.refresh(scratch))
+					continue;
+				if (!root.submitted)
+				{
+					// Only the actual genuine flat factory provider is used; no SQL fallback.
+					work.prepared = prepare_warm_command_flat(
+						root.forest.operation_id, &original, scratch,
+						sizeof(work));
+					if (!work.refresh(scratch) || !work.prepared)
+						continue;
+					work.retained = retain_warm_command_output(
+						scratch, original, sizeof(work));
+					if (!work.refresh(scratch) || !work.retained)
+						continue;
+					if (zone_reset_room_publication_owner::empty(
+						    root.publication))
+					{
+						work.prepared = prepare_warm_publication_flat(
+							root, original, scratch, sizeof(work));
+						if (!work.refresh(scratch) || !work.prepared)
+							continue;
+					}
+					if (!work.refresh(scratch))
+						continue;
+					work.submission = zone_reset_room_publication_owner::
+						submit_warm_bounded(
+							original, reserve_warm_command_scratch,
+							&scratch, work.live,
+							&work.current_coordinator_snapshot);
+					// Actual returned operation state precedes every later fallible census.
+					if (critical_submit_result_keeps_operation(work.submission))
+						root.submitted = true;
+					else if (work.submission ==
+							 critical_submit_result::invalid ||
+						 work.submission ==
+							 critical_submit_result::identity_conflict)
+						root.blocked = true;
+					// Snapshot is not used as an ownership lease; outside shared owner reads CURRENT.
+					if (!work.refresh(scratch))
+						continue;
+				}
+				if (!root.submitted)
+					continue;
+				if (!root.coordinator_generation)
+				{
+					(void)zone_reset_room_publication_owner::
+						generation_warm_bounded(
+							root.original_envelope,
+							&root.coordinator_generation,
+							reserve_warm_command_scratch, &scratch,
+							work.live);
+					if (!work.refresh(scratch))
+						continue;
+				}
+				if (!root.completed)
+				{
+					// Preserve original retry decision: receipt availability is still checked
+					// after a missing generation. Generation remains mandatory for ACK/removal.
+					work.receipt_available = zone_reset_room_publication_owner::
+						completion_warm_bounded(
+							root.original_envelope.command.operation_id,
+							&work.receipt, reserve_warm_command_scratch,
+							&scratch, work.live);
+					if (work.receipt_available)
+					{
+						if (!critical_completion_disposition_valid(
+							    work.receipt))
+							root.blocked = true;
+						else
+						{
+							root.completion = work.receipt;
+							root.completed = true;
+						}
+					}
+					// Complete real returned receipt/blocked marker is retained before recensus.
+					if (!work.refresh(scratch))
+						continue;
+					if (root.blocked)
+						continue;
+				}
+				if (root.completed &&
+				    root.completion.disposition ==
+					    critical_completion_disposition::never_admitted)
+				{
+					(void)cancel_refused_flat_bounded(root, scratch, work.live);
+					// Owning cancellation retains actual cleanup-return/removal independently.
+					(void)work.refresh(scratch);
+				}
+				else if (root.completed)
+				{
+					(void)publish_flat_bounded(root, scratch, work.live);
+					(void)work.refresh(scratch);
+				}
+			}
+		}
+		auto **link = &warm_head_;
+		while (*link)
+		{
+			auto *registry = *link;
+			const bool settled =
+				registry->closed &&
+				std::all_of(
+					registry->roots.begin(), registry->roots.end(),
+					[](const auto &root)
+					{
+						return root->retired && !root->stage.state_ &&
+						       zone_reset_room_publication_owner::empty(
+							       root->publication) &&
+						       std::all_of(
+							       root->children.begin(),
+							       root->children.end(),
+							       [](const auto &child)
+							       { return !child->stage.state_; });
+					}) &&
+				std::all_of(registry->unselected.begin(),
+					    registry->unselected.end(),
+					    [](const auto &child) { return !child->stage.state_; });
+			if (!settled)
+			{
+				link = &registry->next;
+				continue;
+			}
+			if (warm_current_ == registry)
+				warm_current_ = nullptr;
+			*link = registry->next;
+			delete registry;
+			(void)quest_mobile_native_birth_owner::charge();
+		}
+	}
+	catch (...)
+	{
+		(void)quest_mobile_native_birth_owner::charge();
+	}
 }
