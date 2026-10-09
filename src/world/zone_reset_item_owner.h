@@ -115,6 +115,12 @@ enum class zone_reset_item_warm_result
 };
 
 bool zone_reset_room_item_restore(const critical_native_recovery_envelope &) noexcept;
+// Genuine passive bounded ROOM replay registration. The coordinator lends
+// its complete under-lock prefix and nonreentrant admission callback. No native
+// construction, source/S witness, pulse charge or coordinator reentry here.
+bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelope &,
+					  bool (*)(size_t, void *) noexcept, void *,
+					  size_t) noexcept;
 void zone_reset_room_item_completions(const critical_completion *, size_t) noexcept;
 void zone_reset_room_item_pulse(bool prepare_original_resets) noexcept;
 void zone_reset_room_item_replay_ready(bool) noexcept;
@@ -124,6 +130,9 @@ bool zone_reset_room_item_recovery_pending() noexcept;
 
 class zone_reset_item_owner final
 {
+	friend bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelope &,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t) noexcept;
 	friend void reset_zone(int, int);
 	friend bool
 	zone_reset_room_item_restore(const critical_native_recovery_envelope &) noexcept;
@@ -288,6 +297,17 @@ class zone_reset_item_owner final
 	static bool restore_cold_flat_bindings(const std::span<quest_mobile_native_item_stage *> &,
 					       void *, bool (*)(size_t, void *) noexcept, void *,
 					       size_t) noexcept;
+	// Actual passive recovered metadata owner and authentic submitted guard.
+	struct cold_registration_workspace;
+	static bool restore_original_bounded(const critical_native_recovery_envelope &,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
+	static bool begin_submitted_flat_scratch(warm_root &) noexcept;
+	// Prospective genuine exact ACK clone; ownership transfer is nonthrowing,
+	// and every refused successor remains rooted for the real coordinator retry.
+	static bool prepare_flat_ack_successor_bounded(warm_root &,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
 };
 
 #endif
