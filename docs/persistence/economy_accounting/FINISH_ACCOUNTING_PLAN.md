@@ -196,6 +196,145 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Compiler driver and INITIAL observer reviewed; flat lazy-binding preparation selected - 2026-10-09
+
+This checkpoint supersedes the immediate queue below. Root reviewed both sealed
+deliveries at their immutable pins and actual Goal alignment; the broader Goal
+remains BLOCKED unchanged. Worker Goal states are reported BLOCKED unchanged.
+New published primary5ff093fed4d467f9c0ba0098baef78bd276e2057, parent1bd95923,
+adds actual flat lazy-binding catalog notification:8 paths,231 insertions/110
+deletions, with32 db.c/3 private-header production additions. Root read the entire
+[published handoff](https://github.com/Community-Duris/Duris/blob/5ff093fed4d467f9c0ba0098baef78bd276e2057/docs/persistence/economy_accounting/FLAT_LAZY_BINDING_NOTIFICATION_2026-10-09.md),
+production diff, actual genuine callers/predecessor and catalog ready/find guards.
+Only SOURCE availability advances; private primary progress/adoption is unknown.
+
+Further primarye7fcc74844e286e3c308424a60fcbb4f4ad4697a, parent5ff, arrived before
+publication:14 paths,1335 insertions/13 deletions. Root exactly inverted and saved
+its pending three-doc insertion on D:, clean-fast-forwarded, then read the whole
+[48-line handoff](https://github.com/Community-Duris/Duris/blob/e7fcc74844e286e3c308424a60fcbb4f4ad4697a/docs/persistence/economy_accounting/ROOM_CURRENT_STORAGE_ADMISSION_2026-10-09.md),
+complete eight-file production delta/new private contracts and real adapter call
+locations. Complete bounded passive receipt/CURRENT readers now supply SOURCE:
+source claims, full operation-reference buckets and current custody join receipt/
+historical proof/current authority/full world catalog/piles/final lock. Original
+eight providers have additions-only inverses. Private publication adapter
+completion is reported; actual native caller/factory/root lifetime, publication/
+checkpoint/ACK/cold/full aggregate qualification remain open. No executed proof.
+
+Architecture's optional pure ROOM compiler driver and linkage/limits note are
+CLOSED PASS finite future-code/source/design/metadata review at immutable
+d5da4d09beb2202e912c1d4b3f6b2f0b0eacd288:
+D:/Dev/Temp/room-compiler-component-driver-20261009.
+Driver28676 bytes,SHA256
+00cb18469dd05c1a35e624da4c64c75757583203acaab6ab47d494a64cd55152;
+note12997 bytes,SHA256
+d947c2e102b6b8b63539e26be87a33b9e7f605891434c99414688605316cacb2;
+PINS89213 bytes,SHA256
+52c7cd6c5cfbb1269134376333188147c3d25fee1956d633931850328839e2bd;
+INDEX30291 bytes,SHA256
+1dc08be7c8ab7cb6f00ddabb0fea6f9c2a912848e70381377c306bebc9ade5ac.
+Root authenticated71 whole providers,79 ranges,118 quoted edges/zero unresolved,
+10 genuine TUs,7 reused files,155 sealed driver files and all187 compiler-map/
+67 historical ITEM-driver files. Audited metadata verifier passes; root's source
+closure includes raw files beyond the historical verifier's five payload files.
+
+Root read the complete driver/note and actual legal ROOM preflight/placement
+contracts. Original builders, hashes, binding/compiler/plan codecs operate on
+lawful pure values. Full metadata/source/digest/six-vector/canonical equality,
+tree order versus UID normalization, mixed/zero/no-coin account/audit effects,
+nonallocating trace/every reached denial and populated deep-plan value/capacity/
+pointer/scalar refusals are specified. Null/overflow/optional-scalar/unsupported
+controls and limited invalid cases preserve real original oracles. No required
+source/design correction established. Supported19 callbacks are source-derived;
+the candidate g++13/real10-TU/libcrypto/section-GC recipe is UNVERIFIED. No compile,
+preprocessor/link/component/native/DB execution or full request-math/ABI/allocator/
+whole-owner32MiB certification. Preserve original driver/source pin and seal.
+All71 source comparisons identify six changed providers d5->378: intent.c/.h,
+plan.c/.h and critical_command.c/.h; none change378->5ff. No successor qualification.
+The d5 note's unavailable INITIAL observation caller is historical:378 supplies
+actual bounded caller SOURCE, with remaining accepting-native dependencies open.
+
+Quest's INITIAL observation/reader acceptance delta is CLOSED PASS finite source/
+design/metadata review at immutable378c0a6447ff3d6e0deb62fe77dc5f23247e69a4,
+comparison d5 (actual parent50c6, not d5):
+D:/Dev/Temp/published-room-initial-observation-reader-acceptance-delta-20261009.
+Note40562 bytes,SHA256
+fb60dc8b588b95b8bd030135aa16f8f894e4ee3e902bcb577bf76036e44ccf4f;
+PINS6733322 bytes,SHA256
+c151fb4e3f30507b1ba450e7aa655e4c097d19a2c8081455e6dff1dda8d02d90;
+INDEX700 bytes,SHA256
+5ddd3a2c604af833e691e3bc3a83bbb6a948ebdef2038f875665c453a92204ab.
+Root authenticated55 providers,44 ranges,24 forward/24 inverse diffs,37 complete
+original signature/body/catch equalities,25 reused files,four closed indexes/
+16 payloads and historical ACK one-change inverse/original PINS bytes. Audited
+verifier recomputes exact saved receipt. Two disclosed construction metadata
+errors are resolved and retained; zero unresolved. No required correction found.
+
+Root read the complete note/verifier and actual joined observer/warm-owner seam,
+authority/receipt/origin/pile/decoder cuts. Repeated INITIAL/full ROOM/binding,
+historical control/epoch/current empty-mapping authority/season, full receipt
+index/active/stale-next/requested record/canonical/lineage and genuine absence,
+original world/custody proposals, both plan buffers/typed result, origin/every
+pile and final same-lock proofs stay distinct. Status-only caller has local
+proposals, no invented output-scalar/commit contract. Strong leaf outputs/scalars,
+sticky denial and actual exception/error mappings remain precise; no errno-only
+denial inference. Nonempty authority requests refuse before recovery. Actual
+reader recovery may reconcile pending durable machinery; no blanket passive-root
+claim. O1-O6 component/native cases all UNEXECUTED. All24 source providers at378
+remain byte-identical at5ff; preserve sealed historical note without promotion.
+
+### Evolving queue and exact dependencies
+
+1. Architecture has ONE new active private delivery:
+   PUBLISHED_FLAT_LAZY_BINDING_NOTIFICATION_BOUNDARY_2026-10-09.txt plus minimal
+   exact source/ranges/diffs/original equalities/PINS/metadata verifier/receipt/
+   INDEX on D:. Pin378->5ff with actual parent/ancestry. Map genuine proclibObj_add
+   and ITEM_SWITCH native effects-before-notification, sealed flat catalog/index
+   identity, exact old-special/new-index/predecessor proof, bridge/null predecessor
+   and null->switch, original SQL body/caller preservation and silent refusals.
+   Only one catalog special changes; no reseal/index repair/authority grant.
+   Separate noalloc notification from earlier allocating native effects and staged
+   publication. Derive authentic boot/runtime native fixture setup and exact
+   full catalog/index/chain observations/refusal cuts, without direct private
+   invocation, forged authority or stubs. Benefit: future primary-owned genuine
+   lazy-binding/factory integration acceptance. Root independent review required.
+2. Quest's temporary observer-preparation exhaustion is superseded by actual e7
+   source. ONE new active private delivery is selected:
+   PUBLISHED_ROOM_CURRENT_STORAGE_ACCEPTANCE_DELTA_2026-10-09.txt with exact minimal
+   providers/ranges/diffs/original signature-body-catch equalities/PINS/metadata
+   verifier/receipt/INDEX on D:, pin5ff->e7. Reuse CLOSED INITIAL/current/ACK packs.
+   Map original versus bounded full receipt/source-claim/reference-bucket/current
+   world-catalog/custody/history/typed-result/plan/origin/pile/lock proof order,
+   real absent-source and failed-receipt leaf versus joined reachability, named
+   live workspaces/retained DTO heaps, local+returned DTO and growth/coin-copy/
+   borrowed-span phases. Derive authentic deep record/projection/custody plus
+   scalar refusal controls, full bucket other-operation/multiplicity/canonical
+   conflicts and actual sticky-denial/error mapping. Benefit: later primary's
+   real passive CURRENT/receipt integration acceptance. Root independent review
+   required; no duplicate INITIAL/compiler math or architecture's lazy-binding
+   note. Missing native prerequisites block dependent execution only.
+3. Exact dependent gaps: lawful original private owner/reference fixture, actual
+   flat native constructor/factory/source/custody/pending-census binding, accepting
+   warm publication/current reader/checkpoint/guarded ACK/durable terminal/cold
+   reconstruction, publication/submission INTERNAL admission, supported ABI/
+   allocator and fresh integrated major-batch qualification. Required MariaDB0065
+   nullable-default and MySQLschema65 compatibility owner remediation remains
+   unresolved; older binaries/receipts cannot qualify current source. Primary
+   owns maintained code/math/integration/execution and Plan5 owns suite/SQL fixes.
+4. Preserve CLOSED domain/modeled/stage/current/ACK/codec/observer/driver bundles,
+   clean5c53/2c828 worktrees and live jobs. No maintained worker/root code edits,
+   compiler/preprocessor/link/component/native/DB runs, runtime roots/import/
+   registration/private commits, other-chat messages, adoption waits, activation/
+   deployment or production mutations. Only coordinator's three disposition docs
+   are published, with exact raw-byte inverse preserving unrelated FINISH bytes.
+
+Root proof D:/Dev/Temp/coordinator-compiler-driver-observer-review-20261009 contains
+independent authentication/semantic-review, source-successor comparisons, actual
+new primary raw/diff/additions-only inverses and three exact publication inverses.
+Heartbeat stays ACTIVE. Required primary Plans1-5, applicable original R1-R8/
+backend/gameplay/persistence/recovery/integrated proof, resolved required blockers,
+owner completion disposition and selected sidework handoffs remain the finish
+line. Completed packets/temporary exhaustion do not resume or complete the Goal.
+
 ## INITIAL storage and compiler maps reviewed; pure compiler driver selected - 2026-10-09
 
 This checkpoint supersedes the immediate queue below. Both delivered packets
