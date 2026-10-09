@@ -20,7 +20,9 @@ gitignore = (ROOT / ".gitignore").read_text()
 localhost_cert_generator = (ROOT / "scripts/generate_localhost_cert.sh").read_text()
 
 
-assert "security/advisories/new" in security
+assert "https://github.com/Community-Duris/Duris/security/advisories/new" in security
+assert "latest release from this repository" in security
+assert "1.81.x" not in security
 assert "three business days" in security and "ten business days" in security
 assert re.search(r'Security\s+contact requested', security)
 assert "Do not include real player data" in security
@@ -155,7 +157,7 @@ assert all(
 assert "vulnerability status" in inventory["coverage"]["not_included"]
 assert spdx["spdxVersion"] == "SPDX-2.3"
 assert spdx["dataLicense"] == "CC0-1.0"
-assert spdx["documentNamespace"].startswith("https://github.com/LuminariMUD/DurisMUD/sbom/")
+assert spdx["documentNamespace"].startswith("https://github.com/Community-Duris/Duris/sbom/")
 assert spdx["packages"][0]["name"] == "DurisMUD"
 package_purls = [
     reference["referenceLocator"]

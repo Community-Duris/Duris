@@ -30,7 +30,8 @@ does not perform a vulnerability scan.
 ## CI Checks
 
 `.github/workflows/security.yml` runs on `master`, pull requests, and manual dispatch.
-All `uses:` references are immutable commit SHAs with human-readable version comments.
+All `uses:` references are pinned to immutable commit SHAs; version comments
+where present help reviewers identify the corresponding release.
 It performs:
 
 1. repository-specific local source/configuration contracts;
@@ -44,9 +45,10 @@ It performs:
 This workflow is an *advanced* CodeQL configuration, so the repository must have
 CodeQL **default setup** turned off. With default setup enabled GitHub refuses the
 upload -- "CodeQL analyses from advanced configurations cannot be processed when the
-default setup is enabled" -- the analyze step fails, and every step after it is
-skipped, which takes the Trivy scan and its policy gate down with it. Check the
-current state with:
+default setup is enabled" -- and the analyze step fails. The later Trivy scan
+uses the default success condition and is then skipped. Artifact preservation
+and coverage enforcement use `if: always()`; they still run, and enforcement
+fails when the scan result is missing or empty. Check the current state with:
 
 ```
 gh api repos/<owner>/<repo>/code-scanning/default-setup
@@ -62,9 +64,12 @@ the review input because Dependabot has no ecosystem for an `equivs` control fil
 ## Ownership And Failure Policy
 
 Repository maintainers own triage. A fixed HIGH or CRITICAL Trivy finding fails CI.
-Unfixed findings remain visible for triage but do not fail by default; changing that
-policy requires a reviewed workflow change. No vulnerability is ignored in a committed
-exception file at this baseline. CodeQL uploads findings to GitHub code scanning;
+The CI scan selects `HIGH,CRITICAL` severity and sets `ignore-unfixed: true`.
+Its JSON output is therefore limited to that selected finding scope; it is not
+an inventory of lower-severity or unfixed vulnerabilities. Those require a
+separate triage scan; see [Trivy's filtering documentation](https://trivy.dev/docs/latest/configuration/filtering/).
+Changing the gate policy requires a reviewed workflow
+change. No vulnerability is ignored in a committed exception file at this baseline. CodeQL uploads findings to GitHub code scanning;
 analysis completion is a workflow gate, while finding severity and merge enforcement
 are governed by repository code-scanning/branch-protection settings.
 

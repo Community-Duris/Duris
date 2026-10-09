@@ -9,7 +9,7 @@ by the launcher's guarded local path or the explicit procedures below.
 
 ## Current candidate alignment limit
 
-At publication base `43807ab01`, all three migration manifests end at
+At publication base `626e33846`, all three migration manifests end at
 `0065_zone_reset_item_birth_origin`, sequence 65. The runtime manifest and
 compiled contract remain at `0064_auction_custody_history`, sequence 64, with
 230 sealed runtime tables. This is an existing candidate alignment gap;

@@ -5,6 +5,16 @@
 >
 > This is an engineering record, not legal advice or a determination of applicability.
 
+Documentation review note (2026-10-09): phase metrics, finding totals and scan
+results below retain their historical evidence scope. This file has not been
+requalified as a current security or deployment assessment. Current scan coverage
+and filtering are described in [SECURITY_BASELINE.md](../operations/SECURITY_BASELINE.md);
+current runtime gate limits are in
+[RUNTIME_COMPATIBILITY.md](../persistence/RUNTIME_COMPATIBILITY.md). The repository
+also has a [dated deployment tracker](../operations/PRODUCTION_DEPLOYMENT.md),
+which requires fresh operator verification. Pending controller decisions and
+historical phase statuses do not establish a present legal compliance conclusion.
+
 ---
 
 ## Current Security Posture

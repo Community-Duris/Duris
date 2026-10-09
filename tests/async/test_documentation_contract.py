@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from _paths import SRC
+import json
 import re
 import unittest
 from pathlib import Path
@@ -105,6 +106,7 @@ class DocumentationContractTest(unittest.TestCase):
         self.assertIn(f"current project version is `{version}`", versioning)
         self.assertIsNotNone(total_match)
         self.assertIn(f"Its {total_match.group(1)} progress", immutable)
+        self.assertIn(f"historical {total_match.group(1)}-step legacy upgrade", readme)
         self.assertIn("tests/async/run_legacy_migration_mysql.sh", immutable)
         for token in (
             "MIGRATION_ENV_FILE",
@@ -112,9 +114,48 @@ class DocumentationContractTest(unittest.TestCase):
             "make test-db",
             "./scripts/start_mud.sh --dev",
             "nc localhost 4000",
-            "historical 145-step legacy upgrade",
         ):
             self.assertIn(token, readme, token)
+
+    def test_current_schema_descriptions_match_manifests(self) -> None:
+        manifest = json.loads(
+            (ROOT / "migrations/migration_manifest.json").read_text(encoding="utf-8")
+        )
+        runtime = json.loads(
+            (ROOT / "migrations/runtime_compatibility_manifest.json").read_text(encoding="utf-8")
+        )
+        head = manifest["migrations"][-1]
+        runtime_head = runtime["migration_head"]
+        for relative in (
+            "docs/persistence/IMMUTABLE_MIGRATIONS.md",
+            "docs/reference/DATABASE.md",
+        ):
+            normalized = re.sub(r"\s+", " ", self.text[ROOT / relative])
+            self.assertIn(f"`{head['id']}` at sequence {head['sequence']}", normalized, relative)
+            self.assertIn(
+                f"{runtime['current_table_count']}-table runtime compatibility contract",
+                normalized,
+                relative,
+            )
+            self.assertIn(f"{manifest['baseline']['required_table_count']}-table", normalized, relative)
+        immutable = self.text[ROOT / "docs/persistence/IMMUTABLE_MIGRATIONS.md"]
+        self.assertIn(f'RUNTIME_MIGRATION_HEAD_ID = "{runtime_head["id"]}"', immutable)
+        self.assertIn(f"`applied_count={runtime_head['sequence']}`", immutable)
+        telemetry = self.text[ROOT / "docs/telemetry/DATABASE.md"]
+        self.assertIn("../persistence/RUNTIME_COMPATIBILITY.md", telemetry)
+        self.assertNotRegex(telemetry, r"runtime inventory is \d+ tables")
+        # Check both documented facts before rejecting an unaligned candidate.
+        # Describing the mismatch accurately does not qualify the schema pair.
+        self.assertEqual(head["id"], runtime_head["id"], "manifest/runtime heads are unaligned")
+        self.assertEqual(head["sequence"], runtime_head["sequence"])
+
+    def test_readme_repository_links_use_current_project(self) -> None:
+        readme = self.text[ROOT / "README.md"]
+        links = dict(re.findall(r"^\[([^\]]+)\]:\s*(\S+)", readme, re.MULTILINE))
+        for name in ("build", "commits", "issues"):
+            self.assertTrue(links[name].startswith("https://github.com/Community-Duris/Duris/"), name)
+        for name in ("build-badge", "commit-badge", "issues-badge"):
+            self.assertIn("/Community-Duris/Duris", links[name], name)
 
     def test_maintained_markdown_links_and_anchors_resolve(self) -> None:
         failures: list[str] = []

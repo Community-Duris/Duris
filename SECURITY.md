@@ -2,19 +2,21 @@
 
 ## Supported Versions
 
-Security fixes are developed on `master` and released in the current `1.81.x` line.
+Security fixes are developed on `master`. The current `master` branch and the
+latest release from this repository are supported.
 Older source snapshots and private forks are not supported with backported fixes.
 
 | Version | Security support |
 | --- | --- |
-| Current `master` and latest `1.81.x` release | Supported |
+| Current `master` and latest release from this repository | Supported |
 | Older releases | Unsupported; upgrade before requesting a backport |
 
 ## Reporting A Vulnerability
 
 Do not open a public issue, discussion, pull request, game ticket, or chat message for
-an undisclosed vulnerability. Use the repository's enabled
-[private vulnerability reporting form](https://github.com/LuminariMUD/DurisMUD/security/advisories/new).
+an undisclosed vulnerability. Use this repository's
+[private vulnerability reporting form](https://github.com/Community-Duris/Duris/security/advisories/new)
+when available.
 Include the affected revision, impact, prerequisites, minimal reproduction, and any
 suggested mitigation. Do not include real player data, credentials, private keys, or
 production database contents; use fabricated test data.

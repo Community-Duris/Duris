@@ -5,6 +5,11 @@
 **Result**: PHASE 03 ENGINEERING COMPLETE; CAPACITY GATE DEFERRED
 **200-Player Readiness Claim**: No
 
+This is the dated Phase 03 closeout result. Later implementations require their
+own validation; this record does not qualify the current checkout or a deployed
+system. Preserve its deferred capacity outcome until the complete evidence
+required by [PHASE03_READINESS.md](../gates/PHASE03_READINESS.md) exists.
+
 ## Decision
 
 The Phase 03 implementation and local integration work are complete. The user

@@ -1000,7 +1000,7 @@ pass, including both original formatted dependency builds and full links. Origin
 acceptance retains its recorded scope; current major-plan, gameplay, activation
 and full R1-R8/release qualification remain open. No coverage gate is promoted.
 
-## Independent history and namespace qualified — 2026-10-07
+## Independent history and namespace qualified â€” 2026-10-07
 
 [Primary integration](PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
 adds catalogue-required consecutive history and captured physical-namespace
