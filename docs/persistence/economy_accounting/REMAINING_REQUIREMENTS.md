@@ -2681,3 +2681,18 @@ retirement budget, same-root-lock terminal callback and integrated qualification
 remain open. The flat front door stays closed; no plan/release completion is
 claimed. Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED,
 preserved unrelated WIP and primary goal ACTIVE remain.
+
+
+## Native image codec dependency implemented - 2026-10-09
+
+[The native-image source slice](NATIVE_IMAGE_CODEC_ADMISSION_2026-10-09.md)
+adds full bounded encode/decode definitions preserving original reference, forest,
+item, checksum and complete canonical-wire proofs. Prospective actual workspace,
+node/bucket, codec and retained-output lifetimes are source reviewed. Independent
+raw/final review, original full-C prefix/header inverse and token/preprocessor
+checks PASS; all 931 policies/393 pins authenticate with zero new/unmapped sites.
+Native builds/tests remain deferred. Intent and complete ordinary/SHOP command/
+compiler/journal joins, actual warm/cold publication and guarded terminal/ACK/
+retirement qualification remain open. This dependency does not establish plan or
+release completion. Accounting inactive/admission CLOSED, coverage incomplete/
+release BLOCKED, preserved unrelated WIP and primary goal ACTIVE remain.

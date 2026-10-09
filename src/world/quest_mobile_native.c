@@ -974,3 +974,292 @@ player_snapshot_codec_result quest_mobile_native_money_transition(
 		return result::allocation_failure;
 	}
 }
+
+namespace
+{
+using native_image_reserve_fn = bool (*)(size_t, void *) noexcept;
+bool native_image_add(size_t &value, size_t added) noexcept
+{
+	if (added > SIZE_MAX - value)
+		return false;
+	value += added;
+	return true;
+}
+bool native_image_admit(size_t outer, size_t extra, native_image_reserve_fn reserve,
+			void *context) noexcept
+{
+	return extra <= SIZE_MAX - outer && reserve && reserve(outer + extra, context);
+}
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI
+constexpr size_t native_image_hash_scan_objects =
+	sizeof(std::__detail::_Prime_rehash_policy) + sizeof(std::pair<bool, size_t>);
+bool native_image_forest_peak(size_t count, size_t &peak) noexcept
+{
+	using node = std::__detail::_Hash_node<
+		uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+	std::__detail::_Prime_rehash_policy policy;
+	size_t buckets = 1, heap_buckets = 0;
+	peak = 0;
+	for (size_t index = 0; index < count; ++index)
+	{
+		if (index + 1 > SIZE_MAX / sizeof(node) ||
+		    heap_buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *))
+			return false;
+		size_t request = (index + 1) * sizeof(node);
+		if (!native_image_add(request,
+				      heap_buckets * sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		const auto rehash = policy._M_need_rehash(buckets, index, 1);
+		if (rehash.first)
+		{
+			if (rehash.second > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+			    !native_image_add(request,
+					      rehash.second *
+						      sizeof(std::__detail::_Hash_node_base *)))
+				return false;
+			buckets = heap_buckets = rehash.second;
+		}
+		peak = std::max(peak, request);
+	}
+	return native_image_add(peak, sizeof(std::unordered_set<uint64_t>)) &&
+	       native_image_add(peak, sizeof(std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH>));
+}
+#endif
+} // namespace
+
+namespace
+{
+struct native_image_encode_workspace
+{
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	std::vector<uint8_t> blob, candidate;
+};
+struct native_image_decode_workspace
+{
+	quest_mobile_native_image candidate;
+	std::vector<uint8_t> canonical;
+	player_item_snapshot_list_allocation_profile items;
+	std::span<const uint8_t> reference;
+};
+}
+
+player_snapshot_codec_result quest_mobile_native_image_encode_bounded(
+	const quest_mobile_native_image &image, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!output || !nonzero(image.last_transition_operation) || !cash_valid(image) ||
+	    (image.state != quest_mobile_lifetime_state::live &&
+	     image.state != quest_mobile_lifetime_state::retired) ||
+	    (image.state == quest_mobile_lifetime_state::retired && !image.items.empty()))
+		return result::invalid_value;
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return result::unsupported_version;
+#else
+	size_t base = outer_live;
+	if (!native_image_add(base, sizeof(native_image_encode_workspace)) ||
+	    !native_image_admit(base, 0, reserve, context))
+		return result::limit_exceeded;
+	try
+	{
+		native_image_encode_workspace work;
+		// Original reference encoder candidate/source plus nested source result.
+		constexpr size_t reference_working =
+			sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+			2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>);
+		if (!native_image_admit(base, reference_working, reserve, context))
+			return result::limit_exceeded;
+		auto code = quest_mobile_native_reference_encode(image.reference, &work.reference);
+		if (code != result::ok)
+			return code;
+		if (image.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return result::limit_exceeded;
+		if (!native_image_admit(base, native_image_hash_scan_objects, reserve, context))
+			return result::limit_exceeded;
+		size_t forest = 0;
+		if (!native_image_forest_peak(image.items.size(), forest) ||
+		    !native_image_admit(base, forest, reserve, context))
+			return result::limit_exceeded;
+		code = forest_valid(image.items);
+		if (code != result::ok)
+			return code;
+		code = player_item_snapshot_list_encode_bounded(image.items, &work.blob, reserve,
+								context, base);
+		if (code != result::ok)
+			return code;
+		const size_t overhead = image.cash ? QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD :
+						     QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD;
+		if (work.blob.size() > PLAYER_SNAPSHOT_MAX_BYTES - overhead)
+			return result::limit_exceeded;
+		size_t live = base;
+		if (!native_image_add(live, work.blob.capacity()) ||
+		    !native_image_admit(live, overhead + work.blob.size(), reserve, context))
+			return result::limit_exceeded;
+		work.candidate.assign(overhead + work.blob.size(), 0);
+		auto &candidate = work.candidate;
+		std::copy(image_magic.begin(), image_magic.end(), candidate.begin());
+		size_t offset = image_magic.size();
+		put<uint16_t>(candidate.data(), offset,
+			      image.cash ? QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION :
+					   QUEST_MOBILE_NATIVE_VERSION);
+		put<uint8_t>(candidate.data(), offset, static_cast<uint8_t>(image.state));
+		put<uint8_t>(candidate.data(), offset, 0);
+		put<uint32_t>(candidate.data(), offset, candidate.size());
+		std::copy(work.reference.begin(), work.reference.end(), candidate.begin() + offset);
+		offset += work.reference.size();
+		std::copy(image.last_transition_operation.bytes.begin(),
+			  image.last_transition_operation.bytes.end(), candidate.begin() + offset);
+		offset += image.last_transition_operation.bytes.size();
+		if (image.cash)
+		{
+			put<uint64_t>(candidate.data(), offset, image.cash->revision);
+			for (int64_t amount : image.cash->denominations.amount)
+				put<int64_t>(candidate.data(), offset, amount);
+		}
+		put<uint32_t>(candidate.data(), offset, work.blob.size());
+		std::copy(work.blob.begin(), work.blob.end(), candidate.begin() + offset);
+		offset += work.blob.size();
+		if (offset != candidate.size() - SHA256_DIGEST_LENGTH ||
+		    !SHA256(candidate.data(), offset, candidate.data() + offset))
+			return result::invalid_value;
+		*output = std::move(candidate);
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_failure;
+	}
+#endif
+}
+
+player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
+	const std::span<const uint8_t> &bytes, quest_mobile_native_image *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_image_heap_bytes) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!output)
+		return result::invalid_value;
+	if (bytes.size() < QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD)
+		return result::truncated;
+	if (bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return result::limit_exceeded;
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	(void)retained_image_heap_bytes;
+	return result::unsupported_version;
+#else
+	if (!std::equal(image_magic.begin(), image_magic.end(), bytes.begin()))
+		return result::invalid_value;
+	if (!native_image_admit(outer_live,
+				sizeof(std::span<const uint8_t>) +
+					sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+				reserve, context))
+		return result::limit_exceeded;
+	if (!checksum(bytes))
+		return result::invalid_value;
+	try
+	{
+		size_t offset = image_magic.size();
+		const uint16_t version = get<uint16_t>(bytes.data(), offset);
+		if (version != QUEST_MOBILE_NATIVE_VERSION &&
+		    version != QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
+			return result::unsupported_version;
+		if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION &&
+		    bytes.size() < QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD)
+			return result::truncated;
+		size_t base = outer_live;
+		if (!native_image_add(base, sizeof(native_image_decode_workspace)) ||
+		    !native_image_admit(base, 0, reserve, context))
+			return result::limit_exceeded;
+		native_image_decode_workspace work;
+		auto &candidate = work.candidate;
+		candidate.state = static_cast<quest_mobile_lifetime_state>(
+			get<uint8_t>(bytes.data(), offset));
+		if (get<uint8_t>(bytes.data(), offset) ||
+		    get<uint32_t>(bytes.data(), offset) != bytes.size())
+			return result::invalid_value;
+		if (!native_image_admit(base, sizeof(std::span<const uint8_t>), reserve, context))
+			return result::limit_exceeded;
+		work.reference = bytes.subspan(offset, QUEST_MOBILE_NATIVE_REFERENCE_BYTES);
+		// Reference candidate survives its nested source decoder. Its earlier
+		// checksum's digest/span die before candidate construction.
+		size_t reference_working =
+			sizeof(std::span<const uint8_t>) +
+			std::max(sizeof(std::span<const uint8_t>) +
+					 sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+				 sizeof(quest_mobile_native_reference) +
+					 2 * sizeof(std::span<const uint8_t>) +
+					 economic_source_event_decode_object_bytes());
+		if (!native_image_admit(base, reference_working, reserve, context))
+			return result::limit_exceeded;
+		auto code =
+			quest_mobile_native_reference_decode(work.reference, &candidate.reference);
+		if (code != result::ok)
+			return code;
+		offset += QUEST_MOBILE_NATIVE_REFERENCE_BYTES;
+		std::copy_n(bytes.data() + offset, candidate.last_transition_operation.bytes.size(),
+			    candidate.last_transition_operation.bytes.begin());
+		offset += candidate.last_transition_operation.bytes.size();
+		if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
+		{
+			candidate.cash.emplace();
+			candidate.cash->revision = get<uint64_t>(bytes.data(), offset);
+			for (auto &amount : candidate.cash->denominations.amount)
+				amount = get<int64_t>(bytes.data(), offset);
+		}
+		const uint32_t length = get<uint32_t>(bytes.data(), offset);
+		if (length != bytes.size() - offset - SHA256_DIGEST_LENGTH)
+			return result::invalid_value;
+		if (!native_image_admit(base, player_item_snapshot_list_preflight_object_bytes(),
+					reserve, context))
+			return result::limit_exceeded;
+		code = player_item_snapshot_list_preflight(bytes.data() + offset, length,
+							   &work.items);
+		if (code != result::ok)
+			return code;
+		if (!work.items.fresh_decode_storage_policy_supported)
+			return result::unsupported_version;
+		if (work.items.decoded_payload_bytes < sizeof(std::vector<player_item_snapshot>))
+			return result::invalid_value;
+		size_t decode_working = work.items.item_codec_decoder_object_bytes;
+		if (!native_image_add(decode_working, work.items.decoded_payload_bytes) ||
+		    !native_image_add(decode_working, work.items.relationship_scratch_bytes) ||
+		    !native_image_admit(base, decode_working, reserve, context))
+			return result::limit_exceeded;
+		code = player_item_snapshot_list_decode(bytes.data() + offset, length,
+							&candidate.items);
+		if (code != result::ok)
+			return code;
+		const size_t retained = work.items.decoded_payload_bytes -
+					sizeof(std::vector<player_item_snapshot>);
+		size_t live = base;
+		if (!native_image_add(live, retained))
+			return result::limit_exceeded;
+		code = quest_mobile_native_image_encode_bounded(candidate, &work.canonical, reserve,
+								context, live);
+		if (code != result::ok)
+			return code;
+		if (work.canonical.size() != bytes.size() ||
+		    !std::equal(work.canonical.begin(), work.canonical.end(), bytes.begin()))
+			return result::invalid_value;
+		static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_image>);
+		*output = std::move(candidate);
+		if (retained_image_heap_bytes)
+			*retained_image_heap_bytes = retained;
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_failure;
+	}
+#endif
+}

@@ -139,4 +139,20 @@ quest_mobile_native_money_transition(const quest_mobile_native_image &,
 				     const item_transfer_payload &, const critical_operation_id &,
 				     quest_mobile_native_image *) noexcept;
 
+// Prospective complete native-image companions. The caller includes inputs,
+// old outputs and inline output objects in outer_live, and retains the admitted
+// absolute simultaneous peak through output transfer. Full original reference,
+// checksum, forest/item semantics and exact canonical bytes remain required.
+// Requests require GCC13 libstdc++ C++11 ABI; unsupported policy refuses.
+// All outputs, including optional actual transferred heap scalar, are strong.
+// The scalar excludes the caller's inline image; no source/runtime authority.
+player_snapshot_codec_result
+quest_mobile_native_image_encode_bounded(const quest_mobile_native_image &, std::vector<uint8_t> *,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
+player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
+	const std::span<const uint8_t> &, quest_mobile_native_image *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_image_heap_bytes = nullptr) noexcept;
+
 #endif
