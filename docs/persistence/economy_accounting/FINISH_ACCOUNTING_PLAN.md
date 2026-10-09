@@ -1,5 +1,50 @@
 # Finish accounting implementation plan
 
+## Next primary handoff: executable combined candidate - 2026-10-09
+
+The user prioritizes a reproducible executable combined candidate without
+discarding the primary's current implementation. This dated scheduling
+clarification supersedes earlier blanket compilation/boot deferrals only for
+the bounded checkpoint below. Broader qualification remains batched at
+major-plan readiness; original Plans 1-5, R1-R8 and release gates retain their
+full requirements.
+
+Finish the bounded source join or review already in flight, preserving accepted
+contracts, selected packets, source proofs and unrelated WIP. Then make this
+candidate handoff the next primary milestone before further optional research,
+refactoring or repeated closed reviews. Complete the genuine shared caller and
+owner joins needed for the selected candidate to execute; missing joins cannot
+be replaced with stubs or weaker authority, publication or ACK guards. Remaining
+qualification can stay open when a guarded development candidate is published.
+
+1. Re-check and narrowly resolve recorded backend API/declaration, build-object
+   registration and regression/integration-manifest blockers against the actual
+   combined source. Preserve current owners and existing acceptance contracts.
+2. Freeze and publish the selected combined source at one commit, preserving
+   unrelated private WIP. Record included/deferred packets, pending route joins,
+   required schema and build profiles. Source publication is an integration
+   checkpoint; it does not establish runtime, activation or release acceptance.
+3. Compile/link that candidate in the SQL and required client-free flatfile
+   profiles with fresh, separate build outputs. Run the smallest existing isolated
+   inactive boot/shutdown smoke on disposable test data for each available profile.
+   Preserve running shared services and test jobs. Record exact source commit,
+   build commands/results, binary hashes, schema and evidence paths; unexecuted
+   or failed profiles remain explicit blockers. Publish each available result
+   without waiting for complete backend or gameplay qualification.
+4. Link a concise candidate handoff from this plan or the review checkpoint:
+   actual shared interfaces/native callers, remaining owner/fixture dependencies,
+   reproducible commands, and bounded qualification batches for existing helpers,
+   including Plan5. Preserve their existing ownership; unavailable prerequisites
+   remain primary dependencies rather than new speculative preparation tasks.
+
+If compilation or smoke fails, retain the exact failure, repair the narrow
+integration blocker, repin and resume this checkpoint. Source/codec acceptance
+and historical component passes do not qualify the combined binary. Keep shared
+admission closed and existing holds until their original gates pass. Full
+gameplay, crash/recovery, dual-engine schema, audit and release suites remain at
+the existing batch checkpoint; this handoff neither removes nor declares them
+complete. Full flatfile parity remains required for full feature completion.
+
 ## Native season and bounded CURRENT custody joined - 2026-10-09
 
 [Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#native-season-and-bounded-current-custody-joined---2026-10-09)
@@ -5029,6 +5074,11 @@ and crash-point, active-epoch and flatfile parity gates remain open.
 
 ## Work order
 
+The [next primary handoff](#next-primary-handoff-executable-combined-candidate---2026-10-09)
+is the immediate scheduling checkpoint after the current bounded source task.
+The numbered work below retains the functional closure and full qualification
+sequence; step 6 does not postpone initial candidate publication or compilation.
+
 Ordinary bandage consumption now passes a real mortal SQL journey on both
 supported engines with exact surviving original UIDs, one unchanged retirement
 operation/revision, save, and two cold restarts. This inactive-accounting fixture
@@ -5123,6 +5173,10 @@ No deadline was increased or gate waived; see the October 2 review status.
   player-visible recovery state.
 
 ## Proof gates
+
+The [dated candidate checkpoint](#next-primary-handoff-executable-combined-candidate---2026-10-09)
+permits its bounded compilation and isolated inactive boot/shutdown smoke now;
+earlier major-plan deferrals still apply to the broader qualification batches.
 
 During implementation, keep checks focused: changed-line formatting,
 `make -C src`, the relevant focused executable or disposable SQL fixture, and
