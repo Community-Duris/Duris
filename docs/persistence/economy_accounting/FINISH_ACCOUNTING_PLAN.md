@@ -60,6 +60,78 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Flat proposal ownership reviewed; acceptance delta selected - 2026-10-09
+
+Architecture private SHARED_FLAT_PROPOSAL_THREAD_OWNERSHIP_FACTS_2026-10-09.txt
+now PASSes independent root source/factual review and is CLOSED at finite scope.
+27,117 bytes,SHA256a93bdf703f4875a71c46e3cbe11b712bba2bf475e2416e117e323504016ccdc0.
+Directory:D:/Dev/Temp/shared-flat-proposal-thread-ownership-facts-20261009/.
+PINS.json185,379 bytes,SHA256
+6a306154eeade114bc942f56422a0d129c4e63caa5cdec746a56288ffc80a860.
+Root authenticates22 raw public providers/50 exact ranges,16 reused artifacts,
+ten original/current source identities and26 indexed payloads. Nine reused bodies
+are identical;player_save_pipeline.c differs from historical4e26a569 and its old
+correspondence is not silently promoted to current behavior proof. No required defect.
+
+Root reads the full note and actual coordinator worker/retry/shutdown/CAS/refusal
+cleanup,authority lock/commit/recovery/store writer and genuine callback precedents.
+Heap operation/proposal lifetime differs from copied command and callback-local lock.
+Shared retries have no worker-affinity promise;mutex-owning lock must remain on its
+acquiring worker. matches(root) is not worker/operation/stack-lifetime authority.
+Rename precedes publication=true and directory sync;authority committed outcome
+precedes afterimage apply/journal removal. I/O failure is not not_published proof.
+Recovery may complete existing journal mutations;later reconciliation permits no
+NEW domain proposal. Shutdown changes stop/generation before join and clears bodies
+after joins;current execution authority and already-executing pure cleanup ownership
+remain distinct. Existing CAS/pins are precedents,not private capability verification.
+Serialized bounds do not prove full retained capacities,nonallocation or peak budgets.
+Private corrected selection/source-only review remains REPORT;native proof absent.
+
+Prioritized evolving queue:ONE new active quest acceptance-preparation delivery;
+architecture facts and all prior packets stay CLOSED. Sole output:
+D:/Dev/Temp/shared-flat-worker-reconciliation-acceptance-delta-20261009/
+SHARED_FLAT_WORKER_RECONCILIATION_ACCEPTANCE_DELTA_2026-10-09.txt,
+plus exact pins/index/stdlib verification. Benefit:minimal implementation-ready
+genuine shared-flat callback/retention/reconciliation/shutdown acceptance cuts.
+Reuse new facts and closed original checkpoint/current/warm/cold/terminal/Smith
+same-root persisted-image/ACK joins. A genuine authorized flat counterpart of the
+same original missing-SHOP birth is required;SQL data cannot invent that fixture.
+
+Four incremental controls:callback A's local same-worker lock ends before later B
+acquires a fresh recovered same-root lock while original heap proposal persists;
+only absent receipt permits first prepare/reserve/recheck/sole commit,and possible
+publication allows only authentic retained MBR4 receipt PLUS separate full CURRENT
+native/keeper/AF/cash/time/roam/literal/whole-catalog custody reconciliation;
+complete actual retained nested capacities reserved before commit and preserved
+through CAS success/pure refusal/uncertainty/retry;and shutdown cleanup authenticates
+same still-executing thread/operation/native/body/attempt pin with not_published
+only,without relaxing execution authority or discarding possible publication.
+Wrong thread/stale attempt/foreign equal body/recycled pointer,second commit,
+afterimage resubmission/ID reset and absence shortcuts must not pass. Proposed
+controls UNEXECUTED;minimal variants require genuine legal owner cuts/fault hooks.
+
+Available:123af report,unchanged public source,new reviewed facts and sealed closed
+packets. Missing:private023837 selected candidate/slot/worker/callback/cleanup/
+atomic CURRENT/MBR4 APIs;legal original flat producer/caller/source/stage/root
+fixture and phase/fault/native/world/origin/ACK exports. Low-level flat fault
+constants alone supply no shared callback hook. Missing inputs block dependent
+execution,not this bounded preparation. Selected coupled1e26c6b0/original69484205
+and corrected1ef2176e remain reported;standalone69484205/afdd unselected.
+
+Quest owns private D: note/evidence only;root independent acceptance/source review
+required before closure. Preserve clean isolated worktrees/jobs/completed bundles.
+No maintained source/tests/manifest/coverage/contracts/Makefile changes,imports,
+patches/private commits,compiler/preprocessor/tests/build/DB/server/native/gameplay/
+recovery/event/performance execution. Primary retains implementation/whole transient
+budgets/integrated qualification;Plan5 unchanged,no adoption wait. Reported readiness
+sql_enabled/Makefile corrections are queued,not verified;F1 and missing-API P1 remain
+unresolved. Actual continuing Goals remain BLOCKED/unfinished;heartbeat ACTIVE.
+Broader required Plans1-5/applicable original R1-R8/integrated qualification,required
+blockers and published owner completion disposition remain unfinished. No resumption.
+Root proof:D:/Dev/Temp/coordinator-flat-proposal-review-20261009/review.py,
+authentication.json,semantic-review.json and raw providers. Only three root
+disposition docs publish;private evidence stays on D:.
+
 ## Flat proposal and worker ownership preparation selected - 2026-10-09
 
 New published123af716fe997ad2f482aeff39ccd0760d21fed9 reports private shared flat
