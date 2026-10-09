@@ -2847,6 +2847,148 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Item recipe driver reviewed; native current source and leaf boundary map selected - 2026-10-09
+
+This checkpoint supersedes the immediate queue below. New published primary
+0dfb920f004c350877f53b6445c8c76f5f876f23 adds genuine ROOM native current-check
+scratch admission:13 paths,680 insertions/20 deletions,six production .c/.h paths.
+Root read the complete actual source delta and its
+[published handoff](https://github.com/Community-Duris/Duris/blob/0dfb920f004c350877f53b6445c8c76f5f876f23/docs/persistence/economy_accounting/ROOM_NATIVE_CURRENT_SCRATCH_ADMISSION_2026-10-09.md).
+Private primary review/progress and excluded flat-binding/INITIAL-stage WIP
+remain unobserved. No source successor builds or native qualification ran.
+
+Architecture's optional ITEM/RECIPE component packet is CLOSED PASS at finite
+future-code/source/metadata scope, independently reviewed by root:
+D:/Dev/Temp/room-item-recipe-profile-component-driver-20261009.
+Exact driver26708 bytes,SHA256
+ff14d88bef3a032508066de376c2b0e095bdfab6f5b377b94aa8a02b9c7bd736;
+linkage/limits note8561 bytes,SHA256
+ba92dd9ad34f8a16aba4ed5a3dd32cd548bb40c7b20474f498e54c9e56ed3ea1;
+PINS57924 bytes,SHA256
+d900e8a07e98a76ef3f4366612b39d0c4ed0ae48f93e48dfccee252837e17372;
+INDEX10971 bytes,SHA256
+de259de759fc659359f88cbb5e66b81eb205b888222ddfd00ec4e9aa4c693fcc.
+Root authenticated all51 raw providers,11 ranges,50-file conservative quoted
+include closure/80 edges and67 sealed payload/raw files. The four direct item/
+recipe providers AND that whole pinned closure remain byte-exact a0->f2->0df.
+External toolchain/platform headers and genuine link resolution remain unproved.
+
+Complete code/note and actual original APIs were reviewed. Future assertions
+preserve every literal item/recipe field, parent/child values, AF/extra/spells,
+15/16/29/30-byte strings, embedded NUL item text and literal0xff descriptor text;
+original/bounded/canonical byte equality; two absolute item reservations;
+policy/overflow/denial/strong profile and output controls; complete original
+UID/descriptor/library/delay and trailing-wire refusals. Wire shape profiling
+does not grant semantic relationship authority. outer37 is an arithmetic input,
+not a real caller live-storage census. The fixed callback neither allocates nor
+logs. Supported capacities are asserted only under actual supported policy.
+These assertions are UNEXECUTED. Driver remains OPTIONAL NOT COMPILED/LINKED,
+REGISTERED/IMPORTED or native-qualified. Minimal genuine two-provider linkage
+is a future unverified candidate; no accepting factory/source/whole32MiB proof,
+allocator-fault execution or maintained integration is inferred. Preserve packet.
+
+Quest's f2 provider/INITIAL lifetime packet now also passes independent root
+source/design/metadata review, CLOSED finite preparation only:
+D:/Dev/Temp/published-room-provider-initial-lifetime-acceptance-delta-20261009.
+Note32838 bytes,SHA256
+ecce3875e4c529b308b42fe1271ac7e40cc1411d945939356462a0e8142e0172;
+PINS5703182 bytes,SHA256
+73fc3265374e82c3748ae924658b3689702041d6e521a1ee5ca5eb6cd05875e0;
+INDEX753 bytes,SHA256
+166bbe58e4fab32d7729bca4ea0aeb44f922f518d8fb88bdcc98fdca2b7df29a.
+Root read complete note/verifier and real relevant changed provider/INITIAL/guard/
+caller source plus original INITIAL predicates; independently authenticated29
+raw providers/29 ranges,12 forward and12 inverse diffs,18 exact original function
+bodies,29 reused artifacts,four sealed indexes/16 payloads and corrected codec
+single inverse. Recorded actual quest Goal remains BLOCKED unchanged. The real
+pulse guard precedes output and outlives later temporaries; complete world and
+selected custody coexist, whole catalog validation precedes filtering, both
+season records survive second read/decode, full INITIAL receipt/progress/canonical
+checks survive. Optional retained payload scalars and prior output sentinels are
+strong on provider/codec refusals. The whole owner has a different boundary:
+final fresh-copy refusal may follow legitimate root envelope/canonical retention;
+retry preserves that original capsule without reroll/rebinding. Future overlays
+G/W/C/I/L are ALL UNEXECUTED; source/callback/guard lifetime does not establish
+unbounded publication/submission INTERNAL requests, full32MiB or native acceptance.
+No packet rewrite, maintained import or native execution is inferred.
+
+### Evolving queue, source changes and exact ownership
+
+1. Architecture has ONE next private source/design delivery:
+   D:/Dev/Temp/published-literal-capture-request-lifetime-map-20261009/
+   PUBLISHED_LITERAL_CAPTURE_REQUEST_LIFETIME_MAP_2026-10-09.txt plus exact
+   raw source/additions-only diff/original-body/reuse/payload proof. Pin f2->0df.
+   Scope ONLY new bounded literal-tree capture and runtime-link observation,
+   their original leaf implementations and actual public/private types.
+   Map scanner callback/frame-depth stages, original identity/capture phases,
+   string policy, hash node/bucket and old/new vector overlap, ancestor DTO/set
+   lifetimes, AF/extra/spell rows and transfer. Distinguish logical capture_budget
+   estimate from requested/retained heap and caller inline objects. Derive future
+   original-fixture assertions for actual ordering, identity/cycle/prototype/
+   literal/spellbook/limit/refusal/errors and all strong outputs. Link observation
+   keeps the entire active item/root/parent union and source serialized through
+   callback/count/original read; no custody permit. Benefit is implementation-ready
+   fixture controls and transfer boundaries, not duplicate companion code or
+   whole-owner memory certification. Original native object/prototype/factory/
+   custody fixture, compiler/ABI/allocator/runtime evidence and legal accepting
+   flat binding/publication/ACK remain unavailable dependent prerequisites.
+   Exclude four current-check caller cuts/backend-owner design, quest's f2 packet,
+   maintained source/test edits, compiler/native/DB/fixture-root execution and
+   private commits. Primary owns implementation/integration/qualification;
+   Plan5 remains protected. Root independent source/design/proof review required.
+2. Quest's f2 packet is CLOSED preparation; preserve its exact scope/evidence.
+   ONE next private source/design delivery is dispatched:
+   D:/Dev/Temp/published-room-native-current-backend-acceptance-delta-20261009/
+   PUBLISHED_ROOM_NATIVE_CURRENT_BACKEND_ACCEPTANCE_DELTA_2026-10-09.txt with
+   exact raw source/diff/original-body/reuse/payload proof, pinned f2->0df.
+   Available inputs are actual owner current-check/four flat caller cuts,
+   original current/SQL preparation and root/child/forest binding, genuine native
+   factory/binding providers and original publication/submit/checkpoint/ACK code;
+   reuse CLOSED f2/ROOM/INITIAL controls. Map exact game-thread/guard/root/source/
+   factory/placement identity, full recapture/canonical/progress/UID/link/object
+   correspondence, all four simultaneous live allowances and post-lock cut to
+   implementation-ready original-fixture assertions. Trace the actual SQL-only
+   binding/current/publication refusal frontier and required backend authority
+   interfaces; preserve controls and original retry/source/clock/time/once-only
+   effects. Benefit is caller/native acceptance and dependency-reduction blueprint,
+   not duplicate leaf memory modeling or new accepting implementation. Architecture
+   alone owns the two leaf request-lifetime map, with no packet dependency wait.
+   Genuine accepting flat constructor-token/binding companion and retained backend
+   choice, flat publication/checkpoint/ACK owner, original native fixture/execution,
+   bounded INITIAL observation/publication internals and whole32/integrated
+   qualification are unavailable dependent prerequisites; private WIP is excluded.
+   Quest owns only private D note/evidence; root source/design/proof review required.
+   Primary owns all shared implementation/major-batch qualification; Plan5 unchanged.
+   No compiler/native/DB/fixture-root execution, maintained edits/private commits,
+   fabricated binding/backend/success/ACK or other-chat message is authorized.
+3. New bounded literal capture scans actual original identity and storage requests
+   before original capture; runtime observer admits its original fresh projection;
+   current-check companion preserves full factory/progress/object-list/custody
+   correspondence and uses them at four real flat preparation checks. Root read
+   source; independent source review in handoff remains reported, with full
+   memory/native qualification still open.
+   Genuine INITIAL storage observation and publication/submission INTERNAL
+   prospective bounds, complete32MiB and accepting/recovery journeys remain open.
+   A concrete backend gap is now explicit: root/child/forest preparation uses
+   SQL-only native binding, current checks its SQL predicate, warm publication
+   requires SQL. A genuine flat constructor-token companion, consistent retained
+   backend choice and flat publication/checkpoint/ACK owner are required. Preserve
+   guards; removing SQL checks does not supply this missing authority.
+4. Prior required MariaDB0065/MySQLschema65 qualification failures remain open;
+   older authenticated8e5 binaries/preflight cannot qualify0df or release.
+   Primary/Plan5 repair and integrated original Plans1-5/R1-R8/backend/gameplay/
+   persistence/recovery proof, required blockers and owner completion remain the
+   broader finish line. Sidework completion cannot satisfy it.
+
+Root proof D:/Dev/Temp/coordinator-item-recipe-driver-review-20261009 includes
+independent authentication.json,semantic-review.json,current raw source/diff and
+three raw publication inverses. Only the three coordinator-owned disposition docs
+change; no private artifact is committed. Preserve all worker checkouts/jobs and
+closed bundles. Actual root and reported worker Goals remain BLOCKED unchanged;
+authorized preparation does not resume them. Heartbeat remains ACTIVE with quiet
+unchanged monitoring, no adoption wait, completed-primary claim or other-chat
+message. Stop only on user pause or the broader published completion audit.
+
 ## ROOM codec acceptance reviewed; provider INITIAL frontier and two next deliveries - 2026-10-09
 
 This checkpoint supersedes the immediate queue in the ROOM frontier section below.
