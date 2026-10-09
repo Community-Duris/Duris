@@ -8,9 +8,13 @@ a new diagnostics framework.
 
 1. Treat the server as C++20. The `.c` files in `src/` are compiled with `g++`;
    use the repository's build scripts instead of generic C compiler recipes.
-2. Run dynamic memory tools only against a local/development environment and
-   development database. Check `.env` before starting a session, and never put
-   credentials in commands, logs, or bug reports.
+2. Run dynamic memory tools only with `ENVIRONMENT=local` and an isolated
+   persistence authority: an explicit allow-listed loopback development database
+   for SQL, or private native flat-file state with a matching client-free build.
+   Qualify the actual configuration using the
+   [runbook](../operations/RUNBOOK.md#pre-service-safety-gate) before starting;
+   a development port alone is insufficient. Never put credentials in commands,
+   logs, or bug reports.
 3. Keep the normal build unsanitized. Sanitizer objects and the sanitizer binary
    stay isolated under `bin/objects/server-san/` and `bin/server/dms_san`.
 4. Do not run a sanitizer-instrumented binary under Valgrind. Use one detector
@@ -76,7 +80,8 @@ For an automated check that must fail when Memcheck reports an error:
 
 The wrapper supplies the project's standard Memcheck options, applies
 `scripts/valgrind.supp`, and writes reports under `logs/valgrind/`. It refuses
-port 7777. Use `--trace-children` only when copyover itself is the subject of
+hardcoded port 7777, but does not follow `DURIS_PRODUCTION_PORT` or establish
+persistence isolation. Use `--trace-children` only when copyover itself is the subject of
 the test. See [the detailed Valgrind guide](valgrind.md) for all supported
 tools, options, and expected baseline noise.
 
@@ -100,7 +105,8 @@ change. If a required check cannot be run, record what was skipped and why.
 ## Standard test session
 
 1. Record the revision, detector, command, and relevant environment options.
-2. Confirm that `.env` describes a local/development environment.
+2. Confirm `ENVIRONMENT=local`, the selected isolated persistence target, and
+   plain-telnet/TLS/WebSocket ports distinct from any running service.
 3. Start on a development port and use the test account from `.env` without
    exposing its credentials.
 4. Exercise the exact reproducer. Add nearby create/use/destroy or

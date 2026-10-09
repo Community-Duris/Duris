@@ -291,7 +291,7 @@ release; retain and review its `RELEASE ACCOUNTING COVERAGE BLOCKED:` evidence.
 | Focused source/runtime | `python3 tests/async/test_<feature>.py` | One named invariant or compiled harness | Unrelated domains or integrated load |
 | Server build | `make -C src` | C++20 server compiles under the warning profile | Schema compatibility or runtime readiness |
 | Repository gate | `make test-all` | Maintained builds, generated world inputs, all discovered Python tests, and native signal tests | Docker database suites, representative data, or a 200-player hold |
-| Disposable schema | `make test-db` | Listed schema contracts and legacy-to-current convergence on isolated Docker MySQL | MariaDB parity or configured database state |
+| Disposable schema | `make test-db` | Listed schema contracts and legacy-to-current convergence on isolated Docker databases, including the explicitly selected MySQL/MariaDB variants | Complete engine parity across every domain or configured database state |
 | Dual-engine boot contract | `tests/async/run_runtime_compatibility_mysql.sh` and `RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh` | Fresh bootstrap, immutable head, drift rejection, and boot compatibility on MySQL 8 and MariaDB 10.11 | A configured or production upgrade |
 | Lifecycle/privacy | commands below | Pending-policy fail-closed behavior, synthetic archive/export/erasure contracts, and disposable schemas | Controller approval, legal compliance, or enabled canonical mutation |
 | Capacity/fault precursors | commands below | Bounded 25/50/100/200 logical-client codecs and named crash/fault invariants | Representative eight-profile 30-minute 200-player readiness |

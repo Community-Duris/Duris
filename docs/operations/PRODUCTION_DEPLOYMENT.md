@@ -2,6 +2,11 @@
 
 Last verified: 2026-09-14 23:11 UTC
 
+This is a dated deployment record. Host addresses, certificate expiry, service
+locations and watchdog behavior below describe that verification; they require
+fresh operator evidence before being treated as current deployment state.
+For maintained startup, backup and cutover procedures, use [RUNBOOK.md](RUNBOOK.md).
+
 ## Objective
 
 Run DurisMUD and the DurisWeb website as persistent production services for

@@ -10,40 +10,55 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
                            # otherwise nohup cycle_mud.sh -> logs/duris-console.log
 ./scripts/cycle_mud.sh     # foreground supervised run (what start_mud wraps)
 ./scripts/cycle_mud.sh --dev   # development listener/build role on port 4000
-./scripts/cycle_mud.sh --production  # require the production role on port 7777
-./scripts/cycle_mud.sh --check-config  # validate the selected persistence mode only
+./scripts/cycle_mud.sh --production  # require production role; configured port defaults to 7777
+./scripts/cycle_mud.sh --check-config  # check launcher environment requirements without booting
 ```
 
-Set `DURIS_DEV_PORT` to use a different development plain-telnet port when
-another local service owns 4000. It accepts ports 1 through 65535 except the
-production port 7777; the default remains 4000.
+Set `DURIS_DEV_PORT` to use a different development plain-telnet port; its
+default is `4000`. `DURIS_PRODUCTION_PORT` selects the production-role port,
+defaulting to `7777`, and the development port must differ from that configured
+production port. Both launcher range checks allow values from `1` through
+`65535`, while the server rejects positional plain-telnet ports at or below
+`1024`. Use `1025..65535` for server startup.
+
+`--check-config` validates the launcher's environment, role, port, and
+mode-specific fields without connecting to a database or starting the server.
+It creates `bin/server/history/` if needed and exits before the build-stamp,
+schema, backup-policy, world-data, and listener checks. A successful check
+therefore does not qualify a boot. The launcher can currently accept a fully
+configured `mariadb-primary-flatfile-fallback` token even though the server
+rejects it; use one of the two supported authorities described in
+[CONFIGURATION.md](CONFIGURATION.md#persistence).
 
 `cycle_mud.sh`:
 
-- Anchors itself to the repository root; loads `.env` if present.
-- Requires `ENVIRONMENT` in every mode. Database-backed modes also require `DB_HOST`,
-  `DB_USER`, `DB_PASSWD`, `DB_NAME`, and `DB_ALLOWED_TARGETS`; `flatfile-primary`
-  instead requires an absolute `FLATFILE_STATE_DIR`. It has no source-code credential
-  fallback.
-- Runs migrations, schema verification, and MySQL shutdown logging only for a
-  database-backed mode. A `flatfile-primary` launch does not invoke those database
-  tools, even when Redis is enabled.
+- Anchors itself to the repository root and sources `.env` as Bash if present;
+  matching file assignments can replace inherited environment values.
+- Requires `ENVIRONMENT=local` or `production`. MariaDB launches also require
+  `DB_HOST`, `DB_USER`, `DB_PASSWD`, `DB_NAME`, and `DB_ALLOWED_TARGETS`;
+  `flatfile-primary` requires an absolute `FLATFILE_STATE_DIR`.
+- Applies pending immutable migrations for a local MariaDB launch and verifies
+  schema compatibility for both local and production MariaDB launches. Production
+  migrations follow the separately approved procedure below. Flat-file launches
+  skip these database tools and MySQL shutdown logging.
 - Raises core dump limits (`ulimit -c unlimited`).
-- Rebuilds area tools and regenerates `areas/world.*` when the `make_*`
-  helpers are missing.
-- Regenerates `lib/misc/event_names` (demangled symbol list used by crash
-  tooling).
-- Promotes `bin/server/dms_new` to `bin/server/dms`, retains the five newest
-  prior executables under `bin/server/history/` by default, and runs the active
-  binary in an outer loop. Set `DMS_BINARY_HISTORY_LIMIT` to change the limit.
-  A `--production` launch refuses to promote or run anything except a stamped
-  `PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production` build.
-- On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
-  the stop reason, runs `scripts/backup_pfiles.sh`, and optionally emails an alert.
-  Both modes publish verified full generations under the approved backup policy,
-  including journal evidence. A backup failure stops the cycle before restart.
-  Configure policy, scheduling, retention and isolated drills using
-  [BACKUPS.md](BACKUPS.md) before deploying this launcher.
+- In full-world mode, builds missing area helpers and regenerates `areas/world.*`
+  on every cycle iteration. `--minimal` uses the tracked `areas_mini` files instead.
+- Regenerates `lib/misc/event_names` from the active executable.
+- Promotes `bin/server/dms_new` to `bin/server/dms` on initial startup and on later
+  cycle iterations following exit code `53` or `57`. An ordinary exit-code `52`
+  reboot does not promote a staged binary. The default history limit is five prior
+  executables; set `DMS_BINARY_HISTORY_LIMIT` to change it. A `--production` launch
+  requires a stamped `PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production` build.
+- Before each server start attempt, rotates files directly under `logs/log/` into
+  `logs/old-logs/<timestamp>/` and runs `scripts/backup_pfiles.sh`. Backup failure
+  prevents that launch. `SKIP_PREBOOT_BACKUP=1` bypasses the pre-cycle backup step
+  and supplies no backup evidence; an initial unprovisioned flat-file authority
+  also has no generation to capture. Verify policy, scheduling, retention and
+  isolated drills using [BACKUPS.md](BACKUPS.md).
+- After the process exits, records the stop reason in console output and attempts
+  a MySQL reboot record for MariaDB mode. Configured legacy email helpers may
+  attempt notifications; successful process launch does not establish delivery.
 
 ### Exit codes interpreted by the cycle loop
 
@@ -112,8 +127,9 @@ For the fallback background mode started by `start_mud.sh`, use the in-game
 immortal `shutdown` command when possible. The fallback does not create a PID
 file; do not guess with a broad `kill` or `pkill` command. Check
 `logs/duris-console.log`, the listener port, and the process command line before
-stopping a specific local process. A normal shutdown lets the supervisor write
-its reboot record and rotate logs.
+stopping a specific local process. A normal shutdown lets the server drain its
+persistence work and the supervisor attempt its reboot record. Log rotation
+occurs before the next cycle's launch, not when the process stops.
 
 ### Production systemd service
 
@@ -224,12 +240,16 @@ sudo systemctl cat duris-mud-production.service
 The installer renders the absolute checkout path and account into
 `/etc/systemd/system/duris-mud-production.service`, validates the unit with
 `systemd-analyze verify` and reloads systemd. Enabling repeats the production
-configuration preflight and refuses to proceed while another service owns port 7777.
-The `--no-enable` staging path neither needs nor bypasses production credentials; the
-service still enforces them whenever it is eventually started.
+launcher configuration check. When the production unit is inactive, the installer
+also checks whether port `7777` is occupied. That installer check is hard-coded:
+it does not follow `DURIS_PRODUCTION_PORT`, and it is skipped when the unit is
+already active. Verify the owner of the configured production listener before
+cutover. The `--no-enable` staging path does not require production credentials;
+the service enforces them when it is started.
 
-For the cutover, stop and disable any prior service that owns port 7777, then start the
-production unit. Do not run the local and production units concurrently:
+For the cutover, stop and disable any prior service that owns the configured
+production port (default `7777`), then start the production unit. Do not run the
+local and production units concurrently:
 
 ```bash
 # If this checkout currently uses the local user service:
@@ -281,14 +301,21 @@ python3 tests/async/test_runtime_connection_trust.py
 python3 tests/async/test_runtime_boot_compatibility.py
 ```
 
-`DB_NAME` selects the database. `DB_ALLOWED_TARGETS` must explicitly allow that
-name. The listener port is only a secondary safety guard: a non-production port
-redirects a production-like name to the configured development target, but it is not
-the primary database selector. A production role also requires the configured TLS CA
-and a non-loopback database transport; a local/development/test role requires a
-loopback target. The runtime applies a 10-second connection deadline before listeners
-or persistence workers start and fails closed on identity, session-mode, schema, or
-migration incompatibility.
+In MariaDB mode, `DB_NAME` selects the requested database and `DB_ALLOWED_TARGETS`
+authorizes the exact resolved `host/database` pair. Away from the configured
+production port, the names `duris` and `duris_prod` resolve to `duris_dev` before
+allow-list validation. The runtime accepts only `ENVIRONMENT=local` or `production`;
+production must use the configured production port. Either role can use loopback
+TCP, while `DB_SOCKET` is restricted to local loopback mode. Remote TCP requires
+verified TLS and a CA file in either role. Use an isolated loopback target for
+development and migration qualification.
+
+SQL connections have ten-second connect/read/write deadlines. Full schema and
+migration verification precedes lookup publication, SQL UID reservation and pool
+startup; persistence logging, SQL lifecycle recovery and connection-activity
+bookkeeping start earlier. Native flat-file startup uses its private state root
+and does not run this SQL path. See [CONFIGURATION.md](CONFIGURATION.md#persistence)
+and [RUNTIME_COMPATIBILITY.md](../persistence/RUNTIME_COMPATIBILITY.md#boot-gate).
 
 Do not start the game if the target name, role, host, allow-list, TLS posture, or
 backup status is uncertain. Qualify the exact target first; never probe a migration
@@ -339,15 +366,22 @@ test noise.
 
 ## Logs
 
-All under `logs/`; rotated per-run into `logs/old-logs/<timestamp>/`.
+File logs use paths under `logs/`. Each cycle moves the direct contents of
+`logs/log/` (except `.gitignore`) into `logs/old-logs/<timestamp>/`; that rotation
+does not include `logs/player-log/` or the console file.
 
 | File | Content |
 |------|---------|
 | `logs/log/status` | Boot progress, MySQL connection status, system messages |
-| `logs/log/syslog` | Game events |
-| `logs/log/cmdlog` | Player commands |
-| `logs/log/wizlog` | Immortal commands |
-| `logs/duris-console.log` | stdout/stderr of the supervised process |
+| `logs/log/sys` | System diagnostics |
+| `logs/log/events` | Event diagnostics and legacy persistence fallback records |
+| `logs/log/file` | File and persistence diagnostics |
+| `logs/log/cmd.debug` | Command trace while `debug_mode` is enabled; opened afresh at boot and rewound every 500 recorded commands |
+| `logs/player-log/wizcmds` | Immortal commands and staff audit events |
+| `logs/duris-console.log` | stdout/stderr from the `start_mud.sh` nohup fallback |
+
+The checked-in production systemd unit sends stdout/stderr to the service journal;
+inspect it with `journalctl -u duris-mud-production.service`.
 
 In `flatfile-primary`, events sent through the database-backed audit logger remain
 available in the ordinary files above: staff events use `logs/player-log/wizcmds`,
@@ -367,13 +401,15 @@ recovery unavailable; password reset by email disabled.` While the feature runs,
 when wrong guesses exhaust a code, carrying only the request id, the outcome category, and
 the integer libcurl and SMTP codes (for example
 `account recovery mail request=<id> outcome=<sent|retryable|terminal> curl=<n> smtp=<n>`);
-`(account=redacted)` is literal. No line anywhere contains the reset code, the email
-address, the account name, the client address, or libcurl error prose. Completions,
+`(account=redacted)` is literal. Recovery subsystem log lines contain no reset code,
+email address, account name, client address, or libcurl error prose. Completions,
 exhausted codes, save failures, and (rate-limited to one line per 60 s) terminal mail
 failures or live-token evictions and host-window slot recycling also raise a `*** STATUS:`
 notice to immortals watching status, which is mirrored into `logs/log/status`. A run of
-terminal mail failures means the relay, its credentials, or its certificate chain is wrong:
-fix the relay or `MAIL_*` settings and restart; never work around it by weakening TLS
+terminal mail failures requires investigation of the numeric libcurl/SMTP result.
+Relay configuration, credentials, certificates, recipient rejection, and local send
+setup failures can all produce terminal outcomes. Correct the identified cause and
+restart when changing `MAIL_*` settings; never work around it by weakening TLS
 verification, which the source contracts forbid.
 
 Useful checks:
@@ -540,15 +576,19 @@ only; it does not mean MySQL committed and is not automatically replayed.
 The automatic recovery paths are:
 
 1. **Redis world-state recovery** -- after either a graceful restart or an unclean exit,
-   the current immutable generation is accepted only
-   if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
-   decoded with the matching generation into one semantic plan. Every custody-bearing
-   item in each bounded tree must exactly match SQL UID, root, parent, room owner, VNUM,
-   and active state before rollback-capable materialization. Authenticated reconstructible
-   world-pop objects have no SQL custody, player corpses use their separate restore path,
-   and NPC-held items are not recreated. The
-   exact restored generation is then consumed. A fenced one-use marker distinguishes
-   clean restart from crash recovery.
+   the current immutable generation is accepted only after manifest authentication,
+   complete-payload digest verification, and validation of schema, completeness,
+   sequence, checksum, size, and age. Floor deltas are decoded with the matching
+   generation into one semantic plan. Every authority-marked item must exactly match
+   SQL UID, root, parent, room owner, VNUM, and active state before rollback-capable
+   materialization. Reconstructible world-pop objects have no SQL custody, and player
+   corpses use their separate authoritative restore path. NPC equipment and inventory
+   are omitted from the snapshot; restore reconstructs applicable zone-defined NPC
+   items under normal population, artifact, and duplicate checks. After a successful
+   restore, boot attempts to consume the exact generation under the writer fence;
+   consumption failure is logged while boot continues. An expiring one-use marker
+   labels a matching valid generation as clean-restart recovery. Recording that marker
+   is attempted during eligible drained shutdowns; failure does not cancel shutdown.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
 If Redis recovery fails, the server runs a full normal reset for every zone. Check
@@ -559,30 +599,43 @@ cleared by the failed restore.
 
 For queue or dependency incidents, use `world persistence` and the detailed `redis`
 status command. Do not clear a player save queue: player state is owned by the local
-revision coordinator and journal, not a Redis dirty set. A world generation publish
-failure preserves the prior current generation and retains floor deltas for retry.
+revision coordinator and journal, not a Redis dirty set. A rejected publication
+compare-and-set leaves the prior current generation selected. A lost Redis reply can
+instead hide a committed pointer swap and floor clear, so a reported publication
+failure does not prove that the prior generation and floor deltas remain selected.
+Preserve the authority state and inspect publication health before attempting repair.
+See [WORLD_RECOVERY_PIPELINE.md](../persistence/WORLD_RECOVERY_PIPELINE.md).
 
 Account password recovery keeps no durable state. Reset codes, their per-account cooldown
 records, and any queued or in-flight recovery mail live only in process memory, so a
 copyover or restart discards them; the player-facing text already says to request a new
-code after a restart, and no operator action or cleanup is needed. The mail worker is not
-part of the shutdown drain chain, so a dead or slow relay can never delay or cancel a
-copyover or shutdown. The worker thread is joined at shutdown, though: when a send is in
-flight at the moment `SIGTERM` arrives, process exit may take up to 20 s longer (libcurl is
-bounded to 10 s connect / 20 s total per send, with no retry). The production unit's
+code after a restart, and no operator action or cleanup is needed. Mail delivery is
+outside the durable shutdown drain chain and does not veto a copyover or shutdown.
+Normal process teardown drops queued mail and joins the worker; an in-flight send can
+therefore delay process exit by up to 20 s (libcurl is bounded to 10 s connect / 20 s
+total per send, with no retry). Successful copyover exec discards the old process's
+mail state. The production unit's
 `TimeoutStopSec` must stay above that tail; the checked-in
 `deploy/systemd/duris-mud-production.service.in` uses 90 s. `scripts/change_password.sh`
 remains the operator fallback for an account with no usable email address on file.
 
-### Known-benign log lines
+### Interpreting boot diagnostics
 
-These are investigated and understood; they are not signs of a failed boot.
+These messages describe specific boot/reset paths. They do not by themselves
+establish that the entire boot or world data is healthy.
 
 | Line | Meaning |
 |---|---|
-| `Heaven has invalid number: 1 (should be 0)` | `recalc_zone_numbers()` finding and correcting a zone number that disagrees with its lowest room vnum. Self-healing; fixing the data would be zone-numbering surgery with a wide blast radius. |
-| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start -- followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
-| Mob log `RIDICULOUS damage` / `M cmd not executed` | Area data, not engine defects. |
+| `Heaven has invalid number: 1 (should be 0)` | `recalc_zone_numbers()` adjusts the in-memory zone number to match the lowest room vnum. It does not rewrite the source area file; inspect the zone before deciding whether a persistent data change is needed. |
+| Mob log `M cmd not executed` | The zone reset's random roll did not satisfy that mobile command's configured load percentage. This branch clears the current mobile context; inspect the reset command and surrounding diagnostics if the resulting population is unexpected. |
+
+`PERSISTENCE: worker_unavailable_flat_fallback` requires investigation rather than
+being treated as a successful boot replay. Preserve the fallback records and
+inspect the selected persistence pipeline. Raw SQL fallback execution is retired:
+the compatibility replay entry point quarantines records without executing them,
+and normal startup does not call it. These records are not a substitute for the
+typed player or critical-command journals. See
+[PLAYER_SAVE_PIPELINE.md](../persistence/PLAYER_SAVE_PIPELINE.md).
 
 ## Backups and maintenance scripts
 
@@ -1070,10 +1123,12 @@ the timer penalty.
 
 ## Development vs production checklist
 
-- Development: local/development/test `ENVIRONMENT`, loopback database host,
-  explicit non-production `DB_NAME` in `DB_ALLOWED_TARGETS`, non-7777 listener
-  (for example port 4000 via `--dev`), and a `TEST_MUD` build. The port does not
-  select the database.
+- Development: `ENVIRONMENT=local`, a listener distinct from the configured
+  production port (for example `4000` via `--dev`), and `BUILD_PROFILE=development`
+  (which defines `TEST_MUD`). For MariaDB testing, use an allow-listed loopback
+  target and explicit non-production `DB_NAME`. For native flat files, use the
+  client-free build and private `FLATFILE_STATE_DIR`. The port is a guard rather
+  than the primary authority selector.
 - Production: production `ENVIRONMENT`, an explicit allow-listed database target,
   TLS with an absolute trusted `DB_SSL_CA` whenever database traffic leaves loopback,
   a `BUILD_PROFILE=production` binary, a real listener TLS certificate linked as
@@ -1084,9 +1139,16 @@ the timer penalty.
 
 ### Release boundary
 
-This repository declares no production hosting provider, deployment trigger, service
-account, or public URL. Release authorization and platform rollback are operator-owned
-decisions made outside it. Repository-owned validation ends at the workflows in
-`.github/workflows/`; their local equivalents are `./scripts/format.sh --check`,
+The repository includes production service templates, public-health workflows,
+and a dated topology record in [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+Those files document deployment inputs and prior verification; they do not establish
+the current host state or authorize a release. Release approval, actual service
+identity, cutover and rollback remain operator-owned decisions.
+
+Validate changes with the applicable local build, focused regressions and
+persistence/gameplay journeys. Broader local entry points include
+`./scripts/format.sh --check`,
 `python3 tests/async/test_compiler_warning_profile.py`, `make test-all`, and
-`make security-check`.
+`make security-check`; `.github/workflows/` defines the hosted checks. Follow any
+applicable review and branch protections, without treating CI completion as a
+prerequisite for finishing local verification.
