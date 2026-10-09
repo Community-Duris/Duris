@@ -9,6 +9,11 @@ authoritative.
 
 `take` is a complete alias for `get`; both names dispatch to `do_get()`.
 
+The table describes ordinary item authority. When economic gameplay authority is
+active, `wear all` and `remove all` are refused; single-item equipment changes use
+the typed accounting route. This conditional behavior does not imply that the
+[accounting release gate](../persistence/ECONOMY_ACCOUNTING.md) is qualified.
+
 | Operation | Accepted batch syntax | Selection and destination |
 | --- | --- | --- |
 | Pick up from a room | `get all`, `take all` | Every eligible visible floor object. |
@@ -161,7 +166,9 @@ only after the durable part commits. `wear all`, `remove all`, `junk`, `bury`,
 `donate`, and `empty` remain synchronous loops rather than multi-root ownership
 commands.
 
-Item-transfer payload version 6 is the variable-length multi-root format.
+Item-transfer payload version 6 introduced the variable-length multi-root format.
+Later versions extend it; current format constants are defined in
+[`item_transfer_command.h`](../../src/item/item_transfer_command.h).
 Versions 2 through 5 retain their fixed 12-entry compatibility layout. General
 item transfers accept the runtime's 3,000-item staff inventory ceiling within
 the existing 128 KiB snapshot limit; shop-trade payloads retain their 12-item

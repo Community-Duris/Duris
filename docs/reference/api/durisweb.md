@@ -13,24 +13,31 @@ server's production WebSocket listener is loopback-only.
 4. Within 30 seconds send
    `{"type":"cmd","cmd":"durisweb_auth","data":{"sig":"<64 hex>"}}`.
 
-The nonce is random, connection-bound, single-use, and invalidated after an
-authentication attempt. The server accepts the adjacent minute on either side
-for clock skew. GMCP peers request the same challenge with
+The nonce is random and connection-bound. Signature verification consumes it on
+success or failure. Request a fresh challenge before retrying authentication,
+including a retry signed with the previous key. The server accepts the adjacent
+minute on either side for clock skew. GMCP peers request the same challenge with
 `Core.Hello {"requestAuthChallenge":true}` and receive
 `Core.AuthChallenge {"nonce":"...","expiresIn":30}` before sending a second
 `Core.Hello` with `sig`.
 
 For zero-downtime key rotation, deploy the new key as `DURISWEB_SECRET`, retain
 the old key temporarily as `DURISWEB_SECRET_PREVIOUS`, switch the backend, then
-remove the previous key. The backend signs with the current key first and makes
-exactly one retry with the previous key after an authentication rejection; it
-does not loop between credentials.
+remove the previous key. During rotation, the server checks the signature against
+the current and optional previous keys using the same challenge. A usable current
+key must be configured; the previous key is additional.
+
+Clients should sign with the current key first and make at most one retry with
+the previous key after an authentication rejection, using a fresh challenge.
+Do not loop between credentials. See
+[WebSocket and proxy settings](../../operations/CONFIGURATION.md#websocket-and-proxy-settings)
+for key requirements.
 
 ## Hook toggles
 
-Every event and service command the MUD serves can be disabled individually by
-an operator. Ids are shared with the DurisWeb repository and are defined there
-at `backend/src/hooks/registry.ts`.
+Operators can disable the MUD-gated hooks listed below individually. Ids are
+shared with the DurisWeb repository and are defined there at
+`backend/src/hooks/registry.ts`.
 
 Eight ids are gated on the MUD side: `auction_new`, `auction_bid`,
 `auction_close`, `player_presence`, `mud_shutdown`, `wholist`,
@@ -41,11 +48,16 @@ floats; anything `>= 0.5` counts as enabled, and a missing key defaults to
 enabled so an older properties file cannot disable a live integration. Change
 one at runtime with `properties set durisweb.hook.<id> 0.000` -- no restart.
 
+Hook-management commands and `durisweb_auction_remove` require service
+authentication but have no individual hook toggle.
+
 A disabled hook emits nothing at the source. Broadcasts return before building
 a payload; `admin_delete_character` returns an explicit error to the caller,
 since a request path has someone waiting on a response; `donation_delivery`
-drains its queue and drops, logging one line per pulse, so events cannot
-accumulate and flood on re-enable.
+discards up to eight queued notices per nominal one-second poll, logging one
+summary only when it drops any. Changing the toggle does not immediately flush
+the entire queue; notices can remain queued on re-enable. See the
+[donation event envelope](donation-events.md) for the delivery contract.
 
 `connection_log` is deliberately **not** gated here. The lines DurisWeb parses
 out of `logs/log/comm` are ordinary `LOG_COMM` operational logs the MUD writes
@@ -79,8 +91,10 @@ changes via `properties set` or `properties reload`:
 }
 ```
 
-`durisweb_hook_state` requires an authenticated service connection. An
-unauthenticated descriptor sending it is closed, as with other service commands.
+`durisweb_hook_state` requires an authenticated service connection and closes an
+unauthorized connection. `durisweb_hook_set` and `durisweb_auction_remove` use the
+same close behavior. An unauthorized `request_wholist` sends an authorization
+error and returns.
 
 Set one MUD-owned hook with the authenticated service command:
 
@@ -153,9 +167,18 @@ rejected rather than truncated. The MUD acknowledges submission:
 }
 ```
 
-`success` reports that the command was **accepted**, not that it committed. The
-committed outcome arrives on the existing auction event stream as a `removed`
-event. Removal carries no actor wallet, so it runs through the same actor-less
+`success` reports that the command was **accepted**, not that it committed.
+After commit, the auction publisher uses an `auction_close` WebSocket message
+with `data.reason` set to `"removed"` and the auction ID in `data.id`. This
+broadcast carries no `requestId`; it is separate from the admission
+acknowledgement.
+
+Receiving the notification depends on the `auction_close` hook being enabled
+and a live WebSocket service connection. Disabling that hook suppresses the
+notification while the removal command can still proceed. Failure to observe a
+notification does not establish that removal failed.
+
+Removal carries no actor wallet, so it runs through the same actor-less
 background path as auction expiry, and repeating the request for an auction that
 is no longer open is rejected by the repository. A retry is therefore safe.
 
@@ -180,17 +203,22 @@ Redis presence is an expiring generation inside the active SQL season namespace.
 single active `season_epoch` from `season_reset_state` and keep that value fixed for the
 complete read. A consumer must:
 
-1. Read the opaque instance from `<REDIS_NAMESPACE>:season:<epoch>:presence:current`; a missing key means
-   nobody is online.
+1. Read the opaque instance from `<REDIS_NAMESPACE>:season:<epoch>:presence:current`; if the key is missing,
+   no valid published presence generation is available.
 2. Scan only `<REDIS_NAMESPACE>:season:<epoch>:presence:session:<instance>:*` and read the matching JSON values.
    Missing keys are expired/offline sessions and must be ignored.
 3. Read `<REDIS_NAMESPACE>:season:<epoch>:presence:current` again after the scan. If it changed, discard the result and
    retry against the new instance.
 
-Both the pointer and session keys have a 180-second TTL and are refreshed every 60
-seconds by the game server's background worker. Never combine keys from different
-instances, deployments, environments, or season epochs. The
-`<REDIS_NAMESPACE>:season:<epoch>:player` pub/sub channel remains a
+The pointer and session keys use a 180-second TTL. The background worker's
+intended renewal interval is 60 seconds while it owns the generation and has
+active sessions; this is not a guaranteed refresh deadline. An unavailable worker,
+Redis outages, or failed renewal can let keys expire while players remain
+connected. Consumers must distinguish an unavailable feed from an empty, current
+published list.
+
+Never combine keys from different instances, deployments, environments, or
+season epochs. The `<REDIS_NAMESPACE>:season:<epoch>:player` pub/sub channel remains a
 transition hint; the expiring key set is the current-state source. A season change requires
 discarding all old keys and subscribing to the new channel.
 
