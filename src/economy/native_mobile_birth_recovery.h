@@ -206,4 +206,49 @@ bool native_mobile_birth_shared_shop_recovery_execution_valid(const critical_com
 							      std::span<const uint8_t>,
 							      uint64_t revision) noexcept;
 
+// Genuine prospective ORDINARY/shared companions. The caller includes all
+// already-live input capacities, inline spans/outputs and prior output heaps in
+// outer_live, and retains each admitted absolute high-water allowance through
+// transfer. Complete original canonical command/SHOP checkpoint/receipt compiler
+// and result/progress/phase/revision predicates remain authoritative. No source,
+// execution, publication or ACK authority. GCC13 libstdc++ C++11 ABI requests
+// only; unsupported policy refuses. Codec outputs and optional transferred heap
+// scalars remain unchanged on every refusal. Scalars exclude inline context.
+// Bool validators report false on any refusal; callers may retain callback
+// rejection independently when distinguishing resource and semantic refusal.
+economic_accounting_error native_mobile_birth_cash_role_recovery_encode_bounded(
+	const critical_command &, const native_mobile_birth_recovery_context &,
+	std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_recovery_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live, size_t *retained_context_heap_bytes = nullptr) noexcept;
+bool native_mobile_birth_cash_role_recovery_valid_bounded(const critical_native_recovery_envelope &,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t outer_live) noexcept;
+bool native_mobile_birth_cash_role_recovery_initial_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+bool native_mobile_birth_cash_role_recovery_terminal_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_encode_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_recovery_context &,
+	std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_shared_shop_recovery_context *, bool (*)(size_t, void *) noexcept,
+	void *, size_t outer_live, size_t *retained_context_heap_bytes = nullptr) noexcept;
+bool native_mobile_birth_shared_shop_recovery_valid_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+bool native_mobile_birth_shared_shop_recovery_initial_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+bool native_mobile_birth_shared_shop_recovery_terminal_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+
 #endif
