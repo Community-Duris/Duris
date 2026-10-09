@@ -2398,3 +2398,16 @@ authenticate with zero new/unmapped sites. Native tests stay batched. Complete
 scheduler/diagnostic/output/service-step/root admission remains open; no bypass,
 stub or wholebudget claim. Inactive/CLOSED accounting, incomplete coverage/BLOCKED
 release, protected WIP and primary ACTIVE goal persist.
+
+
+## Genuine scheduler diagnostic formatter implemented - 2026-10-09
+
+[Owning source](NATIVE_DIAGNOSTIC_FORMAT_ADMISSION_2026-10-09.md) preadmits actual
+named variadic workspace and exact prefix/body/suffix/NUL malloc request, preserving
+original full two-pass algorithm and strong pointer/retained-byte output transfer.
+Original logging/debug/send functions unchanged. RAW/final originalprefix/headerinverse/
+tokens PASS;931policies/397pins authenticate (two genuine utility pins added), zero
+new/unmapped sites. Native tests stay batched. Actual output queue/pager/fanout/logging/
+inspector/scheduler/service-step/root joins remain unfinished; no complete nativebudget
+claim. Inactive/CLOSED accounting, incomplete coverage/BLOCKED release, protected WIP
+and primary ACTIVE goal persist; no added gate.

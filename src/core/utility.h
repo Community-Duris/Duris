@@ -46,4 +46,14 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 
 int yes_no(const char *);
 
+#include <stdarg.h>
+// Owning exact original variadic formatting request, before malloc. Caller owns
+// already-live prefixes/suffixes/format/va_list and prior output in outer; retains
+// admitted peak through return and transferred request until free. Outputs strong
+// on refusal; pinned GCC13/C++11 ABI; libc formatting internals use existing policy.
+// No output delivery, log write, scheduler or accounting authority.
+bool diagnostic_format_variadic_message_bounded(const char *, const char *, const char *, va_list &,
+						char **, bool (*)(size_t, void *) noexcept, void *,
+						size_t outer_live,
+						size_t *retained_payload_bytes = nullptr) noexcept;
 #endif // _UTILITY_H_
