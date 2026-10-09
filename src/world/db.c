@@ -5902,10 +5902,42 @@ void shop_trade_original_procedure_binding_stage::commit_flat_unchecked() noexce
 void shop_trade_original_procedure_binding_stage::observe_normal_binding(
 	int number, obj_proc_type before, obj_proc_type after) noexcept
 {
+	// The same genuine ordinary notification follows the already-completed
+	// binding in either backend. Keep the SQL proof path unchanged below.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		observe_normal_binding_flat(number, before, after);
+		return;
+	}
 	// Private ordinary-constructor notification only. Never repair an arbitrary
 	// drift or reseal a runtime catalog; native behavior already ran unchanged.
 	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
 	    !recovery_object_templates_ready() || number < 0 || number > top_of_objt ||
+	    before == after || obj_index[number].func.obj != after ||
+	    (after != proclib_obj_cmd_bridge && !(after == item_switch && !before)) ||
+	    (after == proclib_obj_cmd_bridge &&
+	     !proclib_recovery_chain_stage::predecessor_matches(number, before)))
+		return;
+	const int vnum = obj_index[number].virtual_number;
+	auto found = std::lower_bound(recovery_object_templates.begin(),
+				      recovery_object_templates.end(), vnum,
+				      [](const auto &entry, int value)
+				      { return entry.vnum < value; });
+	if (found == recovery_object_templates.end() || found->vnum != vnum ||
+	    found->prototype.R_num != number || found->position != obj_index[number].pos ||
+	    found->special != before)
+		return;
+	found->special = after;
+}
+
+void shop_trade_original_procedure_binding_stage::observe_normal_binding_flat(
+	int number, obj_proc_type before, obj_proc_type after) noexcept
+{
+	// Private post-binding notification only: prove the genuine native change
+	// against this sealed flat entry, never reseal or repair arbitrary drift.
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    !flatfile_coin_boot_templates::ready() || number < 0 || number > top_of_objt ||
 	    before == after || obj_index[number].func.obj != after ||
 	    (after != proclib_obj_cmd_bridge && !(after == item_switch && !before)) ||
 	    (after == proclib_obj_cmd_bridge &&

@@ -2527,3 +2527,21 @@ factory/source/binding/publication/checkpoint/ACK, full 32 MiB and accepting/
 restart qualification remain open. Separate flat-binding WIP is excluded.
 Accounting remains inactive, admission CLOSED, coverage incomplete and release
 BLOCKED. Plans 2–4, combined Plan 5 and R1–R8 remain open; no activation follows.
+
+
+## Sealed flat lazy-binding notification repaired — 2026-10-09
+
+[The source fix](FLAT_LAZY_BINDING_NOTIFICATION_2026-10-09.md) connects the two genuine ordinary post-binding
+notifications to the sealed flat catalog. Exact backend/index/predecessor/template
+before/after checks advance only the matching entry; the original SQL body and
+native callbacks remain unchanged. Independent finite source review, exact
+inverses and changed-line format/token checks pass. All 931 policies and 391
+source pins retain their scope, with zero new/unmapped lexical writer sites.
+
+Only the complete notification fix is published. The separate native flat
+factory draft and unrelated changes remain byte-exact and unpublished. Builds/
+tests stay in the major-plan batch. Genuine flat cursor/backend/root identity,
+warm/cold publication, bounded current proof, once-only checkpoints, durable
+terminal transfer and accepting/restart qualification remain open. Accounting
+stays inactive, admission CLOSED, coverage incomplete and release BLOCKED.
+The primary goal remains ACTIVE; Plans 2–4, combined Plan 5 and R1–R8 are open.
