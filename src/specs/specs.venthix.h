@@ -48,10 +48,21 @@ class quest_mobile_native_zombie_stage
 	static bool prepare(P_obj, quest_mobile_native_zombie_stage &) noexcept;
 	static bool restore(P_obj, quest_mobile_native_zombie_stage &) noexcept;
 	bool publish(P_obj) noexcept;
+	// Caller includes current registry observation and the private retained game
+	// exactly once in outer, retains admitted peak through return, and recounts
+	// registry + stage on EVERY return. No budget callback after enrollment.
+	bool publish_bounded(P_obj, bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 	static bool observe_published(P_obj) noexcept;
 	bool discard() noexcept;
 };
 
+// Game-thread-only allocation-free actual registry inline + vector capacity +
+// owned game/zombie-vector requests under pinned GCC13 C++11 ABI. Strong output.
+// The private unpublished game is excluded. Caller must retain/recount this
+// global allowance after EVERY bounded publication return (including false).
+// Observation grants no admission, source, publication or gameplay authority.
+bool quest_mobile_native_zombie_registry_storage_bytes(size_t *) noexcept;
 int zgame_load_zombie(P_obj obj);
 void zgame_clear_zombies(P_obj obj);
 int zg_count_zombies(P_obj obj);
