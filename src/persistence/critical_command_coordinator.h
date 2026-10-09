@@ -467,6 +467,11 @@ class critical_zone_reset_item_publication_owner final
 	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
 					       uint64_t *, bool (*)(size_t, void *) noexcept,
 					       void *, size_t outer_live) noexcept;
+	// Strong passive snapshot of actual retained coordinator objects/capacities
+	// under its original mutex; includes safe immutable flat-owner charges.
+	// Snapshot is not a lease and does not cover external worker-local transient
+	// workspaces. Never acquire this mutex from a held coordinator/journal callback.
+	static bool current_storage_bytes(size_t *) noexcept;
 	// ROOM-only complete support proof through the bounded callback paired with
 	// the actually selected original admission callback. Pure same-lock proof;
 	// no admission, source, delivery, execution or activation authority.
