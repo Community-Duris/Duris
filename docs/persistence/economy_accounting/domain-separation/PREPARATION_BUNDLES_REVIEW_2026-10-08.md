@@ -2888,6 +2888,26 @@ owner is now observably absent in these bodies rather than merely private/unknow
 Native producer/fault access, prospective aggregate32MiB, full current-world/
 custody/source/origin/publication/terminal/ACK qualification remain primary-owned.
 
+New primary compiler-repair frontier during this handoff:
+201b5fc71eeb05c8c04db66fbc34e66bbb4c89a1, nine commits since 43807ab01, changes
+13 src and three handoff/writer-metadata paths. Latest handoff REPORTS all eleven
+affected translation units compile in both fresh strict production profiles;
+full rebuilt binary link/smoke remain PENDING, no gameplay/release qualification.
+Root reads actual relevant delta: private actor observations move into the existing
+birth owner, ROOM sorts only its copied observation UID list, shared SQL decode
+errno is unsigned, optional diagnostic parameter names preserve signatures;
+other declared repairs include exact widened SHOP identity checks, reference-only
+census, authoritative declarations and refusal cleanup rename. These are actual
+source changes and reported object results, not root-executed compilation.
+Root authenticates all four next architecture bounded-storage provider bodies
+byte-identical from original C to this current frontier. Both INITIAL keeper
+capture_shared_checkpoint and prepare_shared_capture function bodies are also
+byte-identical; surrounding private actor ownership has a published repair.
+Live tasks retain work/original baseline and incorporate exact current scoped
+correspondence, without restart/checkout advance. Earlier R/F sealed reviews stay
+historical, not automatic review/qualification of this successor. Original gates,
+full32MiB/current-world/source/terminal/ACK/native qualification remain required.
+
 Evolving queue after these handoffs: one bounded active delivery per chat.
 Architecture now owns PUBLISHED_BOUNDED_STORAGE_BOUNDARY_REVIEW_2026-10-09.txt
 in D:/Dev/Temp/published-bounded-storage-boundary-review-20261009/. Review actual
