@@ -145,4 +145,53 @@ critical_command_journal_result critical_command_journal_replace_native_recovery
 	const critical_native_recovery_envelope &, const critical_native_recovery_envelope &,
 	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
 
+// Genuine prospective startup companions only; original init/replay and their
+// defaults remain unchanged. The startup owner supplies its authentic input,
+// inline context and full ROOT/global scratch in outer_live, excluding metadata
+// owned here and CURRENT coordinator storage. Its reserve must supply genuine
+// same-lock CURRENT coordinator admission while the real init lock is held;
+// no locking outside coordinator observer or journal reentry is allowed.
+// Persistent rewrite uncertainty is counted once separately by the aggregate.
+using critical_command_replay_bounded_fn = bool (*)(critical_command command,
+						    void *original_context,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *budget_context,
+						    size_t outer_live) noexcept;
+using critical_native_recovery_replay_bounded_fn = bool (*)(
+	critical_native_recovery_envelope envelope, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept;
+
+bool critical_command_journal_init_bounded(
+	const char *directory, size_t quota_bytes, bool (*reserve)(size_t, void *) noexcept,
+	void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes = nullptr) noexcept;
+
+// Complete mixed admitted scan precedes every callback. Journal lock is released
+// before callbacks exactly as ordinary replay. Each callback outer owns all
+// retained mixed frame capacities, current native local/parameter carriers and
+// moved heap once. The owning startup caller keeps genuine coordinator ownership
+// across scan and callbacks; callback receivers must retain that complete prefix.
+// These declarations select no startup path and grant no execution/ACK authority.
+critical_command_journal_result critical_command_journal_replay_with_native_bounded(
+	critical_command_replay_bounded_fn legacy_replay,
+	critical_native_recovery_replay_bounded_fn native_replay, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes = nullptr) noexcept;
+
+// Optional outputs above are genuine journal-held metadata snapshots even on
+// failure; unavailable observations leave outputs unchanged. Metadata excludes
+// the published rewrite carrier term already owned by the aggregate. Caller
+// admits its output and actual provider frames, and retains J only during its
+// genuine ownership scope. No initialized/readiness inference or lease follows.
+class zone_reset_item_owner;
+class critical_startup_journal_budget_owner final
+{
+	friend class zone_reset_item_owner;
+	// Fresh passive observation for the later startup owner after its genuine
+	// coordinator scope. Takes journal mutex: never call while journal is held,
+	// never install in the pure seven-global observer. Caller admits actual
+	// lock_guard/size_t observation frame plus its real output storage.
+	static bool current_metadata_bytes(size_t *) noexcept;
+};
+
 #endif
