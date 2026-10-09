@@ -1,0 +1,7 @@
+# Persistent journal current ownership - 2026-10-09
+
+The journal owner now publishes one complete current storage value under its existing mutex, including real directory/path capacity, fixed objects and all rewrite buffers. Actual assignment exits, rewrite transitions and shutdown/reset retain their surviving capacities. The original rewrite-only value is preserved. The actual runtime aggregate uses the complete value only after genuine coordinator observer registration, replacing the old term rather than adding both; startup providers retain their explicit metadata prefix and include the new atomic once.
+
+Unavailable or unsupported observations and overflow use a refusing sentinel. Publication allocates nothing and adds no fallible callback after effects. Complete independent RAW, strong full-source reanchor and formatted source review passed. Exact inverse/tokens/logical preprocessing and protected work passed; 400 source pins authenticate, 931 writer policies remain unchanged, zero new/unmapped sites. Evidence: tmp/journal-persistent-projection-integrated-20261009.
+
+The actual startup caller must complete the reviewed scope/registration/prefix handoff. Full mixed replay receivers, full admission selection and integrated native qualification remain open. Native execution stays deferred to major-plan readiness. Accounting inactive, admission CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

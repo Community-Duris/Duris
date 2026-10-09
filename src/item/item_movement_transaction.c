@@ -4897,7 +4897,13 @@ bool native_quest_preparation_capacity(size_t incoming, bool include_driver = tr
 			return false;
 		incoming += native_quest_birth_retained_bytes;
 	}
-	const size_t journal_storage = critical_command_journal_native_rewrite_storage_bytes();
+	// Startup prefixes own journal metadata until the genuine outside coordinator
+	// observer is registered. Runtime replaces the old rewrite-only term with
+	// one same-lock published complete journal term; never add both.
+	const size_t journal_storage =
+		native_quest_coordinator_observer ?
+			critical_command_journal_persistent_storage_bytes() :
+			critical_command_journal_native_rewrite_storage_bytes();
 	if (journal_storage > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
 		return false;
 	incoming += journal_storage;

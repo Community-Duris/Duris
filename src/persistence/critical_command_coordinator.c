@@ -7680,3 +7680,266 @@ critical_submit_result critical_zone_reset_item_publication_owner::submit_bounde
 	}
 #endif
 }
+
+namespace
+{
+// Genuine init owns coordinator_mutex throughout this private ROOM callback.
+// Input envelope, replay context and original lock belong to caller_outer.
+// Private state stays here until its exact transfer into CURRENT coordinator.
+struct room_replay_workspace
+{
+	const std::unique_lock<std::mutex> &lock;
+	std::string identity;
+	std::string fence_key;
+	std::unique_ptr<operation_state> state;
+	decltype(operations)::iterator found;
+	decltype(fences)::iterator fence_found;
+	native_identity_queue *fence_queue = nullptr;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer = 0, partial = 0, retained = 0, extra = 0, fresh = 0, key_index = 0;
+	bool continuation = false, holds_fences = false, inserted = false;
+	bool rollback_cleanup_reserved = false;
+	room_replay_workspace(const std::unique_lock<std::mutex> &actual_lock,
+			      bool (*callback)(size_t, void *) noexcept, void *opaque,
+			      size_t caller_outer) noexcept
+		: lock(actual_lock)
+		, reserve(callback)
+		, context(opaque)
+		, outer(caller_outer)
+	{
+	}
+};
+
+bool room_replay_reserve_locked(size_t exclusive_live, void *opaque) noexcept
+{
+	auto &work = *static_cast<room_replay_workspace *>(opaque);
+	return critical_room_shared_budget_lender::reserve(work.lock, work.reserve, work.context,
+							   exclusive_live);
+}
+
+bool room_replay_local_prefix(room_replay_workspace &work, size_t request = 0) noexcept
+{
+	work.partial = work.outer;
+	return room_storage_add(work.partial, sizeof(room_replay_workspace)) &&
+	       (!work.rollback_cleanup_reserved ||
+		room_storage_add(work.partial,
+				 2 * sizeof(std::array<char, 9>) + sizeof(std::string_view))) &&
+	       room_storage_string(work.partial, work.identity) &&
+	       room_storage_string(work.partial, work.fence_key) &&
+	       (!work.state ||
+		(room_storage_add(work.partial, sizeof(operation_state)) &&
+		 room_storage_command(work.partial, work.state->command) &&
+		 (!work.state->native ||
+		  (room_storage_add(work.partial, sizeof(native_operation_context)) &&
+		   room_storage_add(work.partial, work.state->native->attachment.capacity()))))) &&
+	       room_storage_add(work.partial, request);
+}
+
+bool room_replay_admit(room_replay_workspace &work, size_t request = 0) noexcept
+{
+	return room_replay_local_prefix(work, request) &&
+	       room_replay_reserve_locked(work.partial, &work);
+}
+
+bool room_replay_rollback(room_replay_workspace &work) noexcept
+{
+	// Original rollback, including empty newly constructed fence queues. Its
+	// genuine fixed cleanup carriers were reserved BEFORE table insertion.
+	// No callback, codec, new carrier or synthetic throw follows a refusal.
+	if (work.inserted)
+	{
+		work.found = operations.find(work.identity);
+		if (work.found != operations.end())
+		{
+			if (work.holds_fences)
+				remove_fences(work.identity, work.found->second->command);
+			operations.erase(work.found);
+		}
+	}
+	work.state.reset();
+	pending.erase(std::remove(pending.begin(), pending.end(), work.identity), pending.end());
+	update_depth();
+	return false;
+}
+
+// Private unselected ROOM replay insertion, NOT submission or mixed-family
+// fallback. The complete mixed caller owns the real init lock and authentic
+// journal/input prefix. Its optional observer must be the provided genuine
+// startup restore callback with original duplicate/new-registry rollback.
+[[maybe_unused]] bool
+enqueue_room_native_replayed_bounded(const critical_native_recovery_envelope &original,
+				     const replay_observer_context &replay,
+				     const std::unique_lock<std::mutex> &actual_init_lock,
+				     bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+				     size_t exclusive_outer) noexcept
+{
+	if (!reserve || !replay.native_observer || !replay.native_bounded_observer ||
+	    !zone_reset_typed_command(original.command) ||
+	    actual_init_lock.mutex() != &coordinator_mutex || !actual_init_lock.owns_lock())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	room_replay_workspace work(actual_init_lock, reserve, budget_context, exclusive_outer);
+	try
+	{
+		if (!room_replay_admit(work))
+			return false;
+		// Same selected native_envelope_execution_supported decision for ROOM:
+		// original execution support remains mandatory and its genuine bounded
+		// companion performs the exact allocating proof under this real lock.
+		if (!room_replay_local_prefix(work) ||
+		    !(critical_command_valid(original.command) ||
+		      (original.command.schema_version ==
+			       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		       critical_command_envelope_valid(original.command) &&
+		       extension_validator_callback && extension_validator_bounded_callback &&
+		       extension_validator_bounded_callback(
+			       original.command, room_replay_reserve_locked, &work, work.partial))))
+			return false;
+		if (!room_replay_admit(work) ||
+		    !room_checkpoint_size_bounded(original, &work.retained,
+						  room_replay_reserve_locked, &work, work.partial))
+			return false;
+		// Replay accepts authentic execution AND continuation. initial_bounded
+		// would incorrectly reject phase2/revision continuations and is not used.
+		if (!room_replay_admit(work) || !zone_reset_validators_ready() ||
+		    !zone_reset_validators.valid_bounded ||
+		    !zone_reset_validators.valid_bounded(original, room_replay_reserve_locked,
+							 &work, work.partial))
+			return false;
+		if (!room_replay_admit(work))
+			return false;
+		// Original operation_key return/local coexistence. Its actual 16-byte
+		// GCC13 string requests 17 bytes; assignment consumes the returned string.
+		work.extra = sizeof(std::string);
+		if (!room_storage_add(work.extra, original.command.operation_id.bytes.size() + 1) ||
+		    !room_replay_admit(work, work.extra))
+			return false;
+		work.identity = operation_key(original.command.operation_id);
+		if (!room_replay_admit(work))
+			return false;
+		if (operations.find(work.identity) != operations.end() ||
+		    operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
+		    work.retained > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+			return false;
+		work.continuation = original.phase ==
+				    critical_native_recovery_phase::continuation_pending;
+		work.holds_fences = !work.continuation ||
+				    native_birth_origin_command(original.command) ||
+				    zone_reset_typed_command(original.command);
+		if (!room_replay_admit(work, sizeof(operation_state) +
+						     sizeof(std::unique_ptr<operation_state>)))
+			return room_replay_rollback(work);
+		work.state = std::make_unique<operation_state>();
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		// Fresh default state owns no vector capacity. This genuine source profile
+		// reserves ALL command/attachment copy requests and the original native
+		// allocation before that complete original copy sequence. There is no
+		// callback inside the sequence, and its resulting private state is censused
+		// at the next cut using actual vector capacities, not encoded byte length.
+		work.fresh = 0;
+		if (!room_checkpoint_heap(original, true, work.fresh) ||
+		    !room_storage_add(work.fresh, sizeof(native_operation_context)) ||
+		    !room_storage_add(work.fresh,
+				      sizeof(std::unique_ptr<native_operation_context>)) ||
+		    !room_replay_admit(work, work.fresh))
+			return room_replay_rollback(work);
+		work.state->command = original.command;
+		work.state->native = std::make_unique<native_operation_context>();
+		work.state->native->revision = original.revision;
+		work.state->native->phase = original.phase;
+		work.state->native->attachment = original.attachment;
+		work.state->retained_bytes = work.retained;
+		work.state->queued_at_usec = now_usec();
+		work.state->attempt = 1;
+		work.state->attachments = 0;
+		work.state->phase = work.continuation ?
+					    critical_operation_phase::native_continuation_pending :
+					    critical_operation_phase::queued;
+		work.state->retain_until_publication = true;
+		work.state->admission_failure_queued = false;
+		work.state->native_physical_released = work.continuation;
+		work.rollback_cleanup_reserved = true;
+		if (!operations.next_unique_insert_extra_peak(work.identity, 0, &work.extra) ||
+		    !room_replay_admit(work, work.extra))
+			return room_replay_rollback(work);
+		operations.emplace(work.identity, std::move(work.state));
+		work.inserted = true;
+		// state is now genuinely owned by CURRENT C; the moved-from pointer is
+		// excluded from private scratch before any pending/fence request.
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		if (!work.continuation)
+		{
+			if (!pending.push_back_extra_peak(work.identity, &work.extra) ||
+			    !room_replay_admit(work, work.extra))
+				return room_replay_rollback(work);
+			pending.push_back(work.identity);
+			if (!room_replay_admit(work))
+				return room_replay_rollback(work);
+		}
+		if (work.holds_fences)
+		{
+			work.found = operations.find(work.identity);
+			for (work.key_index = 0;
+			     work.key_index < work.found->second->command.keys.size();
+			     ++work.key_index)
+			{
+				if (!room_replay_admit(work,
+						       sizeof(std::string) +
+							       2 * sizeof(std::array<char, 9>)))
+					return room_replay_rollback(work);
+				work.fence_key = entity_key(
+					work.found->second->command.keys[work.key_index]);
+				work.fence_found = fences.find(work.fence_key);
+				if (work.fence_found == fences.end())
+				{
+					if (!native_identity_queue::initial_heap_bytes(
+						    &work.fresh) ||
+					    !fences.next_unique_insert_extra_peak(
+						    work.fence_key, work.fresh, &work.extra) ||
+					    !room_replay_admit(work, work.extra))
+						return room_replay_rollback(work);
+					work.fence_queue = &fences[std::move(work.fence_key)];
+					if (!room_replay_admit(work))
+						return room_replay_rollback(work);
+				}
+				else
+					work.fence_queue = &work.fence_found->second;
+				if (!work.fence_queue->push_back_extra_peak(work.identity,
+									    &work.extra) ||
+				    !room_replay_admit(work, work.extra))
+					return room_replay_rollback(work);
+				work.fence_queue->push_back(work.identity);
+				if (!room_replay_admit(work))
+					return room_replay_rollback(work);
+			}
+			health.fenced_keys = fences.size();
+		}
+		// Actual optional ROOM startup observer only; original mandatory observer
+		// remains installed, but no unbounded mixed fallback runs on this route.
+		// The genuine startup wrapper itself owns post-attach current/rollback.
+		if (!room_replay_local_prefix(work) ||
+		    !replay.native_bounded_observer(original, replay.context,
+						    room_replay_reserve_locked, &work,
+						    work.partial))
+			return room_replay_rollback(work);
+		// No fallible callback after successful new ROOT registry attachment.
+		// Exact original successful tail is nonallocating.
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		// Genuine allocation exceptions only; actual init lock remains owned.
+		// Partially copied private state and actual inserted nodes are removed,
+		// while real surviving bucket/deque capacity stays in CURRENT C.
+		return room_replay_rollback(work);
+	}
+#endif
+}
+} // namespace: complete private bounded ROOM passive replay insertion
