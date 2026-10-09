@@ -44,6 +44,11 @@ class inert_item_stage
 	static inert_item_stage_result prepare_money_for_flat_boot(
 		const player_item_snapshot &, uint64_t, const std::array<int32_t, 4> &,
 		inert_item_stage &) noexcept;
+
+	static inert_item_stage_result
+	allocate_literal_bounded(const object_template &, const player_item_snapshot &,
+				 inert_item_stage &, bool (*)(size_t, void *) noexcept, void *,
+				 size_t, size_t * = nullptr) noexcept;
 	static inert_item_stage_result allocate_literal(const object_template &,
 							const player_item_snapshot &,
 							inert_item_stage &) noexcept;
@@ -56,6 +61,9 @@ class inert_item_stage
 								 inert_item_stage &) noexcept;
 };
 
+// Allocation-free serialized CURRENT object/affect pool storage, including
+// descriptor/list/MEMCHK headers and unused mapped pages. Strong scalar output.
+bool native_mobile_birth_literal_pool_storage_bytes(size_t *) noexcept;
 // Distinct private birth literal allocator. No construction/probe/conversion,
 // UID issuance, native enrollment or publication authority; private stage only.
 class native_mobile_birth_literal_stage final
@@ -69,6 +77,16 @@ class native_mobile_birth_literal_stage final
 	operator=(const native_mobile_birth_literal_stage &) = delete;
 	static bool prepare(const object_template &, const player_item_snapshot &,
 			    native_mobile_birth_literal_stage &) noexcept;
+
+	// Caller outer includes CURRENT object+affect pool storage exactly once, all
+	// inputs/prior output heap and inline output. Refresh pool census on EVERY
+	// return: newly mapped/free pages and created pool metadata remain retained.
+	// Returned scalar owns raw strings/description nodes+MEMCHK headers only;
+	// object/affect slots belong to those shared pools and must not be counted twice.
+	static bool prepare_bounded(const object_template &, const player_item_snapshot &,
+				    native_mobile_birth_literal_stage &,
+				    bool (*)(size_t, void *) noexcept, void *, size_t,
+				    size_t *retained_output_heap = nullptr) noexcept;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;

@@ -3147,3 +3147,15 @@ prefix/inverse/tokens/preprocessing passed; 931 policies/399 pins authenticate,
 zero new/unmapped sites. Full cold DB/four-route/pulse/recovery remains open;
 tests stay batched, inactive/CLOSED accounting, coverage incomplete, release
 BLOCKED and primary goal ACTIVE. No additional gate or full acceptance claim.
+
+
+## Complete frozen literal allocation admission implemented - 2026-10-09
+
+[Actual owning providers](NATIVE_LITERAL_ALLOCATION_ADMISSION_2026-10-09.md) retain
+full metadata/spellbook semantics and preadmit actual copies/raw requests/MEMCHK and
+configured object/affect pool growth with strong private outputs. CURRENT pool storage
+must be counted once and paired with warm/cold pool-excluding stage census before
+shared aggregate selection. RAW/final review/prefix/headerinverse/tokens/preprocessing
+passed; 931 policies/399 pins authenticate, zero new/unmapped sites. Cold DB/four-route/
+pulse/recovery integration remains open; native tests stay batched. Inactive/CLOSED
+accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
