@@ -1,5 +1,6 @@
 #include "world/zone_reset_room_publication.h"
 #include "player/inert_item_stage.h"
+#include "item/item_movement_transaction.h"
 #include "specs/specs.venthix.h"
 #include "net/comm.h"
 #include "world/world_activity.h"
@@ -4825,6 +4826,17 @@ bool zone_reset_room_publication_owner::retained_size_excluding_literal_pools(
 #endif
 	*output = bytes;
 	return true;
+}
+
+bool zone_reset_room_publication_owner::retained_size_registered_literal_pool(
+	const zone_reset_room_publication_stage &stage, size_t *output) noexcept
+{
+	// Genuine registered ownership is a passive accounting identity, not source
+	// authority. Ordinary SQL/nonflat observers preserve their original bodies.
+	return !persistence_mode_requires_mysql() && stage.state_ && stage.state_->flat_backend &&
+			       item_native_quest_global_budget_scope_owner::literal_pool_owned() ?
+		       retained_size_excluding_literal_pools(stage, output) :
+		       retained_size(stage, output);
 }
 
 bool zone_reset_room_publication_owner::completion_warm_bounded(
