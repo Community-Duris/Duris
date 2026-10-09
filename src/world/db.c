@@ -12628,3 +12628,426 @@ bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 	*output = bytes;
 	return true;
 }
+
+bool quest_mobile_native_item_stage::adopt_published_bounded(
+	const player_item_snapshot &literal, const native_mobile_birth_item_recipe &recipe,
+	P_obj actual, const quest_mobile_native_item_progress &progress,
+	const std::span<const quest_mobile_native_item_effect> &effects,
+	quest_mobile_native_item_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)literal;
+	(void)recipe;
+	(void)actual;
+	(void)progress;
+	(void)effects;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	size_t globals = 0, fixed = outer_live;
+	if (!cold_birth_current_globals(&globals) || outer_live < globals ||
+	    !cold_birth_add(fixed, sizeof(cold_birth_stage_budget)) ||
+	    !cold_birth_add(fixed, sizeof(quest_mobile_native_item_stage)) ||
+	    !cold_birth_add(fixed, sizeof(std::unique_ptr<implementation>)) ||
+	    !cold_birth_add(fixed, sizeof(nevent_handle)) || !reserve(fixed, context))
+		return false;
+	cold_birth_stage_budget budget{ reserve, context, fixed - globals };
+
+	// Private original owner must authenticate its command, carrier, receipt,
+	// native lifetime and complete SQL/world cut. These values grant no authority.
+	if (!output || output->state_ || !actual || !nevent_is_game_thread() ||
+	    !progress.admitted || !progress.published ||
+	    !cold_birth_recipe_valid_bounded(literal, recipe, budget))
+		return false;
+	const size_t count = recipe.libraries.size() * 2 + 3;
+	if (effects.size() != count || progress.next_step > count ||
+	    (progress.current_step_started && progress.next_step == count))
+		return false;
+	for (size_t i = 0; i < count; ++i)
+	{
+		const auto &effect = effects[i];
+		const size_t general = recipe.libraries.size() * 2;
+		const bool expected_periodic = i < general && !(i & 1) ?
+						       recipe.libraries[i / 2].periodic_requested :
+						       (i == general && recipe.general_periodic);
+		if (effect.periodic != (effect.returned && expected_periodic))
+			return false;
+		if (i < progress.next_step)
+		{
+			if (!effect.started || !effect.returned || !effect.succeeded)
+				return false;
+		}
+		else if (i == progress.next_step && progress.current_step_started)
+		{
+			if (!effect.started || effect.succeeded)
+				return false;
+		}
+		else if (effect.started || effect.returned || effect.succeeded || effect.periodic)
+			return false;
+	}
+	quest_mobile_native_item_stage candidate;
+	try
+	{
+		const auto *prototype = cold_birth_bound_flat_template(literal, recipe);
+		if (!prototype || prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    !obj_index || actual->R_num != prototype->R_num ||
+		    find_birth_live_object(actual, literal.object_uid) != actual ||
+		    !original_birth_literal_matches_bounded(actual, literal, reserve, context,
+							    budget.live()) ||
+		    actual->trap_eff != recipe.trap_eff || actual->trap_dam != recipe.trap_dam ||
+		    actual->trap_charge != recipe.trap_charge ||
+		    actual->trap_level != recipe.trap_level)
+			return false;
+		size_t matching = 0;
+		for (P_obj object = object_list; object; object = object->next)
+			if (object->obj_uid == literal.object_uid)
+			{
+				if (object != actual)
+					return false;
+				++matching;
+			}
+		if (matching != 1)
+			return false;
+		// Retained returned-success never recreates an event or proves its current
+		// scheduler presence. Adopt only the actual requested completed schedule.
+		for (size_t i = 0; i < recipe.libraries.size(); ++i)
+			if (effects[i * 2 + 1].succeeded &&
+			    recipe.libraries[i].periodic_requested &&
+			    !get_scheduled(actual, proclib_obj_event))
+				return false;
+		const size_t general = recipe.libraries.size() * 2;
+		if ((effects[general + 1].succeeded && recipe.general_periodic &&
+		     !get_scheduled(actual, event_object_proc)) ||
+		    (effects[general + 2].succeeded && recipe.random_exit_requested &&
+		     !get_scheduled(actual, event_random_exit)))
+			return false;
+		obj_proc_type effective;
+		if (!original_birth_procedure(recipe.procedure, &effective))
+			return false;
+		const int nr = prototype->R_num;
+		const auto current = obj_index[nr].func.obj;
+		obj_proc_type original = recipe.binding_form ==
+							 native_mobile_birth_binding_form::bridge ?
+						 proclib_obj_cmd_bridge :
+						 effective;
+		const bool bridge = original == proclib_obj_cmd_bridge || !recipe.libraries.empty();
+		if (bridge)
+		{
+			if (current != proclib_obj_cmd_bridge ||
+			    !proclib_recovery_chain_stage::predecessor_matches(nr, effective))
+				return false;
+		}
+		else if (current != original &&
+			 !(original == nullptr && actual->type == ITEM_SWITCH &&
+			   current == item_switch))
+			return false;
+
+		size_t arrays = 0;
+		if (!cold_birth_stage_array_bytes(recipe.libraries.size(), &arrays) ||
+		    !cold_birth_add(arrays, sizeof(implementation)) || !budget.admit(arrays))
+			return false;
+		auto state = std::make_unique<implementation>();
+		state->bounded_cold_literal = true;
+		budget.heap = arrays;
+		state->index = obj_index;
+		state->rnum = nr;
+		state->vnum = literal.vnum;
+		state->position = obj_index[nr].pos;
+		state->uid = literal.object_uid;
+		state->original_proc = original;
+		state->effective_proc = effective;
+		state->admitted = true;
+		state->published = true;
+		state->general_initialized = true;
+		state->general_periodic = recipe.general_periodic;
+		state->general_delay = recipe.general_delay;
+		state->random_exit_requested = recipe.random_exit_requested;
+		state->next_step = progress.next_step;
+		state->current_step_started = progress.current_step_started;
+		state->libraries.reserve(recipe.libraries.size());
+		state->parsed_descriptions.reserve(recipe.libraries.size());
+		state->requested.reserve(recipe.libraries.size());
+		state->library_delays.reserve(recipe.libraries.size());
+		for (const auto &saved : recipe.libraries)
+		{
+			size_t index;
+			if (!quest_mobile_native_original_proclib::retained_index(saved.library,
+										  &index))
+				return false;
+			auto *description = actual->ex_description;
+			for (uint32_t i = 0; description && i < saved.extra_description_index; ++i)
+				description = description->next;
+			if (!description)
+				return false;
+			state->libraries.push_back(index);
+			state->parsed_descriptions.push_back(description);
+			state->requested.push_back(saved.periodic_requested);
+			state->library_delays.push_back(saved.delay);
+			state->library_event_requested = state->library_event_requested ||
+							 saved.periodic_requested;
+		}
+		state->parsed_proclib = !state->libraries.empty();
+		candidate.state_ = state.release();
+		if (effective == zombies_game)
+		{
+			if (progress.next_step > general)
+			{
+				if (!quest_mobile_native_zombie_stage::observe_published(actual))
+				{
+					delete candidate.state_;
+					candidate.state_ = nullptr;
+					return false;
+				}
+			}
+			else if (progress.current_step_started && progress.next_step == general &&
+				 quest_mobile_native_zombie_stage::observe_published(actual))
+			{
+				// Actual global tail may be present, but the retained started latch
+				// is still uncertain. Do not infer returned or repeat the tail.
+			}
+			else if (!quest_mobile_native_zombie_stage::restore_bounded(
+					 actual, candidate.state_->zombie, reserve, context,
+					 budget.live()))
+			{
+				delete candidate.state_;
+				candidate.state_ = nullptr;
+				return false;
+			}
+		}
+		// Metadata only. Never adds a native object/count, proc, event or UID.
+		candidate.state_->metadata_borrowed_world = true;
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (...)
+	{
+		if (candidate.state_)
+		{
+			candidate.state_->zombie.discard();
+			delete candidate.state_;
+			candidate.state_ = nullptr;
+		}
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::rebuild_enrollment_bounded(
+	P_obj expected, const native_mobile_birth_item_recipe &recipe,
+	const quest_mobile_native_item_progress &progress,
+	const std::span<const quest_mobile_native_item_effect> &effects,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)expected;
+	(void)recipe;
+	(void)progress;
+	(void)effects;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || !state_ || !state_->bounded_cold_literal ||
+	    mysql_enabled || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	struct live_state
+	{
+		quest_mobile_native_item_stage &stage;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		size_t base;
+		bool bytes(size_t *output) const noexcept
+		{
+			size_t globals = 0, pools = 0, queues = 0, metadata = 0;
+			if (!cold_birth_current_globals(&globals) ||
+			    !nevent_object_schedule_pool_storage_bytes(&pools) ||
+			    !diagnostic_output_storage_bytes(&queues) ||
+			    !stage.retained_bytes_excluding_literal_pools(&metadata) ||
+			    !cold_birth_add(globals, pools) || !cold_birth_add(globals, queues) ||
+			    !cold_birth_add(globals, metadata) || !cold_birth_add(globals, base))
+				return false;
+			*output = globals;
+			return true;
+		}
+	};
+	size_t held = 0, pools = 0, queues = 0, metadata = 0;
+	if (!cold_birth_current_globals(&held) ||
+	    !nevent_object_schedule_pool_storage_bytes(&pools) ||
+	    !diagnostic_output_storage_bytes(&queues) ||
+	    !retained_bytes_excluding_literal_pools(&metadata) || !cold_birth_add(held, pools) ||
+	    !cold_birth_add(held, queues) || !cold_birth_add(held, metadata) || outer_live < held)
+		return false;
+	const size_t frame = sizeof(live_state) + sizeof(std::array<event_func_type, 3>) +
+			     sizeof(std::array<bool, 3>) + sizeof(std::array<int, 3>) +
+			     sizeof(nevent_schedule_result) + 2 * sizeof(nevent_handle);
+	size_t base = outer_live - held;
+	if (!cold_birth_add(base, frame) || frame > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + frame, context))
+		return false;
+	live_state live{ *this, reserve, context, base };
+
+	if (!state_ || !nevent_is_game_thread() || !state_->admitted || !state_->published ||
+	    state_->metadata_borrowed_world || !expected || !progress.admitted ||
+	    !progress.published || progress.current_step_started || state_->current_step_started ||
+	    expected->obj_uid != state_->uid ||
+	    find_birth_live_object(expected, state_->uid) != expected ||
+	    effects.size() != publication_step_count() || progress.next_step > effects.size())
+		return false;
+	auto &s = *state_;
+	const size_t general = s.libraries.size() * 2;
+	for (size_t step = 0; step < effects.size(); ++step)
+	{
+		const auto &effect = effects[step];
+		const bool expected_periodic = step < general && !(step & 1) ?
+						       s.requested[step / 2] :
+						       (step == general && s.general_periodic);
+		if (effect.periodic != (effect.returned && expected_periodic))
+			return false;
+		if (step < progress.next_step)
+		{
+			if (!effect.started || !effect.returned || !effect.succeeded)
+				return false;
+		}
+		else if (effect.started || effect.returned || effect.succeeded || effect.periodic)
+			return false;
+	}
+	if (recipe.object_uid != s.uid || recipe.libraries.size() != s.libraries.size() ||
+	    recipe.general_periodic != s.general_periodic ||
+	    recipe.general_delay != s.general_delay ||
+	    recipe.random_exit_requested != s.random_exit_requested)
+		return false;
+	for (size_t i = 0; i < s.libraries.size(); ++i)
+		if (recipe.libraries[i].periodic_requested != s.requested[i] ||
+		    recipe.libraries[i].delay != s.library_delays[i])
+			return false;
+	try
+	{
+		if (s.rebuilding_enrollment)
+		{
+			// Exact prefix plus internal original requested-periodic values
+			// determine every validated effect bit without another heap copy.
+			if (s.rebuilding_object != expected ||
+			    s.rebuilding_prefix != progress.next_step)
+				return false;
+		}
+		else
+		{
+			if (s.next_step)
+				return false;
+			s.rebuilding_object = expected;
+			s.rebuilding_prefix = progress.next_step;
+			s.rebuilding_enrollment = true;
+		}
+		if (obj_index != s.index || expected->R_num != s.rnum ||
+		    obj_index[s.rnum].virtual_number != s.vnum ||
+		    obj_index[s.rnum].pos != s.position)
+			return false;
+		const auto current = obj_index[s.rnum].func.obj;
+		if (((s.parsed_proclib || s.restored_bridge_request) &&
+		     current != proclib_obj_cmd_bridge) ||
+		    (!(s.parsed_proclib || s.restored_bridge_request) &&
+		     current != s.original_proc &&
+		     !(expected->type == ITEM_SWITCH && !s.original_proc &&
+		       current == item_switch)) ||
+		    (current == proclib_obj_cmd_bridge &&
+		     !proclib_recovery_chain_stage::predecessor_matches(
+			     s.rnum, s.original_proc == proclib_obj_cmd_bridge ? s.effective_proc :
+										 s.original_proc)))
+			return false;
+		if (s.effective_proc == zombies_game && progress.next_step > general)
+		{
+			if (!quest_mobile_native_zombie_stage::observe_published(expected))
+			{
+				if (s.rebuilding_zombie || !s.zombie.game_ || !live.bytes(&held) ||
+				    !s.zombie.publish_bounded(expected, reserve, context, held))
+					return false;
+			}
+			if (!quest_mobile_native_zombie_stage::observe_published(expected))
+				return false;
+			s.rebuilding_zombie = true;
+		}
+		bool library_requested = false;
+		int library_delay = 0;
+		for (size_t i = 0; i < s.libraries.size(); ++i)
+			if (progress.next_step > i * 2 + 1 && s.requested[i])
+			{
+				// Original sequence schedules at most one shared library event.
+				// The first actual requested successful step chooses its delay.
+				if (!library_requested)
+					library_delay = s.library_delays[i];
+				library_requested = true;
+			}
+		const std::array<event_func_type, 3> callbacks{ proclib_obj_event,
+								event_object_proc,
+								event_random_exit };
+		const std::array<bool, 3> requested{
+			library_requested, progress.next_step > general + 1 && s.general_periodic,
+			progress.next_step > general + 2 && s.random_exit_requested
+		};
+		const std::array<int, 3> delays{ library_delay, s.general_delay, 3 };
+		for (size_t i = 0; i < callbacks.size(); ++i)
+		{
+			if (!requested[i])
+				continue;
+			P_nevent found = nullptr;
+
+			// Same full cycle/duplicate proof without transient node/bucket allocations.
+			P_nevent slow = expected->nevents, fast = expected->nevents;
+			while (fast && fast->next_obj_nev)
+			{
+				slow = slow->next_obj_nev;
+				fast = fast->next_obj_nev->next_obj_nev;
+				if (slow == fast)
+					return false;
+			}
+			for (P_nevent event = expected->nevents; event; event = event->next_obj_nev)
+			{
+				if (event->func != callbacks[i])
+					continue;
+				if (found || event->obj != expected || event->ch || event->victim ||
+				    event->data ||
+				    !nevent_handle_is_active(nevent_handle_from_event(event)))
+					return false;
+				found = event;
+			}
+			if (!found)
+			{
+				if (s.rebuilding_events[i] || delays[i] <= 0)
+					return false;
+
+				nevent_schedule_result scheduled{};
+				bool returned = false;
+				if (!live.bytes(&held) ||
+				    !nevent_schedule_object_bounded(callbacks[i], delays[i],
+								    expected, &scheduled, &returned,
+								    &s.rebuilding_events[i],
+								    reserve, context, held))
+					return false;
+				// The scheduler writes successful effect into persistent rebuilding_events
+				// BEFORE emitted diagnostics can refuse. A later retry never reschedules it.
+				if (!scheduled.was_scheduled())
+					return false;
+			}
+			s.rebuilding_events[i] = true;
+		}
+		s.next_step = progress.next_step;
+		s.enrollment_rebuilt = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false; // Never discard or rewind actual published ownership.
+	}
+#endif
+}

@@ -10021,3 +10021,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Complete cold room shape/current proof implemented - 2026-10-09
 
 [Owning cold room providers](COLD_ROOM_SHAPE_CURRENT_ADMISSION_2026-10-09.md) preserve full canonical/current cache/physical/progress/custody/receipt proof and admit actual immutable-count vector requests. RAW source review, normalized reviewed identity and formatted tokens/preprocessor/prefix/header inverse checks passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Four-route/root/coordinator/full-pulse joining and qualification remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
+
+
+## Complete cold native adoption/enrollment implemented - 2026-10-09
+
+[Owning adoption/rebuild providers](COLD_NATIVE_ADOPTION_ENROLLMENT_2026-10-09.md) preserve full original identity/literal/binding/historical/current-event proof, admit actual allocations and retain actual completed enrollment markers before later diagnostics refusal. Current stage/four persistent owners are refreshed at real effect boundaries. RAW review and formatted tokens/preprocessor/prefix/header inverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Universal paired pool census, detach and full room/coordinator/recovery integration remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
