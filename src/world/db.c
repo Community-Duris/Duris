@@ -11152,3 +11152,280 @@ void save_obj_limits()
 }
 
 #endif
+
+bool quest_mobile_native_item_stage::publish_many_bounded(
+	const std::span<quest_mobile_native_item_stage *> &input_stages,
+	const std::span<P_obj> &input_output,
+	const std::span<const item_ownership_runtime_entry> &input_custody,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || !obj_index || input_stages.empty() ||
+	    input_stages.size() > ITEM_TRANSFER_MAX_ITEMS ||
+	    input_output.size() != input_stages.size() ||
+	    input_custody.size() != input_stages.size())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		std::span<quest_mobile_native_item_stage *> stages;
+		std::span<P_obj> output;
+		std::span<const item_ownership_runtime_entry> custody;
+		std::vector<bool> linked;
+		std::vector<uint64_t> selected_uids;
+		std::vector<item_ownership_runtime_entry> cached_links;
+		std::span<const uint64_t> selected;
+		workspace(const std::span<quest_mobile_native_item_stage *> &s,
+			  const std::span<P_obj> &o,
+			  const std::span<const item_ownership_runtime_entry> &c) noexcept
+			: stages(s)
+			, output(o)
+			, custody(c)
+		{
+		}
+		size_t uid_index(uint64_t uid) const noexcept
+		{
+			for (size_t i = 0; i < stages.size(); ++i)
+				if (stages[i]->state_->uid == uid)
+					return i;
+			return stages.size();
+		}
+		size_t object_index(P_obj object) const noexcept
+		{
+			for (size_t i = 0; i < stages.size(); ++i)
+				if (stages[i]->state_->object == object)
+					return i;
+			return stages.size();
+		}
+	};
+	// Three actual copied input spans and the later observer span live in this
+	// named workspace. Complete linear lookups replace only transient hash maps;
+	// no scope/limit/membership/forest predicate is reduced.
+	size_t base = outer_live;
+	if (sizeof(workspace) > SIZE_MAX - base)
+		return false;
+	base += sizeof(workspace);
+	const size_t bits_per_word = CHAR_BIT * sizeof(std::_Bit_type);
+	const size_t words =
+		input_stages.size() / bits_per_word + bool(input_stages.size() % bits_per_word);
+	if (words > SIZE_MAX / sizeof(std::_Bit_type))
+		return false;
+	const size_t linked_heap = words * sizeof(std::_Bit_type);
+	if (linked_heap > SIZE_MAX - base || !reserve || !reserve(base + linked_heap, context))
+		return false;
+	try
+	{
+		workspace work{ input_stages, input_output, input_custody };
+		work.linked.assign(work.stages.size(), false);
+		// Explicit references create no extra input-span copies.
+		const auto &stages = work.stages;
+		const auto &output = work.output;
+		const auto &custody = work.custody;
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			if (!stages[i] || !stages[i]->state_)
+				return false;
+			const auto &s = *stages[i]->state_;
+			const auto &entry = custody[i];
+			if (!s.admitted || s.published || !s.object || !s.uid || s.rnum < 0 ||
+			    s.rnum > top_of_objt || s.index != obj_index ||
+			    s.object->obj_uid != s.uid || s.object->R_num != s.rnum ||
+			    s.object->next || s.object->prev ||
+			    obj_index[s.rnum].virtual_number != s.vnum ||
+			    obj_index[s.rnum].pos != s.position || obj_index[s.rnum].number < 0)
+				return false;
+			for (size_t previous = 0; previous < i; ++previous)
+			{
+				const auto &prior = *stages[previous]->state_;
+				if (&prior == &s || prior.object == s.object || prior.uid == s.uid)
+					return false;
+			}
+			if (entry.item_uid != s.uid || !entry.root_item_uid ||
+			    !entry.item_revision || !entry.owner_revision || entry.vnum != s.vnum ||
+			    entry.state != item_custody_state::active ||
+			    entry.owner.type != item_owner_type::room || !entry.owner.id ||
+			    entry.owner.id > INT32_MAX || entry.owner.context_id)
+				return false;
+			const auto current = obj_index[s.rnum].func.obj;
+			if (current != s.original_proc &&
+			    !((s.parsed_proclib || s.restored_bridge_request) &&
+			      current == proclib_obj_cmd_bridge) &&
+			    !(s.object->type == ITEM_SWITCH && !s.original_proc &&
+			      current == item_switch))
+				return false;
+			if (((s.parsed_proclib || s.restored_bridge_request) &&
+			     current != proclib_obj_cmd_bridge) ||
+			    (s.object->type == ITEM_SWITCH && !current) ||
+			    (current == proclib_obj_cmd_bridge &&
+			     !proclib_recovery_chain_stage::predecessor_matches(
+				     s.rnum, s.original_proc == proclib_obj_cmd_bridge ?
+						     s.effective_proc :
+						     s.original_proc)))
+				return false;
+		}
+		// Same complete per-prototype count and counter headroom as the original
+		// map; repeating a pure check for equal rnums does not omit any prototype.
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			const int rnum = stages[i]->state_->rnum;
+			size_t count = 0;
+			for (const auto *stage : stages)
+				if (stage->state_->rnum == rnum)
+					++count;
+			if (count > static_cast<size_t>(INT_MAX - obj_index[rnum].number))
+				return false;
+		}
+		// Complete parent/root and reciprocal local forest checks. No root is
+		// already enrolled in a room or another native ownership domain.
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			const auto &entry = custody[i];
+			const P_obj object = stages[i]->state_->object;
+			const auto root = work.uid_index(entry.root_item_uid);
+			if (root == stages.size() || root > i || custody[root].parent_item_uid ||
+			    custody[root].root_item_uid != entry.root_item_uid ||
+			    !item_owner_identity_equal(custody[root].owner, entry.owner) ||
+			    custody[root].owner_revision != entry.owner_revision)
+				return false;
+			if (!entry.parent_item_uid)
+			{
+				if (entry.item_uid != entry.root_item_uid ||
+				    object->loc_p != LOC_NOWHERE || object->loc.room != NOWHERE ||
+				    object->next_content)
+					return false;
+			}
+			else
+			{
+				const auto parent = work.uid_index(entry.parent_item_uid);
+				if (parent == stages.size() || parent >= i ||
+				    custody[parent].root_item_uid != entry.root_item_uid ||
+				    !item_owner_identity_equal(custody[parent].owner,
+							       entry.owner) ||
+				    object->loc_p != LOC_INSIDE ||
+				    object->loc.inside != stages[parent]->state_->object)
+					return false;
+			}
+			for (P_obj child = object->contains; child; child = child->next_content)
+			{
+				const auto found = work.uid_index(child->obj_uid);
+				if (found == stages.size() ||
+				    stages[found]->state_->object != child ||
+				    custody[found].parent_item_uid != entry.item_uid ||
+				    work.linked[found])
+					return false;
+				work.linked[found] = true;
+			}
+		}
+		for (size_t i = 0; i < custody.size(); ++i)
+			if (work.linked[i] != bool(custody[i].parent_item_uid))
+				return false;
+		// No fixed inventory subset: check the entire existing global list,
+		// with cycle and reciprocal links, for every selected UID/pointer.
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj live = object_list; live; live = live->next)
+		{
+			if (live->prev != previous ||
+			    work.uid_index(live->obj_uid) != stages.size() ||
+			    work.object_index(live) != stages.size())
+				return false;
+			previous = live;
+		}
+		size_t current = base;
+		const size_t retained_bits = work.linked.capacity() / bits_per_word;
+		if (retained_bits > SIZE_MAX / sizeof(std::_Bit_type) ||
+		    retained_bits * sizeof(std::_Bit_type) > SIZE_MAX - current)
+			return false;
+		current += retained_bits * sizeof(std::_Bit_type);
+		if (custody.size() > SIZE_MAX / sizeof(uint64_t))
+			return false;
+		const size_t uid_request = custody.size() * sizeof(uint64_t);
+		if (uid_request > SIZE_MAX - current || !reserve(current + uid_request, context))
+			return false;
+		work.selected_uids.reserve(custody.size());
+		for (const auto &entry : custody)
+			work.selected_uids.push_back(entry.item_uid);
+		std::sort(work.selected_uids.begin(), work.selected_uids.end());
+		if (work.selected_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		    work.selected_uids.capacity() * sizeof(uint64_t) > SIZE_MAX - current)
+			return false;
+		current += work.selected_uids.capacity() * sizeof(uint64_t);
+		// Prospective span assignment and BOTH real by-value observer spans: the
+		// bounded observer calls the original full snapshot with its own parameter
+		// still alive. Inline captured vector/fresh row heap are owned by that leaf.
+		const size_t observer_spans = 2 * sizeof(std::span<const uint64_t>);
+		if (observer_spans > SIZE_MAX - current ||
+		    !reserve(current + observer_spans, context))
+			return false;
+		work.selected = work.selected_uids;
+		size_t cached_heap = 0;
+		if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+			    work.selected, custody.size(), &work.cached_links, reserve, context,
+			    current + observer_spans, &cached_heap))
+			return false;
+		if (cached_heap > SIZE_MAX - current)
+			return false;
+		current += cached_heap;
+		for (const auto &cached : work.cached_links)
+		{
+			const auto found = work.uid_index(cached.item_uid);
+			if (found == stages.size())
+				return false;
+			const auto &expected = custody[found];
+			if (cached.root_item_uid != expected.root_item_uid ||
+			    cached.parent_item_uid != expected.parent_item_uid ||
+			    !item_owner_identity_equal(cached.owner, expected.owner) ||
+			    cached.item_revision != expected.item_revision ||
+			    cached.owner_revision > expected.owner_revision ||
+			    cached.vnum != expected.vnum || cached.state != expected.state)
+				return false;
+		}
+		size_t cold_prepend_count = 0;
+		for (const auto *stage : stages)
+		{
+			if (!reset_order_publication_ready(stage->state_->object))
+				return false;
+			if (!stage->state_->object->reset_order_epoch)
+				++cold_prepend_count;
+		}
+		if (reset_order_active && cold_prepend_count > UINT64_MAX - reset_order_sequence)
+			return false;
+		// Caller outer already contains initial actual runtime cache exactly once.
+		// All local retained vectors remain included during the genuine atomic leaf.
+		// The owner must refresh retained CURRENT cache on every return, including
+		// failed reserve; bucket growth is original persistent cache storage.
+		if (!item_ownership_runtime_hydrate_many_atomic_bounded(
+			    custody.data(), custody.size(), reserve, context, current))
+			return false;
+		// All allocation, validation and rollback-capable projection precede
+		// consumption. These original list/index writes cannot fail or invoke
+		// gameplay. Metadata remains owned for actual once-only service steps.
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			auto &s = *stages[i]->state_;
+			P_obj object = s.object;
+			s.object = nullptr;
+			s.published = true;
+			++obj_index[s.rnum].number;
+			reset_order_enroll(object);
+			output[i] = object;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
