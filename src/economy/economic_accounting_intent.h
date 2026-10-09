@@ -40,4 +40,18 @@ economic_accounting_error economic_intent_plan_metadata(const critical_command &
 							const economic_frozen_intent &intent,
 							economic_plan_metadata *metadata);
 
+// Prospective storage admission beside the original codecs and metadata proof.
+// Caller owns inputs, old output and context in outer_live; retain admitted
+// peaks through the original call and output transfer. Unsupported allocation
+// policy refuses. These helpers grant no writer, source or execution authority.
+economic_accounting_error
+economic_intent_decode_bounded(const std::span<const uint8_t> &encoded, economic_frozen_intent *,
+			       bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+			       size_t outer_live) noexcept;
+economic_accounting_error
+economic_intent_plan_metadata_bounded(const critical_command &, const economic_frozen_intent &,
+				      economic_plan_metadata *,
+				      bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+				      void *context, size_t outer_live) noexcept;
+
 #endif

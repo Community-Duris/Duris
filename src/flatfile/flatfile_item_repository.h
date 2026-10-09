@@ -452,6 +452,19 @@ class flatfile_initial_room_reset_custody_storage final
 		       const critical_native_recovery_envelope &original,
 		       const flatfile_initial_room_reset_world_stage &world,
 		       flatfile_initial_room_reset_custody_stage *output) noexcept;
+	// Prospective scratch sibling under the SAME recovered lock. Callback
+	// admission grants no custody/source/execution permission. Caller retains
+	// all original/world inputs, old output, lock/root/context and their heap
+	// in outer_live_scratch. Returned payload excludes the caller's stage DTO;
+	// keep it charged through stage lifetime. Strong stage/scalar outputs.
+	static flatfile_item_repository_result
+	prepare_locked_bounded(const std::string &root, const flatfile_authority_lock &lock,
+			       const critical_native_recovery_envelope &original,
+			       const flatfile_initial_room_reset_world_stage &world,
+			       flatfile_initial_room_reset_custody_stage *output,
+			       flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			       size_t outer_live_scratch,
+			       size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 // Exact CURRENT original ROOM-reset custody observation. These returned rows

@@ -121,4 +121,26 @@ economic_accounting_error economic_plan_digest(const economic_accounting_plan &p
 economic_accounting_error economic_command_binding_digest(const critical_command &command,
 							  economic_digest *digest);
 
+struct economic_accounting_plan_allocation_profile
+{
+	size_t clone_heap_bytes = 0;
+	size_t normalize_working_bytes = 0;
+	size_t encoded_bytes = 0;
+	size_t encode_working_bytes = 0;
+	bool storage_policy_supported = false;
+};
+// Allocation-free prospective request profile for the unchanged normalizer and
+// encoder. Counts use sizes for actual fresh clones, never retained capacities.
+// Working peaks include callee inline objects but exclude this profile/scanner,
+// caller original plan capacities and prior output. Admit working_bytes() plus
+// the caller profile before scanning; retain original/input/output storage in
+// outer allowance through actual normalize/encode and output transfer.
+// This supplies storage only: original semantic validators remain authoritative.
+// Unsupported ABI returns portable clone/wire fields with supported=false and
+// zero request peaks. Every refusal leaves output unchanged.
+size_t economic_plan_allocation_preflight_working_bytes() noexcept;
+economic_accounting_error
+economic_plan_allocation_preflight(const economic_accounting_plan &,
+				   economic_accounting_plan_allocation_profile *) noexcept;
+
 #endif

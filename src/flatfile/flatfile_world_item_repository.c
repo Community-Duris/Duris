@@ -2577,3 +2577,694 @@ flatfile_world_item_result flatfile_initial_room_reset_world_storage::prepare_lo
 		return flatfile_world_item_result::invalid;
 	}
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool world_initial_item_heap(const std::vector<player_item_snapshot> &items, bool fresh_copy,
+			     size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	if (!output || !world_storage_product(fresh_copy ? items.size() : items.capacity(),
+					      sizeof(player_item_snapshot), &bytes))
+		return false;
+	const auto text = [&](const std::string &value) noexcept
+	{
+		const size_t request = fresh_copy ? world_copied_text_request(value.size()) :
+				       value.capacity() <= 15 ? 0 :
+								value.capacity() + 1;
+		return world_storage_add(bytes, request, &bytes);
+	};
+	for (const auto &item : items)
+	{
+		if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+		    !text(item.action_description) ||
+		    !world_storage_product(fresh_copy ? item.dynamic_affects.size() :
+							item.dynamic_affects.capacity(),
+					   sizeof(player_item_dynamic_affect_snapshot), &rows) ||
+		    !world_storage_add(bytes, rows, &bytes) ||
+		    !world_storage_product(fresh_copy ? item.extra_descriptions.size() :
+							item.extra_descriptions.capacity(),
+					   sizeof(player_item_extra_description_snapshot), &rows) ||
+		    !world_storage_add(bytes, rows, &bytes))
+			return false;
+		for (const auto &extra : item.extra_descriptions)
+			if (!text(extra.keyword) || !text(extra.description) ||
+			    !world_storage_product(fresh_copy ? extra.spell_ids.size() :
+								extra.spell_ids.capacity(),
+						   sizeof(int32_t), &rows) ||
+			    !world_storage_add(bytes, rows, &bytes))
+				return false;
+	}
+	*output = bytes;
+	return true;
+}
+
+bool world_initial_catalog_heap(const world_item_catalog &catalog, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0, items = 0;
+	if (!output ||
+	    !world_storage_product(catalog.corpses.capacity(), sizeof(flatfile_corpse_record),
+				   &bytes) ||
+	    !world_storage_product(catalog.saved_items.capacity(),
+				   sizeof(flatfile_saved_world_item_record), &rows) ||
+	    !world_storage_add(bytes, rows, &bytes) ||
+	    !world_storage_product(catalog.rooms.capacity(), sizeof(flatfile_room_item_record),
+				   &rows) ||
+	    !world_storage_add(bytes, rows, &bytes))
+		return false;
+	const auto text = [&](const std::string &value) noexcept {
+		return world_storage_add(bytes, value.capacity() <= 15 ? 0 : value.capacity() + 1,
+					 &bytes);
+	};
+	for (const auto &row : catalog.corpses)
+		if (!text(row.owner_name) || !text(row.short_description) ||
+		    !text(row.description) || !text(row.keywords) ||
+		    !world_initial_item_heap(row.items, false, &items) ||
+		    !world_storage_add(bytes, items, &bytes))
+			return false;
+	for (const auto &row : catalog.saved_items)
+		if (!text(row.item_key) || !world_initial_item_heap(row.items, false, &items) ||
+		    !world_storage_add(bytes, items, &bytes))
+			return false;
+	for (const auto &row : catalog.rooms)
+		if (!world_initial_item_heap(row.items, false, &items) ||
+		    !world_storage_add(bytes, items, &bytes))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+bool world_initial_image_heap(const zone_reset_item_image &image, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	if (!output || !world_initial_item_heap(image.items, false, &bytes) ||
+	    !world_storage_product(image.recipes.capacity(),
+				   sizeof(native_mobile_birth_item_recipe), &rows) ||
+	    !world_storage_add(bytes, rows, &bytes) ||
+	    !world_storage_product(image.coins.capacity(), sizeof(zone_reset_coin_output), &rows) ||
+	    !world_storage_add(bytes, rows, &bytes))
+		return false;
+	for (const auto &recipe : image.recipes)
+		if (!world_storage_product(recipe.libraries.capacity(),
+					   sizeof(native_mobile_birth_library_recipe), &rows) ||
+		    !world_storage_add(bytes, rows, &bytes))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+bool world_initial_command_copy_heap(const critical_command &command, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	if (!output ||
+	    !world_storage_product(command.keys.size(), sizeof(critical_entity_key), &bytes) ||
+	    !world_storage_product(command.expected_revisions.size(),
+				   sizeof(critical_expected_revision), &rows) ||
+	    !world_storage_add(bytes, rows, &bytes) ||
+	    !world_storage_add(bytes, command.payload.size(), &bytes) ||
+	    !world_storage_add(bytes, command.accounting_intent.size(), &bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+flatfile_world_item_result world_initial_load_bounded(
+	const std::string &root, const flatfile_authority_lock &lock, world_item_catalog *catalog,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !lock.matches(root) || !catalog || !reserve_scratch_peak)
+		return flatfile_world_item_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_world_item_result::io_error;
+#else
+	size_t directory_size = 0, live = 0;
+	// The workspace constructor builds fresh count-character and copied-name
+	// strings directly, avoiding an unmodeled root-copy/append growth phase.
+	if (!world_storage_add(root.size(), sizeof("/domains") - 1, &directory_size) ||
+	    directory_size == SIZE_MAX ||
+	    !world_storage_add(outer_live_scratch, sizeof(world_bounded_read_workspace), &live) ||
+	    !world_storage_add(live, directory_size <= 15 ? 0 : directory_size + 1, &live) ||
+	    !world_storage_add(live, world_copied_text_request(sizeof("world_item_catalog") - 1),
+			       &live) ||
+	    !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_world_item_result::io_error;
+	}
+	try
+	{
+		world_bounded_read_workspace work(directory_size);
+		memcpy(work.directory.data(), root.data(), root.size());
+		memcpy(work.directory.data() + root.size(), "/domains", sizeof("/domains") - 1);
+		const auto loaded = flatfile_read_bounded(work.directory, work.filename,
+							  catalog_maximum_bytes, &work.bytes,
+							  reserve_scratch_peak, context, live);
+		if (loaded == flatfile_read_result::not_found)
+			return flatfile_world_item_result::not_found;
+		if (loaded == flatfile_read_result::io_error)
+			return flatfile_world_item_result::io_error;
+		if (loaded != flatfile_read_result::ok)
+			return flatfile_world_item_result::invalid;
+		size_t scan_peak = 0;
+		const size_t nested_scan = std::max(
+			player_item_snapshot_list_preflight_object_bytes(),
+			std::max(sizeof(std::__detail::_Prime_rehash_policy), sizeof(decoder)));
+		if (!world_storage_add(live, work.bytes.capacity(), &live) ||
+		    !world_storage_add(live, sizeof(world_catalog_storage_scan), &scan_peak) ||
+		    !world_storage_add(scan_peak, nested_scan, &scan_peak) ||
+		    !reserve_scratch_peak(scan_peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_world_item_result::io_error;
+		}
+		errno = 0;
+		if (!world_catalog_storage_preflight(work.bytes, &work.profile))
+			return errno == ENOBUFS ? flatfile_world_item_result::io_error :
+						  flatfile_world_item_result::invalid;
+		size_t validation = 0, peak = 0;
+		if (!world_storage_add(work.profile.retained_payload_bytes,
+				       work.profile.validation_peak, &validation) ||
+		    !world_storage_add(live,
+				       sizeof(world_item_catalog) + 2 * sizeof(decoder) +
+					       sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+				       &peak) ||
+		    !world_storage_add(peak, std::max(work.profile.decode_prefix_peak, validation),
+				       &peak) ||
+		    !reserve_scratch_peak(peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_world_item_result::io_error;
+		}
+		// The original semantic decoder remains authoritative for every field,
+		// ordering rule, topology, UID, money value and canonical item encoding.
+		if (!decode_catalog(work.bytes, &work.catalog))
+			return flatfile_world_item_result::invalid;
+		static_assert(std::is_nothrow_move_assignable_v<world_item_catalog>);
+		*catalog = std::move(work.catalog);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = work.profile.retained_payload_bytes;
+		return flatfile_world_item_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_world_item_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_world_item_result::invalid;
+	}
+#endif
+}
+
+struct world_initial_catalog_encode_profile
+{
+	size_t validation_peak = 0, encoding_peak = 0, file_capacity = 0;
+};
+struct world_initial_byte_growth
+{
+	size_t size = 0, capacity = 0;
+};
+struct world_initial_catalog_encode_scan
+{
+	player_item_snapshot_list_allocation_profile items;
+	std::__detail::_Prime_rehash_policy uid_policy;
+	std::pair<bool, size_t> uid_growth{};
+	world_initial_catalog_encode_profile result;
+	world_initial_byte_growth payload, file;
+};
+
+bool world_initial_append(world_initial_byte_growth &vector, size_t count, size_t other_live,
+			  size_t *peak) noexcept
+{
+	if (vector.size > catalog_maximum_bytes || count > catalog_maximum_bytes - vector.size)
+		return false;
+	size_t next_size = vector.size + count, request = vector.capacity, bytes = 0;
+	if (count && next_size > vector.capacity)
+	{
+		size_t next_capacity = vector.size;
+		if (!world_storage_add(next_capacity, std::max(vector.size, count),
+				       &next_capacity) ||
+		    !world_storage_add(vector.capacity, next_capacity, &request))
+			return false;
+		vector.capacity = next_capacity;
+	}
+	if (!world_storage_add(other_live, request, &bytes))
+		return false;
+	*peak = std::max(*peak, bytes);
+	vector.size = next_size;
+	return true;
+}
+
+bool world_initial_number(world_initial_byte_growth &vector, size_t width, size_t other_live,
+			  size_t *peak) noexcept
+{
+	for (size_t byte = 0; byte != width; ++byte)
+		if (!world_initial_append(vector, 1, other_live, peak))
+			return false;
+	return true;
+}
+
+bool world_initial_catalog_encode_preflight(const world_item_catalog &catalog,
+					    world_initial_catalog_encode_profile *output,
+					    flatfile_scratch_reserve_fn reserve, void *context,
+					    size_t outer, bool validation_only = false) noexcept
+{
+	size_t scan_peak = 0;
+	if (!output ||
+	    !world_storage_add(outer, sizeof(world_initial_catalog_encode_scan), &scan_peak) ||
+	    !world_storage_add(scan_peak,
+			       std::max(player_item_snapshot_list_encoder_preflight_object_bytes(),
+					sizeof(std::__detail::_Prime_rehash_policy)),
+			       &scan_peak) ||
+	    !reserve(scan_peak, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	world_initial_catalog_encode_scan scan;
+	size_t owner_buckets = 0, key_buckets = 0, validator = 0;
+	size_t uid_count = 0, uid_buckets = 1, uid_bucket_bytes = 0;
+	if (!world_reserved_string_buckets(catalog.corpses.size(), &owner_buckets) ||
+	    !world_reserved_string_buckets(catalog.saved_items.size(), &key_buckets) ||
+	    !world_storage_add(2 * sizeof(std::unordered_set<std::string>) +
+				       sizeof(std::unordered_set<uint64_t>),
+			       owner_buckets, &validator) ||
+	    !world_storage_add(validator, key_buckets, &validator))
+		return false;
+	scan.result.validation_peak = validator;
+	const auto number = [&](size_t width, size_t extra = 0) noexcept
+	{
+		if (validation_only)
+			return true;
+		size_t live = 0;
+		return world_storage_add(sizeof(encoder), extra, &live) &&
+		       world_initial_number(scan.payload, width, live, &scan.result.encoding_peak);
+	};
+	const auto text = [&](const std::string &value) noexcept
+	{
+		return validation_only ||
+		       (number(sizeof(uint32_t)) &&
+			world_initial_append(scan.payload, value.size(), sizeof(encoder),
+					     &scan.result.encoding_peak));
+	};
+	const auto forest =
+		[&](const std::vector<player_item_snapshot> &items, size_t canonical_live) noexcept
+	{
+		if (player_item_snapshot_list_encoder_preflight(items, &scan.items) !=
+			    player_snapshot_codec_result::ok ||
+		    !scan.items.canonical_encoder_storage_policy_supported)
+			return false;
+		size_t working = 0, peak = 0, encoded_live = 0;
+		if (!player_item_snapshot_list_encoder_working_bytes(scan.items, &working) ||
+		    !world_storage_add(validator, canonical_live, &peak) ||
+		    !world_storage_add(peak, sizeof(std::vector<uint8_t>), &peak) ||
+		    !world_storage_add(peak, working, &peak) ||
+		    !world_storage_add(canonical_live, sizeof(std::vector<uint8_t>),
+				       &encoded_live) ||
+		    !world_storage_add(encoded_live, scan.items.canonical_encoded_capacity_bytes,
+				       &encoded_live))
+			return false;
+		scan.result.validation_peak = std::max(scan.result.validation_peak, peak);
+		for (size_t item = 0; item != items.size(); ++item)
+		{
+			if (!world_storage_add(validator, world_uid_node_bytes, &validator))
+				return false;
+			scan.uid_growth = scan.uid_policy._M_need_rehash(uid_buckets, uid_count, 1);
+			size_t new_buckets = 0;
+			if ((scan.uid_growth.first &&
+			     !world_storage_product(scan.uid_growth.second,
+						    sizeof(std::__detail::_Hash_node_base *),
+						    &new_buckets)) ||
+			    !world_storage_add(validator, encoded_live, &peak) ||
+			    !world_storage_add(peak, new_buckets, &peak))
+				return false;
+			scan.result.validation_peak = std::max(scan.result.validation_peak, peak);
+			if (scan.uid_growth.first)
+			{
+				validator -= uid_bucket_bytes;
+				if (!world_storage_add(validator, new_buckets, &validator))
+					return false;
+				uid_bucket_bytes = new_buckets;
+				uid_buckets = scan.uid_growth.second;
+			}
+			++uid_count;
+		}
+		if (validation_only)
+			return true;
+		// The subsequent encoder phase has no validator sets/canonical temp.
+		if (!world_storage_add(sizeof(encoder), scan.payload.capacity, &peak) ||
+		    !world_storage_add(peak, sizeof(std::vector<uint8_t>), &peak) ||
+		    !world_storage_add(peak, working, &peak))
+			return false;
+		scan.result.encoding_peak = std::max(scan.result.encoding_peak, peak);
+		encoded_live = sizeof(std::vector<uint8_t>);
+		size_t insert_live = 0;
+		return world_storage_add(encoded_live, scan.items.canonical_encoded_capacity_bytes,
+					 &encoded_live) &&
+		       number(sizeof(uint32_t), encoded_live) &&
+		       world_storage_add(sizeof(encoder), encoded_live, &insert_live) &&
+		       world_initial_append(scan.payload, scan.items.canonical_encoded_bytes,
+					    insert_live, &scan.result.encoding_peak);
+	};
+	if (!number(3 * sizeof(uint32_t)))
+		return false;
+	for (size_t index = 0; index != catalog.corpses.size(); ++index)
+	{
+		const auto &row = catalog.corpses[index];
+		size_t canonical_live =
+			sizeof(std::string) + world_copied_text_request(row.owner_name.size());
+		size_t comparison = 0;
+		if (!world_storage_add(validator, canonical_live, &comparison) ||
+		    !world_storage_add(comparison, sizeof(std::string), &comparison))
+			return false;
+		scan.result.validation_peak = std::max(scan.result.validation_peak, comparison);
+		if ((!index || catalog.corpses[index - 1].owner_pid != row.owner_pid) &&
+		    (!world_storage_add(validator, world_string_node_bytes, &validator) ||
+		     !world_storage_add(validator, world_copied_text_request(row.owner_name.size()),
+					&validator)))
+			return false;
+		if (!number(sizeof(uint32_t)) || !text(row.owner_name) ||
+		    !number(sizeof(uint32_t) + sizeof(int32_t)) || !text(row.short_description) ||
+		    !text(row.description) || !text(row.keywords) ||
+		    !number(13 * sizeof(int32_t) + sizeof(uint64_t)) ||
+		    !forest(row.items, canonical_live))
+			return false;
+	}
+	for (const auto &row : catalog.saved_items)
+	{
+		if (!world_storage_add(validator, world_string_node_bytes, &validator) ||
+		    !world_storage_add(validator, world_copied_text_request(row.item_key.size()),
+				       &validator) ||
+		    !text(row.item_key) || !number(sizeof(int32_t) + sizeof(uint64_t)) ||
+		    !forest(row.items, 0))
+			return false;
+	}
+	for (const auto &row : catalog.rooms)
+		if (!number(5 * sizeof(int32_t) + sizeof(uint64_t)) || !forest(row.items, 0))
+			return false;
+	if (validation_only)
+	{
+		*output = scan.result;
+		return true;
+	}
+	size_t file_live = 0;
+	if (!world_storage_add(2 * sizeof(encoder), scan.payload.capacity, &file_live) ||
+	    !world_storage_add(file_live, sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+			       &file_live) ||
+	    !world_initial_append(scan.file, catalog_magic.size(), file_live,
+				  &scan.result.encoding_peak) ||
+	    !world_initial_number(scan.file, 2 * sizeof(uint32_t) + sizeof(uint64_t), file_live,
+				  &scan.result.encoding_peak) ||
+	    !world_initial_append(scan.file, SHA256_DIGEST_LENGTH, file_live,
+				  &scan.result.encoding_peak) ||
+	    !world_initial_append(scan.file, scan.payload.size, file_live,
+				  &scan.result.encoding_peak))
+		return false;
+	scan.result.file_capacity = scan.file.capacity;
+	*output = scan.result;
+	return true;
+}
+struct world_initial_stage_reservation
+{
+	flatfile_scratch_reserve_fn reserve = nullptr;
+	void *context = nullptr;
+	bool rejected = false;
+};
+
+bool world_initial_stage_reserve(size_t bytes, void *context) noexcept
+{
+	auto *reservation = static_cast<world_initial_stage_reservation *>(context);
+	const bool admitted = reservation->reserve(bytes, reservation->context);
+	reservation->rejected = reservation->rejected || !admitted;
+	return admitted;
+}
+
+struct world_initial_stage_workspace
+{
+	world_initial_stage_reservation reservation;
+	zone_reset_item_image image;
+	world_item_catalog catalog;
+	std::unordered_set<uint64_t> born;
+	flatfile_room_item_record key;
+	flatfile_initial_room_reset_world_stage stage;
+	std::vector<player_item_snapshot> added;
+	world_initial_catalog_encode_profile encode;
+};
+
+#endif
+} // namespace
+
+flatfile_world_item_result flatfile_initial_room_reset_world_storage::prepare_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_initial_room_reset_world_stage *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !output || !reserve_scratch_peak || !lock.matches(root))
+		return flatfile_world_item_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_world_item_result::io_error;
+#else
+	size_t fixed = 0;
+	if (!world_storage_add(outer_live_scratch, sizeof(world_initial_stage_workspace), &fixed) ||
+	    !reserve_scratch_peak(fixed, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_world_item_result::io_error;
+	}
+	try
+	{
+		world_initial_stage_workspace work;
+		work.reservation.reserve = reserve_scratch_peak;
+		work.reservation.context = context;
+		errno = 0;
+		if (!zone_reset_item_recovery_initial_bounded(original, world_initial_stage_reserve,
+							      &work.reservation, fixed))
+		{
+			if (work.reservation.rejected)
+				errno = ENOBUFS;
+			return work.reservation.rejected || errno == ENOMEM || errno == ENOTSUP ?
+				       flatfile_world_item_result::io_error :
+				       flatfile_world_item_result::invalid;
+		}
+		errno = 0;
+		const auto decoded = zone_reset_item_command_decode_bounded(
+			original.command, &work.image, world_initial_stage_reserve,
+			&work.reservation, fixed);
+		if (decoded != economic_accounting_error::ok)
+		{
+			if (work.reservation.rejected)
+				errno = ENOBUFS;
+			return work.reservation.rejected ||
+					       decoded == economic_accounting_error::capacity ||
+					       errno == ENOMEM || errno == ENOTSUP ?
+				       flatfile_world_item_result::io_error :
+				       flatfile_world_item_result::invalid;
+		}
+		if (!work.image.placement || work.image.placement->fall_selected)
+			return flatfile_world_item_result::invalid;
+		for (const auto &item : work.image.items)
+			if (item.type < ITEM_LOWEST || item.type > ITEM_LAST ||
+			    item.type == ITEM_CORPSE || (item.extra_flags & ITEM_ARTIFACT))
+				return flatfile_world_item_result::invalid;
+		size_t image_heap = 0, catalog_heap = 0, born_heap = 0, stage_heap = 0,
+		       added_heap = 0;
+		const auto live_bytes = [&](size_t *value) noexcept
+		{
+			return world_storage_add(fixed, image_heap, value) &&
+			       world_storage_add(*value, catalog_heap, value) &&
+			       world_storage_add(*value, born_heap, value) &&
+			       world_storage_add(*value, stage_heap, value) &&
+			       world_storage_add(*value, added_heap, value);
+		};
+		const auto admit = [&](size_t extra) noexcept
+		{
+			size_t live = 0;
+			if (!live_bytes(&live) || !world_storage_add(live, extra, &live) ||
+			    !reserve_scratch_peak(live, context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			return true;
+		};
+		size_t live = 0;
+		if (!world_initial_image_heap(work.image, &image_heap) || !live_bytes(&live))
+			return flatfile_world_item_result::io_error;
+		const auto loaded = world_initial_load_bounded(root, lock, &work.catalog,
+							       reserve_scratch_peak, context, live,
+							       &catalog_heap);
+		if (loaded != flatfile_world_item_result::ok &&
+		    loaded != flatfile_world_item_result::not_found)
+			return loaded;
+		errno = 0;
+		if (!live_bytes(&live) ||
+		    !world_initial_catalog_encode_preflight(work.catalog, &work.encode,
+							    reserve_scratch_peak, context, live,
+							    true) ||
+		    !admit(work.encode.validation_peak))
+			return errno == ENOBUFS ? flatfile_world_item_result::io_error :
+						  flatfile_world_item_result::invalid;
+		if (!valid_catalog(work.catalog) || work.catalog.revision == UINT64_MAX)
+			return flatfile_world_item_result::invalid;
+		size_t buckets = 0, nodes = 0;
+		if (!admit(sizeof(std::__detail::_Prime_rehash_policy)) ||
+		    !world_reserved_string_buckets(work.image.items.size(), &buckets) ||
+		    !world_storage_product(work.image.items.size(), world_uid_node_bytes, &nodes) ||
+		    !world_storage_add(buckets, nodes, &born_heap))
+			return flatfile_world_item_result::io_error;
+		// Fresh reserve has no old allocated bucket array; UID uniqueness is
+		// still checked by the same actual set, under the complete original image.
+		if (!admit(0))
+			return flatfile_world_item_result::io_error;
+		work.born.reserve(work.image.items.size());
+		for (const auto &item : work.image.items)
+			if (!work.born.insert(item.object_uid).second)
+				return flatfile_world_item_result::invalid;
+		const auto absent = [&](const std::vector<player_item_snapshot> &items)
+		{
+			return std::none_of(items.begin(), items.end(), [&](const auto &item)
+					    { return work.born.contains(item.object_uid); });
+		};
+		for (const auto &row : work.catalog.corpses)
+			if (!absent(row.items))
+				return flatfile_world_item_result::conflict;
+		for (const auto &row : work.catalog.saved_items)
+			if (!absent(row.items))
+				return flatfile_world_item_result::conflict;
+		for (const auto &row : work.catalog.rooms)
+			if (!absent(row.items))
+				return flatfile_world_item_result::conflict;
+		work.key.room_vnum = work.image.room_vnum;
+		auto room = std::lower_bound(work.catalog.rooms.begin(), work.catalog.rooms.end(),
+					     work.key, room_less);
+		const bool present = room != work.catalog.rooms.end() &&
+				     room->room_vnum == work.image.room_vnum;
+		const uint64_t before = present ? room->revision : 0;
+		if (before != work.image.expected_room_revision || before == UINT64_MAX ||
+		    (!present && work.catalog.rooms.size() >= room_maximum))
+			return flatfile_world_item_result::conflict;
+		if (!world_initial_command_copy_heap(original.command, &stage_heap) || !admit(0))
+			return flatfile_world_item_result::io_error;
+		work.stage.original_command = original.command;
+		work.stage.catalog_before_present = loaded == flatfile_world_item_result::ok;
+		work.stage.catalog_before_revision =
+			work.stage.catalog_before_present ? work.catalog.revision : 0;
+		work.stage.room_before_present = present;
+		work.stage.room_revision_before = before;
+		work.stage.room_revision_after = before + 1;
+		if (present)
+		{
+			size_t copy = 0;
+			if (!world_initial_item_heap(room->items, true, &copy) ||
+			    !world_storage_add(stage_heap, copy, &stage_heap) || !admit(0))
+				return flatfile_world_item_result::io_error;
+			work.stage.room_before_items = room->items;
+		}
+		else
+		{
+			size_t extra = sizeof(flatfile_room_item_record);
+			if (work.catalog.rooms.size() == work.catalog.rooms.capacity())
+			{
+				size_t next = work.catalog.rooms.size(), rows = 0;
+				if (!world_storage_add(next, std::max(next, size_t{ 1 }), &next) ||
+				    !world_storage_product(next, sizeof(flatfile_room_item_record),
+							   &rows) ||
+				    !world_storage_add(extra, rows, &extra))
+					return flatfile_world_item_result::io_error;
+			}
+			if (!admit(extra))
+				return flatfile_world_item_result::io_error;
+			flatfile_room_item_record created{};
+			created.room_vnum = work.image.room_vnum;
+			created.revision = 1;
+			static_assert(
+				std::is_nothrow_move_constructible_v<flatfile_room_item_record>);
+			room = work.catalog.rooms.insert(room, std::move(created));
+			if (!world_initial_catalog_heap(work.catalog, &catalog_heap))
+				return flatfile_world_item_result::io_error;
+		}
+		if (room->items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - work.image.items.size() ||
+		    room->items.size() > static_cast<size_t>(INT32_MAX) - work.image.items.size())
+			return flatfile_world_item_result::conflict;
+		if (!world_initial_item_heap(work.image.items, true, &added_heap) || !admit(0))
+			return flatfile_world_item_result::io_error;
+		work.added = work.image.items;
+		if (!canonicalize_detached_items(&work.added))
+			return flatfile_world_item_result::invalid;
+		const int32_t offset = static_cast<int32_t>(room->items.size());
+		const size_t combined_size = room->items.size() + work.added.size();
+		size_t new_rows = 0;
+		if (combined_size > room->items.capacity() &&
+		    (!world_storage_product(combined_size, sizeof(player_item_snapshot),
+					    &new_rows) ||
+		     !admit(new_rows)))
+			return flatfile_world_item_result::io_error;
+		static_assert(std::is_nothrow_move_constructible_v<player_item_snapshot>);
+		room->items.reserve(combined_size);
+		for (auto &item : work.added)
+		{
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				item.parent_index += offset;
+			room->items.push_back(std::move(item));
+		}
+		room->revision = work.stage.room_revision_after;
+		++work.catalog.revision;
+		work.stage.catalog_revision_after = work.catalog.revision;
+		work.stage.operation.store = flatfile_authority_store::domains;
+		work.stage.operation.kind = flatfile_authority_operation_kind::write;
+		if (!world_initial_catalog_heap(work.catalog, &catalog_heap) ||
+		    !world_initial_item_heap(work.added, false, &added_heap) ||
+		    !world_storage_add(stage_heap,
+				       world_assigned_text_request(sizeof("world_item_catalog") - 1),
+				       &stage_heap) ||
+		    !admit(0))
+			return flatfile_world_item_result::io_error;
+		work.stage.operation.filename = catalog_filename;
+		errno = 0;
+		if (!live_bytes(&live) ||
+		    !world_initial_catalog_encode_preflight(work.catalog, &work.encode,
+							    reserve_scratch_peak, context, live) ||
+		    !admit(std::max(work.encode.validation_peak, work.encode.encoding_peak)))
+			return errno == ENOBUFS ? flatfile_world_item_result::io_error :
+						  flatfile_world_item_result::invalid;
+		if (!encode_catalog(work.catalog, &work.stage.operation.bytes) ||
+		    !lock.matches(root))
+			return flatfile_world_item_result::invalid;
+		size_t retained = 0;
+		if (!world_storage_add(stage_heap, work.stage.operation.bytes.capacity(),
+				       &retained))
+			return flatfile_world_item_result::io_error;
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_initial_room_reset_world_stage>);
+		*output = std::move(work.stage);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = retained;
+		return flatfile_world_item_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_world_item_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_world_item_result::invalid;
+	}
+#endif
+}

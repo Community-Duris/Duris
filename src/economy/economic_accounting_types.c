@@ -408,3 +408,85 @@ economic_item_effects_validate(std::span<const economic_item_snapshot> before,
 	}
 	return economic_accounting_error::ok;
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool economic_storage_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+bool economic_storage_product(size_t count, size_t width, size_t *output) noexcept
+{
+	if (!output || (width && count > SIZE_MAX / width))
+		return false;
+	*output = count * width;
+	return true;
+}
+#endif
+}
+
+bool economic_effects_validation_working_bytes(size_t accounts, bool ordinary_account,
+					       size_t before, size_t after, size_t events,
+					       bool before_parent, bool after_parent,
+					       size_t *output) noexcept
+{
+	if (!output || accounts > ECONOMIC_ACCOUNTING_MAX_ACCOUNTS ||
+	    before > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES ||
+	    after > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES ||
+	    events > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)ordinary_account;
+	(void)before_parent;
+	(void)after_parent;
+	return false;
+#else
+	using snapshot_span = std::span<const economic_item_snapshot>;
+	constexpr size_t bit_width = std::numeric_limits<std::_Bit_type>::digits;
+	size_t totals = 0, bits = 0;
+	if (!economic_storage_product(accounts, sizeof(std::array<wide_integer, 4>), &totals) ||
+	    !economic_storage_product(accounts / bit_width + (accounts % bit_width != 0),
+				      sizeof(std::_Bit_type), &bits))
+		return false;
+	size_t coin = sizeof(std::span<const economic_account_effect>) +
+		      sizeof(std::span<const economic_coin_posting>) +
+		      sizeof(std::vector<std::array<wide_integer, 4>>) + sizeof(std::vector<bool>);
+	if (!economic_storage_add(coin, totals) || !economic_storage_add(coin, bits) ||
+	    (ordinary_account && !economic_storage_add(coin, 2 * sizeof(economic_coin_vector))))
+		return false;
+	// The two forest buffer lifetimes end before the current-state clone is
+	// created. Its three by-value validator input spans persist in all phases.
+	const size_t item_base =
+		2 * sizeof(snapshot_span) + sizeof(std::span<const economic_item_event>);
+	const auto forest = [&](size_t count, bool parent, size_t *value) noexcept
+	{
+		size_t heap = 0;
+		*value = sizeof(snapshot_span) + sizeof(std::vector<uint8_t>) +
+			 sizeof(std::vector<size_t>);
+		return economic_storage_product(count, sizeof(uint8_t) + sizeof(size_t), &heap) &&
+		       economic_storage_add(*value, heap) &&
+		       (!parent || economic_storage_add(*value, sizeof(snapshot_span)));
+	};
+	size_t before_forest = 0, after_forest = 0,
+	       current = sizeof(std::vector<economic_item_snapshot>);
+	if (!forest(before, before_parent, &before_forest) ||
+	    !forest(after, after_parent, &after_forest) ||
+	    !economic_storage_product(before, sizeof(economic_item_snapshot), &totals) ||
+	    !economic_storage_add(current, totals) ||
+	    (events && !economic_storage_add(current, sizeof(snapshot_span))))
+		return false;
+	size_t item = item_base;
+	// A mismatched count returns before any forest/current allocation.
+	if (before == after &&
+	    !economic_storage_add(item, std::max({ before_forest, after_forest, current })))
+		return false;
+	*output = std::max(coin, item);
+	return true;
+#endif
+}

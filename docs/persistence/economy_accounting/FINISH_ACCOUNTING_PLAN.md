@@ -6776,3 +6776,20 @@ no new local build, tests, database or gameplay execution is claimed. The peer's
 Maintained SQL linking/service and actual collector publication/replay checks
 remain in the original major-plan qualification. This repair lets Plan5 resume
 its fresh managed SQL restore batch; it does not qualify full accounting.
+
+
+## ROOM INITIAL storage/compiler admission milestone — 2026-10-09
+
+[The source repair](ROOM_INITIAL_STORAGE_COMPILER_ADMISSION_2026-10-09.md) adds complete bounded INITIAL world/custody
+stage companions and the real shared pure compiler, intent and plan-storage
+dependencies. Independent finite source review, original-method/inverse and
+changed-line format/token checks passed. All931 policy rows remain unchanged;
+391 actual source pins include three newly joined shared dependencies. Zero
+new/unmapped lexical sites does not establish complete route qualification.
+
+No builds/tests ran; native/gameplay/persistence/recovery checks remain at the
+major-plan batch. Genuine INITIAL observation caller, publication/submission,
+flat factory/source/binding/checkpoint/ACK and full32MiB/restart qualification
+remain open. Native flat-binding WIP is excluded. Accounting remains inactive,
+admission CLOSED, coverage incomplete and release BLOCKED; no plan/release
+completion or activation follows from these bounded components.
