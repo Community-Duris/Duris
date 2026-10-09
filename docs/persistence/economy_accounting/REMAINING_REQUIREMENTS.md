@@ -1,21 +1,20 @@
 # Double-entry economy: remaining requirements
 
-## Shared original producer, SQL worker and terminal origin source joined - 2026-10-08
+## Shared warm world and flat catalog source joined - 2026-10-08
 
-[Source integration](SHARED_PRODUCER_SQL_AND_TERMINAL_ORIGIN_SOURCE_2026-10-08.md) records actual original checkpoint/time
-capture and passive retry, immutable carrier/progress ownership, distinct genuine
-SQL worker and inbox-first shared transaction/reconciliation, and terminal-origin
-retention/reader. Independent source reviews passed all three scoped slices.
-Candidate `ad42513ceb58e369ad6bbea17cce4c0f218339210dc1b9138c95998bcf75b0ae`
-authenticates674 worker/producer provider records,63 inverses and210 bodies;
-earlier origin join101/13 also passed. Composition is not runtime qualification.
-The larger source remains unpromoted; shared admission/live publication/CAS/ACK
-stays closed. Coordinator selection,role-specific world/cash/SHOP/custody/affects,
-origin COMMIT/retirement,full transition budgets and flat work remain open.
-Major-plan executable qualification remains deferred and required. Maintained
-codec/native-test milestones be7a166f/b4965e22 keep their separate scopes.
-Plans2-4/combinedPlan5/R1-R8/release are unfinished; original Plan1 acceptance and
-inactive/declined-spell/production/activation gates remain preserved.
+[Source integration](SHARED_WARM_WORLD_AND_FLAT_CATALOG_SOURCE_2026-10-08.md) records private coordinator/journal carrier
+selection and authentic ACK revision, full shared SQL-to-runtime projection,
+warm world/cash/keeper correspondence and original origin COMMIT/retirement,
+and borrowed-lock initial flat SHOP staging. All four source reviews passed.
+Candidate `ac4b80841462772e8676ff2d402dfea316cca992cf4a89d45e9c7506038592a1`
+joins861 provider records/39 inverses and210 bodies (171 source,30 tests,5 schema,
+4 other). Inventory is source composition only; the larger source is unpromoted.
+Actual shared producer admission and cold reconstruction stay CLOSED. Genuine
+cold affect/event ownership, flat custody/atomic receipt/current/origin/worker
+counterparts, progressed startup and complete transition budgets remain open.
+Major-plan executable qualification is deferred and required; Plans2-4/combined
+Plan5/R1-R8/release remain unfinished. Original Plan1 acceptance and inactive,
+declined-spell, production and activation gates are preserved.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
