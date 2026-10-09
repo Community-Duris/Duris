@@ -1151,7 +1151,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 			craft_recipe_continuation recipe;
 			if (!craft_recipe_continuation_decode(payload.continuation.data, &recipe) ||
 			    !craft_recipe_continuation_matches(recipe, payload) ||
-			    (craft_recipe_is_alchemy(recipe.discipline) ?
+			    (craft_recipe_is_alchemy(recipe.discipline) ||
+					     recipe.discipline == craft_recipe_discipline::refine ?
 				     static_cast<uint32_t>(
 					     std::count_if(outputs.begin(), outputs.end(),
 							   [](const auto &output) {
@@ -1163,7 +1164,11 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 				     outputs.size() != 1 ||
 					     outputs[0].object_uid != recipe.output_uid ||
 					     outputs[0].vnum !=
-						     static_cast<int32_t>(recipe.recipe_vnum)))
+						     static_cast<int32_t>(recipe.recipe_vnum)) ||
+			    (recipe.discipline == craft_recipe_discipline::refine &&
+			     (!outputs.empty() &&
+			      (outputs.size() != 1 ||
+			       outputs[0].vnum != static_cast<int32_t>(recipe.recipe_vnum)))))
 				return false;
 		}
 		for (const player_item_snapshot &output : outputs)

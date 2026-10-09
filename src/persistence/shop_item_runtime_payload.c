@@ -106,6 +106,7 @@ bool shop_item_runtime_capture_keeper_literal(char_data *keeper,
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
 #include "item/item_transfer_command.h"
+#include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_command.h"
 #include "world/object_template.h"
 #include "core/prototypes.h"
@@ -1544,6 +1545,99 @@ bool shop_item_runtime_keeper_image(MYSQL *connection, uint64_t keeper, uint32_t
 	if (!attempt(connection, [&] { keeper_image(connection, keeper, shop, vnum, &candidate); }))
 		return false;
 	*output = std::move(candidate);
+	return true;
+}
+bool shop_item_runtime_keeper_image(MYSQL *connection, uint64_t keeper, uint32_t shop, int32_t vnum,
+				    shop_item_runtime_image *image_out,
+				    std::vector<item_ownership_runtime_entry> *custody_out) noexcept
+{
+	if (!keeper || vnum <= 0 || !image_out || !custody_out)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	shop_item_runtime_image image;
+	std::vector<item_ownership_runtime_entry> custody;
+	if (!attempt(
+		    connection,
+		    [&]
+		    {
+			    const item_owner_identity owner{ item_owner_type::shopkeeper,
+							     item_shopkeeper_owner_id(shop), 0 };
+			    need(item_owner_identity_valid(owner), EINVAL);
+			    // The caller already serializes this keeper. Lock the actual native
+			    // counter before current custody; never invent an optimistic counter.
+			    auto counter = read(
+				    connection,
+				    "SELECT revision FROM item_owner_revision WHERE owner_type=" +
+					    std::to_string(static_cast<uint8_t>(owner.type)) +
+					    " AND owner_id=" + std::to_string(owner.id) +
+					    " AND owner_context_id=0 FOR UPDATE");
+			    need(mysql_num_rows(counter.get()) <= 1, ESTALE);
+			    const auto counter_row = mysql_fetch_row(counter.get());
+			    // Preserve every original keeper enrollment/history, physical,
+			    // topology, metadata, sidecar and complete-census predicate.
+			    keeper_image(connection, keeper, shop, vnum, &image);
+			    need(image.size() <= PLAYER_SNAPSHOT_MAX_OBJECTS, E2BIG);
+			    if (image.empty())
+				    return;
+			    need(counter_row, ENODATA);
+			    const auto owner_revision = number<uint64_t>(counter_row[0]);
+			    std::map<uint64_t, uint64_t> physical_uids;
+			    std::string uids;
+			    for (const auto &[uid, value] : image)
+			    {
+				    need(uid && uid != UINT64_MAX && value.id && value.root_uid &&
+						 value.revision && value.item.object_uid == uid &&
+						 value.item.vnum > 0 && value.payload_present &&
+						 physical_uids.emplace(value.id, uid).second,
+					 ESTALE);
+				    uids += (uids.empty() ? "" : ",") + std::to_string(uid);
+			    }
+			    auto current = read(
+				    connection,
+				    "SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
+				    "owner_context_id,item_revision,vnum,state,equipment_slot FROM item_current_owner "
+				    "WHERE item_uid IN(" +
+					    uids + ") ORDER BY item_uid LIMIT " +
+					    std::to_string(image.size() + 1) + " FOR UPDATE");
+			    need(mysql_num_rows(current.get()) == image.size(), ESTALE);
+			    custody.reserve(image.size());
+			    MYSQL_ROW row;
+			    while ((row = mysql_fetch_row(current.get())))
+			    {
+				    const auto uid = number<uint64_t>(row[0]);
+				    const auto found = image.find(uid);
+				    need(found != image.end(), ESTALE);
+				    const auto &value = found->second;
+				    const auto parent =
+					    value.parent_id ? physical_uids.find(value.parent_id) :
+							      physical_uids.end();
+				    need(!value.parent_id || parent != physical_uids.end(), ESTALE);
+				    const uint64_t parent_uid = value.parent_id ? parent->second :
+										  0;
+				    need(number<uint64_t>(row[1]) == value.root_uid &&
+						 number<uint64_t>(row[2]) == parent_uid &&
+						 number<uint8_t>(row[3]) ==
+							 static_cast<uint8_t>(owner.type) &&
+						 number<uint64_t>(row[4]) == owner.id &&
+						 number<uint64_t>(row[5]) == owner.context_id &&
+						 number<uint64_t>(row[6]) == value.revision &&
+						 number<int32_t>(row[7]) == value.item.vnum &&
+						 number<uint8_t>(row[8]) ==
+							 static_cast<uint8_t>(
+								 item_custody_state::active) &&
+						 number<int16_t>(row[9]) == value.slot,
+					 ESTALE);
+				    custody.push_back({ uid, value.root_uid, parent_uid, owner,
+							value.revision, owner_revision,
+							value.item.vnum,
+							item_custody_state::active });
+			    }
+		    }))
+		return false;
+	*image_out = std::move(image);
+	*custody_out = std::move(custody);
 	return true;
 }
 bool shop_item_runtime_refresh_image(MYSQL *connection, uint64_t keeper, uint32_t shop,

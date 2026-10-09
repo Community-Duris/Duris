@@ -7,10 +7,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <memory>
+#include <thread>
 
 class economic_sql_lifecycle_guard;
+class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+class flatfile_accounting_zone_reset_item_transaction;
 class economic_sql_cutover_transaction_owner;
 class player_save_restored_publication_owner;
+// Authenticate the delivered pending receipt, complete original command and
+// fence heads for the nonconstructible passive flat SHOP owner. No ACK, pin,
+// cancellation, journal or native effect follows from this observation.
+bool critical_command_coordinator_restored_shop_publication_current(
+	const player_save_restored_publication_owner &) noexcept;
 // Only an exact private pipeline owner can consume a canonical pre-admission
 // collector refusal. This neither checkpoints a journal nor fabricates ACK.
 bool critical_command_coordinator_cancel_collector_publication(
@@ -39,6 +48,11 @@ class critical_command_coordinator_owner final
 	static bool boot_recovery_ready();
 	friend class economic_sql_lifecycle_guard;
 	friend class economic_sql_cutover_transaction_owner;
+	// Consume the actual current-thread boot reservation without restoring
+	// admission. Strict readiness and a fresh genuine lease are checked under
+	// the same coordinator mutex; failure leaves the reservation untouched.
+	static bool transfer_lifecycle_guard_to_cutover_lease(uint64_t *generation,
+							      uint64_t *lease_id) noexcept;
 	static bool acquire_cutover_lease(uint64_t timeout_msec, uint64_t *generation,
 					  uint64_t *lease_id);
 	static bool validate_cutover_lease(uint64_t generation, uint64_t lease_id);
@@ -50,6 +64,16 @@ class critical_command_coordinator_owner final
 	static void set_cutover_outcome_uncertain(uint64_t generation, uint64_t lease_id,
 						  const void *connection, unsigned long session,
 						  bool uncertain);
+	// Reverse only the genuine runtime-origin transfer. Keep admission closed
+	// while restoring its original reservation and owner-recorded reopen policy.
+	static bool return_runtime_cutover_to_lifecycle_guard(uint64_t generation,
+							      uint64_t lease_id,
+							      const void *connection,
+							      unsigned long session);
+	// Actual late initialized boot cut; quiesce remains restrictive across its lifetime.
+	static bool acquire_initialized_lifecycle_guard();
+	// Exact current-thread late boot reservation cleanup; false keeps ownership.
+	static bool finish_initialized_lifecycle_reservation();
 	static bool finish_cutover_transaction(uint64_t generation, uint64_t lease_id,
 					       const void *connection, unsigned long session);
 };
@@ -135,6 +159,100 @@ struct critical_coordinator_health
 };
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
+
+// Borrowed observations of the SAME original queued/executing native owner.
+// Only its actual coordinator worker can mint this noncopyable lifetime handle.
+// Observations alone grant no admission, SQL, publication or ACK authority.
+class critical_shared_native_execution_owner final
+{
+	friend class critical_shared_native_execution_dispatch;
+	friend class critical_shared_native_sql_execution_owner;
+	friend class critical_shared_native_flat_execution_owner;
+	critical_shared_native_execution_owner() = default;
+	bool current() const noexcept;
+	bool current_locked() const noexcept;
+	// Only the genuine private flat worker owns this proposal. It contains no
+	// held lock: each callback releases its acquired lock on that same thread.
+	// Reported bytes come from the private checked participant capacity proof.
+	flatfile_accounting_native_mobile_birth_shared_shop_transaction *
+	flat_transaction() const noexcept;
+	bool retain_flat_transaction(
+		std::unique_ptr<flatfile_accounting_native_mobile_birth_shared_shop_transaction> &,
+		size_t participant_bytes) const noexcept;
+	bool release_unpublished_flat_transaction(
+		flatfile_accounting_native_mobile_birth_shared_shop_transaction *) const noexcept;
+	const void *operation_ = nullptr;
+	const void *native_ = nullptr;
+	const critical_command *command_ = nullptr;
+	std::span<const uint8_t> attachment_{};
+	uint64_t generation_ = 0, revision_ = 0;
+	unsigned int attempt_ = 0;
+	critical_native_recovery_phase phase_ = critical_native_recovery_phase::execution_pending;
+	std::thread::id worker_{};
+
+    public:
+	critical_shared_native_execution_owner(const critical_shared_native_execution_owner &) =
+		delete;
+	critical_shared_native_execution_owner &
+	operator=(const critical_shared_native_execution_owner &) = delete;
+	critical_shared_native_execution_owner(critical_shared_native_execution_owner &&) = delete;
+	critical_shared_native_execution_owner &
+	operator=(critical_shared_native_execution_owner &&) = delete;
+	const critical_command &command() const noexcept { return *command_; }
+	std::span<const uint8_t> attachment() const noexcept { return attachment_; }
+	uint64_t revision() const noexcept { return revision_; }
+	critical_native_recovery_phase phase() const noexcept { return phase_; }
+	unsigned int attempt() const noexcept { return attempt_; }
+	uint64_t generation() const noexcept { return generation_; }
+};
+using critical_shared_native_apply_fn =
+	critical_apply_result (*)(const critical_shared_native_execution_owner &, void *context);
+// Distinct original ROOM execution pin, never a shared SHOP/source capability.
+// Actual root callback validates full original INITIAL carrier/season OUTSIDE
+// coordinator mutex before any storage effect. No public mint/copy/permission.
+class critical_zone_reset_item_execution_owner final
+{
+	friend class critical_shared_native_execution_dispatch;
+	friend class critical_zone_reset_item_flat_execution_owner;
+	critical_zone_reset_item_execution_owner() = default;
+	bool current() const noexcept;
+	bool current_locked() const noexcept;
+	// Only the genuine private flat worker owns this proposal. It contains no
+	// held lock: each callback releases its acquired lock on that same thread.
+	// Reported bytes come from the private checked participant capacity proof.
+	flatfile_accounting_zone_reset_item_transaction *flat_transaction() const noexcept;
+	bool
+	retain_flat_transaction(std::unique_ptr<flatfile_accounting_zone_reset_item_transaction> &,
+				size_t participant_bytes) const noexcept;
+	bool release_unpublished_flat_transaction(
+		flatfile_accounting_zone_reset_item_transaction *) const noexcept;
+	const void *operation_ = nullptr;
+	const void *native_ = nullptr;
+	const critical_command *command_ = nullptr;
+	std::span<const uint8_t> attachment_{};
+	uint64_t generation_ = 0, revision_ = 0;
+	unsigned int attempt_ = 0;
+	critical_native_recovery_phase phase_ = critical_native_recovery_phase::execution_pending;
+	std::thread::id worker_{};
+
+    public:
+	critical_zone_reset_item_execution_owner(const critical_zone_reset_item_execution_owner &) =
+		delete;
+	critical_zone_reset_item_execution_owner &
+	operator=(const critical_zone_reset_item_execution_owner &) = delete;
+	critical_zone_reset_item_execution_owner(critical_zone_reset_item_execution_owner &&) =
+		delete;
+	critical_zone_reset_item_execution_owner &
+	operator=(critical_zone_reset_item_execution_owner &&) = delete;
+	const critical_command &command() const noexcept { return *command_; }
+	std::span<const uint8_t> attachment() const noexcept { return attachment_; }
+	uint64_t revision() const noexcept { return revision_; }
+	critical_native_recovery_phase phase() const noexcept { return phase_; }
+	unsigned int attempt() const noexcept { return attempt_; }
+	uint64_t generation() const noexcept { return generation_; }
+};
+using critical_zone_reset_item_apply_fn =
+	critical_apply_result (*)(const critical_zone_reset_item_execution_owner &, void *context);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
@@ -157,6 +275,18 @@ using critical_native_recovery_pair_validator_fn = bool (*)(
 // never current SQL/world state or a caller's physical-publication assertion.
 // All five callbacks are required for birth-v2/v3 envelopes; quest authority is separate.
 struct critical_native_birth_recovery_validators
+{
+	bool (*valid)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*initial)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*successor)(const critical_native_recovery_envelope &,
+			  const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*publication)(const critical_native_recovery_envelope &,
+			    const critical_completion &) noexcept = nullptr;
+	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+};
+
+// Separate type22 checks; missing callbacks refuse admission and replay.
+struct critical_zone_reset_recovery_validators
 {
 	bool (*valid)(const critical_native_recovery_envelope &) noexcept = nullptr;
 	bool (*initial)(const critical_native_recovery_envelope &) noexcept = nullptr;
@@ -196,7 +326,10 @@ bool critical_command_coordinator_init(
 	critical_native_recovery_publication_validator_fn native_publication_validator = nullptr,
 	critical_native_birth_recovery_validators birth_validators = {},
 	critical_native_recovery_pair_validator_fn quest_pair_validator = nullptr,
-	critical_native_auction_recovery_validators auction_validators = {});
+	critical_native_auction_recovery_validators auction_validators = {},
+	critical_zone_reset_recovery_validators reset_validators = {},
+	critical_shared_native_apply_fn shared_native_apply = nullptr,
+	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr);
 // Separate original owner capabilities: continuation owners cannot submit or
 // cross physical ACK. Opaque context carries no source/SQL/publication authority.
 // Only the original birth owner can cross this physical publication boundary.
@@ -210,6 +343,13 @@ class critical_native_mobile_birth_publication_owner final
 	static critical_submit_result submit(critical_native_recovery_envelope);
 	static bool copy_context(const critical_command &,
 				 critical_native_recovery_envelope *) noexcept;
+	// Exact retained shared carrier plus generation from one mutex observation.
+	// Synchronous reservation precedes all key/codec/copy allocations and runs
+	// outside the coordinator mutex. Caller includes retained input/prior output.
+	static bool copy_context_bounded(const critical_native_recovery_envelope &,
+					 critical_native_recovery_envelope *, uint64_t *,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
 	static bool checkpoint_context(const critical_native_recovery_envelope &,
 				       const critical_native_recovery_envelope &) noexcept;
 	static bool observe_generation(const critical_native_recovery_envelope &,
@@ -242,6 +382,33 @@ class critical_native_mobile_birth_publication_owner final
 				   void *context) noexcept;
 	static bool acknowledge(const critical_command &, const critical_completion &,
 				uint64_t original_coordinator_generation) noexcept;
+};
+
+// Only the actual reset world owner can cross type22 native publication.
+// Full current SQL/world proof is independently required; these methods only
+// authenticate original coordinator delivery, exact context CAS and lifetime.
+class critical_zone_reset_item_publication_owner final
+{
+	friend class zone_reset_room_publication_owner;
+	static critical_submit_result submit(critical_native_recovery_envelope);
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+	static bool observe_generation(const critical_native_recovery_envelope &,
+				       uint64_t *) noexcept;
+	static bool cancel_refusal(const critical_native_recovery_envelope &,
+				   const critical_completion &, uint64_t,
+				   bool (*)(const critical_command &, const critical_completion &,
+					    void *) noexcept,
+				   void *) noexcept;
+	static bool acknowledge(const critical_native_recovery_envelope &,
+				const critical_completion &, uint64_t) noexcept;
+	// Keep actual room/item advancement fences until original terminal service
+	// evidence transfers durably and the exact continuation journal retires.
+	static bool retire(const critical_native_recovery_envelope &, uint64_t,
+			   bool (*)(const critical_native_recovery_envelope &, void *) noexcept,
+			   void *) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.

@@ -12,6 +12,7 @@
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_ip_activity_repository.h"
+#include "flatfile/flatfile_season_state.h"
 
 #include <string>
 #include <time.h>
@@ -68,7 +69,46 @@ static bool ensure_private_directory(const char *path, char *error, size_t error
 	return validate_private_directory(path, error, error_size);
 }
 
-static bool provision_flatfile_directories(const char *root, char *error, size_t error_size)
+static bool sync_created_root_parent(const char *root, char *error, size_t error_size)
+{
+	char parent[4096];
+	const size_t length = strlen(root);
+	if (!length || length >= sizeof(parent))
+		return fail(error, error_size, "fresh flat-file root parent path exceeds limit");
+	memcpy(parent, root, length + 1);
+	size_t end = length;
+	while (end > 1 && parent[end - 1] == '/')
+		parent[--end] = 0;
+	char *slash = strrchr(parent, '/');
+	if (!slash)
+		return fail(error, error_size, "fresh flat-file root has no absolute parent");
+	if (slash == parent)
+		parent[1] = 0;
+	else
+		*slash = 0;
+	const int fd = open(parent, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+		return fail(error, error_size, "cannot open fresh flat-file root parent for sync");
+	struct stat info;
+	const int inspected = fstat(fd, &info);
+	if (inspected || !S_ISDIR(info.st_mode))
+	{
+		const int saved_errno = inspected ? errno : ENOTDIR;
+		close(fd);
+		return fail(error, error_size, "cannot inspect fresh flat-file root parent: %s",
+			    strerror(saved_errno));
+	}
+	const int synced = fsync(fd);
+	const int saved_errno = errno;
+	close(fd);
+	if (synced)
+		return fail(error, error_size, "cannot sync fresh flat-file root parent: %s",
+			    strerror(saved_errno));
+	return true;
+}
+
+static bool provision_flatfile_directories(const char *root, char *error, size_t error_size,
+					   bool *created_root)
 {
 	char path[4096];
 
@@ -78,7 +118,15 @@ static bool provision_flatfile_directories(const char *root, char *error, size_t
 			    persistence_mode_name());
 	if (root[0] != '/')
 		return fail(error, error_size, "FLATFILE_STATE_DIR must be an absolute path");
-	if (!ensure_private_directory(root, error, error_size))
+	if (!created_root)
+		return fail(error, error_size, "missing private flat-file provisioning result");
+	*created_root = false;
+	if (!mkdir(root, 0700))
+		*created_root = true;
+	else if (errno != EEXIST)
+		return fail(error, error_size, "cannot create flat-file directory %s: %s", root,
+			    strerror(errno));
+	if (!validate_private_directory(root, error, error_size))
 		return false;
 
 	for (const char *directory : flatfile_directories)
@@ -143,8 +191,45 @@ bool persistence_mode_configure(char *error, size_t error_size)
 #else
 
 	active_flatfile_root = getenv("FLATFILE_STATE_DIR");
-	if (!provision_flatfile_directories(active_flatfile_root, error, error_size))
+	bool created_root = false;
+	if (!provision_flatfile_directories(active_flatfile_root, error, error_size, &created_root))
 		return false;
+	if (created_root)
+	{
+		if (!sync_created_root_parent(active_flatfile_root, error, error_size))
+			return false;
+		try
+		{
+			const std::string root(active_flatfile_root);
+			flatfile_authority_lock lock;
+			if (!lock.acquire(root, nullptr))
+				return fail(error, error_size,
+					    "cannot lock fresh flat-file season enrollment");
+			const auto recovered =
+				flatfile_authority_transaction_recover(root, lock, nullptr);
+			if (recovered != flatfile_authority_transaction_result::ok &&
+			    recovered != flatfile_authority_transaction_result::not_found)
+				return fail(error, error_size,
+					    "cannot recover fresh flat-file season enrollment");
+			flatfile_season_state season;
+			const auto enrolled =
+				flatfile_season_bootstrap::enroll_fresh_locked(root, lock, &season);
+			if (enrolled != flatfile_season_state_result::ok)
+				return fail(
+					error, error_size,
+					enrolled == flatfile_season_state_result::
+								publication_uncertain ?
+						"fresh flat-file season enrollment publication/readback is uncertain; no reseed" :
+						"cannot enroll fresh flat-file season; no reseed");
+		}
+		catch (...)
+		{
+			return fail(error, error_size,
+				    "fresh flat-file season enrollment failed; no reseed");
+		}
+	}
+	// Existing roots retain their original inactive/generic boot behavior.
+	// A new ROOM owner separately requires valid enrolled active season proof.
 
 	std::string activity_error;
 	if (flatfile_ip_activity_reset_active(active_flatfile_root, (int64_t)time(NULL),

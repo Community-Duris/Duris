@@ -440,7 +440,8 @@ def verify(generation):
     secure_path(generation, True)
     require(GENERATION.fullmatch(generation.name), "invalid_generation_name")
     manifest = read_json(generation / "manifest.json")
-    require(manifest.get("version") == 1 and manifest.get("mode") in MODES and
+    require(type(manifest) is dict and type(manifest.get("version")) is int and
+            manifest["version"] == 1 and manifest.get("mode") in MODES and
             manifest.get("generation") == generation.name and
             type(manifest.get("created")) is int and 0 <= manifest["created"] <= time.time() + 300,
             "invalid_generation_manifest")

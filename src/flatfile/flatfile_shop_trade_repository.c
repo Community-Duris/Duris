@@ -490,3 +490,122 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	return make_result(catalog.operations.back(), catalog.revision,
 			   critical_apply_outcome::applied);
 }
+
+#include <set>
+namespace
+{
+bool unique_native_receipts(const operation_catalog &catalog)
+{
+	std::set<decltype(critical_operation_id{}.bytes)> ids;
+	for (const auto &operation : catalog.operations)
+		if (!ids.emplace(operation.operation_id.bytes).second)
+			return false;
+	return true;
+}
+}
+unsigned int flatfile_shop_trade_storage::lookup_locked(const std::string &root,
+							const flatfile_authority_lock &lock,
+							const critical_command &command,
+							critical_apply_result *output,
+							std::string *error) noexcept
+{
+	try
+	{
+		if (root.empty() || !lock.matches(root) || !output ||
+		    !critical_command_envelope_valid(command))
+			return EINVAL;
+		if (flatfile_authority_transaction_recover(root, lock, error) !=
+		    flatfile_authority_transaction_result::ok)
+			return EIO;
+		operation_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_read_result::ok)
+			return loaded == flatfile_read_result::io_error ? EIO : EILSEQ;
+		if (!unique_native_receipts(catalog))
+			return EILSEQ;
+		std::vector<uint8_t> encoded;
+		if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
+			return EINVAL;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		SHA256(encoded.data(), encoded.size(), digest.data());
+		for (const auto &record : catalog.operations)
+			if (critical_operation_id_equal(record.operation_id, command.operation_id))
+			{
+				if (CRYPTO_memcmp(record.command_digest.data(), digest.data(),
+						  digest.size()))
+					return EEXIST;
+				auto result = make_result(record, catalog.revision,
+							  critical_apply_outcome::already_applied);
+				*output = result;
+				return 0;
+			}
+		return ENOENT;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+}
+unsigned int flatfile_shop_trade_storage::stage_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, unsigned int result_code, std::span<const uint8_t> result,
+	std::vector<flatfile_authority_operation> *operations, std::string *error) noexcept
+{
+	try
+	{
+		shop_trade_result decoded{};
+		if (root.empty() || !lock.matches(root) || !operations ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    command.type != critical_command_type::shop_trade ||
+		    !critical_command_envelope_valid(command) ||
+		    result.size() != SHOP_TRADE_RESULT_BYTES ||
+		    !shop_trade_command_decode_result(result.data(), result.size(), &decoded))
+			return EINVAL;
+		if (flatfile_authority_transaction_recover(root, lock, error) !=
+		    flatfile_authority_transaction_result::ok)
+			return EIO;
+		operation_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_read_result::ok)
+			return loaded == flatfile_read_result::io_error ? EIO : EILSEQ;
+		if (!unique_native_receipts(catalog))
+			return EILSEQ;
+		for (const auto &entry : catalog.operations)
+			if (critical_operation_id_equal(entry.operation_id, command.operation_id))
+				return EEXIST;
+		if (catalog.operations.size() >= catalog_maximum_operations ||
+		    catalog.revision == UINT64_MAX)
+			return ENOSPC;
+		std::vector<uint8_t> encoded;
+		if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
+			return EINVAL;
+		operation_record record{};
+		record.operation_id = command.operation_id;
+		record.result_code = result_code;
+		SHA256(encoded.data(), encoded.size(), record.command_digest.data());
+		std::copy(result.begin(), result.end(), record.result.begin());
+		catalog.operations.push_back(record);
+		++catalog.revision;
+		std::vector<uint8_t> bytes;
+		if (!encode_catalog(catalog, &bytes))
+			return ENOSPC;
+		auto candidate = *operations;
+		candidate.push_back({ flatfile_authority_store::domains,
+				      flatfile_authority_operation_kind::write, catalog_filename,
+				      std::move(bytes) });
+		*operations = std::move(candidate);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+}

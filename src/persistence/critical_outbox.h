@@ -71,6 +71,11 @@ bool critical_outbox_init(critical_outbox_deliver_fn deliver, void *context);
 void critical_outbox_shutdown(void);
 void critical_outbox_quiesce(void);
 void critical_outbox_resume(void);
+// Register on the game thread. The bounded lifecycle drain invokes this only
+// on that registering thread, outside the outbox mutex, to finish existing
+// native publications. No new command admission or retry-policy override.
+using critical_outbox_drain_observer_fn = void (*)();
+void critical_outbox_set_drain_observer(critical_outbox_drain_observer_fn observer);
 bool critical_outbox_drain(uint64_t timeout_msec);
 critical_outbox_health critical_outbox_health_copy(void);
 bool critical_outbox_reconcile(critical_reconciliation_report *report);

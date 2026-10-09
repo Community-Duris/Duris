@@ -9,12 +9,14 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <charconv>
 #include <climits>
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <map>
 #include <mysql.h>
 #include <new>
 #include <set>
@@ -2790,4 +2792,469 @@ bool collector_repository_read_purchase_projection(
 		return false;
 	}
 #endif
+}
+
+namespace
+{
+struct collector_source_failure
+{
+	unsigned int code;
+};
+void collector_source_require(bool ok, unsigned int code = EILSEQ)
+{
+	if (!ok)
+		throw collector_source_failure{ code };
+}
+bool collector_source_number(const economic_sql_source_row &row, size_t column, uint64_t &value)
+{
+	if (column >= row.cells.size() || !row.cells[column] || row.cells[column]->empty())
+		return false;
+	const auto &text = *row.cells[column];
+	const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+	return parsed.ec == std::errc{} && parsed.ptr == text.data() + text.size();
+}
+bool collector_source_equal(const economic_sql_source_row &row, size_t column, uint64_t value)
+{
+	uint64_t actual = 0;
+	return collector_source_number(row, column, actual) && actual == value;
+}
+size_t collector_source_table(const economic_sql_physical_source_snapshot &base, const char *name)
+{
+	for (size_t index = 0; index < base.source2.tables.size(); ++index)
+		if (base.source2.tables[index].name == name)
+			return index;
+	throw collector_source_failure{ EILSEQ };
+}
+std::string collector_source_hex(const std::string &bytes)
+{
+	constexpr char digits[] = "0123456789abcdef";
+	std::string result(bytes.size() * 2, '0');
+	for (size_t index = 0; index < bytes.size(); ++index)
+	{
+		const auto byte = static_cast<unsigned char>(bytes[index]);
+		result[index * 2] = digits[byte >> 4];
+		result[index * 2 + 1] = digits[byte & 15];
+	}
+	return result;
+}
+bool collector_source_same_policy(const collector::rules &a, const collector::rules &b)
+{
+	return a.enabled == b.enabled && a.collection_delay == b.collection_delay &&
+	       a.sale_delay == b.sale_delay && a.holding_duration == b.holding_duration &&
+	       a.price_percent == b.price_percent && a.minimum_value == b.minimum_value;
+}
+}
+unsigned int collector_repository_inspect_physical_sources(
+	const economic_sql_physical_source_snapshot &base, collector_physical_source_report *output,
+	const economic_sql_source_limits &limits, size_t maximum_diagnostics) noexcept
+{
+	try
+	{
+		collector_source_require(
+			output && maximum_diagnostics && maximum_diagnostics <= 512, EINVAL);
+		const auto validation = economic_sql_validate_physical_sources(base, limits);
+		collector_source_require(!validation, validation);
+		const size_t catalog_index =
+				     collector_source_table(base, "collector_catalog_state"),
+			     death_index = collector_source_table(base, "collector_deaths"),
+			     listing_index = collector_source_table(base, "collector_listings"),
+			     custody_index = collector_source_table(base, "item_current_owner"),
+			     owner_index = collector_source_table(base, "item_owner_revision");
+		const auto &catalog = base.source2.tables[catalog_index],
+			   &deaths = base.source2.tables[death_index],
+			   &listings = base.source2.tables[listing_index],
+			   &custody = base.source2.tables[custody_index],
+			   &owners = base.source2.tables[owner_index],
+			   &equipment = base.source2.item_equipment_sources[0];
+		collector_source_require(listings.rows.size() <= collector::catalog_max_records &&
+						 deaths.rows.size() <=
+							 collector::catalog_max_records,
+					 E2BIG);
+		collector_physical_source_report report;
+		report.physical_digest = base.digest;
+		report.rows = base.rows;
+		report.cells = base.cells;
+		report.cell_bytes = base.cell_bytes;
+		auto diagnose = [&](uint32_t findings, size_t table, size_t row)
+		{
+			if (!findings)
+				return;
+			if (report.diagnostics.size() < maximum_diagnostics)
+				report.diagnostics.push_back({ findings, table, row });
+			else
+				report.diagnostics_truncated = true;
+		};
+		collector::catalog native_catalog;
+		report.catalog_valid =
+			catalog.rows.size() == 1 && collector_source_equal(catalog.rows[0], 0, 1) &&
+			collector_source_number(catalog.rows[0], 1, report.catalog_revision) &&
+			collector_source_number(catalog.rows[0], 2, report.next_listing) &&
+			report.next_listing;
+		native_catalog.revision = report.catalog_revision;
+		native_catalog.next_listing = report.next_listing;
+		if (!report.catalog_valid)
+			diagnose(COLLECTOR_SOURCE_BAD_CATALOG, catalog_index, SIZE_MAX);
+		std::map<std::string, std::vector<size_t>> death_by_operation;
+		std::map<std::pair<uint32_t, uint64_t>, std::vector<size_t>> death_by_identity;
+		for (size_t index = 0; index < deaths.rows.size(); ++index)
+		{
+			const auto &row = deaths.rows[index];
+			collector_physical_death_witness witness;
+			witness.death_row = index;
+			collector_death_snapshot death;
+			death.policy.enabled = true;
+			uint64_t beneficiary = 0, hint = 0;
+			bool valid = row.cells[0] && row.cells[0]->size() == 16;
+			if (valid)
+			{
+				const auto operation = collector_source_hex(*row.cells[0]);
+				valid = critical_operation_id_from_hex(operation.c_str(),
+								       &death.operation_id);
+				death_by_operation[*row.cells[0]].push_back(index);
+			}
+			valid = valid && collector_source_number(row, 1, beneficiary) &&
+				beneficiary && beneficiary <= UINT32_MAX &&
+				collector_source_number(row, 2, death.death_time) &&
+				death.death_time &&
+				collector_source_number(row, 3, death.policy.collection_delay) &&
+				collector_source_number(row, 4, death.policy.sale_delay) &&
+				collector_source_number(row, 5, death.policy.holding_duration) &&
+				collector_source_number(row, 6, death.policy.price_percent) &&
+				collector_source_number(row, 7, death.policy.minimum_value) &&
+				collector_source_number(row, 8, hint) &&
+				hint <= COLLECTOR_HINT_DELIVERED &&
+				collector_source_number(row, 9, death.hint_revision) &&
+				collector::valid_rules(death.policy);
+			if (valid)
+			{
+				death.beneficiary_pid = static_cast<uint32_t>(beneficiary);
+				death.hint_state = static_cast<uint8_t>(hint);
+				witness.death = death;
+				death_by_identity[{ death.beneficiary_pid, death.death_time }]
+					.push_back(index);
+			}
+			else
+				witness.findings |= COLLECTOR_SOURCE_BAD_DEATH;
+			report.deaths.push_back(std::move(witness));
+		}
+		for (const auto &[identity, indices] : death_by_identity)
+		{
+			(void)identity;
+			if (indices.size() > 1)
+				for (size_t index : indices)
+					report.deaths[index].findings |= COLLECTOR_SOURCE_BAD_DEATH;
+		}
+		for (const auto &[operation, indices] : death_by_operation)
+		{
+			(void)operation;
+			if (indices.size() > 1)
+				for (size_t index : indices)
+					report.deaths[index].findings |= COLLECTOR_SOURCE_BAD_DEATH;
+		}
+		std::map<uint64_t, std::vector<size_t>> custody_by_uid, custody_by_root,
+			owner_by_listing, listing_by_id;
+		std::map<std::pair<std::string, uint64_t>, std::vector<size_t>>
+			listing_by_death_item;
+		std::map<size_t, size_t> extra_root_rows;
+		for (size_t index = 0; index < custody.rows.size(); ++index)
+		{
+			uint64_t uid = 0;
+			if (collector_source_number(custody.rows[index], 0, uid) && uid)
+				custody_by_uid[uid].push_back(index);
+			uint64_t root = 0;
+			if (collector_source_number(custody.rows[index], 1, root) && root)
+				custody_by_root[root].push_back(index);
+		}
+		for (size_t index = 0; index < owners.rows.size(); ++index)
+		{
+			uint64_t listing = 0;
+			if (collector_source_equal(
+				    owners.rows[index], 0,
+				    static_cast<uint64_t>(item_owner_type::collector)) &&
+			    collector_source_number(owners.rows[index], 1, listing) &&
+			    collector_source_equal(owners.rows[index], 2, 0))
+				owner_by_listing[listing].push_back(index);
+		}
+		for (size_t index = 0; index < listings.rows.size(); ++index)
+		{
+			const auto &row = listings.rows[index];
+			collector_physical_listing_witness witness;
+			witness.listing_row = index;
+			uint64_t status = 0, beneficiary = 0, paused = 0, due = 0,
+				 listing_revision = 0, item_revision = 0, price = 0;
+			bool scalars = collector_source_number(row, 0, witness.listing_id) &&
+				       witness.listing_id &&
+				       collector_source_number(row, 2, beneficiary) &&
+				       collector_source_number(row, 3, witness.item_uid) &&
+				       collector_source_number(row, 4, status) &&
+				       collector_source_number(row, 5, paused) && paused <= 1 &&
+				       (!row.cells[6] || collector_source_number(row, 6, due)) &&
+				       collector_source_number(row, 7, listing_revision) &&
+				       collector_source_number(row, 8, item_revision) &&
+				       collector_source_number(row, 9, price) && row.cells[1] &&
+				       row.cells[1]->size() == 16;
+			if (witness.listing_id)
+				listing_by_id[witness.listing_id].push_back(index);
+			if (row.cells[1] && row.cells[1]->size() == 16 && witness.item_uid)
+				listing_by_death_item[{ *row.cells[1], witness.item_uid }].push_back(
+					index);
+			witness.held = status ==
+					       static_cast<uint64_t>(collector::state::collected) ||
+				       status == static_cast<uint64_t>(collector::state::available);
+			collector::record entry;
+			std::array<uint8_t, collector::encoded_record_bytes> canonical{};
+			if (!row.cells[10] ||
+			    row.cells[10]->size() != collector::encoded_record_bytes ||
+			    collector::record_decode(
+				    reinterpret_cast<const uint8_t *>(row.cells[10]->data()),
+				    row.cells[10]->size(), &entry) != collector::codec_result::ok ||
+			    collector::record_encode(entry, &canonical) !=
+				    collector::codec_result::ok ||
+			    std::memcmp(canonical.data(), row.cells[10]->data(), canonical.size()))
+				witness.findings |= COLLECTOR_SOURCE_MALFORMED_RECORD;
+			else
+			{
+				witness.record = entry;
+				native_catalog.records.push_back(entry);
+				witness.held = entry.status == collector::state::collected ||
+					       entry.status == collector::state::available;
+				if (!scalars || entry.listing != witness.listing_id ||
+				    !projection_matches(
+					    entry, beneficiary, witness.item_uid, status, paused,
+					    !row.cells[6], due, listing_revision, item_revision,
+					    price,
+					    row.cells[1] ?
+						    collector_source_hex(*row.cells[1]).c_str() :
+						    nullptr))
+					witness.findings |= COLLECTOR_SOURCE_PROJECTION_MISMATCH;
+				const auto death = row.cells[1] ?
+							   death_by_operation.find(*row.cells[1]) :
+							   death_by_operation.end();
+				if (death == death_by_operation.end())
+					witness.findings |= COLLECTOR_SOURCE_MISSING_DEATH;
+				else if (death->second.size() != 1)
+					witness.findings |= COLLECTOR_SOURCE_BAD_DEATH;
+				else
+				{
+					witness.death_row = death->second[0];
+					auto &retained = report.deaths[witness.death_row];
+					retained.referenced = true;
+					if (!retained.death || retained.findings ||
+					    retained.death->beneficiary_pid != entry.beneficiary ||
+					    retained.death->death_time != entry.death_time ||
+					    !collector_source_same_policy(retained.death->policy,
+									  entry.policy))
+						witness.findings |= COLLECTOR_SOURCE_BAD_DEATH;
+				}
+			}
+			if (!scalars)
+				witness.findings |= COLLECTOR_SOURCE_PROJECTION_MISMATCH;
+			if (row.cells[11])
+			{
+				std::vector<player_item_snapshot> decoded;
+				const auto &blob = *row.cells[11];
+				if (blob.empty() ||
+				    blob.size() > COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES)
+					witness.findings |= COLLECTOR_SOURCE_MALFORMED_LITERAL;
+				else
+				{
+					const auto result = player_item_snapshot_list_decode(
+						reinterpret_cast<const uint8_t *>(blob.data()),
+						blob.size(), &decoded);
+					collector_source_require(
+						result != player_snapshot_codec_result::
+								  allocation_failure,
+						ENOMEM);
+					if (result != player_snapshot_codec_result::ok ||
+					    decoded.size() != 1 ||
+					    decoded[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+					    decoded[0].equipment_slot ||
+					    decoded[0].object_uid != (witness.record ?
+									      witness.record->uid :
+									      witness.item_uid) ||
+					    decoded[0].vnum <= 0)
+						witness.findings |=
+							COLLECTOR_SOURCE_MALFORMED_LITERAL;
+					else
+						witness.literal = std::move(decoded[0]);
+				}
+			}
+			else if (witness.held)
+				witness.findings |= COLLECTOR_SOURCE_MISSING_LITERAL;
+			const auto owned = custody_by_uid.find(
+				witness.record ? witness.record->uid : witness.item_uid);
+			if (owned != custody_by_uid.end() && owned->second.size() == 1)
+			{
+				witness.custody_row = owned->second[0];
+				witness.equipment_row = witness.custody_row;
+			}
+			if (witness.held)
+			{
+				const uint64_t held_uid = witness.record ? witness.record->uid :
+									   witness.item_uid;
+				const auto roots = custody_by_root.find(held_uid);
+				if (roots == custody_by_root.end() || roots->second.size() != 1)
+					witness.findings |= COLLECTOR_SOURCE_CUSTODY_MISMATCH;
+				if (roots != custody_by_root.end())
+					for (const size_t related : roots->second)
+						if (related != witness.custody_row)
+							extra_root_rows[related] = index;
+				if (owned == custody_by_uid.end())
+					witness.findings |= COLLECTOR_SOURCE_MISSING_CUSTODY;
+				else if (owned->second.size() != 1)
+					witness.findings |= COLLECTOR_SOURCE_DUPLICATE_HELD;
+				else
+				{
+					const auto &native = custody.rows[witness.custody_row];
+					const auto uid = witness.record ? witness.record->uid :
+									  witness.item_uid;
+					if (!collector_source_equal(native, 1, uid) ||
+					    native.cells[2] ||
+					    !collector_source_equal(
+						    native, 3,
+						    static_cast<uint64_t>(
+							    item_owner_type::collector)) ||
+					    !collector_source_equal(
+						    native, 4,
+						    item_collector_owner_id(witness.listing_id)) ||
+					    !collector_source_equal(native, 5, 0) ||
+					    !collector_source_equal(
+						    native, 6,
+						    witness.record ? witness.record->item_revision :
+								     item_revision) ||
+					    !collector_source_equal(
+						    native, 8,
+						    static_cast<uint64_t>(
+							    item_custody_state::active)) ||
+					    !collector_source_equal(
+						    equipment.rows[witness.custody_row], 1, 0) ||
+					    !witness.literal ||
+					    !collector_source_equal(
+						    native, 7,
+						    static_cast<uint64_t>(witness.literal->vnum)))
+						witness.findings |=
+							COLLECTOR_SOURCE_CUSTODY_MISMATCH;
+				}
+				const auto revision = owner_by_listing.find(
+					item_collector_owner_id(witness.listing_id));
+				if (revision != owner_by_listing.end() &&
+				    revision->second.size() == 1)
+					witness.owner_revision_row = revision->second[0];
+				if (revision == owner_by_listing.end() ||
+				    revision->second.size() != 1 ||
+				    !collector_source_number(owners.rows[revision->second[0]], 3,
+							     witness.owner_revision) ||
+				    !witness.owner_revision)
+					witness.findings |= COLLECTOR_SOURCE_BAD_OWNER_REVISION;
+			}
+			else if (witness.custody_row != SIZE_MAX &&
+				 collector_source_equal(
+					 custody.rows[witness.custody_row], 3,
+					 static_cast<uint64_t>(item_owner_type::collector)) &&
+				 collector_source_equal(custody.rows[witness.custody_row], 4,
+							item_collector_owner_id(witness.listing_id)))
+				witness.findings |= COLLECTOR_SOURCE_CUSTODY_MISMATCH;
+			report.listings.push_back(std::move(witness));
+		}
+		report.catalog_valid = report.catalog_valid &&
+				       native_catalog.records.size() == listings.rows.size() &&
+				       collector::valid_catalog(native_catalog);
+		for (const auto &[listing, indices] : listing_by_id)
+		{
+			(void)listing;
+			if (indices.size() > 1)
+			{
+				report.catalog_valid = false;
+				for (const size_t index : indices)
+					report.listings[index].findings |=
+						COLLECTOR_SOURCE_BAD_CATALOG;
+			}
+		}
+		for (const auto &[identity, indices] : listing_by_death_item)
+		{
+			(void)identity;
+			if (indices.size() > 1)
+			{
+				report.catalog_valid = false;
+				for (const size_t index : indices)
+					report.listings[index].findings |=
+						COLLECTOR_SOURCE_BAD_CATALOG;
+			}
+		}
+		if (!report.catalog_valid)
+			diagnose(COLLECTOR_SOURCE_BAD_CATALOG, catalog_index, SIZE_MAX);
+		// Reverse census: never hide orphan/malformed collector-owned rows behind
+		// a listing-driven join. Historical UID reuse is not global uniqueness.
+		std::map<uint64_t, size_t> held_by_listing;
+		for (size_t index = 0; index < custody.rows.size(); ++index)
+		{
+			const auto &row = custody.rows[index];
+			if (!collector_source_equal(
+				    row, 3, static_cast<uint64_t>(item_owner_type::collector)))
+				continue;
+			collector_physical_custody_witness witness;
+			witness.custody_row = index;
+			witness.collector_owned = true;
+			uint64_t listing = 0;
+			const bool parsed = collector_source_number(row, 4, listing) && listing;
+			const auto found = parsed ? listing_by_id.find(listing) :
+						    listing_by_id.end();
+			if (found == listing_by_id.end() || found->second.size() != 1)
+				witness.findings |= COLLECTOR_SOURCE_ORPHAN_CUSTODY;
+			else
+			{
+				witness.listing_witness = found->second[0];
+				auto &matched = report.listings[witness.listing_witness];
+				if (!matched.held || matched.custody_row != index ||
+				    matched.findings)
+					witness.findings |= COLLECTOR_SOURCE_CUSTODY_MISMATCH;
+			}
+			if (parsed && ++held_by_listing[listing] > 1)
+				witness.findings |= COLLECTOR_SOURCE_DUPLICATE_HELD;
+			diagnose(witness.findings, custody_index, index);
+			report.custody.push_back(witness);
+		}
+		for (const auto &[row, listing] : extra_root_rows)
+			if (!collector_source_equal(
+				    custody.rows[row], 3,
+				    static_cast<uint64_t>(item_owner_type::collector)))
+			{
+				collector_physical_custody_witness extra;
+				extra.custody_row = row;
+				extra.listing_witness = listing;
+				extra.findings = COLLECTOR_SOURCE_CUSTODY_MISMATCH;
+				report.custody.push_back(extra);
+				diagnose(extra.findings, custody_index, row);
+			}
+		report.correspondence_valid = report.catalog_valid;
+		for (auto &witness : report.listings)
+		{
+			if (held_by_listing[witness.listing_id] > 1)
+				witness.findings |= COLLECTOR_SOURCE_DUPLICATE_HELD;
+			witness.correspondence_valid = !witness.findings && report.catalog_valid;
+			report.correspondence_valid &= witness.correspondence_valid;
+			diagnose(witness.findings, listing_index, witness.listing_row);
+		}
+		for (const auto &witness : report.deaths)
+		{
+			report.correspondence_valid &= !witness.findings;
+			diagnose(witness.findings, death_index, witness.death_row);
+		}
+		for (const auto &witness : report.custody)
+			report.correspondence_valid &= !witness.findings;
+		*output = std::move(report);
+		return 0;
+	}
+	catch (const collector_source_failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
 }

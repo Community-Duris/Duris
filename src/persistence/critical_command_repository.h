@@ -56,6 +56,25 @@ critical_apply_result critical_command_repository_verify_shop_trade_in_transacti
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);
 
+// Original pinned executing-state callback only. A bare command or passive
+// checkpoint cannot select shared SHOP execution. No publication/ACK authority.
+critical_apply_result critical_command_repository_apply_shared_native_from_pool(
+	const critical_shared_native_execution_owner &, void *context);
+
+// Distinct genuine pinned flat worker callback. Uses only the configured root;
+// every callback owns/releases its lock on the same thread. No bare dispatch,
+// world publication, terminal origin or ACK authority is granted.
+critical_apply_result
+critical_command_repository_apply_shared_native_flat(const critical_shared_native_execution_owner &,
+						     void *context);
+
+// Original private queued ROOM callback only, with one acquired-thread root
+// lock per invocation and retained reconciliation-only proposals after possible
+// publication. Registration stays dormant until original source/budget/gates
+// qualify. No bare command, world publication, terminal origin or ACK authority.
+critical_apply_result critical_command_repository_apply_zone_reset_item_flat(
+	const critical_zone_reset_item_execution_owner &, void *context);
+
 // Shared transaction-finalization helpers for command-specific repositories.
 bool critical_command_repository_insert_outbox_event(MYSQL *connection,
 						     const critical_operation_id &operation_id,

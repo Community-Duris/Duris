@@ -24,6 +24,13 @@ struct item_ownership_runtime_entry
 struct collector_command_payload;
 struct collector_command_result;
 
+// Complete read-only active cache census on the serialized game thread. All
+// owner domains and malformed relationships remain visible; no native authority
+// or world completeness is inferred. Original 262144 ceiling; errno result and
+// unchanged output on any failure, including allocation or excessive rows.
+unsigned int item_ownership_runtime_snapshot_all_active(
+	size_t limit, std::vector<item_ownership_runtime_entry> *output) noexcept;
+
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry);
 bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *batch, size_t count);
 bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *batch,
@@ -114,6 +121,10 @@ size_t item_ownership_runtime_size(void);
 class item_ownership_runtime_published_native_observer final
 {
 	friend class quest_mobile_published_world_owner;
+	friend class quest_mobile_native_item_stage;
+	friend class zone_reset_room_publication_owner;
+	friend class shop_trade_native_checkpoint_owner;
+	friend class shop_trade_current_runtime_owner;
 	static bool snapshot_links(std::span<const uint64_t> selected_uids, size_t limit,
 				   std::vector<item_ownership_runtime_entry> *output) noexcept;
 };

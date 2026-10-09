@@ -16,6 +16,7 @@
 #include "persistence/economic_sql_auction_source_claim.h"
 #include "persistence/shop_item_runtime_payload.h"
 #include <map>
+#include <set>
 
 // Pure original transform only; no native owner/checkpoint/publication capability.
 bool auction_native_expected_player_forest(const auction_command_payload &,
@@ -3006,4 +3007,1315 @@ unsigned int auction_repository_readback_endpoints(MYSQL *connection,
 		return ENOMEM;
 	}
 #endif
+}
+
+namespace
+{
+struct auction_census_failure
+{
+	unsigned int code;
+};
+void auction_census_require(bool value, unsigned int code = EILSEQ)
+{
+	if (!value)
+		throw auction_census_failure{ code };
+}
+template <class T> std::optional<T> auction_census_number(const std::optional<std::string> &cell)
+{
+	if (!cell)
+		return {};
+	T value{};
+	const auto parsed = std::from_chars(cell->data(), cell->data() + cell->size(), value);
+	if (parsed.ec != std::errc{} || parsed.ptr != cell->data() + cell->size())
+		return {};
+	std::array<char, 32> canonical{};
+	const auto encoded =
+		std::to_chars(canonical.data(), canonical.data() + canonical.size(), value);
+	if (encoded.ec != std::errc{} ||
+	    std::string_view(canonical.data(), encoded.ptr - canonical.data()) != *cell)
+		return {};
+	return value;
+}
+std::optional<std::string_view> auction_census_operation(const std::optional<std::string> &cell)
+{
+	if (!cell || cell->size() != 16 ||
+	    std::all_of(cell->begin(), cell->end(), [](char c) { return c == 0; }))
+		return {};
+	return std::string_view(*cell);
+}
+using auction_census_cells = std::vector<std::optional<std::string>>;
+using auction_census_issue = auction_physical_issue;
+struct auction_census_index
+{
+	size_t row = 0;
+	bool ambiguous = false;
+};
+struct auction_census_worker
+{
+	auction_census_worker(const economic_sql_physical_source_snapshot &b,
+			      const sql_room_item_source_snapshot &s, size_t n)
+		: base(b)
+		, supplement(s)
+		, limit(n)
+	{
+	}
+	const economic_sql_physical_source_snapshot &base;
+	const sql_room_item_source_snapshot &supplement;
+	size_t limit;
+	auction_physical_correspondence report;
+	std::map<uint32_t, auction_census_index> auctions;
+	std::map<std::pair<uint32_t, uint16_t>, auction_census_index> slots;
+	std::map<std::string_view, auction_census_index> inbox, operations;
+	std::map<std::string_view, std::vector<size_t>> outbox;
+	std::map<std::pair<std::string_view, uint64_t>, auction_census_index> ledgers, references;
+	std::map<uint64_t, auction_census_index> custody, equipment;
+	std::map<uint64_t, std::vector<size_t>> roots;
+	std::map<std::tuple<uint64_t, uint64_t, uint64_t>, auction_census_index> owners;
+	std::vector<uint8_t> matched, extras;
+	std::map<std::string_view, size_t> retained_receipts;
+	std::map<uint32_t, auction_census_index> retained_by_auction;
+	const economic_sql_source_table &table(size_t index, bool extra = false) const
+	{
+		return extra ? supplement.tables[index] : base.source2.tables[index];
+	}
+	auction_physical_reference ref(size_t index, size_t row, bool extra = false) const
+	{
+		return { extra, index, row, table(index, extra).rows[row].digest };
+	}
+	void finding(auction_census_issue issue, const auction_physical_reference &source)
+	{
+		++report.issue_counts[static_cast<size_t>(issue)];
+		++report.diagnostic_count;
+		if (report.diagnostics.size() < limit)
+			report.diagnostics.push_back({ issue, source });
+	}
+	void mark(auction_physical_slot &slot, auction_census_issue issue)
+	{
+		const auto bit = uint32_t{ 1 } << static_cast<size_t>(issue);
+		if (!(slot.issue_mask & bit))
+		{
+			slot.issue_mask |= bit;
+			finding(issue, slot.source);
+		}
+	}
+	void mark(auction_physical_listing &listing, auction_census_issue issue)
+	{
+		const auto bit = uint32_t{ 1 } << static_cast<size_t>(issue);
+		if (!(listing.issue_mask & bit))
+		{
+			listing.issue_mask |= bit;
+			finding(issue, listing.source);
+		}
+	}
+	template <class K>
+	void index(std::map<K, auction_census_index> &map, const K &key, size_t row)
+	{
+		auto [at, added] = map.emplace(key, auction_census_index{ row, false });
+		if (!added)
+			at->second.ambiguous = true;
+	}
+	std::optional<size_t> lookup(const auto &map, const auto &key) const
+	{
+		auto found = map.find(key);
+		if (found == map.end() || found->second.ambiguous)
+			return {};
+		return found->second.row;
+	}
+	template <class T>
+	static bool equal(const auction_census_cells &cells, size_t field, T value)
+	{
+		return auction_census_number<T>(cells[field]) == std::optional<T>(value);
+	}
+	bool succeeded(size_t row, uint16_t version = 2) const
+	{
+		const auto &c = table(17).rows[row].cells;
+		return equal<uint16_t>(c, 3, 7) && equal<uint16_t>(c, 4, version) &&
+		       equal<uint16_t>(c, 5, version) && equal<uint8_t>(c, 6, 1) &&
+		       equal<uint32_t>(c, 7, 0) && equal<uint16_t>(c, 8, 0) &&
+		       equal<uint8_t>(c, 11, 1) && c[1] && c[1]->size() == 32 && c[2] &&
+		       c[2]->size() == 32;
+	}
+	template <class T>
+	bool scalar(const auction_census_cells &c, size_t field, bool nullable = false) const
+	{
+		return (!c[field] && nullable) || auction_census_number<T>(c[field]).has_value();
+	}
+	void malformed(const auction_physical_reference &source)
+	{
+		report.malformed_rows.push_back(source);
+		finding(auction_census_issue::invalid_identity, source);
+	}
+	bool source_site(const std::optional<std::string> &cell) const
+	{
+		auto site = auction_census_number<uint16_t>(cell);
+		return site && *site <= uint16_t(critical_source_site::operator_repair);
+	}
+	std::optional<auction_command_result> receipt(size_t row, uint16_t version = 2) const
+	{
+		const auto &i = table(17).rows[row].cells;
+		auction_command_result result{};
+		std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> canonical{};
+		if (!succeeded(row, version) || !i[10] ||
+		    !auction_command_decode_result(reinterpret_cast<const uint8_t *>(i[10]->data()),
+						   i[10]->size(), &result) ||
+		    !auction_command_encode_result(result, &canonical) ||
+		    i[10]->size() != canonical.size() ||
+		    !std::equal(canonical.begin(), canonical.end(),
+				reinterpret_cast<const uint8_t *>(i[10]->data())))
+			return {};
+		if (result.action != auction_action::list ||
+		    result.event_type != auction_event_type::listed || !result.auction_id ||
+		    result.status != 1 || !result.seller_pid || result.winner_pid ||
+		    result.previous_bidder_pid || result.final_price || result.claim_credit_used ||
+		    result.wallet_value_delta > 0 || result.auction_revision != 1 ||
+		    result.auction_owner_revision != 1 || !result.player_owner_revision ||
+		    !result.item_count || result.item_count > 9 ||
+		    !equal<uint64_t>(i, 9,
+				     std::max({ result.wallet_revision, result.bank_revision,
+						result.auction_revision,
+						result.player_owner_revision,
+						result.auction_owner_revision })))
+			return {};
+		std::set<uint64_t> unique;
+		for (size_t n = 0; n < result.item_count; ++n)
+			if (!result.item_uids[n] || result.item_uids[n] == UINT64_MAX ||
+			    !result.item_revisions[n] || result.item_revisions[n] == UINT64_MAX ||
+			    !unique.insert(result.item_uids[n]).second)
+				return {};
+		return result;
+	}
+	void read_retained_receipts()
+	{
+		for (size_t r = 0; r < table(17).rows.size(); ++r)
+		{
+			auto op = auction_census_operation(table(17).rows[r].cells[0]);
+			auto decoded = receipt(r);
+			if (!op || !decoded)
+				continue;
+			auction_physical_retained_listing witness;
+			witness.inbox = ref(17, r);
+			witness.receipt = *decoded;
+			auto economic = lookup(operations, *op);
+			if (economic)
+				witness.operation = ref(4, *economic, true);
+			auto outputs = outbox.find(*op);
+			size_t exact = 0;
+			if (outputs != outbox.end())
+				for (size_t o : outputs->second)
+				{
+					const auto &out = table(18).rows[o].cells;
+					if (equal<uint64_t>(out, 2, 0) &&
+					    equal<uint16_t>(out, 3, 5) &&
+					    equal<uint16_t>(out, 4, 1) &&
+					    equal<uint16_t>(out, 5, 1) &&
+					    out[6] == table(17).rows[r].cells[10])
+					{
+						++exact;
+						witness.outbox = ref(18, o);
+					}
+				}
+			if (exact != 1)
+				witness.outbox.reset();
+			if (lookup(inbox, *op) == std::optional<size_t>(r))
+				retained_receipts.emplace(*op, report.retained_listings.size());
+			index(retained_by_auction, decoded->auction_id,
+			      report.retained_listings.size());
+			report.retained_listings.push_back(std::move(witness));
+		}
+	}
+	void build_indexes()
+	{
+		for (size_t r = 0; r < table(17).rows.size(); ++r)
+			if (auto op = auction_census_operation(table(17).rows[r].cells[0]))
+				index(inbox, *op, r);
+		for (size_t r = 0; r < table(18).rows.size(); ++r)
+			if (auto op = auction_census_operation(table(18).rows[r].cells[1]))
+				outbox[*op].push_back(r);
+		for (size_t r = 0; r < table(4, true).rows.size(); ++r)
+			if (auto op = auction_census_operation(table(4, true).rows[r].cells[0]))
+				index(operations, *op, r);
+		for (size_t r = 0; r < table(2, true).rows.size(); ++r)
+		{
+			const auto &c = table(2, true).rows[r].cells;
+			auto op = auction_census_operation(c[0]);
+			auto event = auction_census_number<uint64_t>(c[1]);
+			if (op && event)
+				index(ledgers, std::pair{ *op, *event }, r);
+			bool valid = op.has_value();
+			for (size_t f = 1; f < c.size(); ++f)
+				valid = valid && scalar<uint64_t>(c, f, f == 4);
+			if (!valid)
+				malformed(ref(2, r, true));
+		}
+		for (size_t r = 0; r < table(3, true).rows.size(); ++r)
+		{
+			const auto &c = table(3, true).rows[r].cells;
+			auto op = auction_census_operation(c[0]);
+			auto event = auction_census_number<uint64_t>(c[2]);
+			if (op && event)
+				index(references, std::pair{ *op, *event }, r);
+			bool valid = op.has_value() &&
+				     (!c[7] || auction_census_operation(c[7]).has_value());
+			for (size_t f = 1; f < c.size(); ++f)
+				if (f != 7)
+					valid = valid && scalar<uint64_t>(c, f, f == 8);
+			if (!valid)
+				malformed(ref(3, r, true));
+		}
+		for (size_t r = 0; r < base.source2.item_equipment_sources[0].rows.size(); ++r)
+		{
+			const auto &c = base.source2.item_equipment_sources[0].rows[r].cells;
+			if (auto uid = auction_census_number<uint64_t>(c[0]))
+				index(equipment, *uid, r);
+			if (!scalar<uint64_t>(c, 0) || !scalar<uint16_t>(c, 1))
+				malformed({ false, 0, r,
+					    base.source2.item_equipment_sources[0].rows[r].digest,
+					    true });
+		}
+		for (size_t r = 0; r < table(11).rows.size(); ++r)
+		{
+			const auto &c = table(11).rows[r].cells;
+			auto uid = auction_census_number<uint64_t>(c[0]);
+			auto root = auction_census_number<uint64_t>(c[1]);
+			if (uid)
+				index(custody, *uid, r);
+			if (root)
+				roots[*root].push_back(r);
+			bool valid = scalar<int32_t>(c, 7);
+			for (size_t f = 0; f < 9; ++f)
+				if (f != 7)
+					valid = valid && scalar<uint64_t>(c, f, f == 2);
+			if (!valid)
+				malformed(ref(11, r));
+			if (equal<uint8_t>(c, 3, static_cast<uint8_t>(item_owner_type::auction)))
+				report.auction_custody.push_back(ref(11, r));
+		}
+		for (size_t r = 0; r < table(11).rows.size(); ++r)
+		{
+			auto uid = auction_census_number<uint64_t>(table(11).rows[r].cells[0]);
+			if (uid && custody[*uid].ambiguous)
+				finding(auction_census_issue::duplicate_current_uid, ref(11, r));
+		}
+		matched.resize(table(11).rows.size());
+		extras.resize(matched.size());
+		for (size_t r = 0; r < table(12).rows.size(); ++r)
+		{
+			const auto &c = table(12).rows[r].cells;
+			auto t = auction_census_number<uint64_t>(c[0]),
+			     id = auction_census_number<uint64_t>(c[1]),
+			     context = auction_census_number<uint64_t>(c[2]);
+			if (t && id && context)
+				index(owners, std::tuple{ *t, *id, *context }, r);
+			if (!t || !id || !context || !scalar<uint64_t>(c, 3))
+				malformed(ref(12, r));
+		}
+	}
+	void read_listings()
+	{
+		for (size_t r = 0; r < table(4).rows.size(); ++r)
+		{
+			const auto &c = table(4).rows[r].cells;
+			auction_physical_listing row;
+			row.source = ref(4, r);
+			row.auction_id = auction_census_number<uint32_t>(c[0]);
+			row.quantity = auction_census_number<int64_t>(c[6]);
+			if (!row.auction_id || !*row.auction_id)
+				mark(row, auction_census_issue::invalid_identity);
+			else
+				index(auctions, *row.auction_id, report.listings.size());
+			auto op = auction_census_operation(c[9]);
+			auto receipt_row = op ? lookup(inbox, *op) : std::optional<size_t>{};
+			if (receipt_row)
+			{
+				row.inbox = ref(17, *receipt_row);
+				const auto &i = table(17).rows[*receipt_row].cells;
+				if (equal<uint16_t>(i, 5, 1))
+					row.family = auction_physical_family::legacy_or_v1;
+				auction_command_result receipt{};
+				std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> canonical{};
+				bool bound =
+					succeeded(*receipt_row) && i[10] &&
+					auction_command_decode_result(
+						reinterpret_cast<const uint8_t *>(i[10]->data()),
+						i[10]->size(), &receipt) &&
+					auction_command_encode_result(receipt, &canonical) &&
+					i[10]->size() == canonical.size() &&
+					std::equal(
+						canonical.begin(), canonical.end(),
+						reinterpret_cast<const uint8_t *>(i[10]->data()));
+				bound = bound && row.auction_id &&
+					receipt.action == auction_action::list &&
+					receipt.event_type == auction_event_type::listed &&
+					receipt.auction_id == *row.auction_id &&
+					receipt.status == 1 && receipt.seller_pid &&
+					equal<uint32_t>(c, 1, receipt.seller_pid) &&
+					!receipt.winner_pid && !receipt.previous_bidder_pid &&
+					!receipt.final_price && !receipt.claim_credit_used &&
+					receipt.wallet_value_delta <= 0 &&
+					receipt.auction_revision == 1 &&
+					receipt.auction_owner_revision == 1 &&
+					receipt.player_owner_revision && receipt.item_count &&
+					receipt.item_count <= 9 &&
+					row.quantity == std::optional<int64_t>(receipt.item_count);
+				bound = bound &&
+					equal<uint64_t>(
+						i, 9,
+						std::max({ receipt.wallet_revision,
+							   receipt.bank_revision,
+							   receipt.auction_revision,
+							   receipt.player_owner_revision,
+							   receipt.auction_owner_revision }));
+				std::set<uint64_t> unique;
+				for (size_t n = 0; bound && n < receipt.item_count; ++n)
+					bound = receipt.item_uids[n] &&
+						receipt.item_uids[n] != UINT64_MAX &&
+						receipt.item_revisions[n] &&
+						receipt.item_revisions[n] != UINT64_MAX &&
+						unique.insert(receipt.item_uids[n]).second;
+				if (bound)
+				{
+					row.family = auction_physical_family::observed_native_v2;
+					row.listing_receipt = receipt;
+					mark(row,
+					     auction_census_issue::original_provenance_unknown);
+					auto economic = lookup(operations, *op);
+					if (economic)
+					{
+						row.operation = ref(4, *economic, true);
+					}
+					size_t output_count = 0;
+					auto outputs = outbox.find(*op);
+					if (outputs != outbox.end())
+						for (size_t o : outputs->second)
+						{
+							const auto &out = table(18).rows[o].cells;
+							if (equal<uint64_t>(out, 2, 0) &&
+							    equal<uint16_t>(out, 3, 5) &&
+							    equal<uint16_t>(out, 4, 1) &&
+							    equal<uint16_t>(out, 5, 1) &&
+							    out[6] == i[10])
+							{
+								++output_count;
+								row.outbox = ref(18, o);
+							}
+						}
+					if (output_count != 1)
+						row.outbox.reset();
+				}
+			}
+			if (!row.listing_receipt)
+				mark(row, auction_census_issue::unbound_listing);
+			if (!row.quantity || *row.quantity < 1 || *row.quantity > 9)
+				mark(row, auction_census_issue::invalid_slots);
+			const bool status = c[2] && (*c[2] == "OPEN" || *c[2] == "CLOSED" ||
+						     *c[2] == "REMOVED");
+			auto revision = auction_census_number<uint64_t>(c[7]);
+			if (!status || !revision || !*revision || !equal<uint8_t>(c, 8, 1))
+				mark(row, auction_census_issue::invalid_identity);
+			report.listings.push_back(std::move(row));
+		}
+		for (auto &row : report.listings)
+			if (row.auction_id && auctions[*row.auction_id].ambiguous)
+				mark(row, auction_census_issue::duplicate_row_key);
+		for (auto &witness : report.retained_listings)
+		{
+			auto parent = lookup(auctions, witness.receipt.auction_id);
+			if (parent)
+			{
+				const auto &listing = report.listings[*parent];
+				if (listing.listing_receipt && listing.inbox &&
+				    listing.inbox->row == witness.inbox.row)
+					witness.parent = listing.source;
+			}
+			if (!witness.parent)
+				finding(auction_census_issue::unbound_listing, witness.inbox);
+		}
+	}
+	void read_slots()
+	{
+		for (size_t r = 0; r < table(7).rows.size(); ++r)
+		{
+			const auto &c = table(7).rows[r].cells;
+			auction_physical_slot row;
+			row.source = ref(7, r);
+			row.auction_id = auction_census_number<uint32_t>(c[0]);
+			row.slot = auction_census_number<uint16_t>(c[1]);
+			row.item_uid = auction_census_number<uint64_t>(c[2]);
+			row.row_revision = auction_census_number<uint64_t>(c[3]);
+			row.vnum = auction_census_number<int32_t>(c[4]);
+			row.claim_pid = auction_census_number<uint32_t>(c[6]);
+			auto claimed = auction_census_number<uint8_t>(c[8]);
+			if (claimed && *claimed <= 1)
+				row.claimed = *claimed != 0;
+			if (!row.auction_id || !*row.auction_id || !row.slot || !row.item_uid ||
+			    !*row.item_uid || !row.row_revision || !*row.row_revision ||
+			    !row.vnum || !row.claimed)
+				mark(row, auction_census_issue::invalid_identity);
+			if (row.auction_id && row.slot)
+			{
+				index(slots, std::pair{ *row.auction_id, *row.slot },
+				      report.slots.size());
+				row.listing_index = lookup(auctions, *row.auction_id);
+			}
+			if (!row.listing_index)
+				mark(row, auction_census_issue::unbound_listing);
+			const auto *listing =
+				row.listing_index ? &report.listings[*row.listing_index] : nullptr;
+			if (row.auction_id)
+				row.retained_receipt_index =
+					lookup(retained_by_auction, *row.auction_id);
+			if (!row.retained_receipt_index)
+				mark(row, auction_census_issue::opaque_literal);
+			else
+			{
+				mark(row, auction_census_issue::original_provenance_unknown);
+				const auto &receipt =
+					report.retained_listings[*row.retained_receipt_index]
+						.receipt;
+				if (!row.slot || *row.slot >= receipt.item_count)
+					mark(row, auction_census_issue::invalid_slots);
+				std::vector<player_item_snapshot> items;
+				std::vector<uint64_t> revisions;
+				if (!c[5] ||
+				    !auction_repository_decode_native_tree_blob(
+					    { reinterpret_cast<const uint8_t *>(c[5]->data()),
+					      c[5]->size() },
+					    &items, &revisions))
+					mark(row, auction_census_issue::literal_decode_refused);
+				else
+				{
+					row.node_begin = report.nodes.size();
+					row.node_count = items.size();
+					bool bound =
+						row.slot && *row.slot < receipt.item_count &&
+						row.item_uid == std::optional<uint64_t>(
+									items[0].object_uid) &&
+						row.vnum == std::optional<int32_t>(items[0].vnum) &&
+						items[0].object_uid ==
+							receipt.item_uids[*row.slot] &&
+						revisions[0] == receipt.item_revisions[*row.slot];
+					if (listing && row.slot && *row.slot == 0)
+						bound = bound &&
+							equal<int32_t>(
+								table(4).rows[listing->source.row]
+									.cells,
+								10, items[0].vnum);
+					if (!bound)
+						mark(row,
+						     auction_census_issue::listing_literal_mismatch);
+					if (row.claimed && !*row.claimed &&
+					    row.row_revision !=
+						    std::optional<uint64_t>(revisions[0]))
+						mark(row,
+						     auction_census_issue::listing_literal_mismatch);
+					if (row.claimed && *row.claimed &&
+					    (!row.row_revision ||
+					     *row.row_revision <= revisions[0] || !row.claim_pid ||
+					     !*row.claim_pid || !auction_census_operation(c[7])))
+						mark(row, auction_census_issue::history_metadata);
+					for (size_t n = 0; n < items.size(); ++n)
+					{
+						auction_physical_node node;
+						node.literal = std::move(items[n]);
+						node.listing_after_revision = revisions[n];
+						node.slot_index = report.slots.size();
+						report.nodes.push_back(std::move(node));
+					}
+				}
+			}
+			report.slots.push_back(std::move(row));
+		}
+		for (auto &row : report.slots)
+			if (row.auction_id && row.slot &&
+			    slots[std::pair{ *row.auction_id, *row.slot }].ambiguous)
+				mark(row, auction_census_issue::duplicate_row_key);
+		for (auto &listing : report.listings)
+			if (listing.auction_id && listing.listing_receipt)
+				for (uint16_t slot = 0; slot < listing.listing_receipt->item_count;
+				     ++slot)
+					if (!lookup(slots, std::pair{ *listing.auction_id, slot }))
+						mark(listing, auction_census_issue::invalid_slots);
+	}
+	void legacy_identities()
+	{
+		std::map<uint64_t, size_t> live_counts;
+		std::map<uint64_t, std::vector<size_t>> children;
+		for (size_t row = 0; row < table(11).rows.size(); ++row)
+			if (auto parent =
+				    auction_census_number<uint64_t>(table(11).rows[row].cells[2]))
+				children[*parent].push_back(row);
+		std::vector<std::vector<size_t>> by_listing(report.listings.size());
+		for (size_t index = 0; index < report.slots.size(); ++index)
+		{
+			const auto &slot = report.slots[index];
+			if (slot.listing_index)
+				by_listing[*slot.listing_index].push_back(index);
+			if (!slot.claimed || *slot.claimed)
+				continue;
+			if (slot.node_count)
+				for (size_t n = slot.node_begin;
+				     n < slot.node_begin + slot.node_count; ++n)
+					++live_counts[report.nodes[n].literal.object_uid];
+			else if (slot.item_uid && *slot.item_uid)
+				++live_counts[*slot.item_uid];
+		}
+		for (auto &slot : report.slots)
+		{
+			if (!slot.claimed || *slot.claimed)
+				continue;
+			bool duplicate = slot.item_uid && live_counts[*slot.item_uid] > 1;
+			for (size_t n = slot.node_begin; n < slot.node_begin + slot.node_count; ++n)
+				duplicate = duplicate ||
+					    live_counts[report.nodes[n].literal.object_uid] > 1;
+			if (duplicate)
+				mark(slot, auction_census_issue::duplicate_current_uid);
+		}
+		for (size_t index = 0; index < report.listings.size(); ++index)
+		{
+			auto &listing = report.listings[index];
+			const auto &parent = table(4).rows[listing.source.row].cells;
+			if (listing.quantity && *listing.quantity > 0 && by_listing[index].empty())
+				mark(listing, auction_census_issue::missing_identity);
+			// Declared inventory is independent of receipt family and claim history.
+			if (listing.auction_id && listing.quantity && *listing.quantity >= 1 &&
+			    *listing.quantity <= 9)
+			{
+				bool cardinality = by_listing[index].size() ==
+						   static_cast<size_t>(*listing.quantity);
+				for (uint16_t ordinal = 0; ordinal < *listing.quantity; ++ordinal)
+					cardinality = cardinality &&
+						      lookup(slots, std::pair{ *listing.auction_id,
+									       ordinal })
+							      .has_value();
+				if (!cardinality)
+					mark(listing, auction_census_issue::invalid_slots);
+			}
+			if (listing.family != auction_physical_family::legacy_or_v1)
+				continue;
+			auto op = auction_census_operation(parent[9]);
+			auto input = op ? lookup(inbox, *op) : std::optional<size_t>{};
+			auto decoded = input ? receipt(*input, 1) :
+					       std::optional<auction_command_result>{};
+			const bool bound = decoded && listing.auction_id &&
+					   decoded->auction_id == *listing.auction_id &&
+					   equal<uint32_t>(parent, 1, decoded->seller_pid) &&
+					   listing.quantity ==
+						   std::optional<int64_t>(decoded->item_count);
+			if (bound)
+				listing.legacy_listing_receipt = *decoded;
+			bool complete_slots = bound &&
+					      by_listing[index].size() == decoded->item_count;
+			if (bound)
+				for (uint16_t ordinal = 0; ordinal < decoded->item_count; ++ordinal)
+					complete_slots =
+						complete_slots &&
+						lookup(slots,
+						       std::pair{ *listing.auction_id, ordinal })
+							.has_value();
+			if (!complete_slots)
+				mark(listing, auction_census_issue::invalid_slots);
+			for (size_t slot_index : by_listing[index])
+			{
+				auto &slot = report.slots[slot_index];
+				const auto &raw = table(7).rows[slot.source.row].cells;
+				auction_physical_legacy_identity witness;
+				witness.slot_index = slot_index;
+				witness.item_uid = slot.item_uid;
+				witness.vnum = slot.vnum;
+				if (!slot.vnum || *slot.vnum < 0)
+					mark(slot, auction_census_issue::invalid_identity);
+				witness.parent = listing.source;
+				if (input)
+					witness.inbox = ref(17, *input);
+				slot.legacy_identity_index = report.legacy_identities.size();
+				mark(slot, auction_census_issue::original_provenance_unknown);
+				bool identity = bound && complete_slots && slot.slot &&
+						*slot.slot < decoded->item_count;
+				if (identity)
+				{
+					witness.listing_after_revision =
+						decoded->item_revisions[*slot.slot];
+					identity =
+						slot.item_uid ==
+							std::optional<uint64_t>(
+								decoded->item_uids[*slot.slot]) &&
+						raw[5] && !raw[5]->empty() &&
+						raw[5] == parent[11] &&
+						(*slot.slot != 0 ||
+						 (slot.vnum &&
+						  equal<int32_t>(parent, 10, *slot.vnum)));
+				}
+				if (!identity)
+					mark(slot, auction_census_issue::listing_literal_mismatch);
+				if (slot.claimed && *slot.claimed)
+				{
+					if (!witness.listing_after_revision || !slot.row_revision ||
+					    *slot.row_revision <= *witness.listing_after_revision ||
+					    !slot.claim_pid || !*slot.claim_pid ||
+					    !auction_census_operation(raw[7]))
+						mark(slot, auction_census_issue::history_metadata);
+					report.legacy_identities.push_back(std::move(witness));
+					continue;
+				}
+				auto native = slot.item_uid ? lookup(custody, *slot.item_uid) :
+							      std::optional<size_t>{};
+				auto gear = slot.item_uid ? lookup(equipment, *slot.item_uid) :
+							    std::optional<size_t>{};
+				auto owner =
+					listing.auction_id ?
+						lookup(owners,
+						       std::tuple{
+							       uint64_t(item_owner_type::auction),
+							       uint64_t(*listing.auction_id),
+							       uint64_t(0) }) :
+						std::optional<size_t>{};
+				auto ledger =
+					op && slot.slot ?
+						lookup(ledgers,
+						       std::pair{ *op, uint64_t(*slot.slot) }) :
+						std::optional<size_t>{};
+				if (native)
+					witness.custody = ref(11, *native);
+				if (owner)
+					witness.owner_revision = ref(12, *owner);
+				if (gear)
+					witness.equipment = auction_physical_reference{
+						false, 0, *gear,
+						base.source2.item_equipment_sources[0]
+							.rows[*gear]
+							.digest,
+						true
+					};
+				if (ledger)
+					witness.ledger = ref(2, *ledger, true);
+				bool singleton = false;
+				if (slot.item_uid)
+				{
+					auto direct = children.find(*slot.item_uid);
+					if (direct != children.end())
+						for (size_t row : direct->second)
+							if (!extras[row])
+							{
+								extras[row] = 1;
+								report.extra_custody.push_back(
+									ref(11, row));
+								finding(auction_census_issue::
+										extra_custody_descendant,
+									ref(11, row));
+							}
+					auto tree = roots.find(*slot.item_uid);
+					singleton = tree != roots.end() &&
+						    tree->second.size() == 1 && native &&
+						    tree->second[0] == *native &&
+						    direct == children.end();
+					if (tree != roots.end())
+						for (size_t row : tree->second)
+							if ((!native || row != *native) &&
+							    !extras[row])
+							{
+								extras[row] = 1;
+								report.extra_custody.push_back(
+									ref(11, row));
+								finding(auction_census_issue::
+										extra_custody_descendant,
+									ref(11, row));
+							}
+				}
+				bool ledger_match = identity && ledger;
+				if (ledger_match)
+				{
+					const auto &l = table(2, true).rows[*ledger].cells;
+					ledger_match =
+						equal<uint64_t>(l, 2, *slot.item_uid) &&
+						equal<uint64_t>(l, 3, *slot.item_uid) && !l[4] &&
+						equal<uint8_t>(l, 5,
+							       uint8_t(item_owner_type::player)) &&
+						equal<uint64_t>(l, 6, decoded->seller_pid) &&
+						equal<uint64_t>(l, 7, 0) &&
+						equal<uint8_t>(l, 8,
+							       uint8_t(item_owner_type::auction)) &&
+						equal<uint64_t>(l, 9, decoded->auction_id) &&
+						equal<uint64_t>(l, 10, 0) &&
+						equal<uint64_t>(l, 11,
+								*witness.listing_after_revision) &&
+						equal<uint64_t>(l, 12,
+								decoded->player_owner_revision) &&
+						equal<uint64_t>(l, 13,
+								decoded->auction_owner_revision) &&
+						equal<uint16_t>(
+							l, 14,
+							uint16_t(
+								item_transfer_reason::auction_list)) &&
+						equal<uint64_t>(l, 15, decoded->auction_id) &&
+						source_site(l[16]) && equal<uint16_t>(l, 17, 0) &&
+						equal<uint16_t>(l, 18, 0);
+				}
+				witness.ownership_ledger_proof =
+					ledger_match ?
+						auction_physical_generic_proof::observed_match :
+						(ledger ? auction_physical_generic_proof::conflict :
+							  auction_physical_generic_proof::unknown);
+				if (!ledger_match)
+					mark(slot,
+					     ledger ? auction_census_issue::generic_proof_conflict :
+						      auction_census_issue::generic_proof_unknown);
+				const uint32_t permitted =
+					(uint32_t{ 1 } << static_cast<size_t>(
+						 auction_census_issue::opaque_literal)) |
+					(uint32_t{ 1 } << static_cast<size_t>(
+						 auction_census_issue::original_provenance_unknown));
+				bool match =
+					identity && slot.claimed && !*slot.claimed && native &&
+					gear && owner && singleton && ledger_match &&
+					!(slot.issue_mask & ~permitted) &&
+					!(listing.issue_mask &
+					  (uint32_t{ 1 } << static_cast<size_t>(
+						   auction_census_issue::invalid_identity))) &&
+					!(listing.issue_mask &
+					  (uint32_t{ 1 } << static_cast<size_t>(
+						   auction_census_issue::duplicate_row_key))) &&
+					slot.row_revision == witness.listing_after_revision &&
+					slot.vnum &&
+					auction_census_number<uint64_t>(
+						table(12).rows[*owner].cells[3])
+							.value_or(0) > 0;
+				if (match)
+				{
+					const auto &c = table(11).rows[*native].cells;
+					match = equal<uint64_t>(c, 1, *slot.item_uid) && !c[2] &&
+						equal<uint8_t>(c, 3,
+							       uint8_t(item_owner_type::auction)) &&
+						equal<uint64_t>(c, 4, *listing.auction_id) &&
+						equal<uint64_t>(c, 5, 0) &&
+						equal<uint64_t>(c, 6,
+								*witness.listing_after_revision) &&
+						equal<int32_t>(c, 7, *slot.vnum) &&
+						equal<uint8_t>(c, 8, 1) &&
+						equal<uint16_t>(base.source2
+									.item_equipment_sources[0]
+									.rows[*gear]
+									.cells,
+								1, 0);
+				}
+				witness.current_field_correspondence = match;
+				if (match)
+					matched[*native] = 1;
+				else
+					mark(slot, auction_census_issue::custody_mismatch);
+				report.legacy_identities.push_back(std::move(witness));
+			}
+		}
+	}
+	void current()
+	{
+		std::set<uint64_t> observed_roots;
+		for (const auto &listing : report.retained_listings)
+			for (size_t r = 0; r < listing.receipt.item_count; ++r)
+				observed_roots.insert(listing.receipt.item_uids[r]);
+		for (const auto &witness : report.legacy_identities)
+			if (witness.item_uid)
+				observed_roots.insert(*witness.item_uid);
+		for (const auto &slot : report.slots)
+			if (slot.node_count)
+				observed_roots.insert(
+					report.nodes[slot.node_begin].literal.object_uid);
+		// One base pass retains even a root whose own native root field is wrong.
+		for (size_t r = 0; r < table(11).rows.size(); ++r)
+		{
+			const auto &c = table(11).rows[r].cells;
+			auto uid = auction_census_number<uint64_t>(c[0]),
+			     root = auction_census_number<uint64_t>(c[1]);
+			if ((uid && observed_roots.contains(*uid)) ||
+			    (root && observed_roots.contains(*root)) ||
+			    (auction_census_number<uint64_t>(c[2]) &&
+			     observed_roots.contains(*auction_census_number<uint64_t>(c[2]))))
+				report.related_custody.push_back(ref(11, r));
+		}
+		std::map<uint64_t, std::vector<size_t>> live_uids;
+		for (size_t n = 0; n < report.nodes.size(); ++n)
+		{
+			auto &slot = report.slots[report.nodes[n].slot_index];
+			if (slot.claimed && !*slot.claimed)
+				live_uids[report.nodes[n].literal.object_uid].push_back(n);
+		}
+		for (const auto &[uid, observations] : live_uids)
+			if (observations.size() > 1)
+				for (size_t n : observations)
+					mark(report.slots[report.nodes[n].slot_index],
+					     auction_census_issue::duplicate_current_uid);
+		for (auto &slot : report.slots)
+		{
+			if (!slot.claimed || *slot.claimed || !slot.node_count ||
+			    !slot.listing_index)
+				continue;
+			const auto observed_root = report.nodes[slot.node_begin].literal.object_uid;
+			auto observed_tree = roots.find(observed_root);
+			std::set<uint64_t> observed_nodes;
+			for (size_t n = slot.node_begin; n < slot.node_begin + slot.node_count; ++n)
+				observed_nodes.insert(report.nodes[n].literal.object_uid);
+			if (observed_tree != roots.end())
+				for (size_t r : observed_tree->second)
+				{
+					auto uid = auction_census_number<uint64_t>(
+						table(11).rows[r].cells[0]);
+					if (!uid || !observed_nodes.contains(*uid))
+						if (!extras[r])
+						{
+							extras[r] = 1;
+							report.extra_custody.push_back(ref(11, r));
+							finding(auction_census_issue::
+									extra_custody_descendant,
+								ref(11, r));
+						}
+				}
+			const uint32_t blocking =
+				slot.issue_mask &
+				~(uint32_t{ 1 } << static_cast<size_t>(
+					  auction_census_issue::original_provenance_unknown));
+			const auto &listing = report.listings[*slot.listing_index];
+			const bool bound_parent =
+				listing.family == auction_physical_family::observed_native_v2 &&
+				listing.listing_receipt && listing.inbox &&
+				slot.retained_receipt_index &&
+				listing.inbox->row ==
+					report.retained_listings[*slot.retained_receipt_index]
+						.inbox.row;
+			if (!bound_parent)
+			{
+				mark(slot, auction_census_issue::unbound_listing);
+				continue;
+			}
+			if (blocking || (listing.issue_mask &
+					 (uint32_t{ 1 } << static_cast<size_t>(
+						  auction_census_issue::invalid_identity))))
+				continue;
+			const auto id = *slot.auction_id;
+			const auto root = report.nodes[slot.node_begin].literal.object_uid;
+			auto owner = lookup(owners, std::tuple{ uint64_t(item_owner_type::auction),
+								uint64_t(id), uint64_t(0) });
+			bool complete = owner && auction_census_number<uint64_t>(
+							 table(12).rows[*owner].cells[3])
+								 .value_or(0) > 0;
+			auto tree = roots.find(root);
+			complete = complete && tree != roots.end() &&
+				   tree->second.size() == slot.node_count;
+			std::set<uint64_t> node_uids;
+			for (size_t n = slot.node_begin; n < slot.node_begin + slot.node_count; ++n)
+				node_uids.insert(report.nodes[n].literal.object_uid);
+			if (tree != roots.end())
+				for (size_t row : tree->second)
+				{
+					auto uid = auction_census_number<uint64_t>(
+						table(11).rows[row].cells[0]);
+					if (!uid || !node_uids.contains(*uid))
+						complete = false;
+				}
+			for (size_t n = slot.node_begin; n < slot.node_begin + slot.node_count; ++n)
+			{
+				auto &node = report.nodes[n];
+				auto native = lookup(custody, node.literal.object_uid);
+				auto gear = lookup(equipment, node.literal.object_uid);
+				if (owner)
+					node.owner_revision = ref(12, *owner);
+				if (gear)
+					node.equipment = auction_physical_reference{
+						false, 0, *gear,
+						base.source2.item_equipment_sources[0]
+							.rows[*gear]
+							.digest,
+						true
+					};
+				bool match = false;
+				if (native)
+				{
+					node.custody = ref(11, *native);
+					const auto &c = table(11).rows[*native].cells;
+					const auto expected_parent =
+						node.literal.parent_index < 0 ?
+							uint64_t(0) :
+							report.nodes[slot.node_begin +
+								     static_cast<size_t>(
+									     node.literal
+										     .parent_index)]
+								.literal.object_uid;
+					const bool parent =
+						expected_parent ?
+							equal<uint64_t>(c, 2, expected_parent) :
+							!c[2];
+					match = equal<uint64_t>(c, 1, root) && parent &&
+						equal<uint8_t>(c, 3,
+							       uint8_t(item_owner_type::auction)) &&
+						equal<uint64_t>(c, 4, id) &&
+						equal<uint64_t>(c, 5, 0) &&
+						equal<uint64_t>(c, 6,
+								node.listing_after_revision) &&
+						equal<int32_t>(c, 7, node.literal.vnum) &&
+						equal<uint8_t>(c, 8, 1) && gear &&
+						auction_census_number<uint16_t>(
+							base.source2.item_equipment_sources[0]
+								.rows[*gear]
+								.cells[1]) ==
+							std::optional<uint16_t>(0);
+				}
+				node.current_field_correspondence = complete && match;
+				if (node.current_field_correspondence)
+					matched[*native] = 1;
+				else
+					mark(slot, auction_census_issue::custody_mismatch);
+			}
+		}
+		for (const auto &source : report.auction_custody)
+			if (!matched[source.row])
+			{
+				report.unmatched_auction_custody.push_back(source);
+				finding(auction_census_issue::unmatched_auction_custody, source);
+			}
+	}
+	bool generic(size_t listing_index, const auction_physical_node &node, uint64_t event,
+		     auction_physical_node *bound)
+	{
+		const auto &listing = report.listings[listing_index];
+		const auto &receipt = *listing.listing_receipt;
+		auto op = auction_census_operation(table(4).rows[listing.source.row].cells[9]);
+		if (!op)
+			return false;
+		auto ledger = lookup(ledgers, std::pair{ *op, event }),
+		     reference = lookup(references, std::pair{ *op, event });
+		if (ledger && bound)
+			bound->ledger = ref(2, *ledger, true);
+		if (reference && bound)
+			bound->item_reference = ref(3, *reference, true);
+		if (!ledger || !reference || !listing.operation || !listing.outbox)
+			return false;
+		const auto &o = table(4, true).rows[listing.operation->row].cells;
+		if (!equal<uint8_t>(o, 1, 1) || !equal<uint32_t>(o, 2, 0))
+			return false;
+		const auto &l = table(2, true).rows[*ledger].cells;
+		const auto &r = table(3, true).rows[*reference].cells;
+		const auto &slot = report.slots[node.slot_index];
+		const auto root = report.nodes[slot.node_begin].literal.object_uid;
+		const auto parent =
+			node.literal.parent_index < 0 ?
+				uint64_t(0) :
+				report.nodes[slot.node_begin +
+					     static_cast<size_t>(node.literal.parent_index)]
+					.literal.object_uid;
+		bool valid =
+			equal<uint64_t>(l, 2, node.literal.object_uid) &&
+			equal<uint64_t>(l, 3, root) &&
+			(parent ? equal<uint64_t>(l, 4, parent) : !l[4]) &&
+			equal<uint8_t>(l, 5, uint8_t(item_owner_type::player)) &&
+			equal<uint64_t>(l, 6, receipt.seller_pid) && equal<uint64_t>(l, 7, 0) &&
+			equal<uint8_t>(l, 8, uint8_t(item_owner_type::auction)) &&
+			equal<uint64_t>(l, 9, receipt.auction_id) && equal<uint64_t>(l, 10, 0) &&
+			equal<uint64_t>(l, 11, node.listing_after_revision) &&
+			equal<uint64_t>(l, 12, receipt.player_owner_revision) &&
+			equal<uint64_t>(l, 13, receipt.auction_owner_revision) &&
+			equal<uint16_t>(l, 14, uint16_t(item_transfer_reason::auction_list)) &&
+			equal<uint64_t>(l, 15, receipt.auction_id) && source_site(l[16]) &&
+			equal<uint16_t>(l, 17, 0) && equal<uint16_t>(l, 18, 0);
+		auto before = auction_census_number<uint64_t>(r[5]);
+		valid = valid && equal<uint64_t>(r, 1, event) && equal<uint64_t>(r, 2, event) &&
+			equal<uint64_t>(r, 3, 0) &&
+			equal<uint64_t>(r, 4, node.literal.object_uid) && before &&
+			*before != UINT64_MAX && *before + 1 == node.listing_after_revision &&
+			equal<uint64_t>(r, 6, node.listing_after_revision) &&
+			auction_census_operation(r[7]) == op && equal<uint64_t>(r, 8, event);
+		if (bound)
+			bound->generic_proof =
+				valid ? auction_physical_generic_proof::observed_match :
+					auction_physical_generic_proof::conflict;
+		return valid;
+	}
+	void proofs()
+	{
+		for (size_t a = 0; a < report.listings.size(); ++a)
+		{
+			auto &listing = report.listings[a];
+			if (!listing.listing_receipt || !listing.auction_id)
+				continue;
+			bool complete = true;
+			std::vector<size_t> ordered;
+			for (uint16_t slot = 0; slot < listing.listing_receipt->item_count; ++slot)
+			{
+				auto at = lookup(slots, std::pair{ *listing.auction_id, slot });
+				if (!at || !report.slots[*at].node_count)
+				{
+					complete = false;
+					continue;
+				}
+				const auto &row = report.slots[*at];
+				for (size_t n = row.node_begin; n < row.node_begin + row.node_count;
+				     ++n)
+					ordered.push_back(n);
+			}
+			if (ordered.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			{
+				complete = false;
+				mark(listing, auction_census_issue::native_bound_refused);
+			}
+			else if (complete)
+			{
+				std::vector<player_item_snapshot> combined;
+				combined.reserve(ordered.size());
+				for (uint16_t slot = 0; slot < listing.listing_receipt->item_count;
+				     ++slot)
+				{
+					auto at = lookup(slots,
+							 std::pair{ *listing.auction_id, slot });
+					const auto &row = report.slots[*at];
+					const auto offset = static_cast<int32_t>(combined.size());
+					for (size_t n = row.node_begin;
+					     n < row.node_begin + row.node_count; ++n)
+					{
+						combined.push_back(report.nodes[n].literal);
+						if (combined.back().parent_index >= 0)
+							combined.back().parent_index += offset;
+					}
+				}
+				std::vector<uint8_t> encoded;
+				const auto accepted =
+					player_item_snapshot_list_encode(combined, &encoded);
+				if (accepted == player_snapshot_codec_result::allocation_failure)
+					throw std::bad_alloc();
+				if (accepted != player_snapshot_codec_result::ok)
+				{
+					complete = false;
+					mark(listing, auction_census_issue::native_bound_refused);
+				}
+			}
+			std::map<uint64_t, std::vector<size_t>> observed;
+			for (size_t n : ordered)
+				observed[report.nodes[n].literal.object_uid].push_back(n);
+			for (const auto &[uid, duplicates] : observed)
+				if (duplicates.size() > 1)
+				{
+					complete = false;
+					for (size_t n : duplicates)
+						mark(report.slots[report.nodes[n].slot_index],
+						     auction_census_issue::listing_literal_mismatch);
+				}
+			std::optional<uint16_t> site;
+			bool conflicting_site = false;
+			for (size_t i = 0; i < ordered.size(); ++i)
+			{
+				auto &node = report.nodes[ordered[i]];
+				if (complete && generic(a, node, i, &node))
+				{
+					const auto observed = auction_census_number<uint16_t>(
+						table(2, true).rows[node.ledger->row].cells[16]);
+					if (site && site != observed)
+						conflicting_site = true;
+					site = observed;
+				}
+				else
+					finding(node.generic_proof ==
+								auction_physical_generic_proof::
+									conflict ?
+							auction_census_issue::generic_proof_conflict :
+							auction_census_issue::generic_proof_unknown,
+						report.slots[node.slot_index].source);
+			}
+			if (conflicting_site)
+				for (size_t n : ordered)
+				{
+					report.nodes[n].generic_proof =
+						auction_physical_generic_proof::conflict;
+					finding(auction_census_issue::generic_proof_conflict,
+						report.slots[report.nodes[n].slot_index].source);
+				}
+		}
+		std::map<std::string_view, std::optional<uint16_t>> observed_sites;
+		std::set<std::string_view> site_conflicts;
+		for (size_t r = 0; r < table(2, true).rows.size(); ++r)
+		{
+			const auto &c = table(2, true).rows[r].cells;
+			auto op = auction_census_operation(c[0]);
+			if (!op ||
+			    !equal<uint16_t>(c, 14, uint16_t(item_transfer_reason::auction_list)))
+				continue;
+			auto site = auction_census_number<uint16_t>(c[16]);
+			auto [at, added] = observed_sites.emplace(*op, site);
+			if (!source_site(c[16]) || (!added && at->second != site))
+				site_conflicts.insert(*op);
+		}
+		for (size_t r = 0; r < table(2, true).rows.size(); ++r)
+		{
+			auto op = auction_census_operation(table(2, true).rows[r].cells[0]);
+			if (op && site_conflicts.contains(*op))
+				finding(auction_census_issue::generic_proof_conflict,
+					ref(2, r, true));
+		}
+		for (auto &node : report.nodes)
+		{
+			const auto &slot = report.slots[node.slot_index];
+			if (!slot.listing_index)
+				continue;
+			auto op = auction_census_operation(
+				table(4).rows[report.listings[*slot.listing_index].source.row]
+					.cells[9]);
+			if (op && site_conflicts.contains(*op))
+				node.generic_proof = auction_physical_generic_proof::conflict;
+		}
+		std::map<std::tuple<std::string_view, uint64_t, uint64_t>, size_t> literals;
+		for (const auto &node : report.nodes)
+		{
+			const auto &slot = report.slots[node.slot_index];
+			if (!slot.retained_receipt_index)
+				continue;
+			const auto &receipt =
+				report.retained_listings[*slot.retained_receipt_index];
+			auto op = auction_census_operation(
+				table(17).rows[receipt.inbox.row].cells[0]);
+			if (op)
+				literals.emplace(std::tuple{ *op, node.literal.object_uid,
+							     node.listing_after_revision },
+						 node.slot_index);
+		}
+		for (size_t r = 0; r < table(2, true).rows.size(); ++r)
+		{
+			const auto &l = table(2, true).rows[r].cells;
+			auto op = auction_census_operation(l[0]);
+			auto uid = auction_census_number<uint64_t>(l[2]),
+			     rev = auction_census_number<uint64_t>(l[11]);
+			if (!op || !uid || !*uid || !rev || !*rev)
+				continue;
+			auto listing = retained_receipts.find(*op);
+			if (listing == retained_receipts.end())
+				continue;
+			const auto &a = report.retained_listings[listing->second];
+			if (!a.operation || !a.outbox)
+				continue;
+			auto event = auction_census_number<uint64_t>(l[1]);
+			if (!event)
+				continue;
+			auto retained_event = lookup(ledgers, std::pair{ *op, *event });
+			auto reference = lookup(references, std::pair{ *op, *event });
+			if (!retained_event || *retained_event != r || !reference)
+				continue;
+			const auto &item = table(3, true).rows[*reference].cells;
+			const auto &e = table(4, true).rows[a.operation->row].cells;
+			const auto &receipt = a.receipt;
+			auto before = auction_census_number<uint64_t>(item[5]);
+			auto root = auction_census_number<uint64_t>(l[3]);
+			const bool generic_bound =
+				equal<uint8_t>(e, 1, 1) && equal<uint32_t>(e, 2, 0) && root &&
+				*root &&
+				std::find(receipt.item_uids.begin(),
+					  receipt.item_uids.begin() + receipt.item_count, *root) !=
+					receipt.item_uids.begin() + receipt.item_count &&
+				equal<uint8_t>(l, 5, uint8_t(item_owner_type::player)) &&
+				equal<uint64_t>(l, 6, receipt.seller_pid) &&
+				equal<uint64_t>(l, 7, 0) &&
+				equal<uint8_t>(l, 8, uint8_t(item_owner_type::auction)) &&
+				equal<uint64_t>(l, 9, receipt.auction_id) &&
+				equal<uint64_t>(l, 10, 0) &&
+				equal<uint64_t>(l, 12, receipt.player_owner_revision) &&
+				equal<uint64_t>(l, 13, receipt.auction_owner_revision) &&
+				equal<uint16_t>(l, 14,
+						uint16_t(item_transfer_reason::auction_list)) &&
+				equal<uint64_t>(l, 15, receipt.auction_id) && source_site(l[16]) &&
+				equal<uint16_t>(l, 17, 0) && equal<uint16_t>(l, 18, 0) &&
+				equal<uint64_t>(item, 1, *event) &&
+				equal<uint64_t>(item, 2, *event) && equal<uint64_t>(item, 3, 0) &&
+				equal<uint64_t>(item, 4, *uid) && before && *before != UINT64_MAX &&
+				*before + 1 == *rev && equal<uint64_t>(item, 6, *rev) &&
+				auction_census_operation(item[7]) == op &&
+				equal<uint64_t>(item, 8, *event);
+			if (generic_bound && !literals.contains(std::tuple{ *op, *uid, *rev }))
+			{
+				report.missing_literal_events.push_back(ref(2, r, true));
+				finding(auction_census_issue::missing_literal, ref(2, r, true));
+			}
+		}
+	}
+	void run()
+	{
+		report.physical_digest = base.digest;
+		report.caller_supplied_supplement_digest = supplement.digest;
+		for (size_t i = 0; i < 5; ++i)
+			report.validated_supplement_table_digests[i] =
+				supplement.tables[i].content_digest;
+		report.diagnostics.reserve(limit);
+		build_indexes();
+		read_retained_receipts();
+		read_listings();
+		read_slots();
+		legacy_identities();
+		proofs();
+		current();
+		for (size_t r = 0; r < table(6).rows.size(); ++r)
+		{
+			const auto &c = table(6).rows[r].cells;
+			auction_physical_pickup pickup;
+			pickup.source = ref(6, r);
+			pickup.row_id = auction_census_number<uint64_t>(c[0]);
+			pickup.pid = auction_census_number<uint32_t>(c[1]);
+			pickup.retrieved = auction_census_number<int64_t>(c[3]);
+			pickup.quantity = auction_census_number<int64_t>(c[4]);
+			report.pickups.push_back(pickup);
+			finding(auction_census_issue::opaque_literal, pickup.source);
+		}
+		report.diagnostics_truncated = report.diagnostic_count > report.diagnostics.size();
+	}
+};
+}
+
+unsigned int auction_repository_inspect_physical_sources(
+	const economic_sql_physical_source_snapshot &base,
+	const sql_room_item_source_snapshot &supplement, const economic_sql_source_limits &limits,
+	size_t maximum_diagnostics, auction_physical_correspondence *output) noexcept
+{
+	try
+	{
+		auction_census_require(output && maximum_diagnostics && maximum_diagnostics <= 512,
+				       EINVAL);
+		auction_census_require(supplement.physical_digest == base.digest);
+		{
+			sql_room_item_source_evidence validated;
+			const auto code = sql_room_item_payload_inspect_sources(
+				base, supplement.tables, limits, maximum_diagnostics, &validated);
+			auction_census_require(!code, code);
+		}
+		uint64_t rows = base.rows, cells = base.cells, bytes = base.cell_bytes;
+		for (const auto &table : supplement.tables)
+		{
+			auction_census_require(table.rows.size() <= limits.maximum_rows - rows,
+					       E2BIG);
+			rows += table.rows.size();
+			for (const auto &row : table.rows)
+			{
+				auction_census_require(
+					row.cells.size() <= limits.maximum_cells - cells, E2BIG);
+				cells += row.cells.size();
+				for (const auto &cell : row.cells)
+					if (cell)
+					{
+						auction_census_require(
+							cell->size() <=
+								limits.maximum_cell_bytes - bytes,
+							E2BIG);
+						bytes += cell->size();
+					}
+			}
+		}
+		auction_census_require(rows == supplement.rows && cells == supplement.cells &&
+				       bytes == supplement.cell_bytes);
+		auction_census_worker worker{ base, supplement, maximum_diagnostics };
+		worker.run();
+		*output = std::move(worker.report);
+		return 0;
+	}
+	catch (const auction_census_failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
 }

@@ -112,6 +112,17 @@ def copper(value: tuple[int, int, int, int]) -> int:
     return total
 
 
+def item_previous_owner(event: dict) -> list[int] | None:
+    if "from_owner" not in event:
+        return None
+    owner = event["from_owner"]
+    if (not isinstance(owner, list) or len(owner) != 3 or
+            type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+            any(type(value) is not int or not 0 <= value < 2**64 for value in owner[1:])):
+        raise SnapshotError("invalid item previous owner")
+    return owner
+
+
 def account_key(value: object) -> tuple[str, int, int, int]:
     if not isinstance(value, str) or not HEX_KEY.fullmatch(value):
         raise SnapshotError("invalid account key")
@@ -167,7 +178,8 @@ def valid_item_equipment_slot(value: object) -> bool:
     return type(value) is int and 0 <= value <= 65535
 
 
-def valid_item_custody_position(row: dict, creation_origin: bool = False) -> bool:
+def valid_item_custody_position(row: dict, creation_origin: bool = False,
+                               equipment_field: str = "equipment_slot") -> bool:
     """Apply independent native position grammar to captured authority rows."""
     from economic_restore_evidence import EvidenceError, valid_position
 
@@ -189,7 +201,9 @@ def valid_item_custody_position(row: dict, creation_origin: bool = False) -> boo
             (row.get("parent") is not None and
              (not unsigned_revision(row["parent"]) or not row["parent"]))):
         return False
-    slot = item_equipment_slot(row)
+    slot = row.get(equipment_field)
+    if equipment_field in row and not valid_item_equipment_slot(slot):
+        return False
     try:
         # Missing historical equipment remains unknown in the snapshot and in
         # the separate equipment audit. It supplies no equipment constraint here.
@@ -245,6 +259,8 @@ class Reconciler:
         self.exceptions: list[dict] = []
         self.counts: Counter = Counter()
         self.original_plans_verified = 0
+        self.invalid_history_positions: set[tuple] = set()
+        self.invalid_supply_states: set[tuple] = set()
         registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
         self.reasons = {row["number"]: row for row in registry["reasons"]}
         self.realized_price_reasons = {
@@ -1132,6 +1148,7 @@ class Reconciler:
             if origin["origin"] == "creation" and (expected != (0, 0, 0, 0) or revision != 0):
                 self.emit("invalid_account_creation_origin", account_key=key)
             rows = sorted(by_account.get(key, []), key=lambda row: (row.get("before_revision", -1),
+                                                                    row.get("after_revision", -1),
                                                                     row.get("operation_id", "")))
             for row in rows:
                 op_id = row.get("operation_id")
@@ -1141,7 +1158,8 @@ class Reconciler:
                         self.emit("broken_account_history", account_key=key, operation_id=op_id)
                     if (type(row.get("before_revision")) is not int or
                             type(row.get("after_revision")) is not int or
-                            row["after_revision"] <= row["before_revision"]):
+                            row["after_revision"] < row["before_revision"] or
+                            (before != after and row["after_revision"] == row["before_revision"])):
                         self.emit("broken_account_history", account_key=key, operation_id=op_id)
                     delta = tuple(a - b for a, b in zip(after, before))
                     if delta != tuple(deltas.get((op_id, row.get("account_index")), (0, 0, 0, 0))):
@@ -1983,6 +2001,7 @@ class Reconciler:
         seen_events = set()
         seen_revisions = set()
         for row in events:
+            item_previous_owner(row)
             operation_id = require_id(row.get("operation_id"), "UID history operation ID")
             event_index = row.get("event_index")
             uid = row.get("uid")
@@ -2010,6 +2029,7 @@ class Reconciler:
                     row.get("action") not in ("create", "destroy", "move") or
                     row.get("operation_outcome") not in ("committed", "rejected", "unknown")):
                 raise SnapshotError("invalid lineage UID history event")
+            self.audit_item_history_position(row)
             if row["operation_outcome"] != "committed":
                 self.emit("uid_history_operation_not_committed", operation_id=operation_id,
                           uid=uid)
@@ -2107,6 +2127,7 @@ class Reconciler:
             raise SnapshotError("invalid unattributed UID history coverage")
         seen = set()
         for row in events:
+            item_previous_owner(row)
             operation_id = require_id(row.get("operation_id"),
                                       "unattributed UID operation ID")
             event_index = row.get("event_index")
@@ -2126,6 +2147,7 @@ class Reconciler:
                     row.get("state") not in ("live", "tombstone", "quarantined") or
                     row.get("action") not in ("create", "destroy", "move")):
                 raise SnapshotError("invalid unattributed UID history event")
+            self.audit_item_history_position(row)
             key = (operation_id, event_index, uid)
             if key in seen:
                 raise SnapshotError("duplicate unattributed UID history event")
@@ -2385,6 +2407,28 @@ class Reconciler:
         if missing != coverage["missing_price_rows"]:
             raise SnapshotError("realized price coverage count mismatch")
 
+    def audit_item_supply_state(self, event: dict, uid: int) -> None:
+        action = event.get("action")
+        if action not in ("create", "move", "destroy"):
+            raise SnapshotError("invalid item history action")
+        if ((action == "create" and event.get("state") != "live") or
+                ((action == "destroy") != (event.get("state") == "tombstone"))):
+            identity = (event.get("operation_id"), event.get("event_index"), uid)
+            if identity not in self.invalid_supply_states:
+                self.invalid_supply_states.add(identity)
+                self.emit("invalid_item_supply_state", uid=uid,
+                          operation_id=event.get("operation_id"))
+
+    def audit_item_history_position(self, row: dict) -> None:
+        self.audit_item_supply_state(row, row.get("uid"))
+        if valid_item_custody_position(row, equipment_field="to_equipment_slot"):
+            return
+        identity = (row.get("operation_id"), row.get("event_index"), row.get("uid"))
+        if identity not in self.invalid_history_positions:
+            self.invalid_history_positions.add(identity)
+            self.emit("invalid_item_history_position", uid=row.get("uid"),
+                      operation_id=row.get("operation_id"))
+
     def audit_item_lifetime(self, uid: int, origin: dict, events: list[dict]) -> None:
         if origin["origin"] == "creation" and {
                 field: origin.get(field)
@@ -2394,12 +2438,18 @@ class Reconciler:
             self.emit("invalid_item_creation_origin", uid=uid)
         created = origin["origin"] == "baseline"
         retired = origin.get("state") == "tombstone"
+        previous_owner = [7, 0, 0] if origin.get("state") == "absent" else origin.get("owner")
+        missing_owner = False
         for event in events:
-            action = event.get("action")
-            if ((action == "create" and event.get("state") != "live") or
-                    (action == "destroy" and event.get("state") != "tombstone")):
-                self.emit("invalid_item_supply_state", uid=uid,
+            recorded_owner = item_previous_owner(event)
+            if recorded_owner is None:
+                missing_owner = True
+            elif recorded_owner != previous_owner:
+                self.emit("broken_item_owner_history", uid=uid,
                           operation_id=event.get("operation_id"))
+            previous_owner = event.get("owner")
+            action = event.get("action")
+            self.audit_item_supply_state(event, uid)
             if action == "create":
                 if created:
                     self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
@@ -2410,6 +2460,8 @@ class Reconciler:
             if retired and event.get("state") in ("live", "quarantined"):
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"
+        if missing_owner:
+            self.emit("missing_item_owner_evidence", uid=uid)
         if not created:
             self.emit("missing_item_creation", uid=uid)
 
@@ -2471,9 +2523,11 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
+            item_previous_owner(event)
             if (not unsigned_revision(event.get("before_revision")) or
                     not unsigned_revision(event.get("revision"))):
                 raise SnapshotError("invalid ownership event revision")
+            self.audit_item_history_position(event)
             uid = event.get("uid")
             by_uid[uid].append(event)
             if key not in referenced:
@@ -2591,6 +2645,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                  "event_index": row["event_index"], "revision": row["revision"],
                  "root": row["root"], "parent": row["parent"], "owner": row["owner"],
                  "state": row["state"], "action": row["action"],
+                 **({"from_owner": item_previous_owner(row)} if "from_owner" in row else {}),
                  **{field: item_equipment_slot(row, field)
                     for field in ("from_equipment_slot", "to_equipment_slot")
                     if field in row and valid_item_equipment_slot(row[field])}}

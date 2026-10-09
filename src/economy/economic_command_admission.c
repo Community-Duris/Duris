@@ -2,11 +2,14 @@
 #include "economy/auction_repository.h"
 #include "economy/auction_native_command_context.h"
 #include "economy/native_mobile_birth_command.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include "economy/zone_reset_item_command.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "item/native_quest_transport.h"
 #include "economy/collector_accounting.h"
+#include "economy/shop_trade_accounting.h"
 
 #include <new>
 
@@ -53,7 +56,29 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		if (command.type == critical_command_type::native_mobile_birth)
 		{
 			quest_mobile_native_image original;
+			if (command.payload_version ==
+			    NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+			{
+				std::vector<native_mobile_birth_item_recipe> recipes;
+				native_mobile_birth_cash_role_recipe role;
+				// Complete original NMB4 binding and ordinary role only. Shared
+				// birth has no complete atomic owner and stays unregistered.
+				return native_mobile_birth_cash_role_command_decode(
+					       command, &original, &recipes, &role) == error::ok &&
+				       role.role == native_mobile_birth_cash_role::ordinary_wallet;
+			}
 			return native_mobile_birth_command_decode(command, &original) == error::ok;
+		}
+		if (command.type == critical_command_type::zone_reset_item_birth)
+		{
+#ifdef __NO_MYSQL__
+			return false;
+#else
+			// Immutable SQL type support only. Actual reset source admission,
+			// current room/season and native publication stay with their owners.
+			zone_reset_item_image original;
+			return zone_reset_item_command_decode(command, &original) == error::ok;
+#endif
 		}
 		economic_frozen_intent intent;
 		if (economic_intent_decode(command.accounting_intent, &intent) != error::ok)
@@ -162,6 +187,52 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 
 bool economic_flatfile_command_admission_supported(const critical_command &command) noexcept
 {
+#ifdef __NO_MYSQL__
+	if (command.type == critical_command_type::shop_trade)
+	{
+		try
+		{
+			economic_frozen_intent intent;
+			shop_trade_payload payload{};
+			economic_account_key wallet, bank, counterparty;
+			// Genuine client-free publication retains full v8 forests. Older
+			// flat SHOP commands have no admitted native recovery owner.
+			return command.publication_required &&
+			       command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION &&
+			       shop_trade_accounting_decode(command, &intent, &payload, &wallet,
+							    &bank, &counterparty) ==
+				       economic_accounting_error::ok;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	if (command.type == critical_command_type::collector)
+	{
+		try
+		{
+			economic_frozen_intent intent;
+			collector_command_payload payload{};
+			collector::record listing;
+			economic_account_key wallet, bank;
+			return command.publication_required &&
+			       command.schema_version ==
+				       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			       critical_command_envelope_valid(command) &&
+			       collector_purchase_accounting_decode(command, &intent, &payload,
+								    &listing, &wallet, &bank) ==
+				       economic_accounting_error::ok &&
+			       payload.action == collector_action::purchase &&
+			       payload.item_count == 1 && payload.actor_pid &&
+			       payload.actor_pid <= INT32_MAX && payload.selected_item_uid;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+#endif
 	// Native acknowledged mutation has no qualified flat-file publication owner.
 	if (native_quest_transport_command(command))
 		return false;

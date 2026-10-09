@@ -10,6 +10,8 @@
 #include "player/player_snapshot_codec.h"
 #include "economy/economic_command_admission.h"
 #include "economy/native_mobile_birth_command.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include "economy/zone_reset_item_command.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "economy/collector_accounting.h"
@@ -245,6 +247,52 @@ economic_accounting_error economic_gameplay_authority::finish_sql_recovery(
 				  projection_scope::regular, selected);
 }
 
+bool economic_gameplay_authority::sql_runtime_projection_matches(
+	sql_runtime_recovery_install_key, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, const critical_operation_id &receipt,
+	std::span<const economic_gameplay_wallet_mapping> wallets,
+	std::span<const economic_gameplay_bank_mapping> banks) noexcept
+{
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!persistence_mode_requires_mysql() || !selected ||
+		    selected->scope != projection_scope::regular || selected->scope_version ||
+		    selected->lineage.bytes != lineage.bytes ||
+		    selected->epoch.bytes != epoch.bytes ||
+		    selected->receipt.bytes != receipt.bytes ||
+		    selected->wallets.size() != wallets.size() ||
+		    selected->banks.size() != banks.size())
+			return false;
+		std::set<uint32_t> seen_wallets;
+		std::set<std::pair<std::string, uint8_t>> seen_banks;
+		for (const auto &wallet : wallets)
+		{
+			const auto found = selected->wallets.find(wallet.pid);
+			if (!seen_wallets.insert(wallet.pid).second ||
+			    found == selected->wallets.end() ||
+			    !economic_account_key_equal(found->second, wallet.account))
+				return false;
+		}
+		for (const auto &bank : banks)
+		{
+			std::string canonical;
+			if (!bank_locator(bank.name, &canonical))
+				return false;
+			const auto locator = std::make_pair(std::move(canonical), bank.racewar);
+			const auto found = selected->banks.find(locator);
+			if (!seen_banks.insert(locator).second || found == selected->banks.end() ||
+			    !economic_account_key_equal(found->second, bank.account))
+				return false;
+		}
+		return current.load(std::memory_order_acquire) == selected;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 void economic_gameplay_authority::clear_sql_runtime() noexcept
 {
 	auto selected = current.load(std::memory_order_acquire);
@@ -276,6 +324,92 @@ bool economic_gameplay_authority::active_regular_sql()
 	const auto selected = current.load(std::memory_order_acquire);
 	return persistence_mode_requires_mysql() && selected &&
 	       selected->scope == projection_scope::regular && selected->scope_version == 0;
+}
+
+bool economic_gameplay_authority::active_regular_flat()
+{
+	const auto selected = current.load(std::memory_order_acquire);
+	const char *root = persistence_mode_flatfile_root();
+	return persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY && root && *root &&
+	       selected && selected->scope == projection_scope::regular && !selected->scope_version;
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_zone_reset_item(const zone_reset_item_image &original,
+						     uint64_t accepted_at_usec,
+						     critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql() || original.items.empty())
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.operation_id;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.items.front().object_uid;
+		metadata.writer_id = ECONOMIC_WRITER_ZONE_RESET_ITEM_BIRTH;
+		metadata.reason = economic_reason::item_create;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reset_source;
+		// Replay decodes the retained command; never select a new current epoch.
+		return zone_reset_item_command_build(metadata, original, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_zone_reset_item_flat(const zone_reset_item_image &original,
+							  uint64_t accepted_at_usec,
+							  critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	const char *root = persistence_mode_flatfile_root();
+	if (!output || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql() || !root || !*root || original.items.empty())
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.operation_id;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.items.front().object_uid;
+		metadata.writer_id = ECONOMIC_WRITER_ZONE_RESET_ITEM_BIRTH;
+		metadata.reason = economic_reason::item_create;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reset_source;
+		// Replay decodes the retained command; never select a new current epoch.
+		return zone_reset_item_command_build(metadata, original, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
 }
 
 economic_accounting_error economic_gameplay_authority::prepare_native_mobile_birth(
@@ -400,13 +534,98 @@ economic_accounting_error economic_gameplay_authority::prepare_native_mobile_bir
 	}
 }
 
+economic_accounting_error economic_gameplay_authority::prepare_native_mobile_birth_ordinary_wallet(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const native_mobile_birth_cash_role_recipe &role, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql() ||
+	    role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_cash_role_command_build(
+			metadata, original, recipes, role, original_site, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_native_mobile_birth_shared_shopkeeper(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const native_mobile_birth_cash_role_recipe &role, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql() ||
+	    role.role != native_mobile_birth_cash_role::shared_shopkeeper)
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_cash_role_command_build(
+			metadata, original, recipes, role, original_site, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
 bool economic_gameplay_authority::observe_craft_wallet_checkpoint(
 	uint32_t pid, economic_native_money_checkpoint_projection *output) noexcept
 {
 	if (!output || !pid || pid > INT32_MAX ||
 	    (!persistence_mode_requires_mysql() &&
 	     (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
-	      persistence_mode_sql_enabled())))
+	      !active_regular_flat())))
 		return false;
 	try
 	{
@@ -448,6 +667,42 @@ bool economic_gameplay_authority::observe_shop_checkpoint(
 		const auto wallet = selected->wallets.find(pid);
 		const auto bank = selected->banks.find({ canonical, racewar });
 		if (wallet == selected->wallets.end() || bank == selected->banks.end())
+			return false;
+		*output = { selected->lineage, selected->epoch, wallet->second, bank->second };
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool economic_gameplay_authority::observe_flat_shop_checkpoint(
+	uint32_t pid, std::string_view account_name, uint8_t racewar,
+	economic_shop_checkpoint_projection *output) noexcept
+{
+	if (!output || !pid || pid > INT32_MAX || racewar > INT8_MAX ||
+	    (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	     !persistence_mode_flatfile_root() || !*persistence_mode_flatfile_root()))
+		return false;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version)
+			return false;
+		std::string canonical;
+		if (!bank_locator(account_name, &canonical))
+			return false;
+		const auto wallet = selected->wallets.find(pid);
+		const auto bank = selected->banks.find({ canonical, racewar });
+		if (wallet == selected->wallets.end() || bank == selected->banks.end())
+			return false;
+		if (!mapping_valid(wallet->second, economic_account_kind::wallet, selected->lineage,
+				   0) ||
+		    !mapping_valid(bank->second, economic_account_kind::bank, selected->lineage,
+				   racewar) ||
+		    current.load(std::memory_order_acquire) != selected)
 			return false;
 		*output = { selected->lineage, selected->epoch, wallet->second, bank->second };
 		return true;
@@ -983,9 +1238,16 @@ economic_gameplay_authority::prepare_item_transfer(critical_command *command, ui
 			return error::unauthorized;
 		critical_command frozen = *command;
 		std::vector<uint8_t> intent;
+		// Fresh compound craft fees must use this SAME installed projection.
+		// An absent mapping is an invalid key, not nullptr: nullptr is reserved
+		// for canonical regeneration of an already-frozen historical command.
+		const economic_account_key absent_wallet{};
+		const auto wallet = selected->wallets.find(actor_pid);
+		const auto *fresh_wallet = wallet == selected->wallets.end() ?
+					  &absent_wallet : &wallet->second;
 		const auto result = item_transfer_accounting_intent(frozen, selected->lineage,
 								    selected->epoch, actor_pid,
-								    &intent, lifecycle_source);
+								    &intent, lifecycle_source, fresh_wallet);
 		if (result != error::ok)
 			return result;
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
@@ -1322,6 +1584,51 @@ economic_accounting_error economic_gameplay_authority::prepare_native_money_tran
 			return status;
 		*command = std::move(frozen);
 		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_native_mobile_birth_shared_shopkeeper_flat(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const native_mobile_birth_cash_role_recipe &role, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	const char *root = persistence_mode_flatfile_root();
+	if (!output || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql() || !root || !*root ||
+	    role.role != native_mobile_birth_cash_role::shared_shopkeeper)
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_cash_role_command_build(
+			metadata, original, recipes, role, original_site, accepted_at_usec, output);
 	}
 	catch (const std::bad_alloc &)
 	{

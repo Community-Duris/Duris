@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_ITEM_REPOSITORY_H
 #define DURIS_FLATFILE_ITEM_REPOSITORY_H
 
+#include "economy/zone_reset_item_accounting.h"
 #include "economy/auction_command.h"
 #include "economy/collector_custody_boundary.h"
 #include "flatfile/flatfile_authority_transaction.h"
@@ -12,7 +13,10 @@
 #include "item/quest_reward_continuation.h"
 #include "economy/shop_trade_command.h"
 #include "economy/coin_transfer_command.h"
+#include "economy/native_mobile_birth_cash_role_accounting.h"
 
+#include "flatfile/flatfile_store.h"
+#include "world/quest_mobile_native.h"
 #include <cstdint>
 #include <span>
 #include <string>
@@ -119,6 +123,13 @@ struct flatfile_item_collector_mutation
 flatfile_item_repository_result flatfile_item_repository_load_owner(
 	const std::string &root, const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+// Pure complete prepared-catalog value read, including inactive historical rows.
+// The two original participants' clocks are read from that same canonical image.
+// No custody/storage/publication authority is granted; failure preserves outputs.
+flatfile_item_repository_result flatfile_item_repository_read_trade_after_image(
+	const flatfile_authority_after_image &image,
+	const std::array<item_owner_identity, 2> &owners, std::array<uint64_t, 2> *owner_revisions,
+	std::vector<flatfile_item_ownership_record> *records, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_owner_identity &owner, uint64_t *owner_revision,
@@ -153,6 +164,15 @@ flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
 flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<flatfile_coin_pile_source> *sources, std::string *error);
+// Capture all physically stored room money, including saved-item records,
+// and require exact active root custody and literal agreement. Refuses physical
+// world/locker or catalog money in unsupported owners. This does not enumerate
+// unindexed player/pet snapshots: lifecycle must inspect its selected snapshots.
+// Borrows the lock, recovers only the existing journal, publishes no evidence,
+// and leaves outputs unchanged on refusal. Aggregate cash is a separate domain.
+unsigned int flatfile_item_repository_capture_room_coin_piles_locked(
+    const std::string &root, const flatfile_authority_lock &lock,
+    std::vector<flatfile_coin_pile_source> *sources, std::string *error) noexcept;
 // Verify the original native custody catalog's exact COIN root digest/result.
 // Borrows the authority lock and recovers existing journal only; never applies
 // a command, creates a catalog receipt, mutates custody, or grants an ACK.
@@ -280,5 +300,182 @@ flatfile_item_repository_result flatfile_item_repository_prepare_native_mobile(
 	std::span<const player_item_snapshot> original_player_items, item_transfer_result *,
 	unsigned int *result_code, item_transfer_custody_delta *, quest_mobile_native_image *after,
 	std::vector<flatfile_authority_operation> *operations, std::string *error);
+
+struct smith_native_compound_images;
+struct smith_native_player_grant_projection;
+struct player_snapshot;
+struct economic_account_key;
+struct economic_accounting_plan;
+class flatfile_smith_native_observation
+{
+	friend class smith_native_compound_owner;
+	// Pure observation of the actual ALL-component file under the original
+	// recovered lock. The revision is original observed ACK DATA: the owner
+	// authenticates its ACK chain/lifetime. This helper grants no ACK/admission,
+	// custody, save completion, publication or release authority.
+	static flatfile_item_repository_result
+	capture_persisted_before(const std::string &root, const flatfile_authority_lock &,
+				 uint32_t pid, uint64_t original_observed_ack_revision,
+				 player_snapshot *full_persisted_before, std::string *error);
+};
+// Stages only under the original recovered authority lock. The original owner
+// authenticates retained save ACK/source/carrier, adds references/evidence/root
+// receipt, and commits ONE bundle. No generic Smith17 support or replay here.
+// Every output is unchanged on refusal; the returned images are not authority.
+flatfile_item_repository_result flatfile_item_repository_prepare_smith_native(
+	const std::string &root, const flatfile_authority_lock &, const critical_command &,
+	const smith_native_compound_images &, const smith_native_player_grant_projection &,
+	const player_snapshot &original_acknowledged_filtered_save,
+	const player_snapshot &original_full_persisted_before,
+	const economic_account_key &original_player_wallet, item_transfer_result *,
+	unsigned int *result_code, item_transfer_custody_delta *, economic_accounting_plan *,
+	std::vector<flatfile_authority_operation> *operations, std::string *error);
+
+// Passive proposed initial shared custody participant. Real before owner
+// presence distinguishes absent from present-zero. Zero stock leaves both
+// owner and catalog exactly unchanged and returns has_operation=false.
+// Values/plan alone grant no native/source/bundle/publication authority.
+struct flatfile_shared_shop_initial_custody_stage
+{
+	native_mobile_birth_shared_shop_participant participant;
+	economic_accounting_plan plan;
+	bool catalog_before_present = false, catalog_after_present = false;
+	uint64_t catalog_before_revision = 0, catalog_after_revision = 0;
+	bool has_operation = false;
+	flatfile_authority_operation operation;
+};
+class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+class flatfile_shared_shop_initial_custody_storage final
+{
+    private:
+	friend class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+	// The genuine root owns original admission/source/epoch/constructor proof,
+	// journal recovery, the SAME borrowed lock and sole atomic bundle/receipt.
+	// This stage authenticates the complete original INITIAL carrier/checkpoint,
+	// actual absent native/SHOP and selected empty active owner cut. Every born
+	// UID/history/root/parent must be absent. Preserve unrelated catalog/history.
+	// No recovery, acquire, commit, receipt, publication, ACK or generic route.
+	// ITEM_MONEY properties remain in the same full native/SHOP literals; this
+	// role does not invent a coin mutation or general spending permission.
+	// Every refusal preserves the caller's complete output.
+	static flatfile_item_repository_result
+	prepare_locked(const std::string &root, const flatfile_authority_lock &lock,
+		       const critical_native_recovery_envelope &original,
+		       flatfile_shared_shop_initial_custody_stage *output,
+		       std::string *error) noexcept;
+};
+
+// Passive exact CURRENT initial shared birth custody, not an admission,
+// source, native-body or publication capability. Whole catalog observation
+// retains claims hidden by an active exact-owner inventory projection.
+struct flatfile_shared_shop_current_custody
+{
+	bool owner_present = false;
+	uint64_t owner_revision = 0;
+	std::vector<flatfile_item_ownership_record> rows;
+};
+// Untrusted full-store framing and allocation requests, not authenticated custody.
+// Full v1-v8 catalog, every coin literal and continuation is scanned without
+// allocation or digest calls. Original decode_catalog/valid_catalog still run
+// AFTER admission. Inline objects and requested payload/capacity are counted;
+// malloc metadata/OpenSSL internals and process stack frames are excluded.
+// Supported requests are pinned to release-13 libstdc++, C++11 string ABI.
+struct flatfile_item_catalog_allocation_profile
+{
+	uint32_t format_version = 0, owner_count = 0, item_count = 0, operation_count = 0;
+	size_t decoded_catalog_payload_bytes = 0; // Includes one catalog object.
+	size_t validation_working_bytes = 0; // Sequential coin/quest/hash peak.
+	size_t authenticated_decode_working_bytes = 0; // Includes local decoded catalog.
+	size_t framing_working_object_bytes = 0; // Named scan DTO/decoder objects only.
+	bool storage_policy_supported = false;
+};
+flatfile_item_repository_result
+flatfile_item_catalog_preflight(std::span<const uint8_t>,
+				flatfile_item_catalog_allocation_profile *) noexcept;
+size_t flatfile_item_catalog_preflight_object_bytes() noexcept;
+class flatfile_shared_shop_current_custody_storage final
+{
+    private:
+	friend class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+	// Caller owns genuine original envelope/storage receipt provenance and
+	// the SAME already-recovered exclusive lock. Verify canonical original
+	// command/checkpoint/MBR4/plan and exact whole current ownership catalog.
+	// No born UID/history/foreign root/parent or crossed SHOP/native claim
+	// may hide outside the selected active forest. Unrelated history remains.
+	// Native body/cash/AF/literal proof remains a separate original root cut.
+	// Strong output, no acquire/recover/stage/commit or generic route changes.
+	// The genuine SAME-lock transaction MUST authenticate the full original
+	// carrier, checkpoint, result, plan and receipt before calling this sibling.
+	// Already-live original references and caller output capacities belong in outer.
+	// References alone grant no authority. Callback admits absolute prospective
+	// scratch; caller holds its maximum through output transfer and restores it
+	// only after temporary destruction. No diagnostic allocation or independent
+	// budget. Original read_locked remains byte-identical and available.
+	static flatfile_item_repository_result read_original_projection_locked_bounded(
+		const std::string &, const flatfile_authority_lock &,
+		const quest_mobile_native_image &original_birth,
+		const native_mobile_birth_shared_shop_participant &original_participant,
+		const economic_accounting_plan &original_plan,
+		const critical_operation_id &original_operation,
+		flatfile_shared_shop_current_custody *, flatfile_scratch_reserve_fn, void *context,
+		size_t outer_live_scratch) noexcept;
+	static flatfile_item_repository_result
+	read_locked(const std::string &, const flatfile_authority_lock &,
+		    const critical_native_recovery_envelope &,
+		    std::span<const uint8_t> stored_result, std::span<const uint8_t> stored_plan,
+		    flatfile_shared_shop_current_custody *, std::string *) noexcept;
+};
+
+// Passive native ROOM proposal; values alone grant no source, season,
+// execution, receipt, commit or publication permission. The genuine atomic
+// owner must authenticate the installed root/epoch and original source cut.
+struct flatfile_initial_room_reset_custody_stage
+{
+	bool catalog_before_present = false, owner_before_present = false;
+	uint64_t catalog_revision_before = 0, catalog_revision_after = 0;
+	uint64_t owner_revision_before = 0, owner_revision_after = 0;
+	economic_accounting_plan plan;
+	item_transfer_result result{};
+	flatfile_authority_operation operation;
+};
+class flatfile_initial_room_reset_custody_storage final
+{
+    private:
+	friend class flatfile_accounting_zone_reset_item_transaction;
+	// Consume the genuine SAME-lock world proposal and exact original carrier;
+	// prove complete active ROOM topology and every born UID/history/root/parent
+	// absence over the full custody catalog. No generic transfer receipt/history.
+	// Full money literals are retained; pile head/source/accounting/root receipt
+	// remain the sole atomic owner's same-bundle obligations. Strong output.
+	static flatfile_item_repository_result
+	prepare_locked(const std::string &root, const flatfile_authority_lock &lock,
+		       const critical_native_recovery_envelope &original,
+		       const flatfile_initial_room_reset_world_stage &world,
+		       flatfile_initial_room_reset_custody_stage *output) noexcept;
+};
+
+// Exact CURRENT original ROOM-reset custody observation. These returned rows
+// grant no source, recovery, transaction, publication or ACK permission.
+class flatfile_room_reset_current_custody_storage final
+{
+    private:
+	friend class flatfile_accounting_zone_reset_item_transaction;
+	// The genuine transaction supplies its original full carrier and canonical
+	// durable typed48/compiled plan plus actual complete selected DURWRLD room
+	// read under this SAME recovered exclusive selected-root lock. This helper
+	// independently validates command/source metadata, receipt core, original
+	// born literals, whole current ROOM forest and complete custody history.
+	// Returned rows are only original born rows, never an active-only proof.
+	// Caller owns prospective aggregate/copy lifetimes; this ordinary observer
+	// is not a bounded reader. No acquire/recover/stage/commit/receipt mutation.
+	// Every failure preserves caller output, including allocation failure.
+	static flatfile_item_repository_result
+	read_locked(const std::string &, const flatfile_authority_lock &,
+		    const critical_native_recovery_envelope &,
+		    std::span<const uint8_t> stored_typed48,
+		    std::span<const uint8_t> stored_compiled_plan,
+		    const flatfile_room_item_record &actual_room,
+		    std::vector<flatfile_item_ownership_record> *output) noexcept;
+};
 
 #endif

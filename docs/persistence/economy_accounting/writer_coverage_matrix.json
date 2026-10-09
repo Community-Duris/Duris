@@ -64,6 +64,57 @@
         "scripts/validate_data_lifecycle.py"
       ]
     },
+    "combined_guarded_candidate_writer_refresh_primary_20261009": {
+      "base_commit": "c627dbe5abe42d1f3995cca75036a468b71fba07",
+      "canonical_source_alias_record": "bin/tests/combined-accounting-candidate-primary-20261009/SOURCE-CANONICALIZATION.json",
+      "canonical_source_alias_record_sha256": "2d4b8313b4d039698376e46afe087057e598321c36a74d8c8aa8cabb1322db4f",
+      "coverage_complete": false,
+      "current_census_occurrences": 2911,
+      "new_unique_lexical_sites": 11,
+      "new_unqualified_source_rows": 5,
+      "preserved_original_policy_rows": 926,
+      "qualification_note": "Current candidate source pins and lexical registration only. Original historical component evidence is preserved without qualifying new or changed native routes. Original 926 policy rows/backend evidence/gates remain intact; full Plans1\u20135/R1\u2013R8 acceptance remains required.",
+      "release_safe": false,
+      "reviewed_reanchor_exceptions": [
+        {
+          "after": [
+            "src/world/handler.c",
+            2928,
+            "item_publication"
+          ],
+          "before": [
+            "src/world/handler.c",
+            2780,
+            "item_publication"
+          ]
+        },
+        {
+          "after": [
+            "src/economy/crafting.c",
+            161,
+            "economic_submit"
+          ],
+          "before": [
+            "src/economy/crafting.c",
+            150,
+            "economic_submit"
+          ]
+        }
+      ],
+      "runtime_qualification_promoted": false,
+      "selected_candidate_path": "tmp/lifecycle-room-reset-flat-registered-plan5-candidate-primary-20261009/CANDIDATE.json",
+      "selected_candidate_sha256": "a7bc4532d6b0146f4f6144889e42d4ebb7a11f960cbe3e1f50f1861aa0a9d646",
+      "source_whitespace_successor": {
+        "record": "bin/tests/combined-accounting-candidate-primary-20261009/SOURCE-WHITESPACE-SUCCESSOR.json",
+        "scope": "One newly added provider removes exactly one excess final LF; declarations, statements, routes and policies unchanged."
+      },
+      "status": "source_inventory_refresh_unqualified",
+      "unchanged_committed_input_newline_aliases": {
+        "count": 17,
+        "record": "bin/tests/combined-accounting-candidate-primary-20261009/UNCHANGED-INPUT-ALIASES.json",
+        "scope": "Previously unchanged tracked inputs normalized to exact committed LF bytes; source meaning and all writer policies unchanged."
+      }
+    },
     "maintained_producer_writer_refresh_primary_20261007": {
       "base_commit": "27ba5cd565bbbff68feee7cde3e4574c6eaed3ca",
       "coverage_complete": false,
@@ -93,17 +144,23 @@
       "migrations/immutable/0063_quest_mobile_native_birth_origin.sql": "7ce0983b4c6f8b882d46dda75070f3124fccc8cc6b3f103ba6c05ede094739c4",
       "migrations/immutable/0064_auction_custody_history.sh": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
       "migrations/immutable/0064_auction_custody_history.sql": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
-      "migrations/migration_manifest.json": "106204f0a0b7c4bd9ebc756ebfcc8e34840ad75da90cf128bcbef0f236b0eae3",
-      "migrations/migration_manifest.master_0031.json": "1a8c478597abf280ee8cd88520763ef53fcbffb10a19d7905948d0c834809e62",
-      "migrations/migration_manifest.staging_0045.json": "4e49684e6bc75275171affbf43b139621ed8689035e51ddd2c015862832db537",
+      "migrations/immutable/0065_zone_reset_item_birth_origin.sh": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3",
+      "migrations/immutable/0065_zone_reset_item_birth_origin.sql": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "migrations/migration_manifest.json": "a8fb1cf120787ab8d53fc6abc2912a8e641b9f43f6d5d6544636a63c773b4ceb",
+      "migrations/migration_manifest.master_0031.json": "207dfb235a65ff97a6f4e4a9bf420b274adf3667473ed2c5c4552a9616b2e329",
+      "migrations/migration_manifest.staging_0045.json": "29f220d7b59addba904cb0b809ef49644ef25a17469e3f21f8a8580c6ec2ec90",
       "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
       "migrations/runtime_compatibility_manifest.json": "41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974",
       "migrations/verify_runtime_compatibility.sh": "1e55d588c4215cc4d7f3ba01b1edb92523e943f08521d0821c1e21365a8ace47",
-      "scripts/generate_economy_writer_coverage.py": "5cbe54e8ae437b2578dc312379784230f3e6d024d74e4be4b27d975f7e16dddc",
+      "scripts/economic_sql_audit_snapshot.py": "b11872745b57c339995ab890171b5003f8132e194a73ae4f5fa69bc92fd2f8ae",
+      "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
+      "scripts/persistence_backup.py": "28d5803fcf6e5b3d37abdb65ebdfe506ab958677880479a614639fed97c23c63",
+      "scripts/persistence_restore.py": "e59d968e71fa8bf4fe24deea3fa2c05dddc25506a452621793f1900f964ff47e",
+      "scripts/reconcile_economy_accounting.py": "fc4bb9555326967bd14c0892e6998553cd58dbb4294d628f8643304f97748bc8",
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
-      "src/Makefile": "93119f61776d589c24b4e4a1f1d82dc85580c5b60c2ce611ed8a0a4ce94d3347",
+      "src/Makefile": "f215c0db03f0f3e923ac061e97e9e6c9e192a1de8f6d7cbcee36d06f7286d7d7",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
@@ -113,65 +170,84 @@
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
-      "src/core/structs.h": "e1a9776be892d6a6ec1abccd3487cd5f86d0574f80c072164766a752cb976db9",
+      "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
       "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
       "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
-      "src/economy/auction_item_claim_accounting.c": "c9442b2bbd50e6edbafed159ed9b008255d1fc8659880937650a96ee5777bae4",
-      "src/economy/auction_item_claim_accounting.h": "6d994d6fe86f238927857b24ea88436b2f261b38e6ef99d18e200a40c45a5b6e",
-      "src/economy/auction_listing_accounting.c": "106319021aa7a5c8fce1dbbca3420c1089330d0aab7617c55b65913cf6e3fdf6",
-      "src/economy/auction_listing_accounting.h": "c9bba6749a9c81b888410cb7d085319c8f98152f34b2dcc0fb20082dbcb190d4",
+      "src/economy/auction_item_claim_accounting.c": "7fe018e60a4d16c3d188703ea70fceb48e3d7b5026e239a6017fc8930d8a572d",
+      "src/economy/auction_item_claim_accounting.h": "73744633505c20bb315ab6eb99a3798b2a3f10693c5f8cfc4b599e57d500f83a",
+      "src/economy/auction_listing_accounting.c": "8921edc27abdb122d2dc2f6083e65303a42b29815f32b8cb3e60c57f6c26be34",
+      "src/economy/auction_listing_accounting.h": "6243fb0e2593ac42d58587f67f41f84230efb95350d3f0f5ffc62ded1e16dff3",
       "src/economy/auction_native_command_context.c": "e6531f8c25be35d87c995d1acc6a01b6ab9dbfa6634417afe144bd87b31506cb",
       "src/economy/auction_native_command_context.h": "5b788b82d8d261c768f6fb78bcadd9f0945fde51530b0f5887983a63a9a10b1b",
-      "src/economy/auction_native_publication.c": "05a795a49e822c3836a1a900c3ce05eb8f82346687ffdf16b930e593791b631e",
+      "src/economy/auction_native_publication.c": "869ed9f6cf0c70f232c2daa0e85fa7cb940f700c9472d19f338ff49d3c47cbe5",
       "src/economy/auction_native_publication.h": "36d11f4cbc3e551985f8dc2c1ad5817eec175706af86602489f97531f5c6f87b",
+      "src/economy/auction_player_forest.c": "b5ee05b6b330d0d0e543a6208a2d2c8738d29087ce3926fbc3e1099edcee4e85",
+      "src/economy/auction_player_forest_detail.h": "1a8d764ae5b50b62f3f9f38118876b3560d7cf195727b9c48f185724bf79d0a2",
       "src/economy/auction_recovery_context.c": "f51081959a15f31721012f5ad604d72dea50b738240aeba43e5398334f978507",
       "src/economy/auction_recovery_context.h": "bf53a80b683bbd0e5b73a375745101f14415f582c9a831c5280f6afd8d1ae923",
-      "src/economy/auction_repository.c": "894989b8af90de9a246026ac58a83eadc226fee259f47f18acfb4a84f5c8a106",
-      "src/economy/auction_repository.h": "c1c4bc8b9eb3a56e0e36072d159ca9a1a5bcb4f4c0f81b74741ee61de57024ab",
+      "src/economy/auction_repository.c": "26d0a36705c3ef8915b89247f1da3b71793cd881a6d37c61867ec7980ac808af",
+      "src/economy/auction_repository.h": "32f4adbca349e3a627ec39e751319cf35ac52d8874414b0d2d2df2a038db6233",
       "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
       "src/economy/coin_physical_publication.c": "a6c282a71d505b386334db1c8917a57fa4b831ac5710a74db79e7c5b6b093b23",
-      "src/economy/coin_physical_recovery.c": "e2b76d2c370eefab5a772bc3a41667f0fb5a9edb1961cea7a896512e9f8d7ae5",
-      "src/economy/coin_physical_recovery.h": "c7d333495fb0ae7157116f7ec27e1c469ec78e8a250d6034dde6c5cc188ea815",
+      "src/economy/coin_physical_recovery.c": "d56e52ee715bd24a8ee1bd025fbfce16d12adfb2198c9035abaa664a21e709e6",
+      "src/economy/coin_physical_recovery.h": "f241bac5ac121e5d46793ea384ee2598413371883b39c45356459025549a3582",
       "src/economy/coin_transfer_accounting.c": "0888698453d1722db53c7ca217601ad430198f005e23e48cd6b3ab4066ca834c",
       "src/economy/coin_transfer_accounting.h": "6991025c014c42c65b9e98b7c38446932f58a470615021d1fdf5bafdc83824f0",
-      "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
-      "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
-      "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
+      "src/economy/collector_purchase_publication.c": "0a1375c62db5e782d2b873dce0eb11f56c1559f53900205899dc104a944f179e",
+      "src/economy/collector_repository.c": "4f13cc8308c06d3abf76d2a6776900c23bbe3ac2fa2e25adf88fa9196f4c4e76",
+      "src/economy/collector_repository.h": "2cf659522075b26d9b970468e8872d13d5796b984b92caa6175b43b66de87a34",
       "src/economy/collector_service.c": "73721e2182bfbd25b32d42df42574a01c4aef5b26812c0e8695d275479f7136e",
       "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
-      "src/economy/collector_transaction.c": "f0dfb12bcfc4b1efc6369e0bc19d9b15d4e07543360320df5614a34d19bf8ddf",
+      "src/economy/collector_transaction.c": "7071d61afa5741368ebd4c890b2fab4cca820e773eb5d17bbffc1cf177e034ed",
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
+      "src/economy/craft_progression.c": "0139473706341e12d46fbc1c7c4c9b3a1c79cb7ce115ae454373a5a41b88ec15",
+      "src/economy/crafting.c": "5979d2d68e5ce0f90502521f8506b3b909650792854a0da752da01d0ccaa225e",
       "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
       "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
       "src/economy/economic_accounting_plan.c": "53a3812a24cf4a3c9cfe36c368c6026f897ff6f38bc5c7aec14c0cbcaa75c4e8",
       "src/economy/economic_accounting_plan.h": "f3a6a57877b440c4772b0d2f6c4173834d683abdb9c37ce2c7f6f68cddad2c5e",
       "src/economy/economic_accounting_types.c": "5c2117874526ba9a1f93b3313eb9c13782e50c9d0f1d55763449089db68b36f1",
-      "src/economy/economic_command_admission.c": "e4ea8edc453baef3881382ed3a183cd99ec47aeb9aededb4bb4026d449bee4df",
+      "src/economy/economic_command_admission.c": "ec5af597e067eaa235e906a8ac34aa84a6e4e1d93e84c73dd99ce8e9452850f8",
       "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
-      "src/economy/economic_gameplay_authority.c": "fa49c04a044c576222c958ce67e5d3cf9f0bcf25f2aac97c4f21edd10dff6f0a",
-      "src/economy/economic_gameplay_authority.h": "3b532d79a6960164673b91b65098d2689c7ec7ec7a0cc8d87e8a0a5a9c096e4b",
+      "src/economy/economic_gameplay_authority.c": "d938c19d31f2b6dae5ff58d66b2a595aa0cb0a1cba6b4c787fce147303c27ae9",
+      "src/economy/economic_gameplay_authority.h": "ad8b9a9f120d437293af9114c086fee01a40d4d0d366f4927f5a2f371feedd5e",
+      "src/economy/economic_initialized_world_money_correspondence.c": "a35ec3f174281bc93bb87259cb8a4be81c6c84772fb472e0e08a273d01cbbb8b",
+      "src/economy/economic_initialized_world_money_correspondence.h": "cd87eb2c3cb0caf3b885829cf977015c556bd03c7724aa5659a1dbfebe55ad4c",
       "src/economy/economic_source_event.c": "acefc0d801998c5bcc28c0841d774e423bb930bfc0992d3b443fec592ff0fd08",
       "src/economy/economic_source_event.h": "66bc66de2b214f0356ff7a585db320bb5300aacb6d88ac17ba53cd47f76cd2f4",
-      "src/economy/item_transfer_accounting.c": "33c6e90ff34c91a8222609f69e3b113116e0090a1538294b747559797d9b3f85",
-      "src/economy/item_transfer_accounting.h": "dd4e0c9af0a1a294d70c89d8f7507d616128c1e104995cb11a27b020c4d12255",
+      "src/economy/economic_sql_runtime_cache_correspondence.c": "f9ccd47d1d5f24ad7bec4dcabc773abac0cc94b9113211d085fee5735c57402d",
+      "src/economy/economic_sql_runtime_cache_correspondence.h": "a4dc66b8078fb5ca47b95708982490f4b38c2c7daec916f28bb2f3a09e64c880",
+      "src/economy/economic_sql_source_normalize.c": "c55cb471ded87505a0f8a2001917117c2199d0f3688645c2dca2dbf5495a65be",
+      "src/economy/economic_sql_source_normalize.h": "90292b6e84971132c1873c6385423e5a20c09559a3cef9fb92734f1920b1e5b4",
+      "src/economy/item_transfer_accounting.c": "e396965caf0841ffad09111ffb65e1e945580c0526eaf13fdea17ba5fde15ded",
+      "src/economy/item_transfer_accounting.h": "7d807e020bb5e4f85933be311aad19acc0a3fde08273a7f73035cdb284087116",
       "src/economy/native_mobile_birth_accounting.c": "09437f45ed9cad2cde36dff6148cf720f59ecc8213c84bd85d4f111ef3e87055",
       "src/economy/native_mobile_birth_accounting.h": "52b51797a0e5df6d078be0ad4992934b6e2cceba36b330d70c0e55f0b7a1c1db",
+      "src/economy/native_mobile_birth_cash_role_accounting.c": "c36c29e4265af6b3281cd884dc30f122ff5f344a04fb6f0771d0d576ede56121",
+      "src/economy/native_mobile_birth_cash_role_accounting.h": "256866828826958ec2a20ed9eb7036a208da00c714a3256ebc79d4b717714a28",
+      "src/economy/native_mobile_birth_cash_role_capture.c": "422db95515be2cde1eeaec659821c43daed02cdb0a96b496c43064c4238ad9da",
+      "src/economy/native_mobile_birth_cash_role_command.c": "5e27089f641b8da4a5c8a8e37b20852a31e24107606d70187e36c60402bd9459",
+      "src/economy/native_mobile_birth_cash_role_command.h": "8611f4c02a6fbcf5c3e9034dac4c92c20a6fc23940519492781637a51a9bf47a",
+      "src/economy/native_mobile_birth_cash_role_recipe.c": "3b8b1185e596b345147c5b9e097581ac5e1afe6eb5b4383dfb73d4a26da9828c",
+      "src/economy/native_mobile_birth_cash_role_recipe.h": "ca51d5f0c3e914fd163c9966678302d6d355b6d63005550c753e8ed2b3fa4181",
+      "src/economy/native_mobile_birth_cash_role_result.c": "46679fd7c94910abe076b9dfc16d95ac7703df2d76913dae5b2cd25f28672149",
+      "src/economy/native_mobile_birth_cash_role_result.h": "2fb5ef5ecc7c056abebd9929abc4299b4f9378d56237c7e11274f7af74f19e09",
       "src/economy/native_mobile_birth_command.c": "481c66e414aaba17659b78c2c6393fbd78b2a1f7c324ec731dc44532b5acabf5",
       "src/economy/native_mobile_birth_command.h": "e79e39dcd587557b3c2c6b761bf802277e45e1ccb1de4dfc48c1ae0d74f11baa",
       "src/economy/native_mobile_birth_constructor_recipe.c": "119819b0cf39d4864d673b4f3dc09634b8f753dd91837452dcc4ccbd5157e2c4",
       "src/economy/native_mobile_birth_constructor_recipe.h": "3f0cf512c1c1e3388219b4a074e9129e6037acfb1df651128d7c9859f7ac52c9",
       "src/economy/native_mobile_birth_recipe.c": "53b7d693f9ac1a408b0078ed23e0fdf2eb4a8ef4aea5450fdf272ec8343efca8",
       "src/economy/native_mobile_birth_recipe.h": "62d92e521d980d18f1ac8c5a77bd710a2085422cd269017fe8863c8592b51e44",
-      "src/economy/native_mobile_birth_recovery.c": "23de0d2b2cb06910661d834e6ff92017c576073667f63e40d28e8701e84fa023",
-      "src/economy/native_mobile_birth_recovery.h": "131a063c2d7f1b1ce0bde88f62be134ce1a098e1a681b41b1db71d1eb965f2f7",
+      "src/economy/native_mobile_birth_recovery.c": "33ce4ea47dc5662019957b1b54b5a6e93f144446dcb5cbddb49c1fb45639fa26",
+      "src/economy/native_mobile_birth_recovery.h": "123ff4c89e384a90c17da6fa8ec28d1ce348d9fc67bf50f1fcd7ed544bd56993",
       "src/economy/native_mobile_birth_result.c": "474a8be7f167bb34bcd635c0731383285183c67b59ac46d05f18ea8040fcc26a",
       "src/economy/native_mobile_birth_result.h": "19f428199b098c023e9e18a9c4457a09f0176c5508b0f6460a2dab2ce5a034ec",
-      "src/economy/native_quest_coin_give.c": "fa804b66a8c2b4b5b544de4a8393a4d3a43cc295b7590c60dcaaf164440a2504",
-      "src/economy/native_quest_coin_give.h": "2dc5f786303d24554c81132fb05aac186921ec9cff6ca98751ff1117420ccddd",
+      "src/economy/native_quest_coin_give.c": "88543581facf2dca16e646a7be068539106e956142f6ec3eb473e32b5bab26f3",
+      "src/economy/native_quest_coin_give.h": "01d1a4b20e4150e2e449266ec31da86570550c1272db3e45a3c2b199b448cff8",
       "src/economy/native_quest_consumption_capture.h": "7f204f5c8dfa3ae7b5d4568944a48ac34803cabf42e5a09331c27060b1f00852",
-      "src/economy/native_quest_cost.c": "e3da8df9912b9dd0c64927ed6ce44b7c8ff3e99f9569af36676d3a9ecc4eea7e",
-      "src/economy/native_quest_cost.h": "42d919deaa1eb730ad043fc123ec87cdf1eedeeea29a27e4613fd6a5ccf5963c",
-      "src/economy/native_quest_cost_policy.h": "ac070ee049999f06992dea6f7793c0d7f4cd8e4d20c0a945dca1488ca51f0864",
+      "src/economy/native_quest_cost.c": "036978c11d968b5dcda06e7bbc06ee7715441b4bc9c433a4b26879f16a8e2ca5",
+      "src/economy/native_quest_cost.h": "736790a848256d26b8e1768ff4383585863c6847ff59e4852e17a3cea589f8bb",
+      "src/economy/native_quest_cost_policy.h": "6f96696981112246fee0fd3ab1af043591c62931f87407ca3cbaf67bbdb5be15",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/economy/shop.h": "8fcceb4db03ab4f0db88489ae9aa0b9e8edb8bfc53de092fb03be11460a5a610",
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
@@ -179,106 +255,187 @@
       "src/economy/shop_trade_command.c": "7b69d34b9bc66078df9210a4563318d79d4867d9144223d8bbc32e313d651275",
       "src/economy/shop_trade_command.h": "8a6eb92b931c60006f10d62b083f47c461a003cb9d3e437465b4d1a2e214fa63",
       "src/economy/shop_trade_destination_weight.h": "95d1ff686a8bb7a3c9ef370cc20bfe5da5bafca97c7c234651b3609b032b5d22",
+      "src/economy/shop_trade_flat_native_checkpoint.c": "876e9cd4e8050aa19ebb8444e38daac61f5656576d931c1691be0d9040b09861",
+      "src/economy/shop_trade_flat_native_checkpoint.h": "f4e698f2b5c91b8322576bd18eaeb50a0215c9266cd97ed3047b626a5dc94bc3",
       "src/economy/shop_trade_item_payload.h": "7a1f26b1008ade82a954194fe11c10393643bdd843f34fe0aa9b22fae7b233d2",
       "src/economy/shop_trade_recovery_image.c": "37b257cd6f653a2b2a9b59f85a8f51bd59e846acacc489469e7919b0b35e0747",
       "src/economy/shop_trade_recovery_image.h": "39cbea3872d4ec82eb893eace5db67542359a7d88a88e47a10cbf613d86eed4a",
       "src/economy/shop_trade_recovery_manifest.c": "1a1543b2f8e26aa665eea052e0e6184dcd7e02a2b3da1680450737fc231139c3",
       "src/economy/shop_trade_recovery_manifest.h": "215424403244168829006518cc3e858764ed0dd55501ee541211854ad0ccbed1",
-      "src/economy/shop_trade_runtime.c": "eefaf6fe29c877302a84d8d9cbdc078326b6cf0f0dabb3fe05d9716a039f1c14",
-      "src/economy/shop_trade_runtime.h": "f15bcf72444ee351573feae8142260d2f9b0bc3f1700a1a4587143d4ff3c816d",
-      "src/economy/shop_trade_transaction.c": "e50dd031084f2b040c5b8ea65218fa41bc85f8410d6e2f270a9df0ddd9dcf133",
-      "src/economy/shop_trade_transaction.h": "6345a9c453d1557677fa222dcf13e50c5451d0953b38f902e72b071cedc1cd6e",
+      "src/economy/shop_trade_runtime.c": "1367f8d3140b6ed12d1c0368a4492a7b367b7d5a62f18372da6d0f1d434511b3",
+      "src/economy/shop_trade_runtime.h": "1b27401fcba5f6e32e6adeca06b3a07cfdd3e0f7b62ac8cfc78c21b1ec7c5529",
+      "src/economy/shop_trade_transaction.c": "1ad43b86fecd3798d9dccab14ed76f89eb083e4e17598f4002d937979ef67b0b",
+      "src/economy/shop_trade_transaction.h": "38b1f15d83a6342fbfc27fdfa9c8731791f1a1a9e101c556070a657113861020",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
-      "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
-      "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
+      "src/economy/smith_native_accounting.h": "eb7fe9870e112d10f128c7511c98a50545bc1550d229f20bfee2638cbe04ad94",
+      "src/economy/smith_native_before_sql.h": "396cae88ab7e60564fab2fc9df54ebcb5b0bef677d901d57e2679569650e5bfa",
+      "src/economy/smith_native_producer.c": "4dfa8d075d38df54503d09542bd3bf549605a04b36ddb80dd63570951ceac77d",
+      "src/economy/smith_native_producer.h": "3e43571232cb71594786ec12e9ef71ac34c07675c1f078a82372c33ad891b731",
+      "src/economy/tradeskill.c": "7d0ff8d612e788591201cef1d38fdaa06746f59085ad2f0823f96fd1df580351",
+      "src/economy/zone_reset_item_accounting.c": "5b397f56d720d4d83f6a4107589afb3bbc37227b901fea227b2e85be71f4c578",
+      "src/economy/zone_reset_item_accounting.h": "7f786c73af3485356ba1e13bcaf0fd873df9467ef093d02edf5b3d801fd1a5e4",
+      "src/economy/zone_reset_item_command.c": "31d8d05ae63974399fe070512fba6ab2051a8d3ebdce7547edff932dd3eb4bf9",
+      "src/economy/zone_reset_item_command.h": "c7a50aa23bbff4b1feedfff11fdbc84993ef57d9b3cb8e313b9565e280011a62",
+      "src/economy/zone_reset_item_origin.c": "dc7e0828c6d4bd61e79a036118b8866e504fc51e1b93e0db74e7655f538176c8",
+      "src/economy/zone_reset_item_origin.h": "60a4c69628ae6cf707e9881df77918179759a0b04dc61ed10a5b4c566b36b2db",
+      "src/economy/zone_reset_item_recovery.c": "35c145f8fb881d0fbec7a087cb6233cd56b29716643e74e654789cb355a3bdd9",
+      "src/economy/zone_reset_item_recovery.h": "c9d427365eba1795297b17bbdd38b093880dfa8f829a0a0c1552f958e9d1c9c2",
+      "src/economy/zone_reset_item_source_proof.c": "438d4722d1418c6d04878077920247a1c3e93917d728dcb6466ad47debbed856",
+      "src/economy/zone_reset_item_source_proof.h": "099c6d087d2fb6d50100d117b18bd2ff6cd2d464a94ec133ebae45adb294f467",
+      "src/flatfile/flatfile_accounting_authority.c": "250b1a63a2598ee7bd86809f0ea4505227f5d001923092d52252e15d49241170",
+      "src/flatfile/flatfile_accounting_authority.h": "fd8adcb8f73f8ceb99fd7e09e57b0fdd006ae5e496badb35bd29802921f12b49",
       "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
       "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
-      "src/flatfile/flatfile_accounting_coin_transaction.c": "c6b3725e7eacd12305703c365991bb73604faae919db9caad0822f80484ca3b6",
-      "src/flatfile/flatfile_accounting_coin_transaction.h": "5fc2056fb4a41257887b38c9a6a3ee855a0f9a16b034f60e34db6ee2aee9b5c1",
-      "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
-      "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
+      "src/flatfile/flatfile_accounting_coin_transaction.c": "bca1d94e6092234a6b11445ee42629417c05b6fb16da5f38f95c4aacf97c1d3b",
+      "src/flatfile/flatfile_accounting_coin_transaction.h": "ec0413e401d2f2dd72930dc8488bf55f8e5e55382226436c449ecb8d922abb6c",
+      "src/flatfile/flatfile_accounting_dispatch.c": "d0c7f8ab33c39119a3f123d96026f7610779f7bdf9b3899d6fa269a536ab5598",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "d81ec1ad1d16a0f797b3c13eed6a655af9f3d90d3b9d86adddf36b12387967a2",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "29e9d23f878945338f6a7561107e010f5d492e982c0ae7d35d7708ee5fdcb412",
+      "src/flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.c": "57825e0da092aaa6b2903645e0a4bbfbec13901b35c2d45ce5d327130d36b4da",
+      "src/flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.h": "3d857105729f4c87ff7dca64f072b3b2ccd23af3f99c7e8926e6928ae223510e",
+      "src/flatfile/flatfile_accounting_pile_baseline.c": "03b4f5e31fce37f6bf0a2eb2cbba01cabf42532fa7df2215c807ab19434618ff",
+      "src/flatfile/flatfile_accounting_pile_baseline.h": "9b993e695fd03061ece40fe589f2bcc5a7ab4b9e849fd19332b83e94689ebcdf",
+      "src/flatfile/flatfile_accounting_pile_state.c": "eb3e54027311b7e884cadb7472fd7e7d06a4599dbba8cbfd53ebbe73bc0c485b",
+      "src/flatfile/flatfile_accounting_pile_state.h": "b000df4544bae4bb749788449f065a1b04d9ae876227d8167968ad99fc8fb2d3",
+      "src/flatfile/flatfile_accounting_shop_transaction.c": "290a974b3e1772ba46c0c9e8c86a51963e5d6c4f89c914ed12e9776eec060aa7",
+      "src/flatfile/flatfile_accounting_shop_transaction.h": "984ce532f3ccefe922ed304515c9f3954ea8d3a2b38cd8e96b858045ed42f2af",
+      "src/flatfile/flatfile_accounting_store.c": "76112ba62beddcdca2c47fdaab842f11021acfc18ccaa7c40fed2d929f64680c",
+      "src/flatfile/flatfile_accounting_store.h": "ec2f4cc9a9c6fc7a794899e6b2d6f7ff8a00546b7fc0c4c00a6faf67fa47006b",
+      "src/flatfile/flatfile_accounting_zone_reset_item_transaction.c": "d02d78043ac5fd43f6ffe11b867cc609b3f9c09479c10b269b87a45106580037",
+      "src/flatfile/flatfile_accounting_zone_reset_item_transaction.h": "57be86047760d5d8b75ef113b9560fbf34b1878e3c05619f9647a20dcb6339d4",
+      "src/flatfile/flatfile_authority_transaction.c": "8f9228233fec32ca5e29311603891c916e1b71270f80e071c6c511961e5a2185",
+      "src/flatfile/flatfile_authority_transaction.h": "5e1c0931672c080b7a2516c4b0d990c7c91625c4480cace7fd9cee18dee07a24",
       "src/flatfile/flatfile_collector_repository.c": "af1be45d70af38918b4f10f78504f8fef830c5f4e568c70bddde8a9214c9b4b3",
       "src/flatfile/flatfile_collector_repository.h": "71add098796afe4add187b2d3fc994310215703f3327d0597497b277d5b14386",
+      "src/flatfile/flatfile_corpse_ownership.c": "bb7fa36dd5911211357b291203da6394093865c4033c1c49d9c63c218eb41593",
+      "src/flatfile/flatfile_corpse_ownership.h": "4dcecdaeea059e35699a6697cd8e6ee7af9c2bca5ea7a4bd7133aaab3b4b746e",
+      "src/flatfile/flatfile_corpse_restore.c": "db6b936bdf2fbcdf6d1441346e55e2373631dd14104dd8ebf2ca91ca7f1c53cf",
       "src/flatfile/flatfile_economic_runtime.c": "0361c613879b7ea4bfd4c5dca5fe441a1ea77558753a87db88cdc72a2434e6b9",
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
-      "src/flatfile/flatfile_item_repository.c": "2b8c01b426ebe37e0920ff346688fc1deb04473537972654ab50b2b264c8cecf",
-      "src/flatfile/flatfile_item_repository.h": "d6f76ce17cbae038dea595b8c454cd4587716608c5e4ed1baeb63b7ed7b15f47",
+      "src/flatfile/flatfile_item_repository.c": "4a4edd4aff70656c0e8ac34e2ab2cac7fd20445fc2f555203ac2884c89729ef9",
+      "src/flatfile/flatfile_item_repository.h": "75b576ff10e93063e91d7f438cc0a03e267fd36218610097ff2911ec33ad7f60",
+      "src/flatfile/flatfile_player_domain_repository.c": "a72c2cabac5ddf06f4080dcbcdab383afd92831f0d021ac5dada33fde63e2c79",
+      "src/flatfile/flatfile_player_domain_repository.h": "3f07545245c2549127fa49364627b96256736974d51427eabe6d9ee6bd02ed56",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
-      "src/flatfile/quest_mobile_native_flatfile.c": "21e1d3704977eceb98210d2866dd2ee8f4a08536a34cfffe83842a71495ce6d2",
-      "src/flatfile/quest_mobile_native_flatfile.h": "0a6896d61a34d1b189a1f63ca549c7049bf93572b59285113e8bd1984a722e3b",
+      "src/flatfile/flatfile_season_state.c": "bc396a587d48d9ee4c5e89f08585770b1289e632dfb6306736f83d3ab56eed0d",
+      "src/flatfile/flatfile_season_state.h": "4cf34ecb58579af33cb2ad5430bd59f99df6545e861b91bee58223bd31aeba06",
+      "src/flatfile/flatfile_shop_native_checkpoint.c": "8b311979b435a2fcea692430c1eb9091a4e9e2565d9f119d6ac50993d302de15",
+      "src/flatfile/flatfile_shop_native_checkpoint.h": "e7683ef77d0da9308527b692a4dacb92f852f5a7e2974c2c830b0a014ec08195",
+      "src/flatfile/flatfile_shop_trade_materialization.c": "fa470af210c25333c0fea4da75db35d0dcce2e0dc545cf863ca05d5cd48ece32",
+      "src/flatfile/flatfile_shop_trade_materialization.h": "9a6bfaf14cecd7781ac7ad74a2592fbfaa05abdf1e10ac44324e08fee0ffecb3",
+      "src/flatfile/flatfile_shop_trade_repository.c": "4e608a0be63fd3fbc7bf432af29b154658b8de4245b88f8606b32917e8b4d01d",
+      "src/flatfile/flatfile_shop_trade_repository.h": "d2f81cb5583dbe7f556e6506e91f41c1d7997dd13d3756de71e0d077d9393ab6",
+      "src/flatfile/flatfile_shopkeeper_repository.c": "867f000c3326559c3a5e8cea695d255e43d72034c1ece0bf15e3d19a804a2df8",
+      "src/flatfile/flatfile_shopkeeper_repository.h": "bd029d961cf18dd15282cb616a8e0ec3cf24a3fc3f80c012cf624a668544266d",
+      "src/flatfile/flatfile_store.c": "2f4777879df65ef34ca46d75f7485c165ce30a0048113f6237c455cc508c11bd",
+      "src/flatfile/flatfile_store.h": "3d3c584470ddd439ad95f4a40511ed09f8d83c4c4ab3c03f5959011ff73e2fec",
+      "src/flatfile/flatfile_world_item_repository.c": "2dab4aef1362f285ccd17023e6011b77ca90415c245b1938456508af838a01bb",
+      "src/flatfile/flatfile_world_item_repository.h": "1279591599b34815cfb5ebcf9aeea382d0e3c7c57561c50f1a06e8e74224181b",
+      "src/flatfile/quest_mobile_native_flatfile.c": "70c774a294c518460f3bbde5b2059fc95d3f2f668c3d7fc11ca5f3561a578e3d",
+      "src/flatfile/quest_mobile_native_flatfile.h": "30b031f9da59314a3533b7a50e1d532450aba74bbbfac62dea188c0e22cc7190",
+      "src/item/craft_recipe_continuation.h": "04d964cf53a4cef49dbb614bf602a72f1ac1a3c957ae6b5e8b4c1306be90b148",
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
       "src/item/held_retirement_recovery.c": "b7532fffaba44c7f2b4ceb16c29d9148e6dc003f71d3c83bb6867ed1f6f59f31",
       "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "794e0ceacfc25e072f6ce80158c663aa419f203a81d6ecfd182caba5ce0910af",
-      "src/item/item_movement_transaction.h": "31ad7e821058acacee1d66ddb780792c7be788753a8324ae40ffa0d61c0d64e3",
-      "src/item/item_ownership_runtime.c": "1e9e5ae868e78499349efb93beba895708a53a586e553ff334bff0e06686152b",
-      "src/item/item_ownership_runtime.h": "6463635d5ec9a62cebe8fdc267739bde7a9d7034f7b8295b850924a21195325a",
-      "src/item/item_transfer_command.c": "2885f7f912f7d99465e914cedaf15bc70bc269a309b15d59d8ccc35cb1377be7",
-      "src/item/item_transfer_command.h": "bf5338bcf5df8496ea737af025408034f7c1ed5284686964f0e63fbb354d6b25",
-      "src/item/item_transfer_repository.c": "8703be6161f9f0d03879432426d2ac7d8bab4ff3e6dc790968973521d76ba0e9",
-      "src/item/item_transfer_repository.h": "a22d2fc25ca2c9cd12ea12e207702d3c83b3fe4d3798bb3db1214268a49c5d4f",
+      "src/item/item_movement_transaction.c": "f2d9b27866d1e54280478403e747d7f0ca0be1ce58cfb8d432b7a331881accf7",
+      "src/item/item_movement_transaction.h": "f35cbc759dc15abce5b8972ca919babfd5f4c8ea41c75ec73a5c26c2473c9339",
+      "src/item/item_ownership_runtime.c": "f1d50e1450027e6dbddab1a2bc74cae529a489148f3e8d92153ee47765731927",
+      "src/item/item_ownership_runtime.h": "51e5dd0f2740262b2f934c3b9795c7a16cb13d05d8837e12cc72a6cdea7b6bb9",
+      "src/item/item_transfer_command.c": "f60a0906736ea6214051c2dbc59dbd5318a580e70363da5ef2d92c7f131ceb31",
+      "src/item/item_transfer_command.h": "8522cbc17a29330113b685b8a4188cde4ec975d63c02e87cdeb327be4b481211",
+      "src/item/item_transfer_repository.c": "e005e1a2b5460f01939026072f4c226b770841c1a03382bc59bea62ff99cd6ff",
+      "src/item/item_transfer_repository.h": "922e2141dedc3621c1a55986846b40016ee72fb11cb6c445ea0a19f7f0e182d7",
       "src/item/lockpick_retirement_continuation.c": "fcf706b98339b2a5266e3ea1897c93d399820c621a85c0aef99dcaf14007e0a3",
       "src/item/lockpick_retirement_continuation.h": "bd74b154fdcddccc539ebee24cf43442ff859457dc94faa6148491b9a1d96bc2",
       "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
+      "src/item/ordinary_drop_recovery.c": "d879d78608e4c8914582d50b3e0e657affe756fca0a817877452bff0aa8856d4",
       "src/item/quest_reward_continuation.h": "5d00eddbab2b36ff66ffd714b757bf87a88d3f6f7dda85a556eaa6c015ed4ae3",
+      "src/item/smith_native_command.h": "8ac9b42d86c9fb5176279bd1d594e903274cecb0dd1ac8a0f0011564d20761c8",
+      "src/item/smith_native_compound.h": "4672004a7fd0a3e98a92e761c5d8415fe051e0365a114bbc4c5c2274f1429139",
+      "src/item/smith_native_compound_codec.h": "a64a8ef47776f5e148e6b8f370491bc39a230e25c64b4579f296bb4767803e9c",
+      "src/item/smith_native_compound_images.h": "0507bf104c325a2f5850ab6e31b26103a1701da0a0a33746ed7a6ca3d0455510",
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "299f91e89032d32ae01c492550010bf28d7f84077f4f62e6a5cf417f75bf1d4b",
       "src/mob/studioproclib.h": "515a80db161b60b3d22bb3dc89d66aaa3349709ad4247c825a68639a4f4bb184",
-      "src/net/comm.c": "b7c2f1cc4a91cbe30f0a06151e7795635546c6bf833ace42ec7901ba67910b89",
-      "src/persistence/critical_command.c": "e4e998c275831a7594b0abd1cd54e0aeba46b14b57f97d62a68ad479fa5d1f91",
-      "src/persistence/critical_command.h": "e07e2ede08b226b818f8b6b7c57d82c348742b69b618776f4a196ec5542a1bab",
-      "src/persistence/critical_command_coordinator.c": "1b1313b299e4cb16c1be26d0d3b037e3d229ccbf6183bf84ea4461492f0ba936",
-      "src/persistence/critical_command_coordinator.h": "0bd6cc62b7b33200d9a8885efbc77a91e2d721e0397c561fa362fdd8ee1feaa8",
-      "src/persistence/critical_command_journal.c": "5dae1b7fe3f02dbc262648403e40eb31431cbfd79767c8cec57e2c9bc94fc7c2",
+      "src/net/comm.c": "e53ed8a4247c37f1c4fb2298d50a5cccaf7b5973fe8bee26467a9996823d1931",
+      "src/persistence/critical_command.c": "d332f6491360a5fbfdaf19052f8095d5eac4f7ab82c750422743e5190a390834",
+      "src/persistence/critical_command.h": "34e3641e7687685eba2d54cbe05c6e4a2127f390b33afae01a06b667e481e421",
+      "src/persistence/critical_command_coordinator.c": "e9d4de885a58ec1e14a9fc75077b01410b9e8646eca8c72415692e61a0b75e9a",
+      "src/persistence/critical_command_coordinator.h": "3af2527f6dbbc04c6c982bd0f23a77214756a6c9424f593af9a499f89c688308",
+      "src/persistence/critical_command_journal.c": "53c60552b998dca42640a297f23e8ffe7bc4c297f16905ad7d79ced57864971f",
       "src/persistence/critical_command_journal.h": "a905b7a89a680dfeb521a7d8ce1444b5bc9e54bf400d605a17aa30430db6c33e",
-      "src/persistence/critical_command_repository.c": "adcb89e680d43663e8f1f17a1bc2ca6a11752043363f514adbb8771cd33fec31",
-      "src/persistence/critical_command_repository.h": "50f18f44ec31db0f0d087b1401fe59a5481562a1fdeba008dbc6e481678008c6",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "67fd9bfc6f1aff663c30368cb67bd57aa79ac430b4b9df192d6872c562c34b36",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "46b6a0a54e28185293c1e253fdcf227a3a3572eb848b7036739edff6766c9c59",
-      "src/persistence/economic_sql_auction_bid_transaction.c": "b49e906bf92d2791b846235f467b7a75586dfbc711354d4005f301503e78144a",
+      "src/persistence/critical_command_repository.c": "1271f2ea7f80383d5ae6a28cdcf4bb2881227573da1dae643728e958a0560d02",
+      "src/persistence/critical_command_repository.h": "321ebf1e9e9299079c100fe2c921f2e0c02d06e335499990b7650e82bc1eefef",
+      "src/persistence/critical_outbox.c": "767038ebacb1892fc0e79c29be0b128fcbf5bc8d694650ca5f0031c83cd6103a",
+      "src/persistence/critical_outbox.h": "919243277d54ce2493d60bd9abfdb61afd051292a69b01cbbc4fd6ebef672a85",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "bf8d360313dacfb724c9d03e90963f47ccd689292c081c6ac4a2d500ef14145c",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "ee2974d3694a4dea04ab691e7ea266be32ed5050d564a19fc1d1d0d606ed3681",
+      "src/persistence/economic_sql_auction_bid_transaction.c": "2f2e402df47df7ed2d721591718eb9522c06e7c364584f7a89d0d44acae8de23",
       "src/persistence/economic_sql_auction_claim_endpoint.c": "68574fa4ebfc21833f1921e7ec378b5bfcb7f031ef4549d476eb58b56652740f",
       "src/persistence/economic_sql_auction_item_claim_transaction.c": "d93346b6bca28b78e763eeb299a114f229f23cc60937e1265b6476a58a5a9a19",
       "src/persistence/economic_sql_auction_listing_transaction.c": "47a873fcbac117132ed37cdbb0be7ba217a6f0846f57a61e31886803320dcddc",
-      "src/persistence/economic_sql_auction_money_claim_transaction.c": "703a68032b632b61b134977031ca0a52495cffd324ddae6fc83fff873113df00",
-      "src/persistence/economic_sql_auction_retained.c": "049c07e82301c84b816f63783146a4b3a5b5073b1f745b6d9ed078be077f2b49",
-      "src/persistence/economic_sql_auction_retained.h": "3a62cbf53be4441d54a138acfaccecef72cacdb8911ecf8f549a9c04d39f114a",
-      "src/persistence/economic_sql_auction_settlement_transaction.c": "18b3cf4a830cd43a71607a8e3b77c37e2aff84e871b39e7b42c2ea8a6dff4e50",
-      "src/persistence/economic_sql_item_transfer_transaction.c": "704879929d77ec1eeb8a32eff491411da21100e264892672c2f9997edc60dee8",
-      "src/persistence/economic_sql_item_transfer_transaction.h": "64d3e9e87f010a1fbc812b95389c419c2c1552555101a89b7e9c3ded715cc764",
-      "src/persistence/economic_sql_lifecycle_guard.c": "4c84472c93fd413d0faca08df8fba5560cf86ae1c6ed74ad3bf28228f5968a57",
-      "src/persistence/economic_sql_lifecycle_guard.h": "7daf8e8f55dc5d881da6fb2965cccb5e36994d42b02f260cd65619ffff68a2af",
-      "src/persistence/economic_sql_native_mobile_birth_transaction.c": "37cc4a1fc38aa3e3ca426f85e8f7fd7b4ec122f588e2fc4674cd217edaea99f4",
-      "src/persistence/economic_sql_native_mobile_birth_transaction.h": "e6f19d850ce94ef853416073ec28ed379da6341c8390e9900a0b3a6bff8c60a0",
+      "src/persistence/economic_sql_auction_money_claim_transaction.c": "21bb5e30bb78f20168748b3ed77b3f361c34ddca786ea6d2b7694cb5c081578b",
+      "src/persistence/economic_sql_auction_retained.c": "769a6c80d4f81edba52d6c01e4919022318a9b7fff8437ba97e1cba1d7a6e5f8",
+      "src/persistence/economic_sql_auction_retained.h": "3eda38dc333b968f1351403654ea44231a7509447170f74ee0864b1cd48da740",
+      "src/persistence/economic_sql_auction_settlement_transaction.c": "77d33906a2f8c67bf5585eccbb3832efd6c485c7d83f19182208bc7513385fb7",
+      "src/persistence/economic_sql_cutover_capability.c": "a722573363ef4fcb8250a3f5e4e5f4e238c8eca79a4bcd03bd0498afc130f563",
+      "src/persistence/economic_sql_initialized_activation_view.h": "920af96f4f6e8b62c1385e38dfed58bee4c2c096e2735e3fbf0151d8582a5b69",
+      "src/persistence/economic_sql_item_transfer_transaction.c": "d77554b83624970f034740d3cfdf8e9d638816a546908857311d42ead4ce6aad",
+      "src/persistence/economic_sql_item_transfer_transaction.h": "5bfdf2db0dc16bcdc835e45d8ee4b39763ecbfbe90a2e70ba5c31b8e3d5a2d77",
+      "src/persistence/economic_sql_lifecycle_guard.c": "614855349ce1cea160c9a99d48f79adf23eb53057d19ae4e81e398eeb6236947",
+      "src/persistence/economic_sql_lifecycle_guard.h": "1cd6e096b87c7b70b2c73c038e303def05d724bbf2c99c55780e4ac731ff3201",
+      "src/persistence/economic_sql_native_mobile_birth_shared_shop_observation.c": "395b0c049f421d080a0e38cb4fb4c377a7d171ca8f19a4676a514bd5c6fa9daf",
+      "src/persistence/economic_sql_native_mobile_birth_shared_shop_observation.h": "efa9e7a75644a0650bcfc1d3dd2f487a5c21db535f153049452e9001bc60d443",
+      "src/persistence/economic_sql_native_mobile_birth_transaction.c": "2a4556047f87cdaa12048d8f8dbe212dccdf5d8a8af24940af9968c335fb9ddf",
+      "src/persistence/economic_sql_native_mobile_birth_transaction.h": "ae4f2077872dbe202fd375be4227381ebf7bbd83181bae566abebda186102a93",
       "src/persistence/economic_sql_shop_trade_transaction.c": "8b0511748ea8588cd1066364183dcb0531c54fd12436cb1b2c9b97566d4de639",
       "src/persistence/economic_sql_shop_trade_transaction.h": "b85d982ef6559cde4dd34a031ced0e1dfb67013f4585f260caba0da31ea8e361",
+      "src/persistence/economic_sql_source_snapshot.c": "54c590baf3e179427dda6d4a3924af4ecd29b9aae89f50d1695b62658a925f2d",
+      "src/persistence/economic_sql_source_snapshot.h": "bde8255591e4aa6afb6f149274658bc5b4776555fcf8896395c1c90a1f33731c",
+      "src/persistence/economic_sql_zone_reset_item_transaction.c": "c3ad5ca77cb863ec554b4452e1c9f5397ffaa210ac0c5549d565de891beccdf8",
+      "src/persistence/economic_sql_zone_reset_item_transaction.h": "b02c0ceffe28b132744942522203e634ad1868b50674e4e6217bbdd70748949e",
       "src/persistence/held_retirement_sql_observer.c": "9b51e13afcae6279f671967641eedaa4731764fc9074d9fcaf316b8648d7217b",
-      "src/persistence/quest_mobile_native_origin_sql.c": "23e9a58a34f4108263ea29f70fd69053595200ecb6c4fc5d66a26d5e2ae3686b",
-      "src/persistence/quest_mobile_native_origin_sql.h": "5b6bb6041574f99d18b0f57721c5ee071201999cefed44878732662261867f47",
-      "src/persistence/quest_mobile_native_sql.c": "c4b8b9b9ac2e4f313ae2c00b75571d96c7185c9b84fd91eb40761b598d390d3b",
-      "src/persistence/quest_mobile_native_sql.h": "d1b303bd0e3c89d97e2a99a7426f8e455e761de29970e640f769fe47fd5acab5",
-      "src/persistence/quest_mobile_published_world_sql.c": "eda0d11984460555e9a87f51302f45ed7a9f11983f3b8a8f94ab607f71970f02",
+      "src/persistence/persistence_mode.c": "a5ea3469c66e87a0c6cb51c5956ac8f8688700e907ad53b9e7e25470878db11e",
+      "src/persistence/quest_mobile_native_origin_sql.c": "ec956318fe0b74fdb32dc6b6e81fb84b27c59a163f69e43aa122754d679e1da9",
+      "src/persistence/quest_mobile_native_origin_sql.h": "f9841cf88d8b31075926be221a3a398f814a2ae1afd676c57a78b1a916f29503",
+      "src/persistence/quest_mobile_native_sql.c": "41e67cfda8d21bf6ecc1abf4b560d7ae5eec1a1c15d5507b6055fcd0ff432790",
+      "src/persistence/quest_mobile_native_sql.h": "37aa529418a8c1945c11fcdc38dd4821dc7110a73d0ae9e6fd370b7ddd60c2bb",
+      "src/persistence/quest_mobile_published_world_sql.c": "1db2a93092844a062bcb4773d7eacebb06b19841d9076b4b22eecbc0af681c72",
       "src/persistence/quest_reward_obligation_pipeline.c": "64d8223ad9a45f1a7beebabdf059d9efa5a9ff8ba0d505105ff1f4a59ad582ca",
       "src/persistence/quest_reward_obligation_repository.c": "6b788d76f257636202c63d468a0ccd7b893151bdd6ee4e7d68f967a8b467cebd",
       "src/persistence/quest_reward_obligation_repository.h": "c5bf00750f33ad2bc2c93e976e27226a9ce0cba795f39de83accee10f7a1c293",
-      "src/persistence/shop_item_runtime_payload.c": "7ca2c4f89d265ae18858ca7b0d868301b63ccbd5a839ce06a30a81c587219436",
-      "src/persistence/shop_item_runtime_payload.h": "51eba38c026d8f090aab047e040de7e773958bf6f58beb166f55add60e48d376",
+      "src/persistence/shop_item_runtime_payload.c": "cdd535e9e056c21a0ec2d54709dc6a52b8ef515d8b3f1ac2ba9b8700bfc29644",
+      "src/persistence/shop_item_runtime_payload.h": "ad017691e237448d06bb5cd6cd20ed1e2dacf93858f6494e1a0a9092e5b8b40e",
       "src/persistence/sql_room_coin_payload.c": "0e8a4f52b3d34638b3f7efa81bee3b5787b214e9f1cfce5e8d14fdc46a2bd2da",
       "src/persistence/sql_room_coin_payload.h": "101d33ebcefae5e196ca9e7b8ccb50b94d85c371791bd51aa70e60f1701d5789",
-      "src/player/inert_item_stage.c": "931b52e9400b0a4b380f93f645cf8ba9f1cab17ec55ae11ff2d2738a9e1ba2cd",
-      "src/player/inert_item_stage.h": "1a6c34b77ab4efb0daf50a028c561a2d7a27af314d37f5e65157fdfe5fffa9a9",
-      "src/player/player_load_items.c": "12dbe88d38d3e6f2cbf0b7523cf3d3a73260795f6df70dc65ca2eeaaa043703d",
+      "src/persistence/sql_room_creation_correspondence.c": "ce9c5067b7acfeefb2ba768657b27d7faf2c0c5fa8d5af34967a8302f97a7ee8",
+      "src/persistence/sql_room_creation_correspondence.h": "294430cc6d97023f0e36db560cadee313227d11ca41c4850ed0fc0719ff55116",
+      "src/persistence/sql_room_creation_source.c": "58954396d0377349191142cc539ff01a59dc06b987510dab5bb9d98ea85940d0",
+      "src/persistence/sql_room_creation_source.h": "3748e305a486fbb3a645b109b73fa201d77470597686a5e6c8cdae8f9d55d5c1",
+      "src/persistence/sql_room_item_payload.c": "76c7caf9fd905b6017a7cb08c987a6df5ad50e534b7bd96ba95eb3ccb6c7adec",
+      "src/persistence/sql_room_item_payload.h": "f8e6bd60afaf4acef93e993506c08de2d1ac62d7dd459632d012360cceee856e",
+      "src/persistence/zone_reset_creation_budget.c": "73aa3168504b167acfa4ba1024cc13b250189b63b260bcbb55c6e1fcaf0dc1d0",
+      "src/persistence/zone_reset_creation_budget.h": "55a11e28e0f412bbaf1b77e8d51e5b67241ce3ce9ec8e5358d15a02d28261fde",
+      "src/persistence/zone_reset_item_origin_sql.c": "3a36b4d281cccaa9ff598d94585f75cfd6b19e0251a249078baa08420fe2d1fe",
+      "src/persistence/zone_reset_item_origin_sql.h": "4b4a79185adf97dc5198f5f62e0bd399cd6e42c018ecff0169558d333a20987b",
+      "src/persistence/zone_reset_item_terminal_sql.c": "54ae802793d2d2cf2e86143dc96aaf60ed6d568f33f49570621bd04e1cd10945",
+      "src/persistence/zone_reset_item_terminal_sql.h": "385900156d37aa2a0648ff43d343493af67fbe904af65a68c8c1d06046a7b4e3",
+      "src/player/inert_item_stage.c": "69147aa3b5fdf68fc0df8ab5472f5198a2919aca31061835f3418878a9fb0d6d",
+      "src/player/inert_item_stage.h": "f4ba196f7a5bcc79d322a0330e7406fdb15379269af28ff3ca6edab615ce5c64",
+      "src/player/player_load_items.c": "dca83a76802e59c9ffda1fc93e918e6aa77e0bb6ac5eb570e121e537c0415ca4",
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
-      "src/player/player_save_pipeline.c": "77eb09369ff8bc122ccc6ff7c294ad3c5e631c2db3a14468eb04e57aed820579",
-      "src/player/player_save_pipeline.h": "b163be37492c528bc2b704402c2dd5c1c1b2f07a8bc43713e0b24e75fd21dc2d",
+      "src/player/player_save_pipeline.c": "f573028bd916b5d43410a5842fbe9ba7d1220edd78b42f04a9eb149c2fb0b447",
+      "src/player/player_save_pipeline.h": "e3611b2f8117adf7b236c96232953973664f3120eac0883773747e4ace43457b",
       "src/player/player_snapshot_capture.c": "70e8dc17384d4969ce9741e09f6cb8b17d39da354afbd7662e6deb9404d6cd66",
       "src/player/player_snapshot_capture.h": "9718d08c6b5e52a9a63d6fba836949f57dacd518f961d5d63ceb54f3fb8d845c",
-      "src/player/player_snapshot_codec.c": "80cadd1a287c76916bd2afd7ed30e4e588ee4a1b9c63a9d085ee2496d665f03c",
+      "src/player/player_snapshot_codec.c": "5f03a51318f8724f0e7d30857c416429ec26d8c79be5e4a84b158dd8e93c412a",
+      "src/player/player_snapshot_codec.h": "6e52a816b24b13bb666ebec06a79cf70e38fb1fcf248825a46dbfff86a5e7c61",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
@@ -287,13 +444,17 @@
       "src/specs/specs.venthix.c": "0f97b77852f353b04c4b662a56bae46be4ac24666df8aeebf705aacf1c4863f8",
       "src/specs/specs.venthix.h": "de25eafa046c414388043cf90e3e45548aef8da15e5a65bf87986f8ebe98d22c",
       "src/sql/sql.c": "fcb648fea1a64750d097556c4254e338a749c9727cb92e989298598650bf7ee0",
-      "src/sql/sql_economic_runtime.c": "ed7fc3213ac1983d59581ce8d6a723113606f5762001d1fed3ec76af39ab0c7d",
+      "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
-      "src/sql/sql_player.c": "0c415974fe1e4bc0e56492a5f09ce90c0e70f1a7e68dd79cd76d931af796b2f5",
-      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/db.h": "05ab29035fd5befc33f9d8474ed3d3668fd3108daeebdb09c72e9a228f13131a",
-      "src/world/handler.c": "3f046194166dbbfd949f9ec0199e72f6155283edbdac69a7fd186da21333ce07",
-      "src/world/handler.h": "69cf721db5b448bd67b76074a5af2cb338d46ef3425dc8cae7bb18bc7803f124",
+      "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
+      "src/world/db.c": "d60f4e01cd944371c1646daf4925ee2379996301933515d88b2bb0d57fbf7e04",
+      "src/world/db.h": "997fd7e954b917c3747fb28584f317c5966aa47885bf8abee09345708c66e183",
+      "src/world/economic_initialized_world_owner.c": "b9cc81141a03ba8f7b407c27c972404e948bf302e588658005e986ba0de96c97",
+      "src/world/economic_initialized_world_owner.h": "73d17bb19b6ee5198448c69ade7829f35811e72d55f5f5f568d61e9b2450384d",
+      "src/world/economic_initialized_world_snapshot.c": "8bc6c570684d1a7c1e8040e8051cb0ae73e1b89b5ff5d9c5feecb28207e30d66",
+      "src/world/economic_initialized_world_snapshot.h": "5f376ff74c44f77b6fdb90ec1ef7162f949c4871dd5fd5bc0c147b61bf27357e",
+      "src/world/handler.c": "2fe492376ae60099715bf6442550a32d765ae0edc0fe47887c4cacee99595448",
+      "src/world/handler.h": "6325bc37323324d9a528a7999d28f458dbe2efc88a1b047c4cf2ecbf602bf167",
       "src/world/native_mobile_birth_artifact.c": "b7c368d336c0bdd75e9bb2a6a1a8e4be0ed19f103e9ae42beba357eeb6a4407f",
       "src/world/native_mobile_birth_artifact.h": "5dd9f4ccc3057dc5228f1b17330e2b696b6a6ec9fe19ad48650c28cf5e64bfd1",
       "src/world/native_mobile_birth_procedure.c": "24935e912a9d1aea36894e03d532e1eeb4f6515b64b946de7207468e3974f659",
@@ -303,57 +464,91 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/object_template.h": "ae58cda024d7a568bfddbee9a38d1b494a0f031cbc8a60f13e572d9748eb8454",
+      "src/world/object_template.h": "12cd48ef385775098e6c7ad9e23866bb3fdbb5e801b4a86b3b17556011d372cb",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
-      "src/world/quest_mobile_native.c": "eaf2b922e170eb0a66db041a62b88cbb2f8590b81e47513acdafd8a431914835",
-      "src/world/quest_mobile_native.h": "905d154c990c2b895ba9b67064ed3314e341b678aa6004160f8866c1ae39ae44",
+      "src/world/quest_mobile_native.c": "58a03ebfbec6e25ec4194a85fe76d2a68d889d6edcd538988742f611e7972ad9",
+      "src/world/quest_mobile_native.h": "6aeacec28b272151ad80252bd700d0c25100a4d4ab844c2db3c440d1548805f9",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
       "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
-      "src/world/quest_mobile_native_birth.c": "95cb42c46e9fd0cc54363a2ba8ff6171cec4f7ca232cf41013e0c28b2c4597de",
-      "src/world/quest_mobile_native_birth.h": "cccbd987c0de56c8e1f0507b1fc24395eaa83e03b1194b7a0365037660c3e4c6",
+      "src/world/quest_mobile_native_birth.c": "e9ba684a1f420ad69a71ba057aa02bf589c3f710e27650951bf7b820ac3ad828",
+      "src/world/quest_mobile_native_birth.h": "8fe49a58f7d567190e062e199042bdec1ab091328baa921ff378fee90e5d93f3",
       "src/world/quest_mobile_native_reference.c": "d5273cdee11447dc307c0e14114785d332ccd130bfb59982a811e0f1d68b6d01",
       "src/world/quest_mobile_native_reference.h": "7014af84ee72518d7e8052a6c72b491ab391688b3ca1e0c11f313b2060710426",
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
       "src/world/quest_mobile_published_saved_forest.h": "2c1ad2008827be9bb6e78573b3aeb029db2d06d86759565250ebc830aa242b4d",
-      "src/world/quest_mobile_published_world_owner.c": "fde41607279ee7c0e7c11b62bffcab40e1c43750cf819096345696a02206b284",
-      "src/world/quest_mobile_published_world_owner.h": "d4d018d6adeea1686b45bdd9822ee34cc67f9a0c76603c7260bcb2ab86cb9aa9",
+      "src/world/quest_mobile_published_world_owner.c": "5b6508217886dd602a384e7058ec434b3716bba720953bbfde9c18cbb3aa74d3",
+      "src/world/quest_mobile_published_world_owner.h": "6f70e5b5d8b4048e8ad9d711e856ab45d4378ff89043d778a442257502cd5bba",
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
-      "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
+      "src/world/zone_reset_item_owner.c": "645e637e003cae30fbad0a265ac4e171b39076f94f66a7cad382910b98d2abf1",
+      "src/world/zone_reset_item_owner.h": "3bd60b74b6f2c8254febc98afa863bbb55d2ff2fb03178a376f3855a8541d075",
+      "src/world/zone_reset_room_nesting.h": "d078e8fbf8ff0938796b47bc3d34a72b8aa57f17e43cbb510c2037e408dfa418",
+      "src/world/zone_reset_room_publication.c": "c7316638f93e56db0509e43b4502dace1fd2e6029bf179c0c019d57799793389",
+      "src/world/zone_reset_room_publication.h": "4c5bd0f2ffe5d40e0f7a4a14775e4766aeb994cf6deb59055b5ee5cacc580cba",
+      "tests/async/auction_legacy_identity_cases.inc": "07ac7110cbc99a9848472ed1bfbb31df8b59479e91652fbdf28b01586874583e",
+      "tests/async/auction_physical_component_cases.inc": "761b3054cdcd72ad08dad098e0b21d453e52e9ee11f11b43f7dc848b6b7f816b",
+      "tests/async/auction_physical_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
+      "tests/async/auction_transaction_mysql_harness.cpp": "599ac00a253497ddeab609bfc5a12189a1bc4a8d38f1cb89923a792aef8fb4d1",
+      "tests/async/collector_codec_harness.cpp": "13e338ad3267997b12273ff094ebc5a74b5272d3ab6f699dfcb77f6c120999bf",
+      "tests/async/collector_explicit_item_boundary_cases.inc": "f14e5715480158ea2fb74777cf4e62334243ded96e50cae9a26806d8f58002fc",
+      "tests/async/collector_physical_allocation_cases.inc": "27da84eb7d3613ca1717e503e9b2d7e33a1c41c49fe39e5d10d354cdbe606feb",
+      "tests/async/collector_physical_component_cases.inc": "5501477bed36e49bacc18f4593cd84199244308f8fddefd910b097090603d9f7",
+      "tests/async/collector_physical_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
+      "tests/async/component_registry.inc": "1796a1d55765d404f8abf38811add36c6c31b7705a6e92767f0823f0f58b1b7b",
+      "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "115f2a9c5eb7a368194d1b35f8182ea9cefde3466afd645ff3f49df2201e4be3",
       "tests/async/flatfile_collector_native_unavailable.cpp": "cb14d724a011867f42f4a6ee9a3804a7756d1d27aca20f20a2ecb8900884ffeb",
       "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
+      "tests/async/lifecycle_persisted_union_cases.inc": "f20c45d924a506826d659bd52e371c5afc83e624f64c7733d796aac960d40050",
+      "tests/async/modern_room_component_cases.inc": "47a6edfbade0cee7df14d11cd268519a961ba3b927bede5322dbe93eef45190b",
+      "tests/async/modern_room_explicit_boundary_cases.inc": "e2bbb28b2f417ca23eb13075097cb6feb33d0fe75dc5b5fb8c8792dbd85e4d8e",
+      "tests/async/modern_room_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
+      "tests/async/native_quest_publication_mysql_harness.cpp": "4d057cb6d61a7c389156a82ab8160970a7bcd19a36a61008c00e559f38c2fabb",
+      "tests/async/physical_provider_union_cases.inc": "ee051a6cd3797de2752e4c5c5e0468fab27eaa31d17373ec3b52ddf4b26b72a7",
+      "tests/async/run_economic_sql_audit_snapshot_mysql.py": "f59e9f70e73b4a579bc46f8181c762b951bcf22ef0765383a2cef6c7091487e0",
+      "tests/async/run_economic_sql_lifecycle_owner_mysql.sh": "b263e73a3bb64cde0fcd797a33fccb626e53d89a68a22e36f1f379959e41b460",
+      "tests/async/run_native_quest_publication_mysql.sh": "e40f4872184927c3f1818b506183b4e44000d55195c74cddca808f4ec9578fc3",
+      "tests/async/runtime_cache_correspondence_cases.inc": "217dcbce7a58ac04a0d3205c4b19eb43c067045cbf1311e929f581d447456495",
+      "tests/async/sql_room_item_payload_test.cpp": "3a04e5ca7e347314bb032baa2f50ab8056571d8b0978c8d4dc808f3ee0386f60",
       "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
-      "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4",
+      "tests/async/test_economic_sql_lifecycle_activation_contract.py": "186f0327fa342eb3b6a6833177b449eb9728e3907e86e1acd03c93e1f85c1e44",
+      "tests/async/test_economic_sql_uid_scope.py": "2febe4f3f3e78c0a89d332a9b38988975156da8bdc84f3dc152628b77e17832b",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
-      "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70"
+      "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
+      "tests/async/test_item_equipment_reconciliation.py": "22fa4d61539c18fa7f8c5518d494d8d9c4bd2ee890a58c352a61f64781f1efa8",
+      "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",
+      "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804",
+      "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
+      "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
+      "tests/async/test_reconcile_economy_accounting.py": "7c430d5650ce51a47e1cc2487663ce52c1644df3612e4378ebde7802253096cc",
+      "tests/integration_manifest.json": "78b7fc1fc4342d7708e3e87bc944588ca0c40677c9e8efc08043df67103aeb27"
     },
     "status": "source_integrated_unqualified"
   },
   "counts": {
     "dormant_writer_candidates": 19,
-    "draft_registry_rows": 926,
-    "function_definition_anchors_verified": 918,
-    "matrix_rows": 926,
+    "draft_registry_rows": 931,
+    "function_definition_anchors_verified": 923,
+    "matrix_rows": 931,
     "non_function_candidate_anchors": 8,
-    "non_writer_or_out_of_scope_candidates": 115,
+    "non_writer_or_out_of_scope_candidates": 117,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 16,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 788,
+    "runtime_mutation_and_projection_routes": 791,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 19,
-    "non_writer_candidate": 115,
+    "non_writer_candidate": 117,
     "offline_operational_writer": 4,
-    "runtime_mutation_route": 697,
-    "runtime_projection_route": 91
+    "runtime_mutation_route": 699,
+    "runtime_projection_route": 92
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -365,33 +560,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 926 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 931 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2900,
-    "current_unique_path_line_family_sites": 2842,
+    "current_occurrences": 2911,
+    "current_unique_path_line_family_sites": 2853,
     "draft_registry_census_complete": false,
     "draft_source_commit": "54fce5545e94c8ec9fced6f96a6bce51fe6f9068",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2842,
+    "draft_unique_sites": 2853,
     "family_occurrences": {
-      "coin_assignment": 196,
+      "coin_assignment": 200,
       "coin_bulk_mutation": 23,
       "direct_cash_assignment": 12,
-      "economic_submit": 200,
-      "item_lifecycle": 1168,
+      "economic_submit": 201,
+      "item_lifecycle": 1173,
       "item_publication": 1071,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 58
+      "sql_economy": 59
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 926-row registry maps 2842 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2842,
-    "mapped_unique_sites_from_draft_rows": 2842,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 931-row registry maps 2853 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2853,
+    "mapped_unique_sites_from_draft_rows": 2853,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -3895,7 +4090,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1337
+          1338
         ],
         "file": "src/economy/auction_repository.c",
         "function": "auction_repository_execute",
@@ -4003,7 +4198,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          714
+          715
         ],
         "file": "scripts/persistence_backup.py",
         "function": "backup",
@@ -4049,7 +4244,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          496
+          497
         ],
         "file": "scripts/persistence_backup.py",
         "function": "prune_unretained",
@@ -6274,7 +6469,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4452
+          4782
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -6646,7 +6841,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          804
+          808
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project_bodies",
@@ -6693,7 +6888,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          190
+          194
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "opening_matches",
@@ -6758,7 +6953,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          905
+          952
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project",
@@ -7057,7 +7252,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2091
+          2094
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -7104,7 +7299,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2091
+          2094
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -7166,7 +7361,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1559
+          1561
         ],
         "file": "src/economy/collector_repository.c",
         "function": "collector_repository_apply_item_boundary",
@@ -7602,7 +7797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2437
+          2439
         ],
         "file": "src/economy/collector_repository.c",
         "function": "collector_repository_execute",
@@ -7663,7 +7858,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          619
+          616
         ],
         "file": "src/economy/collector_transaction.c",
         "function": "collector_transaction_submit",
@@ -8783,7 +8978,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          414
+          427
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_configure_recipe_scroll",
@@ -8843,7 +9038,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          516
+          529
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_get_player_recipes",
@@ -8903,7 +9098,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          87
+          91
         ],
         "file": "src/economy/tradeskill.c",
         "function": "epic_store_committed",
@@ -8963,7 +9158,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          645
+          708
         ],
         "file": "src/economy/tradeskill.c",
         "function": "event_fish_check",
@@ -9023,7 +9218,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1187
+          1200
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_forge_command",
@@ -9142,7 +9337,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          286
+          349
         ],
         "file": "src/economy/tradeskill.c",
         "function": "create_parchment",
@@ -9202,7 +9397,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          623
+          636
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_craft_command",
@@ -9262,7 +9457,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2499
+          2721
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_refine",
@@ -9322,7 +9517,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          770
+          833
         ],
         "file": "src/economy/tradeskill.c",
         "function": "smith",
@@ -9381,7 +9576,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          61
+          65
         ],
         "file": "src/economy/tradeskill.c",
         "function": "grant_tradeskill_item",
@@ -10280,8 +10475,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          501,
-          13461
+          502,
+          13561
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -10598,7 +10793,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6489
+          6658
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
@@ -10659,7 +10854,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6635
+          6804
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -10720,7 +10915,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2780
+          2928
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -10849,7 +11044,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1523
+          1909
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -11166,7 +11361,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2145
+          2148
         ],
         "file": "src/world/handler.c",
         "function": "money_to_inventory",
@@ -11415,7 +11610,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4523
+          4692
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_release_money",
@@ -11476,7 +11671,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3901
+          4070
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -11523,7 +11718,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5200
+          5369
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_compaction",
@@ -11667,7 +11862,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4684
+          4853
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_destruction",
@@ -11912,7 +12107,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4539
+          4708
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_nested_release",
@@ -12037,7 +12232,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4154
+          4323
         ],
         "file": "src/world/handler.c",
         "function": "recover_corpse_raise_items",
@@ -12098,7 +12293,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4814
+          4983
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_raise",
@@ -12160,7 +12355,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3901
+          4070
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -12222,7 +12417,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4320
+          4489
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection_item",
@@ -12348,7 +12543,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3838
+          4007
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_transient_items",
@@ -13704,7 +13899,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4388
+          4557
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13785,7 +13980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4388
+          4557
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -17089,7 +17284,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5623
+          5792
         ],
         "file": "src/world/handler.c",
         "function": "extract_char",
@@ -17136,7 +17331,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2731
+          2736
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17344,7 +17539,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          860
+          879
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17394,7 +17589,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          910
+          944
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17482,7 +17677,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3525
+          3566
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -17840,7 +18035,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1856
+          1859
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -17920,8 +18115,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3870,
-          3882
+          3925,
+          3937
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17983,7 +18178,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1438
+          1472
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18045,7 +18240,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1338
+          1372
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18106,7 +18301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1856
+          1859
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -18230,7 +18425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1219
+          1253
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19352,7 +19547,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1060
+          1094
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19414,7 +19609,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1067
+          1101
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19476,7 +19671,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3445
+          3613
         ],
         "file": "src/world/handler.c",
         "function": "extract_obj",
@@ -19998,7 +20193,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3278
+          3446
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_at_end",
@@ -20059,7 +20254,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2036
+          2039
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_char",
@@ -20120,7 +20315,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3161
+          3329
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_obj",
@@ -20181,7 +20376,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3340
+          3508
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_obj",
@@ -20242,7 +20437,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2222
+          2225
         ],
         "file": "src/world/handler.c",
         "function": "equip_char",
@@ -20303,7 +20498,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2780
+          2928
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -20364,7 +20559,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2929
+          3097
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_room",
@@ -20487,7 +20682,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4118
+          4173
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20549,7 +20744,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3930
+          3985
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20735,7 +20930,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5275
+          5444
         ],
         "file": "src/world/handler.c",
         "function": "Decay",
@@ -21535,7 +21730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2781
+          2822
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21722,7 +21917,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1856
+          1859
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -21969,7 +22164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5588
+          5757
         ],
         "file": "src/world/handler.c",
         "function": "hold_durable_pet_items",
@@ -22251,7 +22446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          131
+          134
         ],
         "file": "src/world/handler.c",
         "function": "obj_prototype_weight",
@@ -22313,7 +22508,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1714
+          1748
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22375,7 +22570,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1270
+          1304
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -22743,7 +22938,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1125
+          1159
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22927,7 +23122,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1228
+          1231
         ],
         "file": "src/world/handler.c",
         "function": "char_to_room",
@@ -23390,7 +23585,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          150
+          153
         ],
         "file": "src/world/handler.c",
         "function": "obj_capture_container_shell_weight",
@@ -23578,7 +23773,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1653
+          1655
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",
@@ -23643,7 +23838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2375
+          2460
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -23704,7 +23899,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3047
+          3139
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -23762,7 +23957,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          513
+          1356
         ],
         "file": "src/persistence/sql_room_item_payload.c",
         "function": "sql_room_item_payload_record",
@@ -24115,7 +24310,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1856
+          1859
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -24176,7 +24371,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2359
+          2362
         ],
         "file": "src/world/handler.c",
         "function": "transfer_inventory",
@@ -25936,7 +26131,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          845
+          1086
         ],
         "file": "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
         "function": "flatfile_accounting_lifecycle_transaction::install",
@@ -26107,8 +26302,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          326,
-          5603
+          327,
+          5604
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -26172,8 +26367,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          301,
-          1315
+          302,
+          1316
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -32427,8 +32622,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          497,
-          13326
+          498,
+          13426
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -32488,8 +32683,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          266,
-          4245
+          267,
+          4246
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -32924,7 +33119,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4772
+          5102
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_item_repository_prepare_native_mobile",
@@ -32982,7 +33177,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3804
+          4361
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_stage::publish",
@@ -33100,8 +33295,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3521,
-          3853
+          3613,
+          3945
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_native_mobile",
@@ -33750,7 +33945,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          314
+          375
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "flatfile_corpse_restore_catalog",
@@ -33812,7 +34007,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          174
+          180
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "materialize_corpse",
@@ -33859,7 +34054,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          174
+          180
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "materialize_corpse",
@@ -33921,7 +34116,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          174
+          180
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "materialize_corpse",
@@ -33968,8 +34163,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          86,
-          106
+          92,
+          112
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "discard_staged",
@@ -34032,7 +34227,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          314
+          375
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "flatfile_corpse_restore_catalog",
@@ -34079,7 +34274,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          257
+          264
         ],
         "file": "src/flatfile/flatfile_corpse_restore.c",
         "function": "materialize_room",
@@ -34189,7 +34384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          89
+          92
         ],
         "file": "src/player/inert_item_stage.c",
         "function": "inert_item_stage::reset",
@@ -34236,7 +34431,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          179
+          182
         ],
         "file": "src/player/inert_item_stage.c",
         "function": "inert_item_stage_eligibility",
@@ -34283,7 +34478,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          185
+          188
         ],
         "file": "src/player/inert_item_stage.c",
         "function": "prepare_inert_item_stage",
@@ -34393,7 +34588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1100
+          1107
         ],
         "file": "src/item/ordinary_drop_recovery.c",
         "function": "ordinary_drop_recovery_observe_existing",
@@ -34440,7 +34635,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1107
+          1114
         ],
         "file": "src/item/ordinary_drop_recovery.c",
         "function": "ordinary_drop_recovery_publish",
@@ -34501,7 +34696,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          624
+          625
         ],
         "file": "src/item/ordinary_drop_recovery.c",
         "function": "ordinary_drop_live_publication_owner::publish",
@@ -34968,7 +35163,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          596
+          634
         ],
         "file": "src/item/item_ownership_runtime.c",
         "function": "item_ownership_runtime_peek_owner_revision",
@@ -35093,8 +35288,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          450,
-          12060
+          451,
+          12160
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -35155,8 +35350,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          446,
-          10148
+          447,
+          10149
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -35217,8 +35412,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          442,
-          10094
+          443,
+          10095
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -35344,8 +35539,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          415,
-          8479
+          416,
+          8480
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -35392,8 +35587,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          415,
-          8479
+          416,
+          8480
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -35440,7 +35635,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          981
+          982
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -35502,7 +35697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11802
+          11826
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_publish",
@@ -35564,7 +35759,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11759
+          11783
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_place_restored",
@@ -35611,7 +35806,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11785
+          11809
         ],
         "file": "src/sql/sql_player.c",
         "function": "~sql_room_item_stage_guard",
@@ -35674,7 +35869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6469
+          6470
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -35721,7 +35916,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4355
+          5092
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "critical_command_repository_verify_ordinary_drop_in_transaction",
@@ -35784,8 +35979,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          284,
-          4710
+          285,
+          4711
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -35835,8 +36030,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          284,
-          4710
+          285,
+          4711
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -35899,8 +36094,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          585,
-          7330
+          586,
+          7331
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -35963,8 +36158,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          450,
-          12060
+          451,
+          12160
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -36011,8 +36206,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          450,
-          12060
+          451,
+          12160
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -36075,7 +36270,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10236
+          10237
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -36137,7 +36332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10236
+          10237
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -36184,7 +36379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10188
+          10189
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -36231,7 +36426,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7479
+          7480
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36395,7 +36590,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          212
+          214
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
@@ -38587,8 +38782,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          475,
-          12903
+          476,
+          13003
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -38647,8 +38842,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          467,
-          12785
+          468,
+          12885
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -38708,8 +38903,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          463,
-          12531
+          464,
+          12631
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -39111,7 +39306,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3769
+          3932
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_preparation_owner::start",
@@ -39470,7 +39665,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1466
+          1623
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_native_publication_owner::cold_publish",
@@ -39847,7 +40042,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2366
+          2523
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_native_publication_owner::native_publish",
@@ -39911,7 +40106,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          308
+          315
         ],
         "file": "src/economy/shop_trade_runtime.c",
         "function": "shop_trade_current_runtime_owner::publish",
@@ -40537,7 +40732,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2873
+          3032
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_transaction_submit",
@@ -48374,7 +48569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1134
+          1197
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_bandage",
@@ -48433,7 +48628,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          998
+          1061
         ],
         "file": "src/economy/tradeskill.c",
         "function": "publish_bandage_consumption",
@@ -48493,7 +48688,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1134
+          1197
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_bandage",
@@ -48550,7 +48745,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1256
+          1319
         ],
         "file": "src/economy/tradeskill.c",
         "function": "learn_recipe",
@@ -51126,7 +51321,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2515
+          2525
         ],
         "file": "src/world/db.c",
         "function": "read_mobile_body",
@@ -51280,7 +51475,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5196
+          6168
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -52329,7 +52524,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6823
+          8186
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -52389,7 +52584,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52864,7 +53059,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52925,7 +53120,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52985,7 +53180,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53045,7 +53240,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53105,7 +53300,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53152,7 +53347,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6938
+          8301
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53505,8 +53700,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          80,
-          770
+          104,
+          842
         ],
         "file": "src/persistence/economic_sql_native_mobile_birth_transaction.c",
         "function": "economic_sql_native_mobile_birth_transaction::apply",
@@ -53553,7 +53748,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          642
+          1529
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::prepare_mobile",
@@ -53600,7 +53795,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          939
+          1841
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::seal_mobile",
@@ -53657,7 +53852,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2788
+          4110
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::pulse",
@@ -53714,7 +53909,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3186
+          3811
         ],
         "file": "src/persistence/critical_command_coordinator.c",
         "function": "critical_native_mobile_birth_publication_owner::submit",
@@ -53855,7 +54050,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          726
+          1612
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::capture_alchemist_spawn",
@@ -53915,7 +54110,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1641
+          2760
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::recover_cold",
@@ -53975,7 +54170,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1341
+          2447
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::resume_cold_projection",
@@ -54035,7 +54230,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2103
+          3257
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::publish",
@@ -54095,7 +54290,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4240
+          4807
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_stage::publication_step",
@@ -54155,7 +54350,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4025
+          4585
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_stage::restore_published",
@@ -54202,7 +54397,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5525
+          6539
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::prepare",
@@ -54262,7 +54457,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6333
+          7515
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publish",
@@ -54322,7 +54517,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6372
+          7729
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publication_step",
@@ -54382,7 +54577,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6669
+          8026
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::rebuild_enrollment",
@@ -54442,7 +54637,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7433
+          7602
         ],
         "file": "src/world/handler.c",
         "function": "quest_mobile_native_local_stock::enroll",
@@ -54502,7 +54697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7456
+          7625
         ],
         "file": "src/world/handler.c",
         "function": "quest_mobile_native_local_stock::restore_enrollment",
@@ -54549,7 +54744,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5478
+          6492
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::capture_container_shell",
@@ -54609,7 +54804,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7668
+          7723
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",
@@ -54732,7 +54927,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1939
+          1747
         ],
         "file": "src/economy/auction_native_publication.c",
         "function": "auction_native_publication_owner::physical",
@@ -54912,7 +55107,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          840
+          1521
         ],
         "file": "src/world/quest_mobile_published_world_owner.c",
         "function": "quest_mobile_published_world_owner::materialize",
@@ -54975,13 +55170,290 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1384
+          1431
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "coin_physical_recovery_restore_room",
         "original_draft_symbol": "coin_physical_recovery_restore_room"
       },
       "source_classification": "Reconstructs an already committed original-UID ordinary room coin pile after successful original root/child receipts, source/indexed-plan/ledger evidence and locked current custody, literal and owner-counter proof. Its private inert-stage enrollment and cache owner-revision projection have no lexical scanner occurrence. No new issuance, native holding mutation, custody event, command or ACK is inferred.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Rolls back only the original boot-stage UID proved absent before enrollment: clears its runtime UID, removes the staged physical projection and forgets its runtime cache entry while the shared restore guard lives. No durable pile value, custody row, source claim or accounting receipt is retired; complete boot/restart qualification remains unverified."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Rolls back only the original boot-stage UID proved absent before enrollment: clears its runtime UID, removes the staged physical projection and forgets its runtime cache entry while the shared restore guard lives. No durable pile value, custody row, source claim or accounting receipt is retired; complete boot/restart qualification remains unverified.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Rolls back only the original boot-stage UID proved absent before enrollment: clears its runtime UID, removes the staged physical projection and forgets its runtime cache entry while the shared restore guard lives. No durable pile value, custody row, source claim or accounting receipt is retired; complete boot/restart qualification remains unverified.",
+      "id": "coin.flat_boot_stage_rollback",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "flatfile_coin_boot_stage destructor and move assignment call reset; successful finish clears the retained published pointer before destruction. The extract occurs only while published_ is retained.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1540
+        ],
+        "file": "src/economy/coin_physical_recovery.c",
+        "function": "flatfile_coin_boot_stage::reset",
+        "original_draft_symbol": "flatfile_coin_boot_stage::reset"
+      },
+      "source_classification": "Rollback of only the original flat boot pile projection proved absent before enrollment. It clears the staged runtime UID before extraction, restores physical chains/prototype count and forgets the original runtime cache; no durable coin/custody retirement or new operation is authorized.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Projects the exact committed CURRENT flat keeper scalar cash into the four original keeper denominations only after retained native receipt, current source/lifetime, complete stock/custody and runtime checks. No new coin posting, accounting root or guarded ACK is authorized. Accounted SHOP admission and full native/backend/restart qualification remain closed and unverified. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.flat_cold_keeper_cash_projection",
+      "native_effects": {
+        "custody_effect": "No item event at the four cash assignments; the owning callback separately proves full stock/custody and original handler continuation.",
+        "holding_effect": "Projects selected committed keeper scalar cash into four runtime denominations; no durable cash mutation or new posting.",
+        "native_state_targets": [
+          "original keeper runtime cash[0..3]",
+          "selected flat CURRENT keeper cash and full stock receipt/source proof"
+        ]
+      },
+      "projection_rule": "Projects the exact committed CURRENT flat keeper scalar cash into the four original keeper denominations only after retained native receipt, current source/lifetime, complete stock/custody and runtime checks. No new coin posting, accounting root or guarded ACK is authorized. Accounted SHOP admission and full native/backend/restart qualification remain closed and unverified.",
+      "reachability_evidence": "The original cold flat publication callback reaches these assignments after final_observe and current runtime publication. It records returned balance notification before a refusing post-census and rechecks complete final observation after keeper assignment.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          7191
+        ],
+        "file": "src/economy/shop_trade_transaction.c",
+        "function": "shop_trade_native_publication_owner::native_publish_flat_cold",
+        "original_draft_symbol": "shop_trade_native_publication_owner::native_publish_flat_cold"
+      },
+      "source_classification": "Copies exact committed CURRENT flat keeper scalar cash into platinum/gold/silver/copper on the original observed keeper after full retained native/current source and stock/custody proof. This is a runtime value projection, not new supply, a second accounting root or guarded ACK.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "After the original authenticated never-admitted cancellation and exact retained flat preparation/source checks, extracts only the original NOWHERE produced candidate. Started/returned latches prevent repeated cleanup; no committed item custody, keeper holding or economic root is destroyed. Native refusal/restart qualification remains unverified."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "After the original authenticated never-admitted cancellation and exact retained flat preparation/source checks, extracts only the original NOWHERE produced candidate. Started/returned latches prevent repeated cleanup; no committed item custody, keeper holding or economic root is destroyed. Native refusal/restart qualification remains unverified.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "After the original authenticated never-admitted cancellation and exact retained flat preparation/source checks, extracts only the original NOWHERE produced candidate. Started/returned latches prevent repeated cleanup; no committed item custody, keeper holding or economic root is destroyed. Native refusal/restart qualification remains unverified.",
+      "id": "shop.flat_refusal_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Original cancellation publication callback requires never_admitted and matching original refusal; finds only the exact retained selected UID, requires NOWHERE/no next_content, sets started before extraction and records normal return before another observation.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          7886
+        ],
+        "file": "src/economy/shop_trade_transaction.c",
+        "function": "shop_trade_native_publication_owner::native_publish_flat_refusal",
+        "original_draft_symbol": "shop_trade_native_publication_owner::native_publish_flat_refusal"
+      },
+      "source_classification": "Disposes only the original unadmitted NOWHERE produced item after authenticated never-admitted cancellation and exact retained flat source/current checks. Started/returned cleanup latches prohibit duplicate extraction; no admitted custody, keeper value or economic root is destroyed.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "crafting.accounted_refine",
+      "native_effects": {
+        "custody_effect": "Original inputs and optional output require one correlated craft custody result; pre-admission staged output is disposed on refusal.",
+        "holding_effect": "Optional frozen refining wallet cost is passed to the compound craft command; staged constructor and cleanup do not themselves debit coins.",
+        "native_state_targets": [
+          "original material/ore input UIDs and optional refined output UID",
+          "frozen refine cost/roll/output and retained craft command",
+          "player wallet revision and original progression publication"
+        ]
+      },
+      "reachability_evidence": "do_refine calls do_accounted_refine only under economic_gameplay_authority::active; one output read follows the frozen original roll and original typed craft submit takes ownership only on success. Explicit refusal and bad_alloc cleanup remain local to staged_output.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2564
+        ],
+        "file": "src/economy/tradeskill.c",
+        "function": "do_accounted_refine",
+        "original_draft_symbol": "do_accounted_refine"
+      },
+      "source_classification": "Freezes original refining input order, optional authentic wallet checkpoint/cost and one original roll; stages the optional genuine output and submits the compound craft owner. Submission refusal/allocation cleanup extracts only the retained staged output. Full input destruction/output birth/coin and progression acceptance remains unqualified.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.sql_room_payload_creation",
+      "native_effects": {
+        "custody_effect": "Stores literal bytes for already-correlated first ROOM birth custody under the same root transaction; no second item event.",
+        "holding_effect": "No coin balance/posting at this literal payload INSERT.",
+        "native_state_targets": [
+          "sql_room_item_payload full literal bytes/UID/revision/operation/season",
+          "original ROOM creation SQL transaction/session and correlated item custody ledger"
+        ]
+      },
+      "reachability_evidence": "sql_room_item_payload_record_creation checks original transaction/session, canonical capture and season, full selected room owner/items/ledger, then verifies identical existing rows or inserts item_revision1 under the original operation. It verifies the original session on return.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          610
+        ],
+        "file": "src/persistence/sql_room_item_payload.c",
+        "function": "sql_room_item_payload_record_creation",
+        "original_draft_symbol": "sql_room_item_payload_record_creation"
+      },
+      "source_classification": "Records complete first ROOM-reset literal payloads only in the original active SQL transaction/session after canonical original command/source/season, current creation custody/ledger and exact owner revision proof. Existing payload bytes must match; the INSERT is a participant, not standalone creation or ACK.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

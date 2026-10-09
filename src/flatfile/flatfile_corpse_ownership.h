@@ -34,4 +34,16 @@ flatfile_corpse_ownership_result flatfile_room_load_item_ownership(
 	const std::string &root, const flatfile_room_item_record &record, uint64_t *owner_revision,
 	std::vector<player_load_item_identity> *identities, std::string *error);
 
+// Borrow the shared identity-then-authority boot cut. Preserve the original
+// complete owner census/topology predicates before any typed-root partition.
+// Values only; no physical hydration or publication capability is returned.
+flatfile_corpse_ownership_result flatfile_corpse_load_item_ownership_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_corpse_record &record, uint64_t *owner_revision,
+	std::vector<player_load_item_identity> *identities, std::string *error);
+flatfile_corpse_ownership_result flatfile_room_load_item_ownership_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_room_item_record &record, uint64_t *owner_revision,
+	std::vector<player_load_item_identity> *identities, std::string *error);
+
 #endif

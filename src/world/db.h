@@ -7,6 +7,9 @@
 #define _SOJ_DB_H_
 
 #include <span>
+#include <memory>
+#include <vector>
+#include "flatfile/flatfile_shopkeeper_repository.h"
 #include "economy/native_mobile_birth_constructor_recipe.h"
 
 #include <cstdint>
@@ -197,6 +200,10 @@ struct native_mobile_birth_recovery_effect;
 struct native_mobile_birth_recovery_choice;
 struct native_mobile_birth_recovery_context;
 struct quest_mobile_native_image;
+struct quest_mobile_native_reference;
+struct native_mobile_birth_cash_role_recipe;
+struct flatfile_shopkeeper_record;
+enum class player_snapshot_capture_result : uint8_t;
 class quest_mobile_native_stage
 {
     public:
@@ -212,6 +219,39 @@ class quest_mobile_native_stage
 	bool publication_step_started_ = false, publication_consumed_ = false;
 	uint64_t publication_runtime_id_ = 0;
 	// Process-local restoration observations; never replace historical journal facts.
+	// Only successful original cold-constructor replay may prepare these rows.
+	bool shared_affect_constructor_restored_ = false;
+	std::unique_ptr<const std::vector<uint8_t>> shared_affect_checkpoint_;
+	std::unique_ptr<const std::vector<flatfile_shopkeeper_affect_record>> shared_affect_rows_;
+	std::vector<struct affected_type *> shared_affect_installed_;
+	struct char_data *shared_affect_actor_ = nullptr;
+	uint64_t shared_affect_runtime_ = 0;
+	int shared_affect_room_ = -1;
+	size_t shared_affect_historical_prefix_ = 0, shared_affect_prefix_ = 0;
+	bool shared_affect_step_started_ = false, shared_affect_complete_ = false;
+	bool shared_affect_before_room_ready_ = false;
+	struct nevent_data *shared_affect_balance_event_ = nullptr;
+	unsigned long long shared_affect_balance_sequence_ = 0;
+	bool shared_affect_balance_observed_ = false;
+	bool shared_affect_balance_prepare_started_ = false;
+	bool shared_affect_balance_prepare_returned_ = false;
+	bool shared_affect_park_started_ = false, shared_affect_park_returned_ = false;
+	bool shared_affect_park_succeeded_ = false;
+	bool shared_affect_resume_started_ = false, shared_affect_resume_returned_ = false;
+	struct nevent_data *shared_affect_resumed_event_ = nullptr;
+	unsigned long long shared_affect_resumed_sequence_ = 0;
+	// Private preparation binds the exact owned reconstructed body/full original
+	// checkpoint. Saved AF rows are the sole intentionally missing source piece.
+	bool prepare_shared_shopkeeper_affects(struct char_data *, uint64_t, int,
+					       const quest_mobile_native_reference &,
+					       const flatfile_shopkeeper_record &, size_t) noexcept;
+	bool restore_shared_shopkeeper_affects_before_room(struct char_data *) noexcept;
+	bool finish_shared_shopkeeper_affects_after_room(struct char_data *, int) noexcept;
+	bool shared_shopkeeper_affect_charge(size_t *) const noexcept;
+	bool shared_shopkeeper_affect_rows_current(struct char_data *) const noexcept;
+	bool observe_shared_shopkeeper_balance(struct char_data *) noexcept;
+	bool park_shared_shopkeeper_balance(struct char_data *) noexcept;
+	bool apply_shared_shopkeeper_affects(struct char_data *, bool) noexcept;
 	bool restoration_active_ = false;
 	int restoration_room_ = -1;
 	size_t restoration_prefix_ = 0, restoration_room_step_ = 0;
@@ -252,6 +292,15 @@ class quest_mobile_native_stage
 	restore_constructor(const quest_mobile_native_constructor_recipe &,
 			    const quest_mobile_native_constructor_digest &current_build) noexcept;
 	struct char_data *character() const noexcept { return character_; }
+	// Original detached shared keeper only. These passive observations neither
+	// authenticate the caller's reset/source cut nor permit publication or ACK.
+	// Revision1 and the caller's observed time are retained without a new clock.
+	player_snapshot_capture_result capture_shopkeeper_checkpoint(
+		struct char_data *actual, uint64_t original_runtime, int actual_pending_room,
+		int configured_shop, const quest_mobile_native_reference &,
+		const quest_mobile_native_constructor_recipe &original_constructor,
+		const native_mobile_birth_cash_role_recipe &original_role,
+		int64_t observed_saved_at, flatfile_shopkeeper_record *output) const noexcept;
 	// Only an empty, unlinked, unscheduled preparation can be discarded.
 	// The owner must first resolve/remove its own unadmitted staged stock.
 	bool discard_empty() noexcept;
@@ -315,6 +364,9 @@ struct quest_mobile_native_item_effect
 {
 	bool started = false, returned = false, succeeded = false, periodic = false;
 };
+struct item_ownership_runtime_entry;
+class zone_reset_room_publication_owner;
+enum class zone_reset_room_nest_result;
 class quest_mobile_native_item_stage
 {
     public:
@@ -324,10 +376,45 @@ class quest_mobile_native_item_stage
 
     private:
 	friend class quest_mobile_native_birth_owner;
+	friend class zone_reset_item_owner;
+	friend class zone_reset_room_publication_owner;
+	// Original Smith owner retains the actual constructor stage and its private
+	// producer edits only that stage; friendship grants no source or admission.
+	friend class smith_native_compound_owner;
+	friend class smith_native_producer;
 	struct implementation;
 	implementation *state_ = nullptr;
 	static bool prepare(int nr, int type, uint64_t supplied_reserved_uid,
 			    quest_mobile_native_item_stage *) noexcept;
+	// False may retain the authentic unresolved factory candidate in output.
+	// This private seam grants no source/admission/publication authority.
+	static bool prepare_retaining(int nr, int type, uint64_t supplied_reserved_uid,
+				      quest_mobile_native_item_stage *) noexcept;
+	static bool prepare_impl(int nr, int type, uint64_t supplied_reserved_uid,
+				 quest_mobile_native_item_stage *,
+				 bool retain_failed_candidate) noexcept;
+	bool empty() const noexcept;
+	// Pure original constructor-owned graph changes, never a P/source permit.
+	// The span is the complete selected room tree plus the new detached child.
+	static zone_reset_room_nest_result
+	nest_room(std::span<quest_mobile_native_item_stage *>, quest_mobile_native_item_stage &root,
+		  quest_mobile_native_item_stage &child,
+		  quest_mobile_native_item_stage &target) noexcept;
+	static bool detach_room(std::span<quest_mobile_native_item_stage *>,
+				quest_mobile_native_item_stage &root,
+				quest_mobile_native_item_stage &child,
+				quest_mobile_native_item_stage &target) noexcept;
+	static bool room_graph_ready(std::span<quest_mobile_native_item_stage *>,
+				     quest_mobile_native_item_stage &root,
+				     quest_mobile_native_item_stage &child,
+				     quest_mobile_native_item_stage &target,
+				     bool detaching) noexcept;
+	// Shared original prepend chronology across live and genuine pending factories.
+	// False is an observation gap; true/null is an authentic no-match result.
+	// The actual producer must separately authenticate source and target custody.
+	static bool original_reset_target(int rnum, struct obj_data **selected,
+					  bool *pending) noexcept;
+	bool owns_pending_original_target(struct obj_data *) const noexcept;
 	struct obj_data *object() const noexcept;
 	bool capture_container_shell(quest_mobile_native_container_shell *) noexcept;
 	quest_mobile_native_item_binding binding_input() const noexcept;
@@ -359,6 +446,13 @@ class quest_mobile_native_item_stage
 	// Root consumes every staged object before NPC/room hooks can extract stock.
 	// Actual callbacks are separate once-only steps; returned is not success/ACK.
 	struct obj_data *publish() noexcept;
+	// Same real constructor consumption for a complete room forest. The
+	// genuine context owner must retain admission/progress before calling.
+	// Preflight and cache projection complete before nonallocating global
+	// links; every refusal leaves stages, world, cache and output unchanged.
+	static bool publish_many(std::span<quest_mobile_native_item_stage *>,
+				 std::span<struct obj_data *>,
+				 std::span<const item_ownership_runtime_entry>) noexcept;
 	size_t publication_step_count() const noexcept;
 	bool publication_step(size_t, struct obj_data *expected,
 			      quest_mobile_native_item_effect &) noexcept;
@@ -368,6 +462,8 @@ class quest_mobile_native_item_stage
 				const quest_mobile_native_item_progress &,
 				std::span<const quest_mobile_native_item_effect>) noexcept;
 	bool release_published() noexcept;
+	// Exact original metadata-release guard, for nonfailing whole-batch cleanup.
+	bool can_release_published() const noexcept;
 	bool read_progress(quest_mobile_native_item_progress *) const noexcept;
 	static bool adopt_published(const player_item_snapshot &,
 				    const native_mobile_birth_item_recipe &, struct obj_data *,
@@ -376,6 +472,14 @@ class quest_mobile_native_item_stage
 				    quest_mobile_native_item_stage *) noexcept;
 };
 
+// Pure observation preflight for original cold/native owners. Neither result
+// authorizes custody, bindings, consumption, enrollment or a source claim.
+// An observed hot body must stay with its real constructor/publication owner.
+bool quest_mobile_native_item_cold_prepend_body_ready(struct obj_data *) noexcept;
+bool quest_mobile_native_item_cold_prepend_cut_ready(size_t count) noexcept;
+void quest_mobile_native_item_observe_native_prepend(struct obj_data *) noexcept;
+// Nonallocating observation at the original extraction cut; grants no authority.
+void quest_mobile_native_item_observe_extraction(struct obj_data *) noexcept;
 void free_world();
 
 #endif /* #ifndef _SOJ_DB_H_ */

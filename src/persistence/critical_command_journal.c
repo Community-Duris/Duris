@@ -1,6 +1,8 @@
 #include "item/held_retirement_transport.h"
 #include "item/native_quest_transport.h"
 #include "persistence/critical_command_journal.h"
+#include "economy/native_mobile_birth_recovery.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -153,10 +155,29 @@ bool native_command_valid(const critical_command &command)
 		held_retirement_transport_command(command) ||
 		native_quest_transport_command(command) ||
 		(command.type == critical_command_type::native_mobile_birth &&
-		 (command.payload_version == 2 || command.payload_version == 3)) ||
-		(command.type == critical_command_type::auction && command.payload_version == 2);
+		 (command.payload_version == 2 || command.payload_version == 3 ||
+		  command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)) ||
+		(command.type == critical_command_type::auction && command.payload_version == 2) ||
+		(command.type == critical_command_type::zone_reset_item_birth &&
+		 command.payload_version == 1);
 	return route && command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	       command.publication_required && critical_command_envelope_valid(command);
+}
+
+// Version-4 framing carries the full original native recovery envelope.
+// This is transport validation, never bare-command execution/admission support.
+// Conservative SHOP selection prevents malformed shared bytes from falling
+// through to the ordinary policy; both codecs authenticate canonical contents.
+bool native_cash_role_envelope_valid(const critical_native_recovery_envelope &envelope) noexcept
+{
+	if (envelope.command.type != critical_command_type::native_mobile_birth ||
+	    envelope.command.payload_version != NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+		return true;
+	const bool shared = std::any_of(envelope.command.keys.begin(), envelope.command.keys.end(),
+					[](const auto &key)
+					{ return key.type == critical_entity_type::shopkeeper; });
+	return shared ? native_mobile_birth_shared_shop_recovery_valid(envelope) :
+			native_mobile_birth_cash_role_recovery_valid(envelope);
 }
 
 uint32_t native_checksum(const uint8_t *data, size_t size)
@@ -175,7 +196,8 @@ bool build_native_frame(const critical_native_recovery_envelope &envelope, journ
 	    (held_retirement_transport_command(envelope.command) &&
 	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
 	    !native_phase_valid(envelope.phase) || envelope.attachment.empty() ||
-	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES ||
+	    !native_cash_role_envelope_valid(envelope))
 		return false;
 	std::vector<uint8_t> command;
 	if (critical_command_encode(envelope.command, &command) !=
@@ -255,8 +277,26 @@ bool decode_native_payload(const uint8_t *payload, size_t size, journal_frame *f
 	    !std::equal(canonical.begin(), canonical.end(), payload + cursor))
 		return false;
 	cursor += command_size;
-	frame->native_attachment.assign(payload + cursor, payload + size);
-	frame->command = std::move(command);
+	if (command.type == critical_command_type::native_mobile_birth &&
+	    command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+	{
+		// Move the already decoded command and retain only the original bounded
+		// attachment once; no second command/attachment copy is introduced.
+		critical_native_recovery_envelope original;
+		original.command = std::move(command);
+		original.revision = revision;
+		original.phase = static_cast<critical_native_recovery_phase>(phase);
+		original.attachment.assign(payload + cursor, payload + size);
+		if (!native_cash_role_envelope_valid(original))
+			return false;
+		frame->native_attachment = std::move(original.attachment);
+		frame->command = std::move(original.command);
+	}
+	else
+	{
+		frame->native_attachment.assign(payload + cursor, payload + size);
+		frame->command = std::move(command);
+	}
 	frame->native_revision = revision;
 	frame->native_phase = static_cast<critical_native_recovery_phase>(phase);
 	frame->native = true;

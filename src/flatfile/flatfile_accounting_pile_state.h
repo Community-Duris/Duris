@@ -21,6 +21,14 @@ flatfile_accounting_status
 flatfile_accounting_pile_state_read(const std::string &root, const flatfile_authority_lock &lock,
 				    uint64_t uid, flatfile_accounting_pile_state *state,
 				    std::string *error);
+// Structural boot census, including retired heads and earlier lineages. The
+// existing boot owner supplies its existing census bound. Malformed recognizable
+// names or damaged bodies refuse; absence is not successful empty history.
+// This is not a source/native proof or permission to restore any pile.
+// Preserve output on every failure; caller holds the original authority cut.
+flatfile_accounting_status flatfile_accounting_pile_state_list(
+	const std::string &root, const flatfile_authority_lock &lock, size_t maximum,
+	std::vector<flatfile_accounting_pile_state> *states, std::string *error);
 // Capture a pre-existing native pile with its current item revision as part
 // of the opening baseline. The caller commits this image with its witness.
 flatfile_accounting_status flatfile_accounting_pile_state_stage_baseline(

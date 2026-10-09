@@ -37,9 +37,12 @@
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/quest_mobile_native_birth.h"
+#include "world/zone_reset_item_owner.h"
+#include "economy/zone_reset_item_recovery.h"
 #include "world/object_template.h"
 #include "world/events.h"
 #include "world/world_activity.h"
+#include "world/economic_initialized_world_owner.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -299,6 +302,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
 	quest_mobile_native_birth_completions(completions, count);
+	zone_reset_room_item_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	collector_transaction_handle_completions(completions, count);
@@ -310,6 +314,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
+static void critical_gameplay_publish_outbox();
 static void critical_gameplay_drain_completions(const critical_completion *completions,
 						size_t count)
 {
@@ -320,6 +325,7 @@ static void critical_gameplay_drain_completions(const critical_completion *compl
 	}
 	critical_gameplay_handle_completions(completions, count);
 	quest_mobile_native_birth_pulse(false);
+	zone_reset_room_item_pulse(false);
 }
 
 // This TU owns the original drained repository ACK results. Only this owner
@@ -381,6 +387,8 @@ static bool critical_gameplay_restore_replayed_command(const critical_command &c
 static bool
 critical_gameplay_restore_native_envelope(const critical_native_recovery_envelope &envelope, void *)
 {
+	if (envelope.command.type == critical_command_type::zone_reset_item_birth)
+		return zone_reset_room_item_restore(envelope);
 	if (envelope.command.type == critical_command_type::native_mobile_birth)
 		return quest_mobile_native_birth_restore(envelope);
 	if (envelope.command.type == critical_command_type::auction)
@@ -395,6 +403,8 @@ static bool
 critical_gameplay_native_publication_body_valid(const critical_native_recovery_envelope &envelope,
 						const critical_completion &completion) noexcept
 {
+	if (envelope.command.type == critical_command_type::zone_reset_item_birth)
+		return zone_reset_item_recovery_publication(envelope, completion);
 	if (envelope.command.type == critical_command_type::native_mobile_birth)
 		return native_mobile_birth_recovery_publication(envelope, completion);
 	if (envelope.command.type == critical_command_type::auction)
@@ -427,7 +437,7 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 /** Request an immediate game-thread shutdown transition through the existing persistence gates. */
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
-	if (!quest_mobile_native_birth_lifecycle_ready())
+	if (!quest_mobile_native_birth_lifecycle_ready() || !zone_reset_room_item_lifecycle_ready())
 	{
 		logit(LOG_STATUS,
 		      "Shutdown request refused: original native birth preparation is unresolved.");
@@ -1044,6 +1054,13 @@ int run_the_game(int port, int sslport)
 	// accounting/publication authority; failure keeps recovery closed.
 	if (persistence_mode_requires_mysql() && !finalize_recovery_object_template_bindings())
 		logit(LOG_STATUS, "SQL recovery object-template final binding seal unavailable");
+	// The distinct flat owner uses the same complete parsed boot catalog. Seal
+	// its actual final procedure bindings at this serialized pre-worker cut;
+	// failed provenance keeps its existing preparation consumers closed.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    !finalize_flatfile_shop_recovery_object_template_bindings())
+		logit(LOG_STATUS,
+		      "Flatfile recovery object-template final binding seal unavailable");
 
 	ssl_read_cert();
 
@@ -1124,10 +1141,15 @@ int run_the_game(int port, int sslport)
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
 	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
+	critical_shared_native_apply_fn shared_native_apply =
+		critical_command_repository_apply_shared_native_from_pool;
+	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr;
 	critical_extension_validator_fn critical_extension_validator =
 		economic_command_admission_supported;
 #ifdef __NO_MYSQL__
 	critical_apply = flatfile_accounting_apply_selected;
+	shared_native_apply = critical_command_repository_apply_shared_native_flat;
+	zone_reset_apply = critical_command_repository_apply_zone_reset_item_flat;
 	critical_extension_validator = economic_flatfile_command_admission_supported;
 #else
 	const bool critical_outbox_ready =
@@ -1151,8 +1173,13 @@ int run_the_game(int port, int sslport)
 			{ auction_recovery_envelope_valid, auction_recovery_initial_valid,
 			  auction_recovery_successor_valid,
 			  auction_recovery_publication_context_valid,
-			  auction_recovery_terminal_valid });
+			  auction_recovery_terminal_valid },
+			{ zone_reset_item_recovery_valid, zone_reset_item_recovery_initial,
+			  zone_reset_item_recovery_successor, zone_reset_item_recovery_publication,
+			  zone_reset_item_recovery_terminal },
+			shared_native_apply, zone_reset_apply);
 	quest_mobile_native_birth_replay_ready(critical_commands_ready);
+	zone_reset_room_item_replay_ready(critical_commands_ready);
 	if (!critical_commands_ready)
 	{
 		if (owned_accounting_boot)
@@ -1177,6 +1204,8 @@ int run_the_game(int port, int sslport)
 				  "start_failed", "check critical schema and journal");
 	}
 	critical_command_coordinator_set_drain_observer(critical_gameplay_drain_completions);
+	critical_outbox_set_drain_observer(
+		critical_commands_ready ? critical_gameplay_publish_outbox : nullptr);
 #ifndef __NO_MYSQL__
 	if (player_saves_ready && critical_commands_ready)
 	{
@@ -1189,7 +1218,12 @@ int run_the_game(int port, int sslport)
 		{
 			const auto progress = sql_economic_runtime_recover_boot_step(
 				critical_gameplay_drain_completions);
-			if (progress == sql_economic_boot_progress::ready)
+			// Progress the original room journal owner too. Completion/drain
+			// delivery cannot replace its actual current SQL/world proof or
+			// leave retained room recovery waiting behind a birth-only boot loop.
+			zone_reset_room_item_pulse(false);
+			if (progress == sql_economic_boot_progress::ready &&
+			    !zone_reset_room_item_recovery_pending())
 				break;
 			if (progress == sql_economic_boot_progress::refused ||
 			    std::chrono::steady_clock::now() >= deadline)
@@ -2368,6 +2402,19 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 	ctx.ne_events_us = ne_events_us;
 }
 
+// Existing bounded native publishers, shared by the regular pulse and
+// lifecycle drain. No session input, new command or general game pulse runs.
+static void critical_gameplay_publish_outbox()
+{
+	if (!nevent_is_game_thread())
+		return;
+	auction_transaction_publish_outbox();
+	corpse_lifecycle_transaction_publish_outbox();
+	collector_transaction_publish_outbox();
+	combat_outcome_transaction_publish_outbox();
+	artifact_guild_transaction_publish_outbox();
+}
+
 static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 {
 	const uint64_t loop_tick = ctx.loop_tick;
@@ -2386,17 +2433,14 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		auction_native_publication_pulse();
 		shop_trade_transaction_restore_pulse();
 		quest_mobile_native_birth_pulse(true);
+		zone_reset_room_item_pulse(true);
 		critical_completion critical_completions[64] = {};
 		const size_t critical_completion_count =
 			critical_command_coordinator_pulse(critical_completions, 64);
 		critical_gameplay_handle_completions(critical_completions,
 						     critical_completion_count);
 		quest_reward_ack_pipeline_pulse();
-		auction_transaction_publish_outbox();
-		corpse_lifecycle_transaction_publish_outbox();
-		collector_transaction_publish_outbox();
-		combat_outcome_transaction_publish_outbox();
-		artifact_guild_transaction_publish_outbox();
+		critical_gameplay_publish_outbox();
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
 				    critical_apply_outcome::terminal_failure ||
@@ -2811,6 +2855,45 @@ void game_loop(int port, int sslport)
 #ifdef DO_PROFILE
 	init_func_call_info();
 #endif
+
+	// Decide the original failed-copyover case before taking the world cut or
+	// opening listeners. A successful transport-owned copyover needs no native
+	// recovered listener and must retain the original first-branch behavior.
+	if (copyover_boot &&
+	    !(transport_world_active() && (!copyover_boot || copyover_recovered)) &&
+	    recovered_mother_desc < 0)
+	{
+		/* The inherited listeners are still open, so this process cannot safely
+		 * bind replacements.  Return through normal shutdown to join every worker;
+		 * exit(1) here left joinable std::threads and turned a rejected copyover into
+		 * SIGABRT plus a core dump.  The supervisor then performs a cold restart. */
+		logit(LOG_STATUS,
+		      "FATAL: copyover recovery failed; requesting graceful cold restart");
+		_reboot = 1;
+		return;
+	}
+
+	// Real successful initialization: copyover/Redis fallback, shop/transport
+	// reconciliation and the failed-copyover return are all behind this point.
+	// Early SQL/native promotion remains intact; this owner reacquires genuine
+	// selected exclusion and captures only AFTER original drain callbacks settle.
+	if (!economic_initialized_world_owner::complete_boot())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: initialized accounting world capture refused; requesting graceful cold restart");
+		_reboot = 1;
+		return;
+	}
+	// The root's synchronous SQL/independent qualification consumer belongs
+	// inside the held boot-cut interval. Raw census alone never selects an epoch.
+	// Invalidate before transport readiness, replay/native callbacks or input.
+	if (!economic_initialized_world_owner::before_world_callbacks())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: initialized accounting world exclusion unresolved; requesting graceful cold restart");
+		_reboot = 1;
+		return;
+	}
 
 	// use recovered sockets if copyover, otherwise create new ones
 	if (transport_world_active() && (!copyover_boot || copyover_recovered))

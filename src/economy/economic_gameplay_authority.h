@@ -14,6 +14,8 @@ struct quest_mobile_native_cash_reference;
 class item_native_quest_preparation_owner;
 struct native_mobile_birth_item_recipe;
 struct quest_mobile_native_constructor_recipe;
+struct native_mobile_birth_cash_role_recipe;
+struct zone_reset_item_image;
 
 struct economic_gameplay_wallet_mapping
 {
@@ -79,16 +81,27 @@ class economic_gameplay_authority
 	// Existing native SQL scope only; excludes wallet-root qualification and flat.
 	// This observes admission state and does not grant native mutation authority.
 	static bool active_regular_sql();
+	// Read-only selected flat projection. No writer, source or ACK authority.
+	// SQL qualification/recovery and SQL fallback scopes remain excluded.
+	static bool active_regular_flat();
 	// Selected SQL boot policy keeps legacy writers closed while genuine replay
 	// and published lifetimes recover. It is not fresh admission/readiness.
 	static bool active_sql_recovery();
-	// Pure installed regular wallet mapping only. No admission, native effect,
-	// publication or ACK authority; refusal leaves output unchanged.
+	// Original regular PC wallet admission metadata only, for a same-root craft
+	// fee. Native balances/revisions and mapping lifetime are separately locked
+	// by the financial participant; these values grant no storage/publication
+	// authority. SQL restricted scopes and SQL-enabled flat fallback refuse.
+	// Retained replay uses its frozen command rather than observing today's epoch.
 	static bool observe_craft_wallet_checkpoint(
 		uint32_t pid, economic_native_money_checkpoint_projection *output) noexcept;
 	static bool observe_shop_checkpoint(uint32_t pid, std::string_view account_name,
 					    uint8_t racewar,
 					    economic_shop_checkpoint_projection *output) noexcept;
+	// Explicit flat counterpart; output is unchanged on refusal. The native
+	// owner must authenticate the actual selected-root mappings under its lock.
+	static bool
+	observe_flat_shop_checkpoint(uint32_t pid, std::string_view account_name, uint8_t racewar,
+				     economic_shop_checkpoint_projection *output) noexcept;
 
     private:
 	friend class item_native_quest_preparation_owner;
@@ -103,6 +116,19 @@ class economic_gameplay_authority
 	// The installed regular SQL projection supplies lineage/epoch, not provenance.
 	// This does not reserve identities, admit a command or authorize publication.
 	friend class quest_mobile_native_birth_owner;
+	// Only the original O producer freezes fresh reset values. This selects the
+	// installed lineage/epoch only; the producer and atomic root still prove the
+	// real invocation, decisions, absent identities and same-root room publication.
+	friend class zone_reset_item_owner;
+	static economic_accounting_error prepare_zone_reset_item(const zone_reset_item_image &,
+								 uint64_t accepted_at_usec,
+								 critical_command *) noexcept;
+	// Distinct configured regular-flat preparation; selects installed metadata
+	// only. The real ROOM producer/worker separately prove source, season,
+	// full initial catalogs and original publication. No admission or replay rebind.
+	static economic_accounting_error prepare_zone_reset_item_flat(const zone_reset_item_image &,
+								      uint64_t accepted_at_usec,
+								      critical_command *) noexcept;
 	static economic_accounting_error
 	prepare_native_mobile_birth(const quest_mobile_native_image &, critical_source_site,
 				    uint64_t accepted_at_usec, critical_command *output) noexcept;
@@ -113,6 +139,31 @@ class economic_gameplay_authority
 		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
 		const quest_mobile_native_constructor_recipe &, critical_source_site,
 		uint64_t accepted_at_usec, critical_command *output) noexcept;
+
+	// Prospective ordinary role only. Original factory/source capture and
+	// journal admission remain separate; this never rebuilds a replayed command.
+	static economic_accounting_error prepare_native_mobile_birth_ordinary_wallet(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const native_mobile_birth_cash_role_recipe &, critical_source_site,
+		uint64_t accepted_at_usec, critical_command *) noexcept;
+
+	// Fresh shared role only, using the same installed regular SQL projection.
+	// The original birth owner proves source/stage/constructor/checkpoint facts;
+	// no replay rebind, SHOP clock, admission or publication follows here.
+	static economic_accounting_error prepare_native_mobile_birth_shared_shopkeeper(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const native_mobile_birth_cash_role_recipe &, critical_source_site,
+		uint64_t accepted_at_usec, critical_command *) noexcept;
+
+	// DISTINCT fresh shared FLAT role only. Actual configured client-free
+	// flat primary and installed regular projection supply lineage/epoch;
+	// no SQL primary/fallback, new mapping/wallet/treasury or replay rebind.
+	// Same original birth-owner friendship authenticates source/stage/constructor
+	// and full checkpoint. Strong output; no admission/readiness/publication.
+	static economic_accounting_error prepare_native_mobile_birth_shared_shopkeeper_flat(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const native_mobile_birth_cash_role_recipe &, critical_source_site,
+		uint64_t accepted_at_usec, critical_command *) noexcept;
 
 	friend class economic_sql_accounting_lifecycle_transaction;
 
@@ -169,6 +220,13 @@ class economic_gameplay_authority
 			    const critical_operation_id &receipt,
 			    std::span<const economic_gameplay_wallet_mapping> wallets,
 			    std::span<const economic_gameplay_bank_mapping> banks);
+	// SQL lifecycle owner only: compare a freshly authenticated full projection.
+	// Values/receipts confer no authority; this never installs or clears policy.
+	static bool sql_runtime_projection_matches(
+		sql_runtime_recovery_install_key, const critical_operation_id &lineage,
+		const critical_operation_id &epoch, const critical_operation_id &receipt,
+		std::span<const economic_gameplay_wallet_mapping> wallets,
+		std::span<const economic_gameplay_bank_mapping> banks) noexcept;
 	static void clear_sql_runtime() noexcept;
 	// Trusted flat runtime shutdown only; never clears the SQL qualification scope.
 	static void clear_flat_runtime() noexcept;

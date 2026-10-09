@@ -1,3 +1,4 @@
+#include "world/zone_reset_room_nesting.h"
 /*
  * ***************************************************************************
  *  file: handler.c                                          part of Duris
@@ -21,6 +22,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "economy/zone_reset_item_command.h"
 extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include "economy/shop_trade_destination_weight.h"
 #include "world/bloodstains.h"
@@ -72,6 +74,7 @@ extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include <cstdint>
 #include <new>
 #include <unordered_map>
+#include <utility>
 
 /*
  *
@@ -2777,7 +2780,7 @@ P_char get_char_num(int nr)
 
 /* put an object in a room */
 
-void obj_to_room(P_obj object, int room)
+static void obj_to_room_original(P_obj object, int room, const bool *frozen_falling)
 {
 	P_char i;
 	P_obj o;
@@ -2912,13 +2915,178 @@ void obj_to_room(P_obj object, int room)
 		writeCorpse(object);
 	world_activity_object_enter(object);
 
-	if (OBJ_FALLING(object))
+	if (frozen_falling ? *frozen_falling : OBJ_FALLING(object))
 	{
 		falling_obj(object, 1, false);
 	}
 	if (IS_ARTIFACT(object))
 	{
 		artifact_update_location_sql(object);
+	}
+}
+
+void obj_to_room(P_obj object, int room)
+{
+	obj_to_room_original(object, room, nullptr);
+}
+
+namespace
+{
+bool original_reset_standard_room(P_obj object, int room) noexcept
+{
+	return object && OBJ_NOWHERE(object) && object->obj_uid && object->obj_uid != UINT64_MAX &&
+	       room >= 0 && room <= top_of_world && world[room].number > 0 &&
+	       !IS_WATER_ROOM(room) && !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
+	       !IS_ARTIFACT(object) &&
+	       !(object->type == ITEM_CORPSE && IS_SET(object->value[1], PC_CORPSE));
+}
+bool original_reset_source(const economic_source_event &source) noexcept
+{
+	return economic_source_event_valid(source) &&
+	       source.kind == economic_source_kind::world_generation && !source.sequence &&
+	       source.source.bytes == source.generation.bytes;
+}
+}
+
+bool zone_reset_original_room_placement_stage::capture(
+	P_obj object, int room, const economic_source_event &source,
+	zone_reset_original_room_placement_stage *output) noexcept
+{
+	if (!output || output->valid_ || !nevent_is_game_thread() ||
+	    !economic_gameplay_authority::active() || !original_reset_source(source) ||
+	    !original_reset_standard_room(object, room))
+		return false;
+	zone_reset_original_room_placement_stage candidate;
+	candidate.object_ = object;
+	candidate.uid_ = object->obj_uid;
+	candidate.rnum_ = object->R_num;
+	candidate.room_ = room;
+	candidate.room_vnum_ = world[room].number;
+	candidate.sector_ = world[room].sector_type;
+	candidate.chance_ = world[room].chance_fall;
+	candidate.z_ = object->z_cord;
+	candidate.levitates_ = IS_SET(object->extra_flags, ITEM_LEVITATES);
+	const bool no_ground = candidate.sector_ == SECT_NO_GROUND ||
+			       candidate.sector_ == SECT_UNDRWLD_NOGROUND;
+	candidate.drawn_ = !candidate.levitates_ && !no_ground;
+	// Preserve the original macro's order: the chance comparison draws BEFORE
+	// the z-coordinate branch, even when chance is zero or z is positive.
+	if (candidate.drawn_)
+		candidate.roll_ = number(1, 100);
+	candidate.falls_ = !candidate.levitates_ &&
+			   (no_ground ||
+			    candidate.chance_ >= static_cast<int32_t>(candidate.roll_) ||
+			    candidate.z_ > 0);
+	candidate.source_ = source;
+	candidate.valid_ = true;
+	*output = std::move(candidate);
+	return true;
+}
+zone_reset_original_room_placement_stage::zone_reset_original_room_placement_stage(
+	zone_reset_original_room_placement_stage &&other) noexcept
+{
+	*this = std::move(other);
+}
+zone_reset_original_room_placement_stage &zone_reset_original_room_placement_stage::operator=(
+	zone_reset_original_room_placement_stage &&other) noexcept
+{
+	if (this != &other)
+	{
+		object_ = std::exchange(other.object_, nullptr);
+		uid_ = other.uid_;
+		rnum_ = other.rnum_;
+		room_ = other.room_;
+		room_vnum_ = other.room_vnum_;
+		sector_ = other.sector_;
+		chance_ = other.chance_;
+		z_ = other.z_;
+		roll_ = other.roll_;
+		levitates_ = other.levitates_;
+		drawn_ = other.drawn_;
+		falls_ = other.falls_;
+		source_ = other.source_;
+		valid_ = std::exchange(other.valid_, false);
+	}
+	return *this;
+}
+bool zone_reset_original_room_placement_stage::matches_source(
+	const economic_source_event &source) const noexcept
+{
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> actual{}, expected{};
+	return valid_ &&
+	       economic_source_event_encode(source, &actual) == economic_accounting_error::ok &&
+	       economic_source_event_encode(source_, &expected) == economic_accounting_error::ok &&
+	       actual == expected;
+}
+bool zone_reset_original_room_placement_stage::recipe(
+	zone_reset_room_placement_recipe *output) const noexcept
+{
+	if (!output || !valid_)
+		return false;
+	zone_reset_room_placement_recipe candidate{ uid_,	room_vnum_, sector_, chance_, z_,
+						    levitates_, drawn_,	    roll_,   falls_ };
+	if (!zone_reset_room_placement_recipe_valid(candidate))
+		return false;
+	*output = candidate;
+	return true;
+}
+bool zone_reset_original_room_placement_stage::restore(
+	const zone_reset_room_placement_recipe &frozen, P_obj object,
+	const economic_source_event &source,
+	zone_reset_original_room_placement_stage *output) noexcept
+{
+	if (!output || output->valid_ || !nevent_is_game_thread() ||
+	    !economic_gameplay_authority::active() || !original_reset_source(source) ||
+	    !zone_reset_room_placement_recipe_valid(frozen))
+		return false;
+	const int room = real_room(frozen.room_vnum);
+	if (!original_reset_standard_room(object, room) || object->obj_uid != frozen.root_uid ||
+	    world[room].sector_type != frozen.original_sector_type ||
+	    world[room].chance_fall != frozen.original_chance_fall ||
+	    object->z_cord != frozen.original_z_cord ||
+	    bool(IS_SET(object->extra_flags, ITEM_LEVITATES)) != frozen.original_levitates)
+		return false;
+	zone_reset_original_room_placement_stage candidate;
+	candidate.object_ = object;
+	candidate.uid_ = frozen.root_uid;
+	candidate.rnum_ = object->R_num;
+	candidate.room_ = room;
+	candidate.room_vnum_ = frozen.room_vnum;
+	candidate.sector_ = frozen.original_sector_type;
+	candidate.chance_ = frozen.original_chance_fall;
+	candidate.z_ = frozen.original_z_cord;
+	candidate.levitates_ = frozen.original_levitates;
+	candidate.drawn_ = frozen.fall_roll_drawn;
+	candidate.roll_ = frozen.fall_roll;
+	candidate.falls_ = frozen.fall_selected;
+	candidate.source_ = source;
+	candidate.valid_ = true;
+	*output = std::move(candidate);
+	return true;
+}
+bool zone_reset_original_room_placement_stage::place(
+	quest_mobile_native_item_effect &effect) noexcept
+{
+	if (!valid_ || effect.started || effect.returned || effect.succeeded || effect.periodic ||
+	    !nevent_is_game_thread() || !economic_gameplay_authority::active() || falls_ ||
+	    !original_reset_standard_room(object_, room_) || object_->obj_uid != uid_ ||
+	    object_->R_num != rnum_ || world[room_].number != room_vnum_ ||
+	    world[room_].sector_type != sector_ || world[room_].chance_fall != chance_ ||
+	    object_->z_cord != z_ ||
+	    bool(IS_SET(object_->extra_flags, ITEM_LEVITATES)) != levitates_)
+		return false;
+	try
+	{
+		effect.started = true;
+		valid_ = false; // Any begun original tail is consumed, including an exception.
+		obj_to_room_original(object_, room_, &falls_);
+		effect.succeeded = OBJ_ROOM(object_) && object_->loc.room == room_;
+		effect.returned = true;
+		return effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
 	}
 }
 
@@ -3519,6 +3687,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 	 * yank it from the object_list, very fast now
 	 */
 
+	quest_mobile_native_item_observe_extraction(obj);
 	if (object_list == obj)
 	{ /*
 	   * head of list
@@ -7498,4 +7667,94 @@ bool quest_mobile_native_local_stock::restore_enrollment(P_obj object, P_char ch
 	{
 		return false;
 	}
+}
+
+// Actual room roots terminate weight propagation at NOWHERE rather than a
+// fabricated carrier. Preserve each original negative/zero crossing.
+bool zone_reset_room_local_nesting::weight_fits(P_obj target, P_obj root, int change) noexcept
+{
+	std::array<P_obj, PLAYER_SNAPSHOT_MAX_DEPTH> path{};
+	size_t size = 0;
+	for (P_obj node = target; node;)
+	{
+		if (size == path.size())
+			return false;
+		for (size_t i = 0; i < size; ++i)
+			if (path[i] == node)
+				return false;
+		path[size++] = node;
+		if (node == root)
+		{
+			if (node->loc_p != LOC_NOWHERE || node->loc.room != NOWHERE)
+				return false;
+			break;
+		}
+		if (node->loc_p != LOC_INSIDE || !node->loc.inside)
+			return false;
+		node = node->loc.inside;
+	}
+	if (!size || path[size - 1] != root)
+		return false;
+	int64_t delta = change;
+	for (size_t i = 0; delta && i < size; ++i)
+	{
+		const int64_t before = path[i]->weight, after = before + delta;
+		if (after < INT_MIN || after > INT_MAX)
+			return false;
+		if (before < 0)
+			delta = after > 0 ? after : 0;
+		else if (after <= 0)
+			delta -= after;
+	}
+	return true;
+}
+
+zone_reset_room_nest_result zone_reset_room_local_nesting::nest(P_obj child, P_obj target,
+								P_obj root) noexcept
+{
+	using result = zone_reset_room_nest_result;
+	if (!nevent_is_game_thread() || !child || !target || !root || child->loc_p != LOC_NOWHERE ||
+	    child->loc.room != NOWHERE || child->next || child->prev || child->next_content ||
+	    child->contains || !obj_can_nest(child, target))
+		return result::refused;
+	if (container_weight_reduction_pct(target))
+		return result::original_shell_owner_required;
+	if (!weight_fits(target, root, child->weight))
+		return result::refused;
+	// All selected graph/UID/prototype proof and allocation precedes this cut.
+	// No ordinary handler tail, callback or allocation can interrupt it.
+	child->loc_p = LOC_INSIDE;
+	child->loc.inside = target;
+	native_birth_group(child, target->contains);
+	add_weight(target, child->weight);
+	return result::nested;
+}
+
+bool zone_reset_room_local_nesting::detach(P_obj child, P_obj target, P_obj root) noexcept
+{
+	if (!nevent_is_game_thread() || !child || !target || !root || child == root ||
+	    child->loc_p != LOC_INSIDE || child->loc.inside != target || child->next ||
+	    child->prev || container_weight_reduction_pct(target))
+		return false;
+	const int64_t change = -int64_t(child->weight);
+	if (change < INT_MIN || change > INT_MAX ||
+	    !weight_fits(target, root, static_cast<int>(change)))
+		return false;
+	P_obj *link = &target->contains;
+	size_t count = 0;
+	while (*link && *link != child)
+	{
+		if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return false;
+		link = &(*link)->next_content;
+	}
+	if (*link != child)
+		return false;
+	*link = child->next_content;
+	add_weight(target, static_cast<int>(change));
+	child->loc_p = LOC_NOWHERE;
+	child->loc.inside = nullptr; // Clear the full original pointer union first.
+	child->loc.room = NOWHERE;
+	child->next_content = nullptr;
+	return true;
 }

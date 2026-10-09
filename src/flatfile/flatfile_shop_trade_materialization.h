@@ -37,6 +37,20 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_p
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation_id, const shop_trade_payload &payload,
 	flatfile_shop_trade_materialization_mutation *mutation, std::string *error);
+// Accounted-only native staging and read-only preview under the caller's root
+// lock. Both custody vectors must come from the actual native participants;
+// neither values nor a recovery binding grant custody or publication authority.
+// Outputs remain unchanged on failure. The returned player revision/status and
+// saved file are unchanged; the original player owner must supply any atomic
+// target-weight body participant before the backend may enable targeted trades.
+flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_prepare_accounted(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, const shop_trade_payload &payload,
+	const std::vector<flatfile_item_ownership_record> &current_owned,
+	const std::vector<flatfile_item_ownership_record> &projected_owned,
+	const player_snapshot &current, flatfile_shop_trade_materialization_mutation *mutation,
+	player_snapshot *after, std::string *error);
+
 flatfile_shop_trade_materialization_result flatfile_item_transfer_materialization_prepare(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation_id, const item_transfer_payload &payload,

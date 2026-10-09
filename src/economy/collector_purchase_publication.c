@@ -9,7 +9,9 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "persistence/persistence_mode.h"
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+#include "flatfile/flatfile_collector_repository.h"
+#else
 #include "economy/collector_repository.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/economic_sql_collector_transaction.h"
@@ -42,7 +44,15 @@ bool same_seal(const critical_completion &a, const critical_completion &b) noexc
 	       a.durable_revision == b.durable_revision && a.result_size == b.result_size &&
 	       a.result_payload == b.result_payload;
 }
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+struct collector_native_projection
+{
+	collector_command_result result = {};
+	uint64_t player_save_revision = 0;
+};
+#else
+using collector_native_projection = collector_purchase_current_projection;
+#endif
 bool actor_matches(P_char actor, const collector_command_payload &payload,
 		   uint64_t runtime) noexcept
 {
@@ -162,7 +172,7 @@ bool singleton_census(uint64_t uid, P_char actor, bool rejection, P_obj *selecte
 	return true;
 }
 
-bool balances_match(P_char actor, const collector_purchase_current_projection &current) noexcept
+bool balances_match(P_char actor, const collector_native_projection &current) noexcept
 {
 	return actor && actor->only.pc &&
 	       actor->only.pc->wallet_revision == current.result.wallet_revision &&
@@ -177,8 +187,7 @@ bool balances_match(P_char actor, const collector_purchase_current_projection &c
 }
 
 bool registry_matches(const collector_command_payload &payload,
-		      const collector_purchase_current_projection &current, bool rejected,
-		      bool allow_prior)
+		      const collector_native_projection &current, bool rejected, bool allow_prior)
 {
 	std::vector<item_ownership_runtime_entry> entries;
 	item_ownership_runtime_entry by_uid;
@@ -209,7 +218,7 @@ bool registry_matches(const collector_command_payload &payload,
 	       cached >= entry.owner_revision && cached <= ceiling;
 }
 
-bool catalog_matches(const collector_purchase_current_projection &current)
+bool catalog_matches(const collector_native_projection &current)
 {
 	collector::record cached{};
 	std::array<uint8_t, collector::encoded_record_bytes> expected{}, actual{};
@@ -224,7 +233,7 @@ bool catalog_matches(const collector_purchase_current_projection &current)
 // Only nonphysical projections are reconciled here, under the current native
 // proof. This never constructs an object or substitutes a projection for a seal.
 bool publish_offline_projection(const collector_command_payload &payload,
-				const collector_purchase_current_projection &current, bool rejected)
+				const collector_native_projection &current, bool rejected)
 {
 	std::vector<item_ownership_runtime_entry> entries;
 	item_ownership_runtime_entry by_uid;
@@ -289,7 +298,6 @@ bool literal_matches(P_obj selected, const collector_command_payload &payload, u
 	       encoded.size() == payload.item_blob_size &&
 	       std::equal(encoded.begin(), encoded.end(), payload.item_blob.begin());
 }
-#endif
 }
 
 // Defined only in this implementation. Its pipeline friendship is the sole
@@ -301,15 +309,108 @@ class collector_purchase_publication_owner final
 		uint64_t runtime;
 		collector_purchase_publication_state &state;
 		collector_purchase_effect_fn effect;
+#ifdef __NO_MYSQL__
+		// Acquired inside native_publish after the covered-save observer. The
+		// outer context retains it through post-census, journal ACK and hold consume.
+		std::string root{};
+		flatfile_authority_lock authority{};
+#endif
 	};
 	static bool native_publish(const critical_command &command,
 				   const critical_completion &sealed, void *opaque) noexcept
 	{
 #ifdef __NO_MYSQL__
-		(void)command;
-		(void)sealed;
-		(void)opaque;
-		return false;
+		auto &attempt = *static_cast<attempt_context *>(opaque);
+		try
+		{
+			collector_command_payload payload{};
+			const char *selected_root = persistence_mode_flatfile_root();
+			if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+			    !selected_root || !*selected_root ||
+			    !collector_command_decode_payload(command, &payload) ||
+			    attempt.state.receipt_conflict || !attempt.effect)
+				return false;
+			attempt.root = selected_root;
+			std::string error;
+			if (!attempt.authority.acquire(attempt.root, &error))
+				return false;
+			flatfile_collector_purchase_projection projection;
+			if (flatfile_collector_repository_read_purchase_projection_locked(
+				    attempt.root, attempt.authority, command, &projection, &error))
+				return false;
+			// Historical completion remains distinct from today's catalog/bank clocks.
+			const auto &receipt = projection.receipt;
+			if ((committed(sealed.outcome) ?
+				     receipt.outcome != critical_apply_outcome::already_applied :
+				     receipt.outcome != critical_apply_outcome::terminal_failure) ||
+			    receipt.error_code != sealed.error_code ||
+			    receipt.failure_stage != sealed.failure_stage ||
+			    receipt.durable_revision != sealed.durable_revision ||
+			    receipt.result_size != sealed.result_size ||
+			    receipt.result_payload != sealed.result_payload)
+				return false;
+			const collector_native_projection current{
+				projection.result, projection.player_save_revision
+			};
+			P_char actor = nullptr;
+			if (!resolve_actor(payload.actor_pid, &actor))
+				return false;
+			P_obj selected = nullptr;
+			if (!actor)
+			{
+				if ((attempt.state.materializer_started &&
+				     !attempt.state.materializer_returned) ||
+				    !singleton_census(payload.selected_item_uid, nullptr, true,
+						      &selected, payload.actor_pid) ||
+				    !publish_offline_projection(payload, current,
+								sealed.error_code != 0) ||
+				    !singleton_census(payload.selected_item_uid, nullptr, true,
+						      &selected, payload.actor_pid))
+					return false;
+			}
+			else
+			{
+				if (!actor_matches(actor, payload, attempt.runtime) ||
+				    !singleton_census(payload.selected_item_uid, actor,
+						      sealed.error_code != 0, &selected) ||
+				    !registry_matches(payload, current, sealed.error_code != 0,
+						      true))
+					return false;
+				if (committed(sealed.outcome))
+				{
+					if (!attempt.effect(actor, current.result, payload,
+							    attempt.state))
+						return false;
+					actor = find_player_by_pid(payload.actor_pid);
+					if (!actor_matches(actor, payload, attempt.runtime) ||
+					    attempt.state.receipt_conflict ||
+					    !singleton_census(payload.selected_item_uid, actor,
+							      false, &selected) ||
+					    !literal_matches(selected, payload, 0) ||
+					    !registry_matches(payload, current, false, false))
+						return false;
+				}
+				else if (!currency_transaction_publish_balances(
+						 actor, payload.account_name.data(),
+						 payload.racewar, current.result.wallet,
+						 current.result.bank,
+						 current.result.wallet_revision,
+						 current.result.bank_revision))
+					return false;
+				actor = find_player_by_pid(payload.actor_pid);
+				if (!actor_matches(actor, payload, attempt.runtime) ||
+				    !balances_match(actor, current))
+					return false;
+			}
+			selected_root = persistence_mode_flatfile_root();
+			return !attempt.state.receipt_conflict && selected_root &&
+			       attempt.root == selected_root &&
+			       attempt.authority.matches(attempt.root);
+		}
+		catch (...)
+		{
+			return false;
+		}
 #else
 		auto &attempt = *static_cast<attempt_context *>(opaque);
 		try
@@ -460,7 +561,11 @@ class collector_purchase_publication_owner final
 		try
 		{
 			if (!nevent_is_game_thread() ||
+#ifndef __NO_MYSQL__
 			    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#else
+			    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#endif
 			    !critical_command_envelope_valid(command) ||
 			    !command.publication_required ||
 			    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
@@ -530,8 +635,9 @@ class collector_purchase_publication_owner final
 critical_submit_result collector_purchase_submit_for_publication(critical_command command)
 {
 #ifdef __NO_MYSQL__
-	(void)command;
-	return critical_submit_result::unavailable;
+	if (!nevent_is_game_thread() || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return critical_submit_result::unavailable;
+	return collector_purchase_submit_owned(std::move(command));
 #else
 	if (!nevent_is_game_thread() || persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return critical_submit_result::unavailable;

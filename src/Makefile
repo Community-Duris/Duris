@@ -378,16 +378,21 @@ OBJS =  $(SHIP_OBJS) \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/flatfile_season_state.o \
 				 flatfile/quest_mobile_native_flatfile.o \
 				 flatfile/flatfile_accounting_store.o \
 				 flatfile/flatfile_accounting_authority.o \
 				 flatfile/flatfile_accounting_bank_transaction.o \
+				 flatfile/flatfile_accounting_shop_transaction.o \
+				 flatfile/flatfile_shop_native_checkpoint.o \
 				 flatfile/flatfile_accounting_coin_transaction.o \
 				 flatfile/flatfile_accounting_pile_state.o \
 				 flatfile/flatfile_accounting_pile_baseline.o \
 				 flatfile/flatfile_accounting_dispatch.o \
 				 flatfile/flatfile_accounting_baseline.o \
 				 flatfile/flatfile_accounting_lifecycle_transaction.o \
+				 flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.o \
+				 flatfile/flatfile_accounting_zone_reset_item_transaction.o \
 				 flatfile/flatfile_economic_runtime.o \
 				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
@@ -443,11 +448,20 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/economic_sql_accounting_lifecycle_transaction.o \
 				 persistence/economic_sql_source_snapshot.o \
 				 economy/economic_sql_source_normalize.o \
+				 economy/economic_initialized_world_money_correspondence.o \
+				 economy/economic_sql_runtime_cache_correspondence.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
 				 persistence/held_retirement_sql_observer.o \
 				 persistence/economic_sql_native_mobile_birth_transaction.o \
+				 persistence/economic_sql_native_mobile_birth_shared_shop_observation.o \
+				 persistence/economic_sql_zone_reset_item_transaction.o \
+				 persistence/zone_reset_item_origin_sql.o \
+				 persistence/zone_reset_item_terminal_sql.o \
 				 persistence/sql_room_item_payload.o \
+				 persistence/sql_room_creation_source.o \
+				 persistence/sql_room_creation_correspondence.o \
+				 persistence/zone_reset_creation_budget.o \
 				 persistence/sql_room_coin_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
@@ -500,6 +514,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/auction_native_command_context.o \
 				 economy/auction_recovery_context.o \
 				 economy/auction_native_publication.o \
+				 economy/auction_player_forest.o \
 				 economy/auction_repository.o \
 				 economy/auction_accounting.o \
 				 economy/auction_money_claim_accounting.o \
@@ -597,13 +612,28 @@ OBJS =  $(SHIP_OBJS) \
 				 world/quest_mobile_native_birth.o \
 				 world/quest_mobile_published_saved_forest.o \
 				 world/quest_mobile_published_world_owner.o \
+				 world/economic_initialized_world_snapshot.o \
+				 world/economic_initialized_world_owner.o \
+				 world/zone_reset_room_publication.o \
+	world/zone_reset_item_owner.o \
 				 persistence/quest_mobile_published_world_sql.o \
 				 world/native_mobile_birth_artifact.o \
 				 world/native_mobile_birth_procedure.o \
 				 world/native_mobile_birth_reset_tail.o \
 				 economy/native_mobile_birth_constructor_recipe.o \
+				 economy/shop_trade_flat_native_checkpoint.o \
+				 economy/native_mobile_birth_cash_role_recipe.o \
+				 economy/native_mobile_birth_cash_role_capture.o \
+				 economy/native_mobile_birth_cash_role_command.o \
+				 economy/native_mobile_birth_cash_role_accounting.o \
+				 economy/native_mobile_birth_cash_role_result.o \
 				 economy/native_mobile_birth_recipe.o \
 				 economy/native_mobile_birth_recovery.o \
+				 economy/zone_reset_item_command.o \
+				 economy/zone_reset_item_accounting.o \
+				 economy/zone_reset_item_origin.o \
+				 economy/zone_reset_item_recovery.o \
+				 economy/zone_reset_item_source_proof.o \
 	world/native_quest_recovery_context.o \
 				 world/quest_mobile_native_reference.o \
 				 world/quest_mobile_native_binding.o \
@@ -775,6 +805,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/timers.o \
 				 cmd/track.o \
 				 economy/tradeskill.o \
+				 economy/smith_native_producer.o \
 				 combat/trap.o \
 				 kingdom/kingdom.o \
 				 kingdom/kingdom_geometry.o \

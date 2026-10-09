@@ -90,6 +90,7 @@
 #include "item/item_transfer_repository.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/sql_room_item_payload.h"
+#include "world/zone_reset_room_publication.h"
 #include "player/player_snapshot_capture.h"
 
 // external tables
@@ -10245,6 +10246,9 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 	if (!payload_transaction.starting() || (payload_storage && !sql_begin_transaction()))
 		return false;
 	std::map<int, shop_item_runtime_image> payload_images;
+	// Value-only custody captured with the exact original keeper image. No
+	// runtime entry is published until every keeper stage and SQL cleanup pass.
+	std::vector<item_ownership_runtime_entry> payload_custody;
 	// query 1: load all shopkeepers
 	MYSQL_RES *result =
 		db_query("SELECT shop_id, id, mob_vnum, room_vnum, cash FROM shopkeepers "
@@ -10316,8 +10320,9 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		if (payload_storage)
 		{
 			shop_item_runtime_image image;
+			std::vector<item_ownership_runtime_entry> custody;
 			if (!shop_item_runtime_keeper_image(DB, shopkeeper_id, shop_nr, mob_vnum,
-							    &image))
+							    &image, &custody))
 			{
 				mysql_free_result(result);
 				discard_shopkeeper_restore_stage(keepers, all_items, false);
@@ -10325,7 +10330,17 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			}
 			try
 			{
+				if (custody.size() >
+				    payload_custody.max_size() - payload_custody.size())
+				{
+					mysql_free_result(result);
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					errno = E2BIG;
+					return false;
+				}
 				payload_images.emplace(shopkeeper_id, std::move(image));
+				payload_custody.insert(payload_custody.end(), custody.begin(),
+						       custody.end());
 			}
 			catch (const std::bad_alloc &)
 			{
@@ -10848,6 +10863,15 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 
 	// Explicit same-session rollback/idle proof precedes any live placement.
 	if (!payload_transaction.finish())
+	{
+		discard_shopkeeper_restore_stage(keepers, all_items, true);
+		return false;
+	}
+	// One atomic runtime projection of the proved native forest. The original
+	// primitive rejects duplicate/newer/conflicting UIDs and owner counters,
+	// and rolls back allocation failure. Legacy empty images remain no-ops.
+	if (!item_ownership_runtime_hydrate_many_atomic(payload_custody.data(),
+							payload_custody.size()))
 	{
 		discard_shopkeeper_restore_stage(keepers, all_items, true);
 		return false;
@@ -11802,6 +11826,8 @@ class sql_room_item_stage_guard
 static bool sql_room_item_publish(const sql_room_item_graph &graph,
 				  std::unordered_set<uint64_t> *published)
 {
+	if (graph.creation_origin)
+		return false; // Creation must use the actual locked SQL owner below.
 	if (!published || graph.items.empty() || graph.items.size() != graph.identities.size())
 		return false;
 	const int room = real_room(static_cast<int>(graph.owner.id));
@@ -11943,41 +11969,115 @@ static bool sql_room_item_publish(const sql_room_item_graph &graph,
 	return true;
 }
 
+// Consumed or uncertain factory metadata belongs to the process/world lifetime.
+// In particular a failed SQL cleanup must not destroy an admitted stage. Only
+// successful publication followed by verified original-session rollback erases it.
+static std::unordered_map<uint64_t, std::unique_ptr<zone_reset_room_publication_stage>> &
+sql_room_creation_retained_stages()
+{
+	static auto *stages =
+		new std::unordered_map<uint64_t, std::unique_ptr<zone_reset_room_publication_stage>>;
+	return *stages;
+}
+
 static bool sql_restore_exact_room_items(std::unordered_set<uint64_t> *published, bool *available)
 {
-	if (sql_in_transaction() || !sql_room_item_payload_available(DB, available))
+	MYSQL *const original = DB;
+	if (!original || sql_in_transaction() || player_sql_idle_error(original) ||
+	    !sql_room_item_payload_available(original, available))
 		return false;
 	if (!*available)
 		return true;
+	const auto session = mysql_thread_id(original);
+	bool transaction_clean = false;
+	const auto read_transaction = [&](const auto &read)
+	{
+		transaction_clean = false;
+		if (DB != original || mysql_thread_id(original) != session ||
+		    player_sql_idle_error(original) || sql_in_transaction())
+			return false;
+		player_sql_cleanup proof;
+		bool accepted = false, clean = false;
+		{
+			player_sql_transaction_cleanup cleanup(original, proof);
+			cleanup.starting();
+			try
+			{
+				if (!mysql_real_query(original, "START TRANSACTION", 17) &&
+				    cleanup.same_session() &&
+				    (original->server_status & SERVER_STATUS_IN_TRANS))
+				{
+					in_transaction = true;
+					accepted = read();
+				}
+			}
+			catch (...)
+			{
+				accepted = false;
+			}
+			cleanup.finish();
+			clean = DB == original && cleanup.same_session() &&
+				proof.rollback_confirmed && !proof.cleanup_error &&
+				proof.disposition == player_sql_cleanup_disposition::idle_verified;
+		}
+		// The real cleanup owner unwinds before retirement. This also handles
+		// a successful START whose response was lost; a legacy boolean cannot.
+		if (!clean && DB == original)
+			(void)sql_retire_main_save_connection(original);
+		if (clean || DB != original)
+			in_transaction = false;
+		transaction_clean = clean;
+		return accepted && clean;
+	};
 	std::vector<uint64_t> roots;
-	if (!sql_begin_transaction())
-		return false;
-	const bool enumerated = sql_room_item_payload_roots(DB, &roots);
-	const bool released = sql_rollback();
-	if (!enumerated || !released)
+	if (!read_transaction([&]() { return sql_room_item_payload_roots(original, &roots); }))
 		return false;
 	for (uint64_t uid : roots)
 	{
-		if (!sql_begin_transaction())
-			return false;
-		bool restored = false;
-		try
-		{
-			sql_room_item_graph graph;
-			const bool payload_read = sql_room_item_payload_read(DB, uid, &graph);
+		bool creation = true; // Unknown classification must remain fenced.
+		const bool restored = read_transaction(
+			[&]()
+			{
+				sql_room_item_graph graph;
+				bool may_need_owner = true;
+				const bool classified = sql_room_item_payload_classify_creation(
+					original, uid, &may_need_owner);
+				creation = !classified || may_need_owner ||
+					   sql_room_creation_retained_stages().count(uid) != 0;
+				const bool payload_read =
+					classified &&
+					sql_room_item_payload_read(original, uid, &graph);
 #ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
-			printf("ROOM_ITEM_PAYLOAD_STAGE stage=read ok=%u uid=%llu\n",
-			       static_cast<unsigned int>(payload_read),
-			       static_cast<unsigned long long>(uid));
+				printf("ROOM_ITEM_PAYLOAD_STAGE stage=read ok=%u uid=%llu\n",
+				       static_cast<unsigned int>(payload_read),
+				       static_cast<unsigned long long>(uid));
 #endif
-			restored = payload_read && sql_room_item_publish(graph, published);
-		}
-		catch (const std::bad_alloc &)
-		{
-			restored = false;
-		}
-		if (!sql_rollback())
+				creation = creation ||
+					   (payload_read && graph.creation_origin.has_value());
+				if (creation)
+				{
+					// The classifier only selects the owner. The driver authenticates
+					// its own current graph and terminal evidence in this exact session.
+					if (!classified || !payload_read)
+						return false;
+					auto &stage = sql_room_creation_retained_stages()[uid];
+					if (!stage)
+						stage = std::make_unique<
+							zone_reset_room_publication_stage>();
+					return zone_reset_room_publication_owner::publish_locked(
+						original, uid, published, stage.get());
+				}
+				return payload_read && sql_room_item_publish(graph, published);
+			});
+		if (!transaction_clean || DB != original || mysql_thread_id(original) != session ||
+		    player_sql_idle_error(original) || sql_in_transaction())
 			return false;
+		if (creation)
+		{
+			if (!restored)
+				return false; // Retain real stages; never continue to legacy recovery.
+			sql_room_creation_retained_stages().erase(uid);
+		}
 		if (!restored)
 			logit(LOG_SYS,
 			      "sql_restore_saved_items: exact room graph refused; immutable payload and custody retained");

@@ -1,4 +1,7 @@
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
+#include "persistence/critical_command_coordinator.h"
+#include "world/economic_initialized_world_owner.h"
+#include "economy/economic_initialized_world_money_correspondence.h"
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
 #include "economy/native_mobile_birth_accounting.h"
 #include "economy/economic_baseline_command.h"
@@ -6,11 +9,15 @@
 #include "economy/auction_command.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_sql_source_normalize.h"
+#include "economy/economic_sql_runtime_cache_correspondence.h"
 #include "persistence/economic_sql_baseline_transaction.h"
 #include "persistence/economic_sql_auction_source_claim.h"
 #include "persistence/economic_accounting_repository.h"
 #include "persistence/economic_sql_pending_claim_source.h"
+#include "persistence/sql_room_creation_source.h"
+#include "persistence/zone_reset_creation_budget.h"
 #include "world/vnum.obj.h"
+#include "player/player_sql_transaction_cleanup.h"
 #include <algorithm>
 #include <cerrno>
 #include <cctype>
@@ -63,6 +70,32 @@ unsigned int economic_sql_accounting_lifecycle_transaction::prepare_runtime_boot
 unsigned int economic_sql_accounting_lifecycle_transaction::finish_runtime_boot(
 	MYSQL *, const economic_sql_lifecycle_guard &, economic_sql_runtime_boot_selection &,
 	bool *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_aborted_runtime_projection(
+	MYSQL *, economic_sql_cutover_transaction_owner &,
+	const economic_sql_runtime_boot_selection &) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_returned_runtime_projection(
+	MYSQL *, const economic_sql_lifecycle_guard &,
+	const economic_sql_runtime_boot_selection &) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_runtime_return_projection(
+	MYSQL *, economic_sql_cutover_transaction_owner *, const economic_sql_lifecycle_guard *,
+	const economic_sql_runtime_boot_selection &) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_initialized_runtime_sources(
+	MYSQL *, economic_sql_cutover_transaction_owner &,
+	const economic_sql_runtime_boot_selection &, const economic_sql_lifecycle_request &,
+	const economic_sql_activation_evidence &,
+	economic_sql_initialized_activation_verifier) noexcept
 {
 	return ENOTSUP;
 }
@@ -512,7 +545,8 @@ std::vector<holding_source> read_native_holdings(MYSQL *connection,
 		if (native.account_kind == economic_account_kind::bank)
 		{
 			require(holding.native_id <= UINT32_MAX && holding.native_context >= 0 &&
-					holding.native_context <= 1 && source.cells.size() == 8,
+					holding.native_context <= INT8_MAX &&
+					source.cells.size() == 8,
 				EINVAL);
 			require(source.cells[1] && !source.cells[1]->empty(), EINVAL);
 			native.name = *source.cells[1];
@@ -1149,9 +1183,10 @@ void verify_retired_escrow(MYSQL *connection, const stored_installation &stored,
 	require(revision == current, EILSEQ);
 }
 
-std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_installation &stored,
-					      const authenticated_opening &opening,
-					      const std::vector<holding_source> &holdings)
+std::vector<uint64_t> verify_current_mappings(
+	MYSQL *connection, const stored_installation &stored, const authenticated_opening &opening,
+	const std::vector<holding_source> &holdings,
+	std::vector<economic_sql_native_mobile_wallet_lifetime> *retained_native = nullptr)
 {
 	// Authenticate birth inboxes before mapping/current-native locks. These
 	// wallets form a separate lifetime namespace and never enter PID exports.
@@ -1224,7 +1259,8 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 				integer<uint16_t>(record[4]) == native_locator(kind) &&
 				!critical_operation_id_is_zero(creating),
 			EILSEQ);
-		require(kind == economic_account_kind::bank ? context <= 1 : context == 0, EILSEQ);
+		require(kind == economic_account_kind::bank ? context <= INT8_MAX : context == 0,
+			EILSEQ);
 		const bool original = creating.bytes == stored.operation.bytes;
 		const bool money = kind == economic_account_kind::auction_escrow ||
 				   kind == economic_account_kind::pending_claim;
@@ -1387,6 +1423,10 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 		live.erase(found);
 	}
 	require(live.empty(), EILSEQ);
+	// Move the genuine current lifetime proof only after every mapping passes.
+	// Earlier callers keep their original behavior and no lifetime is re-queried.
+	if (retained_native)
+		*retained_native = std::move(native_wallets);
 	return ids;
 }
 
@@ -1637,9 +1677,319 @@ void verify_baseline_receipt(MYSQL *connection, const stored_installation &store
 			integer<uint64_t>(receipt[3]) == 1 && integer<uint64_t>(receipt[4]) == 1,
 		EILSEQ);
 }
+// This is a persisted correspondence prerequisite, never a complete live/world
+// census or original provenance admission. Consume all rows/counts, not capped
+// diagnostic details. The independent verifier and original authority stay separate.
+void reject_persisted_correspondence_defects(const economic_sql_persisted_correspondence &report)
+{
+	require(report.multiply_matched_active_custody_indices.empty(), EILSEQ);
+	require(report.unmatched_active_custody_indices.empty(), ENODATA);
+	using physical_issue = economic_sql_physical_issue;
+	for (size_t index = 0; index < report.physical.issue_counts.size(); ++index)
+	{
+		const auto kind = static_cast<physical_issue>(index);
+		// The eight-source report cannot count room/auction/collector matches.
+		// Only the complete union above can resolve this provider-local finding.
+		if (kind == physical_issue::unmatched_active_custody)
+			continue;
+		const bool incomplete = kind == physical_issue::unresolved_owner ||
+					kind == physical_issue::missing_uid ||
+					kind == physical_issue::unresolved_parent ||
+					kind == physical_issue::unknown_equipment ||
+					kind == physical_issue::unmatched_physical;
+		require(!report.physical.issue_counts[index], incomplete ? ENODATA : EILSEQ);
+	}
+	constexpr uint32_t room_classification = SQL_ROOM_SOURCE_CURRENT | SQL_ROOM_SOURCE_HISTORY |
+						 SQL_ROOM_SOURCE_OLD_SEASON |
+						 SQL_ROOM_SOURCE_MOVED_FROM_ROOM;
+	require(report.room.season_active && report.room.current_season, ENODATA);
+	require(!report.room.native_root_limit_exceeded, E2BIG);
+	// Retain the original drop-reader evidence. Only independently proven
+	// creation literals can replace its provider-local false classification.
+	require(report.creation_observed, ENODATA);
+	require(!report.creation.global_flags, ENODATA);
+	require(report.creation.season_active &&
+			report.creation.current_season == report.room.current_season,
+		ENODATA);
+	require(!report.creation.native_root_limit_exceeded, E2BIG);
+	for (const auto &family : report.creation.families)
+		require(!family.flags, ENODATA);
+	std::set<size_t> superseded;
+	for (const auto index : report.creation.superseded_room_witness_indices)
+		require(index < report.room.witnesses.size() && superseded.insert(index).second,
+			EILSEQ);
+	std::set<std::tuple<uint64_t, uint64_t, uint64_t>> creation_graphs;
+	for (const auto &graph : report.creation.graphs)
+	{
+		require(graph.valid && !graph.witness_indices.empty(), ENODATA);
+		require(creation_graphs
+				.emplace(graph.root_item_uid, graph.room, graph.owner_revision)
+				.second,
+			EILSEQ);
+	}
+	for (const auto &witness : report.creation.witnesses)
+		require(!(witness.room.flags & ~room_classification), ENODATA);
+	for (size_t index = 0; index < report.room.witnesses.size(); ++index)
+		if (!superseded.count(index))
+			require(!(report.room.witnesses[index].flags & ~room_classification),
+				ENODATA);
+	for (const auto &graph : report.room.graphs)
+	{
+		const bool creation_replaces =
+			!graph.witness_indices.empty() &&
+			std::all_of(graph.witness_indices.begin(), graph.witness_indices.end(),
+				    [&](size_t index) { return superseded.count(index) != 0; }) &&
+			creation_graphs.count(
+				{ graph.root_item_uid, graph.room, graph.owner_revision });
+		require(graph.valid || creation_replaces, EILSEQ);
+	}
+
+	using auction_issue = auction_physical_issue;
+	for (size_t index = 0; index < report.auction.issue_counts.size(); ++index)
+	{
+		const auto kind = static_cast<auction_issue>(index);
+		// Unknown legacy/original origins are not physical contradictions or a
+		// new accounting-command admission requirement for pre-accounting data.
+		// Ambiguous decoder refusal is scoped to current slots below.
+		if (kind == auction_issue::original_provenance_unknown ||
+		    kind == auction_issue::opaque_literal ||
+		    kind == auction_issue::unbound_listing ||
+		    kind == auction_issue::generic_proof_unknown ||
+		    kind == auction_issue::literal_decode_refused)
+			continue;
+		require(!report.auction.issue_counts[index],
+			(kind == auction_issue::missing_literal ||
+			 kind == auction_issue::missing_identity) ?
+				ENODATA :
+			kind == auction_issue::native_bound_refused ? E2BIG :
+								      EILSEQ);
+	}
+	require(report.auction.malformed_rows.empty() && report.auction.extra_custody.empty(),
+		EILSEQ);
+	require(report.auction.unmatched_auction_custody.empty() &&
+			report.auction.missing_literal_events.empty(),
+		ENODATA);
+	// Bound work by the captured rows, rather than rescanning every identity
+	// for every slot. The source ceilings already bound both vector lengths.
+	std::vector<size_t> legacy_matches(report.auction.slots.size());
+	for (const auto &witness : report.auction.legacy_identities)
+	{
+		require(witness.slot_index < legacy_matches.size(), EILSEQ);
+		if (witness.current_field_correspondence)
+			++legacy_matches[witness.slot_index];
+	}
+	for (size_t slot_index = 0; slot_index < report.auction.slots.size(); ++slot_index)
+	{
+		const auto &slot = report.auction.slots[slot_index];
+		require(slot.claimed.has_value(), ENODATA);
+		if (*slot.claimed)
+			continue; // Claimed retained revisions are historical, never occupancy.
+		if (!slot.node_count)
+		{
+			// A v1 native receipt can prove singleton custody without decoded
+			// object properties. Count only the distinct, exact union provider;
+			// opaque bytes and original origin remain unknown, not repaired.
+			require(legacy_matches[slot_index] == 1, ENODATA);
+			continue;
+		}
+		require(slot.node_count && slot.node_begin <= report.auction.nodes.size() &&
+				slot.node_count <= report.auction.nodes.size() - slot.node_begin,
+			ENODATA);
+		for (size_t offset = 0; offset < slot.node_count; ++offset)
+			require(report.auction.nodes[slot.node_begin + offset]
+					.current_field_correspondence,
+				ENODATA);
+	}
+	for (const auto &pickup : report.auction.pickups)
+		require(pickup.retrieved && *pickup.retrieved == 1, ENODATA);
+	// Retrieved opaque legacy pickups stay history; no UID is invented from text.
+	// ANF2/EAI/EAP and retained_command_proof_known remain unknown in these reports.
+	require(report.collector.catalog_valid && report.collector.correspondence_valid, ENODATA);
+	for (const auto &listing : report.collector.listings)
+		require(!listing.findings && listing.correspondence_valid, ENODATA);
+	for (const auto &death : report.collector.deaths)
+		require(!death.findings, ENODATA);
+	for (const auto &custody : report.collector.custody)
+		require(!custody.findings, ENODATA);
+}
+
+// Join only the real native participant captured above in this same RR cut.
+// Its borrowed references address the immutable source2 rows; no historical
+// origin, cash-unknown value or source2 wire/hash contract is manufactured.
+void join_current_native_catalog(const economic_sql_physical_source_snapshot &base,
+				 economic_sql_persisted_correspondence &report,
+				 quest_mobile_native_sql_catalog &&catalog)
+{
+	require(catalog.physical_digest == base.digest, EILSEQ);
+	for (size_t index = 0; index < catalog.issue_counts.size(); ++index)
+	{
+		// Historical v1 unknown cash alone is not missing item identity.
+		if ((uint64_t{ 1 } << index) == quest_mobile_native_catalog_flags::cash_unknown)
+			continue;
+		require(!catalog.issue_counts[index], ENODATA);
+	}
+	require(catalog.extra_custody.empty() && catalog.unmatched_active_custody.empty() &&
+			catalog.malformed_custody.empty(),
+		ENODATA);
+	const auto &items = report.physical.source2.items;
+	require(report.custody.size() == items.size(), EILSEQ);
+	std::map<size_t, size_t> by_raw_row;
+	for (size_t index = 0; index < items.size(); ++index)
+		require(items[index].source.table == 11 &&
+				by_raw_row.emplace(items[index].source.row, index).second &&
+				report.custody[index].custody_index == index,
+			EILSEQ);
+	for (size_t index = 0; index < catalog.items.size(); ++index)
+	{
+		const auto &witness = catalog.items[index];
+		require(witness.current_field_correspondence && witness.custody &&
+				witness.catalog_row < catalog.catalog.size(),
+			ENODATA);
+		const auto &native = catalog.catalog[witness.catalog_row];
+		require(native.image && native.image->state == quest_mobile_lifetime_state::live &&
+				witness.image_item < native.image->items.size(),
+			EILSEQ);
+		const auto &literal = native.image->items[witness.image_item];
+		const auto found = by_raw_row.find(witness.custody->row);
+		require(found != by_raw_row.end() &&
+				witness.custody->row < base.source2.tables[11].rows.size() &&
+				witness.custody->digest ==
+					base.source2.tables[11].rows[witness.custody->row].digest,
+			EILSEQ);
+		const auto &item = items[found->second].item;
+		require(item.uid == literal.object_uid &&
+				item.position.state == item_custody_state::active &&
+				item.position.owner.type == item_owner_type::native_mobile &&
+				item.position.owner.id ==
+					native.image->reference.mobile_instance_id &&
+				item.position.owner.context_id == 0,
+			EILSEQ);
+		report.custody[found->second].matches.push_back(
+			{ economic_sql_persisted_provider::native_mobile_literal, index });
+	}
+	// Retain every raw/history row and all original provider-local diagnostics.
+	// Recompute only the complete union disposition after adding native matches.
+	report.native_mobile = std::move(catalog);
+	report.unmatched_active_custody_indices.clear();
+	report.multiply_matched_active_custody_indices.clear();
+	for (size_t index = 0; index < items.size(); ++index)
+		if (items[index].item.position.state == item_custody_state::active)
+		{
+			if (report.custody[index].matches.empty())
+				report.unmatched_active_custody_indices.push_back(index);
+			else if (report.custody[index].matches.size() > 1)
+				report.multiply_matched_active_custody_indices.push_back(index);
+		}
+}
+
+// This checks the complete current cache against this same persisted cut.
+// The serialized maintenance owner excludes writers throughout capture; real
+// current owner clocks are observed separately from older item-entry clocks.
+// Missing cache for offline/unloaded durable holdings is not absence evidence.
+// This is a prerequisite only: complete initialized-world/literal/cash and
+// original release qualification remain with their respective owners.
+void reject_runtime_cache_correspondence(const economic_sql_persisted_correspondence &persisted,
+					 const economic_sql_source_limits &limits)
+{
+	std::vector<item_ownership_runtime_entry> cache;
+	const auto captured = item_ownership_runtime_snapshot_all_active(
+		static_cast<size_t>(limits.maximum_rows), &cache);
+	require(!captured, captured);
+	std::vector<std::optional<uint64_t>> clocks;
+	clocks.reserve(cache.size());
+	for (const auto &entry : cache)
+	{
+		uint64_t revision = 0;
+		if (item_ownership_runtime_peek_owner_revision(entry.owner, &revision))
+			clocks.emplace_back(revision);
+		else
+			clocks.emplace_back(std::nullopt);
+	}
+	economic_sql_runtime_cache_correspondence report;
+	const auto compared =
+		economic_sql_compare_runtime_cache(cache, clocks, persisted, limits, 512, &report);
+	require(compared == economic_accounting_error::ok,
+		compared == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+	// All findings count; truncating stored detail cannot clear a mismatch.
+	require(report.findings.empty() &&
+			std::all_of(report.issue_counts.begin(), report.issue_counts.end(),
+				    [](uint64_t count) { return count == 0; }),
+		ENODATA);
+}
+
+struct complete_activation_capture
+{
+	economic_sql_physical_source_snapshot physical;
+	sql_room_item_source_snapshot room;
+	sql_room_creation_source_snapshot creation;
+	economic_sql_persisted_correspondence correspondence;
+	zone_reset_creation_budget_totals totals;
+	std::vector<holding_source> holdings;
+	std::vector<economic_sql_native_mobile_wallet_lifetime> native_wallets;
+};
+// Own the complete existing SQL cut beside its indexed reports. It never starts
+// or ends the caller's transaction and does not acquire world/cutover authority.
+complete_activation_capture
+capture_complete_activation_sources(MYSQL *connection, const economic_sql_source_limits &limits)
+{
+	complete_activation_capture complete;
+	const auto session = mysql_thread_id(connection);
+	auto &base = complete.physical;
+	auto captured =
+		economic_sql_capture_physical_sources_in_transaction(connection, limits, &base);
+	require(!captured, captured);
+	auto &supplement = complete.room;
+	captured = sql_room_item_payload_capture_sources_in_transaction(connection, limits, base,
+									&supplement, 512);
+	require(!captured, captured);
+	auto &creation = complete.creation;
+	captured = sql_room_creation_source_capture_in_transaction(connection, limits, base,
+								   supplement, &creation);
+	require(!captured, captured);
+	auto &report = complete.correspondence;
+	const auto status = economic_sql_normalize_persisted_correspondence(
+		base, supplement, creation, limits, 512, &report);
+	require(status == economic_accounting_error::ok,
+		status == economic_accounting_error::capacity	? ENOMEM :
+		status == economic_accounting_error::unresolved ? ENODATA :
+								  EILSEQ);
+	economic_sql_source_limits native_limits;
+	const auto budget_prepared = zone_reset_creation_budget_prepare(base, supplement, creation,
+									limits, &native_limits);
+	require(!budget_prepared, budget_prepared);
+	quest_mobile_native_sql_catalog native;
+	const auto native_captured = quest_mobile_native_sql_capture_catalog_in_transaction(
+		connection, base, supplement, native_limits, &native);
+	require(!native_captured, native_captured);
+	require(native.original_session == session, ENOTCONN);
+	auto &combined = complete.totals;
+	const auto budget_validated = zone_reset_creation_budget_validate_native(
+		base, supplement, creation, limits, native, &combined);
+	require(!budget_validated, budget_validated);
+	join_current_native_catalog(base, report, std::move(native));
+	reject_cutover_defects(report.physical.source2);
+	reject_persisted_correspondence_defects(report);
+	reject_runtime_cache_correspondence(report, limits);
+	require(mysql_thread_id(connection) == session &&
+			(connection->server_status & SERVER_STATUS_IN_TRANS),
+		ENOTCONN);
+	complete.holdings = read_native_holdings(connection, base.source2, report.physical.source2);
+	require(mysql_thread_id(connection) == session &&
+			(connection->server_status & SERVER_STATUS_IN_TRANS),
+		ENOTCONN);
+	// Keep the original verifier input/hash/baseline contracts. EPH1/room
+	// hashes bind this one cut only; they must never replace ESN1-5 or ESC2.
+	return complete;
+}
 std::pair<economic_sql_source_snapshot, std::vector<holding_source>>
 capture_current_holdings(MYSQL *connection, bool reject_defects)
 {
+	if (reject_defects)
+	{
+		auto captured = capture_complete_activation_sources(connection, {});
+		// Preserve the established source2/hash/holdings contract for old callers.
+		return { std::move(captured.physical.source2), std::move(captured.holdings) };
+	}
 	economic_sql_source_snapshot snapshot;
 	const auto captured =
 		economic_sql_capture_sources_in_transaction(connection, {}, &snapshot);
@@ -1767,9 +2117,30 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 				0,
 			EBUSY);
 		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED");
-		economic_sql_source_snapshot snapshot;
-		const auto captured = economic_sql_capture_sources(connection, {}, &snapshot);
-		require(captured == 0, captured);
+		// Maintenance retains its writer fence across capture and installation.
+		// Borrow the complete persisted prerequisite in one owned RR transaction.
+		// READ WRITE permits the original holdings reader's shared locks; this
+		// capture executes only reads and rolls back before any install writes.
+		// The public owning READ ONLY source2 reader remains unchanged.
+		auto [snapshot, holdings] = [&]()
+		{
+			execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+			const auto session = mysql_thread_id(connection);
+			// Arm cleanup before START: its acknowledgement may be lost.
+			transaction capture{ connection, session, true };
+			execute(connection,
+				"START TRANSACTION WITH CONSISTENT SNAPSHOT, READ WRITE");
+			auto cut = capture_current_holdings(connection, true);
+			require(mysql_thread_id(connection) == session &&
+					(connection->server_status & SERVER_STATUS_IN_TRANS),
+				ENOTCONN);
+			execute(connection, "ROLLBACK");
+			capture.started = false;
+			require(mysql_thread_id(connection) == session &&
+					!(connection->server_status & SERVER_STATUS_IN_TRANS),
+				ENOTCONN);
+			return cut;
+		}();
 		economic_sql_normalized_sources normalized;
 		const auto normalized_result =
 			economic_sql_normalize_sources(snapshot, 512, &normalized);
@@ -1777,7 +2148,6 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 			normalized_result == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
 		reject_cutover_defects(normalized);
 		const auto opening_items = read_opening_items(snapshot, normalized);
-		const auto holdings = read_native_holdings(connection, snapshot, normalized);
 		const bool money_opening = std::any_of(
 			holdings.begin(), holdings.end(),
 			[](const auto &h)
@@ -2436,4 +2806,286 @@ unsigned int economic_sql_accounting_lifecycle_transaction::finish_runtime_boot(
 		return EIO;
 	}
 }
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_aborted_runtime_projection(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &retained,
+	const economic_sql_runtime_boot_selection &original) noexcept
+{
+	return verify_runtime_return_projection(connection, &retained, nullptr, original);
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_initialized_runtime_sources(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &retained,
+	const economic_sql_runtime_boot_selection &original,
+	const economic_sql_lifecycle_request &request,
+	const economic_sql_activation_evidence &evidence,
+	economic_sql_initialized_activation_verifier verify) noexcept
+{
+	try
+	{
+		require(connection && retained.connection_ == connection &&
+				retained.runtime_handoff_ && original.prepared_ &&
+				original.finished_ && original.selected_ &&
+				original.session_ == retained.session_ &&
+				original.authority_id_ == retained.sql_authority_id_ &&
+				retained.is_valid(),
+			EPERM);
+		require(verify && evidence.route_count &&
+				evidence.route_count == evidence.verified_route_count &&
+				!evidence.unclassified_route_count &&
+				digest_nonzero(evidence.manifest_digest) &&
+				digest_nonzero(evidence.audit_digest),
+			ENODATA);
+		const auto selected = load_verified_runtime_selection(connection);
+		require(selected && selected->lineage.bytes == original.lineage_.bytes &&
+				selected->epoch.bytes == original.epoch_.bytes &&
+				selected->installation.baseline_operation->bytes ==
+					original.baseline_.bytes &&
+				request.lineage.bytes == original.lineage_.bytes &&
+				request.epoch.bytes == original.epoch_.bytes &&
+				request.operation_id.bytes ==
+					selected->installation.operation.bytes &&
+				selected->installation.request_hash ==
+					request_digest(request, selected->opening.money),
+			ESTALE);
+		const auto active = load_activation(connection, original.lineage_);
+		require(active.exists && active.state == 1 &&
+				active.epoch.bytes == request.epoch.bytes &&
+				active.installation.bytes == request.operation_id.bytes &&
+				active.baseline.bytes == original.baseline_.bytes &&
+				active.manifest_digest == evidence.manifest_digest &&
+				active.audit_digest == evidence.audit_digest &&
+				active.route_count == evidence.route_count &&
+				active.verified_route_count == evidence.verified_route_count &&
+				!active.unclassified_route_count,
+			ESTALE);
+		struct context
+		{
+			MYSQL *connection;
+			economic_sql_cutover_transaction_owner &owner;
+			const economic_sql_lifecycle_request &request;
+			const economic_sql_activation_evidence &evidence;
+			const verified_runtime_selection &selected;
+			economic_sql_initialized_activation_verifier verify;
+			unsigned int error = EIO;
+		} current{ connection, retained, request, evidence, *selected, verify };
+		const auto inspect =
+			+[](const economic_initialized_world_snapshot &world, void *raw) noexcept
+		{
+			auto &c = *static_cast<context *>(raw);
+			try
+			{
+				const economic_sql_source_limits original_limits;
+				require(world.version == 1 &&
+						world.rows <= original_limits.maximum_rows &&
+						world.cells <= original_limits.maximum_cells &&
+						world.cell_bytes <=
+							original_limits.maximum_cell_bytes,
+					E2BIG);
+				auto residual = original_limits;
+				residual.maximum_rows -= world.rows;
+				residual.maximum_cells -= world.cells;
+				residual.maximum_cell_bytes -= world.cell_bytes;
+				// Charge authentic retained world observations once BEFORE SQL reads;
+				// the original single-cell allowance is unchanged throughout.
+				auto captured =
+					capture_complete_activation_sources(c.connection, residual);
+				require(captured.totals.rows <= residual.maximum_rows &&
+						captured.totals.cells <= residual.maximum_cells &&
+						captured.totals.cell_bytes <=
+							residual.maximum_cell_bytes,
+					E2BIG);
+				require(c.owner.is_valid(), EPERM);
+				// Raw captures do not lock current native mappings/rows. This is the
+				// original inbox -> mapping -> native/origin proof, once in this cut.
+				(void)verify_current_mappings(c.connection, c.selected.installation,
+							      c.selected.opening, captured.holdings,
+							      &captured.native_wallets);
+				// Derived metadata is not another raw provider. Bound its retained
+				// allocation under the existing DTO ceiling without adding raw rows.
+				require(captured.native_wallets.size() <=
+							original_limits.maximum_rows &&
+						captured.native_wallets.capacity() <=
+							original_limits.maximum_cell_bytes /
+								sizeof(economic_sql_native_mobile_wallet_lifetime),
+					E2BIG);
+				require(c.owner.is_valid(), EPERM);
+				economic_initialized_world_money_correspondence pc_money;
+				const auto compared = economic_initialized_world_compare_pc_money(
+					world, captured.physical.source2, original_limits, 512,
+					&pc_money);
+				require(compared == economic_accounting_error::ok,
+					compared == economic_accounting_error::capacity ? ENOMEM :
+											  EILSEQ);
+				// This is the primary PC projection comparison only. The full raw
+				// sources and every original normalized finding remain independent
+				// verifier inputs; complete item correspondence remains separate.
+				require(std::all_of(pc_money.issue_counts.begin(),
+						    pc_money.issue_counts.end(),
+						    [](uint64_t count) { return count == 0; }),
+					ENODATA);
+				economic_initialized_world_native_money_correspondence npc_money;
+				const auto native_compared =
+					economic_initialized_world_compare_addressed_npc_money(
+						world, captured.correspondence.native_mobile,
+						captured.native_wallets, original_limits, 512,
+						&npc_money);
+				require(native_compared == economic_accounting_error::ok,
+					native_compared == economic_accounting_error::capacity ?
+						ENOMEM :
+						EILSEQ);
+				// Historical birth amounts are not current cash. All primary defects,
+				// including unresolved first-opening NPCs, gate the independent callback.
+				require(std::all_of(npc_money.issue_counts.begin(),
+						    npc_money.issue_counts.end(),
+						    [](uint64_t count) { return count == 0; }),
+					ENODATA);
+				require(c.owner.is_valid(), EPERM);
+				const economic_sql_initialized_activation_view view{
+					world,
+					captured.physical,
+					captured.room,
+					captured.creation,
+					captured.correspondence,
+					pc_money,
+					captured.native_wallets,
+					npc_money,
+					original_limits
+				};
+				execute(c.connection, "SAVEPOINT economic_sql_activation_verifier");
+				const auto checked =
+					c.verify(c.connection, c.request, c.evidence, view);
+				execute(c.connection,
+					"ROLLBACK TO SAVEPOINT economic_sql_activation_verifier");
+				execute(c.connection,
+					"RELEASE SAVEPOINT economic_sql_activation_verifier");
+				require(c.owner.is_valid(), EPERM);
+				// Callback refusal still cleans its SQL effects before returning.
+				// Failed cleanup leaves the genuine transaction with the abort owner.
+				require(!checked, checked);
+				c.error = 0;
+				return true;
+			}
+			catch (const failure &error)
+			{
+				c.error = error.code ? error.code : EIO;
+			}
+			catch (const std::bad_alloc &)
+			{
+				c.error = ENOMEM;
+			}
+			catch (...)
+			{
+				c.error = EIO;
+			}
+			return false;
+		};
+		const bool checked = economic_initialized_world_owner::with_cutover_cut(
+			retained, inspect, &current);
+		require(checked && retained.is_valid(), current.error ? current.error : EPERM);
+		// No cached result, activation/policy installation, COMMIT, transfer or ACK.
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_returned_runtime_projection(
+	MYSQL *connection, const economic_sql_lifecycle_guard &returned,
+	const economic_sql_runtime_boot_selection &original) noexcept
+{
+	return verify_runtime_return_projection(connection, nullptr, &returned, original);
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_runtime_return_projection(
+	MYSQL *connection, economic_sql_cutover_transaction_owner *retained,
+	const economic_sql_lifecycle_guard *returned,
+	const economic_sql_runtime_boot_selection &original) noexcept
+{
+	try
+	{
+		// Both callers are private actual-boot-owner paths. A value/receipt or an
+		// ordinary maintenance guard cannot substitute for either genuine owner.
+		const auto held = [&]()
+		{
+			if (!connection || !original.prepared_ || !original.finished_ ||
+			    !original.selected_ || bool(retained) == bool(returned))
+				return false;
+			if (retained)
+				return retained->connection_ == connection &&
+				       retained->runtime_handoff_ &&
+				       !retained->runtime_commit_attempted_ &&
+				       original.session_ == retained->session_ &&
+				       original.authority_id_ == retained->sql_authority_id_ &&
+				       retained->is_valid_for_retained_terminal(
+					       economic_sql_cutover_terminal_outcome::rolled_back);
+			return returned->connection_ == connection && returned->runtime_handoff_ &&
+			       returned->maintenance_ && !returned->local_runtime_ &&
+			       returned->local_maintenance_ && returned->writer_lock_ &&
+			       returned->local_exclusive_.owns_lock() &&
+			       !returned->coordinator_release_ &&
+			       !returned->coordinator_generation_ &&
+			       !returned->coordinator_lease_id_ &&
+			       original.session_ == returned->session_ &&
+			       original.authority_id_ == returned->authority_id_ &&
+			       critical_command_coordinator_lifecycle_guard_held_by_current_thread() &&
+			       returned->is_valid_authority();
+		};
+		require(held(), EPERM);
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup read(connection, cleanup);
+		read.starting();
+		execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
+		const auto selected = load_verified_runtime_selection(connection);
+		require(selected && selected->lineage.bytes == original.lineage_.bytes &&
+				selected->epoch.bytes == original.epoch_.bytes &&
+				selected->installation.baseline_operation->bytes ==
+					original.baseline_.bytes,
+			ESTALE);
+		const auto receipt = load_verified_runtime_projection(connection, *selected);
+		std::vector<economic_gameplay_wallet_mapping> wallets;
+		std::vector<economic_gameplay_bank_mapping> banks;
+		wallets.reserve(receipt.wallets.size());
+		banks.reserve(receipt.banks.size());
+		for (const auto &wallet : receipt.wallets)
+			wallets.push_back({ wallet.pid, wallet.account });
+		for (const auto &bank : receipt.banks)
+			banks.push_back({ bank.name, bank.racewar, bank.account });
+		require(mysql_thread_id(connection) == original.session_ &&
+				(connection->server_status & SERVER_STATUS_IN_TRANS),
+			ENOTCONN);
+		read.finish();
+		require(read.same_session() && cleanup.rollback_confirmed &&
+				cleanup.disposition ==
+					player_sql_cleanup_disposition::idle_verified &&
+				!cleanup.cleanup_error && held(),
+			ENOTCONN);
+		require(economic_gameplay_authority::sql_runtime_projection_matches(
+				economic_gameplay_authority::sql_runtime_recovery_install_key{},
+				selected->lineage, selected->epoch,
+				*selected->installation.baseline_operation, wallets, banks),
+			ESTALE);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
 #endif

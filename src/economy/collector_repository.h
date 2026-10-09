@@ -4,6 +4,8 @@
 #include "economy/collector_command.h"
 #include "economy/collector_storage.h"
 #include "economy/economic_accounting_plan.h"
+#include "persistence/economic_sql_source_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <mysql/mysql.h>
 #include <vector>
@@ -120,5 +122,76 @@ bool collector_repository_execute_accounted(MYSQL *connection, const critical_co
 					    collector_command_result *result,
 					    unsigned int *result_code, bool *mutation_applied,
 					    collector_repository_locked_before *before);
+
+enum collector_physical_source_flag : uint32_t
+{
+	COLLECTOR_SOURCE_MALFORMED_RECORD = 1U << 0,
+	COLLECTOR_SOURCE_PROJECTION_MISMATCH = 1U << 1,
+	COLLECTOR_SOURCE_BAD_CATALOG = 1U << 2,
+	COLLECTOR_SOURCE_BAD_DEATH = 1U << 3,
+	COLLECTOR_SOURCE_MISSING_DEATH = 1U << 4,
+	COLLECTOR_SOURCE_MISSING_LITERAL = 1U << 5,
+	COLLECTOR_SOURCE_MALFORMED_LITERAL = 1U << 6,
+	COLLECTOR_SOURCE_MISSING_CUSTODY = 1U << 7,
+	COLLECTOR_SOURCE_CUSTODY_MISMATCH = 1U << 8,
+	COLLECTOR_SOURCE_BAD_OWNER_REVISION = 1U << 9,
+	COLLECTOR_SOURCE_ORPHAN_CUSTODY = 1U << 10,
+	COLLECTOR_SOURCE_DUPLICATE_HELD = 1U << 11
+};
+struct collector_physical_listing_witness
+{
+	size_t listing_row = SIZE_MAX, death_row = SIZE_MAX, custody_row = SIZE_MAX;
+	size_t equipment_row = SIZE_MAX, owner_revision_row = SIZE_MAX;
+	uint64_t listing_id = 0, item_uid = 0, owner_revision = 0;
+	uint32_t findings = 0;
+	bool held = false, correspondence_valid = false;
+	// Current correspondence does not reconstruct/authenticate an acquisition
+	// command or original retained receipt. Unknown remains separate evidence.
+	bool retained_command_proof_known = false;
+	std::optional<collector::record> record;
+	std::optional<player_item_snapshot> literal;
+};
+struct collector_physical_death_witness
+{
+	size_t death_row = SIZE_MAX;
+	uint32_t findings = 0;
+	bool referenced = false;
+	std::optional<collector_death_snapshot> death;
+};
+struct collector_physical_custody_witness
+{
+	size_t custody_row = SIZE_MAX, listing_witness = SIZE_MAX;
+	uint32_t findings = 0;
+	// Foreign rows sharing a held singleton root are relationship defects,
+	// not additional collector occupancy.
+	bool collector_owned = false;
+};
+struct collector_physical_source_diagnostic
+{
+	uint32_t findings = 0;
+	// Tables are base.source2.tables indices; rows never become SQL IDs.
+	size_t table = SIZE_MAX, row = SIZE_MAX;
+};
+struct collector_physical_source_report
+{
+	economic_sql_source_digest physical_digest = {};
+	uint64_t rows = 0, cells = 0, cell_bytes = 0;
+	uint64_t catalog_revision = 0, next_listing = 0;
+	bool catalog_valid = false, correspondence_valid = false;
+	bool diagnostics_truncated = false;
+	std::vector<collector_physical_listing_witness> listings;
+	std::vector<collector_physical_death_witness> deaths;
+	std::vector<collector_physical_custody_witness> custody;
+	std::vector<collector_physical_source_diagnostic> diagnostics;
+};
+// Pure inspection of every retained collector row and every collector-owned
+// custody row in a const validated EPH1 base. No SQL, recapture, raw blob copy,
+// hydration, repair or authority. Listings/deaths/history retain source indices.
+// Candidate/terminal records do not count as held occupancy. NULL prototype
+// strings permitted by the native collector codec remain permitted. Operational
+// failure preserves output; malformed correspondence returns explicit evidence.
+unsigned int collector_repository_inspect_physical_sources(
+	const economic_sql_physical_source_snapshot &, collector_physical_source_report *,
+	const economic_sql_source_limits & = {}, size_t maximum_diagnostics = 512) noexcept;
 
 #endif

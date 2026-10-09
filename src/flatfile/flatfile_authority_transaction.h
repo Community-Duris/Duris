@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_AUTHORITY_TRANSACTION_H
 #define DURIS_FLATFILE_AUTHORITY_TRANSACTION_H
 
+#include "flatfile/flatfile_store.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -70,6 +71,22 @@ class flatfile_authority_lock
 {
     public:
 	flatfile_authority_lock() noexcept;
+	// Fresh explicit C++ state admission BEFORE the original nothrow allocation.
+	// Unsupported storage policy or refusal leaves an empty, unacquirable lock.
+	// Caller includes already-live values in outer_live_scratch and holds the
+	// callback reservation through lock destruction; no lock is taken here.
+	flatfile_authority_lock(flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+				size_t outer_live_scratch) noexcept;
+	// Distinct allocation-admitted acquisition with original process/filesystem
+	// exclusion and private-directory/file checks. outer_live_scratch includes
+	// this actual lock/state/root retention; failures never become owned locks.
+	// Caller includes its root/path inputs and retains peak through nested reads.
+	bool acquire_bounded(const std::string &root,
+			     flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			     size_t outer_live_scratch) noexcept;
+	// Actual explicit C++ lock/state/root storage under pinned libstdc++13.
+	// Scalar only; strong output. Never proves root/source/admission authority.
+	bool retained_bytes(size_t *output) const noexcept;
 	~flatfile_authority_lock();
 	flatfile_authority_lock(const flatfile_authority_lock &) = delete;
 	flatfile_authority_lock &operator=(const flatfile_authority_lock &) = delete;
@@ -109,5 +126,21 @@ flatfile_authority_transaction_result flatfile_authority_transaction_commit_oper
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<flatfile_authority_operation> &operations, std::string *error,
 	flatfile_authority_commit_outcome *outcome);
+
+// DISTINCT bounded recovery admits explicit C++ storage requests under the
+// libstdc++13 capacity policy before decoded materialization or first apply.
+// The allocation-free wire scan sizes untrusted shape; original decode then
+// authenticates the digest after complete admission and before any apply.
+// OpenSSL/system internal allocations remain outside this measured scope.
+// Budget refusal before apply preserves journal/disk. Partial apply failure
+// before final removal leaves the pending journal; final unlink/sync failure
+// has uncertain removal and the journal may already be absent. Same borrowed
+// root lock and original ordering. Caller retains peak through return and
+// restores its prior aggregate. No diagnostic string allocations.
+flatfile_authority_transaction_result
+flatfile_authority_transaction_recover_bounded(const std::string &root,
+					       const flatfile_authority_lock &lock,
+					       flatfile_scratch_reserve_fn reserve_scratch_peak,
+					       void *context, size_t outer_live_scratch) noexcept;
 
 #endif

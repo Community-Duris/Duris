@@ -71,6 +71,9 @@ class flatfile_accounting_storage
 	friend class flatfile_accounting_baseline_storage;
 	friend class flatfile_accounting_bank_transaction;
 	friend class flatfile_accounting_collector_transaction;
+	friend class flatfile_accounting_shop_transaction;
+	friend class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+	friend class flatfile_accounting_zone_reset_item_transaction;
 	friend class flatfile_accounting_auction_item_claim_transaction;
 	friend class flatfile_accounting_coin_transaction;
 	friend class flatfile_accounting_item_transfer_transaction;
@@ -95,6 +98,15 @@ class flatfile_accounting_storage
 								 const critical_operation_id &,
 								 flatfile_accounting_record *,
 								 std::string *);
+	// Complete structural bucket view for the existing typed boot owner. Every
+	// indexed segment is authenticated, including sealed history and the next
+	// segment fence. Caller supplies catalog-required lineage/bucket; absent or
+	// damaged storage refuses, never an empty history. Existing bucket limits
+	// bound the view. No source/domain/native/admission authority is granted.
+	static flatfile_accounting_status list_retained_bucket_locked(
+		const std::string &, const flatfile_authority_lock &,
+		const critical_operation_id &lineage, size_t bucket,
+		std::vector<flatfile_accounting_record> *, std::string *);
 	static flatfile_accounting_status stage(const std::string &,
 						const flatfile_authority_lock &,
 						const flatfile_accounting_record &,

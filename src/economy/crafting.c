@@ -146,12 +146,25 @@ bool submit_recipe_craft(P_char actor, P_obj output, const crafting_plan &plan, 
 	recipe.experience = static_cast<uint32_t>(experience);
 	recipe.recipe_vnum = static_cast<uint32_t>(OBJ_VNUM(output));
 	recipe.output_uid = output->obj_uid;
+	const bool frozen_progression = economic_gameplay_authority::active();
+	if (frozen_progression)
+	{
+		const int skill = mode == CRAFTING_MODE_CRAFT ? SKILL_CRAFT : SKILL_FORGE;
+		recipe.frozen_progression = true;
+		recipe.output_count = 1;
+		recipe.progression_skill_before = actor->only.pc->skills[skill].learned;
+		// Prepare after all original output-property rolls. No skill/timer/message
+		// is applied until the original retained progression publication cut.
+		recipe.notch = skill_notch_prepare(actor, skill, 50);
+	}
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit_craft(actor, inputs.data(), inputs.size(), &output, 1,
-						    OBJ_VNUM(output), complete_recipe_craft,
-						    &context, sizeof(context), &reject, pouch,
-						    use_pouch ? usage : nullptr, usage_count,
-						    chaos_pouch_usage_mode::generated, &recipe))
+	if (!item_movement_transaction_submit_craft(
+		    actor, inputs.data(), inputs.size(), &output, 1, OBJ_VNUM(output),
+		    frozen_progression ? nullptr : complete_recipe_craft,
+		    frozen_progression ? nullptr : &context,
+		    frozen_progression ? 0 : sizeof(context), &reject, pouch,
+		    use_pouch ? usage : nullptr, usage_count, chaos_pouch_usage_mode::generated,
+		    &recipe))
 	{
 		logit(LOG_DEBUG, "Recipe craft submission refused: %s",
 		      item_movement_reject_name(reject));

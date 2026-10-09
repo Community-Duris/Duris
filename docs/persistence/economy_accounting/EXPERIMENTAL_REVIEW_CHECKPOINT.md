@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Guarded combined-source candidate - 2026-10-09
+
+[Candidate handoff](COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md) records
+reviewed selection a7bc4532, now composed with real ROOM worker/executor/startup,
+retained Smith/SHOP/producer interfaces and independent Plan5 source slices.
+Published c627dbe5 separately fixes the missing manual INITIAL checkpoint owner.
+All926 prior writer policies are preserved; five new unqualified rows and386
+current source pins accompany this source milestone. Inactive/declined spell
+behavior, CLOSED admission and protected WIP remain. Both-profile compile/link
+and isolated inactive smoke are pending; full shared32MiB, source/factory/
+publication/terminal/ACK, Plans2-4/fullPlan5/R1-R8 and release remain unfinished.
+Original Plan1 acceptance keeps its recorded scope. The goal stays active.
+
 ## Genuine flat ROOM atomic writer and producer joined - 2026-10-09
 
 [Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#genuine-flat-room-atomic-writer-and-producer-joined---2026-10-09)

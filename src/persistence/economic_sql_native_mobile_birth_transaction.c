@@ -46,6 +46,30 @@ birth_identity decode(const critical_command &command)
 	checked(economic_intent_decode(command.accounting_intent, &value.intent));
 	return value;
 }
+birth_identity decode_ordinary_wallet(const critical_command &command)
+{
+	birth_identity value;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	checked(native_mobile_birth_cash_role_command_decode(command, &value.image, &recipes,
+							     &role));
+	require(role.role == native_mobile_birth_cash_role::ordinary_wallet, ENOTSUP);
+	checked(economic_intent_decode(command.accounting_intent, &value.intent));
+	return value;
+}
+}
+bool economic_sql_native_mobile_birth_ordinary_wallet_command_supported(
+	const critical_command &command) noexcept
+{
+	try
+	{
+		(void)decode_ordinary_wallet(command);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 bool economic_sql_native_mobile_birth_command_supported(const critical_command &command) noexcept
 {
@@ -118,6 +142,28 @@ unsigned int economic_sql_native_mobile_birth_lock_publication(
 unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 	MYSQL *, const critical_operation_id &,
 	std::vector<economic_sql_native_mobile_wallet_lifetime> *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_native_mobile_birth_transaction::prepare_ordinary_wallet(
+	MYSQL *, const critical_command &,
+	std::unique_ptr<economic_sql_native_mobile_birth_transaction> *)
+{
+	return ENOTSUP;
+}
+const native_mobile_birth_cash_role_result *
+economic_sql_native_mobile_birth_transaction::ordinary_wallet_result() const noexcept
+{
+	return nullptr;
+}
+unsigned int economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+	MYSQL *, const critical_command &, unsigned int, std::span<const uint8_t>) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_native_mobile_birth_ordinary_wallet_lock_publication(
+	MYSQL *, const critical_command &, const critical_completion &, quest_mobile_native_image *,
+	std::vector<item_ownership_runtime_entry> *) noexcept
 {
 	return ENOTSUP;
 }
@@ -650,16 +696,16 @@ void evidence(MYSQL *connection, const critical_command &command,
 }
 
 void outbox(MYSQL *connection, const critical_operation_id &operation_id,
-	    std::span<const uint8_t> payload, bool pending)
+	    std::span<const uint8_t> payload, bool pending,
+	    uint16_t version = NATIVE_MOBILE_BIRTH_RESULT_VERSION)
 {
-	fields expected = {
-		{ "operation_id", id(operation_id) },
-		{ "event_index", "0" },
-		{ "destination", std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION) },
-		{ "event_type", std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_EVENT) },
-		{ "payload_version", std::to_string(NATIVE_MOBILE_BIRTH_RESULT_VERSION) },
-		{ "payload", hex(payload) }
-	};
+	fields expected = { { "operation_id", id(operation_id) },
+			    { "event_index", "0" },
+			    { "destination",
+			      std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION) },
+			    { "event_type", std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_EVENT) },
+			    { "payload_version", std::to_string(version) },
+			    { "payload", hex(payload) } };
 	if (pending)
 	{
 		expected.emplace_back("status", "0");
@@ -692,6 +738,8 @@ struct economic_sql_native_mobile_birth_transaction::implementation
 	economic_account_key wallet{};
 	economic_accounting_plan plan;
 	native_mobile_birth_result result{};
+	native_mobile_birth_cash_role_result ordinary_result{};
+	bool ordinary_wallet = false;
 	std::string marker;
 	unsigned int code = EINPROGRESS;
 	bool mutation_started = false;
@@ -719,9 +767,31 @@ unsigned int economic_sql_native_mobile_birth_transaction::result_code() const
 {
 	return state_->code;
 }
+const native_mobile_birth_cash_role_result *
+economic_sql_native_mobile_birth_transaction::ordinary_wallet_result() const noexcept
+{
+	return state_->ordinary_wallet && !state_->code &&
+			       (state_->phase == implementation::phase::applied ||
+				state_->phase == implementation::phase::finalized ||
+				state_->phase == implementation::phase::verified) ?
+		       &state_->ordinary_result :
+		       nullptr;
+}
 unsigned int economic_sql_native_mobile_birth_transaction::prepare(
 	MYSQL *connection, const critical_command &command,
 	std::unique_ptr<economic_sql_native_mobile_birth_transaction> *output)
+{
+	return prepare_impl(connection, command, output, false);
+}
+unsigned int economic_sql_native_mobile_birth_transaction::prepare_ordinary_wallet(
+	MYSQL *connection, const critical_command &command,
+	std::unique_ptr<economic_sql_native_mobile_birth_transaction> *output)
+{
+	return prepare_impl(connection, command, output, true);
+}
+unsigned int economic_sql_native_mobile_birth_transaction::prepare_impl(
+	MYSQL *connection, const critical_command &command,
+	std::unique_ptr<economic_sql_native_mobile_birth_transaction> *output, bool ordinary_wallet)
 {
 	try
 	{
@@ -730,7 +800,9 @@ unsigned int economic_sql_native_mobile_birth_transaction::prepare(
 		state->connection = connection;
 		state->session = mysql_thread_id(connection);
 		active(connection, state->session);
-		state->identity = decode(command);
+		state->identity = ordinary_wallet ? decode_ordinary_wallet(command) :
+						    decode(command);
+		state->ordinary_wallet = ordinary_wallet;
 		require(state->identity.image.items.size() <= ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS,
 			E2BIG);
 		state->command = command;
@@ -803,10 +875,21 @@ unsigned int economic_sql_native_mobile_birth_transaction::apply()
 				state.mapped_authority.mappings.size() == 1 &&
 				state.mapped_authority.mappings[0].revision == 0,
 			ESTALE);
-		checked(native_mobile_birth_accounting_compile(state.command, state.wallet,
-							       &state.plan));
-		checked(native_mobile_birth_result_build(state.command, state.wallet, state.plan,
-							 &state.result));
+		if (state.ordinary_wallet)
+		{
+			// Compile and bind the ORIGINAL NMB4, never its NMB3 projection inbox.
+			checked(native_mobile_birth_cash_role_accounting_compile(
+				state.command, state.wallet, &state.plan));
+			checked(native_mobile_birth_cash_role_result_build(
+				state.command, state.wallet, state.plan, &state.ordinary_result));
+		}
+		else
+		{
+			checked(native_mobile_birth_accounting_compile(state.command, state.wallet,
+								       &state.plan));
+			checked(native_mobile_birth_result_build(state.command, state.wallet,
+								 state.plan, &state.result));
+		}
 		insert(state.connection, "item_owner_revision",
 		       { { "owner_type", "12" },
 			 { "owner_id",
@@ -916,10 +999,29 @@ unsigned int economic_sql_native_mobile_birth_transaction::verify_root_completio
 	{
 		active(state.connection, state.session);
 		execute(state.connection, "RELEASE SAVEPOINT " + state.marker);
-		std::array<uint8_t, NATIVE_MOBILE_BIRTH_RESULT_BYTES> payload{};
-		require(native_mobile_birth_result_encode(state.result, &payload), EILSEQ);
-		const auto retained_error = economic_sql_native_mobile_birth_verify_retained(
-			state.connection, state.command, 0, payload);
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_RESULT_BYTES> historical_payload{};
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> ordinary_payload{};
+		std::span<const uint8_t> payload;
+		unsigned int retained_error = 0;
+		if (state.ordinary_wallet)
+		{
+			require(native_mobile_birth_cash_role_result_encode(state.ordinary_result,
+									    &ordinary_payload),
+				EILSEQ);
+			payload = ordinary_payload;
+			retained_error =
+				economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+					state.connection, state.command, 0, payload);
+		}
+		else
+		{
+			require(native_mobile_birth_result_encode(state.result,
+								  &historical_payload),
+				EILSEQ);
+			payload = historical_payload;
+			retained_error = economic_sql_native_mobile_birth_verify_retained(
+				state.connection, state.command, 0, payload);
+		}
 		require(!retained_error, retained_error);
 		const economic_sql_mapping_request request = {
 			state.wallet, ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR,
@@ -937,7 +1039,11 @@ unsigned int economic_sql_native_mobile_birth_transaction::verify_root_completio
 			ESTALE);
 		verify_current(state.connection, state.command, state.identity, state.wallet,
 			       state.plan, state.item_uids);
-		outbox(state.connection, state.command, payload, true);
+		if (state.ordinary_wallet)
+			outbox(state.connection, state.command.operation_id, payload, true,
+			       NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION);
+		else
+			outbox(state.connection, state.command, payload, true);
 		active(state.connection, state.session);
 		state.code = 0;
 		state.phase = implementation::phase::verified;
@@ -1039,6 +1145,125 @@ economic_sql_native_mobile_birth_verify_retained(MYSQL *connection, const critic
 		return EINVAL;
 	}
 }
+
+unsigned int economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+	MYSQL *connection, const critical_command &command, unsigned int result_code,
+	std::span<const uint8_t> payload) noexcept
+{
+	try
+	{
+		require(connection && !result_code, EINVAL);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const auto identity = decode_ordinary_wallet(command);
+		native_mobile_birth_cash_role_result result{};
+		require(native_mobile_birth_cash_role_result_decode(payload, &result), EILSEQ);
+		const economic_account_key wallet = { identity.intent.admission.metadata.lineage,
+						      economic_account_kind::wallet,
+						      result.wallet_mapping_id,
+						      ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		economic_accounting_plan expected;
+		checked(native_mobile_birth_cash_role_accounting_compile(command, wallet,
+									 &expected));
+		native_mobile_birth_cash_role_result expected_result{};
+		checked(native_mobile_birth_cash_role_result_build(command, wallet, expected,
+								   &expected_result));
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> expected_payload{};
+		require(native_mobile_birth_cash_role_result_encode(expected_result,
+								    &expected_payload),
+			EILSEQ);
+		require(payload.size() == expected_payload.size() &&
+				std::equal(expected_payload.begin(), expected_payload.end(),
+					   payload.begin()),
+			EILSEQ);
+		inbox(connection, command, false);
+		count(connection, "critical_operation_inbox",
+		      predicate({ { "operation_id", id(command.operation_id) },
+				  { "result_code", "0" },
+				  { "failure_stage", "0" },
+				  { "durable_revision", "1" },
+				  { "result_payload", hex(payload) } }) +
+			      " AND committed_at IS NOT NULL",
+		      1);
+		const auto encoded = read(
+			connection,
+			"SELECT canonical_plan FROM economic_accounting_operation WHERE operation_id=" +
+				id(command.operation_id),
+			1);
+		require(encoded[0].has_value());
+		std::vector<uint8_t> expected_bytes;
+		checked(economic_plan_encode(expected, &expected_bytes));
+		require(encoded[0]->size() == expected_bytes.size() &&
+				std::equal(expected_bytes.begin(), expected_bytes.end(),
+					   reinterpret_cast<const uint8_t *>(encoded[0]->data())),
+			EILSEQ);
+		// Stable mapping identity survives retirement. No active epoch, active
+		// mapping, current native image or current cash/stock is consulted.
+		count(connection, "economic_account_mapping",
+		      predicate(mapping(command, identity, wallet.authority_id)), 1);
+		count(connection, "economic_account_mapping",
+		      "backend_kind=1 AND locator_kind=" +
+			      std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) +
+			      " AND native_id=" +
+			      std::to_string(identity.image.reference.mobile_instance_id),
+		      1);
+		count(connection, "economic_account_mapping",
+		      "creating_operation_id=" + id(command.operation_id), 1);
+		evidence(connection, command, expected, false);
+		outbox(connection, command.operation_id, payload, false,
+		       NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION);
+		active(connection, session);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+}
+namespace
+{
+uint16_t native_wallet_birth_payload_version(MYSQL *, const critical_operation_id &);
+critical_native_recovery_envelope native_wallet_origin_peek(MYSQL *, uint64_t,
+							    const critical_operation_id &,
+							    bool ordinary_wallet = false,
+							    bool lock = false);
+bool native_wallet_lifetime_equal(quest_mobile_native_reference original,
+				  const quest_mobile_native_reference &current);
+void observe_ordinary_wallet_origin(MYSQL *connection, unsigned long session,
+				    const quest_mobile_native_reference &reference,
+				    native_mobile_wallet_origin *output)
+{
+	active(connection, session);
+	const auto original = native_wallet_origin_peek(connection, reference.mobile_instance_id,
+							reference.birth_operation, true);
+	const auto identity = decode_ordinary_wallet(original.command);
+	require(native_wallet_lifetime_equal(identity.image.reference, reference), EILSEQ);
+	native_mobile_birth_recovery_context recovery;
+	checked(native_mobile_birth_cash_role_recovery_decode(original.command, original.attachment,
+							      &recovery));
+	const std::span<const uint8_t> payload(recovery.receipt.result_payload.data(),
+					       recovery.receipt.result_size);
+	const auto retained = economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+		connection, original.command, recovery.receipt.error_code, payload);
+	require(!retained, retained);
+	native_mobile_birth_cash_role_result result{};
+	require(native_mobile_birth_cash_role_result_decode(payload, &result) &&
+			result.role == native_mobile_birth_cash_role::ordinary_wallet,
+		EILSEQ);
+	const auto &meta = identity.intent.admission.metadata;
+	active(connection, session);
+	*output = { original.command.operation_id, meta.lineage, meta.epoch,
+		    identity.image.reference.mobile_instance_id, result.wallet_mapping_id };
+}
+}
 unsigned int
 economic_sql_native_mobile_birth_observe_origin(MYSQL *connection,
 						const quest_mobile_native_reference &reference,
@@ -1051,6 +1276,14 @@ economic_sql_native_mobile_birth_observe_origin(MYSQL *connection,
 		const auto session = mysql_thread_id(connection);
 		active(connection, session);
 		const auto root = reference.birth_operation;
+		// Select only from the actual successful original inbox. The unchanged
+		// historical plan/receipt path below retains its original predicates.
+		if (native_wallet_birth_payload_version(connection, root) ==
+		    NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+		{
+			observe_ordinary_wallet_origin(connection, session, reference, output);
+			return 0;
+		}
 		const auto stored = read(
 			connection,
 			"SELECT canonical_plan,canonical_intent FROM economic_accounting_operation WHERE operation_id=" +
@@ -1297,8 +1530,127 @@ unsigned int economic_sql_native_mobile_birth_lock_publication(
 	}
 }
 
+unsigned int economic_sql_native_mobile_birth_ordinary_wallet_lock_publication(
+	MYSQL *connection, const critical_command &command, const critical_completion &completion,
+	quest_mobile_native_image *image,
+	std::vector<item_ownership_runtime_entry> *custody) noexcept
+{
+	if (!connection || !image || !custody)
+		return EINVAL;
+	try
+	{
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		require(completion.operation_id.bytes == command.operation_id.bytes &&
+				completion.disposition ==
+					critical_completion_disposition::execution &&
+				(completion.outcome == critical_apply_outcome::applied ||
+				 completion.outcome == critical_apply_outcome::already_applied) &&
+				!completion.error_code &&
+				completion.failure_stage == critical_failure_stage::none &&
+				completion.durable_revision == 1 &&
+				completion.result_size ==
+					NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES &&
+				std::all_of(completion.result_payload.begin() +
+						    NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES,
+					    completion.result_payload.end(),
+					    [](uint8_t byte) { return !byte; }),
+			EILSEQ);
+		const std::span<const uint8_t> payload(completion.result_payload.data(),
+						       completion.result_size);
+		const auto retained =
+			economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+				connection, command, 0, payload);
+		require(!retained, retained);
+		auto identity = decode_ordinary_wallet(command);
+		native_mobile_birth_cash_role_result result{};
+		require(native_mobile_birth_cash_role_result_decode(payload, &result), EILSEQ);
+		const economic_account_key wallet = { identity.intent.admission.metadata.lineage,
+						      economic_account_kind::wallet,
+						      result.wallet_mapping_id,
+						      ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		economic_accounting_plan plan;
+		checked(native_mobile_birth_cash_role_accounting_compile(command, wallet, &plan));
+		// Preserve original mapping-before-native-before-custody lock order.
+		require(read(connection,
+			     "SELECT mapping_id FROM economic_account_mapping WHERE " +
+				     predicate(mapping(command, identity, wallet.authority_id)) +
+				     " FOR UPDATE",
+			     1)[0]
+				.has_value());
+		quest_mobile_native_sql_row native;
+		const auto native_error = quest_mobile_native_sql_lock(
+			connection, identity.image.reference.mobile_instance_id, &native);
+		require(!native_error, native_error);
+		require(native.present && native.original_session == session, ESTALE);
+		require(read(connection,
+			     "SELECT revision FROM item_owner_revision WHERE " +
+				     owner(identity.image.reference.mobile_instance_id) +
+				     " AND owner_context_id=0 FOR UPDATE",
+			     1)[0]
+				.has_value());
+		const auto values = uids(identity.image);
+		verify_current(connection, command, identity, wallet, plan, values);
+		std::vector<item_ownership_runtime_entry> verified;
+		verified.reserve(plan.item_events.size());
+		for (size_t index = 0; index < plan.item_events.size(); ++index)
+		{
+			const auto &after = plan.item_events[index].after;
+			verified.push_back({ plan.item_events[index].uid, after.root_uid,
+					     after.parent_uid, after.owner, after.revision,
+					     result.item_owner_revision,
+					     identity.image.items[index].vnum, after.state });
+		}
+		active(connection, session);
+		*image = std::move(identity.image);
+		*custody = std::move(verified);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+}
+
 namespace
 {
+uint16_t native_wallet_birth_payload_version(MYSQL *connection, const critical_operation_id &root)
+{
+	return integer<uint16_t>(read(
+		connection,
+		"SELECT payload_version FROM critical_operation_inbox WHERE operation_id=" +
+			id(root) +
+			" AND status=1 AND result_code=0 AND failure_stage=0 AND durable_revision=1 AND committed_at IS NOT NULL AND command_type=" +
+			std::to_string(
+				static_cast<uint16_t>(critical_command_type::native_mobile_birth)) +
+			" AND schema_version=2",
+		1)[0]);
+}
+bool native_wallet_lifetime_equal(quest_mobile_native_reference original,
+				  const quest_mobile_native_reference &current)
+{
+	// Only mobile/stock revisions may advance. Birth operation/source,
+	// issuance/provenance/VNUM/zone facts come from the retained original command.
+	if (current.mobile_revision < original.mobile_revision ||
+	    current.stock_revision < original.stock_revision)
+		return false;
+	original.mobile_revision = current.mobile_revision;
+	original.stock_revision = current.stock_revision;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> left{}, right{};
+	return quest_mobile_native_reference_encode(original, &left) ==
+		       player_snapshot_codec_result::ok &&
+	       quest_mobile_native_reference_encode(current, &right) ==
+		       player_snapshot_codec_result::ok &&
+	       left == right;
+}
 std::vector<cells> native_wallet_mapping_rows(MYSQL *connection,
 					      const critical_operation_id &lineage, bool lock)
 {
@@ -1352,7 +1704,8 @@ critical_operation_id native_wallet_operation(const std::optional<std::string> &
 	return result;
 }
 critical_native_recovery_envelope native_wallet_origin_peek(MYSQL *connection, uint64_t native_id,
-							    const critical_operation_id &creator)
+							    const critical_operation_id &creator,
+							    bool ordinary_wallet, bool lock)
 {
 	// This is a bounded observation only. The original retained verifier below
 	// takes the birth inbox before mapping/native locks; the original 0063
@@ -1362,7 +1715,7 @@ critical_native_recovery_envelope native_wallet_origin_peek(MYSQL *connection, u
 		"SUBSTRING(canonical_origin,1," +
 			std::to_string(CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES + 1) +
 			") FROM quest_mobile_native_birth_origin WHERE mobile_instance_id=" +
-			std::to_string(native_id) + " LIMIT 2");
+			std::to_string(native_id) + " LIMIT 2" + (lock ? " FOR UPDATE" : ""));
 	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
 		mysql_store_result(connection), mysql_free_result);
 	require(bool(result), mysql_errno(connection) ? mysql_errno(connection) : EIO);
@@ -1381,10 +1734,22 @@ critical_native_recovery_envelope native_wallet_origin_peek(MYSQL *connection, u
 	envelope.revision = integer<uint64_t>(std::string(row[1], lengths[1]));
 	envelope.attachment.assign(reinterpret_cast<const uint8_t *>(row[3]),
 				   reinterpret_cast<const uint8_t *>(row[3]) + lengths[3]);
-	checked(native_mobile_birth_recovery_original_command_decode(envelope.attachment,
-								     &envelope.command));
-	require(envelope.command.operation_id.bytes == creator.bytes &&
-		native_mobile_birth_recovery_terminal(envelope));
+	if (ordinary_wallet)
+	{
+		checked(native_mobile_birth_cash_role_recovery_original_command_decode(
+			envelope.attachment, &envelope.command));
+		require(envelope.command.operation_id.bytes == creator.bytes &&
+			envelope.command.payload_version ==
+				NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+			native_mobile_birth_cash_role_recovery_terminal(envelope));
+	}
+	else
+	{
+		checked(native_mobile_birth_recovery_original_command_decode(envelope.attachment,
+									     &envelope.command));
+		require(envelope.command.operation_id.bytes == creator.bytes &&
+			native_mobile_birth_recovery_terminal(envelope));
+	}
 	return envelope;
 }
 }
@@ -1402,8 +1767,10 @@ unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 		candidate.reserve(seeds.size());
 		std::vector<economic_digest> origin_hashes;
 		std::vector<uint64_t> origin_revisions;
+		std::vector<uint8_t> ordinary_births;
 		origin_hashes.reserve(seeds.size());
 		origin_revisions.reserve(seeds.size());
+		ordinary_births.reserve(seeds.size());
 		uint64_t previous_native = 0;
 		// Authenticate/lock ALL original birth inboxes before mapping/native locks.
 		// Large attachments are discarded per lifetime; only small DTOs survive.
@@ -1415,18 +1782,42 @@ unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 			require(mapping_id && native_id && native_id != UINT64_MAX &&
 				native_id > previous_native);
 			previous_native = native_id;
-			const auto envelope =
-				native_wallet_origin_peek(connection, native_id, creator);
+			const bool ordinary_wallet =
+				native_wallet_birth_payload_version(connection, creator) ==
+				NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION;
+			const auto envelope = native_wallet_origin_peek(connection, native_id,
+									creator, ordinary_wallet);
 			native_mobile_birth_recovery_context recovery;
-			checked(native_mobile_birth_recovery_decode(
-				envelope.command, envelope.attachment, &recovery));
-			const auto retained = economic_sql_native_mobile_birth_verify_retained(
-				connection, envelope.command, recovery.receipt.error_code,
-				std::span<const uint8_t>(recovery.receipt.result_payload.data(),
-							 recovery.receipt.result_size));
-			require(!retained, retained);
 			quest_mobile_native_image born;
-			checked(native_mobile_birth_command_decode(envelope.command, &born));
+			if (ordinary_wallet)
+			{
+				checked(native_mobile_birth_cash_role_recovery_decode(
+					envelope.command, envelope.attachment, &recovery));
+				const auto retained =
+					economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+						connection, envelope.command,
+						recovery.receipt.error_code,
+						std::span<const uint8_t>(
+							recovery.receipt.result_payload.data(),
+							recovery.receipt.result_size));
+				require(!retained, retained);
+				born = decode_ordinary_wallet(envelope.command).image;
+			}
+			else
+			{
+				checked(native_mobile_birth_recovery_decode(
+					envelope.command, envelope.attachment, &recovery));
+				const auto retained =
+					economic_sql_native_mobile_birth_verify_retained(
+						connection, envelope.command,
+						recovery.receipt.error_code,
+						std::span<const uint8_t>(
+							recovery.receipt.result_payload.data(),
+							recovery.receipt.result_size));
+				require(!retained, retained);
+				checked(native_mobile_birth_command_decode(envelope.command,
+									   &born));
+			}
 			require(born.reference.mobile_instance_id == native_id &&
 				born.reference.birth_operation.bytes == creator.bytes);
 			native_mobile_wallet_origin historical;
@@ -1446,6 +1837,7 @@ unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 			candidate.push_back(value);
 			origin_hashes.push_back(hash(envelope.attachment));
 			origin_revisions.push_back(envelope.revision);
+			ordinary_births.push_back(ordinary_wallet);
 			active(connection, session);
 		}
 		// Under global lifecycle exclusion the complete selected set must remain
@@ -1474,16 +1866,38 @@ unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 					current.image.state == quest_mobile_lifetime_state::live &&
 					current.image.cash.has_value(),
 				ESTALE);
-			quest_mobile_native_published_origin published;
-			const auto origin_error = quest_mobile_native_origin_sql_lock(
-				connection, current.image.reference, &published);
-			require(!origin_error, origin_error);
-			require(published.present &&
-					published.original.command.operation_id.bytes ==
-						value.creating_operation_id.bytes &&
-					published.original.revision == origin_revisions[index] &&
-					hash(published.original.attachment) == origin_hashes[index],
-				EILSEQ);
+			if (ordinary_births[index])
+			{
+				// All original birth inboxes were authenticated before mapping/native
+				// locks. Lock the SAME original attachment without taking a new inbox
+				// after these locks; exact bytes retain its prior complete receipt proof.
+				const auto published = native_wallet_origin_peek(
+					connection, value.native_id, value.creating_operation_id,
+					true, true);
+				const auto born = decode_ordinary_wallet(published.command);
+				require(published.revision == origin_revisions[index] &&
+						hash(published.attachment) ==
+							origin_hashes[index] &&
+						native_wallet_lifetime_equal(
+							born.image.reference,
+							current.image.reference),
+					EILSEQ);
+			}
+			else
+			{
+				quest_mobile_native_published_origin published;
+				const auto origin_error = quest_mobile_native_origin_sql_lock(
+					connection, current.image.reference, &published);
+				require(!origin_error, origin_error);
+				require(published.present &&
+						published.original.command.operation_id.bytes ==
+							value.creating_operation_id.bytes &&
+						published.original.revision ==
+							origin_revisions[index] &&
+						hash(published.original.attachment) ==
+							origin_hashes[index],
+					EILSEQ);
+			}
 			value.balance = current.image.cash->denominations.amount;
 			value.native_revision = current.image.cash->revision;
 			value.native_state = current.image.state;
@@ -1513,3 +1927,1059 @@ unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
 	}
 }
 #endif
+
+// The separate shared participant deliberately leaves all historical and
+// ordinary-wallet executors above unchanged.
+#include "flatfile/flatfile_shopkeeper_repository.h"
+#include <climits>
+#include "persistence/economic_sql_native_mobile_birth_shared_shop_observation.h"
+
+#ifndef __NO_MYSQL__
+namespace
+{
+birth_identity decode_initial_shared(const critical_command &command,
+				     native_mobile_birth_cash_role_recipe *role)
+{
+	birth_identity value;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	checked(native_mobile_birth_cash_role_command_decode(command, &value.image, &recipes,
+							     role));
+	require(role->role == native_mobile_birth_cash_role::shared_shopkeeper, ENOTSUP);
+	checked(economic_intent_decode(command.accounting_intent, &value.intent));
+	return value;
+}
+std::string shared_owner(const item_owner_identity &value)
+{
+	return "owner_type=" + std::to_string(static_cast<uint8_t>(value.type)) +
+	       " AND owner_id=" + std::to_string(value.id);
+}
+std::vector<uint8_t> shared_item_bytes(const std::vector<player_item_snapshot> &items)
+{
+	std::vector<uint8_t> bytes;
+	const auto error = player_item_snapshot_list_encode(items, &bytes);
+	require(error == player_snapshot_codec_result::ok,
+		error == player_snapshot_codec_result::allocation_failure ? ENOMEM : EILSEQ);
+	return bytes;
+}
+void initial_checkpoint_valid(const birth_identity &identity,
+			      const native_mobile_birth_cash_role_recipe &role,
+			      const flatfile_shopkeeper_record &checkpoint)
+{
+	require(checkpoint.shop_id == static_cast<uint32_t>(role.original.reset_shop_index) &&
+			checkpoint.mob_vnum == role.original.mobile_vnum &&
+			checkpoint.room_vnum == role.original.reset_room_vnum &&
+			checkpoint.revision == 1 && checkpoint.saved_at >= 0 &&
+			checkpoint.cash >= 0 && checkpoint.cash <= INT_MAX && identity.image.cash,
+		EINVAL);
+	require(checkpoint.affects.size() <= PLAYER_SNAPSHOT_MAX_ROWS &&
+			identity.image.items.size() <= ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS &&
+			identity.image.items.size() <= ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES,
+		E2BIG);
+	int64_t value = 0;
+	checked(economic_coin_value(identity.image.cash->denominations.amount, &value));
+	require(value == checkpoint.cash && shared_item_bytes(identity.image.items) ==
+						    shared_item_bytes(checkpoint.items),
+		ESTALE);
+	// Time/roaming/affects remain authentic original producer observations.
+	// The command carries no permission to synthesize them or attach a body.
+}
+void shared_original_exclusion(MYSQL *connection, const critical_command &command,
+			       const birth_identity &identity)
+{
+	const auto &meta = identity.intent.admission.metadata;
+	empty(connection,
+	      "SELECT operation_id FROM economic_accounting_source_claim WHERE lineage=" +
+		      id(meta.lineage) + " AND source_event=" + source(meta) + " FOR UPDATE");
+	empty(connection,
+	      "SELECT mapping_id FROM economic_account_mapping WHERE (backend_kind=1 AND locator_kind=" +
+		      std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) + " AND native_id=" +
+		      std::to_string(identity.image.reference.mobile_instance_id) +
+		      ") OR creating_operation_id=" + id(command.operation_id) +
+		      " ORDER BY mapping_id FOR UPDATE");
+}
+void shared_origin_absence(MYSQL *connection, const critical_command &command,
+			   const birth_identity &identity)
+{
+	empty(connection,
+	      "SELECT mobile_instance_id FROM quest_mobile_native_birth_origin WHERE mobile_instance_id=" +
+		      std::to_string(identity.image.reference.mobile_instance_id) +
+		      " OR birth_operation=" + id(command.operation_id) + " FOR UPDATE");
+}
+economic_sql_native_mobile_birth_shared_shop_stock
+initial_shared_before(MYSQL *connection, const critical_command &command,
+		      const birth_identity &identity, quest_mobile_native_sql_row *native_before)
+{
+	inbox(connection, command, true);
+	const auto &meta = identity.intent.admission.metadata;
+	economic_sql_authority_snapshot authority;
+	const auto authority_error =
+		economic_sql_lock_authority(connection, meta.lineage, meta.epoch, {}, &authority);
+	require(!authority_error, authority_error);
+	shared_original_exclusion(connection, command, identity);
+	economic_sql_native_mobile_birth_shared_shop_before before;
+	const auto before_error =
+		economic_sql_native_mobile_birth_shared_shop_observe_before_locked(
+			connection, command, &before);
+	require(!before_error, before_error);
+	require(!before.keeper_present, ENOTSUP);
+	// Exactly one reserved native lifetime participates; hence ascending native-ID
+	// order is this single authentic ID. Phase1 already holds SHOP/owner locks.
+	const auto native_error = quest_mobile_native_sql_lock(
+		connection, identity.image.reference.mobile_instance_id, native_before);
+	require(!native_error, native_error);
+	require(!native_before->present, EEXIST);
+	economic_sql_native_mobile_birth_shared_shop_stock stock;
+	const auto stock_error = economic_sql_native_mobile_birth_shared_shop_observe_stock_locked(
+		connection, command, before, &stock);
+	require(!stock_error, stock_error);
+	require(!stock.before.keeper_present && stock.physical_routes.empty() &&
+			stock.keeper_items.empty() && stock.keeper_affects.empty(),
+		ESTALE);
+	// An absent physical keeper cannot conceal active SHOP stock. Preserve
+	// genuine inactive history; never union it into the original born forest.
+	for (const auto &row : stock.custody)
+		require(row.snapshot.position.state != item_custody_state::active, ENODATA);
+	empty(connection, "SELECT revision FROM item_owner_revision WHERE " +
+				  shared_owner(before.shop_owner) +
+				  " AND owner_context_id<>0 FOR UPDATE");
+	// Reuse the complete original birth source/history/UID/physical absence proof
+	// only AFTER both shared observer phases; it cannot create a wallet/owner.
+	quest_mobile_native_sql_row confirmed;
+	const auto values = uids(identity.image);
+	original_absence(connection, command, identity, values, &confirmed);
+	require(confirmed.original_session == native_before->original_session && !confirmed.present,
+		ESTALE);
+	shared_origin_absence(connection, command, identity);
+	bool storage = false;
+	errno = 0;
+	require(shop_item_runtime_storage_available(connection, &storage), errno ? errno : EIO);
+	require(storage, ENOTSUP);
+	return stock;
+}
+native_mobile_birth_shared_shop_participant
+initial_shared_participant(const economic_sql_native_mobile_birth_shared_shop_stock &before,
+			   const quest_mobile_native_image &image)
+{
+	native_mobile_birth_shared_shop_participant value;
+	value.shop_id = before.before.shop_id;
+	value.shop_after_present = true;
+	value.shop_revision_after = 1; // Genuine initial SQL save's insert default.
+	value.owner_before_present = before.before.owner_present;
+	value.owner_revision_before = before.before.owner_revision;
+	value.owner_after_present = value.owner_before_present;
+	value.owner_revision_after = value.owner_revision_before;
+	if (!image.items.empty())
+	{
+		require(!value.owner_before_present || value.owner_revision_before != UINT64_MAX,
+			ERANGE);
+		value.owner_after_present = true;
+		value.owner_revision_after = value.owner_revision_before + 1;
+	}
+	value.born_cash = image.cash->denominations.amount;
+	require(native_mobile_birth_shared_shop_participant_valid(value), EINVAL);
+	return value;
+}
+fields shared_item_row(const economic_item_event &event, int32_t vnum)
+{
+	auto row = item_row(event, vnum);
+	for (auto &[key, value] : row)
+		if (key == "owner_type")
+			value = std::to_string(static_cast<uint8_t>(event.after.owner.type));
+	return row;
+}
+fields shared_ledger(const critical_command &command, const economic_item_event &event,
+		     uint64_t after_revision)
+{
+	auto row = ledger(command, event);
+	for (auto &[key, value] : row)
+	{
+		if (key == "to_owner_type")
+			value = std::to_string(static_cast<uint8_t>(event.after.owner.type));
+		else if (key == "to_owner_revision")
+			value = std::to_string(after_revision);
+	}
+	return row;
+}
+fields shared_affect(uint32_t keeper, const flatfile_shopkeeper_affect_record &affect)
+{
+	fields row{ { "shopkeeper_id", std::to_string(keeper) },
+		    { "type", std::to_string(affect.type) },
+		    { "duration", std::to_string(affect.duration) },
+		    { "modifier", std::to_string(affect.modifier) },
+		    { "location", std::to_string(affect.location) } };
+	for (size_t index = 0; index < affect.bitvectors.size(); ++index)
+		row.emplace_back("bitvector" + std::to_string(index + 1),
+				 std::to_string(affect.bitvectors[index]));
+	return row;
+}
+fields shared_history_row(const economic_sql_native_mobile_birth_shared_shop_custody &value)
+{
+	const auto &p = value.snapshot.position;
+	return { { "item_uid", std::to_string(value.snapshot.uid) },
+		 { "root_item_uid", std::to_string(p.root_uid) },
+		 { "parent_item_uid", p.parent_uid ? std::to_string(p.parent_uid) : "NULL" },
+		 { "owner_type", std::to_string(static_cast<uint8_t>(p.owner.type)) },
+		 { "owner_id", std::to_string(p.owner.id) },
+		 { "owner_context_id", std::to_string(p.owner.context_id) },
+		 { "item_revision", std::to_string(p.revision) },
+		 { "vnum", std::to_string(value.vnum) },
+		 { "state", std::to_string(static_cast<uint8_t>(p.state)) },
+		 { "equipment_slot", std::to_string(p.equipment_slot) },
+		 { "coin_payload", value.coin_payload ? hex(*value.coin_payload) : "NULL" } };
+}
+void shared_evidence(MYSQL *connection, const critical_command &command,
+		     const economic_accounting_plan &plan, uint64_t owner_revision, bool append)
+{
+	// Shared SHOP is compatibility cash, never a finite native treasury/posting.
+	require(plan.accounts.empty() && plan.postings.empty() && plan.children.empty(), EILSEQ);
+	const auto root = operation(command.operation_id, plan, command.accounting_intent);
+	if (append)
+		insert(connection, "economic_accounting_operation", root);
+	count(connection, "economic_accounting_operation", predicate(root), 1);
+	for (const auto &event : plan.item_events)
+	{
+		count(connection, "item_ownership_ledger",
+		      predicate(shared_ledger(command, event, owner_revision)), 1);
+		economic_accounting_item_reference ref{};
+		ref.operation_id = command.operation_id;
+		ref.line_index = static_cast<uint16_t>(event.event_index);
+		ref.event_index = event.event_index;
+		ref.item_uid = event.uid;
+		ref.after_revision = 1;
+		ref.legacy_operation_id = command.operation_id;
+		ref.legacy_event_index = static_cast<uint16_t>(event.event_index);
+		if (append)
+		{
+			errno = 0;
+			require(economic_accounting_item_reference_insert(connection, ref),
+				errno ? errno : EIO);
+		}
+		count(connection, "economic_accounting_item_reference",
+		      predicate(
+			      { { "operation_id", id(command.operation_id) },
+				{ "line_index", std::to_string(ref.line_index) },
+				{ "event_index", std::to_string(ref.event_index) },
+				{ "child_index", "0" },
+				{ "item_uid", std::to_string(ref.item_uid) },
+				{ "before_revision", "0" },
+				{ "after_revision", "1" },
+				{ "legacy_operation_id", id(command.operation_id) },
+				{ "legacy_event_index", std::to_string(ref.legacy_event_index) } }),
+		      1);
+	}
+	const fields claim{ { "lineage", id(plan.metadata.lineage) },
+			    { "source_event", source(plan.metadata) },
+			    { "operation_id", id(command.operation_id) },
+			    { "outcome", "1" } };
+	if (append)
+		insert(connection, "economic_accounting_source_claim", claim);
+	count(connection, "economic_accounting_source_claim", predicate(claim), 1);
+	const auto where = "operation_id=" + id(command.operation_id);
+	count(connection, "economic_accounting_account_effect", where, 0);
+	count(connection, "economic_accounting_coin_posting", where, 0);
+	count(connection, "economic_accounting_item_reference", where, plan.item_events.size());
+	count(connection, "item_ownership_ledger", where, plan.item_events.size());
+	count(connection, "economic_accounting_source_claim", where, 1);
+	count(connection, "economic_accounting_child", where, 0);
+}
+} // namespace
+#endif
+
+struct economic_sql_native_mobile_birth_shared_shop_transaction::implementation
+{
+	unsigned int code = EINPROGRESS;
+	bool attempted = false;
+	enum class phase
+	{
+		prepared,
+		applied,
+		finalized,
+		verified,
+		failed
+	} phase = phase::prepared;
+#ifndef __NO_MYSQL__
+	MYSQL *connection = nullptr;
+	unsigned long session = 0;
+	critical_command command;
+	birth_identity identity;
+	native_mobile_birth_cash_role_recipe role;
+	flatfile_shopkeeper_record checkpoint;
+	economic_sql_native_mobile_birth_shared_shop_stock before;
+	quest_mobile_native_sql_row native_before;
+	native_mobile_birth_shared_shop_participant participant;
+	economic_accounting_plan plan;
+	native_mobile_birth_cash_role_result result{};
+	uint32_t keeper_id = 0;
+	std::vector<uint64_t> physical_ids, affect_ids;
+	void verify_before();
+	void verify_current();
+#endif
+};
+economic_sql_native_mobile_birth_shared_shop_transaction::
+	economic_sql_native_mobile_birth_shared_shop_transaction(
+		std::unique_ptr<implementation> state)
+	: state_(std::move(state))
+{
+}
+#ifndef __NO_MYSQL__
+void economic_sql_native_mobile_birth_shared_shop_transaction::implementation::verify_before()
+{
+	quest_mobile_native_sql_row native;
+	const auto observed = initial_shared_before(connection, command, identity, &native);
+	require(native.original_session == session && !native.present &&
+			observed.before.owner_present == before.before.owner_present &&
+			observed.before.owner_revision == before.before.owner_revision &&
+			observed.before.authority.lineage_revision ==
+				before.before.authority.lineage_revision &&
+			observed.custody.size() == before.custody.size(),
+		ESTALE);
+	for (size_t index = 0; index < before.custody.size(); ++index)
+		require(shared_history_row(observed.custody[index]) ==
+				shared_history_row(before.custody[index]),
+			ESTALE);
+}
+void economic_sql_native_mobile_birth_shared_shop_transaction::implementation::verify_current()
+{
+	active(connection, session);
+	economic_sql_authority_snapshot authority;
+	const auto authority_error =
+		economic_sql_lock_authority(connection, before.before.authority.lineage,
+					    before.before.authority.epoch, {}, &authority);
+	require(!authority_error, authority_error);
+	require(authority.lineage_revision == before.before.authority.lineage_revision, ESTALE);
+	// SHOP never borrows an ordinary mobile wallet or a type12 custody counter.
+	empty(connection,
+	      "SELECT mapping_id FROM economic_account_mapping WHERE (backend_kind=1 AND locator_kind=" +
+		      std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) + " AND native_id=" +
+		      std::to_string(identity.image.reference.mobile_instance_id) +
+		      ") OR creating_operation_id=" + id(command.operation_id) + " FOR UPDATE");
+	empty(connection, "SELECT revision FROM item_owner_revision WHERE " +
+				  owner(identity.image.reference.mobile_instance_id) +
+				  " FOR UPDATE");
+	quest_mobile_native_sql_row native;
+	const auto native_error = quest_mobile_native_sql_lock(
+		connection, identity.image.reference.mobile_instance_id, &native);
+	require(!native_error, native_error);
+	require(native.present && native.original_session == session, ESTALE);
+	std::vector<uint8_t> actual, expected;
+	require(quest_mobile_native_image_encode(native.image, &actual) ==
+				player_snapshot_codec_result::ok &&
+			quest_mobile_native_image_encode(identity.image, &expected) ==
+				player_snapshot_codec_result::ok,
+		EILSEQ);
+	require(actual == expected, ESTALE);
+	const auto where = shared_owner(before.before.shop_owner);
+	count(connection, "item_owner_revision", where, participant.owner_after_present ? 1 : 0);
+	if (participant.owner_after_present)
+		count(connection, "item_owner_revision",
+		      where + " AND owner_context_id=0 AND revision=" +
+			      std::to_string(participant.owner_revision_after),
+		      1);
+	const auto born = uids(identity.image);
+	const auto scope = "(" + where + ") OR " +
+			   custody_scope(identity.image.reference.mobile_instance_id, born);
+	// Full selected history + born rows + foreign links, sorted before physical.
+	execute(connection, "SELECT item_uid FROM item_current_owner WHERE " + scope +
+				    " ORDER BY item_uid LIMIT " +
+				    std::to_string(before.custody.size() + born.size() + 1) +
+				    " FOR UPDATE");
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> cut(mysql_store_result(connection),
+								     mysql_free_result);
+	require(bool(cut) && mysql_num_fields(cut.get()) == 1 &&
+			mysql_num_rows(cut.get()) == before.custody.size() + born.size(),
+		ESTALE);
+	std::vector<uint64_t> cut_uids;
+	cut_uids.reserve(before.custody.size() + born.size());
+	for (const auto &row : before.custody)
+		cut_uids.push_back(row.snapshot.uid);
+	cut_uids.insert(cut_uids.end(), born.begin(), born.end());
+	std::sort(cut_uids.begin(), cut_uids.end());
+	for (uint64_t uid : cut_uids)
+	{
+		auto row = mysql_fetch_row(cut.get());
+		auto lengths = mysql_fetch_lengths(cut.get());
+		require(row && lengths && row[0] &&
+				integer<uint64_t>(std::string(row[0], lengths[0])) == uid,
+			ESTALE);
+	}
+	for (const auto &row : before.custody)
+		count(connection, "item_current_owner", predicate(shared_history_row(row)), 1);
+	for (size_t index = 0; index < plan.item_events.size(); ++index)
+		count(connection, "item_current_owner",
+		      predicate(shared_item_row(plan.item_events[index],
+						identity.image.items[index].vnum)),
+		      1);
+	const fields keeper{ { "id", std::to_string(keeper_id) },
+			     { "shop_id", std::to_string(checkpoint.shop_id) },
+			     { "mob_vnum", std::to_string(checkpoint.mob_vnum) },
+			     { "room_vnum", std::to_string(checkpoint.room_vnum) },
+			     { "save_time", "FROM_UNIXTIME(NULLIF(" +
+						    std::to_string(checkpoint.saved_at) + ",0))" },
+			     { "cash", std::to_string(checkpoint.cash) },
+			     { "shop_revision", "1" },
+			     { "keeper_roaming", checkpoint.roaming ? "1" : "0" },
+			     { "runtime_payload_checkpoint_revision", "1" } };
+	count(connection, "shopkeepers", "shop_id=" + std::to_string(checkpoint.shop_id), 1);
+	count(connection, "shopkeepers", predicate(keeper), 1);
+	shop_item_runtime_image physical;
+	errno = 0;
+	require(shop_item_runtime_lock_checkpoint_image(connection, keeper_id, checkpoint.shop_id,
+							checkpoint.mob_vnum, identity.image.items,
+							&physical),
+		errno ? errno : EIO);
+	require(physical.size() == identity.image.items.size(), ESTALE);
+	for (size_t index = 0; index < identity.image.items.size(); ++index)
+	{
+		const auto &item = identity.image.items[index];
+		const auto found = physical.find(item.object_uid);
+		require(found != physical.end() && found->second.id == physical_ids[index] &&
+				found->second.revision == 1 && found->second.payload_present,
+			ESTALE);
+		for (const char *table :
+		     { "player_items", "player_pet_items", "locker_items", "account_locker_items",
+		       "corpse_items", "saved_items", "siege_items" })
+			empty(connection, "SELECT id FROM " + std::string(table) +
+						  " WHERE obj_uid=" +
+						  std::to_string(item.object_uid) + " FOR UPDATE");
+		for (const char *table : { "auction_item_custody", "collector_listings",
+					   "player_death_restitution_runtime" })
+			empty(connection, "SELECT item_uid FROM " + std::string(table) +
+						  " WHERE item_uid=" +
+						  std::to_string(item.object_uid) + " FOR UPDATE");
+	}
+	count(connection, "shopkeeper_affects", "shopkeeper_id=" + std::to_string(keeper_id),
+	      affect_ids.size());
+	for (size_t index = 0; index < affect_ids.size(); ++index)
+	{
+		auto row = shared_affect(keeper_id, checkpoint.affects[index]);
+		row.emplace_back("id", std::to_string(affect_ids[index]));
+		count(connection, "shopkeeper_affects", predicate(row), 1);
+	}
+	active(connection, session);
+}
+#endif
+economic_sql_native_mobile_birth_shared_shop_transaction::
+	~economic_sql_native_mobile_birth_shared_shop_transaction() = default;
+bool economic_sql_native_mobile_birth_shared_shop_transaction::mutation_attempted() const noexcept
+{
+	return state_->attempted;
+}
+unsigned int economic_sql_native_mobile_birth_shared_shop_transaction::result_code() const noexcept
+{
+	return state_->code;
+}
+const native_mobile_birth_cash_role_result *
+economic_sql_native_mobile_birth_shared_shop_transaction::result() const noexcept
+{
+#ifdef __NO_MYSQL__
+	return nullptr;
+#else
+	return !state_->code && (state_->phase == implementation::phase::applied ||
+				 state_->phase == implementation::phase::finalized ||
+				 state_->phase == implementation::phase::verified) ?
+		       &state_->result :
+		       nullptr;
+#endif
+}
+uint64_t economic_sql_native_mobile_birth_shared_shop_transaction::durable_revision() const noexcept
+{
+#ifdef __NO_MYSQL__
+	return 0;
+#else
+	return result() ? std::max(uint64_t{ 1 }, state_->participant.owner_revision_after) : 0;
+#endif
+}
+unsigned int economic_sql_native_mobile_birth_shared_shop_transaction::prepare(
+	MYSQL *connection, const critical_command &command,
+	const flatfile_shopkeeper_record &original_checkpoint,
+	std::unique_ptr<economic_sql_native_mobile_birth_shared_shop_transaction> *output)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_checkpoint;
+	(void)output;
+	return ENOTSUP;
+#else
+	try
+	{
+		require(connection && output, EINVAL);
+		auto state = std::make_unique<implementation>();
+		state->connection = connection;
+		state->session = mysql_thread_id(connection);
+		active(connection, state->session);
+		state->identity = decode_initial_shared(command, &state->role);
+		initial_checkpoint_valid(state->identity, state->role, original_checkpoint);
+		state->command = command;
+		state->checkpoint = original_checkpoint;
+		state->before = initial_shared_before(connection, command, state->identity,
+						      &state->native_before);
+		state->participant =
+			initial_shared_participant(state->before, state->identity.image);
+		checked(native_mobile_birth_cash_role_accounting_compile(
+			command, state->participant, &state->plan));
+		require(state->plan.item_events.size() == state->identity.image.items.size(),
+			EILSEQ);
+		for (size_t index = 0; index < state->plan.item_events.size(); ++index)
+		{
+			const auto &event = state->plan.item_events[index];
+			const auto &item = state->identity.image.items[index];
+			// Enforce actual equipment correspondence, not a flattened catalog.
+			// The paired compiler must preserve the original native save slots.
+			require(event.uid == item.object_uid &&
+					event.after.equipment_slot == item.equipment_slot,
+				ENOTSUP);
+		}
+		checked(native_mobile_birth_cash_role_result_build(command, state->participant,
+								   state->plan, &state->result));
+		state->physical_ids.resize(state->checkpoint.items.size());
+		state->affect_ids.resize(state->checkpoint.affects.size());
+		active(connection, state->session);
+		auto prepared =
+			std::unique_ptr<economic_sql_native_mobile_birth_shared_shop_transaction>(
+				new economic_sql_native_mobile_birth_shared_shop_transaction(
+					std::move(state)));
+		*output = std::move(prepared);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+#endif
+}
+unsigned int economic_sql_native_mobile_birth_shared_shop_transaction::apply()
+{
+#ifdef __NO_MYSQL__
+	return ENOTSUP;
+#else
+	auto &state = *state_;
+	if (state.phase != implementation::phase::prepared)
+		return EPERM;
+	state.phase = implementation::phase::failed;
+	try
+	{
+		active(state.connection, state.session);
+		state.verify_before();
+		// Monotonic attempt latch precedes every potentially writing call below.
+		// A false return never authenticates rollback or a durable refusal.
+		state.attempted = true;
+		insert(state.connection, "shopkeepers",
+		       { { "shop_id", std::to_string(state.checkpoint.shop_id) },
+			 { "mob_vnum", std::to_string(state.checkpoint.mob_vnum) },
+			 { "room_vnum", std::to_string(state.checkpoint.room_vnum) },
+			 { "save_time", "FROM_UNIXTIME(NULLIF(" +
+						std::to_string(state.checkpoint.saved_at) +
+						",0))" },
+			 { "cash", std::to_string(state.checkpoint.cash) },
+			 { "shop_revision", "1" },
+			 { "keeper_roaming", state.checkpoint.roaming ? "1" : "0" },
+			 { "runtime_payload_checkpoint_revision", "1" } });
+		const auto keeper = mysql_insert_id(state.connection);
+		require(keeper && keeper <= INT_MAX, ERANGE);
+		state.keeper_id = static_cast<uint32_t>(keeper);
+		const auto &participant = state.participant;
+		const auto &shop_owner = state.before.before.shop_owner;
+		if (!state.identity.image.items.empty())
+		{
+			state.attempted = true;
+			if (participant.owner_before_present)
+			{
+				execute(state.connection,
+					"UPDATE item_owner_revision SET revision=" +
+						std::to_string(participant.owner_revision_after) +
+						" WHERE " + shared_owner(shop_owner) +
+						" AND owner_context_id=0 AND revision=" +
+						std::to_string(participant.owner_revision_before));
+				require(mysql_affected_rows(state.connection) == 1, ESTALE);
+			}
+			else
+				insert(state.connection, "item_owner_revision",
+				       { { "owner_type",
+					   std::to_string(static_cast<uint8_t>(shop_owner.type)) },
+					 { "owner_id", std::to_string(shop_owner.id) },
+					 { "owner_context_id", "0" },
+					 { "revision", "1" } });
+		}
+		quest_mobile_native_sql_row native_after;
+		state.attempted = true;
+		const auto native_error = quest_mobile_native_sql_apply_locked(
+			state.connection, state.command.operation_id, state.native_before,
+			state.identity.image, &native_after);
+		require(!native_error, native_error);
+		for (size_t index = 0; index < state.plan.item_events.size(); ++index)
+		{
+			const auto &item = state.identity.image.items[index];
+			const auto &event = state.plan.item_events[index];
+			state.attempted = true;
+			insert(state.connection, "item_current_owner",
+			       shared_item_row(event, item.vnum));
+			state.attempted = true;
+			insert(state.connection, "item_ownership_ledger",
+			       shared_ledger(state.command, event,
+					     participant.owner_revision_after));
+			const auto parent =
+				item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					state.physical_ids[static_cast<size_t>(item.parent_index)];
+			state.attempted = true;
+			insert(state.connection, "shopkeeper_items",
+			       { { "shopkeeper_id", std::to_string(state.keeper_id) },
+				 { "vnum", std::to_string(item.vnum) },
+				 { "equip_slot", std::to_string(item.equipment_slot) },
+				 { "container_id", parent ? std::to_string(parent) : "NULL" },
+				 { "quantity", "1" },
+				 { "obj_uid", std::to_string(item.object_uid) } });
+			const auto row_id = mysql_insert_id(state.connection);
+			require(row_id && row_id <= INT_MAX, ERANGE);
+			state.physical_ids[index] = row_id;
+			state.attempted = true;
+			errno = 0;
+			require(shop_item_runtime_write(state.connection, true, row_id, item),
+				errno ? errno : EIO);
+		}
+		for (size_t index = 0; index < state.checkpoint.affects.size(); ++index)
+		{
+			state.attempted = true;
+			insert(state.connection, "shopkeeper_affects",
+			       shared_affect(state.keeper_id, state.checkpoint.affects[index]));
+			const auto row_id = mysql_insert_id(state.connection);
+			require(row_id && row_id <= UINT32_MAX, ERANGE);
+			state.affect_ids[index] = row_id;
+		}
+		state.verify_current();
+		active(state.connection, state.session);
+		state.code = 0;
+		state.phase = implementation::phase::applied;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		state.code = error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		state.code = ENOMEM;
+	}
+	catch (...)
+	{
+		state.code = EINVAL;
+	}
+	return state.code;
+#endif
+}
+unsigned int economic_sql_native_mobile_birth_shared_shop_transaction::finalize()
+{
+#ifdef __NO_MYSQL__
+	return ENOTSUP;
+#else
+	auto &state = *state_;
+	if (state.phase != implementation::phase::applied)
+		return EPERM;
+	state.phase = implementation::phase::failed;
+	try
+	{
+		active(state.connection, state.session);
+		inbox(state.connection, state.command, true);
+		state.verify_current();
+		state.attempted = true;
+		shared_evidence(state.connection, state.command, state.plan,
+				state.participant.owner_revision_after, true);
+		shared_evidence(state.connection, state.command, state.plan,
+				state.participant.owner_revision_after, false);
+		state.verify_current();
+		inbox(state.connection, state.command, true);
+		active(state.connection, state.session);
+		state.code = 0;
+		state.phase = implementation::phase::finalized;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		state.code = error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		state.code = ENOMEM;
+	}
+	catch (...)
+	{
+		state.code = EINVAL;
+	}
+	return state.code;
+#endif
+}
+unsigned int economic_sql_native_mobile_birth_shared_shop_transaction::verify_root_completion()
+{
+#ifdef __NO_MYSQL__
+	return ENOTSUP;
+#else
+	auto &state = *state_;
+	if (state.phase != implementation::phase::finalized)
+		return EPERM;
+	state.phase = implementation::phase::failed;
+	try
+	{
+		active(state.connection, state.session);
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> payload{};
+		require(native_mobile_birth_cash_role_result_matches(
+				state.command, state.participant, state.plan, state.result) &&
+				native_mobile_birth_cash_role_result_encode(state.result, &payload),
+			EILSEQ);
+		inbox(state.connection, state.command, false);
+		count(state.connection, "critical_operation_inbox",
+		      predicate(
+			      { { "operation_id", id(state.command.operation_id) },
+				{ "result_code", "0" },
+				{ "failure_stage", "0" },
+				{ "durable_revision",
+				  std::to_string(std::max(
+					  uint64_t{ 1 }, state.participant.owner_revision_after)) },
+				{ "result_payload", hex(payload) } }) +
+			      " AND committed_at IS NOT NULL",
+		      1);
+		shared_evidence(state.connection, state.command, state.plan,
+				state.participant.owner_revision_after, false);
+		outbox(state.connection, state.command.operation_id, payload, true,
+		       NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION);
+		state.verify_current();
+		active(state.connection, state.session);
+		state.code = 0;
+		state.phase = implementation::phase::verified;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		state.code = error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		state.code = ENOMEM;
+	}
+	catch (...)
+	{
+		state.code = EINVAL;
+	}
+	return state.code;
+#endif
+}
+
+unsigned int economic_sql_native_mobile_birth_shared_shop_verify_retained(
+	MYSQL *connection, const critical_command &command,
+	const flatfile_shopkeeper_record &original_checkpoint, unsigned int result_code,
+	std::span<const uint8_t> payload) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_checkpoint;
+	(void)result_code;
+	(void)payload;
+	return ENOTSUP;
+#else
+	try
+	{
+		require(connection && !result_code, EINVAL);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		native_mobile_birth_cash_role_recipe role;
+		const auto identity = decode_initial_shared(command, &role);
+		initial_checkpoint_valid(identity, role, original_checkpoint);
+		native_mobile_birth_cash_role_result result{};
+		require(native_mobile_birth_cash_role_result_decode(payload, &result), EILSEQ);
+		require(result.role == native_mobile_birth_cash_role::shared_shopkeeper, EILSEQ);
+		const auto &participant = result.shared;
+		// This API proves only the implemented missing-SHOP initial policy.
+		// General MBR4/compiler validity alone also permits later SHOP images.
+		require(!participant.shop_before_present && participant.shop_revision_before == 0 &&
+				participant.shop_after_present &&
+				participant.shop_revision_after == 1,
+			EILSEQ);
+		if (identity.image.items.empty())
+			require(participant.owner_before_present ==
+						participant.owner_after_present &&
+					participant.owner_revision_before ==
+						participant.owner_revision_after,
+				EILSEQ);
+		else
+			require(participant.owner_after_present &&
+					participant.owner_revision_before != UINT64_MAX &&
+					participant.owner_revision_after ==
+						participant.owner_revision_before + 1,
+				EILSEQ);
+		economic_accounting_plan expected;
+		checked(native_mobile_birth_cash_role_accounting_compile(command, participant,
+									 &expected));
+		require(native_mobile_birth_cash_role_result_matches(command, participant, expected,
+								     result),
+			EILSEQ);
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> canonical{};
+		require(native_mobile_birth_cash_role_result_encode(result, &canonical) &&
+				payload.size() == canonical.size() &&
+				std::equal(canonical.begin(), canonical.end(), payload.begin()),
+			EILSEQ);
+		inbox(connection, command, false);
+		count(connection, "critical_operation_inbox",
+		      predicate({ { "operation_id", id(command.operation_id) },
+				  { "result_code", "0" },
+				  { "failure_stage", "0" },
+				  { "durable_revision",
+				    std::to_string(std::max(uint64_t{ 1 },
+							    participant.owner_revision_after)) },
+				  { "result_payload", hex(payload) } }) +
+			      " AND committed_at IS NOT NULL",
+		      1);
+		// Canonical plan/evidence and source claim are historical and remain
+		// valid after the keeper/native image or active epoch has advanced.
+		shared_evidence(connection, command, expected, participant.owner_revision_after,
+				false);
+		count(connection, "economic_account_mapping",
+		      "creating_operation_id=" + id(command.operation_id), 0);
+		outbox(connection, command.operation_id, payload, false,
+		       NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION);
+		active(connection, session);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+#endif
+}
+
+unsigned int economic_sql_native_mobile_birth_shared_shop_lock_publication(
+	MYSQL *connection, const critical_command &command,
+	const flatfile_shopkeeper_record &original_checkpoint,
+	const critical_completion &completion, quest_mobile_native_image *image,
+	std::vector<item_ownership_runtime_entry> *custody) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_checkpoint;
+	(void)completion;
+	(void)image;
+	(void)custody;
+	return ENOTSUP;
+#else
+	try
+	{
+		require(connection && image && custody && !completion.error_code &&
+				completion.operation_id.bytes == command.operation_id.bytes &&
+				completion.failure_stage == critical_failure_stage::none &&
+				completion.result_size ==
+					NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES &&
+				(completion.outcome == critical_apply_outcome::applied ||
+				 completion.outcome == critical_apply_outcome::already_applied) &&
+				critical_completion_disposition_valid(completion),
+			EINVAL);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const std::span<const uint8_t> payload(completion.result_payload.data(),
+						       completion.result_size);
+		const auto retained = economic_sql_native_mobile_birth_shared_shop_verify_retained(
+			connection, command, original_checkpoint, 0, payload);
+		require(!retained, retained);
+		native_mobile_birth_cash_role_recipe role;
+		const auto identity = decode_initial_shared(command, &role);
+		native_mobile_birth_cash_role_result result{};
+		require(native_mobile_birth_cash_role_result_decode(payload, &result) &&
+				completion.durable_revision ==
+					std::max(uint64_t{ 1 }, result.shared.owner_revision_after),
+			EILSEQ);
+		economic_accounting_plan plan;
+		checked(native_mobile_birth_cash_role_accounting_compile(command, result.shared,
+									 &plan));
+		// Retained historical reads may already have established an older
+		// consistent snapshot. Every current-only equality below is a bounded
+		// locking read, including NULL payload and exact affect multiplicity.
+		const auto current_count = [&](const std::string &table, const std::string &where,
+					       size_t expected_rows)
+		{
+			require(expected_rows <= PLAYER_SNAPSHOT_MAX_ROWS, E2BIG);
+			execute(connection, "SELECT 1 FROM " + table + " WHERE " + where +
+						    " LIMIT " + std::to_string(expected_rows + 1) +
+						    " FOR UPDATE");
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			require(bool(rows),
+				mysql_errno(connection) ? mysql_errno(connection) : EIO);
+			require(mysql_num_fields(rows.get()) == 1 &&
+					mysql_num_rows(rows.get()) == expected_rows,
+				ESTALE);
+		};
+		// Phase1 is actual lineage/SHOP/owner BEFORE locking the native ID.
+		economic_sql_native_mobile_birth_shared_shop_before before;
+		const auto before_error =
+			economic_sql_native_mobile_birth_shared_shop_observe_before_locked(
+				connection, command, &before);
+		require(!before_error, before_error);
+		require(before.original_session == session && before.keeper_present &&
+				before.shop_revision == 1 && before.payload_checkpoint_present &&
+				before.payload_checkpoint_revision == 1 &&
+				before.keeper_cash == original_checkpoint.cash &&
+				before.keeper_roaming == original_checkpoint.roaming &&
+				before.owner_present == result.shared.owner_after_present &&
+				before.owner_revision == result.shared.owner_revision_after,
+			ESTALE);
+		// Shared birth cannot borrow an ordinary wallet/type12 owner clock.
+		empty(connection,
+		      "SELECT mapping_id FROM economic_account_mapping WHERE (backend_kind=1 AND locator_kind=" +
+			      std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) +
+			      " AND native_id=" +
+			      std::to_string(identity.image.reference.mobile_instance_id) +
+			      ") OR creating_operation_id=" + id(command.operation_id) +
+			      " FOR UPDATE");
+		empty(connection, "SELECT revision FROM item_owner_revision WHERE " +
+					  owner(identity.image.reference.mobile_instance_id) +
+					  " FOR UPDATE");
+		empty(connection, "SELECT revision FROM item_owner_revision WHERE " +
+					  shared_owner(before.shop_owner) +
+					  " AND owner_context_id<>0 FOR UPDATE");
+		quest_mobile_native_sql_row native;
+		const auto native_error = quest_mobile_native_sql_lock(
+			connection, identity.image.reference.mobile_instance_id, &native);
+		require(!native_error, native_error);
+		require(native.present && native.original_session == session, ESTALE);
+		std::vector<uint8_t> actual, expected;
+		require(quest_mobile_native_image_encode(native.image, &actual) ==
+					player_snapshot_codec_result::ok &&
+				quest_mobile_native_image_encode(identity.image, &expected) ==
+					player_snapshot_codec_result::ok,
+			EILSEQ);
+		require(actual == expected, ESTALE);
+		// Phase2 rechecks the SAME session and complete BEFORE, then acquires
+		// the globally sorted current custody cut before any physical stock.
+		economic_sql_native_mobile_birth_shared_shop_stock stock;
+		const auto stock_error =
+			economic_sql_native_mobile_birth_shared_shop_observe_current_stock_locked(
+				connection, command, before, &stock);
+		require(!stock_error, stock_error);
+		const auto born = uids(identity.image);
+		size_t active_count = 0;
+		for (const auto &row : stock.custody)
+		{
+			const bool belongs =
+				std::binary_search(born.begin(), born.end(), row.snapshot.uid);
+			if (row.snapshot.position.state == item_custody_state::active)
+			{
+				require(belongs && item_owner_identity_equal(
+							   row.snapshot.position.owner,
+							   before.shop_owner),
+					ESTALE);
+				++active_count;
+			}
+			else
+				require(!belongs, ESTALE);
+		}
+		require(active_count == born.size() && stock.keeper_items.size() == born.size() &&
+				stock.physical_routes.size() == born.size(),
+			ESTALE);
+		const fields keeper{ { "id", std::to_string(before.keeper_id) },
+				     { "shop_id", std::to_string(original_checkpoint.shop_id) },
+				     { "mob_vnum", std::to_string(original_checkpoint.mob_vnum) },
+				     { "room_vnum", std::to_string(original_checkpoint.room_vnum) },
+				     { "save_time",
+				       "FROM_UNIXTIME(NULLIF(" +
+					       std::to_string(original_checkpoint.saved_at) +
+					       ",0))" },
+				     { "cash", std::to_string(original_checkpoint.cash) },
+				     { "shop_revision", "1" },
+				     { "keeper_roaming", original_checkpoint.roaming ? "1" : "0" },
+				     { "runtime_payload_checkpoint_revision", "1" } };
+		current_count("shopkeepers",
+			      "shop_id=" + std::to_string(original_checkpoint.shop_id), 1);
+		current_count("shopkeepers", predicate(keeper), 1);
+		shop_item_runtime_image physical;
+		errno = 0;
+		require(shop_item_runtime_lock_checkpoint_image(
+				connection, before.keeper_id, original_checkpoint.shop_id,
+				original_checkpoint.mob_vnum, identity.image.items, &physical),
+			errno ? errno : EIO);
+		require(physical.size() == born.size(), ESTALE);
+		std::vector<item_ownership_runtime_entry> verified;
+		verified.reserve(plan.item_events.size());
+		for (size_t index = 0; index < plan.item_events.size(); ++index)
+		{
+			const auto &event = plan.item_events[index];
+			const auto &item = identity.image.items[index];
+			current_count("item_current_owner",
+				      predicate(shared_item_row(event, item.vnum)), 1);
+			const auto found = physical.find(item.object_uid);
+			const auto observed = stock.keeper_items.find(item.object_uid);
+			const auto route = found == physical.end() ?
+						   stock.physical_routes.end() :
+						   stock.physical_routes.find(found->second.id);
+			require(found != physical.end() && observed != stock.keeper_items.end() &&
+					route != stock.physical_routes.end() &&
+					route->second == item.object_uid &&
+					observed->second.id == found->second.id &&
+					found->second.revision == 1 &&
+					found->second.payload_present,
+				ESTALE);
+			for (const char *table : { "player_items", "player_pet_items",
+						   "locker_items", "account_locker_items",
+						   "corpse_items", "saved_items", "siege_items" })
+				empty(connection,
+				      "SELECT id FROM " + std::string(table) + " WHERE obj_uid=" +
+					      std::to_string(item.object_uid) + " FOR UPDATE");
+			for (const char *table : { "auction_item_custody", "collector_listings",
+						   "player_death_restitution_runtime" })
+				empty(connection,
+				      "SELECT item_uid FROM " + std::string(table) +
+					      " WHERE item_uid=" + std::to_string(item.object_uid) +
+					      " FOR UPDATE");
+			verified.push_back({ event.uid, event.after.root_uid,
+					     event.after.parent_uid, event.after.owner,
+					     event.after.revision,
+					     result.shared.owner_revision_after, item.vnum,
+					     event.after.state });
+		}
+		// Compare exact affect values AND multiplicities, without requiring the
+		// original auto-increment row IDs to be carried in a restart DTO.
+		std::map<fields, size_t> affects;
+		for (const auto &affect : original_checkpoint.affects)
+			++affects[shared_affect(before.keeper_id, affect)];
+		current_count("shopkeeper_affects",
+			      "shopkeeper_id=" + std::to_string(before.keeper_id),
+			      original_checkpoint.affects.size());
+		for (const auto &[row, multiplicity] : affects)
+			current_count("shopkeeper_affects", predicate(row), multiplicity);
+		active(connection, session);
+		static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_image>);
+		static_assert(
+			std::is_nothrow_move_assignable_v<std::vector<item_ownership_runtime_entry>>);
+		*image = std::move(native.image);
+		*custody = std::move(verified);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+#endif
+}

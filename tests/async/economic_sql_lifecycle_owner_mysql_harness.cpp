@@ -18,6 +18,7 @@
 #include "persistence/critical_command_coordinator.h"
 #include "player/player_snapshot_codec.h"
 #include "world/vnum.obj.h"
+#include "world/events.h"
 #include <mysql/mysql.h>
 
 #include <algorithm>
@@ -308,6 +309,10 @@ void seed(MYSQL *connection)
 			"(5,5,NULL,1,21001,0,9," +
 			std::to_string(VOBJ_COINS) + ",1," +
 			coin_payload(5, { 3, 1, 0, 0, 0, 0, 0, 0 }) + ")");
+	execute(connection,
+		"INSERT INTO player_items(pid,obj_uid,vnum,equip_slot,container_id) VALUES(21001,2," +
+			std::to_string(VOBJ_COINS) + ",0,NULL),(21001,3,501,0,NULL),(21001,5," +
+			std::to_string(VOBJ_COINS) + ",0,NULL)");
 }
 void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_receipt &receipt)
 {
@@ -1166,6 +1171,85 @@ static void money_recovery_journey(MYSQL *setup, MYSQL *owner,
 	puts("PASS scoped actual settlement/itemclaim/fullcashout recovery; slot and omitted-consumed-origin refused; independent activation verifier remains separate");
 }
 
+#include "lifecycle_persisted_union_cases.inc"
+
+// Isolated money-fixture preconditions. Use the real v1 owner so the
+// no-bid auction has actual UID custody as well as zero monetary escrow.
+// Original current clocks/balances are reached by the genuine zero-fee result;
+// no clock is rewritten after the owner commits. Opaque bytes stay unknown.
+static void seed_money_opening_current_auction(MYSQL *setup)
+{
+	execute(setup, "ALTER TABLE auctions AUTO_INCREMENT=7001");
+	execute(setup, "UPDATE player_data SET wallet_revision=5 WHERE pid=21001");
+	execute(setup,
+		"UPDATE account_banks SET bank_revision=3 WHERE account_name='lifecycle_a' AND racewar=0");
+	execute(setup,
+		"UPDATE item_owner_revision SET revision=6 WHERE owner_type=1 AND owner_id=21001 AND owner_context_id=0");
+	execute(setup, "UPDATE item_uid_allocator SET next_uid=7 WHERE allocator_id=1");
+	execute(setup,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(6,6,NULL,1,21001,0,0,501,1)");
+	auction_command_payload payload{};
+	payload.action = auction_action::list;
+	payload.actor_pid = 21001;
+	payload.racewar = 0;
+	std::strcpy(payload.account_name.data(), "lifecycle_a");
+	std::strcpy(payload.actor_name.data(), "LifecycleOne");
+	payload.expected_wallet_revision = 5;
+	payload.expected_bank_revision = 3;
+	payload.start_price = 9000;
+	payload.buy_price = 10000;
+	payload.listing_fee = 0;
+	payload.end_time = 2;
+	payload.item_count = 1;
+	payload.items[0] = { 6, 0, 501 };
+	payload.object_blob[0] = 'x';
+	payload.object_blob_size = 1;
+	critical_command command{};
+	if (!auction_command_build(&command, ident(5), payload, critical_source_site::command,
+				   critical_deadline_class::interactive))
+		throw std::runtime_error("money precondition native v1 command refused");
+	command.accepted_at_usec = 90000;
+	execute(setup, "START TRANSACTION");
+	retain_auction_inbox(setup, command);
+	auction_command_result actual{};
+	unsigned int code = 0;
+	bool applied = false;
+	if (!auction_repository_execute(setup, command, &actual, &code, &applied) || code ||
+	    !applied)
+		throw std::runtime_error("money precondition native v1 owner refused");
+	if (actual.action != auction_action::list ||
+	    actual.event_type != auction_event_type::listed || actual.auction_id != 7001 ||
+	    actual.auction_revision != 1 || actual.item_count != 1 || actual.item_uids[0] != 6 ||
+	    actual.item_revisions[0] != 1 || actual.player_owner_revision != 7 ||
+	    actual.auction_owner_revision != 1 || actual.wallet_revision != 6 ||
+	    actual.bank_revision != 4 || actual.wallet_value_delta != 0)
+		throw std::runtime_error("money precondition native v1 result mismatch");
+	retain_auction_result(setup, command, actual);
+	const auto durable =
+		std::max({ actual.auction_revision, actual.wallet_revision, actual.bank_revision,
+			   actual.player_owner_revision, actual.auction_owner_revision });
+	execute(setup,
+		"UPDATE critical_operation_inbox SET durable_revision=" + std::to_string(durable) +
+			" WHERE operation_id=" + sql_id(command.operation_id));
+	execute(setup, "COMMIT");
+	assert_scalar(
+		setup,
+		"SELECT CONCAT(copper,',',silver,',',gold,',',platinum,',',wallet_revision) FROM player_data WHERE pid=21001",
+		"4,2,0,0,6");
+	assert_scalar(
+		setup,
+		"SELECT CONCAT(bank_copper,',',bank_silver,',',bank_gold,',',bank_platinum,',',bank_revision) FROM account_banks WHERE account_name='lifecycle_a' AND racewar=0",
+		"8,1,0,0,4");
+	assert_scalar(
+		setup,
+		"SELECT COUNT(*) FROM auction_item_custody WHERE auction_id=7001 AND slot=0 AND item_uid=6 AND item_revision=1 AND vnum=501 AND claimed_at IS NULL AND claim_pid IS NULL AND claim_operation_id IS NULL",
+		"1");
+	assert_scalar(
+		setup,
+		"SELECT COUNT(*) FROM item_current_owner WHERE item_uid=6 AND root_item_uid=6 AND parent_item_uid IS NULL AND owner_type=6 AND owner_id=7001 AND owner_context_id=0 AND item_revision=1 AND vnum=501 AND state=1",
+		"1");
+}
+
 static int money_opening_fixture(bool recovery = false)
 {
 	MYSQL *setup = nullptr, *owner = nullptr;
@@ -1181,9 +1265,7 @@ static int money_opening_fixture(bool recovery = false)
 			      "0");
 		std::printf("NATIVE_LISTING_ORIGINAL_RECEIPT before_count=0 operation=%s\n",
 			    sql_id(ident(4)).c_str());
-		// The unrelated legacy listing remains an explicitly historical opening boundary.
-		execute(setup,
-			"INSERT INTO auctions(id,seller_pid,status,winning_bidder_pid,cur_price,buy_price,quantity,auction_revision,obj_blob_str) VALUES(7001,21002,'OPEN',0,9000,10000,1,1,'')");
+		seed_money_opening_current_auction(setup);
 		execute(setup, "UPDATE item_uid_allocator SET next_uid=8 WHERE allocator_id=1");
 		execute(setup,
 			"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,21002,0,0)");
@@ -1516,6 +1598,7 @@ static int money_opening_fixture(bool recovery = false)
 
 int main(int argc, char **argv)
 {
+	nevent_bind_game_thread();
 	if (argc == 2 && !std::strcmp(argv[1], "--money-opening"))
 		return money_opening_fixture();
 	if (argc == 2 && !std::strcmp(argv[1], "--money-recovery"))
@@ -2044,6 +2127,7 @@ int main(int argc, char **argv)
 			throw std::runtime_error("pending outbox activated");
 		execute(setup, "DELETE FROM critical_outbox WHERE operation_id=" +
 				       sql_id(request.operation_id));
+		lifecycle_union_season_cases(setup, owner_connection, request, coverage, cutover);
 		if (const auto code = cutover(
 			    [&](auto &owner)
 			    {
@@ -2078,6 +2162,7 @@ int main(int argc, char **argv)
 			"SELECT CONCAT(state,':',revision) FROM economic_sql_global_activation WHERE lineage=" +
 				sql_id(request.lineage),
 			"1:1");
+		lifecycle_union_seed(setup, request);
 		critical_command_coordinator_shutdown();
 		{
 			economic_sql_lifecycle_guard active_runtime;
@@ -2131,6 +2216,7 @@ int main(int argc, char **argv)
 			    },
 			    true))
 			throw std::runtime_error("pause/resume was not reversible");
+		lifecycle_union_cases(setup, owner_connection, request, coverage, cutover);
 		critical_command_coordinator_shutdown();
 		execute(setup, "DELETE FROM economic_sql_global_activation WHERE lineage=" +
 				       sql_id(request.lineage));

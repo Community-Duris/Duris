@@ -1,5 +1,6 @@
 #include "world/quest_mobile_published_world_owner.h"
 #include "world/quest_mobile_native_birth.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
 #include "item/item_transfer_repository.h"
 #include <algorithm>
 #include <cerrno>
@@ -114,6 +115,8 @@ struct observed_native
 	native_mobile_wallet_origin wallet;
 	digest origin_hash{};
 	uint64_t publication_revision = 0;
+	// Selected only from the authenticated complete original terminal attachment.
+	bool ordinary_cash_role = false;
 	cells mapping;
 };
 std::vector<observed_native> observe_catalog(MYSQL *connection, unsigned long session)
@@ -183,11 +186,20 @@ critical_native_recovery_envelope observe_origin(MYSQL *connection, unsigned lon
 	result.revision = integer<uint64_t>(rows[0][1]);
 	result.attachment.assign(reinterpret_cast<const uint8_t *>(rows[0][3]->data()),
 				 reinterpret_cast<const uint8_t *>(rows[0][3]->data()) + size);
-	require(native_mobile_birth_recovery_original_command_decode(
-			result.attachment, &result.command) == economic_accounting_error::ok &&
+	// Both codecs read the actual bounded original bytes with strong outputs.
+	// Ordinary success requires full original NMB4/MBR4; historical success
+	// requires the unchanged original constructor policy. No SQL failure or
+	// CURRENT image is used to choose or reconstruct an original command.
+	const bool ordinary = native_mobile_birth_cash_role_recovery_original_command_decode(
+				      result.attachment, &result.command) ==
+			      economic_accounting_error::ok;
+	require((ordinary ||
+		 native_mobile_birth_recovery_original_command_decode(
+			 result.attachment, &result.command) == economic_accounting_error::ok) &&
 		critical_operation_id_equal(result.command.operation_id,
 					    reference.birth_operation) &&
-		native_mobile_birth_recovery_terminal(result));
+		(ordinary ? native_mobile_birth_cash_role_recovery_terminal(result) :
+			    native_mobile_birth_recovery_terminal(result)));
 	return result;
 }
 cells observe_mapping(MYSQL *connection, unsigned long session,
@@ -299,18 +311,38 @@ unsigned int quest_mobile_published_world_owner::read_locked(
 		for (auto &value : observed)
 		{
 			const auto original = observe_origin(connection, session, value.reference);
+			value.ordinary_cash_role = original.command.payload_version ==
+						   NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION;
 			native_mobile_birth_recovery_context recovery;
-			require(native_mobile_birth_recovery_decode(
-					original.command, original.attachment, &recovery) ==
-				economic_accounting_error::ok);
-			const auto retained = economic_sql_native_mobile_birth_verify_retained(
-				connection, original.command, recovery.receipt.error_code,
-				{ recovery.receipt.result_payload.data(),
-				  recovery.receipt.result_size });
+			require((value.ordinary_cash_role ?
+					 native_mobile_birth_cash_role_recovery_decode(
+						 original.command, original.attachment, &recovery) :
+					 native_mobile_birth_recovery_decode(
+						 original.command, original.attachment,
+						 &recovery)) == economic_accounting_error::ok);
+			const std::span<const uint8_t> receipt(
+				recovery.receipt.result_payload.data(),
+				recovery.receipt.result_size);
+			const auto retained =
+				value.ordinary_cash_role ?
+					economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+						connection, original.command,
+						recovery.receipt.error_code, receipt) :
+					economic_sql_native_mobile_birth_verify_retained(
+						connection, original.command,
+						recovery.receipt.error_code, receipt);
 			require(!retained, retained);
 			quest_mobile_native_image born, current;
-			require(native_mobile_birth_command_decode(original.command, &born) ==
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			require((value.ordinary_cash_role ?
+					 native_mobile_birth_cash_role_command_decode(
+						 original.command, &born, &recipes, &role) :
+					 native_mobile_birth_command_decode(original.command,
+									    &born)) ==
 					economic_accounting_error::ok &&
+				(!value.ordinary_cash_role ||
+				 role.role == native_mobile_birth_cash_role::ordinary_wallet) &&
 				quest_mobile_native_image_decode(value.canonical, &current) ==
 					player_snapshot_codec_result::ok);
 			const auto origin_error = economic_sql_native_mobile_birth_observe_origin(
@@ -372,8 +404,15 @@ unsigned int quest_mobile_published_world_owner::read_locked(
 							    before.wallet.birth_operation) &&
 				critical_operation_id_equal(wallet.birth_epoch,
 							    before.wallet.birth_epoch));
-			const auto published_error = quest_mobile_native_origin_sql_lock(
-				connection, native.image.reference, &value.origin);
+			// This family was authenticated before mapping/native locks. The
+			// selected lifetime owner already holds its original birth inbox;
+			// these exact reentrant reads acquire no new inverted inbox lock.
+			const auto published_error =
+				before.ordinary_cash_role ?
+					quest_mobile_native_origin_sql_lock_ordinary_wallet(
+						connection, native.image.reference, &value.origin) :
+					quest_mobile_native_origin_sql_lock(
+						connection, native.image.reference, &value.origin);
 			require(!published_error, static_cast<unsigned int>(published_error));
 			require(value.origin.present &&
 				value.origin.original.revision == before.publication_revision &&

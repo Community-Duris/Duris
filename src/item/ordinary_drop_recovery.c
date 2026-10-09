@@ -1,4 +1,5 @@
 #include "item/ordinary_drop_recovery.h"
+#include "world/db.h"
 
 #include "core/prototypes.h"
 #include "core/utils.h"
@@ -920,6 +921,11 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 		if (owner.index_[number].number < 0 ||
 		    owner.index_[number].number > INT_MAX - count)
 			return observed(ordinary_drop_observation_status::refused, EOVERFLOW);
+	if (!quest_mobile_native_item_cold_prepend_cut_ready(owner.stages_.size()))
+		return observed(ordinary_drop_observation_status::unavailable, EAGAIN);
+	for (const auto &stage : owner.stages_)
+		if (!quest_mobile_native_item_cold_prepend_body_ready(stage.object_))
+			return observed(ordinary_drop_observation_status::conflict, ESTALE);
 	// Final fallible step rolls back entry/owner values on allocation refusal.
 	// No callback, SQL, allocation or other fallible operation follows success.
 	if (!item_ownership_runtime_hydrate_many_atomic(owner.runtime_.data(),
@@ -934,6 +940,7 @@ void ordinary_drop_enrollment_owner::enroll() noexcept
 	for (auto &stage : stages_)
 	{
 		P_obj object = stage.object_;
+		quest_mobile_native_item_observe_native_prepend(object);
 		object->next = object_list;
 		if (object_list)
 			object_list->prev = object;

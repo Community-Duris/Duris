@@ -138,4 +138,72 @@ bool native_mobile_birth_recovery_publication(const critical_native_recovery_env
 					      const critical_completion &) noexcept;
 bool native_mobile_birth_recovery_terminal(const critical_native_recovery_envelope &) noexcept;
 
+// Distinct prospective ORDINARY NMB4 / MBR4 recovery family. Shared/unknown
+// NBC4 roles refuse. Reuses the original NMR1 version1 framing, full original
+// embedded command, action/choice/UID ordering and retained uncertainty rules.
+// Successful receipt validation recompiles and binds the complete original
+// NMB4 image/role/plan/owner/result. Historical APIs remain v2/v3 only.
+// Extraction requires the successful physically proven BODY; terminal also
+// requires the actual continuation_pending envelope and revision greater than1.
+// No factory, admission, storage, world publication or ACK authority; every
+// refusing codec preserves its output. Current lifetime proof remains separate.
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_encode(const critical_command &,
+					      const native_mobile_birth_recovery_context &,
+					      std::vector<uint8_t> *) noexcept;
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_decode(const critical_command &, std::span<const uint8_t>,
+					      native_mobile_birth_recovery_context *) noexcept;
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_original_command_decode(std::span<const uint8_t>,
+							       critical_command *) noexcept;
+bool native_mobile_birth_cash_role_recovery_valid(
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_cash_role_recovery_initial(
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_cash_role_recovery_successor(
+	const critical_native_recovery_envelope &,
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_cash_role_recovery_publication(const critical_native_recovery_envelope &,
+							const critical_completion &) noexcept;
+bool native_mobile_birth_cash_role_recovery_terminal(
+	const critical_native_recovery_envelope &) noexcept;
+
+// Shared original initial SHOP birth only. The existing journal envelope keeps
+// command and complete canonical DURSHOPv2 checkpoint in one durable frame.
+// Framing revision1 is not a whole-catalog clock or file mutation capability.
+// Original time/roaming/affects survive byte-for-byte across every successor.
+// Pure codecs grant no source, worker execution, SQL/publication or ACK authority.
+struct native_mobile_birth_shared_shop_recovery_context
+{
+	native_mobile_birth_recovery_context progress;
+	std::vector<uint8_t> original_checkpoint;
+};
+economic_accounting_error native_mobile_birth_shared_shop_recovery_encode(
+	const critical_command &, const native_mobile_birth_shared_shop_recovery_context &,
+	std::vector<uint8_t> *) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_decode(
+	const critical_command &, std::span<const uint8_t>,
+	native_mobile_birth_shared_shop_recovery_context *) noexcept;
+economic_accounting_error
+native_mobile_birth_shared_shop_recovery_original_command_decode(std::span<const uint8_t>,
+								 critical_command *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_valid(
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_shared_shop_recovery_initial(
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_shared_shop_recovery_successor(
+	const critical_native_recovery_envelope &,
+	const critical_native_recovery_envelope &) noexcept;
+bool native_mobile_birth_shared_shop_recovery_publication(const critical_native_recovery_envelope &,
+							  const critical_completion &) noexcept;
+bool native_mobile_birth_shared_shop_recovery_terminal(
+	const critical_native_recovery_envelope &) noexcept;
+
+// Passive BODY/revision check for a zero-copy original executing-state view.
+// The private worker separately authenticates phase, lifetime and execution.
+bool native_mobile_birth_shared_shop_recovery_execution_valid(const critical_command &,
+							      std::span<const uint8_t>,
+							      uint64_t revision) noexcept;
+
 #endif

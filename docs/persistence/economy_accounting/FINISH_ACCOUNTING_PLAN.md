@@ -1,5 +1,17 @@
 # Finish accounting implementation plan
 
+## Guarded combined-source handoff in progress - 2026-10-09
+
+[Current candidate handoff](COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md)
+records selected a7bc4532: genuine ROOM worker/executor/startup are joined and the
+missing manual INITIAL checkpoint matrix owner is fixed in published c627dbe5.
+The guarded source commit binds reviewed inputs, maintained preimages and normal
+Git text aliases. All926 original writer policies survive; five new rows remain
+unqualified and386 source pins are refreshed. Coverage and release stay blocked.
+Both-profile compile/link and disposable inactive smoke results remain pending.
+Admission stays closed; shared32MiB, publication/terminal/ACK and release gates
+remain unfinished. No complete plan or runtime qualification is claimed.
+
 ## Next primary handoff: executable combined candidate - 2026-10-09
 
 The user prioritizes a reproducible executable combined candidate without

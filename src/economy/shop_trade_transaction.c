@@ -1,4 +1,6 @@
 #include "economy/shop_trade_publication.h"
+#include "flatfile/flatfile_accounting_shop_transaction.h"
+#include "world/db.h"
 #include "economy/shop.h"
 #include "economy/account_bank_balances.h"
 #include "player/inert_item_stage.h"
@@ -26,6 +28,7 @@
 #include <cstring>
 #include <memory>
 #include <limits>
+#include <type_traits>
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "persistence/shop_item_runtime_payload.h"
@@ -51,6 +54,8 @@ extern P_obj object_list;
 class shop_trade_native_publication_owner final
 {
 	friend class shop_trade_preparation_owner;
+	friend bool
+	shop_trade_transaction_restore_replayed_command(const critical_command &) noexcept;
 	static bool expected_player_forest(const shop_trade_payload &,
 					   const std::vector<player_item_snapshot> &, bool rejected,
 					   std::vector<player_item_snapshot> *) noexcept;
@@ -70,8 +75,53 @@ class shop_trade_native_publication_owner final
 						std::vector<player_item_snapshot> *) noexcept;
 	static bool cold_publish(const critical_command &, const critical_completion &,
 				 void *) noexcept;
+	// Pure literal reconstruction from the genuine borrowed CURRENT flat cut.
+	// Full original v8 bindings authenticate every reconstructed BEFORE byte;
+	// this method supplies no storage, enrollment, publication or ACK proof.
+	static bool cold_flat_original_forests(const critical_command &,
+					       const flatfile_accounting_shop_projection &,
+					       std::vector<player_item_snapshot> *,
+					       std::vector<player_item_snapshot> *) noexcept;
+	// SQL-free wrapper over the original bounded physical cold observer.
+	// Strict requests prove actual presence/absence and complete locations;
+	// relaxed observations expose the original pre-effect/transitional state.
+	static bool cold_flat_world(void *, std::span<const player_item_snapshot>,
+				    std::span<const player_item_snapshot>, bool strict,
+				    bool actor_absent, bool keeper_absent,
+				    shop_trade_world_cold_observation *,
+				    std::vector<shop_trade_world_uid_expectation> *) noexcept;
+	// Complete unpublished flat literal allocation only. Its real native caller
+	// still owns original root/receipt/world proof and the full immutable charge.
+	static bool cold_prepare_selected_flat(void *) noexcept;
+	// Immutable reachable values only; root owns every native effect/phase return.
+	static bool cold_prepare_working_flat(void *,
+					      const critical_command *retained = nullptr) noexcept;
+	static bool cold_flat_working_state(void *, size_t completed_legs,
+					    std::span<const player_item_snapshot> *,
+					    std::span<const player_item_snapshot> *,
+					    std::span<const player_item_snapshot> *,
+					    shop_trade_cold_native_step *, bool *terminal,
+					    bool *for_nesting) noexcept;
+	// Exact CURRENT retained-payload census before first native consumption.
+	// Includes all immutable working variants before the single native charge.
+	static bool
+	cold_flat_retained_payload_bytes(void *, size_t *,
+					 const critical_command *retained = nullptr) noexcept;
+	static bool cold_enroll_selected_flat(player_save_restored_publication_owner &,
+					      const std::string &, const flatfile_authority_lock &,
+					      const flatfile_accounting_shop_projection &,
+					      size_t complete_retained_stage_bytes,
+					      void *) noexcept;
 	static bool cold_prepare_selected(void *) noexcept;
 	static bool cold_enroll_selected(void *) noexcept;
+	static bool live_flat_entry(void *) noexcept;
+	static bool cold_flat_entry(void *) noexcept;
+	static bool restore_flat(const critical_command &) noexcept;
+	static bool native_publish_flat_cold(player_save_restored_publication_owner &,
+					     void *) noexcept;
+	static bool native_publish_flat(player_save_restored_publication_owner &, void *) noexcept;
+	static bool native_publish_flat_refusal(player_save_restored_publication_owner &,
+						void *) noexcept;
 	static bool native_publish(const critical_command &, const critical_completion &,
 				   void *) noexcept;
 	static bool no_native_effect(const critical_command &, const critical_completion &,
@@ -97,6 +147,12 @@ class shop_trade_native_publication_owner final
 	static bool publish_retained(const critical_command &command,
 				     const critical_completion &sealed, void *entry) noexcept
 	{
+		if (live_flat_entry(entry))
+			return player_save_restored_publication_owner::publish_shop_flat(
+				command, sealed, native_publish_flat, entry);
+		if (cold_flat_entry(entry))
+			return player_save_restored_publication_owner::publish_shop_flat_restored(
+				command, sealed, native_publish_flat_cold, entry);
 		return player_save_restored_publication_owner::publish_shop(command, sealed,
 									    native_publish, entry);
 	}
@@ -131,9 +187,26 @@ class shop_trade_native_publication_owner final
 
 namespace
 {
+struct flat_trade_preparation
+{
+	player_flat_shop_checkpoint_token player_token{};
+	player_shop_checkpoint_stage player_stage{};
+	std::string selected_root;
+	bool player_held = false;
+	shop_trade_flat_native_checkpoint_phase phase =
+		shop_trade_flat_native_checkpoint_phase::preparing;
+	std::unique_ptr<shop_trade_flat_native_checkpoint_stage> native;
+	bool outcome_recorded = false;
+	flatfile_authority_transaction_result first_result =
+		flatfile_authority_transaction_result::invalid;
+	flatfile_authority_commit_outcome first_outcome =
+		flatfile_authority_commit_outcome::publication_uncertain;
+	size_t reserved_bytes = 0;
+};
 struct trade_preparation
 {
 	uint64_t generation = 0, actor_runtime_id = 0, keeper_runtime_id = 0;
+	std::unique_ptr<flat_trade_preparation> flat;
 	economic_shop_checkpoint_projection mapping{};
 	player_shop_checkpoint_token player_token{};
 	player_shop_checkpoint_stage player_stage{};
@@ -153,10 +226,48 @@ struct trade_preparation
 	std::vector<uint64_t> fenced_uids;
 };
 uint64_t preparation_generation = 0;
+// Distinct flat holder: the existing SQL stage and capability remain separate.
+// All allocations and private child links precede enrollment/native callbacks.
+struct cold_flat_literal_stage
+{
+	struct reload_item
+	{
+		const object_template *prototype = nullptr;
+		std::array<shop_trade_original_reload_effect, 4> effects{};
+		std::vector<shop_trade_original_reload_effect> proclib_probes;
+	};
+	std::vector<shop_trade_original_item_stage> staged;
+	std::vector<reload_item> reload;
+	std::vector<std::pair<int, size_t>> enrollment_counts;
+	shop_trade_original_procedure_binding_stage bindings;
+	bool binding_started = false, binding_returned = false;
+};
+// Only forests reachable from one genuine pre-effect observation are retained.
+// Fixed scalar selectors refer to immutable allocations, never native pointers.
+struct cold_flat_working_variants
+{
+	struct state
+	{
+		uint8_t player = 0, keeper = 0, target = 0;
+		bool for_nesting = false;
+	};
+	const critical_command *command = nullptr;
+	std::array<std::vector<player_item_snapshot>, 4> player;
+	std::array<std::vector<player_item_snapshot>, 3> keeper;
+	std::array<std::vector<player_item_snapshot>, 2> target;
+	uint8_t player_count = 0, keeper_count = 0, target_count = 0;
+	std::array<state, 7> states{};
+	std::array<shop_trade_cold_native_step, 6> steps{};
+	uint8_t leg_count = 0;
+};
 struct cold_trade_restore
 {
 	std::unique_ptr<critical_command> command;
 	bool registration_pending = true, initialized = false;
+	// Set only by the genuine passive flat registration, never a live token.
+	bool flat_restored = false, flat_rejected_cleanup_returned = false;
+	size_t flat_registration_bytes = 0, flat_publication_bytes = 0;
+	size_t flat_completed_legs = 0, flat_effect_leg = 0;
 	// Original cancellation proof is distinct from an execution receipt.
 	bool refusal_verified = false;
 	bool enrolled = false, enrollment_started = false, for_nesting = false;
@@ -168,6 +279,8 @@ struct cold_trade_restore
 	std::vector<player_item_snapshot> original_player, original_keeper;
 	std::vector<player_item_snapshot> working_player, working_keeper, source, selected_after;
 	std::vector<player_item_snapshot> working_target;
+	std::unique_ptr<cold_flat_literal_stage> flat_literals;
+	std::unique_ptr<const cold_flat_working_variants> flat_working;
 #ifndef __NO_MYSQL__
 	std::vector<shop_trade_original_item_stage> staged;
 	shop_trade_original_procedure_binding_stage bindings;
@@ -199,6 +312,10 @@ struct pending_trade
 	// Exact never-journaled hold cancellation is independent of a live body.
 	// Keep this original domain/produced continuation until notification returns.
 	bool never_admitted_retired = false;
+	// These belong to this original live flat cancellation, not a receipt or
+	// notification. A started but unreturned extraction never becomes absent proof.
+	bool flat_refusal_verified = false;
+	bool flat_refusal_cleanup_started = false, flat_refusal_cleanup_returned = false;
 	bool native_acknowledged = false;
 	bool native_receipt_verified = false;
 	// These are original ordered values; never SQL UID-map iteration order.
@@ -425,12 +542,42 @@ bool publish(decltype(pending)::iterator found, P_char character)
 			return false;
 		if (entry.completed.disposition == critical_completion_disposition::never_admitted)
 		{
-			if (!entry.never_admitted_retired &&
-			    !shop_trade_native_publication_owner::retire_never_admitted(
-				    *entry.preparation->command, entry.completed))
-				return false;
-			entry.never_admitted_retired = true;
-			entry.preparation.reset();
+			// An attempted flat source checkpoint needs genuine terminal cleanup.
+			// Receipt absence and coordinator refusal alone cannot retire its hold.
+			if (entry.preparation->flat)
+			{
+				if (!entry.never_admitted_retired)
+				{
+					const critical_completion original = entry.completed;
+					entry.publishing = true;
+					const bool retired =
+						shop_trade_native_publication_owner::publish_retained(
+							*entry.preparation->command, original,
+							&entry);
+					entry.publishing = false;
+					if (!retired || entry.blocked ||
+					    !same_original_refusal(original, entry.completed))
+						return false;
+					entry.never_admitted_retired = true;
+				}
+				// Notification remains a distinct live continuation. In particular,
+				// authentic body absence can finish native cancellation, but cannot
+				// discharge the original produced-purchase notification/sequence.
+				character = find_character_by_runtime_id(
+					entry.preparation->actor_runtime_id);
+				if (!character || !IS_PC(character) || !character->only.pc ||
+				    static_cast<uint32_t>(GET_PID(character)) != entry.player_pid)
+					return false;
+			}
+			else
+			{
+				if (!entry.never_admitted_retired &&
+				    !shop_trade_native_publication_owner::retire_never_admitted(
+					    *entry.preparation->command, entry.completed))
+					return false;
+				entry.never_admitted_retired = true;
+				entry.preparation.reset();
+			}
 		}
 		else if (!entry.native_acknowledged)
 		{
@@ -587,6 +734,8 @@ bool publish(decltype(pending)::iterator found, P_char character)
 }
 
 #ifndef __NO_MYSQL__
+#endif
+
 bool shop_remove_selected(const std::vector<player_item_snapshot> &input,
 			  const shop_trade_payload &payload,
 			  std::vector<player_item_snapshot> *output)
@@ -614,6 +763,7 @@ bool shop_remove_selected(const std::vector<player_item_snapshot> &input,
 	return true;
 }
 
+#ifndef __NO_MYSQL__
 bool shop_image_matches(const std::vector<player_item_snapshot> &forest,
 			const shop_item_runtime_image &image)
 {
@@ -902,6 +1052,8 @@ bool shop_trade_native_publication_owner::expected_player_order(
 }
 
 #ifndef __NO_MYSQL__
+#endif
+
 bool shop_trade_native_publication_owner::expected_keeper_forest(
 	const shop_trade_payload &payload, P_char keeper, P_obj selected,
 	const std::vector<player_item_snapshot> &original, bool rejected,
@@ -992,6 +1144,7 @@ bool shop_trade_native_publication_owner::expected_destination_forest(
 	}
 }
 
+#ifndef __NO_MYSQL__
 bool shop_trade_native_publication_owner::verified_current_receipt(
 	MYSQL *connection, const critical_command &command, const critical_completion &sealed,
 	const economic_sql_shop_trade_publication &current) noexcept
@@ -1193,7 +1346,7 @@ bool cold_original_forests(const shop_trade_payload &payload,
 	}
 	const bool buying = payload.action == shop_trade_action::buy_existing ||
 			    payload.action == shop_trade_action::buy_produced;
-	if (buying && payload.native_destination_weight_recorded)
+	if (buying && payload.target_parent_item_uid && payload.native_destination_weight_recorded)
 	{
 		const auto target = values.find(payload.target_parent_item_uid);
 		if (target == values.end())
@@ -1432,13 +1585,16 @@ bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noe
 	    !cold.bindings.valid())
 		return false;
 	for (const auto &stage : cold.staged)
-		if (!stage.object_)
+		if (!stage.object_ ||
+		    !quest_mobile_native_item_cold_prepend_body_ready(stage.object_))
 			return false;
 	for (const auto &[number, count] : cold.enrollment_counts)
 		if (!obj_index || number < 0 || number > top_of_objt ||
 		    obj_index[number].number < 0 ||
 		    count > static_cast<size_t>(INT_MAX - obj_index[number].number))
 			return false;
+	if (!quest_mobile_native_item_cold_prepend_cut_ready(cold.staged.size()))
+		return false;
 	// The caller re-proved the original held SQL/world cut after ALL allocation.
 	// No failure/callback/allocation follows this retained native-effect start.
 	cold.enrollment_started = cold.binding_started = true;
@@ -1449,6 +1605,7 @@ bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noe
 	for (auto &stage : cold.staged)
 	{
 		P_obj object = stage.object_;
+		quest_mobile_native_item_observe_native_prepend(object);
 		object->next = object_list;
 		if (object_list)
 			object_list->prev = object;
@@ -2731,6 +2888,8 @@ bool shop_trade_native_publication_owner::native_publish(const critical_command 
 
 bool shop_trade_transaction_restore_replayed_command(const critical_command &original) noexcept
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return shop_trade_native_publication_owner::restore_flat(original);
 #ifdef __NO_MYSQL__
 	(void)original;
 	return false;
@@ -2899,8 +3058,10 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 			 entry.completed.started_at_usec != completions[index].started_at_usec ||
 			 entry.completed.completed_at_usec != completions[index].completed_at_usec);
 		const bool cold_refusal_verified = entry.cold && entry.cold->refusal_verified;
+		const bool original_refusal_verified = cold_refusal_verified ||
+						       entry.flat_refusal_verified;
 		if (entry.completion_ready &&
-		    (!(cold_refusal_verified ?
+		    (!(original_refusal_verified ?
 			       same_original_refusal(entry.completed, completions[index]) :
 		       entry.native_receipt_verified ?
 			       same_native_receipt(entry.completed, completions[index]) :
@@ -2911,7 +3072,7 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 				entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied;
 			if (original_committed || entry.native_receipt_verified ||
-			    entry.never_admitted_retired || cold_refusal_verified ||
+			    entry.never_admitted_retired || original_refusal_verified ||
 			    entry.publishing || entry.blocked)
 			{
 				entry.blocked = true;
@@ -2922,7 +3083,7 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 		// receipt and projection stages while accepting that equivalent proof.
 		if (!entry.completion_ready ||
 		    (!entry.never_admitted_retired && !entry.native_receipt_verified &&
-		     !cold_refusal_verified &&
+		     !original_refusal_verified &&
 		     entry.completed.outcome != critical_apply_outcome::applied &&
 		     entry.completed.outcome != critical_apply_outcome::already_applied))
 			entry.completed = completions[index];
@@ -2934,13 +3095,15 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 		if (attempt_count == attempted.size())
 			continue;
 		attempted[attempt_count++] = completions[index].operation_id.bytes;
-		if (entry.cold)
+		if (entry.cold || (entry.preparation && entry.preparation->flat &&
+				   entry.completed.disposition ==
+					   critical_completion_disposition::never_admitted))
 			publish(found, nullptr);
 		else if (P_char character = find_player_by_pid(entry.player_pid))
 			publish(found, character);
 		else if (!entry.blocked && !entry.publishing && entry.preparation &&
-			 !entry.never_admitted_retired && entry.preparation->submission_started &&
-			 entry.preparation->command &&
+			 !entry.preparation->flat && !entry.never_admitted_retired &&
+			 entry.preparation->submission_started && entry.preparation->command &&
 			 shop_trade_native_publication_owner::retire_never_admitted(
 				 *entry.preparation->command, entry.completed))
 		{
@@ -4135,6 +4298,76 @@ bool shop_trade_preparation_owner::finish_native_checkpoint(
 	case shop_trade_native_checkpoint_disposition::committed:
 		if (!prepared.native_sealed)
 			return false;
+		try
+		{
+			const auto &native = prepared.native_stage;
+			const auto &forest = prepared.keeper_items;
+			if (forest.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+			    native.keeper_image.size() != forest.size())
+				return false;
+			const item_owner_identity owner{
+				item_owner_type::shopkeeper,
+				item_shopkeeper_owner_id(found->second.payload.shop_id), 0
+			};
+			if (!item_owner_identity_valid(owner))
+				return false;
+			std::vector<uint64_t> roots(forest.size());
+			std::set<uint64_t> physical_ids;
+			std::vector<item_ownership_runtime_entry> custody;
+			custody.reserve(forest.size());
+			for (size_t index = 0; index < forest.size(); ++index)
+			{
+				const auto &item = forest[index];
+				if (!item.object_uid || item.object_uid == UINT64_MAX ||
+				    item.vnum <= 0 ||
+				    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+				    item.parent_index >= static_cast<int32_t>(index))
+					return false;
+				const auto parent = item.parent_index;
+				roots[index] = parent < 0 ? item.object_uid : roots[parent];
+				const auto row = native.keeper_image.find(item.object_uid);
+				if (row == native.keeper_image.end() || !row->second.id ||
+				    !row->second.revision || row->second.root_uid != roots[index] ||
+				    row->second.slot != item.equipment_slot ||
+				    !physical_ids.insert(row->second.id).second)
+					return false;
+				const uint64_t parent_uid = parent < 0 ? 0 :
+									 forest[parent].object_uid;
+				const uint64_t parent_id =
+					parent < 0 ? 0 : native.keeper_image.at(parent_uid).id;
+				if (row->second.parent_id != parent_id)
+					return false;
+				auto expected = item;
+				expected.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				std::vector<uint8_t> expected_bytes, native_bytes;
+				if (player_item_snapshot_list_encode({ expected },
+								     &expected_bytes) !=
+					    player_snapshot_codec_result::ok ||
+				    player_item_snapshot_list_encode({ row->second.item },
+								     &native_bytes) !=
+					    player_snapshot_codec_result::ok ||
+				    expected_bytes != native_bytes)
+					return false;
+				// payload_present records the original BEFORE. Only this private
+				// committed disposition follows the native owner's exact AFTER
+				// sidecar verification, same-cut readback and clean session finish.
+				// Retain every BEFORE field; project its unchanged current custody.
+				custody.push_back({ item.object_uid, roots[index], parent_uid,
+						    owner, row->second.revision,
+						    native.keeper_owner_revision, item.vnum,
+						    item_custody_state::active });
+			}
+			// Allocation/conflict failure leaves sealed/attempted/held ownership
+			// intact. The original native retry resolves the same SQL cut again;
+			// rolled-back or uncertain dispositions never hydrate this registry.
+			if (!item_ownership_runtime_hydrate_many_atomic(custody.data(),
+									custody.size()))
+				return false;
+		}
+		catch (...)
+		{
+			return false;
+		}
 		prepared.native_ready = true;
 		return true;
 	case shop_trade_native_checkpoint_disposition::never_mutated_retired:
@@ -4154,6 +4387,1367 @@ bool shop_trade_preparation_owner::finish_native_checkpoint(
 }
 #endif
 
+namespace
+{
+bool flat_preparation_tree_bounded(P_obj root, std::vector<uint8_t> *bytes,
+				   std::vector<uint64_t> *uids, size_t max_items, size_t max_bytes,
+				   size_t *estimated_bytes)
+{
+	if (!root)
+	{
+		bytes->clear();
+		return true;
+	}
+	std::vector<player_item_snapshot> items;
+	std::vector<uint8_t> encoded;
+	size_t estimated = 0;
+	if (player_item_snapshot_tree_capture_literal(root, &items, &estimated) !=
+		    player_snapshot_capture_result::ok ||
+	    items.empty() || items.size() > max_items ||
+	    player_item_snapshot_list_encode(items, &encoded) != player_snapshot_codec_result::ok ||
+	    encoded.size() > max_bytes)
+		return false;
+	if (uids)
+		for (const auto &item : items)
+			uids->push_back(item.object_uid);
+	*bytes = std::move(encoded);
+	if (estimated_bytes)
+		*estimated_bytes = estimated;
+	return true;
+}
+
+bool flat_preparation_tree(P_obj root, std::vector<uint8_t> *bytes,
+			   std::vector<uint64_t> *uids = nullptr, size_t *estimated_bytes = nullptr)
+{
+	return flat_preparation_tree_bounded(root, bytes, uids, SHOP_TRADE_MAX_ITEMS,
+					     SHOP_TRADE_ITEM_BLOB_MAX_BYTES, estimated_bytes);
+}
+
+bool flat_preparation_destination_tree(P_obj root, std::vector<uint8_t> *bytes,
+				       std::vector<uint64_t> *uids = nullptr,
+				       size_t *estimated_bytes = nullptr)
+{
+	return flat_preparation_tree_bounded(root, bytes, uids, PLAYER_SNAPSHOT_MAX_OBJECTS,
+					     PLAYER_SNAPSHOT_MAX_BYTES - sizeof(uint32_t),
+					     estimated_bytes);
+}
+
+bool flat_same_mapping(const economic_shop_checkpoint_projection &a,
+		       const economic_shop_checkpoint_projection &b)
+{
+	return a.lineage.bytes == b.lineage.bytes && a.epoch.bytes == b.epoch.bytes &&
+	       economic_account_key_equal(a.wallet, b.wallet) &&
+	       economic_account_key_equal(a.bank, b.bank);
+}
+
+bool flat_preparation_body(P_char actor, P_char keeper, uint32_t shop)
+{
+	return nevent_is_game_thread() && economic_gameplay_authority::active_regular_flat() &&
+	       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	       persistence_mode_flatfile_root() && *persistence_mode_flatfile_root() && actor &&
+	       IS_PC(actor) && actor->only.pc && GET_PID(actor) > 0 && actor->runtime_id &&
+	       find_character_by_runtime_id(actor->runtime_id) == actor && keeper &&
+	       IS_NPC(keeper) && keeper->runtime_id &&
+	       find_character_by_runtime_id(keeper->runtime_id) == keeper && shop_index &&
+	       number_of_shops > 0 && shop < static_cast<uint32_t>(number_of_shops) &&
+	       GET_RNUM(keeper) == shop_index[shop].keeper && GET_VNUM(keeper) > 0;
+}
+// Real retained object structures and actual allocation capacities, checked
+// against the original literal aggregate. No wire-size multiplier or new cap.
+struct flat_preparation_bytes
+{
+	size_t value = 0;
+	bool add(size_t amount) noexcept
+	{
+		if (amount > PLAYER_SAVE_PIPELINE_MAX_BYTES - value)
+			return false;
+		value += amount;
+		return true;
+	}
+	template <class T> bool vector(const std::vector<T> &v) noexcept
+	{
+		return v.capacity() <= PLAYER_SAVE_PIPELINE_MAX_BYTES / sizeof(T) &&
+		       add(v.capacity() * sizeof(T));
+	}
+	bool string(const std::string &s) noexcept
+	{
+		// Inline string bytes already belong to their containing sizeof charge.
+		const uintptr_t data = reinterpret_cast<uintptr_t>(s.data());
+		const uintptr_t object = reinterpret_cast<uintptr_t>(&s);
+		if (data >= object && data - object < sizeof(s))
+			return true;
+		return add(s.capacity()) && add(1);
+	}
+	bool items(const std::vector<player_item_snapshot> &v) noexcept
+	{
+		if (!vector(v))
+			return false;
+		for (const auto &item : v)
+		{
+			if (!string(item.name) || !string(item.short_description) ||
+			    !string(item.description) || !string(item.action_description) ||
+			    !vector(item.dynamic_affects) || !vector(item.extra_descriptions))
+				return false;
+			for (const auto &description : item.extra_descriptions)
+				if (!string(description.keyword) ||
+				    !string(description.description) ||
+				    !vector(description.spell_ids))
+					return false;
+		}
+		return true;
+	}
+	bool evidence(const player_death_evidence_table &table) noexcept
+	{
+		if (!vector(table.columns) || !vector(table.rows))
+			return false;
+		for (const auto &column : table.columns)
+			if (!string(column))
+				return false;
+		for (const auto &row : table.rows)
+		{
+			if (!vector(row))
+				return false;
+			for (const auto &field : row)
+				if (field && !string(*field))
+					return false;
+		}
+		return true;
+	}
+	bool snapshot(const player_snapshot &s) noexcept
+	{
+		if (!vector(s.status_integers) || !vector(s.status_strings) ||
+		    !vector(s.languages) || !vector(s.introductions) || !vector(s.timers) ||
+		    !vector(s.undead_slots) || !vector(s.forged_items) ||
+		    !vector(s.granted_commands) || !vector(s.skills) || !vector(s.affects) ||
+		    !items(s.items) || !vector(s.pets) || !vector(s.shapes) ||
+		    !vector(s.trophies) || !vector(s.quest_xp_receipts) ||
+		    !vector(s.spell_effect_receipts) || !vector(s.craft_receipts) ||
+		    !string(s.output_preferences))
+			return false;
+		for (const auto &field : s.status_strings)
+			if (!string(field.value))
+				return false;
+		for (const auto &affect : s.affects)
+			if (!string(affect.wear_off_character) || !string(affect.wear_off_room))
+				return false;
+		for (const auto &pet : s.pets)
+			if (!items(pet.items) || !string(pet.restore_state))
+				return false;
+		if (s.death)
+		{
+			if (!items(s.death->corpse) || !vector(s.death->custody) ||
+			    !vector(s.death->unresolved_operations))
+				return false;
+			if (s.death->conflict_evidence)
+			{
+				const auto &e = *s.death->conflict_evidence;
+				if (!evidence(e.player_items) || !evidence(e.player_item_affects) ||
+				    !evidence(e.player_item_extra_descr) ||
+				    !evidence(e.item_current_owner) ||
+				    !evidence(e.item_owner_revision))
+					return false;
+			}
+		}
+		return true;
+	}
+	bool custody(const std::vector<flatfile_item_ownership_record> &rows) noexcept
+	{
+		if (!vector(rows))
+			return false;
+		for (const auto &row : rows)
+			if (!vector(row.coin_payload))
+				return false;
+		return true;
+	}
+	bool keeper(const flatfile_shopkeeper_record &record) noexcept
+	{
+		return vector(record.affects) && items(record.items);
+	}
+	bool manifest(const shop_trade_recovery_manifest &m) noexcept
+	{
+		return vector(m.player_before.ordered_item_uids) &&
+		       vector(m.player_after.ordered_item_uids) &&
+		       vector(m.keeper_before.ordered_item_uids) &&
+		       vector(m.keeper_after.ordered_item_uids) &&
+		       vector(m.live_target_before.ordered_item_uids) &&
+		       vector(m.live_target_after.ordered_item_uids);
+	}
+};
+
+// Values derive only from the genuine private retained stage and original
+// captured selected tree. This does not hydrate or treat runtime cache as storage.
+bool flat_accounted_payload(const pending_trade &entry,
+			    const shop_trade_flat_native_checkpoint_stage &native,
+			    shop_trade_payload *output)
+{
+	if (!output || !entry.preparation || !entry.preparation->flat)
+		return false;
+	const auto &prepared = *entry.preparation;
+	const auto &source = entry.payload;
+	const bool creates = source.action == shop_trade_action::buy_produced;
+	const bool shop_owned = creates || source.action == shop_trade_action::buy_existing ||
+				source.action == shop_trade_action::discard_invalid;
+	const item_owner_identity player_owner{ item_owner_type::player, entry.player_pid, 0 };
+	const item_owner_identity keeper_owner{ item_owner_type::shopkeeper,
+						item_shopkeeper_owner_id(source.shop_id), 0 };
+	const auto expected_owner = shop_owned ? keeper_owner : player_owner;
+	std::map<uint64_t, const flatfile_item_ownership_record *> rows;
+	const auto index = [&](const auto &custody)
+	{
+		for (const auto &row : custody)
+			if (!rows.emplace(row.item_uid, &row).second)
+				return false;
+		return true;
+	};
+	if (!index(native.player.player_custody) || !index(native.keeper_custody))
+		return false;
+	for (const auto &pet : native.player.pet_custody)
+		if (!index(pet.custody))
+			return false;
+	std::vector<player_item_snapshot> selected;
+	if (player_item_snapshot_list_decode(prepared.selected.data(), prepared.selected.size(),
+					     &selected) != player_snapshot_codec_result::ok ||
+	    selected.empty() || selected.size() > SHOP_TRADE_MAX_ITEMS ||
+	    selected.front().object_uid != source.selected_item_uid ||
+	    prepared.selected.size() > SHOP_TRADE_ITEM_BLOB_MAX_BYTES)
+		return false;
+	shop_trade_payload payload{};
+	payload.action = source.action;
+	payload.player_pid = entry.player_pid;
+	payload.shop_id = source.shop_id;
+	payload.racewar = source.racewar;
+	payload.account_name = source.account_name;
+	payload.price = source.price;
+	payload.keeper_vnum = source.keeper_vnum;
+	payload.expected_keeper_cash = source.expected_keeper_cash;
+	payload.keeper_roaming = source.keeper_roaming;
+	payload.expected_wallet_revision = native.player.native_money.domains.wallet_revision;
+	payload.expected_bank_revision = native.player.native_money.domains.bank_revision;
+	payload.expected_shop_revision = native.keeper_after.revision;
+	payload.expected_player_save_revision = native.acknowledged_status.save_revision;
+	payload.expected_player_level = native.acknowledged_status.level;
+	payload.selected_item_uid = source.selected_item_uid;
+	payload.target_root_item_uid = source.selected_item_uid;
+	payload.item_count = static_cast<uint16_t>(selected.size());
+	payload.item_blob_size = static_cast<uint32_t>(prepared.selected.size());
+	std::copy(prepared.selected.begin(), prepared.selected.end(), payload.item_blob.begin());
+	for (size_t i = 0; i < selected.size(); ++i)
+	{
+		const auto &item = selected[i];
+		if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+		    (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= i))
+			return false;
+		const uint64_t parent =
+			item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				0 :
+				selected[static_cast<size_t>(item.parent_index)].object_uid;
+		const auto found = rows.find(item.object_uid);
+		item_ownership_runtime_entry runtime{};
+		if (creates)
+		{
+			if (found != rows.end() ||
+			    item_ownership_runtime_lookup(item.object_uid, &runtime))
+				return false;
+		}
+		else if (found == rows.end() ||
+			 !item_owner_identity_equal(found->second->owner, expected_owner) ||
+			 found->second->state != item_custody_state::active ||
+			 !found->second->item_revision ||
+			 found->second->root_item_uid != source.selected_item_uid ||
+			 found->second->parent_item_uid != parent ||
+			 found->second->vnum != item.vnum)
+			return false;
+		payload.items[i] = {
+			item.object_uid,
+			source.selected_item_uid,
+			parent,
+			creates ? ITEM_TRANSFER_ABSENT_REVISION : found->second->item_revision,
+			item.vnum,
+			creates ? item_custody_state::absent : item_custody_state::active
+		};
+	}
+	std::sort(payload.items.begin(), payload.items.begin() + payload.item_count,
+		  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+	const auto current_root =
+		[&](uint64_t uid,
+		    const item_owner_identity &owner) -> const flatfile_item_ownership_record *
+	{
+		const auto found = rows.find(uid);
+		if (found == rows.end() ||
+		    !item_owner_identity_equal(found->second->owner, owner) ||
+		    found->second->state != item_custody_state::active ||
+		    !found->second->item_revision || found->second->root_item_uid != uid ||
+		    found->second->parent_item_uid)
+			return nullptr;
+		return found->second;
+	};
+	if (creates)
+	{
+		const auto *stock = current_root(source.stock_item_uid, keeper_owner);
+		std::vector<player_item_snapshot> original_stock;
+		if (!stock || stock->item_uid == source.selected_item_uid ||
+		    stock->vnum != selected.front().vnum ||
+		    player_item_snapshot_list_decode(prepared.stock.data(), prepared.stock.size(),
+						     &original_stock) !=
+			    player_snapshot_codec_result::ok ||
+		    original_stock.empty() ||
+		    original_stock.front().object_uid != stock->item_uid ||
+		    original_stock.front().vnum != stock->vnum)
+			return false;
+		payload.stock_item_uid = stock->item_uid;
+		payload.expected_stock_item_revision = stock->item_revision;
+		payload.stock_vnum = stock->vnum;
+		if (source.target_parent_item_uid)
+		{
+			const auto *target =
+				current_root(source.target_parent_item_uid, player_owner);
+			std::vector<player_item_snapshot> original_target;
+			if (!target || target->item_uid == source.selected_item_uid ||
+			    player_item_snapshot_list_decode(
+				    prepared.destination.data(), prepared.destination.size(),
+				    &original_target) != player_snapshot_codec_result::ok ||
+			    original_target.empty() ||
+			    original_target.front().object_uid != target->item_uid ||
+			    original_target.front().vnum != target->vnum)
+				return false;
+			payload.target_root_item_uid = target->root_item_uid;
+			payload.target_parent_item_uid = target->item_uid;
+			payload.expected_target_parent_revision = target->item_revision;
+		}
+	}
+	else if (shop_owned)
+	{
+		const auto *stock = current_root(source.selected_item_uid, keeper_owner);
+		if (!stock)
+			return false;
+		payload.stock_item_uid = stock->item_uid;
+		payload.expected_stock_item_revision = stock->item_revision;
+		payload.stock_vnum = stock->vnum;
+	}
+	std::vector<uint8_t> encoded;
+	if (!shop_trade_command_encode_accounted_payload(payload, &encoded))
+		return false;
+	*output = std::move(payload);
+	return true;
+}
+
+bool flat_command_retained_bytes(const critical_command &command, size_t *output) noexcept
+{
+	flat_preparation_bytes bytes;
+	if (!output || !bytes.add(sizeof(command)) || !bytes.vector(command.keys) ||
+	    !bytes.vector(command.expected_revisions) || !bytes.vector(command.payload) ||
+	    !bytes.vector(command.accounting_intent))
+		return false;
+	*output = bytes.value;
+	return true;
+}
+
+bool flat_native_retained_bytes(const pending_trade &entry,
+				const shop_trade_flat_native_checkpoint_stage &stage,
+				size_t *output) noexcept
+{
+	if (!output || !entry.preparation || !entry.preparation->flat || entry.cold ||
+	    entry.preparation->flat->native || entry.preparation->submission_started ||
+	    entry.preparation->command || entry.production_owned)
+		return false;
+	const auto &prepared = *entry.preparation;
+#ifndef __NO_MYSQL__
+	if (prepared.native_attempted || prepared.native_sealed || prepared.native_ready ||
+	    !prepared.native_stage.keeper_image.empty())
+		return false;
+#endif
+	flat_preparation_bytes bytes;
+	if (!bytes.add(sizeof(decltype(pending)::value_type)) ||
+	    !bytes.add(sizeof(trade_preparation)) || !bytes.add(sizeof(flat_trade_preparation)) ||
+	    !bytes.add(sizeof(stage)) || !bytes.string(prepared.flat->selected_root) ||
+	    !bytes.vector(prepared.selected) || !bytes.vector(prepared.stock) ||
+	    !bytes.vector(prepared.destination) || !bytes.vector(prepared.keeper_blob) ||
+	    !bytes.items(prepared.keeper_items) || !bytes.vector(prepared.fenced_uids) ||
+	    !bytes.manifest(entry.payload.recovery_manifest) || !bytes.items(entry.before_player) ||
+	    !bytes.items(entry.after_player) || !bytes.items(entry.after_keeper) ||
+	    !bytes.vector(entry.after_destination) ||
+	    !bytes.string(stage.player_hold_cut.selected_root) ||
+	    !bytes.snapshot(stage.original_queued_ack) ||
+	    !bytes.vector(stage.player.authority.mappings))
+		return false;
+	for (const auto &mapping : stage.player.authority.mappings)
+		if (!bytes.string(mapping.locator.name))
+			return false;
+	if (!bytes.string(stage.player.native_money.account_name) ||
+	    !bytes.vector(stage.player.native_money.recent_pvp_deaths) ||
+	    !bytes.vector(stage.player.native_money.completed_epic_zones) ||
+	    !bytes.snapshot(stage.player.player) || !bytes.custody(stage.player.player_custody) ||
+	    !bytes.vector(stage.player.pet_custody) || !bytes.custody(stage.keeper_custody) ||
+	    !bytes.keeper(stage.keeper_before) || !bytes.keeper(stage.keeper_after) ||
+	    !bytes.string(stage.catalog_before.filename) ||
+	    !bytes.vector(stage.catalog_before.bytes) ||
+	    !bytes.string(stage.catalog_after.filename) || !bytes.vector(stage.catalog_after.bytes))
+		return false;
+	for (const auto &pet : stage.player.pet_custody)
+		if (!bytes.custody(pet.custody))
+			return false;
+	*output = bytes.value;
+	return bytes.value != 0;
+}
+
+}
+
+shop_trade_preparation_state shop_trade_preparation_owner::begin_flat(
+	P_char actor, P_char keeper, P_obj selected, P_obj stock, P_obj destination, uint32_t shop,
+	shop_trade_action action, int64_t price, shop_trade_flat_preparation_token *output) noexcept
+{
+	if (!nevent_is_game_thread() || !output || !flat_preparation_body(actor, keeper, shop) ||
+	    !selected || !selected->obj_uid || price < 0 || price > INT_MAX ||
+	    action <= shop_trade_action::unknown || action > shop_trade_action::sell_destroy ||
+	    ((action == shop_trade_action::buy_produced) != (stock != nullptr)) ||
+	    (destination && action != shop_trade_action::buy_produced) ||
+	    ((action == shop_trade_action::sell_store ||
+	      action == shop_trade_action::sell_destroy) &&
+	     (!price || !OBJ_CARRIED_BY(selected, actor))) ||
+	    (action == shop_trade_action::buy_existing && !OBJ_CARRIED_BY(selected, keeper)) ||
+	    (stock && !OBJ_CARRIED_BY(stock, keeper)) ||
+	    (destination && !OBJ_CARRIED_BY(destination, actor)) ||
+	    pending.size() + notifying >= SHOP_TRADE_PENDING_MAX ||
+	    player_pending(static_cast<uint32_t>(GET_PID(actor))) ||
+	    shop_trade_transaction_keeper_busy(shop) ||
+	    preparation_generation == std::numeric_limits<uint64_t>::max())
+		return shop_trade_preparation_state::refused;
+	critical_operation_id operation{};
+	bool owns_entry = false;
+	try
+	{
+		const char *account = get_account_name_safe(actor);
+		if (!account || !strcmp(account, "Unknown") ||
+		    strlen(account) > CURRENCY_ACCOUNT_NAME_MAX_BYTES ||
+		    GET_RACEWAR(actor) > INT8_MAX)
+			return shop_trade_preparation_state::refused;
+		const int64_t keeper_cash = static_cast<int64_t>(GET_COPPER(keeper)) +
+					    10LL * GET_SILVER(keeper) + 100LL * GET_GOLD(keeper) +
+					    1000LL * GET_PLATINUM(keeper);
+		if (GET_COPPER(keeper) < 0 || GET_SILVER(keeper) < 0 || GET_GOLD(keeper) < 0 ||
+		    GET_PLATINUM(keeper) < 0 || keeper_cash < 0 || keeper_cash > INT_MAX)
+			return shop_trade_preparation_state::refused;
+		auto prepared = std::make_unique<trade_preparation>();
+		prepared->flat = std::make_unique<flat_trade_preparation>();
+		prepared->flat->selected_root = persistence_mode_flatfile_root();
+		if (!economic_gameplay_authority::observe_flat_shop_checkpoint(
+			    GET_PID(actor), account, static_cast<uint8_t>(GET_RACEWAR(actor)),
+			    &prepared->mapping) ||
+		    !flat_preparation_tree(selected, &prepared->selected, &prepared->fenced_uids,
+					   &prepared->selected_capture_bytes) ||
+		    !flat_preparation_tree(stock, &prepared->stock, &prepared->fenced_uids) ||
+		    !flat_preparation_destination_tree(destination, &prepared->destination,
+						       &prepared->fenced_uids,
+						       &prepared->destination_capture_bytes) ||
+		    !shop_item_runtime_capture_keeper_literal(keeper, &prepared->keeper_items) ||
+		    player_item_snapshot_list_encode(prepared->keeper_items,
+						     &prepared->keeper_blob) !=
+			    player_snapshot_codec_result::ok)
+			return shop_trade_preparation_state::refused;
+		for (const auto &item : prepared->keeper_items)
+			prepared->fenced_uids.push_back(item.object_uid);
+		std::sort(prepared->fenced_uids.begin(), prepared->fenced_uids.end());
+		prepared->fenced_uids.erase(std::unique(prepared->fenced_uids.begin(),
+							prepared->fenced_uids.end()),
+					    prepared->fenced_uids.end());
+		for (const auto uid : prepared->fenced_uids)
+			if (shop_trade_transaction_item_busy(uid))
+				return shop_trade_preparation_state::refused;
+		if (!critical_operation_id_generate(&operation))
+			return shop_trade_preparation_state::refused;
+		prepared->generation = ++preparation_generation;
+		prepared->actor_runtime_id = actor->runtime_id;
+		prepared->keeper_runtime_id = keeper->runtime_id;
+		const uint64_t generation = prepared->generation;
+		pending_trade entry{};
+		entry.player_pid = static_cast<uint32_t>(GET_PID(actor));
+		entry.payload.player_pid = entry.player_pid;
+		entry.payload.shop_id = shop;
+		entry.payload.action = action;
+		entry.payload.price = price;
+		entry.payload.keeper_vnum = GET_VNUM(keeper);
+		entry.payload.expected_keeper_cash = keeper_cash;
+		entry.payload.keeper_roaming = shop_index[shop].shop_is_roaming != 0;
+		entry.payload.selected_item_uid = selected->obj_uid;
+		entry.payload.stock_item_uid = stock ? stock->obj_uid : 0;
+		entry.payload.target_parent_item_uid = destination ? destination->obj_uid : 0;
+		entry.payload.racewar = static_cast<uint8_t>(GET_RACEWAR(actor));
+		strcpy(entry.payload.account_name.data(), account);
+		entry.preparation = std::move(prepared);
+		auto [found, inserted] = pending.emplace(operation.bytes, std::move(entry));
+		if (!inserted)
+			return shop_trade_preparation_state::refused;
+		owns_entry = true;
+		shop_trade_flat_preparation_token token;
+		token.operation_id_ = operation;
+		token.generation_ = generation;
+		*output = token;
+		// Own every original body/UID before the one native shell probe. An
+		// uncertain construction/extraction tail retains this same preparation.
+		if (destination)
+		{
+			auto &owned = *found->second.preparation;
+			std::vector<player_item_snapshot> target, source;
+			if (player_item_snapshot_list_decode(owned.destination.data(),
+							     owned.destination.size(), &target) !=
+				    player_snapshot_codec_result::ok ||
+			    player_item_snapshot_list_decode(owned.selected.data(),
+							     owned.selected.size(), &source) !=
+				    player_snapshot_codec_result::ok ||
+			    target.empty() || source.empty() ||
+			    target.front().type != ITEM_CONTAINER ||
+			    source.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - target.size())
+			{
+				pending.erase(found);
+				return shop_trade_preparation_state::refused;
+			}
+			// Native capture charges structures/dynamic rows in addition to
+			// wire bytes. Two separate captures count the envelope twice.
+			const size_t envelope = sizeof(player_snapshot);
+			if (owned.selected_capture_bytes < envelope ||
+			    owned.destination_capture_bytes < envelope ||
+			    owned.destination_capture_bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
+			    owned.selected_capture_bytes - envelope >
+				    PLAYER_SNAPSHOT_MAX_BYTES - owned.destination_capture_bytes)
+			{
+				pending.erase(found);
+				return shop_trade_preparation_state::refused;
+			}
+			int32_t shell = 0, direct = 0;
+			if (target.front().values[4] > 0)
+			{
+				int64_t sum = 0;
+				for (size_t index = 1; index < target.size(); ++index)
+					if (target[index].parent_index == 0)
+					{
+						sum += target[index].weight;
+						if (sum < INT32_MIN || sum > INT32_MAX)
+						{
+							pending.erase(found);
+							return shop_trade_preparation_state::refused;
+						}
+					}
+				direct = static_cast<int32_t>(sum);
+				owned.destination_shell_started = true;
+				const bool captured =
+					obj_capture_container_shell_weight(destination, &shell);
+				owned.destination_shell_returned = true;
+				if (!captured)
+				{
+					pending.erase(found);
+					return shop_trade_preparation_state::refused;
+				}
+				// Hooks may touch the world. Resolve the original bodies again
+				// and compare all literal source values before any checkpoint.
+				actor = find_character_by_runtime_id(owned.actor_runtime_id);
+				keeper = find_character_by_runtime_id(owned.keeper_runtime_id);
+				if (!flat_preparation_body(actor, keeper, shop))
+					return shop_trade_preparation_state::pending;
+				std::vector<uint8_t> current_target, current_selected;
+				// The original UID census is established again by poll before
+				// SQL; pointers returned across a probe are never retained.
+				P_obj original_destination = nullptr, original_selected = nullptr;
+				size_t count = 0;
+				for (P_obj object = actor->carrying; object;
+				     object = object->next_content)
+				{
+					if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+					    !OBJ_CARRIED_BY(object, actor))
+						return shop_trade_preparation_state::pending;
+					if (object->obj_uid ==
+					    found->second.payload.target_parent_item_uid)
+					{
+						if (original_destination)
+							return shop_trade_preparation_state::pending;
+						original_destination = object;
+					}
+				}
+				// Produced selection is detached, so resolve it from the global
+				// object list through the same original UID; never read a stale pointer.
+				extern P_obj object_list;
+				count = 0;
+				for (P_obj object = object_list; object; object = object->next)
+				{
+					if (++count > 262144)
+						return shop_trade_preparation_state::pending;
+					if (object->obj_uid ==
+					    found->second.payload.selected_item_uid)
+					{
+						if (original_selected)
+							return shop_trade_preparation_state::pending;
+						original_selected = object;
+					}
+				}
+				if (!original_destination || !original_selected ||
+				    !flat_preparation_destination_tree(original_destination,
+								       &current_target) ||
+				    !flat_preparation_tree(original_selected, &current_selected) ||
+				    current_target != owned.destination ||
+				    current_selected != owned.selected)
+					return shop_trade_preparation_state::pending;
+				destination = original_destination;
+				selected = original_selected;
+			}
+			if (!shop_trade_destination_weight_compute(
+				    target.front(), source.front().weight, direct, shell,
+				    &owned.destination_weight))
+			{
+				pending.erase(found);
+				return shop_trade_preparation_state::refused;
+			}
+			// The complete future literal destination must fit the same capture
+			// envelope now, before checkpoint/SQL/admission. Selected STORE/key
+			// transforms are fixed-width and cannot enlarge this encoding.
+			auto combined = target;
+			combined.front().weight = owned.destination_weight.after;
+			const auto base = static_cast<int32_t>(combined.size());
+			for (auto item : source)
+			{
+				item.parent_index =
+					item.parent_index < 0 ? 0 : base + item.parent_index;
+				combined.push_back(std::move(item));
+			}
+			std::vector<uint8_t> encoded;
+			if (player_item_snapshot_list_encode(combined, &encoded) !=
+				    player_snapshot_codec_result::ok ||
+			    encoded.size() > PLAYER_SNAPSHOT_MAX_BYTES - sizeof(uint32_t))
+			{
+				pending.erase(found);
+				return shop_trade_preparation_state::refused;
+			}
+		}
+		found->second.preparation->destination_weight_ready = true;
+
+		// The domain entry already owns the keeper and every frozen UID while
+		// the ordinary save request captures/queues the player's checkpoint.
+		const bool selling = action == shop_trade_action::sell_store ||
+				     action == shop_trade_action::sell_destroy;
+		const auto state = player_save_pipeline_flat_shop_checkpoint_begin(
+			actor, selling ? selected : nullptr, NOWHERE,
+			&found->second.preparation->flat->player_token);
+		if (state == player_literal_inventory_state::refused)
+		{
+			pending.erase(found);
+			return shop_trade_preparation_state::refused;
+		}
+		return shop_trade_preparation_state::pending;
+	}
+	catch (...)
+	{
+		// A matching generated ID is not ownership if insertion failed.
+		if (!owns_entry)
+			return shop_trade_preparation_state::refused;
+		auto found = pending.find(operation.bytes);
+		if (found == pending.end())
+			return shop_trade_preparation_state::refused;
+		if (found->second.preparation->destination_shell_started &&
+		    !found->second.preparation->destination_shell_returned)
+			return shop_trade_preparation_state::pending;
+		const auto &player = found->second.preparation->flat->player_token;
+		// The pipeline exposes the installed slot before enqueue. A zero
+		// token proves this preparation never acquired a player checkpoint;
+		// no keeper write or critical admission has been attempted yet.
+		if (!player.pid && !player.actor_runtime_id && !player.generation)
+		{
+			pending.erase(found);
+			return shop_trade_preparation_state::refused;
+		}
+		return shop_trade_preparation_state::pending;
+	}
+}
+
+shop_trade_preparation_state
+shop_trade_preparation_owner::poll_flat(const shop_trade_flat_preparation_token &token,
+					P_char actor, P_char keeper, P_obj selected, P_obj stock,
+					P_obj destination) noexcept
+{
+	if (!nevent_is_game_thread())
+		return shop_trade_preparation_state::refused;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (!nevent_is_game_thread() || found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return shop_trade_preparation_state::refused;
+	auto &entry = found->second;
+	auto &prepared = *entry.preparation;
+	if (prepared.flat->phase != shop_trade_flat_native_checkpoint_phase::preparing ||
+	    !persistence_mode_flatfile_root() ||
+	    prepared.flat->selected_root != persistence_mode_flatfile_root() ||
+	    prepared.submission_started ||
+	    (prepared.destination_shell_started && !prepared.destination_shell_returned) ||
+	    !prepared.destination_weight_ready)
+		return shop_trade_preparation_state::refused;
+	try
+	{
+		if (!flat_preparation_body(actor, keeper, entry.payload.shop_id) ||
+		    actor->runtime_id != prepared.actor_runtime_id ||
+		    keeper->runtime_id != prepared.keeper_runtime_id ||
+		    static_cast<uint32_t>(GET_PID(actor)) != entry.player_pid || !selected ||
+		    selected->obj_uid != entry.payload.selected_item_uid ||
+		    (stock ? stock->obj_uid : 0) != entry.payload.stock_item_uid ||
+		    (destination ? destination->obj_uid : 0) !=
+			    entry.payload.target_parent_item_uid ||
+		    GET_VNUM(keeper) != entry.payload.keeper_vnum ||
+		    (shop_index[entry.payload.shop_id].shop_is_roaming != 0) !=
+			    (entry.payload.keeper_roaming != 0) ||
+		    GET_RACEWAR(actor) != entry.payload.racewar ||
+		    ((entry.payload.action == shop_trade_action::sell_store ||
+		      entry.payload.action == shop_trade_action::sell_destroy) &&
+		     !OBJ_CARRIED_BY(selected, actor)) ||
+		    (entry.payload.action == shop_trade_action::buy_existing &&
+		     !OBJ_CARRIED_BY(selected, keeper)) ||
+		    (stock && !OBJ_CARRIED_BY(stock, keeper)) ||
+		    (destination && !OBJ_CARRIED_BY(destination, actor)))
+			return shop_trade_preparation_state::refused;
+		const int64_t keeper_cash = static_cast<int64_t>(GET_COPPER(keeper)) +
+					    10LL * GET_SILVER(keeper) + 100LL * GET_GOLD(keeper) +
+					    1000LL * GET_PLATINUM(keeper);
+		if (GET_COPPER(keeper) < 0 || GET_SILVER(keeper) < 0 || GET_GOLD(keeper) < 0 ||
+		    GET_PLATINUM(keeper) < 0 || keeper_cash != entry.payload.expected_keeper_cash)
+			return shop_trade_preparation_state::refused;
+		const char *account = get_account_name_safe(actor);
+		economic_shop_checkpoint_projection mapping{};
+		std::vector<uint8_t> a, b, c, d;
+		std::vector<player_item_snapshot> keeper_items;
+		if (!account || strcmp(account, entry.payload.account_name.data()) ||
+		    !economic_gameplay_authority::observe_flat_shop_checkpoint(
+			    entry.player_pid, account, entry.payload.racewar, &mapping) ||
+		    !flat_same_mapping(mapping, prepared.mapping) ||
+		    !flat_preparation_tree(selected, &a) || a != prepared.selected ||
+		    !flat_preparation_tree(stock, &b) || b != prepared.stock ||
+		    !flat_preparation_destination_tree(destination, &c) ||
+		    c != prepared.destination ||
+		    !shop_item_runtime_capture_keeper_literal(keeper, &keeper_items) ||
+		    player_item_snapshot_list_encode(keeper_items, &d) !=
+			    player_snapshot_codec_result::ok ||
+		    d != prepared.keeper_blob)
+			return shop_trade_preparation_state::refused;
+		if (prepared.flat->player_held)
+		{
+			player_shop_checkpoint_stage held{};
+			player_snapshot original_ack;
+			economic_shop_checkpoint_projection held_mapping;
+			player_flat_shop_checkpoint_cut cut;
+			if (!player_save_shop_checkpoint_owner::observe_held_flat(
+				    prepared.flat->player_token, actor, token.operation_id_,
+				    &original_ack, &held, &held_mapping, &cut) ||
+			    !flat_same_mapping(held_mapping, prepared.mapping) ||
+			    cut.selected_root != prepared.flat->selected_root ||
+			    held.save_revision != prepared.flat->player_stage.save_revision ||
+			    held.level != prepared.flat->player_stage.level)
+				return shop_trade_preparation_state::refused;
+			return shop_trade_preparation_state::ready;
+		}
+		player_shop_checkpoint_stage stage{};
+		const auto state = player_save_pipeline_flat_shop_checkpoint_poll(
+			prepared.flat->player_token, actor, &stage);
+		if (state == player_literal_inventory_state::pending)
+			return shop_trade_preparation_state::pending;
+		if (state != player_literal_inventory_state::database_acknowledged ||
+		    !player_save_shop_checkpoint_owner::hold_flat(prepared.flat->player_token,
+								  token.operation_id_))
+			return shop_trade_preparation_state::refused;
+		prepared.flat->player_stage = stage;
+		prepared.flat->player_held = true;
+		return shop_trade_preparation_state::ready;
+	}
+	catch (...)
+	{
+		return shop_trade_preparation_state::refused;
+	}
+}
+
+bool shop_trade_preparation_owner::cancel_flat(
+	const shop_trade_flat_preparation_token &token) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &prepared = *found->second.preparation;
+	auto &flat = *prepared.flat;
+	if (found->second.production_owned || prepared.submission_started ||
+	    (prepared.destination_shell_started && !prepared.destination_shell_returned) ||
+	    (flat.phase != shop_trade_flat_native_checkpoint_phase::preparing &&
+	     flat.phase != shop_trade_flat_native_checkpoint_phase::sealed))
+		return false;
+	if (flat.player_token.pid || flat.player_token.actor_runtime_id ||
+	    flat.player_token.generation)
+	{
+		const bool released =
+			flat.player_held ?
+				player_save_shop_checkpoint_owner::release_unattempted_flat(
+					flat.player_token, token.operation_id_) :
+				player_save_pipeline_flat_shop_checkpoint_cancel(flat.player_token);
+		if (!released)
+			return false;
+	}
+	else if (flat.player_held || flat.native)
+		return false;
+	pending.erase(found);
+	return true;
+}
+
+bool shop_trade_preparation_owner::begin_native_checkpoint_flat(
+	const shop_trade_flat_preparation_token &token, P_char actor, P_char keeper, P_obj selected,
+	P_obj stock, P_obj destination, shop_trade_flat_checkpoint_context *context,
+	const shop_trade_flat_native_checkpoint_stage **retained,
+	shop_trade_flat_native_checkpoint_phase *phase) noexcept
+{
+	if (!nevent_is_game_thread() || !context || !retained || !phase)
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &entry = found->second;
+	auto &prepared = *entry.preparation;
+	auto &flat = *prepared.flat;
+	if (entry.production_owned || prepared.submission_started)
+		return false;
+	// An existing stage is an actor-independent original lifetime. This path
+	// performs no gameplay recapture, factory, catalog staging or new attempt.
+	if (flat.native)
+	{
+		if (!flat.player_held ||
+		    flat.native->operation_id.bytes != token.operation_id_.bytes ||
+		    flat.phase == shop_trade_flat_native_checkpoint_phase::preparing ||
+		    !flat.reserved_bytes)
+			return false;
+		*retained = flat.native.get();
+		*phase = flat.phase;
+		return true; // context stays unchanged; the retained stage owns the full cut.
+	}
+	if (flat.phase != shop_trade_flat_native_checkpoint_phase::preparing ||
+	    poll_flat(token, actor, keeper, selected, stock, destination) !=
+		    shop_trade_preparation_state::ready)
+		return false;
+	try
+	{
+		shop_trade_flat_checkpoint_context copied;
+		economic_shop_checkpoint_projection mapping;
+		player_shop_checkpoint_stage status;
+		if (!player_save_shop_checkpoint_owner::observe_held_flat(
+			    flat.player_token, actor, token.operation_id_,
+			    &copied.original_queued_ack, &status, &mapping,
+			    &copied.player_hold_cut) ||
+		    !flat_same_mapping(mapping, prepared.mapping) ||
+		    copied.player_hold_cut.selected_root != flat.selected_root ||
+		    status.save_revision != flat.player_stage.save_revision ||
+		    status.level != flat.player_stage.level)
+			return false;
+		copied.original.operation_id = token.operation_id_;
+		copied.original.generation = token.generation_;
+		copied.original.actor_runtime_id = prepared.actor_runtime_id;
+		copied.original.keeper_runtime_id = prepared.keeper_runtime_id;
+		copied.original.player_pid = entry.player_pid;
+		copied.original.shop_id = entry.payload.shop_id;
+		copied.original.account_name = entry.payload.account_name;
+		copied.original.racewar = entry.payload.racewar;
+		copied.original.keeper_roaming = entry.payload.keeper_roaming;
+		copied.original.keeper_cash = entry.payload.expected_keeper_cash;
+		copied.original.keeper_vnum = entry.payload.keeper_vnum;
+		copied.original.mapping = prepared.mapping;
+		copied.original.player = status;
+		copied.original.keeper_items = prepared.keeper_items;
+		copied.player_token = flat.player_token;
+		static_assert(
+			std::is_nothrow_move_assignable_v<shop_trade_flat_checkpoint_context>);
+		*context = std::move(copied);
+		*retained = nullptr;
+		*phase = shop_trade_flat_native_checkpoint_phase::preparing;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_preparation_owner::seal_native_checkpoint_flat(
+	const shop_trade_flat_preparation_token &token,
+	std::unique_ptr<shop_trade_flat_native_checkpoint_stage> &&stage) noexcept
+{
+	if (!nevent_is_game_thread() || !stage)
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &entry = found->second;
+	auto &prepared = *entry.preparation;
+	auto &flat = *prepared.flat;
+	if (!flat.player_held || flat.native || flat.reserved_bytes ||
+	    flat.phase != shop_trade_flat_native_checkpoint_phase::preparing ||
+	    stage->operation_id.bytes != token.operation_id_.bytes ||
+	    stage->player_token != flat.player_token ||
+	    !flat_same_mapping(stage->mapping, prepared.mapping) ||
+	    stage->player_hold_cut.selected_root != flat.selected_root ||
+	    !stage->player_hold_cut.ownership_epoch ||
+	    !stage->player_hold_cut.execution_hold_generation ||
+	    stage->acknowledged_status.save_revision != flat.player_stage.save_revision ||
+	    stage->acknowledged_status.level != flat.player_stage.level ||
+	    stage->original_queued_ack.pid != static_cast<int32_t>(entry.player_pid) ||
+	    stage->original_queued_ack.revision != flat.player_stage.save_revision ||
+	    stage->player.player.pid != static_cast<int32_t>(entry.player_pid) ||
+	    stage->player.player.revision != flat.player_stage.save_revision ||
+	    stage->player.authority.lineage.bytes != prepared.mapping.lineage.bytes ||
+	    stage->player.authority.epoch.bytes != prepared.mapping.epoch.bytes ||
+	    !stage->keeper_owner_revision ||
+	    stage->keeper_custody.size() != prepared.keeper_items.size() ||
+	    stage->keeper_before.shop_id != entry.payload.shop_id ||
+	    stage->keeper_after.shop_id != entry.payload.shop_id ||
+	    !stage->keeper_before.revision || stage->keeper_before.revision == UINT64_MAX ||
+	    stage->keeper_after.revision != stage->keeper_before.revision + 1 ||
+	    stage->keeper_before.mob_vnum != entry.payload.keeper_vnum ||
+	    stage->keeper_after.mob_vnum != entry.payload.keeper_vnum ||
+	    stage->keeper_before.cash != entry.payload.expected_keeper_cash ||
+	    stage->keeper_after.cash != entry.payload.expected_keeper_cash ||
+	    stage->keeper_before.roaming != (entry.payload.keeper_roaming != 0) ||
+	    stage->keeper_after.roaming != (entry.payload.keeper_roaming != 0) ||
+	    stage->catalog_before.filename.empty() ||
+	    stage->catalog_before.filename != stage->catalog_after.filename ||
+	    stage->catalog_before.bytes.empty() || stage->catalog_after.bytes.empty())
+		return false;
+	try
+	{
+		player_snapshot ack;
+		player_shop_checkpoint_stage status;
+		economic_shop_checkpoint_projection mapping;
+		player_flat_shop_checkpoint_cut cut;
+		std::vector<uint8_t> current_ack, staged_ack, keeper;
+		if (!player_save_shop_checkpoint_owner::observe_held_flat(
+			    flat.player_token,
+			    find_character_by_runtime_id(prepared.actor_runtime_id),
+			    token.operation_id_, &ack, &status, &mapping, &cut) ||
+		    !flat_same_mapping(mapping, stage->mapping) ||
+		    cut.selected_root != stage->player_hold_cut.selected_root ||
+		    cut.ownership_epoch != stage->player_hold_cut.ownership_epoch ||
+		    cut.execution_hold_generation !=
+			    stage->player_hold_cut.execution_hold_generation ||
+		    player_snapshot_encode(ack, &current_ack) != player_snapshot_codec_result::ok ||
+		    player_snapshot_encode(stage->original_queued_ack, &staged_ack) !=
+			    player_snapshot_codec_result::ok ||
+		    current_ack != staged_ack ||
+		    player_item_snapshot_list_encode(stage->keeper_after.items, &keeper) !=
+			    player_snapshot_codec_result::ok ||
+		    keeper != prepared.keeper_blob)
+			return false;
+		size_t bytes = 0;
+		if (!flat_native_retained_bytes(entry, *stage, &bytes) ||
+		    !player_save_shop_checkpoint_owner::reserve_flat_native_checkpoint(
+			    flat.player_token, token.operation_id_, bytes))
+			return false;
+		// Original aggregate reservation precedes a nonthrowing ownership transfer.
+		flat.native = std::move(stage);
+		flat.reserved_bytes = bytes;
+		flat.phase = shop_trade_flat_native_checkpoint_phase::sealed;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_preparation_owner::start_native_checkpoint_flat(
+	const shop_trade_flat_preparation_token &token) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &flat = *found->second.preparation->flat;
+	if (!flat.player_held || !flat.native || !flat.reserved_bytes ||
+	    flat.phase != shop_trade_flat_native_checkpoint_phase::sealed ||
+	    flat.native->operation_id.bytes != token.operation_id_.bytes ||
+	    !player_save_shop_checkpoint_owner::begin_native_attempt_flat(flat.player_token,
+									  token.operation_id_))
+		return false;
+	// The genuine exact leaf marker precedes first journal work; no fallible tail.
+	flat.phase = shop_trade_flat_native_checkpoint_phase::attempt_started;
+	return true;
+}
+
+bool shop_trade_preparation_owner::retain_native_outcome_flat(
+	const shop_trade_flat_preparation_token &token,
+	flatfile_authority_transaction_result result,
+	flatfile_authority_commit_outcome outcome) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &flat = *found->second.preparation->flat;
+	if (!flat.native || !flat.player_held ||
+	    (flat.phase != shop_trade_flat_native_checkpoint_phase::attempt_started &&
+	     flat.phase != shop_trade_flat_native_checkpoint_phase::uncertain))
+		return false;
+	switch (result)
+	{
+	case flatfile_authority_transaction_result::ok:
+	case flatfile_authority_transaction_result::not_found:
+	case flatfile_authority_transaction_result::invalid:
+	case flatfile_authority_transaction_result::io_error:
+		break;
+	default:
+		return false;
+	}
+	switch (outcome)
+	{
+	case flatfile_authority_commit_outcome::not_published:
+	case flatfile_authority_commit_outcome::publication_uncertain:
+	case flatfile_authority_commit_outcome::committed:
+		break;
+	default:
+		return false;
+	}
+	if (flat.outcome_recorded)
+		return flat.first_result == result && flat.first_outcome == outcome;
+	flat.first_result = result;
+	flat.first_outcome = outcome;
+	flat.outcome_recorded = true;
+	flat.phase = shop_trade_flat_native_checkpoint_phase::uncertain;
+	return true;
+}
+
+bool shop_trade_preparation_owner::resolve_native_checkpoint_flat(
+	const shop_trade_flat_preparation_token &token,
+	const shop_trade_flat_native_checkpoint_resolution &proof) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &flat = *found->second.preparation->flat;
+	if (!flat.native || !flat.player_held || !flat.reserved_bytes ||
+	    proof.original_ != flat.native.get() ||
+	    flat.native->operation_id.bytes != token.operation_id_.bytes ||
+	    (flat.phase != shop_trade_flat_native_checkpoint_phase::attempt_started &&
+	     flat.phase != shop_trade_flat_native_checkpoint_phase::uncertain))
+		return false;
+	switch (proof.proved_)
+	{
+	case shop_trade_flat_native_checkpoint_resolution::cut::after:
+		if (flat.outcome_recorded &&
+		    flat.first_outcome == flatfile_authority_commit_outcome::not_published)
+			return false;
+		flat.phase = shop_trade_flat_native_checkpoint_phase::ready;
+		return true;
+	case shop_trade_flat_native_checkpoint_resolution::cut::before:
+		if (flat.outcome_recorded &&
+		    flat.first_outcome == flatfile_authority_commit_outcome::committed)
+			return false;
+		flat.phase = shop_trade_flat_native_checkpoint_phase::unpublished_before;
+		return true;
+	}
+	return false;
+}
+
+bool shop_trade_preparation_owner::completed_native_checkpoint_flat(
+	const shop_trade_flat_preparation_token &token,
+	const shop_trade_flat_native_checkpoint_stage **output) noexcept
+{
+	if (!nevent_is_game_thread() || !output)
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    !found->second.preparation->flat ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	const auto &flat = *found->second.preparation->flat;
+	if (!flat.player_held || !flat.native || !flat.reserved_bytes ||
+	    flat.phase != shop_trade_flat_native_checkpoint_phase::ready ||
+	    flat.native->operation_id.bytes != token.operation_id_.bytes)
+		return false;
+	*output = flat.native.get();
+	return true;
+}
+
+bool shop_trade_preparation_owner::build_accounted_command_flat(
+	const shop_trade_flat_preparation_token &token, P_char actor, P_char keeper, P_obj selected,
+	P_obj stock, P_obj destination, critical_command *output) noexcept
+{
+	const shop_trade_flat_native_checkpoint_stage *retained = nullptr;
+	if (!output || !completed_native_checkpoint_flat(token, &retained))
+		return false;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_)
+		return false;
+	auto &entry = found->second;
+	auto &prepared = *entry.preparation;
+	auto &flat = *prepared.flat;
+	const auto &native = *retained;
+	if (entry.production_owned || prepared.submission_started ||
+	    !persistence_mode_flatfile_root() ||
+	    flat.selected_root != persistence_mode_flatfile_root())
+		return false;
+	try
+	{
+		if (prepared.command)
+		{
+			size_t bytes = 0;
+			critical_command copied = *prepared.command;
+			if (!flat_command_retained_bytes(*prepared.command, &bytes) ||
+			    !player_save_shop_checkpoint_owner::reserve_flat_command_checkpoint(
+				    flat.player_token, token.operation_id_, native.player_hold_cut,
+				    bytes))
+				return false;
+			*output = std::move(copied);
+			return true;
+		}
+		if ((prepared.destination_shell_started && !prepared.destination_shell_returned) ||
+		    !prepared.destination_weight_ready)
+			return false;
+		if (!flat_preparation_body(actor, keeper, entry.payload.shop_id) ||
+		    actor->runtime_id != prepared.actor_runtime_id ||
+		    keeper->runtime_id != prepared.keeper_runtime_id ||
+		    static_cast<uint32_t>(GET_PID(actor)) != entry.player_pid || !selected ||
+		    selected->obj_uid != entry.payload.selected_item_uid ||
+		    (stock ? stock->obj_uid : 0) != entry.payload.stock_item_uid ||
+		    (destination ? destination->obj_uid : 0) !=
+			    entry.payload.target_parent_item_uid ||
+		    GET_VNUM(keeper) != entry.payload.keeper_vnum ||
+		    (shop_index[entry.payload.shop_id].shop_is_roaming != 0) !=
+			    (entry.payload.keeper_roaming != 0) ||
+		    GET_RACEWAR(actor) != entry.payload.racewar ||
+		    ((entry.payload.action == shop_trade_action::sell_store ||
+		      entry.payload.action == shop_trade_action::sell_destroy) &&
+		     !OBJ_CARRIED_BY(selected, actor)) ||
+		    (entry.payload.action == shop_trade_action::buy_existing &&
+		     !OBJ_CARRIED_BY(selected, keeper)) ||
+		    (stock && !OBJ_CARRIED_BY(stock, keeper)) ||
+		    (destination && !OBJ_CARRIED_BY(destination, actor)))
+			return false;
+		const int64_t keeper_cash = static_cast<int64_t>(GET_COPPER(keeper)) +
+					    10LL * GET_SILVER(keeper) + 100LL * GET_GOLD(keeper) +
+					    1000LL * GET_PLATINUM(keeper);
+		if (GET_COPPER(keeper) < 0 || GET_SILVER(keeper) < 0 || GET_GOLD(keeper) < 0 ||
+		    GET_PLATINUM(keeper) < 0 || keeper_cash != entry.payload.expected_keeper_cash)
+			return false;
+		const char *account = get_account_name_safe(actor);
+		economic_shop_checkpoint_projection mapping{};
+		std::vector<uint8_t> a, b, c, d;
+		std::vector<player_item_snapshot> keeper_items;
+		if (!account || strcmp(account, entry.payload.account_name.data()) ||
+		    !economic_gameplay_authority::observe_flat_shop_checkpoint(
+			    entry.player_pid, account, entry.payload.racewar, &mapping) ||
+		    !flat_same_mapping(mapping, prepared.mapping) ||
+		    !flat_preparation_tree(selected, &a) || a != prepared.selected ||
+		    !flat_preparation_tree(stock, &b) || b != prepared.stock ||
+		    !flat_preparation_destination_tree(destination, &c) ||
+		    c != prepared.destination ||
+		    !shop_item_runtime_capture_keeper_literal(keeper, &keeper_items) ||
+		    player_item_snapshot_list_encode(keeper_items, &d) !=
+			    player_snapshot_codec_result::ok ||
+		    d != prepared.keeper_blob)
+			return false;
+
+		player_snapshot ack;
+		player_shop_checkpoint_stage held;
+		economic_shop_checkpoint_projection held_mapping;
+		player_flat_shop_checkpoint_cut cut;
+		std::vector<uint8_t> ack_bytes, original_ack_bytes;
+		if (!player_save_shop_checkpoint_owner::observe_held_flat(
+			    flat.player_token, actor, token.operation_id_, &ack, &held,
+			    &held_mapping, &cut) ||
+		    !flat_same_mapping(held_mapping, native.mapping) ||
+		    cut.selected_root != native.player_hold_cut.selected_root ||
+		    cut.ownership_epoch != native.player_hold_cut.ownership_epoch ||
+		    cut.execution_hold_generation !=
+			    native.player_hold_cut.execution_hold_generation ||
+		    held.save_revision != native.acknowledged_status.save_revision ||
+		    held.level != native.acknowledged_status.level ||
+		    static_cast<uint32_t>(GET_LEVEL(actor)) != held.level ||
+		    player_snapshot_encode(ack, &ack_bytes) != player_snapshot_codec_result::ok ||
+		    player_snapshot_encode(native.original_queued_ack, &original_ack_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    ack_bytes != original_ack_bytes)
+			return false;
+		const std::array<int64_t, 4> wallet{ GET_COPPER(actor), GET_SILVER(actor),
+						     GET_GOLD(actor), GET_PLATINUM(actor) };
+		const std::array<int64_t, 4> bank{ GET_BALANCE_COPPER(actor),
+						   GET_BALANCE_SILVER(actor),
+						   GET_BALANCE_GOLD(actor),
+						   GET_BALANCE_PLATINUM(actor) };
+		for (size_t i = 0; i < wallet.size(); ++i)
+			if (wallet[i] < 0 || bank[i] < 0 ||
+			    static_cast<uint64_t>(wallet[i]) !=
+				    native.player.native_money.domains.wallet[i] ||
+			    static_cast<uint64_t>(bank[i]) !=
+				    native.player.native_money.domains.bank[i])
+				return false;
+		if (actor->only.pc->wallet_revision !=
+			    native.player.native_money.domains.wallet_revision ||
+		    actor->only.pc->bank_revision !=
+			    native.player.native_money.domains.bank_revision)
+			return false;
+		shop_trade_payload payload{};
+		if (!flat_accounted_payload(entry, native, &payload))
+			return false;
+		payload.native_destination_weight_recorded = true;
+		payload.destination_weight = prepared.destination_weight;
+		// Refuse an unpublishable complete player AFTER before journal admission
+		// or SQL. Reuse the exact held original body and the final observer rules.
+		const auto &original = native.player.player.items;
+		std::vector<player_item_snapshot> prospective;
+		if (!shop_trade_native_publication_owner::expected_player_forest(
+			    payload, original, false, &prospective))
+			return false;
+		if (payload.action == shop_trade_action::buy_existing ||
+		    payload.action == shop_trade_action::buy_produced)
+		{
+			std::vector<player_item_snapshot> ordered;
+			if (!shop_trade_native_publication_owner::expected_player_order(
+				    payload, actor, selected, destination, prospective, &ordered))
+				return false;
+			prospective = std::move(ordered);
+		}
+		if (!shop_trade_world_player_values_supported(prospective))
+			return false;
+
+		// Saved-policy inventory omits some physical NORENT bodies; its row
+		// count alone cannot prove that the final bounded world census fits.
+		std::vector<uint64_t> literal_roots;
+		if (std::any_of(original.begin(), original.end(), [&](const auto &item)
+				{ return item.object_uid == payload.selected_item_uid; }))
+			literal_roots.push_back(payload.selected_item_uid);
+		std::vector<player_item_snapshot> detached;
+		if (payload.action == shop_trade_action::buy_produced &&
+		    player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     &detached) != player_snapshot_codec_result::ok)
+			return false;
+		shop_trade_world_expectation before_world{};
+		before_world.actor_pid = payload.player_pid;
+		before_world.actor_runtime_id = prepared.actor_runtime_id;
+		before_world.keeper_runtime_id = prepared.keeper_runtime_id;
+		before_world.shop_id = payload.shop_id;
+		before_world.keeper_vnum = payload.keeper_vnum;
+		before_world.player_items = original;
+		before_world.keeper_items = native.keeper_after.items;
+		before_world.detached_items = detached;
+		before_world.literal_player_root_uids = literal_roots;
+		shop_trade_world_witness before_observed;
+		if (!shop_trade_world_witness_observe(before_world, &before_observed) ||
+		    ((payload.action == shop_trade_action::buy_existing ||
+		      payload.action == shop_trade_action::buy_produced) &&
+		     payload.item_count > PLAYER_SNAPSHOT_MAX_OBJECTS -
+						  before_observed.player_physical_item_count))
+			return false;
+
+		// Journal the original ordered forest bindings before admission. These
+		// values are recovery comparison inputs; SQL must authenticate their
+		// complete original images under the existing authority/custody locks.
+		std::vector<player_item_snapshot> keeper_after;
+		if (!shop_trade_native_publication_owner::expected_keeper_forest(
+			    payload, keeper, selected, native.keeper_after.items, false,
+			    &keeper_after))
+			return false;
+		const auto freeze_forest = [](const std::vector<player_item_snapshot> &forest,
+					      shop_trade_recovery_forest_role role,
+					      shop_trade_recovery_forest_binding *binding)
+		{
+			std::vector<uint8_t> canonical;
+			return player_item_snapshot_list_encode(forest, &canonical) ==
+				       player_snapshot_codec_result::ok &&
+			       shop_trade_recovery_forest_freeze(canonical, role, binding);
+		};
+		shop_trade_recovery_manifest manifest;
+		if (!freeze_forest(original, shop_trade_recovery_forest_role::player_before,
+				   &manifest.player_before) ||
+		    !freeze_forest(prospective, shop_trade_recovery_forest_role::player_after,
+				   &manifest.player_after) ||
+		    !freeze_forest(native.keeper_after.items,
+				   shop_trade_recovery_forest_role::keeper_before,
+				   &manifest.keeper_before) ||
+		    !freeze_forest(keeper_after, shop_trade_recovery_forest_role::keeper_after,
+				   &manifest.keeper_after))
+			return false;
+		if (payload.target_parent_item_uid)
+		{
+			// Full live literal includes omitted non-durable NORENT children.
+			// Cold recovery uses the separate saved-policy player binding and
+			// must neither demand nor recreate those omitted children.
+			std::vector<player_item_snapshot> target_after;
+			if (!shop_trade_recovery_forest_freeze(
+				    prepared.destination,
+				    shop_trade_recovery_forest_role::live_target_before,
+				    &manifest.live_target_before) ||
+			    !shop_trade_native_publication_owner::expected_destination_forest(
+				    payload, actor, selected, destination, prepared.destination,
+				    &target_after) ||
+			    !freeze_forest(target_after,
+					   shop_trade_recovery_forest_role::live_target_after,
+					   &manifest.live_target_after))
+				return false;
+		}
+		payload.recovery_manifest = std::move(manifest);
+		payload.recovery_manifest_recorded = true;
+
+		auto command = std::make_unique<critical_command>();
+		if (!shop_trade_command_build_recovery(command.get(), token.operation_id_, payload,
+						       critical_source_site::command,
+						       critical_deadline_class::interactive) ||
+		    economic_gameplay_authority::prepare_shop_trade(command.get()) !=
+			    economic_accounting_error::ok ||
+		    command->schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			return false;
+		economic_frozen_intent intent;
+		shop_trade_payload verified{};
+		economic_account_key verified_wallet, verified_bank, counterparty;
+		auto projection = *command;
+		projection.accepted_at_usec = 1;
+		if (shop_trade_accounting_decode(projection, &intent, &verified, &verified_wallet,
+						 &verified_bank,
+						 &counterparty) != economic_accounting_error::ok ||
+		    intent.admission.metadata.epoch.bytes != prepared.mapping.epoch.bytes ||
+		    !economic_account_key_equal(verified_wallet, prepared.mapping.wallet) ||
+		    !economic_account_key_equal(verified_bank, prepared.mapping.bank))
+			return false;
+		const auto now = std::chrono::duration_cast<std::chrono::microseconds>(
+					 std::chrono::system_clock::now().time_since_epoch())
+					 .count();
+		if (now <= 0)
+			return false;
+		command->accepted_at_usec = static_cast<uint64_t>(now);
+		command->publication_required = true;
+		if (!critical_command_envelope_valid(*command))
+			return false;
+
+		// Copy and account every retained command allocation before installation.
+		critical_command copied = *command;
+		size_t bytes = 0;
+		if (!flat_command_retained_bytes(*command, &bytes) ||
+		    !player_save_shop_checkpoint_owner::reserve_flat_command_checkpoint(
+			    flat.player_token, token.operation_id_, native.player_hold_cut, bytes))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		prepared.command = std::move(command);
+		*output = std::move(copied);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool shop_trade_transaction_keeper_busy(uint32_t shop)
 {
 	return std::any_of(pending.begin(), pending.end(), [shop](const auto &entry)
@@ -4164,27 +5758,27 @@ bool shop_trade_transaction_item_busy(uint64_t uid)
 {
 	if (!uid)
 		return false;
-	return std::any_of(pending.begin(), pending.end(),
-			   [uid](const auto &value)
-			   {
-				   const auto &entry = value.second;
-				   if (entry.cold)
-					   return std::binary_search(
-						   entry.cold->fenced_uids.begin(),
-						   entry.cold->fenced_uids.end(), uid);
-				   if (entry.preparation)
-					   return std::binary_search(
-						   entry.preparation->fenced_uids.begin(),
-						   entry.preparation->fenced_uids.end(), uid);
-				   const auto &p = entry.payload;
-				   if (p.selected_item_uid == uid || p.stock_item_uid == uid ||
-				       p.target_parent_item_uid == uid)
-					   return true;
-				   for (size_t i = 0; i < p.item_count; ++i)
-					   if (p.items[i].item_uid == uid)
-						   return true;
-				   return false;
-			   });
+	return std::any_of(
+		pending.begin(), pending.end(),
+		[uid](const auto &value)
+		{
+			const auto &entry = value.second;
+			if (entry.cold)
+				return std::binary_search(entry.cold->fenced_uids.begin(),
+							  entry.cold->fenced_uids.end(), uid);
+			if (entry.preparation)
+				return std::binary_search(entry.preparation->fenced_uids.begin(),
+							  entry.preparation->fenced_uids.end(),
+							  uid);
+			const auto &p = entry.payload;
+			if (p.selected_item_uid == uid || p.stock_item_uid == uid ||
+			    p.target_parent_item_uid == uid)
+				return true;
+			for (size_t i = 0; i < p.item_count; ++i)
+				if (p.items[i].item_uid == uid)
+					return true;
+			return false;
+		});
 }
 
 void shop_trade_transaction_reset_for_tests(void)
@@ -4192,4 +5786,2716 @@ void shop_trade_transaction_reset_for_tests(void)
 	pending.clear();
 	notifying = 0;
 	preparation_generation = 0;
+}
+
+critical_submit_result shop_trade_preparation_owner::submit_accounted_flat(
+	const shop_trade_flat_preparation_token &token, P_char actor, P_char keeper, P_obj selected,
+	P_obj stock, P_obj destination, shop_trade_accounted_publication_fn publication,
+	shop_trade_completion_fn completion) noexcept
+{
+#ifndef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	(void)keeper;
+	(void)selected;
+	(void)stock;
+	(void)destination;
+	(void)publication;
+	(void)completion;
+	return critical_submit_result::unavailable;
+#else
+	const shop_trade_flat_native_checkpoint_stage *native = nullptr;
+	if (!nevent_is_game_thread() || !publication || !completion ||
+	    !completed_native_checkpoint_flat(token, &native))
+		return critical_submit_result::invalid;
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_ || found->second.blocked ||
+	    found->second.cold || found->second.local_refused || found->second.completion_ready ||
+	    found->second.publishing)
+		return critical_submit_result::identity_conflict;
+	auto &entry = found->second;
+	auto &prepared = *entry.preparation;
+	try
+	{
+		critical_command command;
+		if (prepared.submission_started)
+		{
+			if (!prepared.command || entry.accounted_publication != publication ||
+			    entry.completion != completion)
+				return critical_submit_result::identity_conflict;
+			command = *prepared.command;
+		}
+		else if (!build_accounted_command_flat(token, actor, keeper, selected, stock,
+						       destination, &command))
+			return critical_submit_result::unavailable;
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet, bank, counterparty;
+		if (shop_trade_accounting_decode(command, &intent, &payload, &wallet, &bank,
+						 &counterparty) != economic_accounting_error::ok ||
+		    command.operation_id.bytes != token.operation_id_.bytes ||
+		    command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ||
+		    payload.player_pid != entry.player_pid || !prepared.flat->player_held ||
+		    native->player_token != prepared.flat->player_token)
+			return critical_submit_result::invalid;
+		// All fallible copies complete before the original submission marker.
+		// Admission refusal cannot undo the already attempted native checkpoint.
+		if (!prepared.submission_started)
+		{
+			flat_preparation_bytes bytes;
+			if (!bytes.manifest(payload.recovery_manifest) ||
+			    !player_save_shop_checkpoint_owner::reserve_flat_payload_checkpoint(
+				    prepared.flat->player_token, token.operation_id_,
+				    native->player_hold_cut, bytes.value))
+				return critical_submit_result::unavailable;
+			static_assert(std::is_nothrow_move_assignable_v<shop_trade_payload>);
+			entry.payload = std::move(payload);
+			entry.accounted_publication = publication;
+			entry.completion = completion;
+			prepared.submission_started = true;
+		}
+		// Exact retries preserve the first retained decoded payload and capacity;
+		// they never install another manifest allocation under the old charge.
+		return player_save_shop_checkpoint_owner::submit_owned_flat(
+			prepared.flat->player_token, native->player_hold_cut, std::move(command));
+	}
+	catch (...)
+	{
+		return prepared.submission_started ? critical_submit_result::journal_uncertain :
+						     critical_submit_result::invalid;
+	}
+#endif
+}
+
+namespace
+{
+bool flat_publication_actor(P_char actor, P_char keeper, const pending_trade &entry)
+{
+	if (!entry.preparation || !entry.preparation->flat ||
+	    !flat_preparation_body(actor, keeper, entry.payload.shop_id) ||
+	    static_cast<uint32_t>(GET_PID(actor)) != entry.player_pid ||
+	    actor->runtime_id != entry.preparation->actor_runtime_id ||
+	    keeper->runtime_id != entry.preparation->keeper_runtime_id ||
+	    GET_VNUM(keeper) != entry.payload.keeper_vnum ||
+	    static_cast<uint32_t>(GET_LEVEL(actor)) != entry.payload.expected_player_level ||
+	    GET_RACEWAR(actor) != entry.payload.racewar ||
+	    (shop_index[entry.payload.shop_id].shop_is_roaming != 0) !=
+		    (entry.payload.keeper_roaming != 0))
+		return false;
+	const char *account = get_account_name_safe(actor);
+	return account && !strcmp(account, entry.payload.account_name.data());
+}
+
+// Original world observer and UID location convention, without SQL row IDs.
+bool flat_publication_world(pending_trade &entry, const std::vector<player_item_snapshot> &player,
+			    const std::vector<player_item_snapshot> &keeper,
+			    const std::vector<player_item_snapshot> &detached, bool final,
+			    shop_trade_world_witness *output)
+{
+	std::vector<shop_trade_world_uid_expectation> locations;
+	std::set<uint64_t> included;
+	const auto append = [&](const auto &forest, bool is_keeper, bool is_detached)
+	{
+		for (size_t index = 0; index < forest.size(); ++index)
+		{
+			const auto &item = forest[index];
+			if (!included.insert(item.object_uid).second || item.parent_index < -1 ||
+			    item.parent_index >= static_cast<int32_t>(index))
+				return false;
+			const uint64_t parent =
+				item.parent_index < 0 ? 0 : forest[item.parent_index].object_uid;
+			const auto location =
+				parent	    ? shop_trade_world_location::inside :
+				is_detached ? shop_trade_world_location::detached :
+				is_keeper   ? (item.equipment_slot ?
+						       shop_trade_world_location::keeper_equipment :
+						       shop_trade_world_location::keeper_inventory) :
+					      (item.equipment_slot ?
+						       shop_trade_world_location::actor_equipment :
+						       shop_trade_world_location::actor_inventory);
+			locations.push_back(
+				{ item.object_uid, location, parent, item.equipment_slot, -1 });
+		}
+		return true;
+	};
+	if (!append(player, false, false) || !append(keeper, true, false) ||
+	    !append(detached, false, true))
+		return false;
+	if (final)
+		for (size_t index = 0; index < entry.payload.item_count; ++index)
+			if (!included.count(entry.payload.items[index].item_uid))
+				locations.push_back({ entry.payload.items[index].item_uid,
+						      shop_trade_world_location::absent, 0, 0,
+						      -1 });
+	std::vector<uint64_t> literal;
+	if (std::any_of(player.begin(), player.end(), [&](const auto &item)
+			{ return item.object_uid == entry.payload.selected_item_uid; }))
+		literal.push_back(entry.payload.selected_item_uid);
+	shop_trade_world_expectation expected{};
+	expected.actor_pid = entry.player_pid;
+	expected.actor_runtime_id = entry.preparation->actor_runtime_id;
+	expected.keeper_runtime_id = entry.preparation->keeper_runtime_id;
+	expected.shop_id = entry.payload.shop_id;
+	expected.keeper_vnum = entry.payload.keeper_vnum;
+	expected.player_items = player;
+	expected.keeper_items = keeper;
+	expected.detached_items = detached;
+	expected.literal_player_root_uids = literal;
+	expected.uid_locations = locations;
+	return shop_trade_world_witness_observe(expected, output) &&
+	       flat_publication_actor(output->actor, output->keeper, entry);
+}
+P_obj flat_publication_object(const shop_trade_world_witness &witness, uint64_t uid)
+{
+	if (!uid)
+		return nullptr;
+	const auto found = std::find_if(witness.objects.begin(), witness.objects.end(),
+					[uid](P_obj object)
+					{ return object && object->obj_uid == uid; });
+	return found == witness.objects.end() ? nullptr : *found;
+}
+bool flat_publication_items(const std::vector<player_item_snapshot> &a,
+			    const std::vector<player_item_snapshot> &b)
+{
+	std::vector<uint8_t> x, y;
+	return player_item_snapshot_list_encode(a, &x) == player_snapshot_codec_result::ok &&
+	       player_item_snapshot_list_encode(b, &y) == player_snapshot_codec_result::ok &&
+	       x == y;
+}
+// Pure intermediate placement values, not an alternate command or manifest.
+// Decode/transform ONLY the immutable original command's selected AFTER tree.
+// Its carried-root form leaves the original container's BEFORE weight unchanged.
+bool flat_publication_carried_values(const shop_trade_payload &original,
+				     const std::vector<player_item_snapshot> &before,
+				     std::vector<player_item_snapshot> *output)
+{
+	if (!output || !original.target_parent_item_uid ||
+	    (original.action != shop_trade_action::buy_existing &&
+	     original.action != shop_trade_action::buy_produced) ||
+	    before.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	std::vector<player_item_snapshot> selected;
+	if (!shop_trade_accounted_after_items(original, &selected) || selected.empty() ||
+	    selected.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - before.size())
+		return false;
+	std::set<uint64_t> seen;
+	for (size_t index = 0; index < before.size(); ++index)
+		if (!seen.insert(before[index].object_uid).second ||
+		    before[index].parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    before[index].parent_index >= static_cast<int32_t>(index))
+			return false;
+	auto candidate = before;
+	candidate.reserve(before.size() + selected.size());
+	for (size_t index = 0; index < selected.size(); ++index)
+	{
+		const auto &item = selected[index];
+		if (!seen.insert(item.object_uid).second || item.equipment_slot ||
+		    (index ? (item.parent_index < 0 ||
+			      static_cast<size_t>(item.parent_index) >= index) :
+			     item.parent_index != PLAYER_SNAPSHOT_NO_PARENT))
+			return false;
+		candidate.push_back(item);
+		if (item.parent_index >= 0)
+			candidate.back().parent_index += static_cast<int32_t>(before.size());
+	}
+	if (!shop_trade_world_player_values_supported(candidate))
+		return false;
+	*output = std::move(candidate);
+	return true;
+}
+
+bool flat_publication_rows(const std::vector<flatfile_item_ownership_record> &a,
+			   const std::vector<flatfile_item_ownership_record> &b)
+{
+	if (a.size() != b.size())
+		return false;
+	for (size_t index = 0; index < a.size(); ++index)
+	{
+		const auto &x = a[index], &y = b[index];
+		if (x.item_uid != y.item_uid || x.root_item_uid != y.root_item_uid ||
+		    x.parent_item_uid != y.parent_item_uid ||
+		    !item_owner_identity_equal(x.owner, y.owner) ||
+		    x.item_revision != y.item_revision || x.vnum != y.vnum || x.state != y.state ||
+		    x.coin_payload != y.coin_payload || x.equipment_slot != y.equipment_slot)
+			return false;
+	}
+	return true;
+}
+bool flat_publication_same_current(const flatfile_accounting_shop_projection &a,
+				   const flatfile_accounting_shop_projection &b)
+{
+	const auto &x = a.player_domains, &y = b.player_domains;
+	if (x.pid != y.pid || x.account_name != y.account_name || x.racewar != y.racewar ||
+	    x.domains.wallet != y.domains.wallet || x.domains.bank != y.domains.bank ||
+	    x.domains.wallet_revision != y.domains.wallet_revision ||
+	    x.domains.bank_revision != y.domains.bank_revision ||
+	    a.player_owner_revision != b.player_owner_revision ||
+	    a.keeper_owner_revision != b.keeper_owner_revision ||
+	    a.primary_owner_revision != b.primary_owner_revision ||
+	    a.counterparty_owner_revision != b.counterparty_owner_revision ||
+	    a.pet_owner_revisions.size() != b.pet_owner_revisions.size() ||
+	    !flat_publication_rows(a.player_custody, b.player_custody) ||
+	    !flat_publication_rows(a.keeper_custody, b.keeper_custody) ||
+	    !flat_publication_rows(a.pet_custody, b.pet_custody) ||
+	    !flat_publication_rows(a.selected_custody, b.selected_custody))
+		return false;
+	for (size_t index = 0; index < a.pet_owner_revisions.size(); ++index)
+		if (!item_owner_identity_equal(a.pet_owner_revisions[index].owner,
+					       b.pet_owner_revisions[index].owner) ||
+		    a.pet_owner_revisions[index].owner_revision !=
+			    b.pet_owner_revisions[index].owner_revision)
+			return false;
+	std::vector<uint8_t> first, second;
+	if (player_snapshot_encode(a.player, &first) != player_snapshot_codec_result::ok ||
+	    player_snapshot_encode(b.player, &second) != player_snapshot_codec_result::ok ||
+	    first != second)
+		return false;
+	const auto &k = a.keeper, &l = b.keeper;
+	if (k.shop_id != l.shop_id || k.mob_vnum != l.mob_vnum || k.room_vnum != l.room_vnum ||
+	    k.saved_at != l.saved_at || k.revision != l.revision || k.cash != l.cash ||
+	    k.roaming != l.roaming || k.affects.size() != l.affects.size() ||
+	    !flat_publication_items(k.items, l.items))
+		return false;
+	for (size_t index = 0; index < k.affects.size(); ++index)
+	{
+		const auto &f = k.affects[index], &g = l.affects[index];
+		if (f.type != g.type || f.duration != g.duration || f.modifier != g.modifier ||
+		    f.location != g.location || f.bitvectors != g.bitvectors)
+			return false;
+	}
+	return true;
+}
+bool flat_publication_money(P_char actor, const flatfile_player_domain_record &source)
+{
+	if (!actor || !IS_PC(actor) || !actor->only.pc ||
+	    actor->only.pc->wallet_revision != source.domains.wallet_revision ||
+	    actor->only.pc->bank_revision != source.domains.bank_revision)
+		return false;
+	const std::array<int64_t, 4> wallet{ GET_COPPER(actor), GET_SILVER(actor), GET_GOLD(actor),
+					     GET_PLATINUM(actor) };
+	const std::array<int64_t, 4> bank{ GET_BALANCE_COPPER(actor), GET_BALANCE_SILVER(actor),
+					   GET_BALANCE_GOLD(actor), GET_BALANCE_PLATINUM(actor) };
+	for (size_t index = 0; index < wallet.size(); ++index)
+		if (wallet[index] < 0 || bank[index] < 0 ||
+		    static_cast<uint64_t>(wallet[index]) != source.domains.wallet[index] ||
+		    static_cast<uint64_t>(bank[index]) != source.domains.bank[index])
+			return false;
+	return true;
+}
+} // namespace
+
+bool shop_trade_native_publication_owner::cold_flat_entry(void *opaque) noexcept
+{
+	return opaque && static_cast<pending_trade *>(opaque)->cold &&
+	       static_cast<pending_trade *>(opaque)->cold->flat_restored;
+}
+
+bool shop_trade_native_publication_owner::restore_flat(const critical_command &original) noexcept
+{
+#if !defined(__NO_MYSQL__) || !defined(__GLIBCXX__)
+	(void)original;
+	return false;
+#else
+	try
+	{
+		if (!nevent_is_game_thread() ||
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		    !original.publication_required ||
+		    original.type != critical_command_type::shop_trade ||
+		    original.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    original.payload_version != SHOP_TRADE_RECOVERY_MANIFEST_VERSION ||
+		    !critical_command_envelope_valid(original))
+			return false;
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet{}, bank{}, counterparty{};
+		if (shop_trade_accounting_decode(original, &intent, &payload, &wallet, &bank,
+						 &counterparty) != economic_accounting_error::ok ||
+		    !payload.recovery_manifest_recorded || !payload.player_pid ||
+		    payload.player_pid > INT_MAX)
+			return false;
+		auto found = pending.find(original.operation_id.bytes);
+		if (found != pending.end())
+		{
+			// Observer runs inside coordinator_mutex. This exact passive retry
+			// never calls coordinator APIs or replaces any original/native state.
+			if (!found->second.cold || !found->second.cold->flat_restored ||
+			    !found->second.cold->command ||
+			    !found->second.cold->flat_registration_bytes ||
+			    !critical_command_equal(*found->second.cold->command, original) ||
+			    !player_save_restored_publication_owner::restore_shop_flat_obligation(
+				    original, found->second.cold->flat_registration_bytes))
+				return false;
+			found->second.cold->registration_pending = false;
+			return true;
+		}
+		if (pending.size() + notifying >= SHOP_TRADE_PENDING_MAX ||
+		    player_pending(payload.player_pid) ||
+		    shop_trade_transaction_keeper_busy(payload.shop_id))
+			return false;
+		pending_trade entry;
+		entry.player_pid = payload.player_pid;
+		entry.payload = payload;
+		entry.cold = std::make_unique<cold_trade_restore>();
+		entry.cold->command = std::make_unique<critical_command>(original);
+		entry.cold->flat_restored = true;
+		const auto &manifest = entry.payload.recovery_manifest;
+		for (const auto *binding :
+		     { &manifest.player_before, &manifest.player_after, &manifest.keeper_before,
+		       &manifest.keeper_after, &manifest.live_target_before,
+		       &manifest.live_target_after })
+			entry.cold->fenced_uids.insert(entry.cold->fenced_uids.end(),
+						       binding->ordered_item_uids.begin(),
+						       binding->ordered_item_uids.end());
+		for (size_t index = 0; index < payload.item_count; ++index)
+			entry.cold->fenced_uids.push_back(payload.items[index].item_uid);
+		auto &uids = entry.cold->fenced_uids;
+		std::sort(uids.begin(), uids.end());
+		uids.erase(std::unique(uids.begin(), uids.end()), uids.end());
+		if (uids.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return false;
+		flat_preparation_bytes bytes;
+		// The selected server ABI uses the default libstdc++ map allocator:
+		// sizeof its actual node includes links/alignment/value exactly, not a
+		// guessed overhead or diagnostic allocator header. Other ABIs refuse above.
+		using map_type = decltype(pending);
+		static_assert(std::is_same_v<map_type::allocator_type,
+					     std::allocator<map_type::value_type>>);
+		if (!bytes.add(sizeof(std::_Rb_tree_node<map_type::value_type>)) ||
+		    !bytes.add(sizeof(cold_trade_restore)) ||
+		    !bytes.add(sizeof(critical_command)) ||
+		    !bytes.vector(entry.cold->command->keys) ||
+		    !bytes.vector(entry.cold->command->expected_revisions) ||
+		    !bytes.vector(entry.cold->command->payload) ||
+		    !bytes.vector(entry.cold->command->accounting_intent) || !bytes.vector(uids))
+			return false;
+		for (const auto *binding :
+		     { &manifest.player_before, &manifest.player_after, &manifest.keeper_before,
+		       &manifest.keeper_after, &manifest.live_target_before,
+		       &manifest.live_target_after })
+			if (!bytes.vector(binding->ordered_item_uids))
+				return false;
+		entry.cold->flat_registration_bytes = bytes.value;
+		// Allocate the actual same-allocator node off-map. A failed hold/budget
+		// leaves no uncharged passive entry; successful admission is followed only
+		// by allocation-free node transfer on this original game-thread observer.
+		map_type staged;
+		staged.emplace(original.operation_id.bytes, std::move(entry));
+		auto node = staged.extract(staged.begin());
+		if (!player_save_restored_publication_owner::restore_shop_flat_obligation(
+			    original, node.mapped().cold->flat_registration_bytes))
+			return false;
+		node.mapped().cold->registration_pending = false;
+		const auto inserted = pending.insert(std::move(node));
+		if (!inserted.inserted)
+			return false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool shop_trade_native_publication_owner::cold_flat_original_forests(
+	const critical_command &command, const flatfile_accounting_shop_projection &current,
+	std::vector<player_item_snapshot> *player,
+	std::vector<player_item_snapshot> *keeper) noexcept
+{
+	if (!player || !keeper || player == keeper ||
+	    command.payload_version != SHOP_TRADE_RECOVERY_MANIFEST_VERSION)
+		return false;
+	try
+	{
+		shop_trade_payload payload{};
+		std::vector<player_item_snapshot> source;
+		if (!shop_trade_command_decode_payload(command, &payload) ||
+		    !payload.recovery_manifest_recorded ||
+		    current.player.pid != payload.player_pid ||
+		    current.player_domains.pid != payload.player_pid ||
+		    current.player_domains.account_name != payload.account_name.data() ||
+		    current.player_domains.racewar != payload.racewar ||
+		    current.keeper.shop_id != payload.shop_id ||
+		    current.keeper.mob_vnum != payload.keeper_vnum ||
+		    current.keeper.roaming != payload.keeper_roaming ||
+		    player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     &source) != player_snapshot_codec_result::ok ||
+		    source.empty() || source.size() != payload.item_count ||
+		    source.front().object_uid != payload.selected_item_uid)
+			return false;
+		struct value
+		{
+			player_item_snapshot item;
+			uint64_t parent = 0;
+		};
+		std::map<uint64_t, value> values;
+		for (const auto *forest : { &current.player.items, &current.keeper.items })
+			for (size_t index = 0; index < forest->size(); ++index)
+			{
+				const auto &item = (*forest)[index];
+				if (!item.object_uid ||
+				    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+				    item.parent_index >= static_cast<int64_t>(index))
+					return false;
+				const uint64_t parent_uid =
+					item.parent_index < 0 ?
+						0 :
+						(*forest)[static_cast<size_t>(item.parent_index)]
+							.object_uid;
+				if (!values.emplace(item.object_uid, value{ item, parent_uid })
+					     .second)
+					return false;
+			}
+		// The original selected literal restores only that frozen tree. No UID,
+		// parent, prototype default or CURRENT value is invented for a missing
+		// non-selected item. Every resulting complete forest is verified below.
+		for (size_t index = 0; index < source.size(); ++index)
+		{
+			const auto &item = source[index];
+			if (!item.object_uid || item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int64_t>(index) ||
+			    (index ? item.parent_index < 0 :
+				     item.parent_index != PLAYER_SNAPSHOT_NO_PARENT))
+				return false;
+			const uint64_t parent_uid =
+				item.parent_index < 0 ?
+					0 :
+					source[static_cast<size_t>(item.parent_index)].object_uid;
+			values[item.object_uid] = { item, parent_uid };
+		}
+		const bool buying = payload.action == shop_trade_action::buy_existing ||
+				    payload.action == shop_trade_action::buy_produced;
+		if (buying && payload.target_parent_item_uid &&
+		    payload.native_destination_weight_recorded)
+		{
+			const auto target = values.find(payload.target_parent_item_uid);
+			if (target == values.end())
+				return false;
+			target->second.item.weight = payload.destination_weight.before;
+		}
+		const auto reconstruct = [&](const shop_trade_recovery_forest_binding &binding,
+					     shop_trade_recovery_forest_role role,
+					     std::vector<player_item_snapshot> &result)
+		{
+			if (binding.ordered_item_uids.size() > static_cast<size_t>(INT32_MAX))
+				return false;
+			std::vector<player_item_snapshot> candidate;
+			candidate.reserve(binding.ordered_item_uids.size());
+			std::map<uint64_t, int32_t> positions;
+			for (uint64_t uid : binding.ordered_item_uids)
+			{
+				const auto found = values.find(uid);
+				if (found == values.end())
+					return false;
+				auto item = found->second.item;
+				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				if (found->second.parent)
+				{
+					const auto parent_position =
+						positions.find(found->second.parent);
+					if (parent_position == positions.end())
+						return false;
+					item.parent_index = parent_position->second;
+				}
+				if (!positions.emplace(uid, static_cast<int32_t>(candidate.size()))
+					     .second)
+					return false;
+				candidate.push_back(std::move(item));
+			}
+			std::vector<uint8_t> encoded;
+			if (player_item_snapshot_list_encode(candidate, &encoded) !=
+				    player_snapshot_codec_result::ok ||
+			    !shop_trade_recovery_forest_verify(encoded, role, binding))
+				return false;
+			result = std::move(candidate);
+			return true;
+		};
+		std::vector<player_item_snapshot> original_player, original_keeper;
+		if (!reconstruct(payload.recovery_manifest.player_before,
+				 shop_trade_recovery_forest_role::player_before, original_player) ||
+		    !reconstruct(payload.recovery_manifest.keeper_before,
+				 shop_trade_recovery_forest_role::keeper_before, original_keeper))
+			return false;
+		// Both moves are nonthrowing; a refusal above preserves both outputs.
+		*player = std::move(original_player);
+		*keeper = std::move(original_keeper);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::cold_flat_world(
+	void *opaque, std::span<const player_item_snapshot> player,
+	std::span<const player_item_snapshot> keeper, bool strict, bool actor_absent,
+	bool keeper_absent, shop_trade_world_cold_observation *output,
+	std::vector<shop_trade_world_uid_expectation> *output_locations) noexcept
+{
+	if (!opaque || !output || !output_locations || !nevent_is_game_thread() ||
+	    player.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    keeper.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || entry.cold->registration_pending ||
+	    entry.cold->command->payload_version != SHOP_TRADE_RECOVERY_MANIFEST_VERSION ||
+	    entry.cold->fenced_uids.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	try
+	{
+		shop_trade_payload original{};
+		std::vector<uint8_t> original_bytes, retained_bytes;
+		if (!shop_trade_command_decode_payload(*entry.cold->command, &original) ||
+		    original.player_pid != entry.player_pid ||
+		    !shop_trade_command_encode_recovery_payload(original, &original_bytes) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_bytes) ||
+		    original_bytes != retained_bytes)
+			return false;
+		std::set<uint64_t> fenced;
+		const auto &manifest = original.recovery_manifest;
+		for (const auto *binding :
+		     { &manifest.player_before, &manifest.player_after, &manifest.keeper_before,
+		       &manifest.keeper_after, &manifest.live_target_before,
+		       &manifest.live_target_after })
+			for (uint64_t uid : binding->ordered_item_uids)
+			{
+				if (!uid || uid == UINT64_MAX)
+					return false;
+				fenced.insert(uid);
+				if (fenced.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+					return false;
+			}
+		for (size_t index = 0; index < original.item_count; ++index)
+		{
+			fenced.insert(original.items[index].item_uid);
+			if (fenced.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+				return false;
+		}
+		// Authenticate the complete original registered union; a retained subset
+		// cannot suppress a required selected/target/global absence observation.
+		if (fenced.size() != entry.cold->fenced_uids.size() ||
+		    !std::equal(fenced.begin(), fenced.end(), entry.cold->fenced_uids.begin()))
+			return false;
+		std::map<uint64_t, shop_trade_world_uid_expectation> ordered;
+		const auto append = [&](std::span<const player_item_snapshot> forest, bool npc)
+		{
+			for (size_t index = 0; index < forest.size(); ++index)
+			{
+				const auto &item = forest[index];
+				if (!item.object_uid || item.object_uid == UINT64_MAX ||
+				    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+				    item.parent_index >= static_cast<int64_t>(index))
+					return false;
+				const uint64_t parent =
+					item.parent_index < 0 ?
+						0 :
+						forest[static_cast<size_t>(item.parent_index)]
+							.object_uid;
+				const bool absent = strict && (npc ? keeper_absent : actor_absent);
+				const auto place =
+					absent ? shop_trade_world_location::absent :
+					parent ? shop_trade_world_location::inside :
+					npc    ? (item.equipment_slot ?
+							  shop_trade_world_location::keeper_equipment :
+							  shop_trade_world_location::keeper_inventory) :
+						 (item.equipment_slot ?
+							  shop_trade_world_location::actor_equipment :
+							  shop_trade_world_location::actor_inventory);
+				if (!ordered.emplace(item.object_uid,
+						     shop_trade_world_uid_expectation{
+							     item.object_uid, place,
+							     absent ? 0 : parent,
+							     static_cast<int16_t>(
+								     absent ? 0 :
+									      item.equipment_slot),
+							     -1 })
+					     .second ||
+				    ordered.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+					return false;
+			}
+			return true;
+		};
+		if (!append(player, false) || !append(keeper, true))
+			return false;
+		for (uint64_t uid : fenced)
+		{
+			if (!ordered.count(uid))
+				ordered.emplace(
+					uid, shop_trade_world_uid_expectation{
+						     uid,
+						     strict ? shop_trade_world_location::absent :
+							      shop_trade_world_location::detached,
+						     0, 0, -1 });
+			if (ordered.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+				return false;
+		}
+		std::vector<shop_trade_world_uid_expectation> locations;
+		locations.reserve(ordered.size());
+		for (const auto &[uid, location] : ordered)
+			locations.push_back(location);
+		// An absent body's complete authenticated forest remains retained in
+		// the caller. Its REQUEST span alone is empty: the original observer
+		// rejects absent requirements appearing as expected present objects.
+		const shop_trade_world_cold_request request{
+			&original,
+			strict && actor_absent ? std::span<const player_item_snapshot>{} : player,
+			strict && keeper_absent ? std::span<const player_item_snapshot>{} : keeper,
+			locations
+		};
+		shop_trade_world_cold_observation observed;
+		if (!shop_trade_world_cold_observe(request, &observed))
+			return false;
+		if (strict && (observed.actor_present == actor_absent ||
+			       observed.keeper_present == keeper_absent ||
+			       !observed.uid_locations_current_match ||
+			       (observed.actor_present && !observed.player_current_match) ||
+			       (observed.keeper_present && !observed.keeper_current_match)))
+			return false;
+		// Relaxed observation deliberately preserves false match flags. The
+		// original detached/absent selected tree is not a returned-handler or
+		// native publication proof. All pointers are fresh and transient.
+		*output = std::move(observed);
+		*output_locations = std::move(locations);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::live_flat_entry(void *opaque) noexcept
+{
+	return opaque && static_cast<pending_trade *>(opaque)->preparation &&
+	       static_cast<pending_trade *>(opaque)->preparation->flat;
+}
+
+bool shop_trade_native_publication_owner::cold_prepare_selected_flat(void *opaque) noexcept
+{
+	if (!opaque || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || entry.preparation || entry.blocked ||
+	    entry.cold->registration_pending || !entry.cold->initialized ||
+	    entry.cold->enrollment_started || entry.cold->enrolled || entry.cold->flat_literals ||
+	    entry.cold->source.empty() || entry.cold->source.size() != entry.payload.item_count ||
+	    entry.cold->source.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	try
+	{
+		const auto &source = entry.cold->source;
+		auto prepared = std::make_unique<cold_flat_literal_stage>();
+		prepared->staged.resize(source.size());
+		prepared->reload.resize(source.size());
+		prepared->enrollment_counts.reserve(source.size());
+		std::vector<P_obj> objects;
+		objects.reserve(source.size());
+		std::set<uint64_t> uids;
+		for (size_t index = 0; index < source.size(); ++index)
+		{
+			const auto &item = source[index];
+			// One genuine complete selected subtree, in original parent-first order.
+			// No default literal, new UID, native row identity or VNUM-only matching.
+			// Command item entries are UID-sorted; persisted literals retain their
+			// original DFS order. Bind by genuine UID, never by matching indices.
+			const auto reference = std::lower_bound(
+				entry.payload.items.begin(),
+				entry.payload.items.begin() + entry.payload.item_count,
+				item.object_uid, [](const auto &entry, uint64_t uid)
+				{ return entry.item_uid < uid; });
+			if (!item.object_uid || !uids.insert(item.object_uid).second ||
+			    (index == 0 && item.object_uid != entry.payload.selected_item_uid) ||
+			    reference == entry.payload.items.begin() + entry.payload.item_count ||
+			    reference->item_uid != item.object_uid ||
+			    reference->vnum != item.vnum ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index) ||
+			    (index ? item.parent_index < 0 : item.parent_index != -1) ||
+			    item.equipment_slot)
+				return false;
+			if (index &&
+			    reference->parent_item_uid !=
+				    source[static_cast<size_t>(item.parent_index)].object_uid)
+				return false;
+			const auto *prototype = flatfile_coin_boot_templates::find(item.vnum);
+			if (!prototype ||
+			    !shop_trade_original_item_stage::prepare(*prototype, item,
+								     prepared->staged[index]) ||
+			    !prepared->staged[index].object_)
+				return false;
+			prepared->reload[index].prototype = prototype;
+			prepared->reload[index].proclib_probes.resize(
+				item.extra_descriptions.size());
+			objects.push_back(prepared->staged[index].object_);
+			prepared->enrollment_counts.emplace_back(prototype->R_num, 1);
+		}
+		// A vector supplies an exact-capacity census without hidden tree-node sizes.
+		auto &counts = prepared->enrollment_counts;
+		std::sort(counts.begin(), counts.end(),
+			  [](const auto &a, const auto &b) { return a.first < b.first; });
+		size_t compacted = 0;
+		for (const auto count : counts)
+		{
+			if (compacted && counts[compacted - 1].first == count.first)
+				++counts[compacted - 1].second;
+			else
+				counts[compacted++] = count;
+		}
+		counts.resize(compacted);
+		for (const auto &[number, count] : counts)
+			if (!obj_index || number < 0 || number > top_of_objt ||
+			    obj_index[number].number < 0 ||
+			    count > static_cast<size_t>(INT_MAX - obj_index[number].number))
+				return false;
+		if (!shop_trade_original_procedure_binding_stage::prepare_flat(
+			    objects, source, prepared->bindings) ||
+		    !prepared->bindings.valid_flat())
+			return false;
+		// Reverse parent-first order reproduces each original sibling order.
+		// Stages remain private and independently own nodes until consumption.
+		for (size_t index = source.size(); index-- > 1;)
+		{
+			P_obj child = prepared->staged[index].object_;
+			P_obj parent =
+				prepared->staged[static_cast<size_t>(source[index].parent_index)]
+					.object_;
+			child->loc_p = LOC_INSIDE;
+			child->loc.inside = parent;
+			child->next_content = parent->contains;
+			parent->contains = child;
+		}
+		// No world/count/procedure commit, handler, reload or ACK occurs here.
+		// The complete original held-cut charge must precede later enrollment.
+		entry.cold->flat_literals = std::move(prepared);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::cold_prepare_working_flat(
+	void *opaque, const critical_command *retained) noexcept
+{
+	if (!opaque || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || entry.preparation || entry.blocked ||
+	    entry.cold->registration_pending || !entry.cold->initialized ||
+	    !entry.native_receipt_verified || !entry.publication_forests_ready ||
+	    (entry.completed.outcome != critical_apply_outcome::applied &&
+	     entry.completed.outcome != critical_apply_outcome::already_applied))
+		return false;
+	auto &cold = *entry.cold;
+	try
+	{
+		shop_trade_payload payload{};
+		std::vector<uint8_t> original_bytes, retained_bytes;
+		if (!shop_trade_command_decode_payload(*cold.command, &payload) ||
+		    cold.command->payload_version != SHOP_TRADE_RECOVERY_MANIFEST_VERSION ||
+		    !shop_trade_command_encode_recovery_payload(payload, &original_bytes) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_bytes) ||
+		    original_bytes != retained_bytes || payload.player_pid != entry.player_pid)
+			return false;
+		// Retry never grows/replaces the charged holder or recaptures its path.
+		if (retained && !critical_command_equal(*retained, *cold.command))
+			return false;
+		const auto *bound_command = retained ? retained : cold.command.get();
+		if (cold.flat_working)
+			return cold.flat_working->command == bound_command;
+		if (cold.enrollment_started || cold.enrolled || cold.effect.started ||
+		    cold.balances_started ||
+		    (cold.flat_literals &&
+		     (cold.flat_literals->binding_started || cold.flat_literals->binding_returned)))
+			return false;
+		const auto verifies = [](const std::vector<player_item_snapshot> &forest,
+					 shop_trade_recovery_forest_role role,
+					 const shop_trade_recovery_forest_binding &binding)
+		{
+			std::vector<uint8_t> bytes;
+			return forest.size() <= PLAYER_SNAPSHOT_MAX_OBJECTS &&
+			       player_item_snapshot_list_encode(forest, &bytes) ==
+				       player_snapshot_codec_result::ok &&
+			       shop_trade_recovery_forest_verify(bytes, role, binding);
+		};
+		const auto &manifest = payload.recovery_manifest;
+		if (!verifies(cold.original_player, shop_trade_recovery_forest_role::player_before,
+			      manifest.player_before) ||
+		    !verifies(cold.original_keeper, shop_trade_recovery_forest_role::keeper_before,
+			      manifest.keeper_before) ||
+		    !verifies(entry.after_player, shop_trade_recovery_forest_role::player_after,
+			      manifest.player_after) ||
+		    !verifies(entry.after_keeper, shop_trade_recovery_forest_role::keeper_after,
+			      manifest.keeper_after))
+			return false;
+		std::vector<player_item_snapshot> source, selected_after;
+		if (player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     &source) != player_snapshot_codec_result::ok ||
+		    !shop_trade_accounted_after_items(payload, &selected_after) || source.empty() ||
+		    !flat_publication_items(source, cold.source) ||
+		    !flat_publication_items(selected_after, cold.selected_after))
+			return false;
+		auto candidate = std::make_unique<cold_flat_working_variants>();
+		candidate->command = bound_command;
+		// Dedupe only complete canonical equality; no UID/VNUM approximation.
+		const auto retain = [](auto &forests, uint8_t &count,
+				       std::vector<player_item_snapshot> values, uint8_t *index)
+		{
+			for (uint8_t i = 0; i < count; ++i)
+				if (flat_publication_items(forests[i], values))
+				{
+					*index = i;
+					return true;
+				}
+			if (count == forests.size() || values.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+				return false;
+			std::vector<uint8_t> bytes;
+			if (player_item_snapshot_list_encode(values, &bytes) !=
+				    player_snapshot_codec_result::ok ||
+			    bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES - sizeof(uint32_t))
+				return false;
+			*index = count;
+			forests[count++] = std::move(values);
+			return true;
+		};
+		shop_trade_world_cold_observation observed;
+		std::vector<shop_trade_world_uid_expectation> locations;
+		const bool terminal = cold_flat_world(opaque, entry.after_player,
+						      entry.after_keeper, true, !cold.actor_present,
+						      !cold.keeper_present, &observed,
+						      &locations) &&
+				      (!payload.target_parent_item_uid || !observed.actor_present ||
+				       (observed.target_present &&
+					verifies(observed.target_items,
+						 shop_trade_recovery_forest_role::live_target_after,
+						 manifest.live_target_after)));
+		if (!terminal &&
+		    (!cold_flat_world(opaque, cold.working_player, cold.working_keeper, false,
+				      false, false, &observed, &locations) ||
+		     observed.actor_present != cold.actor_present ||
+		     observed.keeper_present != cold.keeper_present ||
+		     observed.actor_runtime_id != cold.actor_runtime_id ||
+		     observed.keeper_runtime_id != cold.keeper_runtime_id ||
+		     (observed.actor_present &&
+		      !flat_publication_items(observed.player_items, cold.working_player)) ||
+		     (observed.keeper_present &&
+		      !flat_publication_items(observed.keeper_items, cold.working_keeper))))
+			return false;
+		if (observed.actor_present != cold.actor_present ||
+		    observed.keeper_present != cold.keeper_present ||
+		    observed.actor_runtime_id != cold.actor_runtime_id ||
+		    observed.keeper_runtime_id != cold.keeper_runtime_id)
+			return false;
+		// Actual absent-body request spans remain empty; the retained full owner
+		// AFTER forest remains authoritative. No target literal is invented there.
+		if ((!observed.actor_present &&
+		     !flat_publication_items(cold.working_player, entry.after_player)) ||
+		    (!observed.keeper_present &&
+		     !flat_publication_items(cold.working_keeper, entry.after_keeper)))
+			return false;
+		auto &initial = candidate->states[0];
+		if (!retain(candidate->player, candidate->player_count,
+			    terminal ? entry.after_player : cold.working_player, &initial.player) ||
+		    !retain(candidate->keeper, candidate->keeper_count,
+			    terminal ? entry.after_keeper : cold.working_keeper, &initial.keeper) ||
+		    !retain(candidate->target, candidate->target_count, observed.target_items,
+			    &initial.target))
+			return false;
+		initial.for_nesting = cold.for_nesting;
+		if (!terminal)
+		{
+			const auto object = [&](uint64_t uid) -> P_obj
+			{
+				const auto found =
+					std::lower_bound(locations.begin(), locations.end(), uid,
+							 [](const auto &location, uint64_t value)
+							 { return location.uid < value; });
+				if (locations.size() != observed.objects.size() ||
+				    found == locations.end() || found->uid != uid)
+					return nullptr;
+				return observed
+					.objects[static_cast<size_t>(found - locations.begin())];
+			};
+			P_obj selected = object(payload.selected_item_uid);
+			if (selected && !flat_publication_items(observed.selected_items, source) &&
+			    !flat_publication_items(observed.selected_items, selected_after))
+				return false;
+			// A missing selected body has only this genuine, still unpublished
+			// private literal root as an ordering witness. Enrollment remains root-owned.
+			if (!selected && cold.flat_literals && !cold.flat_literals->staged.empty())
+				selected = cold.flat_literals->staged.front().object_;
+			if (!selected || selected->obj_uid != payload.selected_item_uid)
+				return false;
+			const bool buying = payload.action == shop_trade_action::buy_existing ||
+					    payload.action == shop_trade_action::buy_produced;
+			const bool destroying = payload.action == shop_trade_action::sell_destroy ||
+						payload.action ==
+							shop_trade_action::discard_invalid;
+			const bool destination_absent = buying ? !observed.actor_present :
+								 !observed.keeper_present;
+			enum class place
+			{
+				actor,
+				keeper,
+				detached,
+				nested,
+				absent
+			};
+			place selected_place;
+			if (observed.actor && OBJ_CARRIED_BY(selected, observed.actor))
+				selected_place = place::actor;
+			else if (observed.keeper && OBJ_CARRIED_BY(selected, observed.keeper))
+				selected_place = place::keeper;
+			else if (OBJ_NOWHERE(selected))
+				selected_place = place::detached;
+			else
+				return false;
+			P_obj target = payload.target_parent_item_uid ?
+					       object(payload.target_parent_item_uid) :
+					       nullptr;
+			if (payload.target_parent_item_uid && observed.actor_present &&
+			    (!target || !observed.target_present ||
+			     !flat_publication_items(observed.target_items, cold.working_target) ||
+			     !verifies(observed.target_items,
+				       shop_trade_recovery_forest_role::live_target_before,
+				       manifest.live_target_before)))
+				return false;
+			const auto final_place = destroying || destination_absent ? place::absent :
+						 buying ? (payload.target_parent_item_uid ?
+								   place::nested :
+								   place::actor) :
+							  place::keeper;
+			bool finished = false;
+			while (candidate->leg_count < candidate->steps.size())
+			{
+				const auto current = candidate->states[candidate->leg_count];
+				auto next = current;
+				auto player = candidate->player[current.player];
+				auto keeper = candidate->keeper[current.keeper];
+				auto destination = candidate->target[current.target];
+				shop_trade_cold_native_step step;
+				const bool on_actor = selected_place == place::actor;
+				const bool on_keeper = selected_place == place::keeper;
+				if (destroying || destination_absent)
+				{
+					if (destroying &&
+					    !(payload.action == shop_trade_action::discard_invalid ?
+						      on_keeper :
+						      on_actor))
+						return false;
+					if ((on_actor &&
+					     !shop_remove_selected(player, payload, &player)) ||
+					    (on_keeper &&
+					     !shop_remove_selected(keeper, payload, &keeper)))
+						return false;
+					step = destroying ?
+						       shop_trade_cold_native_step::destroy :
+						       shop_trade_cold_native_step::retire_copy;
+					selected_place = place::absent;
+				}
+				else if (on_actor || on_keeper)
+				{
+					if ((buying && on_actor &&
+					     !payload.target_parent_item_uid) ||
+					    (!buying && on_keeper) ||
+					    (on_actor &&
+					     !shop_remove_selected(player, payload, &player)) ||
+					    (on_keeper &&
+					     !shop_remove_selected(keeper, payload, &keeper)))
+						return false;
+					next.for_nesting = buying && on_actor &&
+							   payload.target_parent_item_uid;
+					step = shop_trade_cold_native_step::detach;
+					selected_place = place::detached;
+				}
+				else if (selected_place == place::detached && buying)
+				{
+					std::vector<player_item_snapshot> values, ordered;
+					if (current.for_nesting)
+					{
+						std::vector<uint8_t> original_target;
+						if (!target ||
+						    !expected_player_forest(payload, player, false,
+									    &values) ||
+						    !expected_player_order(payload, observed.actor,
+									   selected, target, values,
+									   &ordered) ||
+						    player_item_snapshot_list_encode(
+							    destination, &original_target) !=
+							    player_snapshot_codec_result::ok ||
+						    !expected_destination_forest(
+							    payload, observed.actor, selected,
+							    target, original_target,
+							    &destination) ||
+						    !verifies(destination,
+							      shop_trade_recovery_forest_role::
+								      live_target_after,
+							      manifest.live_target_after))
+							return false;
+						step = shop_trade_cold_native_step::nest;
+						selected_place = place::nested;
+					}
+					else
+					{
+						// Original immutable command supplies AFTER values. Only the
+						// ordering selector describes temporary carrying; never encode it.
+						shop_trade_payload carrying{};
+						carrying.player_pid = payload.player_pid;
+						carrying.action = payload.action;
+						carrying.selected_item_uid =
+							payload.selected_item_uid;
+						if (!(payload.target_parent_item_uid ?
+							      flat_publication_carried_values(
+								      payload, player, &values) :
+							      expected_player_forest(payload,
+										     player, false,
+										     &values)) ||
+						    !expected_player_order(carrying, observed.actor,
+									   selected, nullptr,
+									   values, &ordered))
+							return false;
+						step = shop_trade_cold_native_step::place_player;
+						selected_place = place::actor;
+					}
+					player = std::move(ordered);
+				}
+				else if (selected_place == place::detached && !buying &&
+					 payload.action == shop_trade_action::sell_store)
+				{
+					if (!expected_keeper_forest(payload, observed.keeper,
+								    selected, keeper, false,
+								    &keeper))
+						return false;
+					step = shop_trade_cold_native_step::place_keeper;
+					selected_place = place::keeper;
+				}
+				else
+					return false;
+				if (!retain(candidate->player, candidate->player_count,
+					    std::move(player), &next.player) ||
+				    !retain(candidate->keeper, candidate->keeper_count,
+					    std::move(keeper), &next.keeper) ||
+				    !retain(candidate->target, candidate->target_count,
+					    std::move(destination), &next.target))
+					return false;
+				candidate->steps[candidate->leg_count++] = step;
+				candidate->states[candidate->leg_count] = next;
+				if (selected_place == final_place)
+				{
+					finished = flat_publication_items(
+							   candidate->player[next.player],
+							   entry.after_player) &&
+						   flat_publication_items(
+							   candidate->keeper[next.keeper],
+							   entry.after_keeper);
+					break;
+				}
+			}
+			if (!finished)
+				return false;
+		}
+		// Only this final nonthrowing move changes the retained stage. Root must
+		// census/charge all its capacities before any enrollment/native effect.
+		cold.flat_working = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::cold_flat_working_state(
+	void *opaque, size_t completed_legs, std::span<const player_item_snapshot> *player,
+	std::span<const player_item_snapshot> *keeper,
+	std::span<const player_item_snapshot> *target, shop_trade_cold_native_step *step,
+	bool *terminal, bool *for_nesting) noexcept
+{
+	if (!opaque || !player || !keeper || !target || !step || !terminal || !for_nesting ||
+	    player == keeper || player == target || keeper == target || terminal == for_nesting ||
+	    !nevent_is_game_thread() || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	const auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || !entry.cold->flat_working || entry.blocked)
+		return false;
+	const auto &plan = *entry.cold->flat_working;
+	if (plan.command != entry.cold->command.get() || completed_legs > plan.leg_count)
+		return false;
+	const auto state = plan.states[completed_legs];
+	if (state.player >= plan.player_count || state.keeper >= plan.keeper_count ||
+	    state.target >= plan.target_count)
+		return false;
+	*player = plan.player[state.player];
+	*keeper = plan.keeper[state.keeper];
+	*target = plan.target[state.target];
+	*terminal = completed_legs == plan.leg_count;
+	// The terminal state has no callback. Its step output is not a permission.
+	*step = *terminal ? shop_trade_cold_native_step::detach : plan.steps[completed_legs];
+	*for_nesting = state.for_nesting;
+	return true;
+}
+
+bool shop_trade_native_publication_owner::cold_flat_retained_payload_bytes(
+	void *opaque, size_t *output, const critical_command *retained) noexcept
+{
+	if (!opaque || !output || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	const auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || entry.preparation || entry.blocked ||
+	    entry.cold->registration_pending || !entry.cold->initialized ||
+	    entry.cold->enrollment_started || entry.cold->enrolled || entry.cold->source.empty() ||
+	    entry.cold->source.size() != entry.payload.item_count)
+		return false;
+	try
+	{
+		const auto &cold = *entry.cold;
+		flat_preparation_bytes bytes;
+		// The earlier passive registration already charges the map/cold structs,
+		// original command, manifest and UID union. These are additional real
+		// allocations, never a second charge for their embedded vector objects.
+		for (const auto *forest :
+		     { &entry.before_player, &entry.after_player, &entry.after_keeper,
+		       &cold.original_player, &cold.original_keeper, &cold.working_player,
+		       &cold.working_keeper, &cold.source, &cold.selected_after,
+		       &cold.working_target })
+			if (forest->size() > PLAYER_SNAPSHOT_MAX_OBJECTS || !bytes.items(*forest))
+				return false;
+		if ((retained && !critical_command_equal(*retained, *cold.command)) ||
+		    !cold.flat_working ||
+		    cold.flat_working->command != (retained ? retained : cold.command.get()) ||
+		    !bytes.add(sizeof(cold_flat_working_variants)))
+			return false;
+		for (const auto &forest : cold.flat_working->player)
+			if (!bytes.items(forest))
+				return false;
+		for (const auto &forest : cold.flat_working->keeper)
+			if (!bytes.items(forest))
+				return false;
+		for (const auto &forest : cold.flat_working->target)
+			if (!bytes.items(forest))
+				return false;
+		if (!bytes.vector(entry.after_destination))
+			return false;
+		if (cold.flat_literals)
+		{
+			const auto &stage = *cold.flat_literals;
+			if (stage.binding_started || stage.binding_returned ||
+			    stage.staged.size() != cold.source.size() ||
+			    stage.reload.size() != cold.source.size() ||
+			    stage.enrollment_counts.size() > cold.source.size() ||
+			    !stage.bindings.valid_flat() || !bytes.add(sizeof(stage)) ||
+			    !bytes.vector(stage.staged) || !bytes.vector(stage.reload) ||
+			    !bytes.vector(stage.enrollment_counts))
+				return false;
+			// Binding's own visitor includes sizeof(bindings), already embedded
+			// in sizeof(stage). Add only its independently retained capacities.
+			const size_t binding_bytes = stage.bindings.retained_bytes();
+			if (binding_bytes < sizeof(stage.bindings) ||
+			    !bytes.add(binding_bytes - sizeof(stage.bindings)))
+				return false;
+			for (size_t index = 0; index < stage.staged.size(); ++index)
+			{
+				size_t native_bytes = 0;
+				if (!stage.staged[index].object_ ||
+				    !stage.staged[index].retained_bytes(cold.source[index],
+									&native_bytes) ||
+				    !native_bytes || !bytes.add(native_bytes) ||
+				    !stage.reload[index].prototype ||
+				    stage.reload[index].proclib_probes.size() !=
+					    cold.source[index].extra_descriptions.size() ||
+				    !bytes.vector(stage.reload[index].proclib_probes))
+					return false;
+			}
+		}
+		// A consumed graph cannot shrink an existing reservation: this visitor
+		// is closed once enrollment starts. Caller records the one complete count
+		// only after all future retained working-state storage is allocated too.
+		if (!bytes.value)
+			return false;
+		*output = bytes.value;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::cold_enroll_selected_flat(
+	player_save_restored_publication_owner &publication, const std::string &root,
+	const flatfile_authority_lock &authority,
+	const flatfile_accounting_shop_projection &current, size_t complete_retained_stage_bytes,
+	void *opaque) noexcept
+{
+#ifndef __NO_MYSQL__
+	(void)publication;
+	(void)root;
+	(void)authority;
+	(void)current;
+	(void)complete_retained_stage_bytes;
+	(void)opaque;
+	return false;
+#else
+	if (!opaque || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || root.empty() ||
+	    !persistence_mode_flatfile_root() || root != persistence_mode_flatfile_root() ||
+	    !authority.matches(root) || !complete_retained_stage_bytes ||
+	    complete_retained_stage_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    !publication.flat_shop_restored_ || publication.flat_shop_ ||
+	    publication.acknowledged_ || publication.publication_proven_ ||
+	    !publication.reservation_.valid() ||
+	    publication.completion_.disposition != critical_completion_disposition::execution ||
+	    (publication.completion_.outcome != critical_apply_outcome::applied &&
+	     publication.completion_.outcome != critical_apply_outcome::already_applied))
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->command || !entry.cold->flat_literals ||
+	    entry.preparation || entry.blocked || entry.cold->registration_pending ||
+	    !entry.cold->initialized || entry.cold->enrollment_started || entry.cold->enrolled ||
+	    publication.pid_ != static_cast<int>(entry.player_pid) ||
+	    publication.flat_shop_restored_root_uid_ != entry.payload.selected_item_uid ||
+	    !critical_command_equal(*entry.cold->command, publication.command_) ||
+	    !same_native_receipt(entry.completed, publication.completion_))
+		return false;
+	auto &cold = *entry.cold;
+	auto &stage = *cold.flat_literals;
+	if (stage.binding_started || stage.binding_returned ||
+	    stage.staged.size() != cold.source.size() ||
+	    stage.reload.size() != cold.source.size() || !stage.bindings.valid_flat())
+		return false;
+	try
+	{
+		const auto original_current = [&]() noexcept
+		{
+			return !entry.blocked && publication.reservation_.valid() &&
+			       critical_command_equal(*cold.command, publication.command_) &&
+			       same_native_receipt(entry.completed, publication.completion_) &&
+			       critical_command_coordinator_restored_shop_publication_current(
+				       publication);
+		};
+		std::string error;
+		flatfile_accounting_shop_projection rechecked;
+		shop_trade_world_cold_observation observed;
+		std::vector<shop_trade_world_uid_expectation> locations;
+		std::vector<uint8_t> retained_payload, original_payload;
+		shop_trade_payload original{};
+		if (!original_current() ||
+		    !shop_trade_command_decode_payload(publication.command_, &original) ||
+		    !shop_trade_command_encode_recovery_payload(original, &original_payload) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_payload) ||
+		    original_payload != retained_payload ||
+		    flatfile_accounting_shop_transaction::read_current_locked(
+			    root, authority, publication.command_, publication.completion_,
+			    &rechecked, &error) ||
+		    !flat_publication_same_current(current, rechecked) ||
+		    !cold_flat_world(&entry, cold.working_player, cold.working_keeper, false, false,
+				     false, &observed, &locations) ||
+		    observed.actor_present != cold.actor_present ||
+		    observed.keeper_present != cold.keeper_present ||
+		    observed.actor_runtime_id != cold.actor_runtime_id ||
+		    observed.keeper_runtime_id != cold.keeper_runtime_id ||
+		    (observed.actor_present &&
+		     !flat_publication_items(observed.player_items, cold.working_player)) ||
+		    (observed.keeper_present &&
+		     !flat_publication_items(observed.keeper_items, cold.working_keeper)) ||
+		    (entry.payload.target_parent_item_uid && observed.actor_present &&
+		     (!observed.target_present ||
+		      !flat_publication_items(observed.target_items, cold.working_target))))
+			return false;
+		for (const auto &item : cold.source)
+		{
+			const auto found = std::lower_bound(locations.begin(), locations.end(),
+							    item.object_uid,
+							    [](const auto &location, uint64_t uid)
+							    { return location.uid < uid; });
+			if (found == locations.end() || found->uid != item.object_uid ||
+			    observed.objects[static_cast<size_t>(found - locations.begin())])
+				return false;
+		}
+		// This supplemental source proof does not replace the full original world
+		// census. Cash follows the real retained BEFORE/CURRENT publication phase.
+		int64_t cash = (entry.physical_stages & 128U) ? current.keeper.cash :
+								entry.payload.expected_keeper_cash;
+		if (observed.keeper)
+		{
+			if (GET_COPPER(observed.keeper) < 0 || GET_SILVER(observed.keeper) < 0 ||
+			    GET_GOLD(observed.keeper) < 0 || GET_PLATINUM(observed.keeper) < 0)
+				return false;
+			const int64_t actual = static_cast<int64_t>(GET_COPPER(observed.keeper)) +
+					       10LL * GET_SILVER(observed.keeper) +
+					       100LL * GET_GOLD(observed.keeper) +
+					       1000LL * GET_PLATINUM(observed.keeper);
+			if (actual != cash &&
+			    ((entry.physical_stages & 128U) || actual != current.keeper.cash))
+				return false;
+			cash = actual; // Genuine original BEFORE or already CURRENT cash only.
+		}
+		if (!shop_trade_native_checkpoint_owner::observe_flat_cold_publication_sources_locked(
+			    root, authority, observed.actor, observed.keeper, entry.payload.shop_id,
+			    current, cold.working_player, cold.working_keeper, cash) ||
+		    !publication.reserve_shop_flat_restored_publication_checkpoint(
+			    complete_retained_stage_bytes) ||
+		    !original_current())
+			return false;
+		for (const auto &item : stage.staged)
+			if (!item.object_ ||
+			    !quest_mobile_native_item_cold_prepend_body_ready(item.object_))
+				return false;
+		for (const auto &[number, count] : stage.enrollment_counts)
+			if (!obj_index || number < 0 || number > top_of_objt ||
+			    obj_index[number].number < 0 ||
+			    count > static_cast<size_t>(INT_MAX - obj_index[number].number))
+				return false;
+		if (!stage.bindings.valid_flat() ||
+		    !quest_mobile_native_item_cold_prepend_cut_ready(stage.staged.size()) ||
+		    !original_current())
+			return false;
+		// All fallible work/allocation completes before these retained once marks.
+		// Original binding commit and body/count enrollment are allocation-free.
+		cold.enrollment_started = stage.binding_started = true;
+		stage.bindings.commit_flat_unchecked();
+		stage.binding_returned = true;
+		for (auto &item : stage.staged)
+		{
+			P_obj object = item.object_;
+			quest_mobile_native_item_observe_native_prepend(object);
+			object->next = object_list;
+			if (object_list)
+				object_list->prev = object;
+			object_list = object;
+			++obj_index[object->R_num].number;
+			item.object_ = nullptr;
+			item.pool_ = nullptr;
+			item.affect_pool_ = nullptr;
+		}
+		cold.enrolled = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool shop_trade_native_publication_owner::native_publish_flat_cold(
+	player_save_restored_publication_owner &publication, void *opaque) noexcept
+{
+#ifndef __NO_MYSQL__
+	(void)publication;
+	(void)opaque;
+	return false;
+#else
+	if (!opaque || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    !publication.flat_shop_restored_ || publication.flat_shop_ ||
+	    publication.acknowledged_ || publication.publication_proven_ ||
+	    !publication.reservation_.matches_pid(publication.pid_) ||
+	    publication.completion_.disposition != critical_completion_disposition::execution)
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold || !entry.cold->flat_restored || !entry.cold->command ||
+	    entry.cold->registration_pending || entry.preparation || entry.blocked ||
+	    !entry.completion_ready || publication.pid_ != static_cast<int>(entry.player_pid) ||
+	    publication.flat_shop_restored_root_uid_ != entry.payload.selected_item_uid ||
+	    !same_native_receipt(entry.completed, publication.completion_))
+		return false;
+	auto &cold = *entry.cold;
+	if ((cold.effect.started && (!cold.effect.returned || !cold.effect.succeeded)) ||
+	    (cold.enrollment_started && !cold.enrolled) ||
+	    (cold.balances_started && !cold.balances_returned))
+		return false;
+	try
+	{
+		const auto &command = publication.command_;
+		const auto &sealed = publication.completion_;
+		std::vector<uint8_t> frozen, original_payload, retained_payload;
+		shop_trade_payload payload{};
+		if (!critical_command_equal(command, *cold.command) ||
+		    critical_command_encode(command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    frozen != publication.frozen_ ||
+		    !shop_trade_command_decode_payload(command, &payload) ||
+		    !shop_trade_command_encode_recovery_payload(payload, &original_payload) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_payload) ||
+		    original_payload != retained_payload || !persistence_mode_flatfile_root())
+			return false;
+		const std::string root(persistence_mode_flatfile_root());
+		const auto session = [&]() noexcept
+		{
+			return !entry.blocked && !root.empty() &&
+			       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+			       persistence_mode_flatfile_root() &&
+			       root == persistence_mode_flatfile_root() &&
+			       publication.reservation_.matches_pid(publication.pid_) &&
+			       same_native_receipt(entry.completed, sealed) &&
+			       critical_command_equal(*cold.command, command) &&
+			       critical_command_coordinator_restored_shop_publication_current(
+				       publication);
+		};
+		if (!session())
+			return false;
+		flatfile_authority_lock authority;
+		std::string error;
+		if (!authority.acquire(root, &error) || !session())
+			return false;
+		flatfile_accounting_shop_projection current;
+		if (flatfile_accounting_shop_transaction::read_current_locked(
+			    root, authority, command, sealed, &current, &error))
+			return false;
+		const bool success = sealed.outcome == critical_apply_outcome::applied ||
+				     sealed.outcome == critical_apply_outcome::already_applied;
+		if (!success && sealed.outcome != critical_apply_outcome::terminal_failure)
+			return false;
+		const auto &manifest = payload.recovery_manifest;
+		const bool produced = payload.action == shop_trade_action::buy_produced;
+		const bool buying = produced || payload.action == shop_trade_action::buy_existing;
+		const bool destroying = payload.action == shop_trade_action::sell_destroy ||
+					payload.action == shop_trade_action::discard_invalid;
+		uint64_t current_level = 0;
+		bool level_seen = false;
+		for (const auto &row : current.player.status_integers)
+			if (row.field == player_status_field::level)
+			{
+				if (level_seen ||
+				    (row.is_unsigned ?
+					     !row.unsigned_value || row.unsigned_value > UINT8_MAX :
+					     row.signed_value <= 0 || row.signed_value > UINT8_MAX))
+					return false;
+				current_level = row.is_unsigned ?
+							row.unsigned_value :
+							static_cast<uint64_t>(row.signed_value);
+				level_seen = true;
+			}
+		if (!level_seen || current.player.revision < payload.expected_player_save_revision)
+			return false;
+		currency_vector wallet{}, bank{};
+		for (size_t index = 0; index < wallet.amount.size(); ++index)
+		{
+			if (current.player_domains.domains.wallet[index] > INT_MAX ||
+			    current.player_domains.domains.bank[index] > INT_MAX)
+				return false;
+			wallet.amount[index] =
+				static_cast<int64_t>(current.player_domains.domains.wallet[index]);
+			bank.amount[index] =
+				static_cast<int64_t>(current.player_domains.domains.bank[index]);
+		}
+		const auto verify_forest = [](const std::vector<player_item_snapshot> &forest,
+					      shop_trade_recovery_forest_role role,
+					      const shop_trade_recovery_forest_binding &binding)
+		{
+			std::vector<uint8_t> bytes;
+			return player_item_snapshot_list_encode(forest, &bytes) ==
+				       player_snapshot_codec_result::ok &&
+			       shop_trade_recovery_forest_verify(bytes, role, binding);
+		};
+		if (!verify_forest(current.player.items,
+				   success ? shop_trade_recovery_forest_role::player_after :
+					     shop_trade_recovery_forest_role::player_before,
+				   success ? manifest.player_after : manifest.player_before) ||
+		    !verify_forest(current.keeper.items,
+				   success ? shop_trade_recovery_forest_role::keeper_after :
+					     shop_trade_recovery_forest_role::keeper_before,
+				   success ? manifest.keeper_after : manifest.keeper_before))
+			return false;
+		shop_trade_world_cold_observation observed;
+		std::vector<shop_trade_world_uid_expectation> locations;
+		const auto object = [&](uint64_t uid) -> P_obj
+		{
+			const auto found = std::lower_bound(locations.begin(), locations.end(), uid,
+							    [](const auto &item, uint64_t value)
+							    { return item.uid < value; });
+			return locations.size() != observed.objects.size() ||
+					       found == locations.end() || found->uid != uid ?
+				       nullptr :
+				       observed.objects[static_cast<size_t>(found -
+									    locations.begin())];
+		};
+		const auto missing_owner = [&](const shop_trade_recovery_forest_binding &before,
+					       const shop_trade_recovery_forest_binding &after)
+		{
+			for (const auto *binding : { &before, &after })
+				for (uint64_t uid : binding->ordered_item_uids)
+				{
+					const bool selected = std::any_of(
+						payload.items.begin(),
+						payload.items.begin() + payload.item_count,
+						[uid](const auto &item)
+						{ return item.item_uid == uid; });
+					if (!selected && object(uid))
+						return false;
+				}
+			return true;
+		};
+		const auto sources = [&](const std::vector<player_item_snapshot> &player,
+					 const std::vector<player_item_snapshot> &keeper)
+		{
+			if ((observed.actor &&
+			     (static_cast<uint64_t>(GET_LEVEL(observed.actor)) != current_level ||
+			      observed.actor->only.pc->wallet_revision >
+				      current.player_domains.domains.wallet_revision ||
+			      observed.actor->only.pc->bank_revision >
+				      current.player_domains.domains.bank_revision)) ||
+			    (!observed.actor_present &&
+			     !missing_owner(manifest.player_before, manifest.player_after)) ||
+			    (!observed.keeper_present &&
+			     !missing_owner(manifest.keeper_before, manifest.keeper_after)))
+				return false;
+			int64_t cash = (entry.physical_stages & 128U) ?
+					       current.keeper.cash :
+					       payload.expected_keeper_cash;
+			if (observed.keeper)
+			{
+				if (GET_COPPER(observed.keeper) < 0 ||
+				    GET_SILVER(observed.keeper) < 0 ||
+				    GET_GOLD(observed.keeper) < 0 ||
+				    GET_PLATINUM(observed.keeper) < 0)
+					return false;
+				const int64_t actual =
+					static_cast<int64_t>(GET_COPPER(observed.keeper)) +
+					10LL * GET_SILVER(observed.keeper) +
+					100LL * GET_GOLD(observed.keeper) +
+					1000LL * GET_PLATINUM(observed.keeper);
+				// Original cold restore accepts genuine BEFORE or already CURRENT
+				// cash. A returned cash stage requires CURRENT; no other value is adopted.
+				if (actual != cash && ((entry.physical_stages & 128U) ||
+						       actual != current.keeper.cash))
+					return false;
+				cash = actual;
+			}
+			return session() &&
+			       shop_trade_native_checkpoint_owner::
+				       observe_flat_cold_publication_sources_locked(
+					       root, authority, observed.actor, observed.keeper,
+					       payload.shop_id, current, player, keeper, cash);
+		};
+		const auto original_current = [&]()
+		{
+			flatfile_accounting_shop_projection fresh;
+			return session() && authority.matches(root) &&
+			       !flatfile_accounting_shop_transaction::read_current_locked(
+				       root, authority, command, sealed, &fresh, &error) &&
+			       flat_publication_same_current(current, fresh) && session();
+		};
+		// All retained cold allocations are built off-map, charged in full, then
+		// installed by nonthrowing moves. Failed reservation cannot accumulate an
+		// uncharged stage in other passive slots. Original command/UID union stay put.
+		if (!cold.initialized)
+		{
+			pending_trade candidate;
+			candidate.player_pid = entry.player_pid;
+			candidate.payload = entry.payload;
+			candidate.completed = sealed;
+			candidate.completion_ready = candidate.native_receipt_verified = true;
+			candidate.cold = std::make_unique<cold_trade_restore>();
+			auto &prepared = *candidate.cold;
+			prepared.command = std::make_unique<critical_command>(*cold.command);
+			prepared.fenced_uids = cold.fenced_uids;
+			prepared.registration_pending = false;
+			if (!cold_flat_original_forests(command, current, &prepared.original_player,
+							&prepared.original_keeper) ||
+			    player_item_snapshot_list_decode(
+				    payload.item_blob.data(), payload.item_blob_size,
+				    &prepared.source) != player_snapshot_codec_result::ok ||
+			    !shop_trade_accounted_after_items(payload, &prepared.selected_after) ||
+			    !cold_flat_world(&candidate, prepared.original_player,
+					     prepared.original_keeper, false, false, false,
+					     &observed, &locations))
+				return false;
+			if ((observed.actor_present &&
+			     !flat_publication_items(observed.player_items,
+						     prepared.original_player) &&
+			     !flat_publication_items(observed.player_items,
+						     current.player.items)) ||
+			    (observed.keeper_present &&
+			     !flat_publication_items(observed.keeper_items,
+						     prepared.original_keeper) &&
+			     !flat_publication_items(observed.keeper_items,
+						     current.keeper.items)) ||
+			    (!observed.selected_items.empty() &&
+			     !flat_publication_items(observed.selected_items, prepared.source) &&
+			     !flat_publication_items(observed.selected_items,
+						     prepared.selected_after)) ||
+			    !sources(observed.actor_present ? observed.player_items :
+							      prepared.original_player,
+				     observed.keeper_present ? observed.keeper_items :
+							       prepared.original_keeper))
+				return false;
+			prepared.actor_present = observed.actor_present;
+			prepared.keeper_present = observed.keeper_present;
+			prepared.actor_runtime_id = observed.actor_runtime_id;
+			prepared.keeper_runtime_id = observed.keeper_runtime_id;
+			prepared.working_player = observed.actor_present ? observed.player_items :
+									   current.player.items;
+			prepared.working_keeper = observed.keeper_present ? observed.keeper_items :
+									    current.keeper.items;
+			prepared.working_target = observed.target_items;
+			candidate.before_player = prepared.original_player;
+			candidate.after_player = current.player.items;
+			candidate.after_keeper = current.keeper.items;
+			candidate.publication_forests_ready = true;
+			prepared.initialized = true;
+			P_obj selected = object(payload.selected_item_uid);
+			shop_trade_world_cold_observation final;
+			std::vector<shop_trade_world_uid_expectation> final_locations;
+			const bool final_state =
+				cold_flat_world(&candidate, candidate.after_player,
+						candidate.after_keeper, true,
+						!prepared.actor_present, !prepared.keeper_present,
+						&final, &final_locations) &&
+				(!payload.target_parent_item_uid || !final.actor_present ||
+				 (final.target_present &&
+				  verify_forest(
+					  final.target_items,
+					  success ?
+						  shop_trade_recovery_forest_role::live_target_after :
+						  shop_trade_recovery_forest_role::live_target_before,
+					  success ? manifest.live_target_after :
+						    manifest.live_target_before)));
+			if (success)
+			{
+				if (!final_state)
+				{
+					if (selected && OBJ_NOWHERE(selected) && !produced)
+						return false; // No normally returned preboot departure tail is invented.
+					if (!selected)
+					{
+						if (destroying ||
+						    (buying ? !prepared.actor_present :
+							      !prepared.keeper_present))
+							return false;
+						for (const auto &item : prepared.source)
+							if (object(item.object_uid))
+								return false;
+						if (!cold_prepare_selected_flat(&candidate))
+							return false;
+					}
+				}
+				if (!cold_prepare_working_flat(&candidate, cold.command.get()))
+					return false;
+			}
+			else
+			{
+				// Genuine execution rejection authenticates unchanged complete BEFORE.
+				// Only an original produced detached copy may require terminal cleanup.
+				if (!flat_publication_items(prepared.working_player,
+							    candidate.after_player) ||
+				    !flat_publication_items(prepared.working_keeper,
+							    candidate.after_keeper) ||
+				    (!final_state &&
+				     (!produced || !selected || !OBJ_NOWHERE(selected) ||
+				      selected->next_content ||
+				      !flat_publication_items(observed.selected_items,
+							      prepared.source))) ||
+				    (payload.target_parent_item_uid && prepared.actor_present &&
+				     (!observed.target_present ||
+				      !verify_forest(
+					      observed.target_items,
+					      shop_trade_recovery_forest_role::live_target_before,
+					      manifest.live_target_before))))
+					return false;
+				auto working = std::make_unique<cold_flat_working_variants>();
+				working->command = cold.command.get();
+				working->player[0] = prepared.working_player;
+				working->keeper[0] = prepared.working_keeper;
+				working->target[0] = prepared.working_target;
+				working->player_count = working->keeper_count =
+					working->target_count = 1;
+				prepared.flat_working = std::move(working);
+			}
+			size_t complete_bytes = 0;
+			if (!cold_flat_retained_payload_bytes(&candidate, &complete_bytes,
+							      cold.command.get()) ||
+			    !original_current() ||
+			    !sources(prepared.working_player, prepared.working_keeper) ||
+			    !publication.reserve_shop_flat_restored_publication_checkpoint(
+				    complete_bytes))
+				return false;
+			// Reserve succeeded; every following retained move is nonthrowing.
+			entry.before_player = std::move(candidate.before_player);
+			entry.after_player = std::move(candidate.after_player);
+			entry.after_keeper = std::move(candidate.after_keeper);
+			entry.after_destination = std::move(candidate.after_destination);
+			cold.original_player = std::move(prepared.original_player);
+			cold.original_keeper = std::move(prepared.original_keeper);
+			cold.working_player = std::move(prepared.working_player);
+			cold.working_keeper = std::move(prepared.working_keeper);
+			cold.source = std::move(prepared.source);
+			cold.selected_after = std::move(prepared.selected_after);
+			cold.working_target = std::move(prepared.working_target);
+			cold.flat_literals = std::move(prepared.flat_literals);
+			cold.flat_working = std::move(prepared.flat_working);
+			cold.actor_present = prepared.actor_present;
+			cold.keeper_present = prepared.keeper_present;
+			cold.actor_runtime_id = prepared.actor_runtime_id;
+			cold.keeper_runtime_id = prepared.keeper_runtime_id;
+			cold.flat_publication_bytes = complete_bytes;
+			cold.initialized = entry.publication_forests_ready =
+				entry.native_receipt_verified = true;
+		}
+		if (!cold.flat_working || !cold.flat_publication_bytes ||
+		    !entry.publication_forests_ready ||
+		    !flat_publication_items(entry.after_player, current.player.items) ||
+		    !flat_publication_items(entry.after_keeper, current.keeper.items) ||
+		    !publication.reserve_shop_flat_restored_publication_checkpoint(
+			    cold.flat_publication_bytes))
+			return false;
+		std::span<const player_item_snapshot> player, keeper, target_values;
+		shop_trade_cold_native_step step{};
+		bool terminal = false, for_nesting = false;
+		const auto working_observe = [&]()
+		{
+			if (!cold_flat_working_state(&entry, cold.flat_completed_legs, &player,
+						     &keeper, &target_values, &step, &terminal,
+						     &for_nesting) ||
+			    !cold_flat_world(&entry, player, keeper, false, false, false, &observed,
+					     &locations) ||
+			    observed.actor_present != cold.actor_present ||
+			    observed.keeper_present != cold.keeper_present ||
+			    observed.actor_runtime_id != cold.actor_runtime_id ||
+			    observed.keeper_runtime_id != cold.keeper_runtime_id ||
+			    (observed.actor_present &&
+			     !flat_publication_items(
+				     observed.player_items,
+				     cold.flat_working
+					     ->player[cold.flat_working
+							      ->states[cold.flat_completed_legs]
+							      .player])) ||
+			    (observed.keeper_present &&
+			     !flat_publication_items(
+				     observed.keeper_items,
+				     cold.flat_working
+					     ->keeper[cold.flat_working
+							      ->states[cold.flat_completed_legs]
+							      .keeper])) ||
+			    (payload.target_parent_item_uid && observed.actor_present &&
+			     (!observed.target_present ||
+			      !flat_publication_items(
+				      observed.target_items,
+				      cold.flat_working
+					      ->target[cold.flat_working
+							       ->states[cold.flat_completed_legs]
+							       .target]))))
+				return false;
+			const auto state = cold.flat_working->states[cold.flat_completed_legs];
+			return sources(cold.flat_working->player[state.player],
+				       cold.flat_working->keeper[state.keeper]) &&
+			       original_current();
+		};
+		const auto final_observe = [&]()
+		{
+			return cold_flat_world(&entry, entry.after_player, entry.after_keeper, true,
+					       !cold.actor_present, !cold.keeper_present, &observed,
+					       &locations) &&
+			       observed.actor_runtime_id == cold.actor_runtime_id &&
+			       observed.keeper_runtime_id == cold.keeper_runtime_id &&
+			       (!payload.target_parent_item_uid || !observed.actor_present ||
+				(observed.target_present &&
+				 verify_forest(
+					 observed.target_items,
+					 success ?
+						 shop_trade_recovery_forest_role::live_target_after :
+						 shop_trade_recovery_forest_role::live_target_before,
+					 success ? manifest.live_target_after :
+						   manifest.live_target_before))) &&
+			       sources(entry.after_player, entry.after_keeper) &&
+			       original_current();
+		};
+		if (!working_observe())
+			return false;
+		// The CURRENT backend/runtime owner independently proves all owner-wide
+		// custody and foreign active UID/root/parent aliases before native placement.
+		if (!shop_trade_current_runtime_owner::publish_flat(root, authority, command,
+								    sealed) ||
+		    !working_observe())
+			return false;
+		if (success && cold.flat_literals && !cold.enrolled)
+		{
+			if (!cold_enroll_selected_flat(publication, root, authority, current,
+						       cold.flat_publication_bytes, &entry) ||
+			    !working_observe())
+				return false;
+		}
+		if (cold.enrolled)
+		{
+			if (!cold.flat_literals ||
+			    cold.flat_literals->reload.size() != cold.source.size())
+				return false;
+			for (size_t index = 0; index < cold.flat_literals->reload.size(); ++index)
+				for (unsigned int phase = 0; phase < 4; ++phase)
+				{
+					auto &reload = cold.flat_literals->reload[index];
+					auto &effect = reload.effects[phase];
+					if (effect.started)
+					{
+						if (!effect.returned || !effect.succeeded)
+							return false;
+						continue;
+					}
+					if (!reload.prototype || !working_observe() ||
+					    !flat_publication_items(observed.selected_items,
+								    cold.source))
+						return false;
+					if (phase == 1)
+						effect.periodic = reload.effects[0].periodic;
+					if (phase == 2)
+					{
+						if (reload.proclib_probes.size() !=
+						    cold.source[index].extra_descriptions.size())
+							return false;
+						bool periodic = false;
+						for (size_t description = 0;
+						     description < reload.proclib_probes.size();
+						     ++description)
+						{
+							auto &probe =
+								reload.proclib_probes[description];
+							if (probe.started)
+							{
+								if (!probe.returned ||
+								    !probe.succeeded)
+									return false;
+							}
+							else
+							{
+								if (!working_observe() ||
+								    !flat_publication_items(
+									    observed.selected_items,
+									    cold.source))
+									return false;
+								P_obj fresh =
+									object(cold.source[index]
+										       .object_uid);
+								if (!fresh ||
+								    !shop_trade_original_item_stage::
+									    proclib_probe_flat(
+										    fresh,
+										    *reload.prototype,
+										    description,
+										    probe) ||
+								    !working_observe() ||
+								    !flat_publication_items(
+									    observed.selected_items,
+									    cold.source))
+									return false;
+							}
+							periodic = periodic || probe.periodic;
+						}
+						effect.periodic = periodic;
+						if (!working_observe())
+							return false;
+					}
+					P_obj fresh = object(cold.source[index].object_uid);
+					if (!fresh ||
+					    !shop_trade_original_item_stage::reload_step_flat(
+						    fresh, *reload.prototype, phase, effect) ||
+					    !working_observe() ||
+					    !flat_publication_items(observed.selected_items,
+								    cold.source))
+						return false;
+				}
+		}
+		if (!success && produced && !cold.flat_rejected_cleanup_returned)
+		{
+			if (!working_observe())
+				return false;
+			P_obj selected = object(payload.selected_item_uid);
+			if (selected)
+			{
+				if (cold.effect.started || !OBJ_NOWHERE(selected) ||
+				    selected->next_content ||
+				    !flat_publication_items(observed.selected_items, cold.source) ||
+				    !original_current())
+					return false;
+				cold.effect.step = shop_trade_cold_native_step::reject_produced;
+				if (!shop_trade_cold_native_step_execute(
+					    observed.actor, observed.keeper, selected, nullptr,
+					    payload, cold.effect) ||
+				    !cold.effect.returned || !cold.effect.succeeded)
+					return false;
+			}
+			cold.flat_rejected_cleanup_returned = true;
+			if (!final_observe())
+				return false;
+		}
+		while (success)
+		{
+			if (!working_observe())
+				return false;
+			if (terminal)
+				break;
+			if (cold.effect.started)
+			{
+				if (!cold.effect.returned || !cold.effect.succeeded ||
+				    cold.flat_effect_leg + 1 != cold.flat_completed_legs)
+					return false;
+				cold.effect = {};
+			}
+			P_obj selected = object(payload.selected_item_uid);
+			P_obj target = payload.target_parent_item_uid ?
+					       object(payload.target_parent_item_uid) :
+					       nullptr;
+			if (!selected ||
+			    (!flat_publication_items(observed.selected_items, cold.source) &&
+			     !flat_publication_items(observed.selected_items, cold.selected_after)))
+				return false;
+			// Recheck actual handler grouping with scratch only; never grow/replace
+			// the charged immutable forests after a callback changes the native graph.
+			if (step == shop_trade_cold_native_step::place_player ||
+			    step == shop_trade_cold_native_step::place_keeper ||
+			    step == shop_trade_cold_native_step::nest)
+			{
+				std::vector<player_item_snapshot> values, ordered;
+				const auto next =
+					cold.flat_working->states[cold.flat_completed_legs + 1];
+				if (step == shop_trade_cold_native_step::place_keeper)
+				{
+					const auto state =
+						cold.flat_working->states[cold.flat_completed_legs];
+					if (!expected_keeper_forest(
+						    payload, observed.keeper, selected,
+						    cold.flat_working->keeper[state.keeper], false,
+						    &ordered) ||
+					    !flat_publication_items(
+						    ordered,
+						    cold.flat_working->keeper[next.keeper]))
+						return false;
+				}
+				else
+				{
+					shop_trade_payload carrying{};
+					carrying.player_pid = payload.player_pid;
+					carrying.action = payload.action;
+					carrying.selected_item_uid = payload.selected_item_uid;
+					if (!expected_player_order(
+						    step == shop_trade_cold_native_step::nest ?
+							    payload :
+							    carrying,
+						    observed.actor, selected,
+						    step == shop_trade_cold_native_step::nest ?
+							    target :
+							    nullptr,
+						    cold.flat_working->player[next.player],
+						    &ordered) ||
+					    !flat_publication_items(
+						    ordered,
+						    cold.flat_working->player[next.player]))
+						return false;
+					if (step == shop_trade_cold_native_step::nest &&
+					    (!expected_player_order(
+						     payload, observed.actor, selected, target,
+						     cold.flat_working->target[next.target],
+						     &values) ||
+					     !flat_publication_items(
+						     values,
+						     cold.flat_working->target[next.target])))
+						return false;
+				}
+			}
+			if (!original_current())
+				return false;
+			cold.flat_effect_leg = cold.flat_completed_legs;
+			cold.effect.step = step;
+			if (!shop_trade_cold_native_step_execute(observed.actor, observed.keeper,
+								 selected, target, payload,
+								 cold.effect) ||
+			    !cold.effect.returned || !cold.effect.succeeded)
+				return false;
+			// Commit advanced expectation immediately after the returned handler,
+			// BEFORE any fresh census may refuse. Never replay that returned leg.
+			++cold.flat_completed_legs;
+			if (!working_observe())
+				return false;
+		}
+		if (!final_observe() ||
+		    !shop_trade_current_runtime_owner::publish_flat(root, authority, command,
+								    sealed) ||
+		    !final_observe())
+			return false;
+		// Original CURRENT money publication is a retained normally returned
+		// notification stage. A failed post-census never reissues its callbacks.
+		if (!cold.balances_returned)
+		{
+			cold.balances_started = true;
+			cold.balances_returned = false;
+			if (observed.actor)
+			{
+				if (!currency_transaction_publish_balances(
+					    observed.actor, payload.account_name.data(),
+					    payload.racewar, wallet, bank,
+					    current.player_domains.domains.wallet_revision,
+					    current.player_domains.domains.bank_revision))
+					return false;
+			}
+			else
+			{
+				const AccountBankBalances amounts{ static_cast<int>(bank.amount[0]),
+								   static_cast<int>(bank.amount[1]),
+								   static_cast<int>(bank.amount[2]),
+								   static_cast<int>(
+									   bank.amount[3]) };
+				publish_account_bank_balances_revision(
+					payload.account_name.data(), payload.racewar, &amounts,
+					current.player_domains.domains.bank_revision);
+			}
+			cold.balances_returned = true;
+		}
+		if (!final_observe())
+			return false;
+		if (observed.keeper)
+		{
+			int64_t remainder = current.keeper.cash;
+			GET_PLATINUM(observed.keeper) = static_cast<int>(remainder / 1000);
+			remainder %= 1000;
+			GET_GOLD(observed.keeper) = static_cast<int>(remainder / 100);
+			remainder %= 100;
+			GET_SILVER(observed.keeper) = static_cast<int>(remainder / 10);
+			GET_COPPER(observed.keeper) = static_cast<int>(remainder % 10);
+		}
+		entry.physical_stages |= 128U;
+		if (!final_observe() ||
+		    !shop_trade_current_runtime_owner::publish_flat(root, authority, command,
+								    sealed) ||
+		    !final_observe() || !session())
+			return false;
+		// No SQL row IDs or live notices are synthesized. Only the original outer
+		// owner may turn this full native/source/custody proof into guarded ACK.
+		return !observed.actor ||
+		       flat_publication_money(observed.actor, current.player_domains);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+// Invoked only inside the original coordinator's authenticated cancellation
+// callback, after its exact refusal and the pipeline's real flat slot are proved.
+// Absence of receipts is supplementary source evidence, never that authority.
+bool shop_trade_native_publication_owner::native_publish_flat_refusal(
+	player_save_restored_publication_owner &publication, void *opaque) noexcept
+{
+	if (!opaque || !nevent_is_game_thread() || !publication.flat_shop_ ||
+	    publication.flat_shop_restored_ || publication.acknowledged_ ||
+	    publication.publication_proven_ || !publication.reservation_.valid() ||
+	    publication.completion_.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (entry.cold || !entry.preparation || !entry.preparation->flat ||
+	    !entry.preparation->command || !entry.preparation->submission_started ||
+	    !entry.completion_ready || entry.blocked || entry.native_receipt_verified ||
+	    entry.native_acknowledged || entry.physical_published || entry.physical_stages ||
+	    !same_original_refusal(entry.completed, publication.completion_) ||
+	    (entry.flat_refusal_cleanup_started && !entry.flat_refusal_cleanup_returned))
+		return false;
+	try
+	{
+		auto &prepared = *entry.preparation;
+		auto &flat = *prepared.flat;
+		const auto &command = publication.command_;
+		const auto &sealed = publication.completion_;
+		if (!flat.player_held || !flat.native || !flat.reserved_bytes ||
+		    flat.phase != shop_trade_flat_native_checkpoint_phase::ready ||
+		    flat.native->operation_id.bytes != command.operation_id.bytes ||
+		    !critical_command_equal(*prepared.command, command) ||
+		    !publication.reservation_.matches_pid(static_cast<int>(entry.player_pid)) ||
+		    flat.player_token.actor_runtime_id != prepared.actor_runtime_id ||
+		    flat.selected_root != flat.native->player_hold_cut.selected_root)
+			return false;
+		std::vector<uint8_t> frozen, bound_bytes, retained_bytes;
+		shop_trade_payload bound{};
+		if (critical_command_encode(command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    frozen != publication.frozen_ ||
+		    !shop_trade_command_decode_payload(command, &bound) ||
+		    !bound.recovery_manifest_recorded ||
+		    !shop_trade_command_encode_recovery_payload(bound, &bound_bytes) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_bytes) ||
+		    bound_bytes != retained_bytes)
+			return false;
+		// This seals the exact refusal before any fallible observation or handler.
+		// Later completion delivery cannot replace its timing, attempt or payload.
+		entry.flat_refusal_verified = true;
+		const auto session = [&]() noexcept
+		{
+			return !entry.blocked && !entry.never_admitted_retired &&
+			       same_original_refusal(entry.completed, sealed) &&
+			       critical_command_equal(*prepared.command, command) &&
+			       publication.reservation_.matches_pid(
+				       static_cast<int>(entry.player_pid)) &&
+			       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+			       persistence_mode_flatfile_root() &&
+			       flat.selected_root == persistence_mode_flatfile_root();
+		};
+		if (!session())
+			return false;
+		flatfile_authority_lock authority;
+		std::string error;
+		if (!authority.acquire(flat.selected_root, &error) || !session())
+			return false;
+		flatfile_accounting_shop_projection current;
+		if (flatfile_accounting_shop_transaction::read_never_admitted_before_locked(
+			    flat.selected_root, authority, command, &current, &error) ||
+		    !flat_publication_items(current.player.items,
+					    flat.native->player.player.items) ||
+		    !flat_publication_items(current.keeper.items, prepared.keeper_items) ||
+		    !flat_publication_items(current.keeper.items,
+					    flat.native->keeper_after.items) ||
+		    current.keeper.cash != entry.payload.expected_keeper_cash)
+			return false;
+		// The completed source checkpoint AFTER is the refused trade's BEFORE.
+		// Retain its literal forests; never reset/reissue that original source write.
+		if (!entry.publication_forests_ready)
+		{
+			auto before = current.player.items, player = current.player.items;
+			auto keeper = current.keeper.items;
+			auto destination = prepared.destination;
+			flat_preparation_bytes bytes;
+			if (!bytes.items(before) || !bytes.items(player) || !bytes.items(keeper) ||
+			    !bytes.vector(destination) || !bytes.value ||
+			    !player_save_shop_checkpoint_owner::reserve_flat_publication_checkpoint(
+				    flat.player_token, command.operation_id,
+				    flat.native->player_hold_cut, publication, bytes.value))
+				return false;
+			entry.before_player = std::move(before);
+			entry.after_player = std::move(player);
+			entry.after_keeper = std::move(keeper);
+			entry.after_destination = std::move(destination);
+			entry.publication_forests_ready = true;
+		}
+		const auto retained_slot = [&]()
+		{
+			flat_preparation_bytes bytes;
+			return session() &&
+			       flat_publication_items(entry.before_player, current.player.items) &&
+			       flat_publication_items(entry.after_player, current.player.items) &&
+			       flat_publication_items(entry.after_keeper, current.keeper.items) &&
+			       entry.after_destination == prepared.destination &&
+			       bytes.items(entry.before_player) &&
+			       bytes.items(entry.after_player) && bytes.items(entry.after_keeper) &&
+			       bytes.vector(entry.after_destination) &&
+			       player_save_shop_checkpoint_owner::reserve_flat_publication_checkpoint(
+				       flat.player_token, command.operation_id,
+				       flat.native->player_hold_cut, publication, bytes.value);
+		};
+		const auto same_cut = [&]()
+		{
+			flatfile_accounting_shop_projection fresh;
+			return retained_slot() && authority.matches(flat.selected_root) &&
+			       !flatfile_accounting_shop_transaction::
+				       read_never_admitted_before_locked(flat.selected_root,
+									 authority, command, &fresh,
+									 &error) &&
+			       flat_publication_same_current(current, fresh) && retained_slot();
+		};
+		std::vector<player_item_snapshot> produced_source;
+		const bool produced = entry.payload.action == shop_trade_action::buy_produced;
+		if (produced &&
+		    (player_item_snapshot_list_decode(
+			     entry.payload.item_blob.data(), entry.payload.item_blob_size,
+			     &produced_source) != player_snapshot_codec_result::ok ||
+		     produced_source.size() != entry.payload.item_count || produced_source.empty()))
+			return false;
+		shop_trade_world_cold_observation observed;
+		// Every observation rebuilds the complete locations from authenticated
+		// literal values, including full absence when an original body disappeared.
+		// No stale pointer, PID lookup or VNUM/order substitution proves absence.
+		const auto observe = [&]()
+		{
+			shop_trade_world_cold_observation initial;
+			if (!shop_trade_world_cold_observe(
+				    { &bound, entry.before_player, entry.after_keeper, {} },
+				    &initial) ||
+			    (initial.actor_present &&
+			     initial.actor_runtime_id != prepared.actor_runtime_id) ||
+			    (initial.keeper_present &&
+			     initial.keeper_runtime_id != prepared.keeper_runtime_id))
+				return false;
+			std::map<uint64_t, shop_trade_world_uid_expectation> required;
+			const auto append =
+				[&](const auto &forest, bool npc, bool detached, bool absent)
+			{
+				for (size_t n = 0; n < forest.size(); ++n)
+				{
+					const auto &item = forest[n];
+					if (!item.object_uid || item.parent_index < -1 ||
+					    item.parent_index >= static_cast<int64_t>(n))
+						return false;
+					const uint64_t parent =
+						item.parent_index < 0 ?
+							0 :
+							forest[item.parent_index].object_uid;
+					const auto place =
+						absent	 ? shop_trade_world_location::absent :
+						parent	 ? shop_trade_world_location::inside :
+						detached ? shop_trade_world_location::detached :
+						npc	 ? (item.equipment_slot ?
+								    shop_trade_world_location::
+									    keeper_equipment :
+								    shop_trade_world_location::
+									    keeper_inventory) :
+							   (item.equipment_slot ?
+								    shop_trade_world_location::
+									    actor_equipment :
+								    shop_trade_world_location::
+									    actor_inventory);
+					if (!required.emplace(
+							     item.object_uid,
+							     shop_trade_world_uid_expectation{
+								     item.object_uid, place,
+								     absent ? 0 : parent,
+								     static_cast<int16_t>(
+									     absent ?
+										     0 :
+										     item.equipment_slot),
+								     -1 })
+						     .second ||
+					    required.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+						return false;
+				}
+				return true;
+			};
+			if (!append(entry.before_player, false, false, !initial.actor_present) ||
+			    !append(entry.after_keeper, true, false, !initial.keeper_present) ||
+			    (produced && !append(produced_source, false, true,
+						 entry.flat_refusal_cleanup_returned)))
+				return false;
+			std::vector<shop_trade_world_uid_expectation> locations;
+			locations.reserve(required.size());
+			for (const auto &[uid, location] : required)
+				locations.push_back(location);
+			if (!shop_trade_world_cold_observe(
+				    { &bound,
+				      initial.actor_present ?
+					      std::span<const player_item_snapshot>(
+						      entry.before_player) :
+					      std::span<const player_item_snapshot>{},
+				      initial.keeper_present ?
+					      std::span<const player_item_snapshot>(
+						      entry.after_keeper) :
+					      std::span<const player_item_snapshot>{},
+				      locations },
+				    &observed) ||
+			    observed.actor_runtime_id != initial.actor_runtime_id ||
+			    observed.keeper_runtime_id != initial.keeper_runtime_id ||
+			    !observed.uid_locations_current_match ||
+			    (observed.actor_present &&
+			     (!observed.player_current_match ||
+			      static_cast<uint32_t>(GET_LEVEL(observed.actor)) !=
+				      entry.payload.expected_player_level ||
+			      !flat_publication_money(observed.actor, current.player_domains))) ||
+			    (observed.keeper_present && !observed.keeper_current_match) ||
+			    (produced && !entry.flat_refusal_cleanup_returned &&
+			     !flat_publication_items(observed.selected_items, produced_source)) ||
+			    (entry.payload.target_parent_item_uid && observed.actor_present &&
+			     !observed.target_present))
+				return false;
+			if (entry.payload.target_parent_item_uid && observed.actor_present)
+			{
+				std::vector<uint8_t> target;
+				if (player_item_snapshot_list_encode(observed.target_items,
+								     &target) !=
+					    player_snapshot_codec_result::ok ||
+				    target != prepared.destination)
+					return false;
+			}
+			return shop_trade_native_checkpoint_owner::
+				       observe_flat_cold_publication_sources_locked(
+					       flat.selected_root, authority, observed.actor,
+					       observed.keeper, entry.payload.shop_id, current,
+					       entry.before_player, entry.after_keeper,
+					       entry.payload.expected_keeper_cash) &&
+			       same_cut();
+		};
+		if (!observe() ||
+		    !shop_trade_current_runtime_owner::publish_flat(flat.selected_root, authority,
+								    command, sealed) ||
+		    !observe())
+			return false;
+		if (produced && !entry.flat_refusal_cleanup_returned)
+		{
+			const auto selected = std::find_if(
+				observed.objects.begin(), observed.objects.end(),
+				[&](P_obj object) {
+					return object &&
+					       object->obj_uid == entry.payload.selected_item_uid;
+				});
+			if (entry.flat_refusal_cleanup_started ||
+			    selected == observed.objects.end() || !OBJ_NOWHERE(*selected) ||
+			    (*selected)->next_content || !retained_slot())
+				return false;
+			entry.flat_refusal_cleanup_started = true;
+			extract_obj(*selected, FALSE);
+			// Record genuine normal return immediately, before post-handler census.
+			// Exceptions or unresolved tails keep the original owner started forever.
+			entry.flat_refusal_cleanup_returned = true;
+		}
+		return observe() &&
+		       shop_trade_current_runtime_owner::publish_flat(flat.selected_root, authority,
+								      command, sealed) &&
+		       observe() && retained_slot();
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_native_publication_owner::native_publish_flat(
+	player_save_restored_publication_owner &publication, void *opaque) noexcept
+{
+	if (!nevent_is_game_thread() || !publication.flat_shop_ || !opaque ||
+	    !publication.reservation_.valid() || publication.acknowledged_)
+		return false;
+	if (publication.completion_.disposition == critical_completion_disposition::never_admitted)
+		return native_publish_flat_refusal(publication, opaque);
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (entry.cold || !entry.preparation || !entry.preparation->flat ||
+	    !entry.preparation->command || !entry.preparation->submission_started ||
+	    entry.blocked || !entry.accounted_publication ||
+	    !same_native_receipt(entry.completed, publication.completion_))
+		return false;
+	try
+	{
+		auto &prepared = *entry.preparation;
+		auto &flat = *prepared.flat;
+		const auto &command = publication.command_;
+		const auto &sealed = publication.completion_;
+		if (!flat.player_held || !flat.native || !flat.reserved_bytes ||
+		    flat.phase != shop_trade_flat_native_checkpoint_phase::ready ||
+		    flat.native->operation_id.bytes != command.operation_id.bytes ||
+		    command.operation_id.bytes != sealed.operation_id.bytes ||
+		    !persistence_mode_flatfile_root() ||
+		    flat.selected_root != persistence_mode_flatfile_root() ||
+		    flat.selected_root != flat.native->player_hold_cut.selected_root)
+			return false;
+		const auto &native = *flat.native;
+		std::vector<uint8_t> frozen, retained_command, payload_bytes, retained_payload;
+		shop_trade_payload bound{};
+		if (critical_command_encode(command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    frozen != publication.frozen_ ||
+		    critical_command_encode(*prepared.command, &retained_command) !=
+			    critical_command_codec_result::ok ||
+		    retained_command != frozen ||
+		    !shop_trade_command_decode_payload(command, &bound) ||
+		    !bound.recovery_manifest_recorded ||
+		    !shop_trade_command_encode_recovery_payload(bound, &payload_bytes) ||
+		    !shop_trade_command_encode_recovery_payload(entry.payload, &retained_payload) ||
+		    payload_bytes != retained_payload)
+			return false;
+		player_snapshot held_body;
+		player_shop_checkpoint_stage held{};
+		// The outer authentic reservation is borrowed, before the root lock.
+		if (!player_save_shop_checkpoint_owner::original_held_body_flat(
+			    flat.player_token, native.player_hold_cut, publication, &held_body,
+			    &held) ||
+		    held.save_revision != entry.payload.expected_player_save_revision ||
+		    held.level != entry.payload.expected_player_level ||
+		    !flat_publication_items(held_body.items, native.player.player.items) ||
+		    !flat_publication_items(prepared.keeper_items, native.keeper_after.items))
+			return false;
+		flatfile_authority_lock authority;
+		std::string error;
+		if (!authority.acquire(flat.selected_root, &error))
+			return false;
+		flatfile_accounting_shop_projection current;
+		if (flatfile_accounting_shop_transaction::read_current_locked(
+			    flat.selected_root, authority, command, sealed, &current, &error))
+			return false;
+		entry.native_receipt_verified = true;
+		const bool success = sealed.outcome == critical_apply_outcome::applied ||
+				     sealed.outcome == critical_apply_outcome::already_applied;
+		std::vector<player_item_snapshot> source;
+		if (player_item_snapshot_list_decode(entry.payload.item_blob.data(),
+						     entry.payload.item_blob_size,
+						     &source) != player_snapshot_codec_result::ok ||
+		    source.empty())
+			return false;
+		const bool produced = entry.payload.action == shop_trade_action::buy_produced;
+		const bool buying = produced ||
+				    entry.payload.action == shop_trade_action::buy_existing;
+		const bool selling = entry.payload.action == shop_trade_action::sell_store ||
+				     entry.payload.action == shop_trade_action::sell_destroy;
+		const bool cleanup_action = entry.payload.action ==
+					    shop_trade_action::discard_invalid;
+		std::vector<player_item_snapshot> staged =
+			produced ? source : std::vector<player_item_snapshot>{};
+		shop_trade_world_witness observed;
+		const auto source_supported = [&](const auto &player, const auto &keeper)
+		{
+			const int64_t cash = (entry.physical_stages & 128U) ?
+						     current.keeper.cash :
+						     entry.payload.expected_keeper_cash;
+			return flat_publication_actor(observed.actor, observed.keeper, entry) &&
+			       shop_trade_native_checkpoint_owner::
+				       observe_flat_publication_sources_locked(
+					       flat.selected_root, authority, observed.actor,
+					       observed.keeper, entry.payload.shop_id, current,
+					       player, keeper, cash) &&
+			       (flat_publication_money(observed.actor,
+						       native.player.native_money) ||
+				flat_publication_money(observed.actor, current.player_domains));
+		};
+		if (!entry.publication_forests_ready)
+		{
+			if (!flat_publication_world(entry, held_body.items, prepared.keeper_items,
+						    staged, false, &observed) ||
+			    !source_supported(held_body.items, prepared.keeper_items))
+				return false;
+			P_obj selected =
+				flat_publication_object(observed, entry.payload.selected_item_uid);
+			P_obj destination = flat_publication_object(
+				observed, entry.payload.target_parent_item_uid);
+			std::vector<uint8_t> literal, after_destination;
+			if (destination &&
+			    (!flat_preparation_destination_tree(destination, &literal) ||
+			     literal != prepared.destination))
+				return false;
+			std::vector<player_item_snapshot> player, keeper;
+			if (!selected ||
+			    !expected_player_forest(entry.payload, held_body.items, !success,
+						    &player) ||
+			    !expected_keeper_forest(entry.payload, observed.keeper, selected,
+						    prepared.keeper_items, !success, &keeper))
+				return false;
+			if (success && buying)
+			{
+				std::vector<player_item_snapshot> ordered;
+				if (!expected_player_order(entry.payload, observed.actor, selected,
+							   destination, player, &ordered))
+					return false;
+				player = std::move(ordered);
+			}
+			if (!flat_publication_items(player, current.player.items) ||
+			    !flat_publication_items(keeper, current.keeper.items))
+				return false;
+			if (success && destination)
+			{
+				std::vector<player_item_snapshot> after;
+				if (!expected_destination_forest(entry.payload, observed.actor,
+								 selected, destination,
+								 prepared.destination, &after) ||
+				    player_item_snapshot_list_encode(after, &after_destination) !=
+					    player_snapshot_codec_result::ok)
+					return false;
+			}
+			flat_preparation_bytes bytes;
+			if (!bytes.items(held_body.items) || !bytes.items(player) ||
+			    !bytes.items(keeper) || !bytes.vector(after_destination) ||
+			    !bytes.value ||
+			    !player_save_shop_checkpoint_owner::reserve_flat_publication_checkpoint(
+				    flat.player_token, command.operation_id, native.player_hold_cut,
+				    publication, bytes.value))
+				return false;
+			// All allocations and the exact separate charge precede these nonthrowing moves.
+			static_assert(
+				std::is_nothrow_move_assignable_v<std::vector<player_item_snapshot>>);
+			static_assert(std::is_nothrow_move_assignable_v<std::vector<uint8_t>>);
+			entry.before_player = std::move(held_body.items);
+			entry.after_player = std::move(player);
+			entry.after_keeper = std::move(keeper);
+			entry.after_destination = std::move(after_destination);
+			entry.publication_forests_ready = true;
+		}
+		else
+		{
+			flat_preparation_bytes bytes;
+			if (!flat_publication_items(entry.after_player, current.player.items) ||
+			    !flat_publication_items(entry.after_keeper, current.keeper.items) ||
+			    !bytes.items(entry.before_player) || !bytes.items(entry.after_player) ||
+			    !bytes.items(entry.after_keeper) ||
+			    !bytes.vector(entry.after_destination) ||
+			    !player_save_shop_checkpoint_owner::reserve_flat_publication_checkpoint(
+				    flat.player_token, command.operation_id, native.player_hold_cut,
+				    publication, bytes.value))
+				return false;
+		}
+		const auto destination_matches = [&](bool after)
+		{
+			if (!entry.payload.target_parent_item_uid)
+				return true;
+			P_obj destination = flat_publication_object(
+				observed, entry.payload.target_parent_item_uid);
+			std::vector<uint8_t> literal;
+			const auto &expected = after ? entry.after_destination :
+						       prepared.destination;
+			return destination && !expected.empty() &&
+			       flat_preparation_destination_tree(destination, &literal) &&
+			       literal == expected;
+		};
+		const auto observe_final = [&]()
+		{
+			return flat_publication_world(entry, entry.after_player, entry.after_keeper,
+						      (!success && produced) ?
+							      staged :
+							      std::vector<player_item_snapshot>{},
+						      true, &observed) &&
+			       destination_matches(success) &&
+			       source_supported(entry.after_player, entry.after_keeper);
+		};
+		if (entry.physical_published || (entry.physical_stages & 32U) ||
+		    (success && (entry.physical_stages & 4096U) &&
+		     (entry.physical_stages & 131072U)))
+		{
+			if (!observe_final())
+				return false;
+		}
+		else if (!flat_publication_world(entry, entry.before_player, prepared.keeper_items,
+						 staged, false, &observed))
+		{
+			// A normally returned departure can resume placement. Incomplete
+			// started handler tails remain held by the physical callback's
+			// explicit stage checks; topology cannot discharge them.
+			std::vector<player_item_snapshot> player = entry.before_player;
+			std::vector<player_item_snapshot> keeper = prepared.keeper_items;
+			if (selling && !shop_remove_selected(player, entry.payload, &player))
+				return false;
+			if ((buying && !produced) || cleanup_action)
+				if (!shop_remove_selected(keeper, entry.payload, &keeper))
+					return false;
+			auto detached = source;
+			if (buying && (entry.physical_stages & 65536U))
+				detached.front().extra2_flags |= ITEM2_STOREITEM;
+			if (buying && (entry.physical_stages & 1024U) &&
+			    !shop_trade_accounted_after_items(entry.payload, &detached))
+				return false;
+			bool resumed = (entry.physical_stages & 65536U) &&
+				       flat_publication_world(entry, player, keeper, detached,
+							      false, &observed);
+			if (!resumed && buying && entry.payload.target_parent_item_uid &&
+			    (entry.physical_stages & 1024U))
+			{
+				// obj_to_char returned before the existing nesting leg. Its
+				// temporary carried-root placement has the same native grouping
+				// policy; never pretend it is the final container placement.
+				// The insertion observer consumes only these placement selectors.
+				// This value is never encoded, frozen, compiled or submitted.
+				shop_trade_payload carried_selection{};
+				carried_selection.player_pid = entry.payload.player_pid;
+				carried_selection.action = entry.payload.action;
+				carried_selection.selected_item_uid =
+					entry.payload.selected_item_uid;
+				std::vector<player_item_snapshot> values, ordered;
+				P_char actor =
+					find_character_by_runtime_id(prepared.actor_runtime_id);
+				P_obj selected = nullptr;
+				// Bounded temporary carrying observation resolves the pointer;
+				// the subsequent full world census must still prove uniqueness.
+				if (flat_publication_carried_values(entry.payload,
+								    entry.before_player, &values))
+				{
+					// The ordering helper checks the complete target chain;
+					// the following full census must prove every alias surface.
+					std::set<P_obj> seen;
+					for (P_obj object = actor ? actor->carrying : nullptr;
+					     object; object = object->next_content)
+					{
+						if (seen.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
+						    !seen.insert(object).second ||
+						    !OBJ_CARRIED_BY(object, actor))
+							return false;
+						if (object->obj_uid ==
+						    entry.payload.selected_item_uid)
+						{
+							selected = object;
+							break;
+						}
+					}
+					if (selected && expected_player_order(
+								carried_selection, actor, selected,
+								nullptr, values, &ordered))
+						resumed = flat_publication_world(entry, ordered,
+										 keeper, {}, false,
+										 &observed);
+				}
+			}
+			if (!resumed)
+				return false;
+		}
+		// Before nesting, bind every original literal child. Normally
+		// returned nesting instead requires the retained complete afterimage.
+		if (!destination_matches(success && (entry.physical_stages & 4096U) &&
+					 (entry.physical_stages & 131072U)))
+			return false;
+
+		if (!source_supported(observed.player_items, observed.keeper_items) ||
+		    entry.blocked || !same_native_receipt(entry.completed, sealed) ||
+		    !publication.reservation_.valid())
+			return false;
+		shop_trade_result projected{};
+		if (!shop_trade_command_decode_result(sealed.result_payload.data(),
+						      sealed.result_size, &projected))
+			return false;
+		const auto &money = current.player_domains.domains;
+		for (size_t index = 0; index < projected.wallet.amount.size(); ++index)
+		{
+			if (money.wallet[index] > INT_MAX || money.bank[index] > INT_MAX)
+				return false;
+			projected.wallet.amount[index] = static_cast<int64_t>(money.wallet[index]);
+			projected.bank.amount[index] = static_cast<int64_t>(money.bank[index]);
+		}
+		projected.wallet_revision = money.wallet_revision;
+		projected.bank_revision = money.bank_revision;
+		projected.keeper_cash = current.keeper.cash;
+		projected.keeper_cash_recorded = true;
+		projected.shop_revision = current.keeper.revision;
+		projected.player_owner_revision = current.primary_owner_revision;
+		projected.counterparty_owner_revision = current.counterparty_owner_revision;
+		// Actual current AFTER custody and the complete foreign union precede placement.
+		if (!shop_trade_current_runtime_owner::publish_flat(flat.selected_root, authority,
+								    command, sealed))
+			return false;
+		if (success && !entry.physical_published)
+		{
+			const bool returned = entry.accounted_publication(observed.actor,
+									  observed.keeper,
+									  projected, entry.payload,
+									  entry.physical_stages);
+			if (returned)
+				entry.physical_published = true;
+			if (!returned)
+				return false;
+		}
+		// Refusal never invokes the physical callback. Success retries preserve its
+		// returned once stages; unresolved started tails remain held by that callback.
+		if (entry.blocked || !same_native_receipt(entry.completed, sealed) ||
+		    !observe_final())
+			return false;
+		flatfile_accounting_shop_projection rechecked;
+		if (flatfile_accounting_shop_transaction::read_current_locked(
+			    flat.selected_root, authority, command, sealed, &rechecked, &error) ||
+		    !flat_publication_same_current(current, rechecked) ||
+		    !currency_transaction_publish_balances(
+			    observed.actor, entry.payload.account_name.data(),
+			    entry.payload.racewar, projected.wallet, projected.bank,
+			    projected.wallet_revision, projected.bank_revision) ||
+		    entry.blocked || !same_native_receipt(entry.completed, sealed) ||
+		    !observe_final() ||
+		    !flat_publication_money(observed.actor, current.player_domains))
+			return false;
+		// The original callback owns keeper cash; never restore it from a historical
+		// receipt or fabricate SQL native row IDs in the flat physical graph.
+		if (!shop_trade_current_runtime_owner::publish_flat(flat.selected_root, authority,
+								    command, sealed) ||
+		    !observe_final() || !publication.reservation_.valid() ||
+		    !same_native_receipt(entry.completed, sealed))
+			return false;
+		return flat_publication_money(observed.actor, current.player_domains);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

@@ -308,6 +308,196 @@ quest_mobile_native_image_decode(std::span<const uint8_t> bytes,
 	}
 }
 
+player_snapshot_codec_result
+quest_mobile_native_image_preflight(std::span<const uint8_t> bytes,
+				    quest_mobile_native_image_allocation_profile *output) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!output)
+		return result::invalid_value;
+	if (bytes.size() < QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD)
+		return result::truncated;
+	if (bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return result::limit_exceeded;
+	// Sizing accepts untrusted framing; never call OpenSSL before admission.
+	if (!std::equal(image_magic.begin(), image_magic.end(), bytes.begin()))
+		return result::invalid_value;
+	size_t offset = image_magic.size();
+	const uint16_t version = get<uint16_t>(bytes.data(), offset);
+	if (version != QUEST_MOBILE_NATIVE_VERSION &&
+	    version != QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
+		return result::unsupported_version;
+	if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION &&
+	    bytes.size() < QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD)
+		return result::truncated;
+	quest_mobile_native_image header;
+	header.state = static_cast<quest_mobile_lifetime_state>(get<uint8_t>(bytes.data(), offset));
+	if (get<uint8_t>(bytes.data(), offset) ||
+	    get<uint32_t>(bytes.data(), offset) != bytes.size())
+		return result::invalid_value;
+	// Fixed original reference framing/value checks only. Reference/image
+	// digests and exact canonical bytes are validated by the original decoder
+	// AFTER the prospective C++ allocation reservation.
+	const auto encoded_reference = bytes.subspan(offset, QUEST_MOBILE_NATIVE_REFERENCE_BYTES);
+	constexpr std::array<uint8_t, 8> reference_magic = { 'Q', 'M', 'N', 'R', 'E', 'F', 0, 0 };
+	if (!std::equal(reference_magic.begin(), reference_magic.end(), encoded_reference.begin()))
+		return result::invalid_value;
+	size_t ref_offset = reference_magic.size();
+	if (get<uint16_t>(encoded_reference.data(), ref_offset) != QUEST_MOBILE_NATIVE_VERSION)
+		return result::unsupported_version;
+	header.reference.provenance = static_cast<quest_mobile_birth_provenance>(
+		get<uint8_t>(encoded_reference.data(), ref_offset));
+	if (get<uint8_t>(encoded_reference.data(), ref_offset) ||
+	    get<uint32_t>(encoded_reference.data(), ref_offset) !=
+		    QUEST_MOBILE_NATIVE_REFERENCE_BYTES)
+		return result::invalid_value;
+	header.reference.mobile_instance_id = get<uint64_t>(encoded_reference.data(), ref_offset);
+	std::copy_n(encoded_reference.data() + ref_offset,
+		    header.reference.birth_operation.bytes.size(),
+		    header.reference.birth_operation.bytes.begin());
+	ref_offset += header.reference.birth_operation.bytes.size();
+	if (economic_source_event_decode(
+		    encoded_reference.subspan(ref_offset, ECONOMIC_SOURCE_EVENT_BYTES),
+		    &header.reference.birth_source) != economic_accounting_error::ok)
+		return result::invalid_value;
+	ref_offset += ECONOMIC_SOURCE_EVENT_BYTES;
+	header.reference.mobile_vnum = get<int32_t>(encoded_reference.data(), ref_offset);
+	header.reference.birthplace_vnum = get<int32_t>(encoded_reference.data(), ref_offset);
+	header.reference.reset_zone_vnum = get<int32_t>(encoded_reference.data(), ref_offset);
+	header.reference.mobile_revision = get<uint64_t>(encoded_reference.data(), ref_offset);
+	header.reference.stock_revision = get<uint64_t>(encoded_reference.data(), ref_offset);
+	if (ref_offset != QUEST_MOBILE_NATIVE_REFERENCE_BYTES - SHA256_DIGEST_LENGTH ||
+	    !quest_mobile_native_reference_valid(header.reference))
+		return result::invalid_value;
+	offset += QUEST_MOBILE_NATIVE_REFERENCE_BYTES;
+	std::copy_n(bytes.data() + offset, header.last_transition_operation.bytes.size(),
+		    header.last_transition_operation.bytes.begin());
+	offset += header.last_transition_operation.bytes.size();
+	if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
+	{
+		header.cash.emplace();
+		header.cash->revision = get<uint64_t>(bytes.data(), offset);
+		for (auto &amount : header.cash->denominations.amount)
+			amount = get<int64_t>(bytes.data(), offset);
+	}
+	if (!nonzero(header.last_transition_operation) || !cash_valid(header) ||
+	    (header.state != quest_mobile_lifetime_state::live &&
+	     header.state != quest_mobile_lifetime_state::retired))
+		return result::invalid_value;
+	const uint32_t length = get<uint32_t>(bytes.data(), offset);
+	if (length != bytes.size() - offset - SHA256_DIGEST_LENGTH)
+		return result::invalid_value;
+	quest_mobile_native_image_allocation_profile profile;
+	const auto code =
+		player_item_snapshot_list_preflight(bytes.data() + offset, length, &profile.items);
+	if (code != result::ok)
+		return code;
+	if (header.state == quest_mobile_lifetime_state::retired && profile.items.item_count)
+		return result::invalid_value;
+	profile.canonical_image_bytes = bytes.size();
+	profile.storage_policy_supported = profile.items.fresh_decode_storage_policy_supported &&
+					   profile.items.canonical_encoder_storage_policy_supported;
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI
+	if (profile.storage_policy_supported)
+	{
+		const auto add = [](size_t &total, size_t amount) noexcept
+		{
+			if (amount > SIZE_MAX - total)
+				return false;
+			total += amount;
+			return true;
+		};
+		const auto product = [](size_t count, size_t width, size_t &out) noexcept
+		{
+			if (count && width > SIZE_MAX / count)
+				return false;
+			out = count * width;
+			return true;
+		};
+		// Original forest_valid's actual default hash policy: one fresh node
+		// precedes a possible rehash; old/new heap bucket arrays coexist.
+		// _M_need_rehash is allocation-free scalar/table policy, not a set.
+		using node = std::__detail::_Hash_node<
+			uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+		std::__detail::_Prime_rehash_policy policy;
+		size_t buckets = 1, heap_buckets = 0;
+		for (size_t index = 0; index < profile.items.item_count; ++index)
+		{
+			size_t nodes = 0, old_buckets = 0, new_buckets = 0;
+			if (!product(index + 1, sizeof(node), nodes) ||
+			    !product(heap_buckets, sizeof(std::__detail::_Hash_node_base *),
+				     old_buckets))
+				return result::limit_exceeded;
+			const auto rehash = policy._M_need_rehash(buckets, index, 1);
+			if (rehash.first)
+			{
+				if (!product(rehash.second,
+					     sizeof(std::__detail::_Hash_node_base *), new_buckets))
+					return result::limit_exceeded;
+				buckets = heap_buckets = rehash.second;
+			}
+			if (!add(nodes, old_buckets) || !add(nodes, new_buckets))
+				return result::limit_exceeded;
+			profile.forest_validation_heap_peak_bytes =
+				std::max(profile.forest_validation_heap_peak_bytes, nodes);
+		}
+		profile.forest_validation_inline_bytes =
+			sizeof(std::unordered_set<uint64_t>) +
+			sizeof(std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH>);
+		const auto &items = profile.items;
+		if (items.decoded_payload_bytes < sizeof(std::vector<player_item_snapshot>))
+			return result::invalid_value;
+		const size_t item_payload =
+			items.decoded_payload_bytes - sizeof(std::vector<player_item_snapshot>);
+		profile.decoded_image_payload_bytes = sizeof(quest_mobile_native_image);
+		if (!add(profile.decoded_image_payload_bytes, item_payload))
+			return result::limit_exceeded;
+		size_t item_validation = items.canonical_encoded_capacity_bytes;
+		if (!add(item_validation, items.item_codec_decoder_object_bytes) ||
+		    !add(item_validation, sizeof(std::vector<player_item_snapshot>)) ||
+		    !add(item_validation, items.decoded_payload_bytes) ||
+		    !add(item_validation, items.relationship_scratch_bytes))
+			return result::limit_exceeded;
+		size_t item_roundtrip = items.canonical_encoder_object_bytes;
+		if (!add(item_roundtrip, std::max(items.canonical_encoded_reallocation_peak_bytes,
+						  item_validation)))
+			return result::limit_exceeded;
+		item_roundtrip = std::max(item_roundtrip, items.relationship_scratch_bytes);
+		constexpr size_t reference_bytes =
+			sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>);
+		size_t forest = reference_bytes, roundtrip = reference_bytes,
+		       image_build = reference_bytes;
+		if (!add(forest, profile.forest_validation_inline_bytes) ||
+		    !add(forest, profile.forest_validation_heap_peak_bytes) ||
+		    !add(roundtrip, sizeof(std::vector<uint8_t>)) ||
+		    !add(roundtrip, item_roundtrip) ||
+		    !add(image_build, sizeof(std::vector<uint8_t>)) ||
+		    !add(image_build, items.canonical_encoded_capacity_bytes) ||
+		    !add(image_build, sizeof(std::vector<uint8_t>)) ||
+		    !add(image_build, profile.canonical_image_bytes))
+			return result::limit_exceeded;
+		profile.canonical_encode_working_bytes =
+			std::max({ forest, roundtrip, image_build });
+		// Original item decode owns a temporary vector before moving into image;
+		// later image re-encode holds its own decoded image and output vector.
+		size_t decode_items = sizeof(quest_mobile_native_image);
+		size_t decode_canonical = profile.decoded_image_payload_bytes;
+		if (!add(decode_items, items.item_codec_decoder_object_bytes) ||
+		    !add(decode_items, items.decoded_payload_bytes) ||
+		    !add(decode_items, items.relationship_scratch_bytes) ||
+		    !add(decode_canonical, sizeof(std::vector<uint8_t>)) ||
+		    !add(decode_canonical, profile.canonical_encode_working_bytes))
+			return result::limit_exceeded;
+		profile.decode_working_bytes = std::max(decode_items, decode_canonical);
+	}
+#else
+	profile.storage_policy_supported = false;
+#endif
+	*output = profile;
+	return result::ok;
+}
+
 bool quest_mobile_native_cash_transition_valid(const quest_mobile_native_image *before,
 					       const quest_mobile_native_image &after) noexcept
 {

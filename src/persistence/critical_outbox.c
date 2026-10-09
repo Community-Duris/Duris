@@ -34,6 +34,8 @@ critical_outbox_deliver_fn deliver_callback = nullptr;
 void *deliver_context = nullptr;
 critical_outbox_health health = {};
 bool stop_requested = false;
+critical_outbox_drain_observer_fn drain_observer = nullptr;
+std::thread::id drain_observer_thread;
 
 bool execute(MYSQL *connection, const std::string &sql)
 {
@@ -320,6 +322,8 @@ bool critical_outbox_init(critical_outbox_deliver_fn deliver, void *context)
 	if (health.initialized)
 		return false;
 	health = {};
+	drain_observer = nullptr;
+	drain_observer_thread = {};
 	health.initialized = true;
 	health.accepting = true;
 	health.running = true;
@@ -362,6 +366,8 @@ void critical_outbox_shutdown(void)
 	health = {};
 	deliver_callback = nullptr;
 	deliver_context = nullptr;
+	drain_observer = nullptr;
+	drain_observer_thread = {};
 }
 
 void critical_outbox_quiesce(void)
@@ -378,15 +384,56 @@ void critical_outbox_resume(void)
 	outbox_changed.notify_all();
 }
 
+void critical_outbox_set_drain_observer(critical_outbox_drain_observer_fn observer)
+{
+	std::lock_guard<std::mutex> lock(outbox_mutex);
+	drain_observer = observer;
+	drain_observer_thread = observer ? std::this_thread::get_id() : std::thread::id{};
+}
+
 bool critical_outbox_drain(uint64_t timeout_msec)
 {
 	const auto deadline =
 		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
 	for (;;)
 	{
-		critical_outbox_health snapshot = critical_outbox_health_copy();
+		critical_outbox_drain_observer_fn observer = nullptr;
+		bool was_quiesced = false;
+		{
+			std::lock_guard<std::mutex> lock(outbox_mutex);
+			if (!health.initialized)
+				return true;
+			if (drain_observer_thread == std::this_thread::get_id())
+				observer = drain_observer;
+			was_quiesced = !health.accepting;
+		}
+		// Existing outbox owners need the game thread to publish before their
+		// original due worker retry can record delivery. Never hold the worker
+		// mutex across native/SQL publication or reopen quiesced admission.
+		try
+		{
+			if (observer)
+				observer();
+		}
+		catch (...)
+		{
+			if (was_quiesced)
+				critical_outbox_quiesce();
+			return false;
+		}
+		if (was_quiesced)
+			critical_outbox_quiesce();
+		const critical_outbox_health snapshot = critical_outbox_health_copy();
 		if (!snapshot.pending)
-			return true;
+		{
+			// A cached zero can predate the last committed command. Existing
+			// native reconciliation proves this final cut; missing SQL refuses.
+			critical_reconciliation_report report{};
+			if (!critical_outbox_reconcile(&report))
+				return false;
+			if (!report.pending_outbox)
+				return true;
+		}
 		if (std::chrono::steady_clock::now() >= deadline)
 			return false;
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));

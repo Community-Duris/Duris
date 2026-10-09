@@ -818,6 +818,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
       "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02"
+    },
+    {
+      "id": "0065_zone_reset_item_birth_origin",
+      "sequence": 65,
+      "description": "Retain original reset issuance and immutable completed native service BODY across journal retirement",
+      "apply": "immutable/0065_zone_reset_item_birth_origin.sql",
+      "verify": "immutable/0065_zone_reset_item_birth_origin.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "verify_checksum": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3"
     }
   ]
 }

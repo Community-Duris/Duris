@@ -11,11 +11,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
 #include "item/item_ownership_runtime.h"
+#include "economy/economic_sql_runtime_cache_correspondence.h"
 #include "player/player_snapshot_codec.h"
 #include <algorithm>
 #include "economy/collector_command.h"
 
 #include <cassert>
+#include "core/prototypes.h"
+#include <cerrno>
 
 int main()
 {
@@ -84,6 +87,28 @@ int main()
 	item_ownership_runtime_entry untouched = {};
 	assert(item_ownership_runtime_lookup(101, &untouched));
 	assert(untouched.item_revision == 3 && untouched.owner_revision == 10);
+	// Real original runtime publication above left this sibling at10 while the
+	// current owner clock advanced11. The SQL/report below is a modeled pure
+	// component, not genuine SQL/world/native admission evidence.
+	uint64_t observed_clock = 0;
+	assert(item_ownership_runtime_peek_owner_revision(player, &observed_clock) &&
+	       observed_clock == 11);
+	economic_sql_persisted_correspondence component;
+	economic_sql_native_item persisted_sibling;
+	persisted_sibling.item = { 101, { player, 101, 0, 3, item_custody_state::active, 0 } };
+	persisted_sibling.vnum = 8;
+	persisted_sibling.owner_revision = 11;
+	component.physical.source2.items.push_back(persisted_sibling);
+	component.physical.source2.owners.push_back({ {}, player, 11 });
+	component.physical.items.resize(1);
+	component.physical.items[0].exact_custody_match = true;
+	component.custody.push_back({ 0, { { economic_sql_persisted_provider::physical, 0 } } });
+	const std::array<item_ownership_runtime_entry, 1> actual_cache = { untouched };
+	const std::array<std::optional<uint64_t>, 1> actual_clocks = { observed_clock };
+	economic_sql_runtime_cache_correspondence comparison;
+	assert(economic_sql_compare_runtime_cache(actual_cache, actual_clocks, component, {}, 512,
+						  &comparison) == economic_accounting_error::ok &&
+	       comparison.findings.empty() && comparison.cache[0].exact_current_correspondence);
 
 	const item_ownership_runtime_entry authoritative = {
 		101, 101, 0, player, 3, 11, 8, item_custody_state::active
@@ -756,6 +781,195 @@ int main()
  // recorded destruction and output again without fabricating another UID.
  item_ownership_runtime_reset();
  assert(item_ownership_runtime_apply(craft, craft_result));
+	// Component cache census controls use genuine hydration/transfer APIs on the
+	// serialized game thread. They establish neither a complete live world nor
+	// persisted correspondence, birth authority or activation eligibility.
+	{
+		nevent_bind_game_thread();
+		assert(nevent_is_game_thread());
+		const auto equal_entry = [](const item_ownership_runtime_entry &a,
+					    const item_ownership_runtime_entry &b) {
+			return a.item_uid == b.item_uid && a.root_item_uid == b.root_item_uid &&
+			       a.parent_item_uid == b.parent_item_uid &&
+			       item_owner_identity_equal(a.owner, b.owner) &&
+			       a.item_revision == b.item_revision &&
+			       a.owner_revision == b.owner_revision && a.vnum == b.vnum &&
+			       a.state == b.state;
+		};
+		const item_ownership_runtime_entry sentinel = {
+			910000, 910000, 0, {item_owner_type::player, 9100, 0},
+			17, 23, 1200, item_custody_state::quarantined
+		};
+		std::vector<item_ownership_runtime_entry> captured = {sentinel};
+		captured.reserve(16);
+		const auto assert_refusal = [&](size_t limit, unsigned int error) {
+			const size_t size = captured.size(), capacity = captured.capacity();
+			const auto *data = captured.data();
+			const auto before = captured;
+			assert(item_ownership_runtime_snapshot_all_active(limit, &captured) == error);
+			assert(captured.size() == size && captured.capacity() == capacity &&
+			       captured.data() == data);
+			for (size_t i = 0; i < before.size(); ++i)
+				assert(equal_entry(captured[i], before[i]));
+		};
+		item_ownership_runtime_reset();
+		assert(item_ownership_runtime_snapshot_all_active(1, nullptr) == EINVAL);
+		assert_refusal(0, EINVAL);
+		assert_refusal(262145, EINVAL);
+		assert(item_ownership_runtime_snapshot_all_active(1, &captured) == 0);
+		assert(captured.empty() && item_ownership_runtime_size() == 0);
+
+		// Every accepted owner domain is retained, including foreign/root-orphan
+		// relationships admitted by the existing cache hydrator. No provider is
+		// selected or preferred, and destroyed/quarantined history is not active.
+		const item_owner_identity domains[] = {
+			{item_owner_type::player, 9101, 0},
+			{item_owner_type::container, 9102, 0},
+			{item_owner_type::room, 9103, 0},
+			{item_owner_type::corpse, item_corpse_owner_id(9104, 1), 0},
+			{item_owner_type::locker, 9105, 0},
+			{item_owner_type::auction, 9106, 0},
+			{item_owner_type::system, 0, 0},
+			{item_owner_type::destruction, 0, 0},
+			{item_owner_type::shopkeeper, item_shopkeeper_owner_id(9109), 0},
+			{item_owner_type::collector, item_collector_owner_id(9110), 0},
+			{item_owner_type::pet, 9111, 42},
+			{item_owner_type::native_mobile, 9112, 0}
+		};
+		std::vector<item_ownership_runtime_entry> expected;
+		for (size_t i = 0; i < sizeof(domains) / sizeof(domains[0]); ++i)
+		{
+			const uint64_t uid = 920012 - i;
+			const item_ownership_runtime_entry entry = {
+				uid, i == 1 ? 930001 : uid,
+				i == 1 ? uint64_t{930002} : uint64_t{0},
+				domains[i], i == 0 ? 0U : 3U, 0, 1200,
+				item_custody_state::active
+			};
+			assert(item_ownership_runtime_hydrate(entry));
+			expected.push_back(entry);
+		}
+		const item_ownership_runtime_entry foreign = {
+			920013, 920012, 920012, domains[2], 4, 0, 1201,
+			item_custody_state::active
+		};
+		assert(item_ownership_runtime_hydrate(foreign));
+		expected.push_back(foreign);
+		const item_ownership_runtime_entry history[] = {
+			{920014, 920014, 0, domains[0], 2, 0, 1202, item_custody_state::destroyed},
+			{920015, 920015, 0, domains[0], 2, 0, 1203, item_custody_state::quarantined}
+		};
+		for (const auto &entry : history)
+			assert(item_ownership_runtime_hydrate(entry));
+		std::sort(expected.begin(), expected.end(),
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		captured = {sentinel};
+		captured.reserve(32);
+		assert_refusal(expected.size() - 1, E2BIG);
+		assert(item_ownership_runtime_snapshot_all_active(expected.size(), &captured) == 0);
+		assert(captured.size() == expected.size());
+		for (size_t i = 0; i < expected.size(); ++i)
+		{
+			assert(equal_entry(captured[i], expected[i]));
+			assert(i == 0 || captured[i - 1].item_uid < captured[i].item_uid);
+			item_ownership_runtime_entry stored = {};
+			assert(item_ownership_runtime_lookup(expected[i].item_uid, &stored));
+			assert(equal_entry(stored, expected[i]));
+		}
+		assert(item_ownership_runtime_size() == expected.size() + 2);
+		for (const auto &domain : domains)
+		{
+			uint64_t clock = UINT64_MAX;
+			assert(item_ownership_runtime_peek_owner_revision(domain, &clock) && clock == 0);
+		}
+		for (const auto &entry : history)
+		{
+			item_ownership_runtime_entry stored = {};
+			assert(item_ownership_runtime_lookup(entry.item_uid, &stored));
+			assert(equal_entry(stored, entry));
+		}
+
+		// A real selected-item transfer advances the owner's clock without
+		// rewriting its untouched sibling's entry clock. Both facts are valid.
+		item_ownership_runtime_reset();
+		const item_owner_identity source_owner = {item_owner_type::player, 9200, 0};
+		const item_owner_identity target_owner = {item_owner_type::room, 1200, 0};
+		const item_ownership_runtime_entry siblings[] = {
+			{940001, 940001, 0, source_owner, 5, 10, 7, item_custody_state::active},
+			{940002, 940002, 0, source_owner, 3, 10, 8, item_custody_state::active}
+		};
+		assert(item_ownership_runtime_hydrate_batch(siblings, 2));
+		item_transfer_payload transfer = {};
+		transfer.from_owner = source_owner;
+		transfer.to_owner = target_owner;
+		transfer.selected_item_uid = 940001;
+		transfer.target_root_item_uid = 940001;
+		transfer.item_count = 1;
+		transfer.items[0] = {940001, 940001, 0, 5, 7, item_custody_state::active};
+		assert(item_ownership_runtime_apply(transfer, {940001, 1, 11, 1, 6, 0}));
+		assert(item_ownership_runtime_snapshot_all_active(2, &captured) == 0);
+		assert(captured.size() == 2 && captured[0].item_uid == 940001 &&
+		       captured[1].item_uid == 940002);
+		const item_ownership_runtime_entry moved = {
+			940001, 940001, 0, target_owner, 6, 1, 7, item_custody_state::active
+		};
+		assert(equal_entry(captured[0], moved) && equal_entry(captured[1], siblings[1]));
+		uint64_t source_clock = 0, target_clock = 0;
+		assert(item_ownership_runtime_peek_owner_revision(source_owner, &source_clock) &&
+		       source_clock == 11);
+		assert(item_ownership_runtime_peek_owner_revision(target_owner, &target_clock) &&
+		       target_clock == 1);
+		for (const auto &entry : captured)
+		{
+			item_ownership_runtime_entry stored = {};
+			assert(item_ownership_runtime_lookup(entry.item_uid, &stored));
+			assert(equal_entry(stored, entry));
+		}
+		assert_refusal(1, E2BIG);
+		assert(item_ownership_runtime_size() == 2);
+		assert(item_ownership_runtime_peek_owner_revision(source_owner, &source_clock) &&
+		       source_clock == 11);
+
+		// Original cache ceiling, not a larger fixture budget. Exact acceptance,
+		// one-less observation refusal and one-more capacity admission refusal.
+		item_ownership_runtime_reset();
+		constexpr size_t cache_limit = 262144;
+		std::vector<item_ownership_runtime_entry> boundary;
+		boundary.reserve(cache_limit);
+		for (size_t i = 0; i < cache_limit; ++i)
+		{
+			const uint64_t uid = 1000000 + cache_limit - i;
+			boundary.push_back({uid, uid, 0, source_owner, 0, 0, 1200,
+					    item_custody_state::active});
+		}
+		assert(item_ownership_runtime_hydrate_batch(boundary.data(), boundary.size()));
+		assert(item_ownership_runtime_size() == cache_limit);
+		captured = {sentinel};
+		captured.reserve(16);
+		assert_refusal(cache_limit - 1, E2BIG);
+		assert_refusal(cache_limit + 1, EINVAL);
+		assert(item_ownership_runtime_snapshot_all_active(cache_limit, &captured) == 0);
+		assert(captured.size() == cache_limit);
+		for (size_t i = 0; i < cache_limit; ++i)
+		{
+			assert(equal_entry(captured[i], boundary[cache_limit - 1 - i]));
+			item_ownership_runtime_entry stored = {};
+			assert(item_ownership_runtime_lookup(captured[i].item_uid, &stored));
+			assert(equal_entry(stored, captured[i]));
+		}
+		const item_ownership_runtime_entry beyond = {
+			2000000, 2000000, 0, source_owner, 0, 0, 1200, item_custody_state::active
+		};
+		assert(!item_ownership_runtime_hydrate(beyond));
+		item_ownership_runtime_entry not_admitted = {};
+		assert(!item_ownership_runtime_lookup(beyond.item_uid, &not_admitted));
+		assert(item_ownership_runtime_size() == cache_limit);
+		assert(item_ownership_runtime_peek_owner_revision(source_owner, &source_clock) &&
+		       source_clock == 0);
+		// Failure keeps the complete already-successful output as well as a sentinel.
+		assert_refusal(cache_limit - 1, E2BIG);
+		item_ownership_runtime_reset();
+	}
 	return 0;
 }
 '''
@@ -775,10 +989,11 @@ with tempfile.TemporaryDirectory(prefix="duris-item-ownership-runtime-") as temp
 			"-Werror",
 			"-Isrc",
 			str(source),
-			rel("item_ownership_runtime.c"),
+			rel("item_ownership_runtime.c"), rel("economic_sql_runtime_cache_correspondence.c"),
 			rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
 			rel("player_snapshot_codec.c"),
 			rel("critical_command.c"),
+			rel("new_events.c"),
 			"-lcrypto",
 			"-o",
 			str(binary),

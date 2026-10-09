@@ -1509,3 +1509,88 @@ unsigned int flatfile_accounting_authority_storage::read_all_mappings_locked(
 		},
 		error);
 }
+
+// Original complete CURRENT authority proof; caller resolves journals first.
+unsigned int economic_flatfile_read_current_authority_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	std::span<const flatfile_economic_mapping_request> requests,
+	flatfile_economic_authority_snapshot *out, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(out && nonzero(lineage) && nonzero(epoch), EINVAL);
+			need(requests.size() <= ECONOMIC_ACCOUNTING_MAX_ACCOUNTS, E2BIG);
+			need(!root.empty() && lock.matches(root), EINVAL);
+			auto control = load_control(root);
+			need(control.lineage.bytes == lineage.bytes, ESTALE);
+			need(nonzero(control.active_epoch), ENODATA);
+			need(control.active_epoch.bytes == epoch.bytes, ESTALE);
+			std::set<uint64_t> ids;
+			std::map<size_t, std::vector<const flatfile_economic_mapping_request *>>
+				groups;
+			for (const auto &request : requests)
+			{
+				need(economic_account_key_valid(request.account) &&
+					     ids.insert(request.account.authority_id).second,
+				     EINVAL);
+				need(request.account.lineage.bytes == lineage.bytes &&
+					     request.account.authority_id < control.next_mapping_id,
+				     ESTALE);
+				groups[request.account.authority_id % 256].push_back(&request);
+			}
+			flatfile_economic_authority_snapshot candidate;
+			candidate.lineage = lineage;
+			candidate.epoch = epoch;
+			candidate.lineage_revision = control.revision;
+			candidate.mappings.reserve(requests.size());
+			// One decoded bucket at a time, retaining only the requested mappings.
+			for (const auto &[bucket, group] : groups)
+			{
+				auto values = load_mappings(root, control, bucket);
+				for (const auto *request : group)
+				{
+					const auto &value = values.at(
+						(request->account.authority_id - 1) / 256);
+					need(economic_account_key_equal(value.account,
+									request->account) &&
+						     value.locator.kind == request->locator.kind &&
+						     value.locator.native_id ==
+							     request->locator.native_id &&
+						     value.locator.name == request->locator.name &&
+						     !nonzero(value.retiring_operation),
+					     ESTALE);
+					candidate.mappings.push_back(value);
+				}
+			}
+			std::map<size_t, std::vector<size_t>> native_groups;
+			for (size_t i = 0; i < candidate.mappings.size(); ++i)
+			{
+				const auto &value = candidate.mappings[i];
+				native_groups[hash(native_key(value.account.kind,
+							      value.account.context_id,
+							      value.locator))[0]]
+					.push_back(i);
+			}
+			for (const auto &[bucket, group] : native_groups)
+			{
+				auto index = load_native(root, control, bucket);
+				for (auto i : group)
+				{
+					const auto &value = candidate.mappings[i];
+					auto key = native_key(value.account.kind,
+							      value.account.context_id,
+							      value.locator);
+					auto at = find_native(index, key);
+					need(at < index.size() &&
+					     index[at].active == value.account.authority_id);
+				}
+			}
+			std::sort(candidate.mappings.begin(), candidate.mappings.end(),
+				  [](const auto &a, const auto &b)
+				  { return a.account.authority_id < b.account.authority_id; });
+			*out = std::move(candidate);
+		},
+		error);
+}

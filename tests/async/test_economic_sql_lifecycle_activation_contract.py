@@ -46,5 +46,30 @@ class TestEconomicSqlLifecycleActivationContract(unittest.TestCase):
         # Exact retry accepts only the already selected epoch.
         self.assertIn("parse_id(state[0]).bytes == stored.epoch.bytes", impl)
 
+    def test_fresh_persisted_cut_preserves_original_verifier_contract(self):
+        impl = (ROOT / "src/persistence/economic_sql_accounting_lifecycle_transaction.c").read_text(encoding="utf-8")
+        capture = impl[impl.index("capture_current_holdings(MYSQL"):impl.index("struct transaction", impl.index("capture_current_holdings(MYSQL"))]
+        self.assertIn("economic_sql_capture_physical_sources_in_transaction", capture)
+        self.assertIn("sql_room_item_payload_capture_sources_in_transaction", capture)
+        self.assertIn("economic_sql_normalize_persisted_correspondence", capture)
+        self.assertIn("std::move(base.source2)", capture)
+        # The same-cut extension does not replace original durable wire domains.
+        self.assertNotIn("base.digest", capture)
+        self.assertNotIn("supplement.digest", capture)
+        helper = impl[impl.index("void reject_persisted_correspondence_defects"):impl.index("capture_current_holdings(MYSQL")]
+        self.assertIn("multiply_matched_active_custody_indices.empty()", helper)
+        self.assertIn("unmatched_active_custody_indices.empty()", helper)
+        self.assertIn("report.physical.issue_counts.size()", helper)
+        self.assertIn("report.auction.issue_counts.size()", helper)
+        self.assertNotIn(".diagnostics", helper)
+        self.assertNotIn("observed_native_v2", helper)
+        self.assertNotIn("retained_command_proof_known,", helper)
+        # Exact already-active retries bypass fresh capture after their retained
+        # request/receipt/epoch binding, just as they did before this prerequisite.
+        activate = impl[impl.rindex("::activate_verified("):impl.index("::pause(", impl.rindex("::activate_verified("))]
+        self.assertLess(activate.index("existing.exists && existing.state == 1"), activate.index("capture_current_holdings(connection, true)"))
+        self.assertIn("verify(connection, request, evidence, snapshot)", activate)
+
+
 if __name__ == "__main__":
     unittest.main()

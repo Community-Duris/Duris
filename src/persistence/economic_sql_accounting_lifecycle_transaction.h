@@ -4,6 +4,7 @@
 #include "economy/economic_accounting_types.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "persistence/economic_sql_source_snapshot.h"
+#include "persistence/economic_sql_initialized_activation_view.h"
 #include <mysql/mysql.h>
 #include <string>
 #include <vector>
@@ -106,6 +107,34 @@ class economic_sql_runtime_boot_selection final
 // NULL because gameplay-wide producer coverage is not complete in this phase.
 class economic_sql_accounting_lifecycle_transaction
 {
+    private:
+	friend class sql_economic_runtime_boot_owner;
+	// Immediate verification of an actual selected-runtime cut. Same retained
+	// world and RR raw providers are borrowed together; success is not a permit
+	// to activate, install/cache authority, commit or publish on a later retry.
+	static unsigned int
+	verify_initialized_runtime_sources(MYSQL *, economic_sql_cutover_transaction_owner &,
+					   const economic_sql_runtime_boot_selection &,
+					   const economic_sql_lifecycle_request &,
+					   const economic_sql_activation_evidence &,
+					   economic_sql_initialized_activation_verifier) noexcept;
+	// Known pre-COMMIT abort only. Authenticate current SQL selection/mappings
+	// against the still-installed regular projection under the retained owner.
+	// Success does not release exclusion, reopen admission or install authority.
+	static unsigned int
+	verify_aborted_runtime_projection(MYSQL *, economic_sql_cutover_transaction_owner &,
+					  const economic_sql_runtime_boot_selection &) noexcept;
+
+	// After the known-abort owner has returned its same fences to the genuine
+	// runtime-handoff maintenance guard, a later retry must re-read SQL again.
+	static unsigned int
+	verify_returned_runtime_projection(MYSQL *, const economic_sql_lifecycle_guard &,
+					   const economic_sql_runtime_boot_selection &) noexcept;
+	static unsigned int
+	verify_runtime_return_projection(MYSQL *, economic_sql_cutover_transaction_owner *,
+					 const economic_sql_lifecycle_guard *,
+					 const economic_sql_runtime_boot_selection &) noexcept;
+
     public:
 	static unsigned int install(MYSQL *, const economic_sql_lifecycle_guard &,
 				    const economic_sql_lifecycle_request &,

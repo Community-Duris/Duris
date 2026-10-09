@@ -87,6 +87,8 @@ enum class critical_command_type : uint16_t
 	// Original native birth, including an actually empty stock/wallet.
 	// No legacy executor or admission route follows from wire support.
 	native_mobile_birth,
+	// Actorless original room reset issuance; wire support alone grants no admission.
+	zone_reset_item_birth,
 };
 
 enum class critical_source_site : uint16_t

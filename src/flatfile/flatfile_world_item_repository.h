@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 #define DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 
+#include "economy/zone_reset_item_recovery.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "item/item_transfer_command.h"
@@ -140,6 +141,14 @@ flatfile_world_item_result flatfile_world_item_recovery_list_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<flatfile_corpse_record> *corpses, std::vector<flatfile_room_item_record> *rooms,
 	std::string *error);
+// Complete world physical inspection under the existing authority freeze.
+// Includes saved-item records omitted by the legacy two-output recovery reader.
+// No replay or lock acquisition; outputs remain unchanged on failure.
+flatfile_world_item_result flatfile_world_item_recovery_list_all_locked(
+    const std::string &root, const flatfile_authority_lock &lock,
+    std::vector<flatfile_corpse_record> *corpses,
+    std::vector<flatfile_room_item_record> *rooms,
+    std::vector<flatfile_saved_world_item_record> *saved_items, std::string *error);
 flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,
 							 const flatfile_authority_lock &lock,
 							 const item_owner_identity &owner,
@@ -180,5 +189,32 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload, flatfile_world_corpse_raise_mutation *mutation,
 	std::string *error);
+
+// Passive native ROOM proposal; values alone grant no source, season,
+// execution, receipt, commit or publication permission. The genuine atomic
+// owner must authenticate the installed root/epoch and original source cut.
+struct flatfile_initial_room_reset_world_stage
+{
+	critical_command original_command;
+	bool catalog_before_present = false, room_before_present = false;
+	uint64_t catalog_before_revision = 0, catalog_revision_after = 0;
+	uint64_t room_revision_before = 0, room_revision_after = 0;
+	std::vector<player_item_snapshot> room_before_items;
+	flatfile_authority_operation operation;
+};
+class flatfile_accounting_zone_reset_item_transaction;
+class flatfile_initial_room_reset_world_storage final
+{
+    private:
+	friend class flatfile_accounting_zone_reset_item_transaction;
+	// SAME already-recovered exclusive root lock; original INITIAL carrier,
+	// actual ROOM counter and whole-catalog born UID absence. Full literals
+	// retain native order/properties; original detached slot normalization only.
+	// Every refusal preserves output; no acquire/recover/commit/live changes.
+	static flatfile_world_item_result
+	prepare_locked(const std::string &root, const flatfile_authority_lock &lock,
+		       const critical_native_recovery_envelope &original,
+		       flatfile_initial_room_reset_world_stage *output) noexcept;
+};
 
 #endif

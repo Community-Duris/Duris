@@ -36,8 +36,10 @@ def tombstone_preflight(path, p, captured):
     backup.require(not backup.overlaps(path, p["root"]) and
                    not backup.overlaps(path, p["restore_root"]), "independent_tombstones_required")
     ledger = backup.read_json(path)
-    backup.require(set(ledger) == {"version", "captured_at", "policy_sha256", "tombstones"} and
-                   ledger["version"] == 1 and type(ledger["captured_at"]) is int,
+    backup.require(type(ledger) is dict and
+                   set(ledger) == {"version", "captured_at", "policy_sha256", "tombstones"} and
+                   type(ledger["version"]) is int and ledger["version"] == 1 and
+                   type(ledger["captured_at"]) is int,
                    "invalid_tombstone_evidence")
     now = int(time.time())
     backup.require(max(captured, now - p["rpo_seconds"]) <= ledger["captured_at"] <= now,

@@ -1246,6 +1246,106 @@ bool shop_trade_original_item_stage::proclib_probe(
 	}
 }
 
+// Flat cold SHOP retains the original four reload/probe effect states and policy.
+// Only the actual sealed flat prototype lookup differs from the original SQL path.
+bool shop_trade_original_item_stage::reload_step_flat(
+	P_obj object, const object_template &prototype, unsigned int step,
+	shop_trade_original_reload_effect &effect) noexcept
+{
+	if (!nevent_is_game_thread() || !object || object->R_num != prototype.R_num ||
+	    effect.started || step > 3)
+		return false;
+	try
+	{
+		extern P_index obj_index;
+		extern int top_of_objt;
+		extern void event_object_proc(P_char, P_char, P_obj, void *);
+		extern void proclib_obj_event(P_char, P_char, P_obj, void *);
+		extern void event_random_exit(P_char, P_char, P_obj, void *);
+		if (!obj_index || object->R_num < 0 || object->R_num > top_of_objt)
+			return false;
+		if (flatfile_coin_boot_templates::find(obj_index[object->R_num].virtual_number) !=
+		    &prototype)
+			return false;
+		const auto proc = obj_index[object->R_num].func.obj;
+		// Original binding was separately committed under the complete owner cut.
+		// Callback phases never bind procedures or duplicate saved descriptions.
+		if ((object->type == ITEM_SWITCH && !proc) ||
+		    (IS_SET(object->extra_flags, ITEM_PROCLIB) && proc != proclib_obj_cmd_bridge))
+			return false;
+		effect.started = true;
+		switch (step)
+		{
+		case 0:
+			effect.periodic = proc && invoke_object_special(object, nullptr,
+									CMD_SET_PERIODIC, nullptr);
+			effect.succeeded = true;
+			break;
+		case 1:
+			effect.succeeded =
+				!effect.periodic || get_scheduled(object, event_object_proc) ||
+				add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), nullptr,
+					  nullptr, object, 0, nullptr, 0)
+					.was_scheduled();
+			break;
+		case 2:
+			// Restored saved proclib parameter descriptions are already literal.
+			// Each saved library's normal eligibility probe was retained before
+			// this separate schedule step. No parser/new description is invoked.
+			// Command-only proclibs do not gain periodic events.
+			effect.succeeded =
+				!effect.periodic || get_scheduled(object, proclib_obj_event) ||
+				add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), nullptr,
+					  nullptr, object, 0, nullptr, 0)
+					.was_scheduled();
+			break;
+		case 3:
+			effect.succeeded = !isname("random_exit", object->name) ||
+					   get_scheduled(object, event_random_exit) ||
+					   add_event(event_random_exit, 3, nullptr, nullptr, object,
+						     0, nullptr, 0)
+						   .was_scheduled();
+			break;
+		}
+		effect.returned = true;
+		return effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_original_item_stage::proclib_probe_flat(
+	P_obj object, const object_template &prototype, size_t description_index,
+	shop_trade_original_reload_effect &effect) noexcept
+{
+	if (!nevent_is_game_thread() || !object || object->R_num != prototype.R_num ||
+	    effect.started)
+		return false;
+	try
+	{
+		extern P_index obj_index;
+		extern int top_of_objt;
+		if (!obj_index || object->R_num < 0 || object->R_num > top_of_objt ||
+		    flatfile_coin_boot_templates::find(obj_index[object->R_num].virtual_number) !=
+			    &prototype)
+			return false;
+		effect.started = true;
+		bool requested = false;
+		if (IS_SET(object->extra_flags, ITEM_PROCLIB) &&
+		    !proclib_saved_periodic_probe(object, description_index, &requested))
+			return false;
+		effect.periodic = requested;
+		effect.returned = effect.succeeded = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 // Birth-only complete persisted literal hydration. Existing SHOP/legacy bodies
 // are unchanged; reuse their actual raw allocator and metadata/spellbook rules.
 bool native_mobile_birth_literal_stage::prepare(const object_template &prototype,
