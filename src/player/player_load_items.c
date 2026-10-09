@@ -1468,3 +1468,492 @@ void native_mobile_birth_literal_stage::reset() noexcept
 	literal.pool_ = std::exchange(pool_, nullptr);
 	affect_pool_ = nullptr;
 }
+
+#include <optional>
+extern mm_ds_list *mmds_list;
+extern mm_ds *dead_obj_affect_pool;
+namespace
+{
+bool bounded_literal_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - value)
+		return false;
+	value += amount;
+	return true;
+}
+constexpr size_t bounded_literal_header() noexcept
+{
+#ifdef MEMCHK
+	return sizeof(ALLOCATION_HEADER);
+#else
+	return 0;
+#endif
+}
+struct bounded_literal_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	size_t heap = 0;
+	size_t live() const noexcept
+	{
+		size_t pools = 0;
+		if (!native_mobile_birth_literal_pool_storage_bytes(&pools) ||
+		    !bounded_literal_add(pools, base) || !bounded_literal_add(pools, heap))
+			return SIZE_MAX;
+		return pools;
+	}
+	bool admit(size_t extra) const noexcept
+	{
+		size_t amount = live();
+		return amount != SIZE_MAX && bounded_literal_add(amount, extra) &&
+		       reserve(amount, context);
+	}
+};
+bool bounded_literal_clone_heap(const player_item_snapshot &row, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	for (const auto *s :
+	     { &row.name, &row.short_description, &row.description, &row.action_description })
+		if (s->size() > 15 &&
+		    (s->size() == SIZE_MAX || !bounded_literal_add(bytes, s->size() + 1)))
+			return false;
+	if (row.dynamic_affects.size() > SIZE_MAX / sizeof(player_item_dynamic_affect_snapshot) ||
+	    !bounded_literal_add(bytes, row.dynamic_affects.size() *
+						sizeof(player_item_dynamic_affect_snapshot)) ||
+	    row.extra_descriptions.size() >
+		    SIZE_MAX / sizeof(player_item_extra_description_snapshot) ||
+	    !bounded_literal_add(bytes, row.extra_descriptions.size() *
+						sizeof(player_item_extra_description_snapshot)))
+		return false;
+	for (const auto &d : row.extra_descriptions)
+	{
+		if (d.keyword.size() > 15 && (d.keyword.size() == SIZE_MAX ||
+					      !bounded_literal_add(bytes, d.keyword.size() + 1)))
+			return false;
+		if (d.description.size() > 15 &&
+		    (d.description.size() == SIZE_MAX ||
+		     !bounded_literal_add(bytes, d.description.size() + 1)))
+			return false;
+		if (d.spell_ids.size() > SIZE_MAX / sizeof(int32_t) ||
+		    !bounded_literal_add(bytes, d.spell_ids.size() * sizeof(int32_t)))
+			return false;
+	}
+	*output = bytes;
+	return true;
+}
+bool bounded_literal_reserve_slot(mm_ds *pool, const bounded_literal_budget &budget) noexcept
+{
+	if (!pool || pool->size < sizeof(char *) || pool->next_off > pool->size - sizeof(char *))
+		return false;
+	size_t extra = 0;
+	if (!pool->head)
+	{
+		if (pool->tail || pool->chunk_size <= 0 ||
+		    static_cast<size_t>(pool->chunk_size) > SIZE_MAX / 4096)
+			return false;
+		extra = static_cast<size_t>(pool->chunk_size) * 4096;
+	}
+	if (!budget.admit(extra))
+		return false;
+	return mm_try_reserve_free_slot(pool);
+}
+// Complete nonfatal original mm_create descriptor/list transaction. Both real
+// CREATE headers are admitted, and no half-created descriptor is registered.
+bool bounded_literal_create_affect_pool(const bounded_literal_budget &budget) noexcept
+{
+	if (dead_obj_affect_pool)
+		return true;
+	if (!budget.admit(sizeof(mm_ds) + sizeof(mm_ds_list) + 2 * bounded_literal_header()))
+		return false;
+	auto *pool = static_cast<mm_ds *>(
+		__try_malloc(sizeof(mm_ds), MEM_TAG_MEMMAN, __FILE__, __LINE__));
+	if (!pool)
+		return false;
+	auto *entry = static_cast<mm_ds_list *>(
+		__try_malloc(sizeof(mm_ds_list), MEM_TAG_MMLIST, __FILE__, __LINE__));
+	if (!entry)
+	{
+		__free(pool, __FILE__, __LINE__);
+		return false;
+	}
+	std::memset(pool, 0, sizeof(*pool));
+	std::memcpy(pool->name, "OBJ_AFF", 8);
+	pool->size = sizeof(obj_affect);
+	pool->next_off = offsetof(obj_affect, next);
+	pool->chunk_size = 100;
+	entry->mmds = pool;
+	entry->next = ::mmds_list;
+	::mmds_list = entry;
+	dead_obj_affect_pool = pool;
+	return true;
+}
+}
+
+namespace
+{
+void bounded_literal_skip_space(const std::string &json, size_t &position) noexcept
+{
+	while (position < json.size() && (json[position] == ' ' || json[position] == '\t' ||
+					  json[position] == '\r' || json[position] == '\n'))
+		++position;
+}
+bool bounded_literal_parse_spellbook(const std::string &json, char *spell_bits = nullptr)
+{
+	std::array<bool, MAX_SKILLS> seen = {};
+	size_t position = 0;
+
+	bounded_literal_skip_space(json, position);
+	if (position >= json.size() || json[position++] != '[')
+		return false;
+	bounded_literal_skip_space(json, position);
+	if (position < json.size() && json[position] == ']')
+	{
+		++position;
+		bounded_literal_skip_space(json, position);
+		return position == json.size();
+	}
+	for (;;)
+	{
+		bounded_literal_skip_space(json, position);
+		if (position >= json.size() || json[position] < '0' || json[position] > '9')
+			return false;
+		const size_t number_start = position;
+		uint64_t value = 0;
+		while (position < json.size() && json[position] >= '0' && json[position] <= '9')
+		{
+			const uint64_t digit = static_cast<unsigned int>(json[position++] - '0');
+			if (value > (static_cast<uint64_t>(MAX_SKILLS) - 1 - digit) / 10)
+				return false;
+			value = value * 10 + digit;
+		}
+		if (json[number_start] == '0' && position != number_start + 1)
+			return false;
+		if (seen[value])
+			return false;
+		seen[value] = true;
+		if (spell_bits)
+			spell_bits[value / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[value / 8]) |
+				static_cast<unsigned char>(1U << (value % 8)));
+		bounded_literal_skip_space(json, position);
+		if (position >= json.size())
+			return false;
+		if (json[position] == ']')
+		{
+			++position;
+			break;
+		}
+		if (json[position++] != ',')
+			return false;
+	}
+	bounded_literal_skip_space(json, position);
+	return position == json.size();
+}
+
+bool bounded_literal_decode_spellbook(const player_item_extra_description_snapshot &description,
+				      char *spell_bits = nullptr)
+{
+	if (!description.description.empty())
+		return description.spell_ids.empty() &&
+		       bounded_literal_parse_spellbook(description.description, spell_bits);
+	std::array<bool, MAX_SKILLS> seen = {};
+	for (int32_t spell : description.spell_ids)
+	{
+		if (spell < 0 || spell >= MAX_SKILLS || seen[spell])
+			return false;
+		seen[spell] = true;
+		if (spell_bits)
+			spell_bits[spell / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[spell / 8]) |
+				static_cast<unsigned char>(1U << (spell % 8)));
+	}
+	return true;
+}
+
+char bounded_literal_key_byte(const player_item_extra_description_snapshot &d,
+			      const std::array<char, (MAX_SKILLS + 1) / 8 + 1> &bits,
+			      size_t k) noexcept
+{
+	if (k < d.keyword.size())
+		return d.keyword[k];
+	k -= d.keyword.size();
+	if (k == 0)
+		return '\0';
+	--k;
+	if (k < d.description.size())
+		return d.description[k];
+	return bits[k - d.description.size()];
+}
+
+bool bounded_literal_metadata_valid(const player_item_snapshot &item) noexcept
+{
+	player_load_item_identity identity{};
+	identity.database_id = 1;
+	identity.item_uid = item.object_uid;
+	identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+	const bool complete_snapshot_state = true;
+
+	constexpr uint8_t allowed_string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 |
+						STRUNG_DESC3 | STRUNG_EDESC;
+	if ((item.string_mask & ~allowed_string_mask) ||
+	    identity.database_id > static_cast<uint64_t>(INT_MAX) ||
+	    identity.item_uid > static_cast<uint64_t>(ULONG_MAX) ||
+	    item.timers[0] < std::numeric_limits<time_t>::min() ||
+	    item.timers[0] > std::numeric_limits<time_t>::max())
+		return false;
+	if (complete_snapshot_state)
+		for (int64_t timer : item.timers)
+			if (timer < std::numeric_limits<time_t>::min() ||
+			    timer > std::numeric_limits<time_t>::max())
+				return false;
+	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_TYPE) &&
+	    (item.type < ITEM_LOWEST || item.type > ITEM_LAST))
+		return false;
+	if (complete_snapshot_state ||
+	    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS))
+		for (const auto &affect : item.dynamic_affects)
+			if (affect.extra2 > ULONG_MAX)
+				return false;
+	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS) &&
+	    !(identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS))
+		return false;
+	for (const auto &affect : item.affects)
+		if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) &&
+		    (affect[0] < 0 || affect[0] > APPLY_LAST || affect[1] < INT8_MIN ||
+		     affect[1] > INT8_MAX))
+			return false;
+	std::array<char, (MAX_SKILLS + 1) / 8 + 1> current_bits{}, previous_bits{};
+	for (size_t i = 0; i < item.extra_descriptions.size(); ++i)
+	{
+		const auto &d = item.extra_descriptions[i];
+		if (d.keyword.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+		    d.description.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+		    d.spellbook != (d.keyword == "SPELLBOOK"))
+			return false;
+		current_bits.fill(0);
+		if (d.spellbook)
+		{
+			if (!bounded_literal_decode_spellbook(d, current_bits.data()))
+				return false;
+		}
+		else if (!d.spell_ids.empty())
+			return false;
+		const bool binary = d.spellbook && d.description.empty();
+		const size_t length = d.keyword.size() + 1 + d.description.size() +
+				      (binary ? current_bits.size() : 0);
+		for (size_t j = 0; j < i; ++j)
+		{
+			const auto &p = item.extra_descriptions[j];
+			const bool pb = p.spellbook && p.description.empty();
+			const size_t plength = p.keyword.size() + 1 + p.description.size() +
+					       (pb ? previous_bits.size() : 0);
+			if (plength != length)
+				continue;
+			previous_bits.fill(0);
+			if (pb && !bounded_literal_decode_spellbook(p, previous_bits.data()))
+				return false;
+			bool equal = true;
+			for (size_t k = 0; k < length; ++k)
+				if (bounded_literal_key_byte(d, current_bits, k) !=
+				    bounded_literal_key_byte(p, previous_bits, k))
+				{
+					equal = false;
+					break;
+				}
+			if (equal)
+				return false;
+		}
+	}
+	return true;
+}
+
+}
+bool native_mobile_birth_literal_stage::prepare_bounded(const object_template &prototype,
+							const player_item_snapshot &literal,
+							native_mobile_birth_literal_stage &output,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live,
+							size_t *retained_output_heap) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)prototype;
+	(void)literal;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	(void)retained_output_heap;
+	return false;
+#else
+	struct workspace
+	{
+		std::optional<player_item_snapshot> decoded;
+		inert_item_stage raw;
+		native_mobile_birth_literal_stage candidate;
+		size_t decoded_heap = 0, raw_heap = 0;
+	};
+	if (!reserve || !nevent_is_game_thread())
+		return false;
+	size_t pool_initial = 0;
+	if (!native_mobile_birth_literal_pool_storage_bytes(&pool_initial) ||
+	    outer_live < pool_initial)
+		return false;
+	size_t fixed = outer_live;
+	if (!bounded_literal_add(fixed, sizeof(workspace)) ||
+	    !bounded_literal_add(fixed, sizeof(bounded_literal_budget)) || !reserve(fixed, context))
+		return false;
+	workspace work;
+	bounded_literal_budget budget{ reserve, context, fixed - pool_initial };
+	try
+	{
+		if (!literal.object_uid || !std::in_range<unsigned long>(literal.object_uid) ||
+		    !std::in_range<long>(literal.generated_key) || literal.vnum <= 0 ||
+		    literal.type < ITEM_LOWEST || literal.type > ITEM_LAST ||
+		    literal.string_mask !=
+			    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+		    !budget.admit(sizeof(player_load_item_identity) +
+				  2 * sizeof(std::array<char, (MAX_SKILLS + 1) / 8 + 1>) +
+				  sizeof(std::array<bool, MAX_SKILLS>)) ||
+		    !bounded_literal_metadata_valid(literal))
+			return false;
+		// Complete full-literal SHOP capture uses these exact four strings. No
+		// prototype default is substituted for a missing original string.
+		if (!budget.admit(sizeof(std::initializer_list<const std::string *>) +
+				  sizeof(const std::string *[4])))
+			return false;
+		for (const auto *text : { &literal.name, &literal.short_description,
+					  &literal.description, &literal.action_description })
+			if (text->size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+			    text->find('\0') != std::string::npos)
+				return false;
+		for (const auto &affect : literal.affects)
+			if (!std::in_range<decltype(std::declval<obj_data &>().affected[0].location)>(
+				    affect[0]) ||
+			    !std::in_range<decltype(std::declval<obj_data &>().affected[0].modifier)>(
+				    affect[1]))
+				return false;
+		for (auto value : literal.bitvectors)
+			if (!std::in_range<unsigned long>(value))
+				return false;
+		for (auto timer : literal.timers)
+			if (!std::in_range<time_t>(timer))
+				return false;
+
+		if (!budget.admit(sizeof(const std::string *[4]) +
+				  sizeof(std::initializer_list<const std::string *>)) ||
+		    !bounded_literal_clone_heap(literal, &work.decoded_heap) ||
+		    !budget.admit(work.decoded_heap))
+			return false;
+		work.decoded.emplace(literal);
+		auto &decoded = *work.decoded;
+		budget.heap = work.decoded_heap;
+		for (auto &description : decoded.extra_descriptions)
+		{
+			if (description.spellbook)
+			{
+				if (!budget.admit(
+					    sizeof(std::array<char, (MAX_SKILLS + 1) / 8 + 1>) +
+					    sizeof(std::array<bool, MAX_SKILLS>)))
+					return false;
+				std::array<char, (MAX_SKILLS + 1) / 8 + 1> bits{};
+				if (!bounded_literal_decode_spellbook(description, bits.data()))
+					return false;
+
+				const size_t old_capacity = description.description.capacity();
+				if (bits.size() > old_capacity)
+				{
+					size_t next_capacity = bits.size();
+					if (old_capacity > SIZE_MAX / 2)
+						return false;
+					if (next_capacity < 2 * old_capacity)
+						next_capacity = 2 * old_capacity;
+					size_t replacement_peak = sizeof(bits);
+					if (next_capacity == SIZE_MAX ||
+					    !bounded_literal_add(replacement_peak,
+								 next_capacity + 1) ||
+					    !budget.admit(replacement_peak))
+						return false;
+				}
+				description.keyword.assign("\3\1\3", 3);
+
+				description.description.assign(bits.data(), bits.size());
+				if (description.description.capacity() != old_capacity)
+				{
+					if (old_capacity > 15)
+						budget.heap -= old_capacity + 1;
+					if (description.description.capacity() > 15 &&
+					    !bounded_literal_add(
+						    budget.heap,
+						    description.description.capacity() + 1))
+						return false;
+				}
+			}
+			else if (description.keyword.find('\0') != std::string::npos ||
+				 description.description.find('\0') != std::string::npos)
+				return false;
+		}
+		// Cold birth replay may be the first object allocation after mm_create.
+		// Reserve native capacity only after complete literal validation; keep
+		// the generic inert/money allocator's free-slot-only contract unchanged.
+		extern mm_ds *dead_obj_pool;
+		if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+		    dead_obj_pool->next_off != offsetof(obj_data, next) ||
+		    !bounded_literal_reserve_slot(dead_obj_pool, budget))
+			return false;
+		auto &raw = work.raw;
+		if (inert_item_stage::allocate_literal_bounded(
+			    prototype, decoded, raw, reserve, context, budget.live(),
+			    &work.raw_heap) != inert_item_stage_result::ok)
+			return false;
+		if (!bounded_literal_add(budget.heap, work.raw_heap))
+			return false;
+		auto &candidate = work.candidate;
+		candidate.object_ = std::exchange(raw.object_, nullptr);
+		candidate.pool_ = std::exchange(raw.pool_, nullptr);
+		// Exact trap values come from the original birth recipe, never this template.
+		if (!literal.dynamic_affects.empty())
+		{
+			// Keep native pool ownership: obj_affect_remove returns consumed nodes
+			// to this existing pool. All creation/growth happens before enrollment.
+			extern mm_ds *dead_obj_affect_pool;
+			if (!dead_obj_affect_pool)
+				if (!bounded_literal_create_affect_pool(budget))
+					return false;
+			candidate.affect_pool_ = dead_obj_affect_pool;
+			if (candidate.affect_pool_->size != sizeof(obj_affect) ||
+			    candidate.affect_pool_->next_off != offsetof(obj_affect, next))
+				return false;
+			obj_affect **tail = &candidate.object_->affects;
+			for (const auto &saved : literal.dynamic_affects)
+			{
+				if (!bounded_literal_reserve_slot(candidate.affect_pool_, budget))
+					return false;
+				auto *node = static_cast<obj_affect *>(
+					mm_try_get(candidate.affect_pool_));
+				if (!node)
+					return false;
+				node->type = saved.type;
+				node->data = saved.data;
+				node->extra2 = static_cast<ulong>(saved.extra2);
+				node->next = nullptr;
+				*tail = node;
+				tail = &node->next;
+			}
+		}
+		if (output.object_)
+			return false;
+		output.object_ = std::exchange(candidate.object_, nullptr);
+		output.pool_ = std::exchange(candidate.pool_, nullptr);
+		output.affect_pool_ = std::exchange(candidate.affect_pool_, nullptr);
+		if (retained_output_heap)
+			*retained_output_heap = work.raw_heap;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
