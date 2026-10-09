@@ -1696,7 +1696,7 @@ flatfile_item_repository_result flatfile_item_repository_recovery_catalog_locked
 flatfile_item_repository_result flatfile_item_repository_read_trade_after_image(
 	const flatfile_authority_after_image &image,
 	const std::array<item_owner_identity, 2> &owners, std::array<uint64_t, 2> *owner_revisions,
-	std::vector<flatfile_item_ownership_record> *records, std::string *error)
+	std::vector<flatfile_item_ownership_record> *records, std::string * /*error*/)
 {
 	if (!owner_revisions || !records || image.filename != ownership_filename ||
 	    image.bytes.empty() || image.bytes.size() > ownership_maximum_bytes ||
