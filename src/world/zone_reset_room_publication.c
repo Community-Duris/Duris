@@ -2837,3 +2837,226 @@ bool zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
 	}
 #endif
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+using room_union_set = std::unordered_set<uint64_t>;
+using room_union_node =
+	std::__detail::_Hash_node<uint64_t,
+				  std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+bool room_union_heap(const room_union_set &values, size_t &heap) noexcept
+{
+	heap = 0;
+	return room_prepare_array(heap, values.size(), sizeof(room_union_node)) &&
+	       (values.bucket_count() == 1 ||
+		room_prepare_array(heap, values.bucket_count(),
+				   sizeof(std::__detail::_Hash_node_base *)));
+}
+struct room_union_workspace
+{
+	std::__detail::_Prime_rehash_policy policy;
+};
+struct room_union_live
+{
+	const room_union_set &values;
+	const size_t &fixed;
+	bool admit(size_t request, bool (*reserve)(size_t, void *) noexcept,
+		   void *context) const noexcept
+	{
+		size_t current = fixed, heap = 0;
+		return room_union_heap(values, heap) && room_prepare_add(current, heap) &&
+		       room_prepare_add(current, request) && reserve && reserve(current, context);
+	}
+};
+bool room_union_insert_bounded(room_union_set &values, uint64_t uid, room_union_workspace &work,
+			       const room_union_live &live,
+			       bool (*reserve)(size_t, void *) noexcept, void *context)
+{
+	if (values.find(uid) != values.end())
+		return true;
+	// This private warm union has only original default-growth insertions before
+	// consumption (including retained partial attempts), never reserve/rehash or
+	// load-factor changes. Reconstruct that actual policy's next-resize threshold;
+	// bucket1 is the original embedded empty state with next_resize0.
+	if (values.max_load_factor() != work.policy.max_load_factor())
+		return false;
+	work.policy._M_reset(values.bucket_count() == 1 ? 0 : values.bucket_count());
+	const auto growth = work.policy._M_need_rehash(values.bucket_count(), values.size(), 1);
+	size_t request = sizeof(room_union_node);
+	if ((growth.first && !room_prepare_array(request, growth.second,
+						 sizeof(std::__detail::_Hash_node_base *))) ||
+	    !live.admit(request, reserve, context))
+		return false;
+	// Original unreserved insertion pattern is retained: new node + old buckets +
+	// replacement buckets coexist, admitted before the node's first allocation.
+	values.insert(uid);
+	return true;
+}
+#endif
+} // namespace
+
+bool zone_reset_room_publication_owner::reserve_warm_consume_bounded(
+	zone_reset_room_publication_stage &stage, const std::unordered_set<uint64_t> &published,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    stage.state_->consumed || !nevent_is_game_thread() || stage.state_->graph.items.empty())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)published;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		auto &state = *stage.state_;
+		size_t initial_heap = 0;
+		if (!room_union_heap(state.next_published, initial_heap) ||
+		    outer_live < initial_heap)
+			return false;
+		size_t fixed = outer_live - initial_heap;
+		if (!room_prepare_add(fixed, sizeof(room_union_workspace)) ||
+		    !room_prepare_add(fixed, sizeof(room_union_live)) ||
+		    !room_prepare_add(fixed, sizeof(std::pair<bool, size_t>)))
+			return false;
+		size_t initial = fixed;
+		if (!room_prepare_add(initial, initial_heap) || !reserve ||
+		    !reserve(initial, context))
+			return false;
+		room_union_workspace work;
+		room_union_live live{ state.next_published, fixed };
+		// An earlier allocation refusal can retain a partial original union.
+		// Extend only that proven subset before intent; never overwrite it or
+		// interpret its incompleteness as a successful native publication.
+		for (const auto uid : state.next_published)
+			if (!published.count(uid) &&
+			    std::none_of(state.graph.items.begin(), state.graph.items.end(),
+					 [uid](const auto &item)
+					 { return item.object_uid == uid; }))
+				return false;
+		for (const auto uid : published)
+			if (!room_union_insert_bounded(state.next_published, uid, work, live,
+						       reserve, context))
+				return false;
+		for (const auto &item : state.graph.items)
+		{
+			if (published.count(item.object_uid))
+				return false;
+			if (!room_union_insert_bounded(state.next_published, item.object_uid, work,
+						       live, reserve, context))
+				return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_room_publication_owner::consume_bounded(zone_reset_room_publication_stage &stage,
+							std::unordered_set<uint64_t> *published,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !published || !nevent_is_game_thread() || !stage.state_->admitted ||
+	    stage.state_->consumed || !stage.state_->warm || !stage.state_->flat_backend)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	auto &state = *stage.state_;
+	// The original warm caller allocated and charged this exact union
+	// before its intent checkpoint. Do not grow holders after that cut.
+	if (state.next_published.size() != published->size() + state.graph.items.size())
+		return false;
+	for (const auto uid : *published)
+		if (!state.next_published.count(uid))
+			return false;
+	for (const auto &item : state.graph.items)
+		if (published->count(item.object_uid) ||
+		    !state.next_published.count(item.object_uid))
+			return false;
+	if (!world || state.room < 0 || state.room > top_of_world ||
+	    state.objects[0]->loc_p != LOC_NOWHERE || state.objects[0]->loc.room != NOWHERE ||
+	    state.objects[0]->next_content)
+		return false;
+	struct input_spans
+	{
+		std::span<quest_mobile_native_item_stage *> factories;
+		std::span<P_obj> objects;
+		std::span<const item_ownership_runtime_entry> custody;
+		input_spans(zone_reset_room_publication_stage::implementation &source) noexcept
+			: factories(source.stage_pointers)
+			, objects(source.objects)
+			, custody(source.custody)
+		{
+		}
+	};
+	size_t live = outer_live;
+	if (!room_prepare_add(live, sizeof(input_spans)) || !reserve || !reserve(live, context))
+		return false;
+	input_spans inputs{ state };
+	if (!quest_mobile_native_item_stage::publish_many_bounded(
+		    inputs.factories, inputs.objects, inputs.custody, reserve, context, live))
+		return false;
+	// No allocating work or budget callback may intervene after atomic cache/
+	// native consumption. Caller retains CURRENT cache on every return.
+	state.consumed = true;
+	return true;
+#endif
+}
+
+bool zone_reset_room_publication_owner::mark_published_bounded(
+	zone_reset_room_publication_stage &stage, std::unordered_set<uint64_t> *published,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !published || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !stage.state_->placed ||
+	    !verify_warm_flat_current_bounded(stage, reserve, context, outer_live))
+		return false;
+	auto &state = *stage.state_;
+	if (state.bookkeeping_published)
+	{
+		for (const auto &item : state.graph.items)
+			if (!published->count(item.object_uid))
+				return false;
+		return true;
+	}
+	// All nodes were allocated before batch publication. The real context owner
+	// keeps this tracker stable across its publication steps; unrelated progress
+	// must not be silently overwritten by an old preparation-time union.
+	if (state.next_published.size() < state.graph.items.size() ||
+	    published->size() != state.next_published.size() - state.graph.items.size())
+		return false;
+	for (const auto &item : state.graph.items)
+		if (published->count(item.object_uid))
+			return false;
+	for (const auto uid : *published)
+		if (!state.next_published.count(uid))
+			return false;
+	for (const auto &item : state.graph.items)
+		if (!state.next_published.count(item.object_uid))
+			return false;
+	published->swap(state.next_published);
+	state.bookkeeping_published = true;
+	if (state.warm)
+	{
+		// Actual complete placement/cache proof above still protects these
+		// live objects. End their creation-candidate marker before final SQL/
+		// ACK/terminal proof; later metadata cleanup never touches old pointers.
+		for (P_obj object : state.objects)
+			REMOVE_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+	}
+	return true;
+}
