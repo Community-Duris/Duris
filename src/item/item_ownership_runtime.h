@@ -123,6 +123,7 @@ class item_ownership_runtime_published_native_observer final
 	friend class quest_mobile_published_world_owner;
 	friend class quest_mobile_native_item_stage;
 	friend class zone_reset_room_publication_owner;
+	friend class zone_reset_item_owner;
 	friend class shop_trade_native_checkpoint_owner;
 	friend class shop_trade_current_runtime_owner;
 	static bool snapshot_links(std::span<const uint64_t> selected_uids, size_t limit,

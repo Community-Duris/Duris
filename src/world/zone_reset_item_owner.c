@@ -1617,6 +1617,7 @@ bool zone_reset_item_owner::warm_root_current(const warm_root &root) noexcept
 				return false;
 			selected.push_back(item.object_uid);
 		}
+		std::sort(selected.begin(), selected.end());
 		std::vector<item_ownership_runtime_entry> cached;
 		// This union includes any foreign root/parent link into a selected UID.
 		// An unpublished forest has no current runtime custody anywhere.
