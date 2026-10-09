@@ -1,20 +1,22 @@
 # Experimental accounting review checkpoint
 
-## Native season and bounded CURRENT custody joined - 2026-10-09
+## Genuine flat ROOM atomic writer and producer joined - 2026-10-09
 
-[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#native-season-and-bounded-current-custody-joined---2026-10-09)
-records private candidate `c84bb521c95303c7515afaaa9baa7a01af64547768e1e1f30fa19e84af0a6106`:226 paths (186 source,31 tests,
-5 schema,4 other). Reviewed full custody storage/projection, required v6 DTO
-correction, genuine fresh-root season enrollment and real object/flat harness
-link registration are joined.219 providers and16 exact inverse spans authenticate;
-no executable qualification ran. Existing roots are never silently reseeded and
-inactive generic startup remains unchanged. Full native season capture/worker
-equality, explicit stopped legacy enrollment, shared32MiB caller/lifetime census,
-atomic participants and original world source/publication/origin/ACK remain.
-Root cold reader scope stays UNSELECTED; INITIAL checkpoint decoder review is
-ongoing. Source is unpromoted and admission CLOSED. Original Plan1 acceptance
-stays scoped; Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Peer docs
-and unrelated WIP are preserved. The ongoing goal is active.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#genuine-flat-room-atomic-writer-and-producer-joined---2026-10-09)
+records private candidate `e1cbcd21bd5abe553da9d6551fd45d6415b01e5397036cb01242aa221a428da1`:228 paths (188 source,31 tests,5 schema,4 other).
+Independent review passed for actual initial ROOM atomic world/custody/coins/
+origin/receipt/source, full CURRENT custody, object registration, private source
+contracts and genuine producer season/counter capture. Atomic join239 providers/
+six inverses and capture join304 providers/ten inverses authenticate. Original
+SQL/factories/registry/pulse/inactive behavior and CLOSED admission are preserved;
+retained capsule retries do not recapture source/time/season/counters or reroll.
+INITIAL keeper and bounded coordinator carrier-plus-generation components are
+joined; wholecold5b2 stays UNSELECTED and its private fixture needs item{} before
+qualification. Real worker/factory, full prospective32MiB overlap, original world
+publication/terminal/ACK, explicit stopped legacy enrollment and executable gates
+remain. No executable qualification ran or source promotion occurred. Original
+Plan1 acceptance stays scoped; Plans2-4/fullPlan5/R1-R8/release remain unfinished.
+Peer docs/WIP and independent Plan5 ownership are preserved. The goal is active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 

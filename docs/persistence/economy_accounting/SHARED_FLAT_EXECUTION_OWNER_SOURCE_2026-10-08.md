@@ -262,3 +262,54 @@ CURRENT projection/output budgets are complete. The new INITIAL keeper decoder
 Source stays private/unpromoted, admission CLOSED, inactive/declined-spell/
 production gates intact. Original Plan1 acceptance remains scoped; fullPlans2-4/
 combinedPlan5/R1-R8/release remain unfinished. The goal remains active.
+
+## Genuine flat ROOM atomic writer and producer joined - 2026-10-09
+
+Private candidate e1cbcd21bd5abe553da9d6551fd45d6415b01e5397036cb01242aa221a428da1
+at tmp/lifecycle-room-reset-flat-capture-plan5-candidate-primary-20261009 joins
+the genuine initial ROOM atomic participant, full CURRENT custody observer,
+canonical object registration and actual flat producer/season capture. The
+atomic join955199af authenticates239 provider records/six inverses; capture
+join e1cbcd21 authenticates304 records/ten inverses. Inventory is228 paths
+(188 source,31 tests,5 schema,4 other); counts establish no completion.
+Evidence: bin/tests/room-reset-flat-atomic-primary-20261009/SOURCE-INTEGRATION.json
+and bin/tests/room-reset-flat-capture-primary-20261009/SOURCE-INTEGRATION.json.
+
+Independent source review passed for atomicf653da8c, CURRENT observer7b99526d,
+build registrationf0b880a4, private capture contracts1e0a3c2c and producerd49c8e5b.
+One existing authority bundle carries complete world/custody catalogs, genuine
+coin heads including zero, canonical ZRO1, item references, original segment/index
+receipt and source claim. Original compiled plan/typed48, configured accounting
+lineage/active epoch and independent native active season agree under the same
+recovered root lock. Historical immutable receipt proof remains separate from
+full CURRENT world/literal/custody/pile proof. Commit occurs once; possible
+publication retains the proposal and fresh-lock reconciliation never resubmits.
+
+The actual original ROOM producer freezes source, accepted time, complete forest,
+constructor/placement facts, observed season and real world/custody counters in
+revision1 ZRR1 under one recovered root lock. Retained retries never recapture
+those values or restart factories. Original SQL body is byte-identical under its
+private rename; factories, registry, pulse, dispatcher and restoration remain.
+Private INITIAL observation stages no receipt/source and commits nothing;
+durable source uniqueness remains the atomic writer's actual responsibility.
+Underlying original readers may recover internally, so the genuinely already-
+recovered same-lock precondition is essential. Legacy roots are not reseeded.
+
+Earlier selected successor567bfb0a joins bounded INITIAL keeper0cd49bee, exact
+coordinator carrier-plus-generation copyb183abe7 and private ROOM storefriend77aa.
+Their scoped source review passed: reserve occurs before key/canonical equality/
+fresh vector copying, outside the coordinator mutex; actual retained sizes,
+revision, phase, attachment and generation are checked under one lock. Original
+APIs remain unchanged. Its unregistered private keeper fixture needs item{}
+initialization before eventual qualification; production providers are unaffected.
+
+No build, preprocessor, executable test, native/gameplay/SQL/flat/recovery or
+performance qualification ran. Actual ROOM worker/factory lifetime wiring,
+full prospective32MiB producer/worker/reader/commit overlap, original warm/cold
+world publication, terminal origin/ZRR1 retention, guarded ACK, stopped legacy
+enrollment and all applicable release gates remain. The whole shared cold reader
+5b2ff6b8 stays UNSELECTED. Source stays private/unpromoted and admission CLOSED;
+inactive/declined-spell/production gates and unrelated WIP are preserved. Original
+Plan1 acceptance keeps its recorded scope; Plans2-4/fullPlan5/R1-R8/release remain
+unfinished. Root owns shared contracts/coordinator/producers/registry/activation;
+independent Plan5 ownership is unchanged. The ongoing goal remains active.
