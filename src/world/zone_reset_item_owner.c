@@ -1030,8 +1030,15 @@ bool zone_reset_item_owner::reserve_warm_command_scratch(size_t bytes, void *con
 	if (!scratch || !scratch->root || persistence_mode_requires_mysql() ||
 	    !economic_gameplay_authority::active_regular_flat())
 		return false;
+	size_t exclusive = 0;
+	// Only the genuine same-lock lender can authenticate borrowed coordinator
+	// bytes. Keep those CURRENT bytes out of retained ROOT high-water scratch.
+	// Without an actual borrow the complete original prefix is unchanged.
+	if (!item_native_quest_coordinator_budget_scope_owner::exclusive_prefix(
+		    scratch, reserve_warm_command_scratch, bytes, &exclusive))
+		return false;
 	return rebase_warm_command_scratch(*scratch,
-		std::max(bytes, scratch->root->preparation_scratch));
+					   std::max(exclusive, scratch->root->preparation_scratch));
 }
 
 bool zone_reset_item_owner::retain_warm_command_output(warm_command_scratch &scratch,
@@ -4645,7 +4652,13 @@ bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &
 	}
 	scratch.global_scope = true;
 	size_t current = 0, live = warm_command_scratch::inline_bytes();
-	if (flat_current_global_storage_with_literal_pools(&current) &&
+	// This private candidate runs only after startup. Genuine scope identity
+	// selects its outside observer BEFORE the first shared charge; no selected
+	// six-owner caller or replay callback registers the locking observer.
+	if (item_native_quest_coordinator_budget_scope_owner::register_observer(
+		    &scratch, zone_reset_room_publication_owner::current_coordinator_storage,
+		    reserve_warm_command_scratch) &&
+	    flat_current_global_storage_with_literal_pools(&current) &&
 	    warm_scratch_add(live, current))
 	{
 		scratch.root->preparation_scratch = live;

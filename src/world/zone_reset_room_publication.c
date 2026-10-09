@@ -1953,6 +1953,14 @@ bool zone_reset_room_publication_owner::retained_size(
 	return true;
 }
 
+bool zone_reset_room_publication_owner::current_coordinator_storage(size_t *output) noexcept
+{
+	// Passive complete CURRENT census under the real coordinator mutex. The
+	// shared owner uses its actual borrowed census during same-lock callbacks;
+	// this outside observer is never a storage lease or admission capability.
+	return critical_zone_reset_item_publication_owner::current_storage_bytes(output);
+}
+
 critical_submit_result
 zone_reset_room_publication_owner::submit_warm(critical_native_recovery_envelope envelope)
 {
