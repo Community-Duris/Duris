@@ -70,6 +70,17 @@ writer policies are introduced. Evidence: `build-successor-73195295e/{native,bui
 under the candidate evidence directory below. Full rebuilt binary link and smoke
 remain pending; these object checks grant no gameplay or release qualification.
 
+The subsequent full `201b5fc71` SQL compile reached linking without source errors;
+linking failed because installed WSL linker scripts reference absent `/lib` math
+libraries. Genuine matching libraries exist under `/usr/lib`; a private linker
+script alias can retain the original production flags and system files. The
+full flat compile found one missing direct `RENT_CRASH` declaration in the SHOP
+native checkpoint. Including its existing `core/files.h` owner fixes that TU;
+fresh strict SQL and flat object checks both passed. The temporary build outputs
+were unavailable after the WSL session ended, so the retry could not verify its
+source and did not link. The next full candidate run must retain binaries and
+use owned persistent output directories. Full link and smoke remain unqualified.
+
 Published source `25b863da7727b57c30901cf271a8fa555c9ee954` reached both fresh
 production compilers. Both stopped at the same missing-field initializer error
 in the Harvester caller. The complete repair explicitly initializes refinement
