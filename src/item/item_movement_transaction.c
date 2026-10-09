@@ -4841,6 +4841,13 @@ size_t native_quest_birth_retained_bytes = 0;
 bool (*native_quest_flat_global_observer)(size_t *) noexcept = nullptr;
 const void *native_quest_flat_global_scope = nullptr;
 bool native_quest_flat_literal_pool_owned = false;
+// Nonowning game-thread accounting only. The coordinator lends CURRENT bytes
+// only during a real reserve callback under its own mutex; ROOT never caches them.
+bool (*native_quest_coordinator_observer)(size_t *) noexcept = nullptr;
+bool (*native_quest_coordinator_reserve)(size_t, void *) noexcept = nullptr;
+const void *native_quest_coordinator_lender = nullptr;
+const void *native_quest_coordinator_guard = nullptr;
+size_t native_quest_coordinator_borrowed_bytes = 0;
 
 size_t native_quest_pending_count()
 {
@@ -4865,6 +4872,11 @@ void native_quest_reset_for_tests()
 	native_quest_flat_global_observer = nullptr;
 	native_quest_flat_global_scope = nullptr;
 	native_quest_flat_literal_pool_owned = false;
+	native_quest_coordinator_observer = nullptr;
+	native_quest_coordinator_reserve = nullptr;
+	native_quest_coordinator_lender = nullptr;
+	native_quest_coordinator_guard = nullptr;
+	native_quest_coordinator_borrowed_bytes = 0;
 }
 bool native_quest_preparation_capacity(size_t incoming, bool include_driver = true,
 				       bool include_birth = true)
@@ -4900,6 +4912,33 @@ bool native_quest_preparation_capacity(size_t incoming, bool include_driver = tr
 		    globals > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
 			return false;
 		incoming += globals;
+	}
+	// The genuine same-lock callback lends current ownership once. Outside it,
+	// take a fresh passive observation; this observer is registered only by the
+	// opt-in full ROOT after startup replay, never by ordinary/default paths.
+	if (native_quest_coordinator_observer)
+	{
+		size_t coordinator = 0;
+		constexpr size_t slots = sizeof(native_quest_coordinator_observer) +
+					 sizeof(native_quest_coordinator_reserve) +
+					 sizeof(native_quest_coordinator_lender) +
+					 sizeof(native_quest_coordinator_guard) +
+					 sizeof(native_quest_coordinator_borrowed_bytes);
+		if (!nevent_is_game_thread() || slots > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
+			return false;
+		incoming += slots;
+		if (native_quest_coordinator_lender)
+		{
+			if (!native_quest_coordinator_guard ||
+			    native_quest_coordinator_guard != native_quest_flat_global_scope)
+				return false;
+			coordinator = native_quest_coordinator_borrowed_bytes;
+		}
+		else if (!native_quest_coordinator_observer(&coordinator))
+			return false;
+		if (coordinator > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
+			return false;
+		incoming += coordinator;
 	}
 	for (const auto &[key, entry] : native_quest_acceptances)
 	{
@@ -8972,4 +9011,90 @@ bool item_native_quest_global_budget_scope_owner::literal_pool_owned() noexcept
 {
 	return nevent_is_game_thread() && native_quest_flat_global_observer &&
 	       native_quest_flat_literal_pool_owned;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::register_observer(
+	const void *actual_guard, bool (*current_storage)(size_t *) noexcept,
+	bool (*actual_reserve)(size_t, void *) noexcept) noexcept
+{
+	if (!actual_guard || !current_storage || !actual_reserve || !nevent_is_game_thread() ||
+	    actual_guard != native_quest_flat_global_scope ||
+	    !native_quest_flat_literal_pool_owned || !native_quest_flat_global_observer ||
+	    native_quest_coordinator_lender ||
+	    (native_quest_coordinator_observer &&
+	     (native_quest_coordinator_observer != current_storage ||
+	      native_quest_coordinator_reserve != actual_reserve)))
+		return false;
+	native_quest_coordinator_observer = current_storage;
+	native_quest_coordinator_reserve = actual_reserve;
+	return true;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::registered() noexcept
+{
+	return native_quest_coordinator_observer != nullptr;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::begin_borrow(
+	const void *actual_lender, bool (*actual_reserve)(size_t, void *) noexcept,
+	void *actual_guard, size_t current) noexcept
+{
+	if (!actual_lender || !actual_guard || !nevent_is_game_thread() ||
+	    !native_quest_coordinator_observer || native_quest_coordinator_lender ||
+	    actual_reserve != native_quest_coordinator_reserve ||
+	    actual_guard != native_quest_flat_global_scope || !native_quest_flat_literal_pool_owned)
+		return false;
+	native_quest_coordinator_lender = actual_lender;
+	native_quest_coordinator_guard = actual_guard;
+	native_quest_coordinator_borrowed_bytes = current;
+	return true;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::end_borrow(const void *actual_lender) noexcept
+{
+	if (!actual_lender || !nevent_is_game_thread() ||
+	    actual_lender != native_quest_coordinator_lender)
+		return false;
+	native_quest_coordinator_lender = nullptr;
+	native_quest_coordinator_guard = nullptr;
+	native_quest_coordinator_borrowed_bytes = 0;
+	return true;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::exclusive_prefix(
+	const void *actual_guard, bool (*actual_reserve)(size_t, void *) noexcept, size_t full,
+	size_t *exclusive) noexcept
+{
+	if (!exclusive || !nevent_is_game_thread())
+		return false;
+	size_t result = full;
+	if (native_quest_coordinator_lender)
+	{
+		if (!native_quest_coordinator_observer || !actual_guard ||
+		    actual_guard != native_quest_coordinator_guard ||
+		    actual_guard != native_quest_flat_global_scope ||
+		    actual_reserve != native_quest_coordinator_reserve ||
+		    native_quest_coordinator_borrowed_bytes > full)
+			return false;
+		result -= native_quest_coordinator_borrowed_bytes;
+	}
+	*exclusive = result;
+	return true;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::reset_before_replay() noexcept
+{
+	// Unregistered original callers preserve their behavior, including tests
+	// before the game thread is installed. A selected owner cannot be reset in
+	// the middle of its actual guard or borrowed callback.
+	if (!native_quest_coordinator_observer)
+		return native_quest_coordinator_lender == nullptr;
+	if (!nevent_is_game_thread() || native_quest_coordinator_lender ||
+	    native_quest_flat_global_scope)
+		return false;
+	native_quest_coordinator_observer = nullptr;
+	native_quest_coordinator_reserve = nullptr;
+	native_quest_coordinator_guard = nullptr;
+	native_quest_coordinator_borrowed_bytes = 0;
+	return true;
 }

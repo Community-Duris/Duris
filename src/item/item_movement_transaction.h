@@ -283,6 +283,27 @@ class item_native_quest_global_budget_scope_owner final
 	static bool literal_pool_owned() noexcept;
 };
 
+// Private current-byte ownership split. Only the real ROOT can register the
+// outside observer; only the coordinator's mutex-owning lender can borrow it.
+// No source, execution, publication, retry, activation or ACK authority follows.
+class item_native_quest_coordinator_budget_scope_owner final
+{
+	friend class zone_reset_item_owner;
+	friend class critical_room_shared_budget_lender;
+	static bool register_observer(const void *actual_guard,
+				      bool (*current_storage)(size_t *) noexcept,
+				      bool (*actual_reserve)(size_t, void *) noexcept) noexcept;
+	static bool registered() noexcept;
+	static bool begin_borrow(const void *actual_lender,
+				 bool (*actual_reserve)(size_t, void *) noexcept,
+				 void *actual_guard, size_t current) noexcept;
+	static bool end_borrow(const void *actual_lender) noexcept;
+	static bool exclusive_prefix(const void *actual_guard,
+				     bool (*actual_reserve)(size_t, void *) noexcept, size_t full,
+				     size_t *exclusive) noexcept;
+	static bool reset_before_replay() noexcept;
+};
+
 class item_native_quest_gameplay_publication_owner final
 {
     private:

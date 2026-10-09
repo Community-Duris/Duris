@@ -350,8 +350,8 @@
       "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "45dcffc7e4afda424d64688d60ac0519d2f7fbc2afbba485e249d724eb4b0e6f",
-      "src/item/item_movement_transaction.h": "f493ff64767b5cf5787d80bc436deabc3c7d9b683994abc7334d1be6e8c262e1",
+      "src/item/item_movement_transaction.c": "a478e113c71cf2a5fa97bbfd3b33c8b4bd63e4a4b8609d020bb4e3acf98e40c0",
+      "src/item/item_movement_transaction.h": "f4384d98288924fa34be2b46b66a2ded373a9062cf49cddee233226846f9694e",
       "src/item/item_ownership_runtime.c": "ceeaf4c2086369bf7d249408def297d673492c4032deddfb31db78d6edce261d",
       "src/item/item_ownership_runtime.h": "7c625f1dca7e066c64df5666d489cdabab3a28645836e06e44ab8a574b625650",
       "src/item/item_transfer_command.c": "f60a0906736ea6214051c2dbc59dbd5318a580e70363da5ef2d92c7f131ceb31",
@@ -54818,7 +54818,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7749
+          7788
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",
