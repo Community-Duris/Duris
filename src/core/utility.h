@@ -56,4 +56,15 @@ bool diagnostic_format_variadic_message_bounded(const char *, const char *, cons
 						char **, bool (*)(size_t, void *) noexcept, void *,
 						size_t outer_live,
 						size_t *retained_payload_bytes = nullptr) noexcept;
+
+// Full original diagnostic formatting/fanout/logging companions. Debug outer
+// includes ALL-current registered queue/pager observer once; refresh its actual
+// retained allowance on EVERY return/drain/disconnect. False after a prior send
+// may retain actual output. Native caller MUST record returned effect first.
+// Logit keeps original timestamp/counter/open/mkdir/fallback/rewind/stderr order.
+// Original funcs unchanged; no general output policy, source or activation authority.
+bool diagnostic_debug_bounded(bool (*)(size_t, void *) noexcept, void *, size_t, const char *,
+			      ...) noexcept __attribute__((format(printf, 4, 5)));
+bool diagnostic_logit_bounded(bool (*)(size_t, void *) noexcept, void *, size_t, const char *,
+			      const char *, ...) noexcept __attribute__((format(printf, 5, 6)));
 #endif // _UTILITY_H_
