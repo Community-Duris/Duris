@@ -2690,6 +2690,27 @@
         "test_economic_sql_canonical_audit.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "flatfile_shopkeeper_initial_checkpoint",
+      "path": "tests/async/test_flatfile_shopkeeper_initial_checkpoint.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 120,
+      "covers": [
+        "test_flatfile_shopkeeper_initial_checkpoint.py"
+      ],
+      "required_markers": [
+        "flatfile shopkeeper INITIAL checkpoint regression passed"
+      ]
     }
   ]
 }
