@@ -58,6 +58,75 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Bounded storage source preparation selected - 2026-10-09
+
+New publishedbf4942f9fd09364188b7af1a31f33bd2b82b9a11 adds48 report lines to
+SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md. Root reads the successor and
+changed remaining/finish/checkpoint dispositions. Actual src/tests/migrations/
+scripts trees are unchanged from reviewedaef2722fd. Reported private candidate
+d89f715fb9a2c8c9e75555513f9529b3841c7ec008153b2e1560a7749d36dd47 has220 paths,
+748 additional provider records/34 inverses. Selected source reportedly adds
+same-FD secure read admission, original journal structural sizing, complete keeper/
+item sizing, exact item encoder storage and a borrowed-lock CURRENT reader.
+Checksums remain in authenticated decoders after admission; sizing successors
+remove duplicate pre-reservation OpenSSL SHA256 calls. Explicit C++ requests under
+pinned libstdc++13 exclude OpenSSL/system internals. Caller aggregate lifetimes/
+full original32MiB budget, world/capture/origin/ACK and major qualification remain
+open. These are published REPORTS,not available private bodies or executed proof.
+
+Priority1:ONE active architecture PRIVATE source-fact delivery. Sole output:
+D:/Dev/Temp/shared-flat-bounded-read-storage-facts-20261009/
+SHARED_FLAT_BOUNDED_READ_STORAGE_FACTS_2026-10-09.txt,
+plus exact provider/range/reused-artifact pins,index and metadata-only verifier.
+Benefit:ground future original missing-SHOP acceptance in actual file admission,
+authenticated journal decode and complete CURRENT keeper/item allocation lifetime,
+without conflating serialized limits,retained proposal charge and transient peak.
+This is distinct from CLOSED worker F3 retained proposal/reservation facts.
+
+Trace only actual flatfile_store.c/.h,flatfile_authority_transaction.c/.h,
+flatfile_shopkeeper_repository.c/.h and player_snapshot_codec.c/.h,plus directly
+required type/limit providers. Establish ordinary secure open/fstat/read and
+output mutation/error semantics;wire bounds versus reserve/resize and simultaneous
+file/journal/decoded records/affects/items/validation/UID/equipment/encoder buffers;
+whole-catalog scope and unrelated keeper records;original checksum/field/order/UID/
+equipment validation;successful and refused cleanup/lifetime paths. State precise
+public facts with raw line spans and minimal future observation obligations.
+Separate pre-apply budget refusal from apply/remove/final directory-sync uncertainty;
+absent journal after failed final fsync is not settled durability. Reuse CLOSED
+worker/INITIAL-codec/cold/current/Smith packets,not another general inventory/map.
+Private bounded helpers,exact allocator capacity/peak and integration are unavailable;
+no private sizing promise is attributed to unchanged ordinary public APIs.
+
+Priority2:event-dependent quest extension of the SAME original missing-SHOP
+journey after independent review of architecture facts. Target preallocation
+refusal/output preservation,original authenticated decoder acceptance,unrelated
+CURRENT keeper/UID costs,scratch lifetime/caller aggregate overlap and genuine
+journal failure cuts. Keep quest/all prior packets CLOSED pending that input;
+no new runner,duplicate primary/Plan5 sizing implementation or completed F1-F4 rewrite.
+
+Available:exactbf494 report,unchanged eight public providers and closed artifacts.
+Missing:private selected bounded-read/journal/item/keeper/lifetime/reader bodies,
+actual pinned allocator observations and aggregate caller/reservation ownership;
+genuine shared producer/callback/native fixture and legal fault/budget exports.
+Missing inputs block dependent execution,not this limited source preparation.
+Architecture owns private D: note/evidence only;root independent factual/source
+review required before closure and quest handoff. Preserve both isolated worktrees,
+live jobs and sealed bundles. No maintained source/tests/coverage/manifest/contracts/
+Makefile changes,imports,patches or private artifact commits;no compiler/preprocessor/
+tests/build/DB/server/native/gameplay/recovery/event/performance runs. Primary owns
+shared sizing,aggregate integration and qualification;Plan5 retains its ownership.
+
+Plan2 flat initial ROOM participants are reported a separate primary source stream;
+do not duplicate it. Named SQL post-ACK room coin boot defect is reported already
+solved/qualified at its recorded scope;this checkpoint supplies no fresh runtime
+proof. Published missing-API P1 and F1 startup readiness remain unresolved;private
+reports are not verified maintained adoption. Admission stays CLOSED. Actual root/
+worker Goals remain BLOCKED/unfinished;preparation does not resume them. Broader
+Plans1-5/applicable original R1-R8/integrated qualification,required blockers and
+published owner completion disposition remain unfinished;heartbeat ACTIVE.
+Root raw source/report/tree and dispatch proof:
+D:/Dev/Temp/coordinator-bounded-storage-dispatch-20261009/.
+
 ## Flat worker acceptance reviewed; publication prerequisites reassessed - 2026-10-09
 
 Quest's SHARED_FLAT_WORKER_RECONCILIATION_ACCEPTANCE_DELTA_2026-10-09.txt now
