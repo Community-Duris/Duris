@@ -8570,3 +8570,22 @@ new/unmapped sites. Native tests remain deferred. Complete mixed-journal/coordin
 and actual ROOM warm/cold publication/checkpoint/effects/ACK/terminal work remain
 open. No plan/release completion claim. Accounting inactive/admission CLOSED,
 coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Complete mixed-journal native retirement dependency implemented - 2026-10-09
+
+[The journal retirement source](MIXED_JOURNAL_RETIREMENT_ADMISSION_2026-10-09.md)
+adds owning bounded single phase2 retirement with full original legacy/native
+framing, exact legacy duplicate bytes/native refusal, original record limits and
+complete v4 recovery proof. Actual full-file/frame/clone/array/attempt/postimage/
+path and fixed temporary peaks are prospectively admitted. Original exact BODY/
+uncertain full-postimage and file/namespace durability protocol remains. Persistent
+attempt storage has an atomic nonlocking census counted exactly once by native
+preparation capacity; no fallible callback follows rename. Independent raw/
+corrected/final source review, original insertion-only inverses and tokens/
+preprocessor PASS. All 931 policies/393 pins authenticate; zero new/unmapped sites.
+Native tests/fault/restart remain deferred. Bounded entry remains unjoined to
+guarded coordinator/ROOM terminal callback; actual warm/cold publication/checkpoint/
+effects/ACK/aggregate qualification remains open. No plan/release completion claim.
+Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED,
+protected WIP and primary goal ACTIVE persist.
