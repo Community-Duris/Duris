@@ -3209,3 +3209,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Four genuine cold room paths implemented - 2026-10-09
 
 [Complete four-route source join](COLD_ROOM_FOUR_ROUTE_INTEGRATION_2026-10-09.md) preserves full original canonical/UID/cache/physical/custody/progress/receipt proof and invokes real published restore/adopt/rebuild/light/binding providers. CURRENT union/stage ownership and every native handoff refresh once; actual topology/light/enrollment/binding results remain sticky before later refusal. One double global rebase found in full RAW review was repaired; full recheck and formattedtokens/PP/allfour preciseinverses passed. Private paired publication census added; original SQL/inactive/selectedsixglobalroute unchanged. 931 policies/399 pins authenticate, zero new/unmapped sites. Full ROOT/coordinator/pool/selector and native qualification remain open; candidate stays unselected, accounting inactive/CLOSED, tests batched, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Actual coordinator table ownership implemented - 2026-10-09
+
+[Owning map storage](COORDINATOR_NATIVE_MAP_STORAGE_2026-10-09.md) retains the exact supported original table/defaultallocator/hash/cache/primepolicy and ordinary algorithms while observing current storage and the real copied insertion policy. No layoutcast, guessed hiddenstate or probeallocation. Full RAW review and formattedtokens/PP/preciseclass2typeinverse passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full coordinator retained census/initial callback/native submit/shared-root joining remains open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

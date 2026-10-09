@@ -306,7 +306,113 @@ class native_identity_queue final : public std::deque<std::string>
 static_assert(sizeof(native_identity_queue) == sizeof(std::deque<std::string>));
 #endif
 
-std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
+// The supported original unordered_map owns this exact underlying table.
+// A genuinely new data-free owner exposes its real public policy accessor;
+// no existing unordered_map is cast, mirrored or interpreted by layout.
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+template <typename Value, typename Hash = std::hash<std::string>,
+	  typename Equal = std::equal_to<std::string>>
+class native_admission_string_table final
+	: public std::__umap_hashtable<std::string, Value, Hash, Equal>
+{
+	using table_type = std::__umap_hashtable<std::string, Value, Hash, Equal>;
+	using original_type = std::unordered_map<std::string, Value, Hash, Equal>;
+	using actual_node =
+		std::__detail::_Hash_node<typename table_type::value_type,
+					  std::__cache_default<std::string, Hash>::value>;
+
+    public:
+	using table_type::table_type;
+	using table_type::operator=;
+	using table_type::find;
+	native_admission_string_table() = default;
+	native_admission_string_table(const native_admission_string_table &) = default;
+	native_admission_string_table(native_admission_string_table &&) = default;
+	native_admission_string_table &operator=(const native_admission_string_table &) = default;
+	native_admission_string_table &operator=(native_admission_string_table &&) = default;
+	// Exact original unordered_map transparent lookup forwarding. All ordinary
+	// key lookup/mutation algorithms are inherited from the actual original table.
+	template <typename Lookup>
+	auto find(const Lookup &key) -> decltype(std::declval<table_type &>()._M_find_tr(key))
+	{
+		return this->_M_find_tr(key);
+	}
+	template <typename Lookup> auto find(const Lookup &key) const
+		-> decltype(std::declval<const table_type &>()._M_find_tr(key))
+	{
+		return this->_M_find_tr(key);
+	}
+	bool current_table_heap_bytes(size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		size_t bytes = 0;
+		// The actual table's bucket_count==1 uses its inline single bucket.
+		const size_t buckets = this->bucket_count();
+		if (!buckets ||
+		    (buckets > 1 && buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		if (buckets > 1)
+			bytes = buckets * sizeof(std::__detail::_Hash_node_base *);
+		if (this->size() > (SIZE_MAX - bytes) / sizeof(actual_node))
+			return false;
+		bytes += this->size() * sizeof(actual_node);
+		for (const auto &entry : *this)
+			if (entry.first.capacity() > 15)
+			{
+				if (entry.first.capacity() == SIZE_MAX ||
+				    entry.first.capacity() + 1 > SIZE_MAX - bytes)
+					return false;
+				bytes += entry.first.capacity() + 1;
+			}
+		// Nested mapped-value ownership is separately inspected by its real owner.
+		*output = bytes;
+		return true;
+	}
+	bool next_unique_insert_extra_peak(const std::string &key, size_t fresh_mapped_heap,
+					   size_t *output) const noexcept
+	{
+		if (!output || this->size() == this->max_size() || key.size() == SIZE_MAX)
+			return false;
+		const size_t text = key.size() > 15 ? key.size() + 1 : 0;
+		if (text > SIZE_MAX - sizeof(actual_node) ||
+		    fresh_mapped_heap > SIZE_MAX - sizeof(actual_node) - text)
+			return false;
+		size_t extra = sizeof(actual_node) + text + fresh_mapped_heap;
+		try
+		{
+			// Copy the genuine CURRENT policy. Its original _M_need_rehash owns
+			// exact resize thresholds/primes; the real table state remains unchanged.
+			auto policy = this->__rehash_policy();
+			const auto next =
+				policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+			if (next.first && next.second > 1)
+			{
+				if (next.second >
+				    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+					return false;
+				// Original node/key/default mapped construction precedes rehash.
+				// Entire new bucket array coexists with old table ownership until
+				// _M_rehash_aux finishes; do not subtract old buckets at this peak.
+				extra += next.second * sizeof(std::__detail::_Hash_node_base *);
+			}
+			*output = extra;
+			return true;
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+};
+#else
+template <typename Value, typename Hash = std::hash<std::string>,
+	  typename Equal = std::equal_to<std::string>>
+using native_admission_string_table = std::unordered_map<std::string, Value, Hash, Equal>;
+#endif
+
+native_admission_string_table<std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
 native_identity_queue pending_admission;
 critical_completion_delivery completion_delivery;
@@ -319,7 +425,15 @@ struct entity_key_hash
 	}
 };
 std::unordered_map<std::string, std::string, entity_key_hash, std::equal_to<>> active_keys;
-std::unordered_map<std::string, native_identity_queue, entity_key_hash, std::equal_to<>> fences;
+native_admission_string_table<native_identity_queue, entity_key_hash, std::equal_to<>> fences;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+static_assert(sizeof(decltype(operations)) ==
+	      sizeof(std::unordered_map<std::string, std::unique_ptr<operation_state>>));
+static_assert(sizeof(decltype(fences)) ==
+	      sizeof(std::unordered_map<std::string, native_identity_queue, entity_key_hash,
+					std::equal_to<>>));
+#endif
 std::unordered_map<std::string, completed_state> completed_cache;
 std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
