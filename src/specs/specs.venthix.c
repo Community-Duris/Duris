@@ -1204,3 +1204,52 @@ bool quest_mobile_native_zombie_stage::observe_published(P_obj object) noexcept
 	       mob_index[number].virtual_number == 87 &&
 	       mob_index[number].func.mob == zgame_mob_proc;
 }
+
+// Serialized owning registry observation only; no enrollment authority.
+bool quest_mobile_native_zombie_registry_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t bytes = sizeof(zgames);
+	if (zgames.capacity() > (SIZE_MAX - bytes) / sizeof(ZombieGame *))
+		return false;
+	bytes += zgames.capacity() * sizeof(ZombieGame *);
+	for (const auto *game : zgames)
+	{
+		if (!game || sizeof(ZombieGame) > SIZE_MAX - bytes)
+			return false;
+		bytes += sizeof(ZombieGame);
+		if (game->zombies.capacity() > (SIZE_MAX - bytes) / sizeof(P_char))
+			return false;
+		bytes += game->zombies.capacity() * sizeof(P_char);
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool quest_mobile_native_zombie_stage::publish_bounded(P_obj object,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)object;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// The original publish has one named pointer and no allocation: prepare /
+	// restore already reserved the registry slot. The caller retains both the
+	// current registry and this private game until ownership transfers.
+	if (!reserve || sizeof(ZombieGame *) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(ZombieGame *), context))
+		return false;
+	return publish(object);
+#endif
+}
