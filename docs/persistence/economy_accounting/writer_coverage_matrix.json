@@ -173,6 +173,8 @@
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
       "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
+      "src/core/utility.c": "6efc8ad366b80abc500eabe0f07ff0d39da4e3708b3bfb9c6f0895a2bcf7e6af",
+      "src/core/utility.h": "5eb16e44423115edc6797fad4b1c368aa5f010b004472267bf78480ad8d5a8b6",
       "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
       "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
       "src/economy/auction_item_claim_accounting.c": "7fe018e60a4d16c3d188703ea70fceb48e3d7b5026e239a6017fc8930d8a572d",

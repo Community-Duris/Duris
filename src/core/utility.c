@@ -8278,3 +8278,66 @@ unsigned int popcnt(unsigned long long x)
 	return res;
 #endif
 }
+
+bool diagnostic_format_variadic_message_bounded(const char *prefix, const char *suffix,
+						const char *format, va_list &args, char **output,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer_live,
+						size_t *retained_payload_bytes) noexcept
+{
+	if (!format || !output || !reserve)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)prefix;
+	(void)suffix;
+	(void)args;
+	(void)context;
+	(void)outer_live;
+	(void)retained_payload_bytes;
+	return false;
+#else
+	struct workspace
+	{
+		va_list copy;
+		int body_len;
+		size_t prefix_len, suffix_len, request;
+		char *buf;
+	};
+	if (sizeof(workspace) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(workspace), context))
+		return false;
+	workspace work{};
+	const char *safe_prefix = prefix ? prefix : "";
+	const char *safe_suffix = suffix ? suffix : "";
+	va_copy(work.copy, args);
+	work.body_len = vsnprintf(nullptr, 0, format, work.copy);
+	va_end(work.copy);
+	if (work.body_len < 0)
+		return false;
+	work.prefix_len = strlen(safe_prefix);
+	work.suffix_len = strlen(safe_suffix);
+	if (work.prefix_len > SIZE_MAX - static_cast<size_t>(work.body_len) ||
+	    work.suffix_len >= SIZE_MAX - work.prefix_len - static_cast<size_t>(work.body_len))
+		return false;
+	work.request = work.prefix_len + static_cast<size_t>(work.body_len) + work.suffix_len + 1;
+	if (work.request > SIZE_MAX - outer_live - sizeof(workspace) ||
+	    !reserve(outer_live + sizeof(workspace) + work.request, context))
+		return false;
+	work.buf = static_cast<char *>(malloc(work.request));
+	if (!work.buf)
+		return false;
+	memcpy(work.buf, safe_prefix, work.prefix_len);
+	va_copy(work.copy, args);
+	vsnprintf(work.buf + work.prefix_len, static_cast<size_t>(work.body_len) + 1, format,
+		  work.copy);
+	va_end(work.copy);
+	memcpy(work.buf + work.prefix_len + static_cast<size_t>(work.body_len), safe_suffix,
+	       work.suffix_len);
+	work.buf[work.request - 1] = '\0';
+	*output = work.buf;
+	if (retained_payload_bytes)
+		*retained_payload_bytes = work.request;
+	return true;
+#endif
+}
