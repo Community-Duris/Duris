@@ -122,6 +122,10 @@ class zone_reset_original_room_placement_stage final
 	// on EVERY return. Begun witness and partial native effects cannot be retried.
 	bool place_bounded(quest_mobile_native_item_effect &, bool (*)(size_t, void *) noexcept,
 			   void *, size_t outer_live) noexcept;
+	// Complete original current room-light observation for private cold replay.
+	// Outer includes CURRENT diagnostic outputs once; refresh on every return.
+	static bool current_light_bounded(int, int *, bool (*)(size_t, void *) noexcept, void *,
+					  size_t outer_live) noexcept;
 	size_t retained_bytes() const noexcept { return sizeof(*this); }
 	economic_source_event source_ = {};
 	P_obj object_ = nullptr;
