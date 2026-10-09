@@ -452,6 +452,95 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Factory acceptance correction reviewed; terminal retention selected - 2026-10-09
+
+Quest's d818adbd2f7b913c5846a9a17e0ab549c1da40a1 acceptance packet now PASSes
+independent SOURCE/DESIGN review and is CLOSED as finite preparation, following
+exactly two required current/retained snapshot wording corrections. Architecture's
+factory packet remains independently CLOSED at its original pins/seals. No packet
+has been imported or executed; all six quest component/native cuts are UNEXECUTED.
+Actual root Goal remains BLOCKED; quest reports actual correction-boundary Goal
+reads BLOCKED unchanged, two additional reads with no mutation. Monitor ACTIVE.
+
+Corrected private quest note:
+D:/Dev/Temp/published-room-flat-factory-binding-acceptance-delta-20261009/
+PUBLISHED_ROOM_FLAT_FACTORY_BINDING_ACCEPTANCE_DELTA_2026-10-09.txt,
+30200 bytes SHA4a1e6d846b7569175a3706a79118e32757032fe1da938e10c24be90744c28518.
+PINS5761977 bytes SHAe872b2347e1e0cb3d71aad19b9e3e1b9b11eecef266cfb9ec7c61f6a0f3c4a3e;
+INDEX671 bytes SHAd1902c946803233f58774bc34aa50756efc14112fbb509e28ca9c7d406f4ebd3.
+Verifier18684 bytes SHA06daea0444eec8e13b141e638f500bc4de34bdbf2875e43b54d6a40b315687a2;
+receipt2303 bytes SHAc8a787c39e6f18fb192904c682791b0991da23720822a9ed0d77867a28257ea3.
+Complete original five-file failed-review history stays in sibling
+published-room-flat-factory-binding-acceptance-delta-20261009-history-before-current-retained-boundary-correction.
+Original note29610 bytes SHA201a39b13a19cfb6a275d0c4f40c926a431701e4314d907b40ed97a5b39a912d,
+PINS5752428 bytes SHA27adc20f10194b3393cf9592d619a66ccfb54b35b282f0840aaa79098b6906c8,
+INDEX671 bytes SHAfe2270fcac3f05deb87e88d11f60614145e50357b4e6ccaae5d7663f8602bfe5
+remain authenticated. Historical pending/failed-review records are not rewritten.
+
+Root read the full original note/verifier and complete correction verifier diff.
+Independent source authentication PASS exit0:38 whole providers,35 selected full
+ranges,17 forward/17 inverse diffs,20 unchanged original full functions,one original
+C prefix,three entry-reference censuses,17 whole frontier equalities,25 reused
+files,four CLOSED indexes/16 payloads and preserved prior native ACK inverse.
+Independent correction authentication PASS exit0 proves all five history seals,
+two exact segment forward/inverses,all original PINS raw bytes,three complete real
+current/retained functions,eight unchanged verifier functions and unchanged original
+receipt fields. Audited corrected worker metadata verifier PASS exit0. No product
+module/build/test/native/DB or private fixture executes. No required correction remains.
+
+Exact command/if_flag/arg1-4 snapshot equality applies to CURRENT flat source/open
+capture. RETAINED wrappers pass current=false and preserve actual table/cursor,
+slot,command-kind/O-room and subsequent holder checks. Other mutations have no
+blanket historical snapshot refusal oracle; each future assertion needs an actual
+checked CURRENT snapshot or a specific real retained-holder fact/supported control.
+F2-F6 retain genuine attempted-factory/no SQL/no reroll,full UID-parent-order native
+forest,actual parsed/restored predecessor before fallback,strong outputs versus
+prior owner moves,real ABI admission/lifetime and once-only warm/cold/checkpoint/
+ACK/retirement dependencies. Primary format/math reports remain reported proof.
+
+Prioritized evolving queue after this handoff:
+1. Architecture ACTIVE: ONE private PUBLISHED_ROOM_TERMINAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt,
+   assigned after independent factory closure. Map genuine callback/borrowed root
+   lock/envelope/BODY correlation,recovery-before-staging,storage outcome versus
+   complete transfer,retained carrier/fences and actual admission lifetimes. Root
+   independent review PENDING. Preserve its live work and original5c53 worktree.
+2. Quest selected next ONE private PUBLISHED_ROOM_TERMINAL_RETENTION_ACCEPTANCE_DELTA_2026-10-09.txt
+   plus minimal sealed source/metadata proof on D:. Benefit: implementation-ready
+   genuine future native fixture/cut blueprint for guarded terminal retention and
+   precise ROOM1/ROOM2 journal transport controls. At most six source-grounded cuts;
+   no architecture map,writer,driver,fixture implementation or repeated CLOSED cases.
+   Inputs:43ecc9b081b15753d82ecd0adac9769f36a35808 actual179045 parent/seven writer/
+   commit/atomic providers/full84-line handoff,a18bb459277e7249f338b46d3c94dedee871f639
+   actual4a8 parent journal transport,original full predicates/callers/fault cuts,
+   CLOSED immutable terminal/current/ACK/factory/literal packets by reference.
+   Full body/absence/conflict before writes,same borrowed lock/live budget,real
+   commit result plus publication outcome/retry,secure readback,sticky denial/
+   strong output limits and authentic codec-built ROOM2 journal round trips are
+   distinct acceptance obligations. Root source/design/metadata review PENDING.
+3. Still unavailable: accepting flat dispatcher/native cursor caller,genuine warm/
+   cold callback/fixture/failure controls,mixed-journal retirement/coordinator prefix,
+   complete capture/ABI/allocator32MiB and required integrated gameplay/persistence/
+   recovery qualification. Writer is available SOURCE; callback remains unjoined.
+   Reported private fee_journal_cases.cpp is unavailable source/proof. Missing
+   execution prerequisites block dependent execution only. Primary owns shared
+   implementation/contracts/math/integration/qualification; Plan5 owns suite and
+   SQL0065/schema65/audit/backup/restore/recovery. No adoption wait or other chat.
+4. Preserve both clean isolated worktrees,all CLOSED seals/jobs. Workers own only
+   distinct private notes/metadata; root only three coordination docs. No shared
+   authority/source/test/schema rewrite,compile/preprocess/link/product/native/DB/
+   root fixture,private commit/import/registration,activation/deploy/production.
+
+Root exact review/correction/assignment/publication proof remains at
+D:/Dev/Temp/coordinator-factory-binding-review-20261009. The previously recorded
+two metadata preparation failures are resolved; a later note-display substring
+lookup and a verifier-filename lookup failed read-only and were resolved using
+raw correction bytes and the actual verify.py. No product/control change or
+unresolved metadata error. Only three docs receive raw insertion/exact inverse.
+Broader Plans1-5/applicable original R1-R8/backend/gameplay/persistence/recovery,
+required blockers/owner completion and selected reviews/handoffs remain open.
+Accounting inactive,admission CLOSED,coverage incomplete,release BLOCKED persists.
+
+
 ## Factory authority preparation reviewed; quest snapshot clarification - 2026-10-09
 
 Architecture's original61b325765509889de7fcd36c4cca9e8b0f6217cb ->
