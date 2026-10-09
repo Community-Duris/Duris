@@ -29,6 +29,11 @@ extern int top_of_world;
 
 struct zone_reset_room_publication_stage::implementation
 {
+	// Provenance comparisons retained with the actual borrowed factory handles.
+	// They never construct a flat factory scope or grant native permission.
+	bool flat_backend = false;
+	std::string selected_root;
+	std::vector<economic_source_event> factory_sources;
 	sql_room_item_graph graph;
 	critical_command cold_command;
 	zone_reset_item_image original;
@@ -1884,7 +1889,9 @@ bool zone_reset_room_publication_owner::retained_size(
 		       array(value.expected_revisions.capacity(),
 			     sizeof(critical_expected_revision));
 	};
-	if (!array(state.objects.capacity(), sizeof(P_obj)) ||
+	if ((state.selected_root.capacity() > 15 && !text(state.selected_root)) ||
+	    !array(state.factory_sources.capacity(), sizeof(economic_source_event)) ||
+	    !array(state.objects.capacity(), sizeof(P_obj)) ||
 	    !array(state.stage_pointers.capacity(), sizeof(quest_mobile_native_item_stage *)) ||
 	    !array(state.original_indices.capacity(), sizeof(size_t)) ||
 	    !array(state.custody.capacity(), sizeof(item_ownership_runtime_entry)) ||
@@ -2084,4 +2091,244 @@ bool zone_reset_room_publication_owner::release_original_terminal_metadata(
 	delete stage.state_;
 	stage.state_ = nullptr;
 	return true;
+}
+
+namespace
+{
+bool room_prepare_add(size_t &bytes, size_t amount) noexcept
+{
+	if (bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+	    amount > CRITICAL_COORDINATOR_MAX_BYTES - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool room_prepare_array(size_t &bytes, size_t count, size_t unit) noexcept
+{
+	return (!unit || count <= CRITICAL_COORDINATOR_MAX_BYTES / unit) &&
+	       room_prepare_add(bytes, count * unit);
+}
+bool room_prepare_image_heap(const zone_reset_item_image &image, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const auto text = [&](const std::string &value) noexcept
+	{
+		return value.capacity() <= 15 || (value.capacity() != SIZE_MAX &&
+						  room_prepare_add(bytes, value.capacity() + 1));
+	};
+	if (!room_prepare_array(bytes, image.items.capacity(), sizeof(player_item_snapshot)) ||
+	    !room_prepare_array(bytes, image.recipes.capacity(),
+				sizeof(native_mobile_birth_item_recipe)) ||
+	    !room_prepare_array(bytes, image.coins.capacity(), sizeof(zone_reset_coin_output)))
+		return false;
+	for (const auto &item : image.items)
+	{
+		if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+		    !text(item.action_description) ||
+		    !room_prepare_array(bytes, item.dynamic_affects.capacity(),
+					sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !room_prepare_array(bytes, item.extra_descriptions.capacity(),
+					sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : item.extra_descriptions)
+			if (!text(description.keyword) || !text(description.description) ||
+			    !room_prepare_array(bytes, description.spell_ids.capacity(),
+						sizeof(int32_t)))
+				return false;
+	}
+	for (const auto &recipe : image.recipes)
+		if (!room_prepare_array(bytes, recipe.libraries.capacity(),
+					sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	*output = bytes;
+	return true;
+}
+bool room_prepare_same_invocation(const economic_source_event &a,
+				  const economic_source_event &b) noexcept
+{
+	return a.kind == b.kind && a.source.bytes == b.source.bytes &&
+	       a.generation.bytes == b.generation.bytes && a.sequence == b.sequence;
+}
+}
+
+bool zone_reset_room_publication_owner::prepare_warm_flat_bounded(
+	const critical_command &command, const std::string &selected_root,
+	const std::span<quest_mobile_native_item_stage *> &factories,
+	const std::span<const economic_source_event> &sources,
+	zone_reset_original_room_placement_stage *placement,
+	zone_reset_room_publication_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!output || output->state_ || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql() || selected_root.empty() || !reserve ||
+	    factories.empty() || factories.size() > ITEM_TRANSFER_MAX_ITEMS ||
+	    sources.size() != factories.size() || !placement)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		// Admit the actual owning unique_ptr and heap implementation before creation.
+		size_t live = outer_live;
+		if (!room_prepare_add(
+			    live, sizeof(std::unique_ptr<
+					  zone_reset_room_publication_stage::implementation>)) ||
+		    !room_prepare_add(live,
+				      sizeof(zone_reset_room_publication_stage::implementation)) ||
+		    !reserve(live, context))
+			return false;
+		auto state = std::make_unique<zone_reset_room_publication_stage::implementation>();
+		if (zone_reset_item_command_decode_bounded(command, &state->original, reserve,
+							   context,
+							   live) != economic_accounting_error::ok ||
+		    state->original.items.size() != factories.size())
+			return false;
+		size_t image_heap = 0;
+		if (!room_prepare_image_heap(state->original, &image_heap) ||
+		    !room_prepare_add(live, image_heap))
+			return false;
+		state->room = real_room(state->original.room_vnum);
+		if (!world || state->room < 0 || state->room > top_of_world ||
+		    !room_prepare_same_invocation(sources[0], state->original.reset_source) ||
+		    sources[0].slot != state->original.reset_source.slot)
+			return false;
+		// Fresh reserve/resize and string assignment requests on the pinned policy.
+		if (!room_prepare_array(live, factories.size(),
+					sizeof(quest_mobile_native_item_stage *)) ||
+		    !room_prepare_array(live, factories.size(), sizeof(P_obj)) ||
+		    !room_prepare_array(live, factories.size(), sizeof(size_t)) ||
+		    !room_prepare_array(live, factories.size(),
+					sizeof(item_ownership_runtime_entry)) ||
+		    !room_prepare_array(live, factories.size(), sizeof(economic_source_event)) ||
+		    (selected_root.size() > 15 &&
+		     (selected_root.size() == SIZE_MAX ||
+		      !room_prepare_add(live, selected_root.size() + 1))) ||
+		    !reserve(live, context))
+			return false;
+		state->stage_pointers.reserve(factories.size());
+		state->objects.reserve(factories.size());
+		state->original_indices.reserve(factories.size());
+		state->custody.resize(factories.size());
+		state->factory_sources.reserve(factories.size());
+		{
+			// Copy construction requests exact source length; fresh SSO assignment
+			// would instead grow to twice its prior inline capacity for short roots.
+			size_t text_live = live;
+			if (!room_prepare_add(text_live, sizeof(std::string)) ||
+			    !reserve(text_live, context))
+				return false;
+			std::string retained_root(selected_root);
+			state->selected_root = std::move(retained_root);
+		}
+		{
+			size_t progress_live = live;
+			if (!room_prepare_array(progress_live, 2,
+						sizeof(quest_mobile_native_item_progress)) ||
+			    !reserve(progress_live, context))
+				return false;
+			for (size_t at = 0; at < factories.size(); ++at)
+			{
+				auto *factory = factories[at];
+				quest_mobile_native_item_progress progress{};
+				if (!factory || !factory->is_flat_factory() ||
+				    !factory->flat_factory_matches(selected_root, sources[at]) ||
+				    !room_prepare_same_invocation(sources[at],
+								  state->original.reset_source) ||
+				    !factory->object() ||
+				    !factory->owns_pending_original_target(factory->object()) ||
+				    factory->object()->obj_uid !=
+					    state->original.items[at].object_uid ||
+				    !factory->read_progress(&progress) || progress.admitted ||
+				    progress.published || progress.next_step ||
+				    progress.current_step_started)
+					return false;
+				for (size_t prior = 0; prior < at; ++prior)
+					if (factories[prior] == factory ||
+					    sources[prior].slot == sources[at].slot)
+						return false;
+				state->stage_pointers.push_back(factory);
+				state->objects.push_back(factory->object());
+				state->original_indices.push_back(at);
+				state->factory_sources.push_back(sources[at]);
+			}
+		}
+		// The full original literal capture and both canonical comparisons survive
+		// through placement validation; each first output stays in the next prefix.
+		if (!room_prepare_add(live, sizeof(std::vector<player_item_snapshot>)) ||
+		    !room_prepare_array(live, 2, sizeof(std::vector<uint8_t>)) ||
+		    !reserve(live, context))
+			return false;
+		std::vector<player_item_snapshot> observed;
+		std::vector<uint8_t> a, b;
+		size_t observed_heap = 0;
+		if (player_item_snapshot_tree_capture_literal_bounded(
+			    state->objects[0], &observed, nullptr, reserve, context, live,
+			    &observed_heap) != player_snapshot_capture_result::ok ||
+		    !room_prepare_add(live, observed_heap) ||
+		    player_item_snapshot_list_encode_bounded(observed, &a, reserve, context,
+							     live) !=
+			    player_snapshot_codec_result::ok ||
+		    !room_prepare_add(live, a.capacity()) ||
+		    player_item_snapshot_list_encode_bounded(state->original.items, &b, reserve,
+							     context, live) !=
+			    player_snapshot_codec_result::ok ||
+		    !room_prepare_add(live, b.capacity()) || a != b)
+			return false;
+		// Source comparison arrays die before recipe()'s actual candidate DTO.
+		size_t placement_live = live;
+		if (!room_prepare_add(placement_live, sizeof(zone_reset_room_placement_recipe)) ||
+		    !room_prepare_add(
+			    placement_live,
+			    std::max(3 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+				     sizeof(zone_reset_room_placement_recipe))) ||
+		    !reserve(placement_live, context))
+			return false;
+		zone_reset_room_placement_recipe recipe;
+		if (!placement->matches_source(state->original.reset_source) ||
+		    !placement->recipe(&recipe) || !state->original.placement ||
+		    recipe != *state->original.placement || recipe.fall_selected)
+			return false;
+		// Existing publication retained_size conservatively counts inline string
+		// capacity as well. Carry that established census allowance prospectively
+		// before transfer; it is not a new heap-allocation claim or ABI certificate.
+		for (const auto &item : state->original.items)
+		{
+			if ((item.name.capacity() <= 15 &&
+			     !room_prepare_add(placement_live, item.name.capacity() + 1)) ||
+			    (item.short_description.capacity() <= 15 &&
+			     !room_prepare_add(placement_live,
+					       item.short_description.capacity() + 1)) ||
+			    (item.description.capacity() <= 15 &&
+			     !room_prepare_add(placement_live, item.description.capacity() + 1)) ||
+			    (item.action_description.capacity() <= 15 &&
+			     !room_prepare_add(placement_live,
+					       item.action_description.capacity() + 1)))
+				return false;
+			for (const auto &description : item.extra_descriptions)
+				if ((description.keyword.capacity() <= 15 &&
+				     !room_prepare_add(placement_live,
+						       description.keyword.capacity() + 1)) ||
+				    (description.description.capacity() <= 15 &&
+				     !room_prepare_add(placement_live,
+						       description.description.capacity() + 1)))
+					return false;
+		}
+		if (!reserve(placement_live, context))
+			return false;
+		state->original_placement = placement;
+		state->flat_backend = true;
+		state->warm = true;
+		output->state_ = state.release();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
 }

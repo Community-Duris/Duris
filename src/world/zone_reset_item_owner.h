@@ -190,6 +190,11 @@ class zone_reset_item_owner final
 	static bool rebase_warm_command_scratch(warm_command_scratch &, size_t) noexcept;
 	static bool retain_warm_command_output(warm_command_scratch &,
 		const critical_native_recovery_envelope &) noexcept;
+	// Actual closed warm-root handoff; prospective caller rows/spans/canonical
+	// comparison and current projection recheck also cover retained retries.
+	static bool prepare_warm_publication_flat(warm_root &,
+						  const critical_native_recovery_envelope &,
+						  warm_command_scratch &) noexcept;
 	static void release_warm_command_scratch(warm_command_scratch &) noexcept;
 	static bool release_retired(warm_root &) noexcept;
 	static bool publish_warm(warm_root &) noexcept;
