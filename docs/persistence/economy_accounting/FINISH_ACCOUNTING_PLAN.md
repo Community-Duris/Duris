@@ -103,6 +103,53 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## INITIAL matrix-owner omission source fix reviewed - 2026-10-09
+
+Publishedc627dbe5abe42d1f3995cca75036a468b71fba07 changes only the source report
+and tests/integration_manifest.json. Root independently reviews the actual new
+flatfile_shopkeeper_initial_checkpoint offline/once script row:original120-second
+timeout,script case,exact existing harness success marker,no arguments/environment.
+All108 prior rows and non-row JSON fields remain exact;there are109 rows now.
+Raw insertion inverse preserves all preexisting bytes. Existing regression entry,
+manual reason/timeout,runner/strict required-owner predicate and fixture/harness
+are byte-identical. Metadata required-owner set had this one missing owner before,
+none after;this is raw source/JSON analysis,not execution of inventory/runner/tests.
+
+The named F1 INITIAL required-matrix-owner omission is now FIXED in published
+source and independently reviewed. Earlier unresolved-F1 wording and optional
+private temporary-deferral repair remain historical/non-imported;no workaround
+or relaxing required-owner validation is now selected. Regression manual deferral
+is preserved. Explicit integration rows run through their actual runner contract;
+registration does not qualify the fixture or combined binary. No compiler,
+preprocessor,native fixture,DB/gameplay/recovery or smoke result is established by
+root review. Original coverage/owner/profile/marker controls remain required.
+
+Actual src,migrations,scripts,tests/async and runner remain unchanged. Full primary
+report22,573 bytes,SHA256
+6d1c0b811d6f15814ef631388511f3a00206a6b8610cd89dc5f2726c9033df10.
+Its new18 lines REPORT private68195fca real ROOM worker/repository executor joined,
+209 providers/27 inverses,and6eb7fcb5 carrying this same matrix row. Those private
+bodies remain unpromoted/unavailable;callback hookup is reported in flight.
+Full original shared32MiB overlap,publication/terminal/ACK and executable gates
+remain. No private source adoption,worker lifetime or native qualification is
+inferred from report counts;shared admission stays CLOSED. P1 published backend
+accessor source finding remains unresolved;private fix reports do not close it.
+
+Prioritized queue unchanged:both selected preparation streams CLOSED/event-dependent.
+Next concrete inputs are published executable combined source/shared interfaces/
+native callers/route-owner joins,schema/build profiles and actual blocker/build/
+isolated inactive-smoke evidence per dated primary handoff. Reassess independent
+implementation/integration/review/acceptance on those inputs,without speculative
+new packets,completed-bundle reopening,adoption waits or primary/Plan5 duplication.
+All native-season G1-G4 remain UNEXECUTED. Preserve worktrees/jobs/exact proofs;
+no helper fixture execution,root seeding,enrollment/restore,private commit,
+deploy/activation. Actual Goals BLOCKED,preparation not resumption;required
+Plans1-5/applicable original R1-R8/integrated qualification/blockers/published
+owner completion finish unmet;heartbeat ACTIVE. Root raw source/metadata proof:
+D:/Dev/Temp/coordinator-initial-matrix-owner-review-20261009/review.py,review.json,
+integration-before.raw,integration-after.raw,exact pinned source ranges,
+latest-primary-report.raw and coordination publication inverse/remote identity.
+
 ## Native season acceptance reviewed; executable candidate inputs next - 2026-10-09
 
 Quest's FLAT_ROOT_NATIVE_SEASON_ACCEPTANCE_DELTA_2026-10-09.txt now PASSes
