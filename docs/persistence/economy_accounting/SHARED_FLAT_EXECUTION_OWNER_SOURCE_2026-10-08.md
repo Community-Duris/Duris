@@ -90,3 +90,49 @@ remains to be established. Shared producer admission remains CLOSED. Maintained
 source and unrelated WIP are preserved. Original Plan1 acceptance retains its
 recorded scope; Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Inactive,
 declined-spell and production/activation gates remain; the ongoing goal is active.
+
+## Publication prerequisites successor - 2026-10-08
+
+Two missing backend-accessor callsites now use existing persistence predicates,
+preserving inactive behavior, regular flat scope and SQL-source requirements.
+The actual flat publication storage reader authenticates the original envelope,
+stored receipt, native image, keeper checkpoint and complete CURRENT custody
+under the caller's recovered borrowed root lock. A distinct private runtime
+publisher applies those genuine rows through the existing ownership/cache batch;
+the SQL publisher remains byte-exact. Neither reader grants construction or ACK.
+
+QNS1 stores the full canonical terminal shared envelope and original checkpoint
+in the existing per-native .qno namespace. Actual current native references and
+stable original identity are required; absence remains unknown, conflicting or
+wrong-family evidence refuses, and outputs remain unchanged on refusal. The
+outer world owner still owns current source/receipt/custody proof, commit outcome
+recovery, origin readback and retirement. These callers are not yet integrated.
+
+Composition caught a build predecessor mistake before source promotion: all 27
+objects reported missing by the initial audit already existed in the selected
+lowercase makefile. The earlier proposed Makefile bodies are superseded. The
+accepted selected-predecessor correction preserves every prior registration,
+including Smith, adds only the missing shared flat transaction object, and maps
+the selected inventory to Git's canonical src/Makefile without case duplicates.
+
+Accepted packets: backend fixes f546351e (two source files only; its Makefile
+superseded), selected build correction 6af7e6e4, publication projection 9d1d5eb4,
+and terminal origin 57a7f0ad. Independent source reviews passed. Source composition
+authenticated 341 provider records and 16 exact inverse spans; 15 are applied,
+and the old Makefile span is checked but excluded. The immutable successor is
+`9cf306d951f5c1fc7558ec88e99dc453ff758b12f95a73f8349d07d621d31e3b`
+at tmp/lifecycle-shared-flat-publication-prerequisites-selected-plan5-candidate-primary-20261008:
+214 paths (175 source,30 tests,5 schema,4 other). Source evidence is in
+bin/tests/shared-flat-publication-prerequisites-primary-20261008/SOURCE-INTEGRATION.json.
+The initial case-collision join stopped at its inventory assertion, before any
+manifest publication or maintained source change; only this corrected successor
+is selected. The ancestor023837 and superseded private packets remain preserved.
+
+No compiler, preprocessor, tests, native/gameplay/persistence/recovery/performance
+qualification ran. Cold-world recovery integration is underway; actual warm
+dispatcher capture, publication/world/ACK/origin caller wiring, progressed startup,
+full transient budget and major-plan qualification remain open. Shared admission
+is CLOSED. This is a docs-only checkpoint; the larger private source is unpromoted.
+Original Plan1 acceptance retains its recorded scope. Plans2-4/combinedPlan5/R1-R8
+and release remain unfinished. Unrelated WIP and inactive/declined-spell/production
+safety gates are preserved; the ongoing goal remains active.

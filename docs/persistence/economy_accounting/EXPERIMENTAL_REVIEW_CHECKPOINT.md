@@ -1,24 +1,23 @@
 # Experimental accounting review checkpoint
 
-## Shared flat execution owner source joined - 2026-10-08
+## Shared flat publication prerequisites source joined - 2026-10-08
 
-[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md) records genuine flat callback, original coordinator
-proposal ownership/capacity and distinct flat producer preparation, plus required
-atomic CURRENT custody/receipt and shutdown cleanup corrections. Independently
-accepted candidate `0238370773930da6c7b46f1db60835553d041b2e02d84439f08fb73389dad6d6`
-has212 authenticated paths (173 source,30 tests,5 schema,4 other),1297 provider
-records/37 exact inverses. Each callback releases its fresh root lock on its own
-worker; possible publication is reconciliation-only. Genuine capacity reservation
-precedes commit and persists through native CAS/retry. Shutdown cleanup frees only
-known-not-published heap ownership under the same executing pin. Prior standalone
-atomic69484205 and newline-changing cleanupafdd remain unselected.
-The candidate is unpromoted/unexecuted and producer admission stays CLOSED.
-Actual producer caller, full flat world/origin/ACK, progressed startup, transient
-budget and major-plan qualification remain. Two undeclared sql_enabled callsites
-and missing transaction object registration are queued readiness corrections.
-Original Plan1 scope stays accepted; Plans2-4/combinedPlan5/R1-R8/release remain
-unfinished. Unrelated WIP, peer documents, inactive/declined-spell/production and
-activation guards are preserved. The ongoing goal remains active.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#publication-prerequisites-successor---2026-10-08)
+records corrected existing backend predicates, genuine borrowed-lock publication
+proof/cache projection and full QNS1 terminal shared origin. Independent source
+review passed; corrected private candidate `9cf306d951f5c1fc7558ec88e99dc453ff758b12f95a73f8349d07d621d31e3b`
+has214 authenticated paths (175 source,30 tests,5 schema,4 other),341 additional
+provider records and16 checked inverse spans (15 applied,1 superseded).
+The selected build correction adds only the missing shared transaction object
+and preserves all prior registrations. The earlier 27-object gap finding used
+the wrong maintained predecessor; all27 were already present in selected source.
+Inventory now uses canonical src/Makefile without case duplicates.
+Source remains private/unpromoted/unexecuted and shared admission stays CLOSED.
+Cold world recovery is being implemented. Actual warm source/dispatcher capture,
+full publication/origin/ACK, progressed startup, transient budget and major-plan
+qualification remain. Original Plan1 recorded acceptance stays scoped;
+Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Unrelated WIP, peer documents
+and inactive/declined-spell/production safety gates are preserved. Goal is active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
