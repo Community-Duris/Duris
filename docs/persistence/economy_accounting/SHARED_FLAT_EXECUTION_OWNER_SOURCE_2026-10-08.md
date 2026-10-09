@@ -313,3 +313,21 @@ inactive/declined-spell/production gates and unrelated WIP are preserved. Origin
 Plan1 acceptance keeps its recorded scope; Plans2-4/fullPlan5/R1-R8/release remain
 unfinished. Root owns shared contracts/coordinator/producers/registry/activation;
 independent Plan5 ownership is unchanged. The ongoing goal remains active.
+
+## INITIAL checkpoint matrix owner registered - 2026-10-09
+
+The actual integration runner rejected its workload before row selection because
+manual test_flatfile_shopkeeper_initial_checkpoint.py lacked a matrix owner.
+One offline/once script row now supplies its original 120-second timeout and
+exact existing harness success marker. All prior rows, strict required-owner
+validation, manual deferral and fixture behavior are preserved. Source JSON and
+exact inverse checks passed; no fixture or native test ran. This registration
+does not establish accounting coverage, runtime acceptance or plan completion.
+
+The independently reviewed real ROOM worker and repository executor are also
+joined privately in candidate68195fca; 209 providers and27 inverses authenticate.
+Candidate6eb7fcb5 carries the same matrix row with all existing peer rows intact.
+Both remain unpromoted and CLOSED. Callback hookup is in flight; original
+shared32MiB overlap, publication/terminal/ACK and executable qualification remain.
+The next implementation milestone is the guarded combined-source handoff in
+FINISH_ACCOUNTING_PLAN.md, preserving newer maintained fixes and peer history.
