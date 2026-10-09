@@ -97,4 +97,15 @@ bool zone_reset_item_recovery_publication(const critical_native_recovery_envelop
 					  const critical_completion &) noexcept;
 bool zone_reset_item_recovery_terminal(const critical_native_recovery_envelope &) noexcept;
 
+// Complete saved terminal BODY against a separately authenticated immutable
+// original command. This returns observations only: no envelope, revision,
+// generation, delivery or current physical/ACK entitlement is constructed.
+// Same original terminal predicate; strong context and retained-heap outputs.
+// Caller owns wire/input/prior output and span objects in outer_live_scratch.
+economic_accounting_error zone_reset_item_recovery_terminal_body_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	zone_reset_item_recovery_context *, bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+	void *context, size_t outer_live_scratch,
+	size_t *retained_context_heap_bytes = nullptr) noexcept;
+
 #endif
