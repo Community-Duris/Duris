@@ -1,0 +1,9 @@
+# ROOM receipt, cancellation and native cleanup integration - 2026-10-09
+
+The actual private ROOT/publication callers now invoke the genuine bounded coordinator receipt and never-admitted cancellation methods with complete authentic original carrier, generation, receipt and caller prefix. Receipt/completed disposition is rooted before later current observation can refuse. CURRENT rebases retain all other actual caller locals rather than dropping outer storage.
+
+Delivered refusal cleanup preserves the complete original canonical, source, receipt, action and native forest checks. Real refusal-factory vector growth is admitted with old capacity still retained. Reverse disposal uses the published full detach provider before the original corresponding stage disposal. Partial uncertain cleanup keeps the original started latch. After genuine full destruction, ROOT records cleanup returned before later recensus; distinct called/succeeded markers survive coordinator-removal refusal, so destruction cannot repeat. Only actual coordinator removal marks ROOT retired.
+
+Complete independent RAW/final source review passed: genuine providers and full disposal/proof paths, complete prefix preservation, both exact original C prefixes, header inverses, tokens/logical preprocessing and protected unrelated files. All 400 source pins authenticate, 931 writer policies remain unchanged and zero new/unmapped sites appear. Evidence: tmp/room-root-completion-cleanup-owner-20261009 and tmp/room-root-completion-cleanup-integrated-20261009.
+
+The full ROOT driver and seven-owner pool policy remain unselected. Shared coordinator/journal handoff and actual startup recovery-prefix integration remain open. Native builds/gameplay/persistence/recovery checks stay deferred to major-plan readiness; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

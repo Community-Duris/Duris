@@ -308,6 +308,21 @@ class zone_reset_item_owner final
 	static bool prepare_flat_ack_successor_bounded(warm_root &,
 						       bool (*)(size_t, void *) noexcept, void *,
 						       size_t) noexcept;
+	// Genuine receipt availability and never-admitted cancellation. Complete
+	// caller prefix survives native disposal; actual cleanup return is distinct
+	// from later coordinator removal. No native effect is repeated on refusal.
+	struct flat_refusal_workspace;
+	static bool observe_completed_flat_bounded(warm_root &, warm_command_scratch &,
+						   size_t) noexcept;
+	static bool cleanup_refusal_flat_relay(const critical_command &,
+					       const critical_completion &, void *,
+					       size_t) noexcept;
+	static bool cancel_refused_flat_bounded(warm_root &, warm_command_scratch &,
+						size_t) noexcept;
+
+	static bool cleanup_refusal_bounded(const critical_command &, const critical_completion &,
+					    void *, bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
 };
 
 #endif

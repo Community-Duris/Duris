@@ -345,6 +345,18 @@ class zone_reset_room_publication_owner final
 	// matching warm/cold/NPC consumers. This grants no admission or source proof.
 	static bool retained_size_excluding_literal_pools(const zone_reset_room_publication_stage &,
 							  size_t *) noexcept;
+	// Real coordinator capabilities with complete outer and caller-owned
+	// cleanup_called/cleanup_succeeded storage alive through native disposal.
+	static bool completion_warm_bounded(const critical_operation_id &, critical_completion *,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
+	static bool cancel_warm_bounded(const critical_native_recovery_envelope &,
+					const critical_completion &, uint64_t,
+					bool (*)(const critical_command &,
+						 const critical_completion &, void *,
+						 size_t) noexcept,
+					void *, bool (*)(size_t, void *) noexcept, void *, size_t,
+					bool *, bool *) noexcept;
 };
 
 #endif

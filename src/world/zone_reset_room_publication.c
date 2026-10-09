@@ -4826,3 +4826,24 @@ bool zone_reset_room_publication_owner::retained_size_excluding_literal_pools(
 	*output = bytes;
 	return true;
 }
+
+bool zone_reset_room_publication_owner::completion_warm_bounded(
+	const critical_operation_id &operation, critical_completion *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return critical_zone_reset_item_publication_owner::completion_bounded(
+		operation, output, reserve, context, outer_live);
+}
+
+bool zone_reset_room_publication_owner::cancel_warm_bounded(
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	uint64_t generation,
+	bool (*cleanup)(const critical_command &, const critical_completion &, void *,
+			size_t) noexcept,
+	void *cleanup_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer_live, bool *cleanup_called, bool *cleanup_succeeded) noexcept
+{
+	return critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
+		original, receipt, generation, cleanup, cleanup_context, reserve, budget_context,
+		outer_live, cleanup_called, cleanup_succeeded);
+}
