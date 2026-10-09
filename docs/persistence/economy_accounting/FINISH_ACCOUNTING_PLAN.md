@@ -1,23 +1,22 @@
 # Finish accounting implementation plan
 
-## Shared flat publication prerequisites source joined - 2026-10-08
+## Shared flat bounded keeper source joined - 2026-10-08
 
-[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#publication-prerequisites-successor---2026-10-08)
-records corrected existing backend predicates, genuine borrowed-lock publication
-proof/cache projection and full QNS1 terminal shared origin. Independent source
-review passed; corrected private candidate `9cf306d951f5c1fc7558ec88e99dc453ff758b12f95a73f8349d07d621d31e3b`
-has214 authenticated paths (175 source,30 tests,5 schema,4 other),341 additional
-provider records and16 checked inverse spans (15 applied,1 superseded).
-The selected build correction adds only the missing shared transaction object
-and preserves all prior registrations. The earlier 27-object gap finding used
-the wrong maintained predecessor; all27 were already present in selected source.
-Inventory now uses canonical src/Makefile without case duplicates.
-Source remains private/unpromoted/unexecuted and shared admission stays CLOSED.
-Cold world recovery is being implemented. Actual warm source/dispatcher capture,
-full publication/origin/ACK, progressed startup, transient budget and major-plan
-qualification remain. Original Plan1 recorded acceptance stays scoped;
-Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Unrelated WIP, peer documents
-and inactive/declined-spell/production safety gates are preserved. Goal is active.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#bounded-storage-and-keeper-reader-successor---2026-10-08)
+records actual preallocation admission for secure files, original journals and
+complete CURRENT keeper reads, exact item encoder storage, and shorter scratch
+lifetimes. Independent source review passed; private candidate `d89f715fb9a2c8c9e75555513f9529b3841c7ec008153b2e1560a7749d36dd47`
+has220 authenticated paths (181 source,30 tests,5 schema,4 other). Source joins
+checked748 additional provider records and34 inverse spans; no executable checks
+ran. Explicit C++ storage excludes OpenSSL/system internals; full original32MiB
+aggregate/caller ownership remains required. Source is unpromoted and admission
+stays CLOSED. Full warm source/dispatcher, world publication/origin/ACK, progressed
+startup and major-plan qualification remain. Plan2 flat initial ROOM participants
+are now a parallel source stream. Its named SQL post-ACK room coin boot defect was
+already solved and qualified; current source matches that recorded provider.
+Original Plan1 acceptance stays scoped; Plans2-4/combinedPlan5/R1-R8/release remain
+unfinished. Peer documents, unrelated WIP and inactive/declined-spell/production
+gates are preserved. Goal is active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 

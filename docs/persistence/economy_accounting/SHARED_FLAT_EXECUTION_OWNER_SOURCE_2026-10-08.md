@@ -136,3 +136,51 @@ is CLOSED. This is a docs-only checkpoint; the larger private source is unpromot
 Original Plan1 acceptance retains its recorded scope. Plans2-4/combinedPlan5/R1-R8
 and release remain unfinished. Unrelated WIP and inactive/declined-spell/production
 safety gates are preserved; the ongoing goal remains active.
+
+## Bounded storage and keeper reader successor - 2026-10-08
+
+Actual CURRENT recovery now has reviewed explicit C++ storage primitives:
+secure same-FD read admission; whole journal structural sizing before original
+authenticated decode/apply; complete keeper/item wire sizing; exact fresh item
+encoder capacity, reallocation peak and object size; and a distinct borrowed-lock
+CURRENT keeper reader admitting its paths, file, all unrelated records, global
+UID array and original item roundtrip validation before materialization.
+The keeper validator preserves checksum, field/order/UID/equipment predicates.
+Direct item spans remove redundant blobs; UID sorting and a fixed equipment
+bitmap replace uncounted hash/tree scratch. Ordinary APIs remain byte-exact.
+CURRENT native/canonical buffers and unrelated keeper records are also destroyed
+before custody proof. Actual root aggregate lifetime/caller wiring remains open.
+
+Original sizing scans unnecessarily invoked OpenSSL3 SHA256 before reservation.
+Required successors remove those duplicate hashes; original authenticated
+decoders still verify checksums after admission and before accepting/applying
+data. Measured scope is explicit C++ requests under pinned libstdc++13, excluding
+OpenSSL/system internals. Final journal unlink followed by failed fsync may leave
+the journal absent with uncertain durability; pre-apply budget denial preserves it.
+
+Accepted final source: lifetime638d38d1, item encoder b96f8ccd coupled through
+939318fd/e9a2c434, keeper sizingd75c5312 coupled throughb1b4586d, bounded journal
+6857fd02 coupled throughe5c4029e, and bounded keeper reader7251ec92. Two source
+joins authenticate 748 additional provider records and34 inverse spans. Selected
+candidate d89f715fb9a2c8c9e75555513f9529b3841c7ec008153b2e1560a7749d36dd47 at
+tmp/lifecycle-shared-flat-bounded-keeper-plan5-candidate-primary-20261008 has220
+paths (181 source,30 tests,5 schema,4 other). Evidence lives in
+bin/tests/shared-flat-bounded-storage-primary-20261008/SOURCE-INTEGRATION.json and
+bin/tests/shared-flat-bounded-keeper-primary-20261008/SOURCE-INTEGRATION.json.
+Independent source reviews passed; inventory is not implementation completion.
+
+Plan2 source trace f75ee8a8 confirms the previously qualified SQL post-ACK room
+coin boot transaction and physical cold owner remain byte-identical in selected
+and maintained source. Older open wording for that named defect is historical;
+COIN_POSTACK_MAINTAINED_INTEGRATION_2026-10-07.md records its solved scope.
+Actual remaining flat initial ROOM-reset storage/season/source participants are
+being implemented separately. Existing pure command/plan/carrier/origin code is
+reused; no duplicate coin recovery or fake transfer/season authority is introduced.
+
+No compiler/preprocessor/tests/native/gameplay/SQL/flat/recovery/performance ran.
+Larger source remains private/unpromoted and shared admission CLOSED. Full world
+source/dispatcher/publication/origin/ACK, progressed startup, original shared32MiB
+aggregate integration and major-plan qualification remain. Original Plan1 recorded
+acceptance retains its scope; Plans2-4/combinedPlan5/R1-R8/release remain unfinished.
+This docs-only milestone preserves peer documents, unrelated WIP and inactive/
+declined-spell/production gates. The ongoing goal remains active.
