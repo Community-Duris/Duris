@@ -7,6 +7,7 @@
 struct obj_data;
 class critical_zone_reset_item_publication_owner;
 class zone_reset_item_owner;
+class flatfile_authority_lock;
 class quest_mobile_native_item_stage;
 class quest_mobile_native_flat_factory_scope;
 class shop_trade_original_procedure_binding_stage;
@@ -215,6 +216,23 @@ class zone_reset_item_owner final
 	static void release_warm_command_scratch(warm_command_scratch &) noexcept;
 	static bool release_retired(warm_root &) noexcept;
 	static bool publish_warm(warm_root &) noexcept;
+	// Complete private flat publication candidate. Caller outer owns all live
+	// frames/output/globals once; native-return writers precede fallible census.
+	// Unselected until genuine coordinator lenders/journal callbacks join.
+
+	struct flat_publication_workspace;
+	static bool refresh_flat_publication_scratch(warm_command_scratch &,
+						     const flat_publication_workspace &,
+						     const flatfile_authority_lock *,
+						     size_t *) noexcept;
+	static bool copy_flat_next_context(warm_root &, flat_publication_workspace &,
+					   warm_command_scratch &,
+					   const flatfile_authority_lock *) noexcept;
+	static bool publish_flat_bounded(warm_root &, warm_command_scratch &,
+					 size_t outer_live) noexcept;
+	static bool finish_flat_publication_action(warm_root &, flat_publication_workspace &,
+						   warm_command_scratch &,
+						   const flatfile_authority_lock &) noexcept;
 	static bool restore_cold_bindings(std::span<quest_mobile_native_item_stage *>,
 					  void *) noexcept;
 	static bool settle_warm_checkpoint(warm_root &) noexcept;

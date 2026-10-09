@@ -1,0 +1,11 @@
+# Complete private bounded flat ROOM publication driver - 2026-10-09
+
+The real private publish_flat_bounded driver joins the original full carrier, generation, canonical command, receipt, recovery revision and phase decisions to the maintained bounded flat providers. Its four cold recovery routes retain their original order. The complete warm/cold custody, physical publication, original native service effects, physically proven checkpoint, exact ACK successor, coordinator ACK and terminal retirement sequence are implemented.
+
+Every native-return tail selects its actual presealed return writer before fallible CURRENT census, retaining the original outcome for retry. The context-copy temporary now dies before the CURRENT rebase drops its separately admitted inline storage. This closes the concrete lifetime issue found during independent review. Actual retirement is recorded before later metadata release can refuse.
+
+The genuine workspace borrows the owned output and preserves caller_extra at every CURRENT calculation. Real locks, context/output heap, current global owners and private stage pooling remain in their actual ownership terms. The authentic const-reference submission bridge forwards directly to the maintained bounded coordinator; its returned storage is a CURRENT observation, not a lease.
+
+Complete independent RAW and final formatted source review passed after the lifetime correction. Exact four-file original inverses, tokens/logical preprocessing and protected WIP passed; all 400 source pins authenticate, 931 writer policies remain unchanged with zero new/unmapped sites. Evidence: tmp/room-full-private-driver-owner-20261009 and tmp/room-full-private-driver-integrated-20261009.
+
+The actual constructor remains default six-owner, the complete new driver remains private and unselected, and original SQL/inactive/pulse bodies remain unchanged. Remaining locked coordinator companions and journal paths, full pulse/admission selection, startup replay and integrated native qualification remain necessary. No plan/release acceptance is promoted. Native tests stay deferred to major-plan readiness; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

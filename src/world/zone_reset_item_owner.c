@@ -5176,3 +5176,494 @@ bool zone_reset_item_owner::cancel_refused_flat_bounded(warm_root &root,
 	(void)rebase_warm_command_scratch(scratch, current);
 	return removed;
 }
+
+struct zone_reset_item_owner::flat_publication_workspace
+{
+	critical_native_recovery_envelope &current;
+	size_t caller_extra = 0;
+	explicit flat_publication_workspace(critical_native_recovery_envelope &output,
+					    size_t extra) noexcept
+		: current(output)
+		, caller_extra(extra)
+	{
+	}
+	std::vector<uint8_t> canonical;
+	zone_reset_item_recovery_context next;
+	std::span<const uint8_t> attachment;
+	quest_mobile_native_item_effect actual{};
+	std::string selected_root;
+	uint64_t generation = 0;
+	bool current_live(const warm_command_scratch &scratch, const flatfile_authority_lock *lock,
+			  size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		// Guard fixed bytes already contain the actual single output carrier inline.
+		size_t live = scratch.current_bytes(), heap = 0, lock_heap = 0;
+		if (!warm_scratch_add(live, caller_extra) ||
+		    !warm_scratch_add(live, sizeof(*this)) ||
+		    !warm_scratch_envelope_heap(current, false, &heap) ||
+		    !warm_scratch_add(live, heap) ||
+		    !warm_scratch_add(live, canonical.capacity()) ||
+		    !warm_scratch_context_heap(next, false, &heap) ||
+		    !warm_scratch_add(live, heap) ||
+		    (selected_root.capacity() > 15 &&
+		     (selected_root.capacity() == SIZE_MAX ||
+		      !warm_scratch_add(live, selected_root.capacity() + 1))) ||
+		    (lock &&
+		     (!lock->retained_bytes(&lock_heap) || !warm_scratch_add(live, lock_heap))))
+			return false;
+		*output = live;
+		return true;
+	}
+};
+
+bool zone_reset_item_owner::refresh_flat_publication_scratch(warm_command_scratch &scratch,
+							     const flat_publication_workspace &work,
+							     const flatfile_authority_lock *lock,
+							     size_t *output) noexcept
+{
+	size_t live = 0;
+	if (!work.current_live(scratch, lock, &live) || !rebase_warm_command_scratch(scratch, live))
+		return false;
+	if (output)
+		*output = live;
+	return true;
+}
+
+bool zone_reset_item_owner::copy_flat_next_context(warm_root &root,
+						   flat_publication_workspace &work,
+						   warm_command_scratch &scratch,
+						   const flatfile_authority_lock *lock) noexcept
+{
+	size_t live = 0, heap = 0;
+	if (!work.current_live(scratch, lock, &live) ||
+	    !warm_scratch_add(live, sizeof(zone_reset_item_recovery_context)) ||
+	    !warm_scratch_context_heap(root.context, true, &heap) ||
+	    !warm_scratch_add(live, heap) || !reserve_warm_command_scratch(live, &scratch))
+		return false;
+	try
+	{
+		{
+			zone_reset_item_recovery_context next(root.context);
+			work.next = std::move(next);
+		}
+		// The admitted moved-from temporary has died before dropping its inline bytes.
+		return refresh_flat_publication_scratch(scratch, work, lock, nullptr);
+	}
+	catch (...)
+	{
+		(void)refresh_flat_publication_scratch(scratch, work, lock, nullptr);
+		return false;
+	}
+}
+
+bool zone_reset_item_owner::finish_flat_publication_action(
+	warm_root &root, flat_publication_workspace &work, warm_command_scratch &scratch,
+	const flatfile_authority_lock &lock) noexcept
+{
+	const auto &actual = work.actual;
+	if (!actual.started)
+		return false;
+	root.action_not_attempted = false;
+	if (!actual.returned)
+	{
+		root.blocked = true;
+		return false;
+	}
+	const size_t bits = size_t(actual.succeeded) | (size_t(actual.periodic) << 1);
+	if (!root.returned_writers[bits])
+	{
+		root.blocked = true;
+		return false;
+	}
+	root.checkpoint = std::move(root.returned_writers[bits]);
+	for (auto &writer : root.returned_writers)
+		writer.reset();
+	// The real returned variant is rooted before any fallible current observation,
+	// budget/proof, codec or I/O. A later refusal cannot repeat this native effect.
+	size_t live = 0;
+	return refresh_flat_publication_scratch(scratch, work, &lock, &live) &&
+	       settle_warm_checkpoint_bounded(root, reserve_warm_command_scratch, &scratch, live) &&
+	       actual.succeeded;
+}
+
+bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_scratch &scratch,
+						 size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || !root.submitted ||
+	    !root.completed || root.blocked || !root.coordinator_generation ||
+	    !successful_warm_receipt(root.completion) || !scratch.root || scratch.root != &root ||
+	    !scratch.global_scope || !scratch.literal_pool_scope || !scratch.output ||
+	    root.preparation_owner != &scratch ||
+	    !item_native_quest_global_budget_scope_owner::literal_pool_owned())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = scratch.current_bytes(), output_heap = 0;
+	if (!warm_scratch_envelope_heap(*scratch.output, false, &output_heap) ||
+	    !warm_scratch_add(live, output_heap) || outer_live < live)
+		return false;
+	const size_t caller_extra = outer_live - live;
+	live = outer_live;
+	if (!warm_scratch_add(live, sizeof(flat_publication_workspace)) ||
+	    !reserve_warm_command_scratch(live, &scratch))
+		return false;
+	// Preserve ALL other caller frames/capacities on every CURRENT rebase. This
+	// does not claim ownership of the root-owned coordinator/journal handoff.
+	flat_publication_workspace work(*scratch.output, caller_extra);
+	try
+	{
+		if (!settle_warm_checkpoint_bounded(root, reserve_warm_command_scratch, &scratch,
+						    live) ||
+		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
+		    !zone_reset_room_publication_owner::copy_warm_bounded(
+			    root.original_envelope.command, &work.current,
+			    reserve_warm_command_scratch, &scratch, live) ||
+		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
+		    critical_command_encode_bounded(work.current.command, &work.canonical,
+						    reserve_warm_command_scratch, &scratch,
+						    live) != critical_command_codec_result::ok ||
+		    work.canonical != root.canonical_command ||
+		    work.current.revision != root.original_envelope.revision ||
+		    work.current.phase != root.original_envelope.phase ||
+		    work.current.attachment != root.original_envelope.attachment ||
+		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
+		    !zone_reset_room_publication_owner::generation_warm_bounded(
+			    work.current, &work.generation, reserve_warm_command_scratch, &scratch,
+			    live) ||
+		    work.generation != root.coordinator_generation)
+			return false;
+		if (root.context.items.empty())
+		{
+			work.attachment = work.current.attachment;
+			if (!refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
+			    zone_reset_item_recovery_decode_bounded(
+				    work.current.command, work.attachment, &root.context,
+				    reserve_warm_command_scratch, &scratch,
+				    live) != economic_accounting_error::ok ||
+			    !refresh_flat_publication_scratch(scratch, work, nullptr, &live))
+				return false;
+		}
+		if (!root.context.receipt_present ||
+		    !same_warm_completion(root.context.receipt, root.completion))
+		{
+			if (root.context.receipt_present &&
+			    !same_warm_economic_receipt(root.context.receipt, root.completion))
+				return false;
+			if (work.current.phase ==
+			    critical_native_recovery_phase::continuation_pending)
+			{
+				if (!root.context.receipt_present ||
+				    !refresh_flat_publication_scratch(scratch, work, nullptr,
+								      &live) ||
+				    !zone_reset_item_recovery_publication_bounded(
+					    work.current, root.completion,
+					    reserve_warm_command_scratch, &scratch, live))
+					return false;
+			}
+			else
+			{
+				if (!copy_flat_next_context(root, work, scratch, nullptr))
+					return false;
+				work.next.receipt_present = true;
+				work.next.receipt = root.completion;
+				if (work.next.stage == zone_reset_item_recovery_stage::captured)
+					work.next.stage =
+						zone_reset_item_recovery_stage::publishing;
+				if (!refresh_flat_publication_scratch(scratch, work, nullptr,
+								      &live) ||
+				    !checkpoint_warm_context_bounded(root, work.next,
+								     reserve_warm_command_scratch,
+								     &scratch, live))
+					return false;
+			}
+		}
+		const char *configured = persistence_mode_flatfile_root();
+		if (!configured || !*configured)
+			return false;
+		if (!root.cold)
+		{
+			if (!root.stage.state_ || !root.stage.state_->flat_backend ||
+			    !root.stage.state_->flat_scope ||
+			    root.stage.state_->flat_scope->root_ != configured)
+				return false;
+			configured = root.stage.state_->flat_scope->root_.c_str();
+		}
+		if (!refresh_flat_publication_scratch(scratch, work, nullptr, &live))
+			return false;
+		const size_t chars = std::char_traits<char>::length(configured);
+		if (!warm_scratch_add(live, sizeof(std::string)) ||
+		    (chars > 15 && (chars == SIZE_MAX || !warm_scratch_add(live, chars + 1))) ||
+		    !reserve_warm_command_scratch(live, &scratch))
+			return false;
+		{
+			std::string selected(configured);
+			work.selected_root = std::move(selected);
+		}
+		if (!refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
+		    !warm_scratch_add(live, sizeof(flatfile_authority_lock)) ||
+		    !reserve_warm_command_scratch(live, &scratch))
+			return false;
+		flatfile_authority_lock lock(reserve_warm_command_scratch, &scratch,
+					     live - sizeof(flatfile_authority_lock));
+		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+		    !lock.acquire_bounded(work.selected_root, reserve_warm_command_scratch,
+					  &scratch, live) ||
+		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
+			return false;
+		const auto recovered = flatfile_authority_transaction_recover_bounded(
+			work.selected_root, lock, reserve_warm_command_scratch, &scratch, live);
+		if ((recovered != flatfile_authority_transaction_result::ok &&
+		     recovered != flatfile_authority_transaction_result::not_found) ||
+		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
+			return false;
+		if (root.cold)
+		{
+			// Exact original four-way dispatch. A failed partial actual adoption never
+			// becomes permission to replace a live body in the later missing routes.
+			bool ready = zone_reset_room_publication_owner::
+				prepare_original_completed_flat_locked_bounded(
+					work.selected_root, lock, root.original_envelope,
+					root.completion, root.publication,
+					reserve_warm_command_scratch, &scratch, live);
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+				return false;
+			if (!ready)
+			{
+				ready = zone_reset_room_publication_owner::
+					prepare_original_reconstructed_flat_locked_bounded(
+						work.selected_root, lock, root.original_envelope,
+						root.completion, root.publication, root.published,
+						restore_cold_flat_bindings, &root,
+						reserve_warm_command_scratch, &scratch, live);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+					return false;
+			}
+			if (!ready)
+			{
+				ready = zone_reset_room_publication_owner::
+					prepare_original_present_prefix_flat_locked_bounded(
+						work.selected_root, lock, root.original_envelope,
+						root.completion, root.publication, &root.placement,
+						reserve_warm_command_scratch, &scratch, live);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+					return false;
+			}
+			if (!ready)
+			{
+				ready = zone_reset_room_publication_owner::
+					prepare_original_pending_flat_locked_bounded(
+						work.selected_root, lock, root.original_envelope,
+						root.completion, root.publication, &root.placement,
+						root.published, restore_cold_flat_bindings, &root,
+						reserve_warm_command_scratch, &scratch, live);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+					return false;
+			}
+			if (!ready)
+				return false;
+		}
+		if (!(root.cold ?
+			      zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
+				      work.selected_root, lock, root.original_envelope,
+				      root.completion, root.publication,
+				      reserve_warm_command_scratch, &scratch, live) :
+			      zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
+				      work.selected_root, lock, root.original_envelope,
+				      root.completion, root.publication,
+				      reserve_warm_command_scratch, &scratch, live)) ||
+		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
+			return false;
+		if (!root.context.batch_publication.succeeded)
+		{
+			if (!zone_reset_room_publication_owner::retain_admitted(root.publication) ||
+			    !copy_flat_next_context(root, work, scratch, &lock))
+				return false;
+			for (auto &item : work.next.items)
+				item.admitted = true;
+			if (!std::all_of(root.context.items.begin(), root.context.items.end(),
+					 [](const auto &item) { return item.admitted; }) &&
+			    (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+			     !checkpoint_warm_context_bounded(root, work.next,
+							      reserve_warm_command_scratch,
+							      &scratch, live)))
+				return false;
+		}
+		if (!root.context.whole_binding.succeeded)
+		{
+			if (!root.whole_bindings.valid_flat() ||
+			    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
+				return false;
+			const int run = prepare_warm_action_bounded(root, WARM_BINDING, 0, 0,
+								    reserve_warm_command_scratch,
+								    &scratch, live);
+			if (run < 0)
+				return false;
+			if (run)
+			{
+				root.whole_bindings.commit_flat_unchecked();
+				if (root.cold)
+					root.cold_binding_restored = true;
+				work.actual = { true, true, true, false };
+				const bool finished =
+					finish_flat_publication_action(root, work, scratch, lock);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock,
+								      &live) ||
+				    !finished)
+					return false;
+			}
+		}
+		if (!root.context.batch_publication.succeeded)
+		{
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+				return false;
+			const bool reserved = zone_reset_room_publication_owner::
+				reserve_rooted_flat_consume_bounded(root.publication,
+								    root.published,
+								    reserve_warm_command_scratch,
+								    &scratch, live);
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+			    !reserved)
+				return false;
+			const int run = prepare_warm_action_bounded(root, WARM_BATCH, 0, 0,
+								    reserve_warm_command_scratch,
+								    &scratch, live);
+			if (run < 0)
+				return false;
+			if (run)
+			{
+				// Genuine provider is atomic before consumption. False keeps the real
+				// not-attempted latch; unknown native effects cannot earn this branch.
+				if (!zone_reset_room_publication_owner::consume_bounded(
+					    root.publication, &root.published,
+					    reserve_warm_command_scratch, &scratch, live))
+					return false;
+				work.actual = { true, true, true, false };
+				const bool finished =
+					finish_flat_publication_action(root, work, scratch, lock);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock,
+								      &live) ||
+				    !finished)
+					return false;
+			}
+		}
+		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+		    !zone_reset_room_publication_owner::verify_warm_flat_current_bounded(
+			    root.publication, reserve_warm_command_scratch, &scratch, live))
+			return false;
+		for (size_t row = 0; row < root.context.items.size(); ++row)
+			for (size_t step = root.context.items[row].next_step;
+			     step < root.context.items[row].effects.size(); ++step)
+			{
+				if (!lock.matches(work.selected_root) ||
+				    !refresh_flat_publication_scratch(scratch, work, &lock,
+								      &live) ||
+				    !zone_reset_room_publication_owner::
+					    verify_warm_flat_current_bounded(
+						    root.publication, reserve_warm_command_scratch,
+						    &scratch, live))
+					return false;
+				const int run = prepare_warm_action_bounded(
+					root, WARM_ITEM_EFFECT, row, step,
+					reserve_warm_command_scratch, &scratch, live);
+				if (run < 0)
+					return false;
+				if (!run)
+					continue;
+				work.actual = {};
+				(void)zone_reset_room_publication_owner::service_step_bounded(
+					root.publication, row, step, work.actual,
+					reserve_warm_command_scratch, &scratch, live);
+				const bool finished =
+					finish_flat_publication_action(root, work, scratch, lock);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock,
+								      &live) ||
+				    !finished)
+					return false;
+			}
+		if (!root.context.room_placement.succeeded)
+		{
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
+				return false;
+			const int run = prepare_warm_action_bounded(root, WARM_PLACE, 0, 0,
+								    reserve_warm_command_scratch,
+								    &scratch, live);
+			if (run < 0)
+				return false;
+			if (run)
+			{
+				work.actual = {};
+				(void)zone_reset_room_publication_owner::place_warm_bounded(
+					root.publication, work.actual, reserve_warm_command_scratch,
+					&scratch, live);
+				const bool finished =
+					finish_flat_publication_action(root, work, scratch, lock);
+				if (!refresh_flat_publication_scratch(scratch, work, &lock,
+								      &live) ||
+				    !finished)
+					return false;
+			}
+		}
+		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+		    !zone_reset_room_publication_owner::verify_warm_flat_current_bounded(
+			    root.publication, reserve_warm_command_scratch, &scratch, live) ||
+		    !zone_reset_room_publication_owner::mark_published_bounded(
+			    root.publication, &root.published, reserve_warm_command_scratch,
+			    &scratch, live) ||
+		    !refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+		    !(root.cold ?
+			      zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
+				      work.selected_root, lock, root.original_envelope,
+				      root.completion, root.publication,
+				      reserve_warm_command_scratch, &scratch, live) :
+			      zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
+				      work.selected_root, lock, root.original_envelope,
+				      root.completion, root.publication,
+				      reserve_warm_command_scratch, &scratch, live)) ||
+		    !lock.matches(work.selected_root))
+			return false;
+		if (root.context.stage != zone_reset_item_recovery_stage::physically_proven)
+		{
+			if (!copy_flat_next_context(root, work, scratch, &lock))
+				return false;
+			work.next.runtime_applied = true;
+			work.next.stage = zone_reset_item_recovery_stage::physically_proven;
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+			    !checkpoint_warm_context_bounded(
+				    root, work.next, reserve_warm_command_scratch, &scratch, live))
+				return false;
+		}
+		if (root.original_envelope.phase ==
+		    critical_native_recovery_phase::execution_pending)
+		{
+			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+			    !prepare_flat_ack_successor_bounded(root, reserve_warm_command_scratch,
+								&scratch, live) ||
+			    !refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+			    !zone_reset_room_publication_owner::acknowledge_warm_bounded(
+				    root.original_envelope, root.completion,
+				    root.coordinator_generation, reserve_warm_command_scratch,
+				    &scratch, live))
+				return false;
+			root.original_envelope = std::move(*root.ack_successor);
+			root.ack_successor.reset();
+		}
+		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
+		    !zone_reset_room_publication_owner::retire_warm_flat_locked_bounded(
+			    work.selected_root, lock, root.forest.items[0].object_uid,
+			    root.original_envelope, root.coordinator_generation,
+			    reserve_warm_command_scratch, &scratch, live))
+			return false;
+		root.retired = true;
+		return release_retired(
+			root); // Original metadata-only terminal release, no old-body dereference.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
