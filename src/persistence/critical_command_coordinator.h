@@ -302,6 +302,10 @@ struct critical_zone_reset_recovery_validators
 	bool (*terminal_bounded)(const critical_native_recovery_envelope &,
 				 bool (*)(size_t, void *) noexcept, void *,
 				 size_t) noexcept = nullptr;
+	bool (*successor_bounded)(const critical_native_recovery_envelope &,
+				  const critical_native_recovery_envelope &,
+				  bool (*)(size_t, void *) noexcept, void *,
+				  size_t) noexcept = nullptr;
 };
 
 // Pure auction NAR checks. All callbacks must be registered by the genuine
@@ -427,6 +431,14 @@ class critical_zone_reset_item_publication_owner final
 					    size_t) noexcept,
 				   void *transfer_context, bool (*)(size_t, void *) noexcept,
 				   void *budget_context, size_t outer_live) noexcept;
+	// Complete original same-phase context CAS. Full prepared clone and pure
+	// callbacks precede the pinned journal rewrite; no allocating work follows
+	// durable success. Callback/outer/persistent-storage contract matches retire.
+	static bool checkpoint_context_bounded(const critical_native_recovery_envelope &,
+					       const critical_native_recovery_envelope &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live,
+					       uint64_t expected_generation = 0) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.

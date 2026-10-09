@@ -2464,3 +2464,17 @@ preprocessor PASS;931policies/398pins authenticate, zero new/unmapped sites. Nat
 checks stay batched. Bounded coordinator/root joins and original scheduler/warm/cold/
 ACK/fault/mixed qualification remain open. Protected WIP, inactive/CLOSED accounting,
 incomplete coverage/BLOCKED release and ACTIVE goal persist; no new gate.
+
+
+## Full ROOM same-phase coordinator checkpoint joined - 2026-10-09
+
+[Owning integration](ROOM_COORDINATOR_CHECKPOINT_ADMISSION_2026-10-09.md) joins
+real full successor validator and mixed-journal replacement to original operation
+pin/guards, whole prepared-clone lifetime, proposal charges and uncertainty handling.
+Journal runs outside coordinator mutex; post-durable exact recheck/move remains
+nonallocating. Actual owning registration appended; original callbacks intact.
+RAW/final Cprefix/header/registration inverses/tokens/preprocessor PASS;931policies/
+398pins authenticate, zero new/unmapped sites. Native tests stay batched. Pulse root,
+ACK/copy/generation/warm/cold/scheduler/service/fault/mixed qualification remain open.
+Protected WIP, inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
+ACTIVE goal persist; no newgate/full native acceptance claim.
