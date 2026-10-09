@@ -2790,3 +2790,18 @@ warm/cold publication/checkpoint/effects/ACK/terminal and mixed-journal/coordina
 work remains open. No plan/release completion claim. Accounting inactive/admission
 CLOSED, coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE
 persist.
+
+
+## Complete native cash-role recovery dependency implemented - 2026-10-09
+
+[The recovery source](NATIVE_CASH_ROLE_RECOVERY_ADMISSION_2026-10-09.md) adds complete
+ordinary/shared owning bounded codecs and valid/initial/terminal predicates. Full
+canonical command, shared SHOP checkpoint, repeated receipt compiler/result and
+original progress/phase/revision proofs remain. Actual workspace/parser/buffer/
+transferred heap/fresh row/effect/span storage is prospectively admitted; outputs
+stay strong. Independent raw/final source review, full original C prefix/header
+inverse and tokens/preprocessor PASS. All 931 policies/393 pins authenticate, zero
+new/unmapped sites. Native tests remain deferred. Complete mixed-journal/coordinator
+and actual ROOM warm/cold publication/checkpoint/effects/ACK/terminal work remain
+open. No plan/release completion claim. Accounting inactive/admission CLOSED,
+coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.
