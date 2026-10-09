@@ -452,6 +452,81 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Existing ROOM placement journal transport corrected - 2026-10-09
+
+Primarya18bb459277e7249f338b46d3c94dedee871f639, actual immediate parent
+coordinator4a8c9093c6142010f2d2a7bdb170baa3971933c0, fixes a concrete source
+transport mismatch: genuine codec-built ROOM placement uses existing payload2,
+but the native journal predicate previously accepted only payload1. Shared
+native frame construction and decode now accept exactly the named existing
+ROOM1/ROOM2 constants. Unknown versions still refuse; this is transport
+compatibility,not execution admission or source/publication/retirement authority.
+
+Root clean-fast-forwarded,read the full54-line
+[ROOM placement transport handoff](https://github.com/Community-Duris/Duris/blob/a18bb459277e7249f338b46d3c94dedee871f639/docs/persistence/economy_accounting/ROOM_PLACEMENT_JOURNAL_TRANSPORT_2026-10-09.md),
+entire one-source delta,shared predicate/build_native_frame/decode_native_payload,
+authentic command builder/decode,coordinator typed predicate and net/comm.c typed
+validator registration. Seven changed paths,122 insertions/three deletions;
+production change is one include and one ROOM predicate replacement. Removing
+that exact include and reversing that exact predicate restores complete original
+journal bytes. Forward diff1172 bytes SHA256721fb9a41784ade32940dbb3145251e39cc8396cf623522438b1dd9c77e75db4.
+Eight checked codec/coordinator/validator/owner/terminal providers remain byte-
+identical to4a8c909. No other command family,journal framing/checksum/schema,
+publication requirement,envelope guards or typed recovery control is changed.
+
+Original ROOM decode still authenticates payload,intent binding and full rebuilt
+canonical command. Original registered valid/INITIAL/successor/publication/
+terminal validators and genuine execution owner remain required. Public active-
+flat reset refusal,uncalled private flat cursor and unjoined native terminal
+callback remain. No original inactive or declined spell behavior is replaced.
+Primary-reported independent final-source/format/token/931-policy/393-pin evidence
+is distinct from root's narrow raw source review and executed qualification.
+No native build/test or append/restart journey ran for this successor per handoff.
+Source correction passes root narrow review; executable transport is UNQUALIFIED.
+
+Prioritized queue remains ONE active d818 factory/binding delivery per chat.
+Compact snapshots show both original turns active,aligned and incorporating the
+43ecc writer dependency correction. Preserve source pins,worktrees,CLOSED seals
+and live work. This event warrants only a narrow latest-frontier qualification,
+not repin/restart,expanded active scope or a second parallel delivery.
+
+At those handoffs reassess the queued43ecc terminal retention authority/acceptance
+preparation against latest source. Concrete additional acceptance join: genuinely
+codec-built ROOM2 carrier append,shutdown/reopen,replay/checkpoint/continuation/
+reopen; original ROOM1 behavior and unknown-version append/decode rejection.
+Use actual a18bb journal,unchanged codec/coordinator/typed validators,original
+terminal/factory packets and the primary's reported existing native fixture
+pattern. That private fixture/source is UNAVAILABLE to root; no substitute is
+invented. Ordinary-command fault tests do not establish this native case. Future
+private blueprint can identify genuine inputs/proof/owner without executing it;
+primary owns actual native transport implementation/qualification and complete
+gameplay/persistence/recovery. Architecture can connect transport eligibility to
+typed owner/terminal transfer boundaries in its queued note; no separate repeated
+inventory or primary math/Plan5 suite duplicate is justified. Queued notes remain
+unassigned/unreviewed until the current handoffs; all native cases UNEXECUTED.
+
+Exact remaining execution dependencies: genuine flat accepting dispatcher/owner
+fixture,warm/cold CURRENT/native forest publication,selected root/SAME borrowed
+lock/live-budget terminal callback,once-only checkpoints/ACK/retirement and full
+mixed-journal/coordinator/factory capture32MiB; supported runtime and original
+major-plan/integrated qualification. Terminal retention storage is available at
+43ecc; its callback is still unjoined. Plan5 owns SQL0065/schema65 blockers and
+audit/backup/restore/recovery. Missing prerequisites block dependent execution
+only. No actual Goal/native interface is resumed; actual root Goal BLOCKED
+unchanged,primary handoff's Goal ACTIVE is separately reported. Heartbeat ACTIVE.
+
+Root source/inverse/dependency/publication proof:
+D:/Dev/Temp/coordinator-room-journal-transport-frontier-20261009.
+Root updates only three disposition docs by raw insertion/exact byte inverse.
+Workers own distinct private notes/metadata; primary owns shared source/contracts/
+math/qualification. No maintained source/test/schema edit,compile/preprocess/
+link/component/native/DB/root fixture,private commit/import/registration,other
+chats/adoption waits,activation/deployment/production. Required Plans1-5,applicable
+original R1-R8/backend/gameplay/persistence/recovery,required blockers/owner
+completion and selected sidework reviews/handoffs remain the finish line.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED persists.
+
+
 ## Terminal retention storage published; preserve active factory preparation - 2026-10-09
 
 Primary43ecc9b081b15753d82ecd0adac9769f36a35808, actual immediate parent
