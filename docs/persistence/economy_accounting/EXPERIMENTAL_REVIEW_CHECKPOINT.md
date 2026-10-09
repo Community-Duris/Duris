@@ -2303,3 +2303,23 @@ authenticate; zero new/unmapped sites. Native tests/mixed workloads remain defer
 Actual root warm/cold/effects/checkpoints/ACK/guarded coordinator/terminal qualification
 remain open. No plan/release completion claim. Accounting inactive/admission CLOSED,
 coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Guarded original ROOM retirement dependency implemented - 2026-10-09
+
+[The guarded retirement source](ROOM_GUARDED_RETIREMENT_ADMISSION_2026-10-09.md)
+adds the private complete coordinator handoff, real bounded terminal envelope
+validation and actual bounded validator registration beside unchanged originals.
+Original canonical equality, phase/physical-release/generation/lifecycle/retention/
+uncertainty guards remain. Exact operation/counters are pinned before unlocking
+for genuine terminal transfer and full bounded mixed-journal retirement; callback
+receives the whole simultaneous coordinator prefix. Original exact recheck and
+only-confirmed fence release remain; no fallible budget/validation follows durable
+retirement. Actual identity/lock/late-fence storage is prospectively admitted.
+Independent raw/final review, original C prefixes/header inverses/registration and
+tokens/preprocessor PASS. All 931 policies/393 pins authenticate; zero new/unmapped
+sites. Native tests/fault/restart remain deferred. Actual ROOM root/same-lock writer
+join and full warm/cold/context/effects/checkpoint/ACK qualification remain open;
+new capability remains uncalled. No plan/release completion claim. Accounting
+inactive/admission CLOSED, coverage incomplete/release BLOCKED, protected WIP and
+primary goal ACTIVE persist.

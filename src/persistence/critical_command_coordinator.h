@@ -295,6 +295,13 @@ struct critical_zone_reset_recovery_validators
 	bool (*publication)(const critical_native_recovery_envelope &,
 			    const critical_completion &) noexcept = nullptr;
 	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	// Complete pure owning companions for prospectively admitted retirement.
+	// Missing companions affect only the new bounded capability.
+	bool (*valid_bounded)(const critical_native_recovery_envelope &,
+			      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept = nullptr;
+	bool (*terminal_bounded)(const critical_native_recovery_envelope &,
+				 bool (*)(size_t, void *) noexcept, void *,
+				 size_t) noexcept = nullptr;
 };
 
 // Pure auction NAR checks. All callbacks must be registered by the genuine
@@ -409,6 +416,17 @@ class critical_zone_reset_item_publication_owner final
 	static bool retire(const critical_native_recovery_envelope &, uint64_t,
 			   bool (*)(const critical_native_recovery_envelope &, void *) noexcept,
 			   void *) noexcept;
+	// Same actual original generation/operation/fence/uncertainty ownership.
+	// Callback receives coordinator's whole simultaneous scratch prefix while
+	// the genuine operation is pinned. Both callbacks must avoid acquiring
+	// coordinator/journal mutexes; they may run under either original lock.
+	// Persistent journal storage is separately counted once by the aggregate.
+	// No allocation/encode/budget callback follows successful journal retirement.
+	static bool retire_bounded(const critical_native_recovery_envelope &, uint64_t,
+				   bool (*)(const critical_native_recovery_envelope &, void *,
+					    size_t) noexcept,
+				   void *transfer_context, bool (*)(size_t, void *) noexcept,
+				   void *budget_context, size_t outer_live) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.

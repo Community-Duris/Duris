@@ -1033,3 +1033,22 @@ economic_accounting_error zone_reset_item_recovery_terminal_body_decode_bounded(
 	}
 #endif
 }
+
+bool zone_reset_item_recovery_terminal_bounded(const critical_native_recovery_envelope &envelope,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept
+{
+	// The original envelope decoder refuses revision1/continuation even when
+	// its otherwise complete BODY is terminal. Preserve that envelope rule.
+	if (!reserve || !envelope.revision || envelope.revision == 1 ||
+	    envelope.phase != critical_native_recovery_phase::continuation_pending)
+		return false;
+	size_t live = outer;
+	if (!recovery_bound_add(live, sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(live, sizeof(std::span<const uint8_t>)) || !reserve(live, context))
+		return false;
+	zone_reset_item_recovery_context decoded;
+	const std::span<const uint8_t> bytes(envelope.attachment);
+	return zone_reset_item_recovery_terminal_body_decode_bounded(
+		       envelope.command, bytes, &decoded, reserve, context, live) == error::ok;
+}

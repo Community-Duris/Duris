@@ -5901,3 +5901,216 @@ void critical_command_coordinator_reset_for_tests(void)
 	critical_command_coordinator_set_drain_observer(nullptr);
 	critical_command_journal_reset_for_tests();
 }
+
+#include "economy/zone_reset_item_recovery.h"
+
+namespace
+{
+bool room_retire_add(size_t &bytes, size_t amount) noexcept
+{
+	if (bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+	    amount > CRITICAL_COORDINATOR_MAX_BYTES - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool room_retire_size_bounded(const critical_native_recovery_envelope &envelope, size_t *retained,
+			      bool (*reserve)(size_t, void *) noexcept, void *context,
+			      size_t outer) noexcept
+{
+	// Same original native envelope hard gates and canonical encoded size.
+	if (!retained || !native_transport_command(envelope.command) ||
+	    !envelope.command.publication_required || !envelope.revision ||
+	    envelope.phase != critical_native_recovery_phase::continuation_pending ||
+	    envelope.attachment.empty() ||
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return false;
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(std::vector<uint8_t>)) || !reserve(live, context))
+		return false;
+	std::vector<uint8_t> encoded;
+	if (critical_command_encode_bounded(envelope.command, &encoded, reserve, context, live) !=
+		    critical_command_codec_result::ok ||
+	    encoded.size() >
+		    CRITICAL_COORDINATOR_MAX_BYTES - NATIVE_COORDINATOR_ENVELOPE_OVERHEAD ||
+	    envelope.attachment.size() > CRITICAL_COORDINATOR_MAX_BYTES -
+						 NATIVE_COORDINATOR_ENVELOPE_OVERHEAD -
+						 encoded.size())
+		return false;
+	*retained =
+		encoded.size() + envelope.attachment.size() + NATIVE_COORDINATOR_ENVELOPE_OVERHEAD;
+	return true;
+}
+bool room_retire_matches_bounded(const operation_state &state,
+				 const critical_native_recovery_envelope &envelope,
+				 bool (*reserve)(size_t, void *) noexcept, void *context,
+				 size_t outer) noexcept
+{
+	if (!state.native || state.native->revision != envelope.revision ||
+	    state.native->phase != envelope.phase ||
+	    state.native->attachment != envelope.attachment)
+		return false;
+	size_t left = 0, right = 0;
+	if (critical_command_encoder_working_bytes(state.command, &left) !=
+		    critical_command_codec_result::ok ||
+	    critical_command_encoder_working_bytes(envelope.command, &right) !=
+		    critical_command_codec_result::ok ||
+	    left < sizeof(std::vector<uint8_t>) || right < sizeof(std::vector<uint8_t>))
+		return false;
+	// critical_command_equal owns two output vectors; each nested original
+	// encoder owns its result vector. Keep the first encoded heap in pass two.
+	size_t first = outer, second = outer;
+	if (!room_retire_add(first, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(first, left) ||
+	    !room_retire_add(second, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(second, left - sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(second, right) || !reserve(std::max(first, second), context))
+		return false;
+	try
+	{
+		return critical_command_equal(state.command, envelope.command);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // namespace
+
+bool critical_zone_reset_item_publication_owner::retire_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t expected_generation,
+	bool (*durable_transfer)(const critical_native_recovery_envelope &, void *,
+				 size_t) noexcept,
+	void *transfer_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer) noexcept
+{
+	if (!zone_reset_typed_command(expected.command) || !expected_generation ||
+	    !durable_transfer || !reserve ||
+	    expected.phase != critical_native_recovery_phase::continuation_pending)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	// Actual original 16-byte operation_key requests 17 chars. The lock and
+	// nonallocating post-retirement fence lookup temporaries are pre-admitted
+	// before pinning; no fallible budget callback follows durable retirement.
+	if (!room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !room_retire_add(live, 2 * sizeof(std::array<char, 9>)) ||
+	    !room_retire_add(live, sizeof(std::string_view)) || !reserve(live, budget_context))
+		return false;
+	uint64_t generation = 0;
+	operation_state *reserved_operation = nullptr;
+	size_t original_retained = 0, successor_retained = 0;
+	bool prior_uncertain = false;
+	try
+	{
+		const std::string identity = operation_key(expected.command.operation_id);
+		if (!room_retire_size_bounded(expected, &original_retained, reserve, budget_context,
+					      live))
+			return false;
+		{
+			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			auto found = operations.find(identity);
+			if (!health.initialized || stop_requested || found == operations.end() ||
+			    !room_retire_matches_bounded(*found->second, expected, reserve,
+							 budget_context, live) ||
+			    found->second->publication_checkpointing ||
+			    found->second->native_ack_uncertain || !coordinator_generation ||
+			    coordinator_generation_exhausted ||
+			    coordinator_generation != expected_generation ||
+			    (lifecycle_guard_active &&
+			     lifecycle_guard_thread != std::this_thread::get_id()) ||
+			    found->second->phase !=
+				    critical_operation_phase::native_continuation_pending ||
+			    !found->second->native_physical_released ||
+			    !zone_reset_validators_ready() ||
+			    !zone_reset_validators.valid_bounded ||
+			    !zone_reset_validators.terminal_bounded ||
+			    !zone_reset_validators.valid_bounded(expected, reserve, budget_context,
+								 live) ||
+			    !zone_reset_validators.terminal_bounded(expected, reserve,
+								    budget_context, live))
+				return false;
+			// Preserve every original retained proposal/ceiling rule even though
+			// this capability retires only, never constructs a successor.
+			if (found->second->flat_transaction)
+			{
+				const size_t extra = found->second->flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
+			if (found->second->room_flat_transaction)
+			{
+				const size_t extra = found->second->room_flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
+			const size_t reserved =
+				std::max(found->second->retained_bytes, successor_retained);
+			if (reserved >
+			    CRITICAL_COORDINATOR_MAX_BYTES -
+				    (health.retained_bytes - found->second->retained_bytes))
+				return false;
+			prior_uncertain = found->second->native_context_uncertain;
+			found->second->retained_bytes = reserved;
+			found->second->publication_checkpointing = true;
+			generation = coordinator_generation;
+			reserved_operation = found->second.get();
+			++publication_checkpoints_inflight;
+			++guarded_publications_inflight;
+			update_depth();
+		}
+		auto result = critical_command_journal_result::io_failure;
+		// Exact original operation/generation remain pinned while the real owner
+		// transfers its complete terminal BODY under its borrowed recovered root
+		// lock. Relay THIS live coordinator prefix, not an uncounted two-arg shim.
+		if (durable_transfer(expected, transfer_context, live))
+			result = critical_command_journal_retire_native_recovery_bounded(
+				expected, reserve, budget_context, live);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+		auto found = operations.find(identity);
+		if (found == operations.end() || coordinator_generation != generation ||
+		    found->second.get() != reserved_operation ||
+		    !found->second->publication_checkpointing || !found->second->native ||
+		    found->second->native->revision != expected.revision ||
+		    found->second->native->phase != expected.phase ||
+		    found->second->native->attachment != expected.attachment)
+			return false;
+		auto &state = *found->second;
+		state.publication_checkpointing = false;
+		if (result != critical_command_journal_result::ok)
+		{
+			state.native_context_uncertain =
+				prior_uncertain ||
+				result == critical_command_journal_result::append_uncertain;
+			if (!state.native_context_uncertain)
+				state.retained_bytes = original_retained;
+			update_depth();
+			return false;
+		}
+		remove_fences(identity, state.command);
+		operations.erase(found);
+		++health.completed;
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
