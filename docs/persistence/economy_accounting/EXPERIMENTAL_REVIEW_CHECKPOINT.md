@@ -1,21 +1,20 @@
 # Experimental accounting review checkpoint
 
-## Shared flat readers and initial ROOM stages joined - 2026-10-08
+## Native season and bounded CURRENT custody joined - 2026-10-09
 
-[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#reviewed-native-readers-and-initial-room-stages-joined---2026-10-08)
-records private candidate `02ace4ce570a352a20da2360852f8d121996b35792a1a38b8828a025daa94acd`:222 authenticated paths
-(183 source,30 tests,5 schema,4 other). Genuine passive initial ROOM stages and
-bounded lock/native/keeper readers now meet on one source-reviewed candidate;
-539 provider records and37 exact inverse spans were checked. No executable checks
-ran and inventory proves no completion. Root's actual shared32MiB callback scope
-and bounded cold root/lock/journal proposal remains UNSELECTED until the full
-checkpoint/carrier/CURRENT projection/output census is complete. Full custody
-reading and native season enrollment continue separately. Existing roots are not
-silently reseeded; original inactive behavior and admission CLOSED are preserved.
-Full atomic participants/source/dispatcher, world publication/origin/ACK, progressed
-startup and major-plan qualification remain. Original Plan1 acceptance stays
-scoped; Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Peer docs and
-unrelated WIP are preserved; the goal is active.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md#native-season-and-bounded-current-custody-joined---2026-10-09)
+records private candidate `c84bb521c95303c7515afaaa9baa7a01af64547768e1e1f30fa19e84af0a6106`:226 paths (186 source,31 tests,
+5 schema,4 other). Reviewed full custody storage/projection, required v6 DTO
+correction, genuine fresh-root season enrollment and real object/flat harness
+link registration are joined.219 providers and16 exact inverse spans authenticate;
+no executable qualification ran. Existing roots are never silently reseeded and
+inactive generic startup remains unchanged. Full native season capture/worker
+equality, explicit stopped legacy enrollment, shared32MiB caller/lifetime census,
+atomic participants and original world source/publication/origin/ACK remain.
+Root cold reader scope stays UNSELECTED; INITIAL checkpoint decoder review is
+ongoing. Source is unpromoted and admission CLOSED. Original Plan1 acceptance
+stays scoped; Plans2-4/combinedPlan5/R1-R8/release remain unfinished. Peer docs
+and unrelated WIP are preserved. The ongoing goal is active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
