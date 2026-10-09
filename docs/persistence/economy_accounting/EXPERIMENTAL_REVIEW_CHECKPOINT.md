@@ -1954,3 +1954,22 @@ flat factory/source/binding/checkpoint/ACK and full32MiB/restart qualification
 remain open. Native flat-binding WIP is excluded. Accounting remains inactive,
 admission CLOSED, coverage incomplete and release BLOCKED; no plan/release
 completion or activation follows from these bounded components.
+
+
+## ROOM INITIAL observation admission milestone — 2026-10-09
+
+[The source repair](ROOM_INITIAL_OBSERVATION_ADMISSION_2026-10-09.md) joins the real bounded locked INITIAL
+observation caller, authenticated authority/receipt/pile readers and complete
+command/plan/origin/recovery/binding codec dependencies. The omitted persistent
+bookkeeping object now receives prospective admission. Independent finite source
+review, exact original-method/inverse and changed-line format/token checks passed.
+All 931 policy rows and 391 source pins retain their scope; hashes and source
+coordinates refresh without new/unmapped lexical writer sites. Inventory does
+not establish accounting completion. This primary ongoing goal remains ACTIVE.
+
+No builds/tests ran; native/gameplay/persistence/recovery qualification remains
+in the major-plan batch. Publication/submission internals, genuine flat
+factory/source/binding/publication/checkpoint/ACK, full 32 MiB and accepting/
+restart qualification remain open. Separate flat-binding WIP is excluded.
+Accounting remains inactive, admission CLOSED, coverage incomplete and release
+BLOCKED. Plans 2–4, combined Plan 5 and R1–R8 remain open; no activation follows.

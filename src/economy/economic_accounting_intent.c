@@ -361,13 +361,17 @@ economic_accounting_error economic_intent_decode_bounded(const std::span<const u
 #endif
 }
 
-economic_accounting_error economic_intent_plan_metadata_bounded(
-	const critical_command &command, const economic_frozen_intent &intent,
-	economic_plan_metadata *output, bool (*reserve)(size_t, void *) noexcept, void *context,
-	size_t outer_live) noexcept
+namespace
+{
+economic_accounting_error intent_proof_bounded(const critical_command &command,
+					       const economic_frozen_intent &intent,
+					       economic_plan_metadata *output,
+					       bool metadata_requested,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept
 {
 	using error = economic_accounting_error;
-	if (!output)
+	if (metadata_requested && !output)
 		return error::corrupt_evidence;
 	if (!reserve)
 		return error::capacity;
@@ -377,6 +381,7 @@ economic_accounting_error economic_intent_plan_metadata_bounded(
 	(void)intent;
 	(void)context;
 	(void)outer_live;
+	(void)metadata_requested;
 	return error::capacity;
 #else
 	size_t base = outer_live;
@@ -458,29 +463,34 @@ economic_accounting_error economic_intent_plan_metadata_bounded(
 	    !intent_bound_add(work.phase, std::max(work.domain_peak, work.digest_live)))
 		return error::capacity;
 	work.peak = std::max(work.peak, work.phase);
-	// Only after binding verification does the original construct metadata and
-	// digest the canonical intent. Moved hash parameter and source vector objects
-	// coexist; prepend's old/new requests and digest DTOs are separate phases.
-	if (!intent_bound_prepend(work.bytes, sizeof("DURIS-ECONOMIC-INTENT-V1"),
-				  work.intent_capacity, work.intent_peak))
-		return error::capacity;
-	work.digest_live = work.intent_capacity;
-	if (!intent_bound_add(work.digest_live, 2 * sizeof(economic_digest)))
-		return error::capacity;
-	work.phase = work.base;
-	size_t encode_peak = work.bytes;
-	if (!intent_bound_add(encode_peak, work.fixed) ||
-	    !intent_bound_add(work.phase, sizeof(economic_plan_metadata)) ||
-	    !intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
-	    !intent_bound_add(work.phase,
-			      std::max(encode_peak, std::max(work.intent_peak, work.digest_live))))
-		return error::capacity;
-	work.peak = std::max(work.peak, work.phase);
+	if (metadata_requested)
+	{
+		// Only after binding verification does the original construct metadata and
+		// digest the canonical intent. Moved hash parameter and source vector objects
+		// coexist; prepend's old/new requests and digest DTOs are separate phases.
+		if (!intent_bound_prepend(work.bytes, sizeof("DURIS-ECONOMIC-INTENT-V1"),
+					  work.intent_capacity, work.intent_peak))
+			return error::capacity;
+		work.digest_live = work.intent_capacity;
+		if (!intent_bound_add(work.digest_live, 2 * sizeof(economic_digest)))
+			return error::capacity;
+		work.phase = work.base;
+		size_t encode_peak = work.bytes;
+		if (!intent_bound_add(encode_peak, work.fixed) ||
+		    !intent_bound_add(work.phase, sizeof(economic_plan_metadata)) ||
+		    !intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
+		    !intent_bound_add(work.phase,
+				      std::max(encode_peak,
+					       std::max(work.intent_peak, work.digest_live))))
+			return error::capacity;
+		work.peak = std::max(work.peak, work.phase);
+	}
 	if (!reserve(work.peak, context))
 		return error::capacity;
 	try
 	{
-		return economic_intent_plan_metadata(command, intent, output);
+		return metadata_requested ? economic_intent_plan_metadata(command, intent, output) :
+					    economic_intent_verify_binding(command, intent);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -491,4 +501,20 @@ economic_accounting_error economic_intent_plan_metadata_bounded(
 		return error::corrupt_evidence;
 	}
 #endif
+}
+} // namespace
+
+economic_accounting_error economic_intent_plan_metadata_bounded(
+	const critical_command &command, const economic_frozen_intent &intent,
+	economic_plan_metadata *output, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	return intent_proof_bounded(command, intent, output, true, reserve, context, outer_live);
+}
+economic_accounting_error economic_intent_verify_binding_bounded(
+	const critical_command &command, const economic_frozen_intent &intent,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	// Binding-only verification must not compute the later metadata digest.
+	return intent_proof_bounded(command, intent, nullptr, false, reserve, context, outer_live);
 }

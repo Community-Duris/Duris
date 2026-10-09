@@ -41,4 +41,11 @@ flatfile_accounting_status flatfile_accounting_pile_state_stage(
 	const critical_operation_id &operation_id, bool retired,
 	std::vector<flatfile_authority_operation> *operations, std::string *error);
 
+// Passive prospective scratch admission; same recovered lock and original head proof.
+// Input/prior output storage belongs to outer; no diagnostics allocate.
+flatfile_accounting_status
+flatfile_accounting_pile_state_read_bounded(const std::string &, const flatfile_authority_lock &,
+					    uint64_t, flatfile_accounting_pile_state *,
+					    flatfile_scratch_reserve_fn, void *, size_t) noexcept;
+
 #endif

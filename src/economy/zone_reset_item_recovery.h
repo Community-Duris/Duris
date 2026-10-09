@@ -88,6 +88,9 @@ bool zone_reset_item_recovery_initial_bounded(
 	size_t outer_live_scratch) noexcept;
 bool zone_reset_item_recovery_successor(const critical_native_recovery_envelope &expected,
 					const critical_native_recovery_envelope &successor) noexcept;
+bool zone_reset_item_recovery_valid_bounded(const critical_native_recovery_envelope &,
+					    bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+					    void *context, size_t outer_live_scratch) noexcept;
 // Current successful delivery may change attempts/times/replay outcome, but the
 // complete economic receipt core must match. This does not authenticate delivery.
 bool zone_reset_item_recovery_publication(const critical_native_recovery_envelope &,

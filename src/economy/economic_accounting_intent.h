@@ -54,4 +54,9 @@ economic_intent_plan_metadata_bounded(const critical_command &, const economic_f
 				      bool (*reserve_scratch_peak)(size_t, void *) noexcept,
 				      void *context, size_t outer_live) noexcept;
 
+economic_accounting_error
+economic_intent_verify_binding_bounded(const critical_command &, const economic_frozen_intent &,
+				       bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+				       void *context, size_t outer_live) noexcept;
+
 #endif

@@ -212,4 +212,14 @@ critical_command_codec_result critical_command_encode_bounded(
 critical_command_codec_result critical_command_decode(const uint8_t *encoded, size_t size,
 						      critical_command *command);
 
+// Full original wire decoder with prospective actual fresh-vector growth.
+// Input, old output and context remain outer; keep admitted peaks through
+// return and strong transfer. Optional heap excludes caller inline command.
+// Unsupported allocation policy refuses; no execution authority is granted.
+critical_command_codec_result
+critical_command_decode_bounded(const uint8_t *, size_t, critical_command *,
+				bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+				void *context, size_t outer_live_scratch,
+				size_t *retained_command_heap_bytes = nullptr) noexcept;
+
 #endif

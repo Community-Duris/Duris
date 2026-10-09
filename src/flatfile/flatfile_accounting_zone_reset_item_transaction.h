@@ -63,6 +63,15 @@ class flatfile_accounting_zone_reset_item_transaction final
 	static unsigned int
 	observe_initial_locked(const std::string &, const flatfile_authority_lock &,
 			       const critical_native_recovery_envelope &) noexcept;
+	// Complete original INITIAL observation with prospective transitive storage.
+	// Caller owns original/root/lock/context and all existing scratch in outer.
+	// No source/execution/publication/receipt authority is granted; all staged
+	// values remain local. Unsupported pinned request ABI refuses ENOTSUP.
+	static unsigned int
+	observe_initial_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				       const critical_native_recovery_envelope &,
+				       flatfile_scratch_reserve_fn, void *context,
+				       size_t outer_live_scratch) noexcept;
 	struct implementation;
 	std::unique_ptr<implementation> state_;
 	explicit flatfile_accounting_zone_reset_item_transaction(std::unique_ptr<implementation>);
@@ -81,6 +90,15 @@ class flatfile_zone_reset_item_publication_storage final
 	static unsigned int
 	observe_initial_locked(const std::string &, const flatfile_authority_lock &,
 			       const critical_native_recovery_envelope &) noexcept;
+	// Complete original INITIAL observation with prospective transitive storage.
+	// Caller owns original/root/lock/context and all existing scratch in outer.
+	// No source/execution/publication/receipt authority is granted; all staged
+	// values remain local. Unsupported pinned request ABI refuses ENOTSUP.
+	static unsigned int
+	observe_initial_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				       const critical_native_recovery_envelope &,
+				       flatfile_scratch_reserve_fn, void *context,
+				       size_t outer_live_scratch) noexcept;
 	static unsigned int read_locked(const std::string &, const flatfile_authority_lock &,
 					const critical_native_recovery_envelope &,
 					const critical_completion &,

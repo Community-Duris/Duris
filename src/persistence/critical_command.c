@@ -577,3 +577,214 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	*command = std::move(decoded);
 	return critical_command_codec_result::ok;
 }
+
+namespace
+{
+[[maybe_unused]] bool critical_decode_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+[[maybe_unused]] bool critical_decode_heap(const critical_command &command, size_t *output) noexcept
+{
+	size_t bytes = command.payload.capacity();
+	if (!critical_decode_add(bytes, command.accounting_intent.capacity()) ||
+	    command.keys.capacity() > SIZE_MAX / sizeof(critical_entity_key) ||
+	    !critical_decode_add(bytes, command.keys.capacity() * sizeof(critical_entity_key)) ||
+	    command.expected_revisions.capacity() > SIZE_MAX / sizeof(critical_expected_revision) ||
+	    !critical_decode_add(bytes, command.expected_revisions.capacity() *
+						sizeof(critical_expected_revision)))
+		return false;
+	*output = bytes;
+	return true;
+}
+[[maybe_unused]] bool critical_decode_admit(const critical_command &command, size_t extra,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t live) noexcept
+{
+	size_t heap = 0;
+	return critical_decode_heap(command, &heap) && critical_decode_add(live, heap) &&
+	       critical_decode_add(live, extra) && reserve(live, context);
+}
+} // namespace
+
+critical_command_codec_result
+critical_command_decode_bounded(const uint8_t *encoded, size_t size, critical_command *command,
+				bool (*reserve)(size_t, void *) noexcept, void *context,
+				size_t outer_live, size_t *retained_command_heap_bytes) noexcept
+{
+	if (!encoded || !command || size < CRITICAL_COMMAND_HEADER_BYTES)
+		return critical_command_codec_result::truncated;
+	if (size > CRITICAL_COMMAND_MAX_ENCODED_BYTES || memcmp(encoded, COMMAND_MAGIC, 4) != 0)
+		return critical_command_codec_result::invalid;
+	if (!reserve)
+		return critical_command_codec_result::overflow;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	(void)retained_command_heap_bytes;
+	return critical_command_codec_result::unsupported_version;
+#else
+	size_t live = outer_live;
+	if (!critical_decode_add(live, sizeof(critical_command)) || !reserve(live, context))
+		return critical_command_codec_result::overflow;
+	size_t offset = 4;
+	critical_command decoded = {};
+	uint16_t type = 0, source = 0;
+	uint32_t key_count = 0, revision_count = 0, payload_size = 0;
+	if (!read_le(encoded, size, &offset, &decoded.schema_version))
+		return critical_command_codec_result::truncated;
+	if (decoded.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	    decoded.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		return critical_command_codec_result::unsupported_version;
+	memcpy(decoded.operation_id.bytes.data(), encoded + offset,
+	       decoded.operation_id.bytes.size());
+	offset += decoded.operation_id.bytes.size();
+	if (!read_le(encoded, size, &offset, &type) ||
+	    !read_le(encoded, size, &offset, &decoded.payload_version) ||
+	    !read_le(encoded, size, &offset, &source) || offset + 2 > size)
+		return critical_command_codec_result::truncated;
+	decoded.type = static_cast<critical_command_type>(type);
+	decoded.source_site = static_cast<critical_source_site>(source);
+	decoded.deadline_class = static_cast<critical_deadline_class>(encoded[offset]);
+	if (encoded[offset + 1] > 1 ||
+	    (encoded[offset + 1] &&
+	     decoded.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION))
+		return critical_command_codec_result::invalid;
+	decoded.publication_required = encoded[offset + 1] == 1;
+	offset += 2;
+	if (!read_le(encoded, size, &offset, &decoded.accepted_at_usec) ||
+	    !read_le(encoded, size, &offset, &key_count) ||
+	    !read_le(encoded, size, &offset, &revision_count) ||
+	    !read_le(encoded, size, &offset, &payload_size))
+		return critical_command_codec_result::truncated;
+	// Intent bytes are decoded below. This is only the allocation hard gate;
+	// final envelope validation rechecks exact schema/publication/intent shape.
+	const bool native_auction_header =
+		decoded.type == critical_command_type::auction &&
+		decoded.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION &&
+		((decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		  decoded.publication_required) ||
+		 (decoded.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+		  !decoded.publication_required));
+	const size_t key_limit = native_auction_header ? CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+							 CRITICAL_COMMAND_MAX_KEYS;
+	if (!key_count || key_count > CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS ||
+	    revision_count > CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS || key_count > key_limit ||
+	    revision_count > key_limit || payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return critical_command_codec_result::overflow;
+	uint64_t required =
+		static_cast<uint64_t>(key_count) * CRITICAL_COMMAND_ENTITY_KEY_BYTES +
+		static_cast<uint64_t>(revision_count) * CRITICAL_COMMAND_EXPECTED_REVISION_BYTES +
+		payload_size;
+	if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		if (required > size - offset ||
+		    size - offset - required < CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES)
+			return critical_command_codec_result::truncated;
+		size_t intent_offset = offset + static_cast<size_t>(required);
+		uint32_t intent_size = 0;
+		if (!read_le(encoded, size, &intent_offset, &intent_size))
+			return critical_command_codec_result::truncated;
+		if (!intent_size || intent_size > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES)
+			return critical_command_codec_result::overflow;
+		required += CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES + intent_size;
+	}
+	if (required != size - offset)
+		return required > size - offset ? critical_command_codec_result::truncated :
+						  critical_command_codec_result::invalid;
+	try
+	{
+		for (uint32_t index = 0; index < key_count; ++index)
+		{
+			if (!critical_decode_admit(decoded, sizeof(critical_entity_key), reserve,
+						   context, live))
+				return critical_command_codec_result::overflow;
+			critical_entity_key key = {
+				static_cast<critical_entity_type>(encoded[offset]), 0
+			};
+			for (size_t pad = 1; pad < 8; ++pad)
+				if (encoded[offset + pad] != 0)
+					return critical_command_codec_result::invalid;
+			offset += 8;
+			if (!read_le(encoded, size, &offset, &key.id))
+				return critical_command_codec_result::truncated;
+			if (decoded.keys.size() == decoded.keys.capacity())
+			{
+				size_t request = decoded.keys.size();
+				size_t extra = sizeof(key);
+				if (!critical_decode_add(request, std::max(decoded.keys.size(),
+									   size_t{ 1 })) ||
+				    request > SIZE_MAX / sizeof(critical_entity_key) ||
+				    !critical_decode_add(extra,
+							 request * sizeof(critical_entity_key)) ||
+				    !critical_decode_admit(decoded, extra, reserve, context, live))
+					return critical_command_codec_result::overflow;
+			}
+			decoded.keys.push_back(key);
+		}
+		for (uint32_t index = 0; index < revision_count; ++index)
+		{
+			if (!critical_decode_admit(decoded, sizeof(critical_expected_revision),
+						   reserve, context, live))
+				return critical_command_codec_result::overflow;
+			critical_expected_revision revision = {
+				.key = { static_cast<critical_entity_type>(encoded[offset]), 0 },
+				.revision = 0
+			};
+			for (size_t pad = 1; pad < 8; ++pad)
+				if (encoded[offset + pad] != 0)
+					return critical_command_codec_result::invalid;
+			offset += 8;
+			if (!read_le(encoded, size, &offset, &revision.key.id) ||
+			    !read_le(encoded, size, &offset, &revision.revision))
+				return critical_command_codec_result::truncated;
+			if (decoded.expected_revisions.size() ==
+			    decoded.expected_revisions.capacity())
+			{
+				size_t request = decoded.expected_revisions.size();
+				size_t extra = sizeof(revision);
+				if (!critical_decode_add(request,
+							 std::max(decoded.expected_revisions.size(),
+								  size_t{ 1 })) ||
+				    request > SIZE_MAX / sizeof(critical_expected_revision) ||
+				    !critical_decode_add(
+					    extra, request * sizeof(critical_expected_revision)) ||
+				    !critical_decode_admit(decoded, extra, reserve, context, live))
+					return critical_command_codec_result::overflow;
+			}
+			decoded.expected_revisions.push_back(revision);
+		}
+		if (!critical_decode_admit(decoded, payload_size, reserve, context, live))
+			return critical_command_codec_result::overflow;
+		decoded.payload.assign(encoded + offset, encoded + offset + payload_size);
+		if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			const size_t intent_size = size - offset - payload_size -
+						   CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES;
+			if (!critical_decode_admit(decoded, intent_size, reserve, context, live))
+				return critical_command_codec_result::overflow;
+			decoded.accounting_intent.assign(
+				encoded + offset + payload_size +
+					CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES,
+				encoded + size);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return critical_command_codec_result::overflow;
+	}
+	if (!critical_command_envelope_valid(decoded))
+		return critical_command_codec_result::invalid;
+	size_t retained = 0;
+	if (!critical_decode_heap(decoded, &retained))
+		return critical_command_codec_result::overflow;
+	*command = std::move(decoded);
+	if (retained_command_heap_bytes)
+		*retained_command_heap_bytes = retained;
+	return critical_command_codec_result::ok;
+#endif
+}

@@ -2077,8 +2077,8 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			// One actual recovered selected-root freeze. Values never grant
 			// source, constructor, execution or publication permission.
 			// Recovered providers and codecs below reserve their real scratch.
-			// Native recapture below is bounded as well. Genuine INITIAL observation
-			// and publication preparation still need their own transitive bounds.
+			// Native recapture and complete INITIAL observation are bounded as well.
+			// Publication preparation still needs its own transitive bounds.
 			size_t lock_live = frame_live;
 			if (!warm_scratch_add(lock_live, sizeof(flatfile_authority_lock)) ||
 			    !reserve_warm_command_scratch(lock_live, &scratch))
@@ -2202,17 +2202,21 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			}
 			original.revision = 1;
 			original.phase = critical_native_recovery_phase::execution_pending;
-			if (zone_reset_item_recovery_encode_bounded(original.command, initial,
-				    &original.attachment, reserve_warm_command_scratch,
-				    &scratch, storage_live) != economic_accounting_error::ok ||
+			if (zone_reset_item_recovery_encode_bounded(
+				    original.command, initial, &original.attachment,
+				    reserve_warm_command_scratch, &scratch,
+				    storage_live) != economic_accounting_error::ok ||
 			    !warm_scratch_add(storage_live, original.attachment.capacity()) ||
 			    !zone_reset_item_recovery_initial_bounded(original,
-				    reserve_warm_command_scratch, &scratch, storage_live) ||
-			    flatfile_zone_reset_item_publication_storage::observe_initial_locked(
-				    selected_root, lock, original) != 0 ||
+								      reserve_warm_command_scratch,
+								      &scratch, storage_live) ||
+			    flatfile_zone_reset_item_publication_storage::
+					    observe_initial_locked_bounded(
+						    selected_root, lock, original,
+						    reserve_warm_command_scratch, &scratch,
+						    storage_live) != 0 ||
 			    !warm_root_current_bounded(*root, scratch, storage_live) ||
-			    !lock.matches(selected_root) ||
-			    persistence_mode_requires_mysql() ||
+			    !lock.matches(selected_root) || persistence_mode_requires_mysql() ||
 			    !economic_gameplay_authority::active_regular_flat())
 				return false;
 			const char *still_configured = persistence_mode_flatfile_root();

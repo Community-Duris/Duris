@@ -210,4 +210,24 @@ class flatfile_accounting_authority_storage
 						const critical_operation_id &, operations *,
 						std::string *, flatfile_accounting_staging_view *);
 };
+// Passive same-lock recovered readers with prospective pinned-storage admission.
+// Caller retains inputs/prior outputs/context in outer. No diagnostic allocation.
+unsigned int flatfile_economic_control_read_bounded(const std::string &,
+						    const flatfile_authority_lock &,
+						    flatfile_economic_control *,
+						    flatfile_scratch_reserve_fn, void *,
+						    size_t) noexcept;
+unsigned int
+flatfile_economic_epoch_read_bounded(const std::string &, const flatfile_authority_lock &,
+				     const critical_operation_id &, const critical_operation_id &,
+				     flatfile_economic_epoch *, flatfile_scratch_reserve_fn, void *,
+				     size_t) noexcept;
+// INITIAL-only empty mapping scope; nonempty requests explicitly return ENOTSUP.
+// Full original control/epoch/current selection proof remains required.
+unsigned int economic_flatfile_lock_authority_bounded(
+	const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+	const critical_operation_id &, const std::span<const flatfile_economic_mapping_request> &,
+	flatfile_economic_authority_snapshot *, flatfile_scratch_reserve_fn, void *, size_t,
+	size_t *retained_payload = nullptr) noexcept;
+
 #endif
