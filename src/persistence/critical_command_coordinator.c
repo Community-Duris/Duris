@@ -413,7 +413,7 @@ using native_admission_string_table = std::unordered_map<std::string, Value, Has
 #endif
 
 native_admission_string_table<std::unique_ptr<operation_state>> operations;
-std::deque<std::string> pending;
+native_identity_queue pending;
 native_identity_queue pending_admission;
 critical_completion_delivery completion_delivery;
 struct entity_key_hash
@@ -435,7 +435,7 @@ static_assert(sizeof(decltype(fences)) ==
 					std::equal_to<>>));
 #endif
 std::unordered_map<std::string, completed_state> completed_cache;
-std::deque<std::string> completed_order;
+native_identity_queue completed_order;
 size_t completed_cache_bytes = 0;
 size_t pending_admission_bytes = 0;
 size_t admission_inflight_bytes = 0;
@@ -7011,6 +7011,177 @@ bool critical_zone_reset_item_publication_owner::admission_supported_bounded(
 		       critical_command_envelope_valid(command) && extension_validator_callback &&
 		       extension_validator_bounded_callback &&
 		       extension_validator_bounded_callback(command, reserve, context, live);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+namespace
+{
+bool room_storage_add(size_t &total, size_t bytes) noexcept
+{
+	if (bytes > SIZE_MAX - total)
+		return false;
+	total += bytes;
+	return true;
+}
+bool room_storage_array(size_t &total, size_t capacity, size_t width) noexcept
+{
+	return (!width || capacity <= SIZE_MAX / width) &&
+	       room_storage_add(total, capacity * width);
+}
+bool room_storage_command(size_t &total, const critical_command &command) noexcept
+{
+	return room_storage_array(total, command.keys.capacity(), sizeof(critical_entity_key)) &&
+	       room_storage_array(total, command.expected_revisions.capacity(),
+				  sizeof(critical_expected_revision)) &&
+	       room_storage_add(total, command.payload.capacity()) &&
+	       room_storage_add(total, command.accounting_intent.capacity());
+}
+bool room_storage_string(size_t &total, const std::string &value) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return value.capacity() <= 15 ||
+	       (value.capacity() != SIZE_MAX && room_storage_add(total, value.capacity() + 1));
+#else
+	(void)total;
+	(void)value;
+	return false;
+#endif
+}
+template <typename Map> bool room_storage_map(size_t &total, const Map &map) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using node = std::__detail::_Hash_node<
+		typename Map::value_type,
+		std::__cache_default<typename Map::key_type, typename Map::hasher>::value>;
+	if (!map.bucket_count() ||
+	    (map.bucket_count() > 1 &&
+	     !room_storage_array(total, map.bucket_count(),
+				 sizeof(std::__detail::_Hash_node_base *))) ||
+	    !room_storage_array(total, map.size(), sizeof(node)))
+		return false;
+	for (const auto &entry : map)
+		if (!room_storage_string(total, entry.first))
+			return false;
+	return true;
+#else
+	(void)total;
+	(void)map;
+	return false;
+#endif
+}
+// Pure current retained owner census. Its caller owns the actual coordinator
+// mutex. Do not call through an unlocked root global observer or journal lock.
+bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output)
+		return false;
+	size_t total =
+		sizeof(coordinator_mutex) + sizeof(work_available) + sizeof(result_available) +
+		sizeof(admission_available) + sizeof(publication_checkpoint_finished) +
+		sizeof(publication_checkpoints_inflight) + sizeof(guarded_publications_inflight) +
+		sizeof(operations) + sizeof(pending) + sizeof(pending_admission) +
+		sizeof(completion_delivery) + sizeof(active_keys) + sizeof(fences) +
+		sizeof(completed_cache) + sizeof(completed_order) + sizeof(completed_cache_bytes) +
+		sizeof(pending_admission_bytes) + sizeof(admission_inflight_bytes) +
+		sizeof(workers) + sizeof(admission_worker) + sizeof(apply_callback) +
+		sizeof(shared_native_apply_callback) + sizeof(zone_reset_apply_callback) +
+		sizeof(extension_validator_callback) +
+		sizeof(extension_validator_bounded_callback) +
+		sizeof(native_replay_observer_callback) +
+		sizeof(native_publication_validator_callback) + sizeof(native_birth_validators) +
+		sizeof(native_quest_pair_validator) + sizeof(native_auction_validators) +
+		sizeof(zone_reset_validators) + sizeof(apply_context) + sizeof(drain_observer) +
+		sizeof(health) + sizeof(stop_requested) + sizeof(lifecycle_guard_active) +
+		sizeof(lifecycle_guard_was_accepting) +
+		sizeof(lifecycle_guard_initialized_runtime) + sizeof(lifecycle_guard_thread) +
+		sizeof(recovery_requested) + sizeof(uncertain_recovery_not_before_usec) +
+		sizeof(uncertain_recovery_delay_usec) + sizeof(coordinator_generation) +
+		sizeof(coordinator_generation_exhausted) + sizeof(next_cutover_lease_id) +
+		sizeof(cutover_lease_ids_exhausted) + sizeof(active_cutover_generation) +
+		sizeof(active_cutover_lease_id) + sizeof(active_cutover_phase) +
+		sizeof(active_cutover_thread) + sizeof(active_cutover_connection) +
+		sizeof(active_cutover_session) + sizeof(cutover_reopen_allowed) +
+		sizeof(cutover_was_accepting) + sizeof(cutover_outcome_uncertain) +
+		sizeof(cutover_runtime_origin) + sizeof(cutover_runtime_was_accepting);
+	if (!room_storage_map(total, operations) || !room_storage_map(total, active_keys) ||
+	    !room_storage_map(total, fences) || !room_storage_map(total, completed_cache) ||
+	    !room_storage_array(total, workers.capacity(), sizeof(std::thread)))
+		return false;
+	size_t heap = 0;
+	if (!pending.current_heap_bytes(&heap) || !room_storage_add(total, heap) ||
+	    !pending_admission.current_heap_bytes(&heap) || !room_storage_add(total, heap) ||
+	    !completed_order.current_heap_bytes(&heap) || !room_storage_add(total, heap) ||
+	    !completion_delivery.current_heap_bytes(&heap) || !room_storage_add(total, heap))
+		return false;
+	for (const auto &entry : active_keys)
+		if (!room_storage_string(total, entry.second))
+			return false;
+	for (const auto &entry : fences)
+		if (!entry.second.current_heap_bytes(&heap) || !room_storage_add(total, heap))
+			return false;
+	for (const auto &entry : completed_cache)
+		if (!room_storage_command(total, entry.second.command))
+			return false;
+	for (const auto &entry : operations)
+	{
+		if (!entry.second || !room_storage_add(total, sizeof(operation_state)) ||
+		    !room_storage_command(total, entry.second->command))
+			return false;
+		const auto &state = *entry.second;
+		if (state.native && (!room_storage_add(total, sizeof(native_operation_context)) ||
+				     !room_storage_add(total, state.native->attachment.capacity())))
+			return false;
+		// Real immutable capacity proof captured by the sole flat owner before
+		// transfer. Do not inspect mutable worker-owned participant state here.
+		// Pointer/charge slots are already in sizeof(operation_state), exactly once.
+		if (state.flat_transaction)
+		{
+			const size_t slots = sizeof(state.flat_transaction) +
+					     sizeof(state.flat_transaction_bytes);
+			if (state.flat_transaction_bytes <
+				    slots + sizeof(*state.flat_transaction) ||
+			    !room_storage_add(total, state.flat_transaction_bytes - slots))
+				return false;
+		}
+		else if (state.flat_transaction_bytes)
+			return false;
+		if (state.room_flat_transaction)
+		{
+			const size_t slots = sizeof(state.room_flat_transaction) +
+					     sizeof(state.room_flat_transaction_bytes);
+			if (state.room_flat_transaction_bytes <
+				    slots + sizeof(*state.room_flat_transaction) ||
+			    !room_storage_add(total, state.room_flat_transaction_bytes - slots))
+				return false;
+		}
+		else if (state.room_flat_transaction_bytes)
+			return false;
+	}
+	*output = total;
+	return true;
+#endif
+}
+} // namespace
+
+bool critical_zone_reset_item_publication_owner::current_storage_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		return room_coordinator_current_storage_bytes_locked(output);
 	}
 	catch (...)
 	{
