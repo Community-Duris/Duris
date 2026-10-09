@@ -1,9 +1,11 @@
 # Telemetry contract — version 1 (#260)
 
-Status: implementation candidate; **not frozen or integration-ready until #260
-merges**. This document and the public headers must be reviewed together with the
-golden fixtures. Declarations and specification tests do not implement a writer,
-classifier, SQL store or gameplay instrumentation.
+Status: version-1 shared contract with implemented headers, runtime consumers and
+offline workers. Review it with the public headers and golden fixtures. The original
+#260 issue breakdown below records ownership; current implementation and remaining
+qualification limits are described in [architecture](../reference/ARCHITECTURE.md) and
+the subsystem guides. Header/specification tests alone do not prove writer, classifier,
+SQL storage, gameplay integration or production capacity.
 
 `STORAGE_DESIGN.md` preserves the complete published design. Its workload numbers,
 SQL examples and table shapes are proposals, not measurements. The precise v1
@@ -275,6 +277,10 @@ join. Telemetry must not veto valid game shutdown because observations were lost
 
 ## Six-table logical schema and first reports
 
+These are the initial #260/#261 logical grains. Later migrations added stores and
+extended reporting; [DATABASE.md](DATABASE.md) owns the physical inventory and
+[REPORTS.md](REPORTS.md) describes the implemented report interface.
+
 #261 finalizes physical SQL and indexes within these frozen logical grains:
 
 1. `telemetry_session`: projection keyed by environment/season plus stable session
@@ -342,9 +348,9 @@ python3 tests/async/test_telemetry_contract_fixtures.py
 Shared fixtures live in `tests/async/fixtures/telemetry/contract/`. Downstream
 implementations must consume the same cases through their actual boundaries; the
 reference oracle is not a substitute for queue, repository or classifier tests.
-The public declarations are intentionally not added to `src/Makefile` here, and
-no gameplay journey is applicable until #265 installs actual runtime hooks.
-
-#260 is not complete until header/document/fixture agreement is checked. The
-standalone schema declaration does not justify enabling SQL telemetry or changing
-ready/blocked labels before the contract actually merges.
+Telemetry modules are now registered in `src/Makefile`, and #265 runtime hooks are
+implemented. Verify integration through [session lifecycle](SESSION_LIFECYCLE.md),
+[activity](ACTIVITY.md), [transport](TRANSPORT.md) and their actual runtime tests.
+The standalone declarations and fixture oracle do not establish rollout approval;
+the [performance gate](PERFORMANCE_GATE.md), lifecycle policy and deployed role/grant
+qualification remain separate requirements.

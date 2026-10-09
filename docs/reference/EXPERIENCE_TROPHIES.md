@@ -65,8 +65,10 @@ Other explicit or terminal checkpoints can save earlier; a long cycle or queue
 backlog can save later. No second trophy timer or worker is introduced.
 
 SQL login now reads all trophy rows for the player in one query, with the same
-bounded load transaction as the other components. The full query budget increases
-from 23 to 24. Negative totals, invalid zone identifiers, or too many entries
+bounded load transaction as the other components. This extension increased the base
+component-query budget from 23 to 24. The complete login budget includes later
+recovery and receipt queries; its current bounds are defined in
+[`player_load_repository.h`](../../src/player/player_load_repository.h). Negative totals, invalid zone identifiers, or too many entries
 refuse the load rather than silently truncating saved state. Materialization also
 checks the entry bound, including flatfile loads.
 The trophy query returns at most 1,025 rows: 1,024 allowed entries plus one to

@@ -4,8 +4,9 @@ Migration `0014_telemetry_storage` adds exactly six InnoDB tables. The additive
 migration `0017_telemetry_rollup_support` adds the two replay-safe rollup support
 stores described below. Migration `0030_telemetry_quarantine` adds a durable,
 operator-controlled quarantine for record-specific SQL failures. Existing
-immutable migrations retain their original content and checksums; the current
-runtime inventory is 203 tables.
+immutable migrations retain their original content and checksums. The complete
+server schema inventory and migration head are documented in
+[Runtime database compatibility](../persistence/RUNTIME_COMPATIBILITY.md).
 
 | Table | Grain and ownership |
 | --- | --- |
@@ -239,8 +240,9 @@ were changed. The 0017 extension is statically verified here; parent-owned Maria
 migration, grant, and drift checks remain required. These results do not qualify
 rollup/report plans or the future load gate. Permission grant provisioning, scoped
 disclosure and lifecycle activation remain explicit operator/integration work.
-The runtime contract is pinned to migration head 0017. A previously built binary
-pinned to head 0016 will refuse the upgraded schema; additive tables do not make a
-binary-only rollback compatible. Recovery requires a reviewed compatible
+At the 0017 increment, a binary pinned to head 0016 refused the upgraded schema.
+The current head and accepted histories are documented in
+[runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md). Additive tables do
+not make a binary-only rollback compatible. Recovery requires a reviewed compatible
 binary/schema pair. Disabling telemetry retains its tables and does not authorize a
 destructive down migration.

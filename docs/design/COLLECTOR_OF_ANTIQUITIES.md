@@ -2,8 +2,8 @@
 
 Specification: [discussion #336](https://github.com/Community-Duris/Duris/discussions/336).
 
-**Implementation status: complete and promotion-ready behind the
-disabled-by-default feature switch.** Player deaths are enrolled with captured
+**Implementation status: integrated behind the disabled-by-default feature
+switch; target-environment qualification is required before enablement.** Player deaths are enrolled with captured
 policy, live collector commands and the due worker submit through the critical
 command coordinator, and protected collector NPCs reconcile in registered
 auction rooms. SQL and flat-file authorities both preserve exact item payloads,
@@ -193,5 +193,6 @@ after commit/publication, and pickup/purchase/expiry races. Verify migrations
 against an isolated database and responsive pulses with a blocked worker.
 
 Existing corpse/combat journeys are useful regressions but do not substitute for
-the collector-specific journey. GitHub CI is necessary but should be combined
-with the target-environment run before enabling the feature globally.
+the collector-specific journey. Use local builds, focused executable tests and the
+target-environment journey to qualify enablement; repository work does not require
+waiting for CI. Preserve any applicable review and branch-protection requirements.

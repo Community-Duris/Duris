@@ -42,9 +42,12 @@ No production migration was executed during implementation.
 SQL checkpoint and load repositories carry the field in the existing status query
 and transaction. Legacy SQL character load/save paths also carry it. Flatfile
 STATUS merges replace it; unrelated component merges retain it. The player
-snapshot wire versions are 5 (normal) and 6 (death). Readers still accept versions
-1–4 with empty preferences, including their original journal envelopes; old
-executables cannot read the new snapshot versions. Rollback therefore requires a
+preferences extension introduced snapshot versions 5 (normal) and 6 (death).
+Later snapshot formats retain that field; current version constants and receipt
+extensions are defined in [`player_snapshot.h`](../../src/player/player_snapshot.h)
+and described in [the save pipeline](../persistence/PLAYER_SAVE_PIPELINE.md).
+Readers still accept versions 1–4 with empty preferences, including their original
+journal envelopes. Older executables may reject formats written by a newer binary. Rollback therefore requires a
 compatible reader or restoration of pre-upgrade snapshot/journal files, in addition
 to the normal deployment backup process. The additive SQL column can remain.
 
