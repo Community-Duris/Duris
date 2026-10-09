@@ -196,6 +196,174 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Refusal and completion pair reviewed CLOSED; cold registration and ACK pair selected - 2026-10-09
+
+Both original PUBLISHED_ROOM_REFUSAL_COMPLETION_AUTHORITY_BOUNDARY_2026-10-09.txt
+and PUBLISHED_ROOM_REFUSAL_COMPLETION_ACCEPTANCE_DELTA_2026-10-09.txt independently
+SOURCE/DESIGN/METADATA PASS; finite reviews CLOSED without correction, repin or reseal.
+Fixed refusal F4babbc3ad94040fc1c235f6a9c7121a0e52fe746 / actual parent
+ea2852667aab72277644db90b35918acdad3388a; completion
+Cd15a94ed464e4173efc3d182de0b5d4698950e62 / actual parentF4babbc3.
+Selected original charter1260 and distinct finite delivery contexts remain sealed.
+Root evidence D:/Dev/Temp/coordinator-refusal-completion-review-20261009 authenticates
+strict indices, raw original Git providers, complete functions/signatures/catches,
+scopes/owning ranges, original equalities, whole forward/inverses and minimal CLOSED
+principals. Both fully read and audited pure stdlib/read-only Git default verifiers
+reproduce exact sealed receipts. Architecture:20 providers,151 cuts,35 original
+definition equalities,34 scopes,42 owning controls,two new definitions,four full
+inverses/eight raw diffs/two unique header inverses,two whole caller equalities,
+original late-tail/lookup laws,six minimal principals,187 indexed payloads.
+Quest:26 providers,72 complete functions,14 scopes,two owning ranges,25 equalities,
+15 continuities,four whole inverses/two original C prefixes,three minimal CLOSED
+contexts and strict four-payload index. Exact original principal seals:
+- Architecture INDEX.json: 31211/34d90bf376885db1251d295bad78b1d06647896df9af639b6e446f3c78fe16e9
+- Architecture PINS.json: 193552/0f028c12b3b9f0dd330b289f7ce09e6379f6a22d744c53eb766781a7dee8b2db
+- Architecture PUBLISHED_ROOM_REFUSAL_COMPLETION_AUTHORITY_BOUNDARY_2026-10-09.txt: 38522/7ef7afa5aad9489824022b381b52f8d05232406bb5ae4674a29aede8fa2facf2
+- Architecture VERIFICATION.json: 2464/2959722e7fbe938a54f0109ae57c16e566556cb8257741b237627d186687993e
+- Architecture verify.py: 31183/6e5b06772df988a4772ec29e0dd9f911c3b75e5a8a8bbe69b90735f4f4f945f6
+- Quest INDEX.json: 669/e1939c5c12ee8f2d8415f7ee066c474bdfacac0bb212d5ee360bf645135f19fa
+- Quest PINS.json: 7850267/2839a3f644d54bf965fb1ec0eced779531896a7a4495c22824acf9d08c26cc8f
+- Quest PUBLISHED_ROOM_REFUSAL_COMPLETION_ACCEPTANCE_DELTA_2026-10-09.txt: 31840/bf9631ab43160b2b87bb87e615f96fd9ba88115944f55b21291370b20808437e
+- Quest VERIFICATION.json: 3678/c5d27a51b2c518185f8fb40f8b528b4364b08cc3f2523834eb295f6087d2a051
+- Quest verify.py: 18771/f418fbf0f931faeb32fd06e9402e134dc3b30c6a6b8cef3ade0b5d8b055669b2
+
+RF design preserves typed/full receipt/nonzero original generation and native BODY
+proof, clone/key/canonical equality before pin, actual pointer/latch/two counters,
+cleanup outside mutex and distinct surviving caller called/succeeded markers.
+Original partial native cleanup and returned-success survive coordinator false;
+no automatic rerun or universal rollback. Final original metadata/receipt/fence/
+health removal law adds no late allocating encoder/reserve/owner callback.
+Lookup preserves original pending-publication first/cache second, full binary key
+and fixed receipt, strong output on false, no invented health/type/generation/
+receipt gate or source/ACK/delivery/terminal authority. Reserve may run under the
+coordinator mutex and acquires neither coordinator nor journal mutex. Scratch dies
+before retained recensus; actual surviving owners/markers/outputs remain counted.
+All RF1-RF4 component/native UNEXECUTED; genuine commands UNAVAILABLE. No native,
+request math/ABI/allocator/runtime/aggregate qualification or adoption inferred.
+Root reader corrections are private metadata only: explicit UTF8 for Windows
+prose, appended-suffix versus original-prefix hash selector, and a failed guessed
+inline method name replaced by the actual complete scratch owner/functions.
+An overbroad charter presentation was truncated; exact initial and selected charter
+sections were read separately. No worker artifact or maintained source was altered.
+
+One bounded next delivery per existing authorized chat:
+
+1. SELECT architecture PUBLISHED_ROOT_COLD_REGISTRATION_ACK_AUTHORITY_BOUNDARY_2026-10-09.txt
+   in D:/Dev/Temp/published-root-cold-registration-ack-authority-boundary-20261009;
+   quest PUBLISHED_ROOT_COLD_REGISTRATION_ACK_ACCEPTANCE_DELTA_2026-10-09.txt
+   in D:/Dev/Temp/published-root-cold-registration-ack-acceptance-delta-20261009.
+   Fixed source T985e86daf24fe784a17d21ca16bec703fc9265b5 / actual parent
+   P29e31cc87bdbdf72aaf4944ef17d1f58fc35a5e9. Complete zone_reset_item_owner C/H,
+   cold_registration_workspace, restore_original_bounded/real restore forwarding,
+   begin_submitted_flat_scratch and prepare_flat_ack_successor_bounded; actual
+   original restore_original/warm_root/warm_registry/pulse/publish_warm ACK tail,
+   scratch constructor/begin/rebase/reserve/retain/release/current/owner controls,
+   full canonical command/image/recovery validation/decode/successor controls and
+   exact source inverses. Reuse minimal original CLOSED RF/GG/CK/CG references only.
+   Future benefit: implementation-ready passive cold registration, genuine submitted
+   caller-scope ownership and once-rooted full ACK successor retry integration.
+   Architecture maps authority/state/request/output/lifetime; quest four RK cuts:
+   RK1 full original carrier/canonical/image/recovery and duplicate-identity proof,
+   legal allocation refusal before attachment, actual one-root registration with
+   nonthrowing moves and no fallible callback/allocation after linked transfer;
+   RK2 authentic cold versus completed warm-cleanup submitted guard, real registry/
+   source/slot/scalar/ABI/game-thread/flat/current registration and separate warm
+   default branch, preserving no invented dispatcher/S/live O/P witness for cold;
+   RK3 genuine full expected/retained ACK successor clone, actual monotonic BODY
+   predicate and rooted successor surviving later reserve refusal, held retry
+   input remains exact and existing candidate is revalidated rather than rerun;
+   RK4 exact scope/output/provider destruction and every-return lender CURRENT
+   recensus, no lock reentry/SQL/native construction/effect during passive restore,
+   strong pre-attachment refusal versus post-ACK-transfer false, no source/physical/
+   ACK/delivery/terminal release authority from these metadata helpers.
+   Registration workspace/decoded bodies/cloned envelope coexist until moves;
+   prospective one-root vector/inline-string allowance before attachment. Original
+   unbounded restore may link then charge/rollback; new bounded registration links
+   only after admission and requires caller retention refresh on every return.
+   Submitted cold guard checks actual closed registry/source equality but does not
+   manufacture dispatcher completion; returned warm cleanup uses real returned
+   latch/source closed boundary and survives stage disposal for coordinator removal.
+   Full carrier/receipt/generation remain owning driver responsibilities. Guard uses
+   genuine address/global observer/scalar lifetime, six CURRENT owners at fixed T;
+   never invoke a coordinator-lock-taking observer from a held coordinator/journal
+   callback. Persistent journal attempt once outside outer; scratch dies before
+   aggregate recensus. No synthetic owner/flags/generation/phase/receipt/S witness,
+   constant-true observer, fixture copy or maintained math/admission duplication.
+   All RK component/native UNEXECUTED; genuine commands UNAVAILABLE until authentic
+   owner/capture/legal fault/restart/current binary/schema/aggregate prerequisites.
+   Strict private INDEX, deterministic pure read-only Git verifier, exact receipt,
+   full original controls/inverses and independent root review. No source/header/
+   shared authority/test/coverage/policy/schema edit or compiler/product/native/DB
+   execution/private commit/import. Missing execution blocks only dependent steps.
+2. QUEUE full bounded submission/restoration callback registration and root/pulse/
+   refusal-cleanup/ACK/shared journal joining; outside-lock current coordinator
+   storage snapshot and immutable parked participant retention; coherent registered
+   literal-pool policy with paired ROOT/publication/NPC consumers; initial bounded
+   proof boot callback; cold four-route/restore/adopt/enroll/detach/light effect
+   markers and full pool/slot ownership; diagnostics/service/scheduler/activity;
+   financial command/compiler/result/recovery; full caller/capture/aggregate proof.
+   Reassess current source at each delivery, one active task per chat. No task
+   expansion, sealed repin/reopen, broad inventories, busywork or adoption wait.
+
+Root source-only successor assessment authenticates14 whole-provider forward/inverses
+through current2081ef4f28274a9193847e32da393eda1e67d7c2. New e212758770ce5d3e64f04fdd79a7d238a6c560b4
+/ actual parent1a6c9cb192838702fb88b71352fac28437d677a1 supplies full bounded native
+forest/detach proof; root reads all changed code/header/handoff. Full UID/template/
+reciprocal links/forest/parent depth/live absence checks precede original mutation;
+graph temporaries die before scalar detach. Complete original native equivalence,
+allocator/math/runtime qualification NOT PERFORMED. P29e31cc / parente212 supplies
+actual under-mutex coordinator storage census, genuine completion queues and safe
+immutable parked participant charges. Root reads all changed C/H and full handoff;
+full original coordinator/deque/table semantics and native/ABI/math unqualified.
+Its public passive snapshot takes coordinator mutex, is not a lease, excludes
+external worker-local transients and must not run under coordinator/journal locks.
+Root reads all231 added T ROOT C lines, header, full handoff and actual complete
+original restore/publish/scratch controls. Fixed T ROOT C/H remain whole unchanged
+at current2081; selected RF/current original caller definitions unchanged; all three
+owned1260 sections preserved. Selected leaves have declarations/definitions only,
+not actual bounded boot restore registration/full submitted pulse use at this cut.
+Private RAW/token/preprocessor/policy/source-pin/review claims REPORTED ONLY.
+
+Late1af73e944acef55472a15d7b559c2e07f71c549f / actual parentT adds optional genuine
+initial_bounded proof in real boot callback and header; ordinary readiness unchanged.
+Current2081 / actual parent1af adds registered literal-pool ownership flag/default
+false and actual NPC private census selection. Root reads full changed code/headers/
+handoffs and authenticates five whole source inverses. Existing T six-owner default
+route stays unchanged; seventh pool observer/full-policy paired joining remains
+unselected/unqualified. These adjacent dependencies are queued, not added to RK
+or used to repin original GG. Full boot/charge/native/aggregate semantics not qualified.
+
+Late cdbf43fa876e7385225957fca38a3ea02e416688 / actual parent2081 supplies the full
+private bounded ROOM submit companion. Root reads all320 added C lines, header and
+full handoff; authenticates original whole C-prefix/header insertion inverses,
+fixed T ROOT providers and selected RF methods unchanged. Actual same-lock current
+coordinator prefix/clone/table/queue/fence admission, rollback capacity retention,
+original support/initial predicates and strong current output are available code,
+not missing submission leaf source. Full original submit/table/deque/trace/allocator/
+math/native semantic qualification NOT PERFORMED. Private repaired cleanup allowance
+and RAW/policy/preprocessor claims remain reported. Queue real ROOT/journal aggregate
+submission joining and caller acceptance at RK handoff, no RK expansion or repin.
+
+Preserve all CLOSED RF/GG/CG/CK/SAME-lock seals/receipts/history, original scan-close
+correction, lifecycle hydration-allocation clarification, CURRENT/warm/constructor
+declaration-order history, terminal/factory CURRENT-RETAINED corrections, immutable
+and earlier bundles. Preserve clean worker checkouts/jobs/services/build evidence
+and quest unpublished mergef4e20219113fdaee7d3ead787418d89683e05590. Historical Oct7
+human scope/provenance answer remains pending as observed; genuine new human
+instructions take priority. Old component/build/SQL claims remain UNREVIEWED root;
+no reset/revert/kill/delete/restart or deferred product/DB work authorized by root.
+
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion.
+Required full accepting warm/cold root/submission/recovery/native/capture/legal fault/
+restart/current ELF/schema/full caller aggregate/ABI/allocator qualification and
+owner completion disposition remain open. Primary owns implementation/math/admission/
+authority/contracts/qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release.
+Root publishes only three owned docs/read-only source/metadata, no private artifacts
+committed/imported or activation/deploy/production mutation/other-chat messaging.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery completion audit stays open;
+accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat
+ACTIVE until broader completion audit/user pause, quiet unchanged/non-actionable state.
+
 ## Warm global retention pair reviewed CLOSED; refusal and completion pair selected - 2026-10-09
 
 Both original PUBLISHED_WARM_ROOT_GLOBAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt
