@@ -452,6 +452,65 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Deferred INITIAL regression and current SQL proof assignments - 2026-10-09
+
+Published b4965e22aba49b970f72f881d695e1bcd9a58acf adds actual maintained
+INITIAL-checkpoint regression source:547-line C++ harness,51-line Python runner
+and one central native-script entry. Root reads both complete bodies and the
+59-line shared-current-SQL report. Raw Git providers authenticate;removing the
+single manifest insertion reproduces its entire parent. Src and migrations are
+unchanged. The harness implements synthetic passive-codec/disposable catalog
+cases;compiler,preprocessor,test/native/SQL/gameplay/recovery execution is NOT RUN.
+The manual flag/reason preserves user major-plan deferral. At relevant readiness,
+the primary owner removes that temporary scheduling restriction and qualifies the
+required regression without another permission request. Estimates are unmeasured.
+This supersedes the earlier absence of new-wrapper component invocations only;
+all closed codec/source/native acceptance reviews remain valid at their pins.
+
+One bounded PRIVATE delivery per existing chat is now assigned,not reviewed:
+
+- Architecture:SHARED_INITIAL_CHECKPOINT_REGRESSION_SOURCE_REVIEW_2026-10-09.txt
+  under D:/Dev/Temp/shared-initial-checkpoint-regression-source-review-20261009/.
+  Inspect actual new assertions/oracles,malformed and boundary cases,strong output
+  refusal,canonical affect ties/multiplicity,v1/v2 compatibility,provider closure
+  and runner/registry deferral. Reuse closed codec source pins. Benefit:find real
+  source/assertion/recipe defects before qualification;reserve exact optional
+  corrections only where justified. No maintained test/source/manifest edits.
+- Quest:SHARED_CURRENT_SQL_NATIVE_CORRESPONDENCE_DELTA_2026-10-09.txt under
+  D:/Dev/Temp/shared-current-sql-native-correspondence-delta-20261009/. Reuse closed
+  INITIAL correspondence and missing-SHOP SQL preparation. Map newly implemented
+  but unexecuted component cases;prepare only the new original/current/historical
+  proof delta,legal phase exports and independent expected facts. Benefit:avoid
+  qualifying an internally consistent wrong native/SQL join. Architecture owns
+  assertion/build-recipe review;primary/Plan5 owns code and integrated execution.
+
+New private candidate01a1f0e11fe112bf3fcc74b779367e67df80f9038901ca1f4e9abbd66835f031
+reports current original-completion/receipt,native/full keeper,stock/custody/full
+literals,foreign-copy absence,timestamp/nullable payload/affect multiplicity proof.
+Required coupled successor75c1aab5 follows c0a18186;precursor alone is not selected.
+Reported fixes distinguish born-stock current observation from BEFORE,correct
+row-ID/object-UID route direction and replace stale snapshot COUNT comparisons
+with bounded locking reads.290 providers/19 inverses/209 bodies are reported
+composition evidence only. Private bodies and actual execution are unavailable.
+Neither chat is assigned duplicate primary implementation or private-source review.
+
+Current prioritized queue:these two new deliveries and root independent review
+PENDING. Then reassess actual source/report/native-export changes;do not reopen
+closed bundles or repeat inventories. Missing private producer/carrier/current
+observer/root SQL dispatch/reconciliation/flat bodies and legal original-birth/
+publication/ACK exports block dependent implementation/qualification only. Complete
+transition budgets,world publication/ACK/origin and flat counterpart remain open.
+Smith missing-API P1 remains unresolved on unchanged src. All compiler/preprocessor/
+test/build/gameplay/DB execution remains deferred for these preparations.
+
+Root proof:D:/Dev/Temp/coordinator-deferred-codec-regression-dispatch-20261009/
+dispatch.json and publish.py. Only coordinator-owned plan/charter/review disposition
+publishes;private review artifacts are not committed. Existing isolated worktrees,
+sealed packets and jobs remain preserved. Actual root/native Goals remain BLOCKED
+and unfinished;these bounded preparation assignments do not resume them. Heartbeat
+stays ACTIVE until observable required Plans1-5/R1-R8/integrated qualification,
+resolved blockers and published owner completion disposition pass the broader audit.
+
 ## Initial checkpoint codec and correspondence preparation reviewed - 2026-10-08
 
 Independent root review accepts both exactbe7a166faa97f7c1788abb02dc74d96673b0ec43
