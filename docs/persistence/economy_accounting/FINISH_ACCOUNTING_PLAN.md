@@ -196,6 +196,144 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## INITIAL storage and compiler maps reviewed; pure compiler driver selected - 2026-10-09
+
+This checkpoint supersedes the immediate queue below. Both delivered packets
+are reviewed at immutable d5da4d09beb2202e912c1d4b3f6b2f0b0eacd288.
+New primary378c0a6447ff3d6e0deb62fe77dc5f23247e69a4, parent50c6, arrived at
+this handoff:25 paths,2594 insertions/108 deletions. Root read its complete
+[published handoff](https://github.com/Community-Duris/Duris/blob/378c0a6447ff3d6e0deb62fe77dc5f23247e69a4/docs/persistence/economy_accounting/ROOM_INITIAL_OBSERVATION_ADMISSION_2026-10-09.md),
+new public headers, complete observer helper/caller section and real owner call
+delta. This supplies the previously absent bounded INITIAL observation CALLER
+and authenticated reader companions as SOURCE. Private progress/adoption remain
+unobserved; no accepting native route, source-math certification or compiler/
+preprocessor/link/build/component/native/DB execution follows from this event.
+
+Architecture's compiler request/authority map is CLOSED PASS at finite source/
+design/metadata scope:
+D:/Dev/Temp/published-room-compiler-request-authority-map-20261009.
+Note30439 bytes,SHA256
+b5f0c82b60dc805bb2363464276f3b8677026838fee0d70b31f88c5b054bf768;
+PINS126501 bytes,SHA256
+3f63060a609afefc6ca8f183895306172bed2bc6f7c8a5c26d33a9b0d52cc446;
+INDEX37932 bytes,SHA256
+2965977de6659aa0371e19b340842da52ba223a86f24e8ad8c10de1f4dd58dc9.
+Root authenticated35 whole providers,113 ranges,34 original body/signature
+equalities,10 additions-only inverses and actual modified command diff separately,
+10 reused files,67 sealed historical driver files/50 source comparisons. The
+three changed historical closure providers at d5 are economic_accounting_types.h
+and player_snapshot_codec.c/.h. Preserve old driver/source pins without promotion.
+
+Complete map/source review preserves full original ROOM decode/canonical intent/
+binding/domain/digest/rebuilt-command proof, item witnesses/events and both coin
+issuance audit legs. Candidate reserves count capacities C+1 accounts/2C postings;
+fresh normalization clones only actual C+(K>0) accounts/2K postings. Zero/no-coin
+cases remain distinct. Empty children still allocate one size_t remap, with zero
+bit words. Validator phases are sequential; generic plan encoding holds two
+clones, while ROOM compilation does not call that encoder. The supported19-call
+trace is SOURCE-DERIVED UNEXECUTED. Legal ROOM fields/wire limits precede later
+unreachable count guards; standalone invalid-plan controls are distinguished.
+No concrete in-contract defect established; no full request-math/ABI/allocator/
+whole-owner32MiB or native certification. Callback success grants no authority.
+
+Quest's INITIAL storage acceptance overlay is CLOSED PASS at finite source/
+design/metadata scope:
+D:/Dev/Temp/published-room-initial-storage-acceptance-overlay-20261009.
+Note36887 bytes,SHA256
+c830f25b00a55265daf82f170a9626cd09cddb8bd0bb8854879f3bdf082e1540;
+PINS4265390 bytes,SHA256
+7fa73b409cdb4a9021442666679977aa03ee1e34d5b3697f0ef6372ab81d807e;
+INDEX691 bytes,SHA256
+1116a6957bc59d0fa45d932121a682a66f41ef343aecba92590a0ccea039b6f9.
+Root authenticated24 providers,26 ranges,9 forward/9 inverse diffs,11 complete
+original function equalities,20 reused artifacts,3 closed indexes/12 payloads
+and historical ACK one-change inverse/original PINS bytes. No correction required.
+All IW/IC/IM/IR/IL component/native acceptance remains UNEXECUTED.
+
+Complete note/source review preserves full world catalog/actual ROOM topology/
+absence/counters and custody historical born/before UID sets/foreign root-parent
+claims/owner counters. World missing-catalog revision1 and custody revision0
+remain distinct. Historical coin validation is conditional on nonempty payload;
+new born money uses full normalized singleton literals with three simultaneous
+copies, not totals-only comparison. Sticky callback rejection and actual error
+mappings, populated stage AND retained scalar refusal preservation are specified.
+At the overlay's d5 pin the original observation caller invokes unbounded stages
+and retains both
+proposals, independent expected plan/two canonical buffers, typed comparisons
+and real accounting/origin/pile absence guards. Replacing two leaf calls alone
+does not establish full caller admission or an accepting native route. New378
+now supplies a bounded companion/call; do not rewrite the CLOSED historical note.
+
+New observer retains original repeated INITIAL/recovery/decode/binding proof,
+historical control/epoch and current authority/season, complete authenticated
+receipt lookup, world/custody stages, canonical command/plan/typed comparisons,
+origin and actual pile absence and final same lock. Its named seven-reference
+live state is admitted before construction. Current authority supports only the
+actual empty mapping request; nonempty requests refuse ENOTSUP. Joined readers
+retain recovery/history/index/segment/digest/lineage/pile proof before existing
+artifact refusal. The real warm owner passes original attachment and held storage
+into observation, then its current check. Headers/source are available; full
+math/format/inverse independent-review results remain reported in the handoff.
+New plan profile adds initializer-list backing arrays, and intent/plan/command
+providers change. The optional d5 driver remains source-pin limited, UNVERIFIED
+at378; root will assess exact changed providers at its handoff. No restart.
+
+### Evolving queue, exhaustion and exact ownership
+
+1. Architecture has ONE active private future-code delivery:
+   ROOM_COMPILER_COMPONENT_DRIVER_2026-10-09.cpp plus small linkage/limits note,
+   exact source/PINS/metadata verifier/receipt/INDEX at immutable d5. Use genuine
+   original public builders/hashes/compiler/plan codecs on lawful pure values.
+   Cover full original-versus-bounded metadata/source/digest/six-vector/canonical
+   equality, tree order versus UID normalization, mixed/zero/no-coin effects,
+   fixed nonallocating supported trace and every reached callback denial with
+   populated deep-plan/retained-scalar sentinels, honest outer overflow/null/
+   optional-scalar/real unsupported controls and limited canonical refusals.
+   Benefit: later primary-owned component qualification candidate. Do not create
+   a generic plan/fault-allocator suite, stage/native fixture or fake digest/token.
+   Minimal real linkage candidate and quoted-include pins are SOURCE ONLY;
+   compile/link recipe stays UNVERIFIED. Root independent review required.
+2. Quest's temporary INITIAL-stage exhaustion was superseded by the actual378
+   observation-caller source event. ONE new private delivery is assigned:
+   PUBLISHED_ROOM_INITIAL_OBSERVATION_READER_ACCEPTANCE_DELTA_2026-10-09.txt,
+   sealed exact source/PINS/diffs/original equalities/metadata verifier/receipt/
+   INDEX at d5->378. Reuse CLOSED stage/current controls. Map actual joined caller
+   live state and real warm-owner cut, repeated recovery/binding-only checks,
+   historical/current empty-mapping authority/season, complete authenticated
+   lookup, origin and pile readers and decoder contracts. Derive future precise
+   denial/overflow/corrupt-existing-versus-genuine-not-found/strong reader-output
+   and scalar cases, authentication order and actual rejection/error behavior.
+   Caller is status-only/local proposals; invent no caller output-scalar contract.
+   Benefit: primary's later authentic observer/reference fixture acceptance.
+   Exclude architecture's pure compiler math; root independent review required.
+3. Primary owns maintained code/math/caller/integration and execution; Plan5 owns
+   suite/SQL restore. Both workers preserve closed packets and clean5c53/2c828
+   checkouts/jobs. No maintained edits, compiler/preprocessor/link/run/native/DB/
+   fixture roots, stubs/fabricated authority, import/registration/private commits.
+   Available pure compiler source supports the one selected future-code task;
+   missing native source does not block that independent preparation.
+4. Actual bounded INITIAL observation is now SOURCE AVAILABLE and integrated at
+   the real owner call; execution/whole-bound qualification remains open. Exact
+   dependent prerequisites are lawful original private owner/reference fixture,
+   native source/constructor/custody proof, accepting flat binding/publication/
+   checkpoint/ACK, publication/submission INTERNAL bounds, supported ABI/allocator
+   and fresh integrated major-batch evidence. Required MariaDB
+   0065/MySQLschema65 failures remain unresolved; older authenticated binaries/
+   receipts cannot qualify d5. Required primary Plans1-5, applicable original
+   R1-R8/backend/gameplay/persistence/recovery/integrated proof, resolved blockers,
+   owner completion and selected sidework reviews/handoffs remain the finish line.
+   Idle/exhausted quest preparation or finished packets cannot complete it.
+
+Root proof D:/Dev/Temp/coordinator-initial-compiler-preparation-review-20261009
+contains independent architecture/quest-authentication.json,semantic-review.json,
+new primary raw/diff and three exact raw publication inverses. Pending sections
+were preserved on D: and exactly inverted before clean fast-forward onto378;
+new primary FINISH bytes are preserved. Only coordinator's3 disposition docs
+change; no private artifact is committed. Actual root Goal and reported worker
+Goals stay BLOCKED unchanged; preparation does not resume them. Heartbeat stays
+ACTIVE with event monitoring and quiet unchanged/non-actionable runs. No other-
+chat messages, adoption waits, activation/deployment or production mutations.
+
 ## Native current preparation reviewed; INITIAL storage and compiler acceptance selected - 2026-10-09
 
 This checkpoint supersedes the immediate queue below. Published primary
