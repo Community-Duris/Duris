@@ -8055,3 +8055,14 @@ bool zone_reset_original_room_placement_stage::place_bounded(
 	}
 #endif
 }
+
+bool zone_reset_original_room_placement_stage::current_light_bounded(
+	int room, int *output, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	// Observation only. Actual cold forest/room/custody and effect markers belong
+	// to the private publication owner; no placement witness or source is granted.
+	return nevent_is_game_thread() && !persistence_mode_requires_mysql() && world &&
+	       room >= 0 && room <= top_of_world &&
+	       native_reset_room_light_bounded(room, REAL, output, reserve, context, outer_live);
+}

@@ -10006,3 +10006,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Complete cold native restoration admission implemented - 2026-10-09
 
 [Owning restoration providers](COLD_NATIVE_STAGE_RESTORATION_ADMISSION_2026-10-09.md) retain full original strict/bound/rebind semantics and admit actual implementation/vector/literal/Zombie requests before allocation. Private current heap excludes globally owned pools and retains bodies until original successful world transfer. RAW/formatted reviews and exact private-field/append/header inverses, tokens and preprocessing passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Adoption/enrollment, paired whole-pool joining and complete room/coordinator/recovery integration remain open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
+
+
+## Owning cold room light bridge implemented - 2026-10-09
+
+[Private light bridge](COLD_ROOM_LIGHT_BRIDGE_2026-10-09.md) invokes the genuine full observer with original game-thread/world/backend/range guards and strong output. Full RAW review and formatted token/preprocessor/prefix/header inverse checks passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Full cold placement retains separate actual topology/light progress and refreshes current output on every return; driver integration remains open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
