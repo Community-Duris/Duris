@@ -3254,3 +3254,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Optional genuine bounded passive restoration callback registered - 2026-10-09
 
 [Passive restoration registration](PASSIVE_ROOM_BOUNDED_RESTORE_CALLBACK_REGISTRATION_2026-10-09.md) joins the real optional default-null callback/storage/reset/boot registration and complete bounded ROOM provider forwarding. Original full multi-family dispatcher and replay insertion remain unchanged; bounded invocation is not selected. Full RAW/final review, exact inverses/original bodies/tokens/logical preprocessing passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Authentic journal frames/full replay insertion/shared ROOT prefix remain genuine integration dependencies. Native checks batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Coherent opt-in whole-pool/private-stage accounting implemented - 2026-10-09
+
+[Seven-owner pairing](COHERENT_SEVEN_OWNER_LITERAL_POOL_PAIRING_2026-10-09.md) adds a genuine full-pool scope while preserving the default six-owner constructor/body and existing selected call. Actual registered ownership and real flat stage identity select pool-excluding ROOT/publication retention; SQL/six observers remain original. Full RAW/final review passed after correcting LF/CRLF evidence, proving exact byte inverses and unchanged code/PP boundaries. 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Full driver/policy remains unselected; shared coordinator/journal, startup replay prefix and native qualification remain open. Tests batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

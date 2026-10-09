@@ -7,6 +7,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "economy/zone_reset_item_recovery.h"
 #include "player/player_snapshot_codec.h"
+#include "player/inert_item_stage.h"
 #include "persistence/sql_room_item_payload.h"
 #include "item/item_transfer_repository.h"
 #include "item/item_ownership_runtime.h"
@@ -794,18 +795,23 @@ struct zone_reset_item_owner::warm_command_scratch
 	warm_root *root = nullptr;
 	critical_native_recovery_envelope *output = nullptr;
 	bool global_scope = false;
+	bool literal_pool_scope = false;
 	size_t current_bytes() const noexcept;
 	static size_t inline_bytes() noexcept
 	{
 		return sizeof(warm_command_scratch) + sizeof(critical_native_recovery_envelope) +
 		       economic_gameplay_authority::active_regular_flat_working_bytes();
 	}
-	explicit warm_command_scratch(warm_root *original) noexcept : root(original)
+	explicit warm_command_scratch(warm_root *original,
+				      bool includes_literal_pool = false) noexcept
+		: root(original)
+		, literal_pool_scope(includes_literal_pool)
 	{
 		if (root)
 		{
 			root->preparation_owner = this; // begin admitted this object before construction.
-			if (!begin_flat_command_scope(*this))
+			if (!(literal_pool_scope ? begin_full_flat_command_scope(*this) :
+						   begin_flat_command_scope(*this)))
 				root = nullptr;
 		}
 	}
@@ -3943,7 +3949,15 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 	{
 		if (value.empty())
 			return true;
-		const size_t retained = value.retained_bytes();
+		size_t retained = 0;
+		if (!persistence_mode_requires_mysql() && value.is_flat_factory() &&
+		    item_native_quest_global_budget_scope_owner::literal_pool_owned())
+		{
+			if (!value.retained_bytes_excluding_literal_pools(&retained))
+				return false;
+		}
+		else
+			retained = value.retained_bytes();
 		return retained >= sizeof(value) && add(retained - sizeof(value));
 	};
 	const auto source_scope = [&](const quest_mobile_native_flat_factory_scope *value)
@@ -4021,8 +4035,8 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 				if (!writer(variant.get()))
 					return false;
 			size_t publication_bytes = 0;
-			if (!zone_reset_room_publication_owner::retained_size(root.publication,
-									      &publication_bytes) ||
+			if (!zone_reset_room_publication_owner::retained_size_registered_literal_pool(
+				    root.publication, &publication_bytes) ||
 			    !add(publication_bytes))
 				return false;
 #ifdef __GLIBCXX__
@@ -4557,7 +4571,11 @@ size_t zone_reset_item_owner::warm_command_scratch::current_bytes() const noexce
 {
 	size_t current = 0, bytes = inline_bytes();
 	return root && global_scope && root->preparation_owner == this &&
-			       flat_current_global_storage(&current) &&
+			       (literal_pool_scope ?
+					(item_native_quest_global_budget_scope_owner::
+						 literal_pool_owned() &&
+					 flat_current_global_storage_with_literal_pools(&current)) :
+					flat_current_global_storage(&current)) &&
 			       warm_scratch_add(bytes, current) ?
 		       bytes :
 		       SIZE_MAX;
@@ -4588,6 +4606,54 @@ bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scrat
 	// admission cannot proceed to any provider allocation or native callback.
 	// Remove root scalar scratch before ending exactly this scope, then recensus
 	// CURRENT persistent globals outside it. No fallible callback between changes.
+	scratch.root->preparation_owner = nullptr;
+	scratch.root->preparation_scratch = 0;
+	(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+	scratch.global_scope = false;
+	(void)quest_mobile_native_birth_owner::charge();
+	return false;
+}
+
+bool zone_reset_item_owner::flat_current_global_storage_with_literal_pools(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t bytes = 0, current = 0;
+	if (!flat_current_global_storage(&bytes) ||
+	    !native_mobile_birth_literal_pool_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &scratch) noexcept
+{
+	if (!scratch.root || scratch.root->preparation_owner != &scratch ||
+	    !scratch.literal_pool_scope)
+		return false;
+	// The first genuine registration selects this complete immutable policy.
+	// Native private stages use their paired census only after actual registration.
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || scratch.global_scope ||
+	    !item_native_quest_global_budget_scope_owner::begin(
+		    &scratch, flat_current_global_storage_with_literal_pools, true))
+	{
+		scratch.root->preparation_owner = nullptr;
+		scratch.root->preparation_scratch = 0;
+		(void)quest_mobile_native_birth_owner::charge();
+		return false;
+	}
+	scratch.global_scope = true;
+	size_t current = 0, live = warm_command_scratch::inline_bytes();
+	if (flat_current_global_storage_with_literal_pools(&current) &&
+	    warm_scratch_add(live, current))
+	{
+		scratch.root->preparation_scratch = live;
+		if (quest_mobile_native_birth_owner::charge())
+			return true;
+	}
+	// No allocating or fallible callback between dropping the scalar and ending
+	// this scope. Its registered observer remains CURRENT outside the guard.
 	scratch.root->preparation_owner = nullptr;
 	scratch.root->preparation_scratch = 0;
 	(void)item_native_quest_global_budget_scope_owner::end(&scratch);

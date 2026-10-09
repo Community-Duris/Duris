@@ -162,6 +162,10 @@ class zone_reset_room_publication_owner final
 					 void *) noexcept,
 				void *) noexcept;
 	static bool retained_size(const zone_reset_room_publication_stage &, size_t *) noexcept;
+	// Passive actual registered-pool identity selects the paired complete flat
+	// private census. SQL and the existing six-owner policy retain their observer.
+	static bool retained_size_registered_literal_pool(const zone_reset_room_publication_stage &,
+							  size_t *) noexcept;
 	static critical_submit_result submit_warm(critical_native_recovery_envelope);
 	static bool copy_warm(const critical_command &,
 			      critical_native_recovery_envelope *) noexcept;

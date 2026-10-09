@@ -196,6 +196,11 @@ class zone_reset_item_owner final
 	static bool warm_bindings_current(const warm_root &) noexcept;
 	struct warm_command_scratch;
 	static bool flat_current_global_storage(size_t *) noexcept;
+	// Opt-in complete policy; immutable genuine registration pairs global pool
+	// ownership with all actual flat ROOT/publication/NPC private-stage censuses.
+	// The existing constructor default and six-owner selected path remain unchanged.
+	static bool flat_current_global_storage_with_literal_pools(size_t *) noexcept;
+	static bool begin_full_flat_command_scope(warm_command_scratch &) noexcept;
 	static bool begin_flat_command_scope(warm_command_scratch &) noexcept;
 	static bool begin_warm_command_scratch(warm_root &) noexcept;
 	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
