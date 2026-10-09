@@ -3219,3 +3219,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Complete native room detach implemented - 2026-10-09
 
 [Owning bounded forest detach](NATIVE_ROOM_DETACH_ADMISSION_2026-10-09.md) preserves full UID/template/topology/depth/world-absence proof and admits actual bitvector/handler working requests before allocation or mutation. Graph locals die before original unlink/weight tail; no allocation/callback after effect. Full RAW review and formattedtokens/PP/twoCprefix/twoheaderinverse passed; 931 policies/399 pins authenticate, zero new/unmapped sites. Genuine ROOT refusal cleanup/receipt/passive registration/submit and native qualification remain open. Tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Actual coordinator retained storage implemented - 2026-10-09
+
+[Coordinator retained storage](COORDINATOR_CURRENT_RETAINED_STORAGE_2026-10-09.md) now observes actual command/maps/fences/pending/completion/worker capacities under the coordinator mutex and the immutable prepared participant reports. The private outside-lock caller gets a strong passive snapshot, not an admission lease. Full RAW/final source review, tokens/logical preprocessing, exact inverses and protected files passed; 931 policies/400 authenticated pins (new completion-header pin), zero new/unmapped sites. Full submission and once-only same-lock ROOT/journal handoff remain open. Native qualification stays batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
