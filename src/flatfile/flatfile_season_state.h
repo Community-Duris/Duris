@@ -49,4 +49,14 @@ class flatfile_season_bootstrap final
 			    flatfile_season_state *output) noexcept;
 };
 
+// Prospective storage admission for the same passive, two-record observation.
+// Caller includes root/lock/prior output/context in outer and retains admitted
+// peaks until this call's temporaries die. Strong output on every refusal;
+// callback success grants no enrollment, reset, bootstrap or accounting permit.
+// Pinned libstdc++13 C++11 ABI request policy; no allocating diagnostics.
+flatfile_season_state_result flatfile_season_state_read_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    flatfile_season_state *output, flatfile_scratch_reserve_fn reserve_scratch_peak,
+    void *context, size_t outer_live_scratch) noexcept;
+
 #endif

@@ -169,6 +169,13 @@ class zone_reset_item_owner final
 	// Factories stay gated; values never grant source or target-owner admission.
 	struct warm_checkpoint;
 	struct warm_root;
+	struct warm_command_scratch;
+	static bool begin_warm_command_scratch(warm_root &) noexcept;
+	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
+	static bool rebase_warm_command_scratch(warm_command_scratch &, size_t) noexcept;
+	static bool retain_warm_command_output(warm_command_scratch &,
+		const critical_native_recovery_envelope &) noexcept;
+	static void release_warm_command_scratch(warm_command_scratch &) noexcept;
 	static bool release_retired(warm_root &) noexcept;
 	static bool publish_warm(warm_root &) noexcept;
 	static bool restore_cold_bindings(std::span<quest_mobile_native_item_stage *>,
@@ -217,12 +224,17 @@ class zone_reset_item_owner final
 	// aggregate provider/caller reservations remain required before opening gates.
 	// Never predicts the next room clock for another retained root.
 	static bool prepare_warm_command(const critical_operation_id &,
-					 critical_native_recovery_envelope *) noexcept;
+					 critical_native_recovery_envelope *, warm_command_scratch &) noexcept;
 	static bool prepare_warm_command_sql(const critical_operation_id &,
 					     critical_native_recovery_envelope *) noexcept;
 	static bool prepare_warm_command_flat(const critical_operation_id &,
-					      critical_native_recovery_envelope *) noexcept;
+					      critical_native_recovery_envelope *, warm_command_scratch &) noexcept;
 	static bool warm_root_current(const warm_root &) noexcept;
+	// Same complete native/factory/custody observation, with prospective
+	// capture/codec/selected-UID scratch under the real pulse's private guard.
+	// Keeps original binding/backend predicates; it grants no new admission.
+	static bool warm_root_current_bounded(const warm_root &, warm_command_scratch &,
+					      size_t outer_live_scratch) noexcept;
 	static bool observe_warm_forest(const critical_operation_id &,
 					zone_reset_item_warm_forest_facts *) noexcept;
 };

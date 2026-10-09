@@ -334,6 +334,11 @@ bool economic_gameplay_authority::active_regular_flat()
 	       selected && selected->scope == projection_scope::regular && !selected->scope_version;
 }
 
+size_t economic_gameplay_authority::active_regular_flat_working_bytes() noexcept
+{
+	return sizeof(std::shared_ptr<const admission_projection>);
+}
+
 economic_accounting_error
 economic_gameplay_authority::prepare_zone_reset_item(const zone_reset_item_image &original,
 						     uint64_t accepted_at_usec,
@@ -1629,6 +1634,62 @@ economic_gameplay_authority::prepare_native_mobile_birth_shared_shopkeeper_flat(
 		// original command and never calls this current-projection preparation.
 		return native_mobile_birth_cash_role_command_build(
 			metadata, original, recipes, role, original_site, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+
+economic_accounting_error economic_gameplay_authority::prepare_zone_reset_item_flat_bounded(
+	const zone_reset_item_image &original, uint64_t accepted_at_usec, critical_command *output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	using error = economic_accounting_error;
+	const char *root = persistence_mode_flatfile_root();
+	if (!output || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql() || !root || !*root || original.items.empty())
+		return error::unauthorized;
+	if (!reserve_scratch_peak)
+		return error::capacity;
+	// decltype does not load or select authority. Both callee objects remain
+	// alive through the bounded original command compiler and output transfer.
+	using selected_type = decltype(current.load(std::memory_order_acquire));
+	size_t live = outer_live_scratch;
+	if (sizeof(economic_operation_metadata) > SIZE_MAX - live)
+		return error::capacity;
+	live += sizeof(economic_operation_metadata);
+	if (sizeof(selected_type) > SIZE_MAX - live)
+		return error::capacity;
+	live += sizeof(selected_type);
+	if (!reserve_scratch_peak(live, context))
+		return error::capacity;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.operation_id;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.items.front().object_uid;
+		metadata.writer_id = ECONOMIC_WRITER_ZONE_RESET_ITEM_BIRTH;
+		metadata.reason = economic_reason::item_create;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reset_source;
+		// Frozen retries retain their original epoch, source and accepted time.
+		return zone_reset_item_command_build_bounded(metadata, original, accepted_at_usec,
+			output, reserve_scratch_peak, context, live);
 	}
 	catch (const std::bad_alloc &)
 	{

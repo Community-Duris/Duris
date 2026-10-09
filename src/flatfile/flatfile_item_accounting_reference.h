@@ -87,4 +87,12 @@ flatfile_item_accounting_reference_verify_and_repair(const std::string &root,
 						     flatfile_accounting_audit_report *report,
 						     std::string *error = nullptr);
 
+// Complete original operation set verification under borrowed genuine root lock.
+// Caller admits expected span/buffers and existing root/lock/context in outer.
+// No recovery, repair, staging or publication; unsupported request ABI refuses.
+flatfile_item_accounting_status flatfile_item_accounting_reference_verify_operation_bounded(
+	const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+	const std::span<const economic_accounting_item_reference> &, flatfile_scratch_reserve_fn,
+	void *, size_t) noexcept;
+
 #endif

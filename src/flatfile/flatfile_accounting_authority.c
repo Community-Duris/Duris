@@ -1594,3 +1594,364 @@ unsigned int economic_flatfile_read_current_authority_locked(
 		},
 		error);
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool authority_bounded_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+void authority_bounded_admit(size_t outer, size_t request,
+			     flatfile_scratch_reserve_fn reserve_scratch_peak, void *context)
+{
+	need(authority_bounded_add(outer, request) && reserve_scratch_peak(outer, context),
+	     ENOBUFS);
+}
+struct authority_bounded_file_workspace
+{
+	authority_bounded_file_workspace(size_t directory_size, const char *filename)
+		: directory(directory_size, '\0')
+		, name(filename)
+	{
+	}
+	std::string directory, name;
+	bytes encoded;
+};
+bytes authority_read_file_bounded(const std::string &root, const char *filename,
+				  flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+				  size_t outer)
+{
+	size_t directory_size = root.size(), request = sizeof(authority_bounded_file_workspace);
+	need(authority_bounded_add(directory_size, sizeof("/economic-evidence") - 1), ENOBUFS);
+	if (directory_size > 15)
+		need(directory_size != SIZE_MAX &&
+			     authority_bounded_add(request, directory_size + 1),
+		     ENOBUFS);
+	const size_t name_size = std::strlen(filename);
+	if (name_size > 15)
+		need(authority_bounded_add(request, name_size + 1), ENOBUFS);
+	authority_bounded_admit(outer, request, reserve_scratch_peak, context);
+	authority_bounded_file_workspace work(directory_size, filename);
+	std::copy(root.begin(), root.end(), work.directory.begin());
+	std::copy_n("/economic-evidence", sizeof("/economic-evidence") - 1,
+		    work.directory.begin() + root.size());
+	errno = 0;
+	const auto result = flatfile_read_bounded(work.directory, work.name,
+						  FLATFILE_ECONOMIC_METADATA_MAX_BYTES,
+						  &work.encoded, reserve_scratch_peak, context,
+						  outer + request);
+	need(result == flatfile_read_result::ok, result == flatfile_read_result::io_error ?
+							 (errno == ENOMEM  ? ENOMEM :
+							  errno == ENOBUFS ? ENOBUFS :
+									     EIO) :
+							 EILSEQ);
+	return std::move(work.encoded);
+}
+
+// unwrap's reader/prefix/body/digest/hash result coexist. reader::fixed's
+// array/take span and the returned reader are actual subsequent call frames.
+constexpr size_t authority_unwrap_working =
+	sizeof(reader) * 2 + sizeof(std::span<const uint8_t>) * 3 + sizeof(economic_digest) * 2;
+constexpr size_t authority_epoch_decode_working =
+	sizeof(bytes) + sizeof(epochs) + sizeof(reader) + sizeof(flatfile_economic_epoch) +
+	sizeof(uint32_t) + authority_unwrap_working + sizeof(economic_account_key) +
+	sizeof(std::span<const uint8_t>) * 2;
+
+epochs authority_load_epochs_bounded(const std::string &root,
+				     const flatfile_economic_control &control,
+				     flatfile_scratch_reserve_fn reserve_scratch_peak,
+				     void *context, size_t outer)
+{
+	authority_bounded_admit(outer, authority_epoch_decode_working, reserve_scratch_peak,
+				context);
+	const size_t frame_live = outer + authority_epoch_decode_working;
+	auto encoded = authority_read_file_bounded(root, "epochs.eae", reserve_scratch_peak,
+						   context, frame_live);
+	authority_bounded_admit(frame_live, encoded.capacity(), reserve_scratch_peak, context);
+	need(hash(encoded) == control.epochs_digest);
+	uint32_t version = 0;
+	auto in = unwrap(encoded, "DURECE1", &version);
+	need(in.id().bytes == control.lineage.bytes);
+	auto count = in.number(4);
+	need(count == control.epoch_count && count <= FLATFILE_ECONOMIC_MAX_EPOCHS &&
+	     in.number(4) == 0 && in.data.size() == 24 + count * (version == 1 ? 96 : 160));
+	epochs values;
+	size_t retained_live = frame_live;
+	need(authority_bounded_add(retained_live, encoded.capacity()) &&
+		     count <= SIZE_MAX / sizeof(flatfile_economic_epoch) &&
+		     authority_bounded_add(retained_live, count * sizeof(flatfile_economic_epoch)),
+	     ENOBUFS);
+	need(reserve_scratch_peak(retained_live, context), ENOBUFS);
+	values.reserve(count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		flatfile_economic_epoch value;
+		value.epoch = in.id();
+		value.ordinal = in.number(8);
+		value.predecessor = in.id();
+		value.transition_kind = in.number(2);
+		need(in.number(6) == 0);
+		value.transition_digest = in.fixed<32>();
+		value.creating_operation = in.id();
+		if (version >= 2)
+		{
+			value.baseline_initialization =
+				static_cast<flatfile_baseline_initialization>(in.number(1));
+			if (version == 3)
+			{
+				value.initialization_origin =
+					static_cast<flatfile_baseline_initialization_origin>(
+						in.number(1));
+				need(in.number(6) == 0);
+			}
+			else
+				need(in.number(7) == 0);
+			value.baseline_initializing_operation = in.id();
+			auto opening = in.take(ECONOMIC_ACCOUNT_KEY_BYTES);
+			if (value.baseline_initialization ==
+			    flatfile_baseline_initialization::initialized)
+				need(economic_account_key_decode(opening,
+								 &value.baseline_opening) ==
+				     economic_accounting_error::ok);
+			else
+				need(std::all_of(opening.begin(), opening.end(),
+						 [](uint8_t byte) { return byte == 0; }));
+		}
+		values.push_back(value);
+	}
+	in.done();
+	size_t lifecycle_count = 0;
+	for (const auto &value : values)
+		if (value.initialization_origin ==
+		    flatfile_baseline_initialization_origin::lifecycle_owner)
+			++lifecycle_count;
+	const size_t node_bytes = sizeof(std::_Rb_tree_node<std::array<uint8_t, 16>>);
+	size_t validator_request = sizeof(std::set<std::array<uint8_t, 16>>) * 2 +
+				   sizeof(critical_operation_id) * 2 + sizeof(economic_account_key);
+	need(values.size() <= SIZE_MAX / node_bytes && lifecycle_count <= SIZE_MAX / node_bytes &&
+		     authority_bounded_add(validator_request, values.size() * node_bytes) &&
+		     authority_bounded_add(validator_request, lifecycle_count * node_bytes),
+	     ENOBUFS);
+	authority_bounded_admit(retained_live, validator_request, reserve_scratch_peak, context);
+	validate_epochs(control.lineage, values);
+	need(values.empty() || values.back().epoch.bytes == control.last_epoch.bytes);
+	return values;
+}
+
+flatfile_economic_control
+authority_load_control_bounded(const std::string &root,
+			       flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			       size_t outer)
+{
+	const size_t frame = sizeof(flatfile_economic_control) + sizeof(bytes);
+	authority_bounded_admit(outer, frame, reserve_scratch_peak, context);
+	flatfile_economic_control value;
+	{
+		auto encoded = authority_read_file_bounded(
+			root, "authority.eal", reserve_scratch_peak, context, outer + frame);
+		size_t decode_request = encoded.capacity();
+		need(authority_bounded_add(decode_request, sizeof(flatfile_economic_control)) &&
+			     authority_bounded_add(decode_request, sizeof(reader)) &&
+			     authority_bounded_add(decode_request, authority_unwrap_working),
+		     ENOBUFS);
+		authority_bounded_admit(outer + frame, decode_request, reserve_scratch_peak,
+					context);
+		value = decode_control(encoded);
+	}
+	// The control file/path/decoder die before the complete epoch catalog pass.
+	(void)authority_load_epochs_bounded(root, value, reserve_scratch_peak, context,
+					    outer + frame);
+	return value;
+}
+
+unsigned int authority_recover_bounded(const std::string &root, const flatfile_authority_lock &lock,
+				       flatfile_scratch_reserve_fn reserve_scratch_peak,
+				       void *context, size_t outer) noexcept
+{
+	if (!lock.matches(root))
+		return EINVAL;
+	const auto result = flatfile_authority_transaction_recover_bounded(
+		root, lock, reserve_scratch_peak, context, outer);
+	return result == flatfile_authority_transaction_result::ok	 ? 0 :
+	       result == flatfile_authority_transaction_result::io_error ? EIO :
+									   EILSEQ;
+}
+#endif
+}
+
+unsigned int
+flatfile_economic_control_read_bounded(const std::string &root, const flatfile_authority_lock &lock,
+				       flatfile_economic_control *out,
+				       flatfile_scratch_reserve_fn reserve_scratch_peak,
+				       void *context, size_t outer) noexcept
+{
+	if (!out || !reserve_scratch_peak)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#else
+	const auto recovered =
+		authority_recover_bounded(root, lock, reserve_scratch_peak, context, outer);
+	if (recovered)
+		return recovered;
+	try
+	{
+		authority_bounded_admit(outer, sizeof(flatfile_economic_control),
+					reserve_scratch_peak, context);
+		auto value =
+			authority_load_control_bounded(root, reserve_scratch_peak, context,
+						       outer + sizeof(flatfile_economic_control));
+		*out = std::move(value);
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}
+
+unsigned int flatfile_economic_epoch_read_bounded(const std::string &root,
+						  const flatfile_authority_lock &lock,
+						  const critical_operation_id &lineage,
+						  const critical_operation_id &epoch,
+						  flatfile_economic_epoch *out,
+						  flatfile_scratch_reserve_fn reserve_scratch_peak,
+						  void *context, size_t outer) noexcept
+{
+	if (!out || !nonzero(lineage) || !nonzero(epoch) || !reserve_scratch_peak)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#else
+	const auto recovered =
+		authority_recover_bounded(root, lock, reserve_scratch_peak, context, outer);
+	if (recovered)
+		return recovered;
+	try
+	{
+		const size_t frame = sizeof(flatfile_economic_control) + sizeof(epochs);
+		authority_bounded_admit(outer, frame, reserve_scratch_peak, context);
+		const auto control = authority_load_control_bounded(root, reserve_scratch_peak,
+								    context, outer + frame);
+		need(control.lineage.bytes == lineage.bytes, ESTALE);
+		// Preserve the original second complete epoch read after lineage checking.
+		const auto values = authority_load_epochs_bounded(
+			root, control, reserve_scratch_peak, context, outer + frame);
+		const auto at = std::find_if(values.begin(), values.end(), [&](const auto &value)
+					     { return value.epoch.bytes == epoch.bytes; });
+		need(at != values.end(), ENODATA);
+		*out = *at;
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}
+
+unsigned int economic_flatfile_lock_authority_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const std::span<const flatfile_economic_mapping_request> &requests,
+	flatfile_economic_authority_snapshot *out, flatfile_scratch_reserve_fn reserve_scratch_peak,
+	void *context, size_t outer, size_t *retained_payload) noexcept
+{
+	if (!out || !nonzero(lineage) || !nonzero(epoch) || !reserve_scratch_peak)
+		return EINVAL;
+	if (requests.size() > ECONOMIC_ACCOUNTING_MAX_ACCOUNTS)
+		return E2BIG;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)context;
+	(void)outer;
+	(void)retained_payload;
+	return ENOTSUP;
+#else
+	// INITIAL requests no mappings. Do not expose a partially profiled general
+	// mapping reader: that distinct unsupported scope refuses before recovery.
+	if (!requests.empty())
+		return ENOTSUP;
+	const auto recovered =
+		authority_recover_bounded(root, lock, reserve_scratch_peak, context, outer);
+	if (recovered)
+		return recovered;
+	try
+	{
+		using groups_type =
+			std::map<size_t, std::vector<const flatfile_economic_mapping_request *>>;
+		using native_groups_type = std::map<size_t, std::vector<size_t>>;
+		const size_t frame = sizeof(flatfile_economic_control) +
+				     sizeof(flatfile_economic_authority_snapshot) +
+				     sizeof(std::set<uint64_t>) + sizeof(groups_type) +
+				     sizeof(native_groups_type);
+		authority_bounded_admit(outer, frame, reserve_scratch_peak, context);
+		auto control = authority_load_control_bounded(root, reserve_scratch_peak, context,
+							      outer + frame);
+		need(control.lineage.bytes == lineage.bytes, ESTALE);
+		need(nonzero(control.active_epoch), ENODATA);
+		need(control.active_epoch.bytes == epoch.bytes, ESTALE);
+		std::set<uint64_t> ids;
+		groups_type groups;
+		flatfile_economic_authority_snapshot candidate;
+		candidate.lineage = lineage;
+		candidate.epoch = epoch;
+		candidate.lineage_revision = control.revision;
+		candidate.mappings.reserve(requests.size());
+		native_groups_type native_groups;
+		std::sort(candidate.mappings.begin(), candidate.mappings.end(),
+			  [](const auto &a, const auto &b)
+			  { return a.account.authority_id < b.account.authority_id; });
+		*out = std::move(candidate);
+		if (retained_payload)
+			*retained_payload = 0;
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}

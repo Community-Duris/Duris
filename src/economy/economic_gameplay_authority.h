@@ -84,6 +84,9 @@ class economic_gameplay_authority
 	// Read-only selected flat projection. No writer, source or ACK authority.
 	// SQL qualification/recovery and SQL fallback scopes remain excluded.
 	static bool active_regular_flat();
+	// Actual named installed-projection observer object used by the predicate.
+	// No allocation, projection load, or admission authority is performed here.
+	static size_t active_regular_flat_working_bytes() noexcept;
 	// Selected SQL boot policy keeps legacy writers closed while genuine replay
 	// and published lifetimes recover. It is not fresh admission/readiness.
 	static bool active_sql_recovery();
@@ -129,6 +132,15 @@ class economic_gameplay_authority
 	static economic_accounting_error prepare_zone_reset_item_flat(const zone_reset_item_image &,
 								      uint64_t accepted_at_usec,
 								      critical_command *) noexcept;
+
+	// Same installed regular-flat metadata selection, with prospective callee
+	// shared-pointer/metadata and original compiler scratch admitted first.
+	// Caller includes already-live image/input/old-output storage in outer_live;
+	// callback acceptance grants no source, execution or publication authority.
+	static economic_accounting_error prepare_zone_reset_item_flat_bounded(
+		const zone_reset_item_image &, uint64_t accepted_at_usec, critical_command *,
+		bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+		size_t outer_live_scratch) noexcept;
 	static economic_accounting_error
 	prepare_native_mobile_birth(const quest_mobile_native_image &, critical_source_site,
 				    uint64_t accepted_at_usec, critical_command *output) noexcept;

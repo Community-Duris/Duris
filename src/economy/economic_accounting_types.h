@@ -166,4 +166,15 @@ economic_item_effects_validate(std::span<const economic_item_snapshot> before,
 			       std::span<const economic_item_snapshot> after,
 			       std::span<const economic_item_event> events, size_t child_count);
 
+// Allocation-free request profile for the existing sequential coin/item
+// validators. Counts describe their original vector constructors; parent flags
+// describe live parent edges, ordinary_account the original coin-delta branch.
+// No semantic validation or authority is provided. False leaves output intact;
+// actual requests require GCC13/libstdc++ C++11 ABI. Scalar/private-library call
+// frames are excluded by the existing payload policy.
+bool economic_effects_validation_working_bytes(size_t accounts, bool ordinary_account,
+					       size_t before, size_t after, size_t events,
+					       bool before_parent, bool after_parent,
+					       size_t *output) noexcept;
+
 #endif

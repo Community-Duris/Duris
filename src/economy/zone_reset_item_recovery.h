@@ -70,12 +70,42 @@ zone_reset_item_recovery_original_command_decode(std::span<const uint8_t>,
 						 critical_command *) noexcept;
 bool zone_reset_item_recovery_valid(const critical_native_recovery_envelope &) noexcept;
 bool zone_reset_item_recovery_initial(const critical_native_recovery_envelope &) noexcept;
+// Bounded companions preserve complete original command/context validation.
+// Caller owns input, old outputs and its other live storage in outer_live;
+// reservations precede all allocating phases and survive output transfer.
+// No source, factory, storage/publication or recovery entitlement is granted.
+economic_accounting_error zone_reset_item_recovery_encode_bounded(
+	const critical_command &, const zone_reset_item_recovery_context &,
+	std::vector<uint8_t> *, bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+	void *context, size_t outer_live_scratch) noexcept;
+economic_accounting_error zone_reset_item_recovery_decode_bounded(
+	const critical_command &, std::span<const uint8_t>, zone_reset_item_recovery_context *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch, size_t *retained_context_heap_bytes = nullptr) noexcept;
+bool zone_reset_item_recovery_initial_bounded(
+	const critical_native_recovery_envelope &,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept;
 bool zone_reset_item_recovery_successor(const critical_native_recovery_envelope &expected,
 					const critical_native_recovery_envelope &successor) noexcept;
+bool zone_reset_item_recovery_valid_bounded(const critical_native_recovery_envelope &,
+					    bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+					    void *context, size_t outer_live_scratch) noexcept;
 // Current successful delivery may change attempts/times/replay outcome, but the
 // complete economic receipt core must match. This does not authenticate delivery.
 bool zone_reset_item_recovery_publication(const critical_native_recovery_envelope &,
 					  const critical_completion &) noexcept;
 bool zone_reset_item_recovery_terminal(const critical_native_recovery_envelope &) noexcept;
+
+// Complete saved terminal BODY against a separately authenticated immutable
+// original command. This returns observations only: no envelope, revision,
+// generation, delivery or current physical/ACK entitlement is constructed.
+// Same original terminal predicate; strong context and retained-heap outputs.
+// Caller owns wire/input/prior output and span objects in outer_live_scratch.
+economic_accounting_error zone_reset_item_recovery_terminal_body_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	zone_reset_item_recovery_context *, bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+	void *context, size_t outer_live_scratch,
+	size_t *retained_context_heap_bytes = nullptr) noexcept;
 
 #endif

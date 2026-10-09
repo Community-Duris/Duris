@@ -10,6 +10,8 @@
 #include "core/utils.h"
 
 #include <algorithm>
+#include <array>
+#include <cerrno>
 #include <new>
 #include <type_traits>
 #include <unordered_set>
@@ -774,6 +776,336 @@ player_item_snapshot_tree_capture_literal(P_obj root, std::vector<player_item_sn
 					  size_t *estimated_bytes_out)
 {
 	return capture_tree_snapshot(root, items_out, estimated_bytes_out, true);
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+    _GLIBCXX_USE_CXX11_ABI
+struct literal_capture_storage_profile
+{
+	size_t original_peak = 0, retained_payload = 0;
+};
+struct literal_capture_hash_scan
+{
+	std::__detail::_Prime_rehash_policy policy;
+	std::pair<bool, size_t> growth{};
+	size_t count = 0, buckets = 1, bucket_bytes = 0, requests = 0;
+};
+struct literal_capture_vector_scan
+{
+	size_t size = 0, capacity = 0;
+};
+struct literal_capture_scan_frame
+{
+	literal_capture_hash_scan affects, descriptions;
+	literal_capture_vector_scan affect_rows, description_rows, spells;
+};
+struct literal_capture_storage_scan
+{
+	std::array<const obj_data *, PLAYER_SNAPSHOT_MAX_OBJECTS> objects{};
+	size_t object_count = 0;
+	literal_capture_hash_scan audit_objects, audit_uids, captured_objects;
+	literal_capture_vector_scan item_rows;
+	capture_budget budget;
+	literal_capture_storage_profile result;
+	size_t original_live = sizeof(literal_identity_audit), scan_base = 0;
+	bool (*reserve)(size_t, void *) noexcept = nullptr;
+	void *context = nullptr;
+
+	bool peak(size_t extra = 0) noexcept
+	{
+		if (extra > SIZE_MAX - original_live)
+			return false;
+		result.original_peak = std::max(result.original_peak, original_live + extra);
+		return true;
+	}
+	bool add(size_t bytes) noexcept
+	{
+		if (bytes > SIZE_MAX - original_live)
+			return false;
+		original_live += bytes;
+		return peak();
+	}
+};
+
+template <typename Key>
+bool literal_hash_insert(literal_capture_storage_scan &scan,
+			 literal_capture_hash_scan &table) noexcept
+{
+	constexpr size_t node_bytes = sizeof(std::__detail::_Hash_node<
+	    Key, std::__cache_default<Key, std::hash<Key>>::value>);
+	table.growth = table.policy._M_need_rehash(table.buckets, table.count, 1);
+	size_t new_buckets = 0;
+	if (table.growth.first)
+	{
+		if (table.growth.second > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *))
+			return false;
+		new_buckets = table.growth.second * sizeof(std::__detail::_Hash_node_base *);
+	}
+	// Unique insertion allocates its node before replacing the bucket array.
+	if (!scan.add(node_bytes) || !scan.peak(new_buckets) ||
+	    node_bytes > SIZE_MAX - table.requests)
+		return false;
+	table.requests += node_bytes;
+	if (table.growth.first)
+	{
+		scan.original_live -= table.bucket_bytes;
+		table.requests -= table.bucket_bytes;
+		if (!scan.add(new_buckets) || new_buckets > SIZE_MAX - table.requests)
+			return false;
+		table.requests += new_buckets;
+		table.bucket_bytes = new_buckets;
+		table.buckets = table.growth.second;
+	}
+	++table.count;
+	return true;
+}
+
+bool literal_vector_push(literal_capture_storage_scan &scan,
+			 literal_capture_vector_scan &vector, size_t width,
+			 size_t expression_object = 0) noexcept
+{
+	if (vector.size == vector.capacity)
+	{
+		const size_t growth = std::max(vector.size, size_t{1});
+		if (growth > SIZE_MAX - vector.size || vector.size + growth > SIZE_MAX / width)
+			return false;
+		const size_t next = vector.size + growth, request = next * width;
+		if (expression_object > SIZE_MAX - request || !scan.peak(request + expression_object))
+			return false;
+		scan.original_live -= vector.capacity * width;
+		if (!scan.add(request))
+			return false;
+		vector.capacity = next;
+	}
+	else if (!scan.peak(expression_object))
+		return false;
+	++vector.size;
+	return true;
+}
+
+bool literal_string_copy(literal_capture_storage_scan &scan, const char *source) noexcept
+{
+	const size_t length = source ? strlen(source) : 0;
+	if (length > PLAYER_SNAPSHOT_MAX_STRING_BYTES || !scan.budget.add(length + 1))
+		return false;
+	return length <= 15 || scan.add(std::max(length, size_t{30}) + 1);
+}
+
+player_snapshot_capture_result literal_identity_storage_scan(
+	const obj_data *object, literal_capture_storage_scan &scan, size_t depth) noexcept
+{
+	if (!object)
+		return player_snapshot_capture_result::ok;
+	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH || scan.object_count >= PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return player_snapshot_capture_result::limit_exceeded;
+	for (size_t index = 0; index != scan.object_count; ++index)
+		if (scan.objects[index] == object)
+			return player_snapshot_capture_result::object_cycle;
+	if (!literal_hash_insert<const obj_data *>(scan, scan.audit_objects))
+		return player_snapshot_capture_result::limit_exceeded;
+	if (!object->obj_uid || object->obj_uid == UINT64_MAX)
+		return player_snapshot_capture_result::malformed_source;
+	for (size_t index = 0; index != scan.object_count; ++index)
+		if (scan.objects[index]->obj_uid == object->obj_uid)
+			return player_snapshot_capture_result::malformed_source;
+	if (!literal_hash_insert<uint64_t>(scan, scan.audit_uids))
+		return player_snapshot_capture_result::limit_exceeded;
+	scan.objects[scan.object_count++] = object;
+	for (const obj_data *child = object->contains; child; child = child->next_content)
+	{
+		const auto result = literal_identity_storage_scan(child, scan, depth + 1);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+	}
+	return player_snapshot_capture_result::ok;
+}
+
+player_snapshot_capture_result literal_tree_storage_scan(
+	const obj_data *object, literal_capture_storage_scan &scan, size_t depth) noexcept
+{
+	if (!object)
+		return player_snapshot_capture_result::ok;
+	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+		return player_snapshot_capture_result::limit_exceeded;
+	// Actual allocation-free recursive scan frames, retained through descendants.
+	if (depth > (SIZE_MAX - scan.scan_base) / sizeof(literal_capture_scan_frame) ||
+	    !scan.reserve(scan.scan_base + depth * sizeof(literal_capture_scan_frame), scan.context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_capture_result::limit_exceeded;
+	}
+	literal_capture_scan_frame frame;
+	if (!scan.add(sizeof(item_ownership_runtime_entry)) ||
+	    !literal_hash_insert<const obj_data *>(scan, scan.captured_objects))
+		return player_snapshot_capture_result::limit_exceeded;
+	if (object->R_num < 0 || object->R_num > top_of_objt)
+		return player_snapshot_capture_result::malformed_source;
+	if (scan.budget.objects >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !scan.budget.add(sizeof(player_item_snapshot), 1))
+		return player_snapshot_capture_result::limit_exceeded;
+	++scan.budget.objects;
+	if (!scan.add(sizeof(player_item_snapshot)) ||
+	    !scan.peak(sizeof(decltype(player_item_snapshot::bitvectors))) ||
+	    !literal_string_copy(scan, object->name) ||
+	    !literal_string_copy(scan, object->short_description) ||
+	    !literal_string_copy(scan, object->description) ||
+	    !literal_string_copy(scan, object->action_description) ||
+	    !scan.peak(sizeof(std::array<int16_t, 2>)) ||
+	    !scan.add(sizeof(std::unordered_set<const obj_affect *>)))
+		return player_snapshot_capture_result::limit_exceeded;
+	for (const obj_affect *affect = object->affects; affect; affect = affect->next)
+	{
+		// Match the first repeated-link refusal without allocating a second set.
+		const obj_affect *earlier = object->affects;
+		for (size_t index = 0; index != frame.affects.count; ++index, earlier = earlier->next)
+			if (earlier == affect)
+				return player_snapshot_capture_result::object_cycle;
+		if (!literal_hash_insert<const obj_affect *>(scan, frame.affects) ||
+		    !scan.budget.add(sizeof(player_item_dynamic_affect_snapshot), 1) ||
+		    !literal_vector_push(scan, frame.affect_rows,
+			 sizeof(player_item_dynamic_affect_snapshot),
+			 sizeof(player_item_dynamic_affect_snapshot)))
+			return player_snapshot_capture_result::limit_exceeded;
+	}
+	if (!scan.add(sizeof(std::unordered_set<const extra_descr_data *>)))
+		return player_snapshot_capture_result::limit_exceeded;
+	for (const extra_descr_data *description = object->ex_description; description;
+	     description = description->next)
+	{
+		const extra_descr_data *earlier = object->ex_description;
+		for (size_t index = 0; index != frame.descriptions.count; ++index, earlier = earlier->next)
+			if (earlier == description)
+				return player_snapshot_capture_result::object_cycle;
+		if (!literal_hash_insert<const extra_descr_data *>(scan, frame.descriptions) ||
+		    !scan.budget.add(sizeof(player_item_extra_description_snapshot), 1) ||
+		    !scan.add(sizeof(player_item_extra_description_snapshot)))
+			return player_snapshot_capture_result::limit_exceeded;
+		frame.spells.size = 0;
+		frame.spells.capacity = 0;
+		const bool spellbook = description->keyword && strlen(description->keyword) == 3 &&
+		    description->keyword[0] == 3 && description->keyword[1] == 1 &&
+		    description->keyword[2] == 3;
+		if (spellbook)
+		{
+			if (!literal_string_copy(scan, "SPELLBOOK") || !description->description)
+				return player_snapshot_capture_result::malformed_source;
+			for (int skill_id = 0; skill_id != MAX_SKILLS; ++skill_id)
+				if ((static_cast<unsigned char>(description->description[skill_id / 8]) &
+				     (1U << (skill_id % 8))) != 0)
+					if (!scan.budget.add(sizeof(int32_t)) ||
+					    !literal_vector_push(scan, frame.spells, sizeof(int32_t)))
+						return player_snapshot_capture_result::limit_exceeded;
+		}
+		else if (!literal_string_copy(scan, description->keyword) ||
+			 !literal_string_copy(scan, description->description))
+			return player_snapshot_capture_result::limit_exceeded;
+		if (!literal_vector_push(scan, frame.description_rows,
+				 sizeof(player_item_extra_description_snapshot)))
+			return player_snapshot_capture_result::limit_exceeded;
+		// The extra's heap transfers into its row; only its inline DTO dies here.
+		scan.original_live -= sizeof(player_item_extra_description_snapshot);
+	}
+	if (!literal_vector_push(scan, scan.item_rows, sizeof(player_item_snapshot)))
+		return player_snapshot_capture_result::limit_exceeded;
+	for (const obj_data *child = object->contains; child; child = child->next_content)
+	{
+		const auto result = literal_tree_storage_scan(child, scan, depth + 1);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+	}
+	// Parent row and both audit tables really remain live through its descendants.
+	// Moving the row transfers every string/vector request into the output tree.
+	scan.original_live -= sizeof(item_ownership_runtime_entry) + sizeof(player_item_snapshot) +
+	    sizeof(std::unordered_set<const obj_affect *>) +
+	    sizeof(std::unordered_set<const extra_descr_data *>) +
+	    frame.affects.requests + frame.descriptions.requests;
+	return player_snapshot_capture_result::ok;
+}
+
+player_snapshot_capture_result literal_capture_preflight(
+	P_obj root, literal_capture_storage_profile *profile,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (sizeof(literal_capture_storage_scan) > SIZE_MAX - outer ||
+	    !reserve(outer + sizeof(literal_capture_storage_scan), context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_capture_result::limit_exceeded;
+	}
+	literal_capture_storage_scan scan;
+	scan.scan_base = outer + sizeof(scan);
+	scan.reserve = reserve;
+	scan.context = context;
+	if (!scan.peak())
+		return player_snapshot_capture_result::limit_exceeded;
+	const auto audited = literal_identity_storage_scan(root, scan, 1);
+	if (audited != player_snapshot_capture_result::ok)
+		return audited;
+	constexpr size_t capture_fixed = sizeof(capture_budget) +
+	    sizeof(std::vector<player_item_snapshot>) + sizeof(std::unordered_set<const obj_data *>);
+	scan.original_live = capture_fixed; // Literal identity audit has already died.
+	if (!scan.peak())
+		return player_snapshot_capture_result::limit_exceeded;
+	const auto captured = literal_tree_storage_scan(root, scan, 1);
+	if (captured != player_snapshot_capture_result::ok)
+		return captured;
+	scan.result.retained_payload = scan.original_live - capture_fixed -
+	    scan.captured_objects.requests;
+	*profile = scan.result;
+	return player_snapshot_capture_result::ok;
+}
+#endif
+} // namespace
+
+player_snapshot_capture_result player_item_snapshot_tree_capture_literal_bounded(
+    P_obj root, std::vector<player_item_snapshot> *items_out, size_t *estimated_bytes_out,
+    bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (!root || !items_out || !reserve_scratch_peak)
+		return player_snapshot_capture_result::invalid_identity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+    !_GLIBCXX_USE_CXX11_ABI
+	(void)estimated_bytes_out;
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return player_snapshot_capture_result::retryable_allocation_failure;
+#else
+	static_assert(std::is_nothrow_move_constructible_v<player_item_snapshot>);
+	static_assert(std::is_nothrow_move_constructible_v<player_item_extra_description_snapshot>);
+	if (sizeof(literal_capture_storage_profile) > SIZE_MAX - outer_live_scratch ||
+	    !reserve_scratch_peak(outer_live_scratch + sizeof(literal_capture_storage_profile), context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_capture_result::limit_exceeded;
+	}
+	literal_capture_storage_profile profile;
+	const size_t outer = outer_live_scratch + sizeof(profile);
+	const auto framed = literal_capture_preflight(root, &profile, reserve_scratch_peak, context, outer);
+	if (framed != player_snapshot_capture_result::ok)
+		return framed;
+	if (profile.original_peak > SIZE_MAX - outer ||
+	    !reserve_scratch_peak(outer + profile.original_peak, context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_capture_result::limit_exceeded;
+	}
+	try
+	{
+		const auto captured = player_item_snapshot_tree_capture_literal(root, items_out, estimated_bytes_out);
+		if (captured == player_snapshot_capture_result::ok && retained_output_payload_bytes)
+			*retained_output_payload_bytes = profile.retained_payload;
+		return captured;
+	}
+	catch (...)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+#endif
 }
 
 player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revision_t revision,

@@ -60,19 +60,74 @@ class flatfile_accounting_zone_reset_item_transaction final
 	static unsigned int read_origin_locked(const std::string &, const flatfile_authority_lock &,
 					       uint64_t,
 					       zone_reset_item_retained_origin *) noexcept;
+	// Complete original receipt/current proof with prospective transitive storage.
+	// Caller includes original/root/lock/receipt/prior outputs in outer. Returned
+	// heap excludes inline output DTO; no execution, source or ACK authority.
+	static unsigned int
+	verify_record_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				     const critical_native_recovery_envelope &,
+				     flatfile_accounting_record *, flatfile_scratch_reserve_fn,
+				     void *, size_t,
+				     size_t *retained_output_heap = nullptr) noexcept;
+	static unsigned int read_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &,
+		const critical_native_recovery_envelope &, const critical_completion &,
+		flatfile_zone_reset_item_projection *, flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_output_heap = nullptr) noexcept;
 	static unsigned int
 	observe_initial_locked(const std::string &, const flatfile_authority_lock &,
 			       const critical_native_recovery_envelope &) noexcept;
+	// Complete original INITIAL observation with prospective transitive storage.
+	// Caller owns original/root/lock/context and all existing scratch in outer.
+	// No source/execution/publication/receipt authority is granted; all staged
+	// values remain local. Unsupported pinned request ABI refuses ENOTSUP.
+	static unsigned int
+	observe_initial_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				       const critical_native_recovery_envelope &,
+				       flatfile_scratch_reserve_fn, void *context,
+				       size_t outer_live_scratch) noexcept;
 	struct implementation;
+	// Authenticate the immutable original successful root by canonical origin UID.
+	// Same recovered lock; historical control/epoch, full receipt/plan/source/refs.
+	// No live envelope, delivery, generation, current world or ACK authority.
+	// Caller includes root/lock/context and prior outputs in outer. Strong outputs;
+	// transferred heap excludes both inline DTOs. Missing origin remains ENODATA.
+	static unsigned int
+	read_origin_receipt_locked_bounded(const std::string &, const flatfile_authority_lock &,
+					   uint64_t, zone_reset_item_retained_origin *,
+					   critical_completion *, flatfile_scratch_reserve_fn,
+					   void *, size_t,
+					   size_t *retained_origin_heap = nullptr) noexcept;
 	std::unique_ptr<implementation> state_;
 	explicit flatfile_accounting_zone_reset_item_transaction(std::unique_ptr<implementation>);
 };
 class zone_reset_item_owner;
 class critical_zone_reset_item_publication_owner;
+class zone_reset_room_publication_owner;
 class flatfile_zone_reset_item_publication_storage final
 {
 	friend class zone_reset_item_owner;
 	friend class critical_zone_reset_item_publication_owner;
+	friend class zone_reset_room_publication_owner;
+	// Passive saved BODY, backed by separately authenticated original success.
+	// Original command is origin.original; no duplicate or live envelope exists.
+	struct retained_terminal
+	{
+		bool present = false;
+		zone_reset_item_retained_origin origin;
+		critical_completion core{};
+		zone_reset_item_recovery_context context;
+		std::vector<uint8_t> canonical;
+	};
+	// Same recovered selected-root lock; authenticates original origin BEFORE
+	// secure terminal read. Absence succeeds with present=false and origin/core;
+	// absent origin remains ENODATA. No current-world, delivery or ACK authority.
+	// Strong output/heap; heap excludes inline DTO and includes only transferred
+	// origin command, canonical BODY and context arrays. No writer or commit.
+	static unsigned int
+	read_terminal_locked_bounded(const std::string &, const flatfile_authority_lock &, uint64_t,
+				     retained_terminal *, flatfile_scratch_reserve_fn, void *,
+				     size_t, size_t *retained_terminal_heap = nullptr) noexcept;
 	// SAME genuine recovered configured-root lock and original full carrier.
 	// Passive stored proof only; no constructor, source/execution/ACK authority,
 	// acquisition/recovery/write/commit or live mutation. Strong outputs.
@@ -81,12 +136,34 @@ class flatfile_zone_reset_item_publication_storage final
 	static unsigned int
 	observe_initial_locked(const std::string &, const flatfile_authority_lock &,
 			       const critical_native_recovery_envelope &) noexcept;
+	// Complete original INITIAL observation with prospective transitive storage.
+	// Caller owns original/root/lock/context and all existing scratch in outer.
+	// No source/execution/publication/receipt authority is granted; all staged
+	// values remain local. Unsupported pinned request ABI refuses ENOTSUP.
+	static unsigned int
+	observe_initial_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				       const critical_native_recovery_envelope &,
+				       flatfile_scratch_reserve_fn, void *context,
+				       size_t outer_live_scratch) noexcept;
 	static unsigned int read_locked(const std::string &, const flatfile_authority_lock &,
 					const critical_native_recovery_envelope &,
 					const critical_completion &,
 					flatfile_zone_reset_item_projection *) noexcept;
+	static unsigned int
+	read_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &, const critical_completion &,
+			    flatfile_zone_reset_item_projection *, flatfile_scratch_reserve_fn,
+			    void *, size_t, size_t *retained_output_heap = nullptr) noexcept;
 	static unsigned int read_origin_locked(const std::string &, const flatfile_authority_lock &,
 					       uint64_t,
 					       zone_reset_item_retained_origin *) noexcept;
+	// Immutable historical proof only. No terminal BODY can substitute for the
+	// genuine origin/root; no active epoch/season/current room/pile is required.
+	static unsigned int
+	read_origin_receipt_locked_bounded(const std::string &, const flatfile_authority_lock &,
+					   uint64_t, zone_reset_item_retained_origin *,
+					   critical_completion *, flatfile_scratch_reserve_fn,
+					   void *, size_t,
+					   size_t *retained_origin_heap = nullptr) noexcept;
 };
 #endif

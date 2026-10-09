@@ -302,3 +302,108 @@ catch (const std::bad_alloc &)
 {
 	return flatfile_accounting_status::io_error;
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct pile_bounded_workspace
+{
+	explicit pile_bounded_workspace(size_t directory_size)
+		: directory(directory_size, '\0')
+		, name(30, '\0')
+	{
+	}
+	std::string directory, name;
+	std::vector<uint8_t> bytes;
+	flatfile_accounting_pile_state candidate;
+};
+bool pile_bounded_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+#endif
+}
+
+flatfile_accounting_status flatfile_accounting_pile_state_read_bounded(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_accounting_pile_state *state, flatfile_scratch_reserve_fn reserve_scratch_peak,
+	void *context, size_t outer_live_scratch) noexcept
+{
+	if (root.empty() || !lock.matches(root) || !uid || !state || !reserve_scratch_peak)
+		return flatfile_accounting_status::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return flatfile_accounting_status::io_error;
+#else
+	// Recovery precedes the reader's paths and candidate, as in the original.
+	const auto recovered = flatfile_authority_transaction_recover_bounded(
+		root, lock, reserve_scratch_peak, context, outer_live_scratch);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_accounting_status::io_error :
+			       flatfile_accounting_status::invalid;
+	size_t directory_size = root.size(), live = outer_live_scratch;
+	if (!pile_bounded_add(directory_size, sizeof("/economic-evidence") - 1) ||
+	    !pile_bounded_add(live, sizeof(pile_bounded_workspace)) ||
+	    (directory_size > 15 &&
+	     (directory_size == SIZE_MAX || !pile_bounded_add(live, directory_size + 1))) ||
+	    !pile_bounded_add(live, 31) || !pile_bounded_add(live, sizeof(char[32])) ||
+	    !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_accounting_status::io_error;
+	}
+	try
+	{
+		pile_bounded_workspace work(directory_size);
+		std::copy(root.begin(), root.end(), work.directory.begin());
+		std::copy_n("/economic-evidence", sizeof("/economic-evidence") - 1,
+			    work.directory.begin() + root.size());
+		{
+			char name[32] = {};
+			std::snprintf(name, sizeof(name), "pile-head-%016llx.eph",
+				      static_cast<unsigned long long>(uid));
+			std::copy_n(name, work.name.size(), work.name.begin());
+		}
+		// The formatting array dies before secure file metadata inspection.
+		live -= sizeof(char[32]);
+		const auto loaded = flatfile_read_bounded(work.directory, work.name, head_bytes,
+							  &work.bytes, reserve_scratch_peak,
+							  context, live);
+		if (loaded == flatfile_read_result::not_found)
+			return flatfile_accounting_status::not_found;
+		if (loaded == flatfile_read_result::io_error)
+			return flatfile_accounting_status::io_error;
+		if (loaded != flatfile_read_result::ok)
+			return flatfile_accounting_status::invalid;
+		// Original decode owns its span, digest and value concurrently. Its
+		// number() span and retired-zero comparison temporary are sequential.
+		if (!pile_bounded_add(live, work.bytes.capacity()) ||
+		    !pile_bounded_add(live, sizeof(std::span<const uint8_t>)) ||
+		    !pile_bounded_add(live, sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>)) ||
+		    !pile_bounded_add(live, sizeof(flatfile_accounting_pile_state)) ||
+		    !pile_bounded_add(live, std::max(sizeof(std::span<const uint8_t>),
+						     sizeof(economic_coin_vector))) ||
+		    !reserve_scratch_peak(live, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_accounting_status::io_error;
+		}
+		if (!decode(work.bytes, uid, &work.candidate))
+			return flatfile_accounting_status::invalid;
+		*state = work.candidate;
+		return flatfile_accounting_status::ok;
+	}
+	catch (...)
+	{
+		return flatfile_accounting_status::io_error;
+	}
+#endif
+}

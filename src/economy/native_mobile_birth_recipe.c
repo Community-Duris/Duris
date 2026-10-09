@@ -334,3 +334,119 @@ native_mobile_birth_recipe_decode(std::span<const uint8_t> bytes,
 		return economic_accounting_error::capacity;
 	}
 }
+
+
+namespace
+{
+// descriptor_valid owns name, keyword, prefix and suffix string_view objects;
+// library_valid receives one seen span. They coexist with the seen array.
+constexpr size_t recipe_validation_objects =
+	sizeof(std::array<uint8_t, PLAYER_SNAPSHOT_MAX_ROWS>) +
+	sizeof(std::string_view) + sizeof(std::string_view) +
+	sizeof(std::string_view) + sizeof(std::string_view) + sizeof(std::span<uint8_t>);
+// Wire preflight additionally owns its empty recipe and decoded library value.
+// Include read_library's local return value too, without assuming NRVO.
+constexpr size_t recipe_preflight_objects = recipe_validation_objects +
+	sizeof(native_mobile_birth_item_recipe) + sizeof(native_mobile_birth_library_recipe) +
+	sizeof(native_mobile_birth_library_recipe);
+
+bool recipe_profile_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - value)
+		return false;
+	value += amount;
+	return true;
+}
+bool recipe_profile_array(size_t count, size_t unit, size_t *value) noexcept
+{
+	if (!value || (unit && count > SIZE_MAX / unit))
+		return false;
+	*value = count * unit;
+	return true;
+}
+bool recipe_profile_finish(native_mobile_birth_recipe_allocation_profile &profile) noexcept
+{
+	if (!recipe_profile_array(profile.item_count, sizeof(native_mobile_birth_item_recipe),
+				  &profile.decoded_row_storage_bytes) ||
+	    !recipe_profile_array(profile.library_count, sizeof(native_mobile_birth_library_recipe),
+				  &profile.decoded_library_storage_bytes))
+		return false;
+	profile.decoded_payload_bytes = profile.decoded_row_storage_bytes;
+	if (!recipe_profile_add(profile.decoded_payload_bytes, profile.decoded_library_storage_bytes))
+		return false;
+	profile.validation_inline_storage_bytes = recipe_validation_objects;
+	profile.preflight_inline_storage_bytes = recipe_preflight_objects;
+	profile.encoder_inline_storage_bytes = sizeof(std::vector<uint8_t>);
+	// candidate, current recipe, returned library and its callee local; no NRVO assumption.
+	profile.decoder_inline_storage_bytes = sizeof(std::vector<native_mobile_birth_item_recipe>) +
+		sizeof(native_mobile_birth_item_recipe) + sizeof(native_mobile_birth_library_recipe) +
+		sizeof(native_mobile_birth_library_recipe);
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	profile.fresh_decode_storage_policy_supported = true;
+	profile.fresh_encode_storage_policy_supported = true;
+	// Fresh reserve(count) and vector(size, 0) request exactly those capacities.
+	profile.encoded_capacity_bytes = profile.wire_bytes;
+#endif
+	return true;
+}
+} // namespace
+
+size_t native_mobile_birth_recipe_profile_inline_storage_bytes() noexcept
+{
+	// Conservatively reserve candidate and validator object phases together.
+	return sizeof(native_mobile_birth_recipe_allocation_profile) + recipe_preflight_objects;
+}
+
+economic_accounting_error native_mobile_birth_recipe_encode_profile(
+	std::span<const player_item_snapshot> items,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	native_mobile_birth_recipe_allocation_profile *output) noexcept
+{
+	if (!output || !native_mobile_birth_recipe_valid(items, recipes))
+		return economic_accounting_error::corrupt_evidence;
+	native_mobile_birth_recipe_allocation_profile profile;
+	profile.item_count = items.size();
+	profile.wire_bytes = HEADER_BYTES;
+	for (const auto &recipe : recipes)
+	{
+		size_t libraries = 0;
+		if (!recipe_profile_add(profile.library_count, recipe.libraries.size()) ||
+		    !recipe_profile_array(recipe.libraries.size(), LIBRARY_BYTES, &libraries) ||
+		    !recipe_profile_add(profile.wire_bytes, ITEM_BYTES) ||
+		    !recipe_profile_add(profile.wire_bytes, libraries))
+			return economic_accounting_error::capacity;
+	}
+	if (!recipe_profile_finish(profile))
+		return economic_accounting_error::capacity;
+	*output = profile;
+	return economic_accounting_error::ok;
+}
+
+economic_accounting_error native_mobile_birth_recipe_decode_profile(
+	std::span<const uint8_t> bytes, std::span<const player_item_snapshot> items,
+	native_mobile_birth_recipe_allocation_profile *output) noexcept
+{
+	if (!output)
+		return economic_accounting_error::corrupt_evidence;
+	const auto checked = preflight(bytes, items);
+	if (checked != economic_accounting_error::ok)
+		return checked;
+	native_mobile_birth_recipe_allocation_profile profile;
+	profile.item_count = items.size();
+	profile.wire_bytes = bytes.size();
+	size_t offset = HEADER_BYTES;
+	for (size_t i = 0; i < items.size(); ++i)
+	{
+		const size_t count = static_cast<uint32_t>(get(bytes.data() + offset + 24, 4));
+		size_t libraries = 0;
+		if (!recipe_profile_add(profile.library_count, count) ||
+		    !recipe_profile_array(count, LIBRARY_BYTES, &libraries) ||
+		    !recipe_profile_add(offset, ITEM_BYTES) || !recipe_profile_add(offset, libraries))
+			return economic_accounting_error::capacity;
+	}
+	if (offset != bytes.size() || !recipe_profile_finish(profile))
+		return economic_accounting_error::capacity;
+	*output = profile;
+	return economic_accounting_error::ok;
+}

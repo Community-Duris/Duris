@@ -120,6 +120,11 @@ class flatfile_accounting_storage
 							      const flatfile_authority_lock &,
 							      const flatfile_accounting_record &,
 							      std::string *);
+	// Same original owning lock and complete source claim proof; passive bounded storage.
+	static flatfile_accounting_status
+	verify_source_claim_bounded(const std::string &, const flatfile_authority_lock &,
+				    const flatfile_accounting_record &, flatfile_scratch_reserve_fn,
+				    void *, size_t) noexcept;
 	static flatfile_authority_transaction_result
 	commit(const std::string &, const flatfile_authority_lock &,
 	       const std::vector<flatfile_authority_operation> &, std::string *);
@@ -128,5 +133,14 @@ class flatfile_accounting_storage
 			    const std::vector<flatfile_authority_operation> &, std::string *,
 			    flatfile_authority_commit_outcome *);
 };
+
+// Passive prospective storage admission for the complete authenticated lookup.
+// Same recovered lock, full index/active segment/stale-next fence and receipt
+// validation; inputs/prior output/context belong to outer. Strong heap scalar.
+flatfile_accounting_status
+flatfile_accounting_lookup_bounded(const std::string &, const flatfile_authority_lock &,
+				   const critical_command &, flatfile_accounting_record *,
+				   flatfile_scratch_reserve_fn, void *, size_t,
+				   size_t *retained_payload = nullptr) noexcept;
 
 #endif

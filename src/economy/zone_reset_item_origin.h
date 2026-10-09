@@ -32,4 +32,17 @@ economic_accounting_error zone_reset_item_origin_encode(const critical_command &
 economic_accounting_error zone_reset_item_origin_decode(std::span<const uint8_t>,
 							zone_reset_item_retained_origin *) noexcept;
 
+// Complete original correlation and canonical wire checks with prospective
+// storage admission. Caller owns wire/command/result spans, prior output and
+// context in outer_live. Hold peaks through output transfer; no authority follows.
+economic_accounting_error
+zone_reset_item_origin_encode_bounded(const critical_command &, const std::span<const uint8_t> &,
+				      std::vector<uint8_t> *,
+				      bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+				      void *context, size_t outer_live) noexcept;
+economic_accounting_error zone_reset_item_origin_decode_bounded(
+	const std::span<const uint8_t> &, zone_reset_item_retained_origin *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_origin_heap_bytes = nullptr) noexcept;
+
 #endif

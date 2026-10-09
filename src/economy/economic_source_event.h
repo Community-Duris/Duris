@@ -50,6 +50,9 @@ struct economic_source_event
 // Pure original source-event value codecs. No allocation, source issuance or
 // current authority follows from a decoded source/generation identity.
 bool economic_source_event_valid(const economic_source_event &event);
+// Named decoder objects, including nested returned identity/span objects when
+// optional NRVO is absent. Scalar call frames and caller output are excluded.
+size_t economic_source_event_decode_object_bytes() noexcept;
 economic_accounting_error
 economic_source_event_encode(const economic_source_event &event,
 			     std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> *encoded);

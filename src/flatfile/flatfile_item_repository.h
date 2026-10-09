@@ -452,6 +452,19 @@ class flatfile_initial_room_reset_custody_storage final
 		       const critical_native_recovery_envelope &original,
 		       const flatfile_initial_room_reset_world_stage &world,
 		       flatfile_initial_room_reset_custody_stage *output) noexcept;
+	// Prospective scratch sibling under the SAME recovered lock. Callback
+	// admission grants no custody/source/execution permission. Caller retains
+	// all original/world inputs, old output, lock/root/context and their heap
+	// in outer_live_scratch. Returned payload excludes the caller's stage DTO;
+	// keep it charged through stage lifetime. Strong stage/scalar outputs.
+	static flatfile_item_repository_result
+	prepare_locked_bounded(const std::string &root, const flatfile_authority_lock &lock,
+			       const critical_native_recovery_envelope &original,
+			       const flatfile_initial_room_reset_world_stage &world,
+			       flatfile_initial_room_reset_custody_stage *output,
+			       flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			       size_t outer_live_scratch,
+			       size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 // Exact CURRENT original ROOM-reset custody observation. These returned rows
@@ -476,6 +489,33 @@ class flatfile_room_reset_current_custody_storage final
 		    std::span<const uint8_t> stored_compiled_plan,
 		    const flatfile_room_item_record &actual_room,
 		    std::vector<flatfile_item_ownership_record> *output) noexcept;
+	// Prospective full CURRENT proof; caller retains original carrier, full room,
+	// span objects and old output heap in outer. Returned heap excludes inline
+	// vector. Same recovered lock; no new authority. Strong outputs on refusal.
+	static flatfile_item_repository_result
+	read_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &,
+			    const std::span<const uint8_t> &stored_typed48,
+			    const std::span<const uint8_t> &stored_compiled_plan,
+			    const flatfile_room_item_record &,
+			    std::vector<flatfile_item_ownership_record> *,
+			    flatfile_scratch_reserve_fn, void *, size_t outer_live_scratch,
+			    size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
+
+// Passive exact-owner counter/active inventory read under the existing lock.
+// Full catalog decode/authentication precedes owner filtering; this projection
+// alone grants no full-store absence/source/UID/execution or ACK authority.
+// Caller includes root/lock/owner/prior outputs in outer and retains admitted
+// peaks until temporary destruction. Optional retained output counts actual
+// transferred row capacity and copied coin payload requests (inline output
+// vector excluded). All outputs stay unchanged on refusal. Same pinned
+// libstdc++13 C++11 ABI policy; no allocating diagnostics or lock/replay actions.
+flatfile_item_repository_result flatfile_item_repository_load_owner_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    const item_owner_identity &owner, uint64_t *owner_revision,
+    std::vector<flatfile_item_ownership_record> *items,
+    flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
 
 #endif
