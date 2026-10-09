@@ -8044,3 +8044,390 @@ flatfile_item_repository_result flatfile_initial_room_reset_custody_storage::pre
 	}
 #endif
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct custody_current_workspace
+{
+	custody_initial_stage_reservation reservation;
+	zone_reset_item_image image;
+	zone_reset_item_recovery_context recovery;
+	economic_accounting_plan plan;
+	economic_accounting_plan_allocation_profile plan_profile;
+	std::vector<uint8_t> canonical_plan, room_wire;
+	item_transfer_result actual{}, expected{};
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical{}, expected_bytes{};
+	ownership_catalog catalog;
+	flatfile_item_catalog_allocation_profile catalog_profile;
+	item_owner_identity selected{};
+	std::vector<flatfile_item_ownership_record> observed;
+	size_t recovery_heap = 0, image_heap = 0, plan_heap = 0, catalog_heap = 0;
+};
+struct custody_current_live
+{
+	size_t fixed;
+	custody_current_workspace &work;
+	bool bytes(size_t *out) const noexcept
+	{
+		*out = fixed;
+		if (!custody_budget_add(*out, work.recovery_heap) ||
+		    !custody_budget_add(*out, work.image_heap) ||
+		    !custody_budget_add(*out, work.plan_heap) ||
+		    !custody_budget_add(*out, work.catalog_heap) ||
+		    !custody_budget_add(*out, work.canonical_plan.capacity()) ||
+		    !custody_budget_add(*out, work.room_wire.capacity()))
+			return false;
+		size_t rows = 0;
+		if (!custody_budget_product(work.observed.capacity(),
+					    sizeof(flatfile_item_ownership_record), &rows) ||
+		    !custody_budget_add(*out, rows))
+			return false;
+		for (const auto &row : work.observed)
+			if (!custody_budget_add(*out, row.coin_payload.capacity()))
+				return false;
+		return true;
+	}
+	flatfile_item_repository_result capacity() const noexcept
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	bool admit(size_t extra) const noexcept
+	{
+		size_t total = 0;
+		if (!bytes(&total) || !custody_budget_add(total, extra) ||
+		    !custody_initial_stage_reserve(total, &work.reservation))
+		{
+			capacity();
+			return false;
+		}
+		return true;
+	}
+	flatfile_item_repository_result
+	refusal(flatfile_item_repository_result result) const noexcept
+	{
+		return work.reservation.rejected ? capacity() : result;
+	}
+	flatfile_item_repository_result codec(economic_accounting_error result) const noexcept
+	{
+		return refusal(result == economic_accounting_error::capacity ?
+				       flatfile_item_repository_result::io_error :
+				       flatfile_item_repository_result::invalid);
+	}
+	bool born(uint64_t uid) const noexcept
+	{
+		for (const auto &literal : work.image.items)
+			if (literal.object_uid == uid)
+				return true;
+		return false;
+	}
+};
+#endif
+} // namespace
+
+flatfile_item_repository_result flatfile_room_reset_current_custody_storage::read_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	const std::span<const uint8_t> &stored_typed48,
+	const std::span<const uint8_t> &stored_compiled_plan, const flatfile_room_item_record &room,
+	std::vector<flatfile_item_ownership_record> *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *callback_context,
+	size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !output || !reserve_scratch_peak || !lock.matches(root) ||
+	    stored_typed48.size() != ITEM_TRANSFER_RESULT_BYTES || stored_compiled_plan.empty())
+		return flatfile_item_repository_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)room;
+	(void)callback_context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_item_repository_result::io_error;
+#else
+	size_t fixed = outer_live_scratch;
+	if (!custody_budget_add(fixed, sizeof(custody_current_workspace)) ||
+	    !custody_budget_add(fixed, sizeof(custody_current_live)) ||
+	    !reserve_scratch_peak(fixed, callback_context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		custody_current_workspace work;
+		work.reservation = { reserve_scratch_peak, callback_context, false };
+		custody_current_live live{ fixed, work };
+		auto reserve = custody_initial_stage_reserve;
+		void *reservation = &work.reservation;
+		auto &image = work.image;
+		auto &context = work.recovery;
+		errno = 0;
+		if (!zone_reset_item_recovery_valid_bounded(original, reserve, reservation, fixed))
+			return live.refusal(errno == ENOMEM || errno == ENOTSUP ?
+						    flatfile_item_repository_result::io_error :
+						    flatfile_item_repository_result::invalid);
+		size_t bytes = 0;
+		if (!live.bytes(&bytes) || !live.admit(sizeof(std::span<const uint8_t>)))
+			return flatfile_item_repository_result::io_error;
+		size_t decode_live = bytes;
+		if (!custody_budget_add(decode_live, sizeof(std::span<const uint8_t>)))
+			return flatfile_item_repository_result::io_error;
+		const auto recovery_decoded = zone_reset_item_recovery_decode_bounded(
+			original.command, original.attachment, &context, reserve, reservation,
+			decode_live, &work.recovery_heap);
+		if (recovery_decoded != economic_accounting_error::ok)
+			return live.codec(recovery_decoded);
+		if (!live.bytes(&bytes))
+			return flatfile_item_repository_result::io_error;
+		const auto image_decoded = zone_reset_item_command_decode_bounded(
+			original.command, &image, reserve, reservation, bytes);
+		if (image_decoded != economic_accounting_error::ok)
+			return live.codec(image_decoded);
+		if (!custody_initial_image_heap(image, &work.image_heap))
+			return live.capacity();
+		if (!image.placement || image.placement->fall_selected ||
+		    room.room_vnum != image.room_vnum ||
+		    room.revision != image.expected_room_revision + 1 ||
+		    room.items.size() < image.items.size() ||
+		    room.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+		    std::any_of(room.money.begin(), room.money.end(),
+				[](int32_t value) { return value < 0; }))
+			return flatfile_item_repository_result::invalid;
+		auto &plan = work.plan;
+		auto &canonical_plan = work.canonical_plan;
+		if (!live.bytes(&bytes))
+			return live.capacity();
+		const auto compiled = zone_reset_item_accounting_compile_bounded(
+			original.command, &plan, reserve, reservation, bytes, &work.plan_heap);
+		if (compiled != economic_accounting_error::ok)
+			return live.codec(compiled);
+		if (!live.admit(economic_plan_allocation_preflight_working_bytes()))
+			return live.capacity();
+		const auto profiled = economic_plan_allocation_preflight(plan, &work.plan_profile);
+		if (profiled != economic_accounting_error::ok)
+			return live.codec(profiled);
+		if (!work.plan_profile.storage_policy_supported ||
+		    !live.admit(work.plan_profile.encode_working_bytes))
+			return live.capacity();
+		const auto encoded = economic_plan_encode(plan, &canonical_plan);
+		if (encoded != economic_accounting_error::ok)
+			return live.codec(encoded);
+		if (canonical_plan.size() != stored_compiled_plan.size() ||
+		    !std::equal(canonical_plan.begin(), canonical_plan.end(),
+				stored_compiled_plan.begin()) ||
+		    plan.item_events.size() != image.items.size())
+			return flatfile_item_repository_result::invalid;
+		auto &actual = work.actual;
+		auto &expected = work.expected;
+		expected.root_item_uid = image.items.front().object_uid;
+		expected.item_count = static_cast<uint16_t>(image.items.size());
+		expected.to_owner_revision = room.revision;
+		expected.max_item_revision = 1;
+		auto &canonical = work.canonical;
+		auto &expected_bytes = work.expected_bytes;
+		if (!live.admit(sizeof(item_transfer_result)))
+			return live.capacity();
+		if (!item_transfer_command_decode_result(stored_typed48.data(),
+							 stored_typed48.size(), &actual) ||
+		    !item_transfer_command_encode_result(actual, &canonical) ||
+		    !item_transfer_command_encode_result(expected, &expected_bytes) ||
+		    canonical != expected_bytes ||
+		    !std::equal(canonical.begin(), canonical.end(), stored_typed48.begin()))
+			return flatfile_item_repository_result::invalid;
+		if (context.receipt_present)
+		{
+			const auto &r = context.receipt;
+			if ((r.outcome != critical_apply_outcome::applied &&
+			     r.outcome != critical_apply_outcome::already_applied) ||
+			    r.operation_id.bytes != original.command.operation_id.bytes ||
+			    r.durable_revision != room.revision || r.error_code ||
+			    r.failure_stage != critical_failure_stage::none ||
+			    r.disposition != critical_completion_disposition::execution ||
+			    r.result_size != canonical.size() ||
+			    !std::equal(canonical.begin(), canonical.end(),
+					r.result_payload.begin()) ||
+			    !std::all_of(r.result_payload.begin() + r.result_size,
+					 r.result_payload.end(),
+					 [](uint8_t value) { return !value; }))
+				return flatfile_item_repository_result::invalid;
+		}
+		// Original world AFTER appends this complete forest, retaining detached -1
+		// slots and shifting each non-root parent index by the BEFORE room length.
+		auto &room_wire = work.room_wire;
+		if (!live.bytes(&bytes))
+			return live.capacity();
+		const auto room_encoded = player_item_snapshot_list_encode_bounded(
+			room.items, &room_wire, reserve, reservation, bytes);
+		if (room_encoded != player_snapshot_codec_result::ok)
+			return live.refusal(
+				room_encoded == player_snapshot_codec_result::allocation_failure ?
+					flatfile_item_repository_result::io_error :
+					flatfile_item_repository_result::invalid);
+		const size_t born_start = room.items.size() - image.items.size();
+		for (size_t i = 0; i < room.items.size(); ++i)
+		{
+			const auto &item = room.items[i];
+			if (!item.object_uid || item.equipment_slot != -1)
+				return flatfile_item_repository_result::invalid;
+			for (size_t prior = 0; prior < i; ++prior)
+				if (room.items[prior].object_uid == item.object_uid)
+					return flatfile_item_repository_result::invalid;
+		}
+		for (size_t i = 0; i < image.items.size(); ++i)
+		{
+			const auto &literal = image.items[i];
+			const auto &observed = room.items[born_start + i];
+			const int32_t parent =
+				literal.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					PLAYER_SNAPSHOT_NO_PARENT :
+					static_cast<int32_t>(born_start) + literal.parent_index;
+			if (literal.type < ITEM_LOWEST || literal.type > ITEM_LAST ||
+			    literal.type == ITEM_CORPSE || (literal.extra_flags & ITEM_ARTIFACT) ||
+			    observed.parent_index != parent ||
+			    !room_reset_current_literal_equal(literal, observed))
+				return flatfile_item_repository_result::invalid;
+		}
+		auto &catalog = work.catalog;
+		if (!live.bytes(&bytes))
+			return live.capacity();
+		const auto loaded = custody_initial_load_bounded(root, lock, &catalog,
+								 &work.catalog_profile, reserve,
+								 reservation, bytes,
+								 &work.catalog_heap);
+		if (loaded != flatfile_item_repository_result::ok)
+			return loaded;
+		if (!live.bytes(&bytes))
+			return live.capacity();
+		const auto validated =
+			custody_initial_valid_bounded(catalog, reserve, reservation, bytes);
+		if (validated != flatfile_item_repository_result::ok)
+			return live.refusal(validated);
+		work.selected = { item_owner_type::room, static_cast<uint64_t>(image.room_vnum),
+				  0 };
+		const auto &selected = work.selected;
+		const auto *owner = find_owner(&catalog, selected);
+		if (!owner || owner->revision != room.revision)
+			return flatfile_item_repository_result::invalid;
+		for (const auto &entry : catalog.owners)
+			if (entry.owner.type == selected.type && entry.owner.id == selected.id &&
+			    entry.owner.context_id)
+				return flatfile_item_repository_result::
+					invalid; // Includes empty crossed-context owners.
+		for (const auto &operation : catalog.operations)
+			if (operation.operation_id.bytes == original.command.operation_id.bytes ||
+			    live.born(operation.result.root_item_uid))
+				return flatfile_item_repository_result::invalid;
+		auto &observed = work.observed;
+		size_t rows = 0;
+		if (!custody_budget_product(image.items.size(),
+					    sizeof(flatfile_item_ownership_record), &rows) ||
+		    !live.admit(rows))
+			return live.capacity();
+		observed.reserve(image.items.size());
+		size_t selected_count = 0;
+		for (const auto &row : catalog.items)
+		{
+			const bool born_row = live.born(row.item_uid);
+			if ((!born_row &&
+			     (live.born(row.root_item_uid) || live.born(row.parent_item_uid))) ||
+			    (born_row && (!item_owner_identity_equal(row.owner, selected) ||
+					  row.state != item_custody_state::active)))
+				return flatfile_item_repository_result::invalid;
+			if (!item_owner_identity_equal(row.owner, selected))
+			{
+				if (row.owner.type == selected.type && row.owner.id == selected.id)
+					return flatfile_item_repository_result::invalid;
+				continue;
+			}
+			if (row.state != item_custody_state::active)
+				continue; // Preserve unrelated inactive history.
+			const auto found = std::find_if(
+				room.items.begin(), room.items.end(), [&](const auto &literal)
+				{ return literal.object_uid == row.item_uid; });
+			if (found == room.items.end() || row.vnum != found->vnum ||
+			    !row.item_revision || row.equipment_slot)
+				return flatfile_item_repository_result::invalid;
+			const size_t index = static_cast<size_t>(found - room.items.begin());
+			const uint64_t parent =
+				found->parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					room.items[static_cast<size_t>(found->parent_index)]
+						.object_uid;
+			size_t root_index = index;
+			while (room.items[root_index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				root_index =
+					static_cast<size_t>(room.items[root_index].parent_index);
+			if (row.parent_item_uid != parent ||
+			    row.root_item_uid != room.items[root_index].object_uid)
+				return flatfile_item_repository_result::invalid;
+			if (!row.coin_payload.empty())
+			{
+				if (!live.admit(sizeof(std::vector<uint8_t>)))
+					return live.capacity();
+				std::vector<uint8_t> coin;
+				if (!live.bytes(&bytes) || !custody_budget_add(bytes, sizeof(coin)))
+					return live.capacity();
+				const auto money = custody_initial_money_encode_bounded(
+					*found, false, &coin, reserve, reservation, bytes);
+				if (money != flatfile_item_repository_result::ok)
+					return live.refusal(money);
+				if (coin != row.coin_payload)
+					return flatfile_item_repository_result::invalid;
+			}
+			if (born_row)
+			{
+				const auto event = std::find_if(plan.item_events.begin(),
+								plan.item_events.end(),
+								[&](const auto &e)
+								{ return e.uid == row.item_uid; });
+				if (event == plan.item_events.end() ||
+				    row.item_revision != event->after.revision ||
+				    row.root_item_uid != event->after.root_uid ||
+				    row.parent_item_uid != event->after.parent_uid ||
+				    row.equipment_slot != event->after.equipment_slot ||
+				    !item_owner_identity_equal(row.owner, event->after.owner) ||
+				    row.state != event->after.state ||
+				    (found->type == ITEM_MONEY && row.coin_payload.empty()))
+					return flatfile_item_repository_result::invalid;
+				size_t growth = 0;
+				if (!custody_initial_vector_growth(
+					    observed.size(), observed.capacity(),
+					    sizeof(flatfile_item_ownership_record), &growth) ||
+				    !custody_budget_add(growth, row.coin_payload.size()) ||
+				    !live.admit(growth))
+					return live.capacity();
+				observed.push_back(row);
+			}
+			++selected_count;
+		}
+		if (selected_count != room.items.size() || observed.size() != image.items.size() ||
+		    !lock.matches(root))
+			return flatfile_item_repository_result::invalid;
+		size_t retained = 0;
+		if (!custody_budget_product(observed.capacity(),
+					    sizeof(flatfile_item_ownership_record), &retained))
+			return live.capacity();
+		for (const auto &row : observed)
+			if (!custody_budget_add(retained, row.coin_payload.capacity()))
+				return live.capacity();
+		output->swap(observed);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = retained;
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::invalid;
+	}
+#endif
+}

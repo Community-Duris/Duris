@@ -1324,3 +1324,208 @@ flatfile_accounting_status flatfile_accounting_lookup_bounded(
 	}
 #endif
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+// The original name codec owns these objects and exact fresh requests. Its
+// key grows 16 -> 64 while the old 16-byte allocation is still live; its
+// inline prefix then reserve() requests the final 81 characters plus NUL.
+std::string current_source_claim_name_bounded(const economic_operation_metadata &metadata,
+					      flatfile_scratch_reserve_fn reserve, void *context,
+					      size_t outer)
+{
+	require(metadata.source_event.has_value());
+	const size_t first_key = metadata.lineage.bytes.size();
+	const size_t complete_key = first_key + ECONOMIC_SOURCE_EVENT_BYTES;
+	const size_t filename_size =
+		sizeof("source-claim-") - 1 + SHA256_DIGEST_LENGTH * 2 + sizeof(".bin") - 1;
+	static_assert(sizeof("source-claim-") - 1 <= 15);
+	static_assert(sizeof("source-claim-") - 1 + SHA256_DIGEST_LENGTH * 2 + sizeof(".bin") - 1 >
+		      30);
+	size_t growth = first_key;
+	require(receipt_bounded_add(growth, complete_key), status::capacity);
+	size_t name_phase = complete_key;
+	require(receipt_bounded_add(name_phase, filename_size + 1), status::capacity);
+	size_t hash_phase = complete_key;
+	require(receipt_bounded_add(hash_phase,
+				    sizeof(std::span<const uint8_t>) + sizeof(economic_digest)),
+		status::capacity);
+	size_t working = sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) +
+			 sizeof(std::vector<uint8_t>) + sizeof(economic_digest) +
+			 sizeof(std::string);
+	require(receipt_bounded_add(
+			working,
+			std::max(
+				std::max(growth, name_phase),
+				std::max(hash_phase,
+					 sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))),
+		status::capacity);
+	receipt_bounded_admit(outer, working, reserve, context);
+	return source_claim_name(metadata);
+}
+
+struct current_source_claim_bytes_workspace
+{
+	economic_frozen_intent intent;
+	std::span<const uint8_t> intent_wire;
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> event{};
+	std::vector<uint8_t> payload;
+	explicit current_source_claim_bytes_workspace(const flatfile_accounting_record &record)
+		: intent_wire(record.command.accounting_intent)
+	{
+	}
+};
+std::vector<uint8_t> current_source_claim_bytes_bounded(const flatfile_accounting_record &record,
+							flatfile_scratch_reserve_fn reserve,
+							void *context, size_t outer)
+{
+	const size_t fixed = sizeof(current_source_claim_bytes_workspace);
+	receipt_bounded_admit(outer, fixed, reserve, context);
+	current_source_claim_bytes_workspace work(record);
+	checked(economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve, context,
+					       outer + fixed));
+	require(work.intent.admission.metadata.source_event.has_value());
+	size_t live = outer + fixed;
+	require(receipt_bounded_add(live, work.intent.admission.facts.capacity()),
+		status::capacity);
+	receipt_bounded_admit(live, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+			      reserve, context);
+	checked(economic_source_event_encode(*work.intent.admission.metadata.source_event,
+					     &work.event));
+	// Same raw()/number() sequence and original growth, admitted before each
+	// call. The raw span and old allocation survive the fresh request.
+	receipt_bounded_admit(live,
+			      work.intent.admission.metadata.lineage.bytes.size() +
+				      sizeof(std::span<const uint8_t>),
+			      reserve, context);
+	raw(work.payload, work.intent.admission.metadata.lineage.bytes);
+	size_t first_live = live;
+	require(receipt_bounded_add(first_live, work.payload.capacity()), status::capacity);
+	const size_t second_size = work.payload.size() + work.event.size();
+	receipt_bounded_admit(first_live, second_size + sizeof(std::span<const uint8_t>), reserve,
+			      context);
+	raw(work.payload, work.event);
+	size_t second_live = live;
+	require(receipt_bounded_add(second_live, work.payload.capacity()), status::capacity);
+	const size_t third_capacity = work.payload.size() * 2;
+	receipt_bounded_admit(second_live, third_capacity + sizeof(std::span<const uint8_t>),
+			      reserve, context);
+	raw(work.payload, record.command.operation_id.bytes);
+	number(work.payload, 1, 1);
+	number(work.payload, 0, 7);
+	size_t payload_live = live;
+	require(receipt_bounded_add(payload_live, work.payload.capacity()), status::capacity);
+	// Original envelope owns its payload span, result vector, exact fresh
+	// reserve and hash/raw span/digest temporaries with payload still retained.
+	size_t envelope_working = sizeof(std::span<const uint8_t>) + sizeof(std::vector<uint8_t>);
+	require(receipt_bounded_add(envelope_working, header_bytes + work.payload.size()) &&
+			receipt_bounded_add(envelope_working,
+					    sizeof(economic_digest) +
+						    sizeof(std::span<const uint8_t>)),
+		status::capacity);
+	receipt_bounded_admit(payload_live, envelope_working, reserve, context);
+	return envelope(source_claim_magic, work.payload);
+}
+
+struct current_source_claim_workspace
+{
+	economic_frozen_intent intent;
+	std::span<const uint8_t> intent_wire;
+	std::vector<uint8_t> retained, expected;
+	std::string directory, filename;
+	explicit current_source_claim_workspace(const flatfile_accounting_record &record)
+		: intent_wire(record.command.accounting_intent)
+	{
+	}
+};
+#endif
+}
+
+flatfile_accounting_status flatfile_accounting_storage::verify_source_claim_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	if (!lock.owns(root) || !reserve)
+		return status::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)record;
+	(void)context;
+	(void)outer;
+	errno = ENOTSUP;
+	return status::io_error;
+#else
+	try
+	{
+		const size_t fixed = sizeof(current_source_claim_workspace);
+		receipt_bounded_admit(outer, fixed, reserve, context);
+		current_source_claim_workspace work(record);
+		checked(economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve,
+						       context, outer + fixed));
+		if (!work.intent.admission.metadata.source_event)
+			return status::ok;
+		size_t live = outer + fixed;
+		require(receipt_bounded_add(live, work.intent.admission.facts.capacity()),
+			status::capacity);
+		work.filename = current_source_claim_name_bounded(work.intent.admission.metadata,
+								  reserve, context, live);
+		require(work.filename.capacity() != SIZE_MAX &&
+				receipt_bounded_add(live, work.filename.capacity() + 1),
+			status::capacity);
+		size_t directory_size = root.size();
+		require(receipt_bounded_add(directory_size, sizeof("/economic-evidence") - 1),
+			status::capacity);
+		size_t path_peak = live;
+		require(directory_size <= 15 ||
+				(directory_size != SIZE_MAX &&
+				 receipt_bounded_add(path_peak, directory_size + 1)),
+			status::capacity);
+		// Direct fresh length construction avoids root+suffix growth while
+		// preserving the exact original directory bytes and read ordering.
+		receipt_bounded_admit(path_peak, sizeof(std::string), reserve, context);
+		{
+			std::string directory(directory_size, '\0');
+			std::copy(root.begin(), root.end(), directory.begin());
+			std::copy_n("/economic-evidence", sizeof("/economic-evidence") - 1,
+				    directory.begin() + root.size());
+			work.directory = std::move(directory);
+		}
+		live = path_peak;
+		const auto read_result = flatfile_read_bounded(
+			work.directory, work.filename, 256, &work.retained, reserve, context, live);
+		// Same original read() helper refuses IO/invalid before the receipt
+		// result branches; budget refusal never becomes missing claim proof.
+		require(read_result == flatfile_read_result::ok ||
+				read_result == flatfile_read_result::not_found,
+			read_result == flatfile_read_result::io_error ? status::io_error :
+									status::invalid);
+		if (record.result_code)
+		{
+			require(read_result == flatfile_read_result::not_found,
+				read_result == flatfile_read_result::io_error ? status::io_error :
+				read_result == flatfile_read_result::invalid  ? status::invalid :
+										status::conflict);
+			return status::ok;
+		}
+		require(read_result == flatfile_read_result::ok,
+			read_result == flatfile_read_result::io_error ? status::io_error :
+			read_result == flatfile_read_result::invalid  ? status::invalid :
+									status::not_found);
+		require(receipt_bounded_add(live, work.retained.capacity()), status::capacity);
+		work.expected = current_source_claim_bytes_bounded(record, reserve, context, live);
+		require(work.retained == work.expected, status::conflict);
+		return status::ok;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+#endif
+}

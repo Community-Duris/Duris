@@ -489,6 +489,18 @@ class flatfile_room_reset_current_custody_storage final
 		    std::span<const uint8_t> stored_compiled_plan,
 		    const flatfile_room_item_record &actual_room,
 		    std::vector<flatfile_item_ownership_record> *output) noexcept;
+	// Prospective full CURRENT proof; caller retains original carrier, full room,
+	// span objects and old output heap in outer. Returned heap excludes inline
+	// vector. Same recovered lock; no new authority. Strong outputs on refusal.
+	static flatfile_item_repository_result
+	read_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &,
+			    const std::span<const uint8_t> &stored_typed48,
+			    const std::span<const uint8_t> &stored_compiled_plan,
+			    const flatfile_room_item_record &,
+			    std::vector<flatfile_item_ownership_record> *,
+			    flatfile_scratch_reserve_fn, void *, size_t outer_live_scratch,
+			    size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 // Passive exact-owner counter/active inventory read under the existing lock.

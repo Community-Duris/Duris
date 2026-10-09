@@ -1368,3 +1368,365 @@ unsigned int flatfile_zone_reset_item_publication_storage::observe_initial_locke
 	return flatfile_accounting_zone_reset_item_transaction::observe_initial_locked_bounded(
 		root, lock, original, reserve_scratch_peak, context, outer_live_scratch);
 }
+
+#include <initializer_list>
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct current_receipt_workspace
+{
+	original_values value;
+	flatfile_accounting_record record;
+	critical_completion core{};
+	economic_accounting_plan plan;
+	std::vector<uint8_t> encoded_plan;
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> typed{};
+	std::vector<economic_accounting_item_reference> references;
+	std::span<const economic_accounting_item_reference> reference_span;
+	zone_reset_item_retained_origin origin;
+};
+struct current_projection_workspace
+{
+	flatfile_accounting_record record;
+	critical_completion core{};
+	original_values value;
+	economic_accounting_plan plan;
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_room_item_record> rooms;
+	std::vector<flatfile_saved_world_item_record> saved;
+	flatfile_zone_reset_item_projection current;
+	std::span<const uint8_t> typed, compiled_plan;
+	flatfile_accounting_pile_state pile;
+};
+bool current_command_heap(const critical_command &command, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	if (!output ||
+	    !observation_storage_rows(bytes, command.keys.capacity(),
+				      sizeof(critical_entity_key)) ||
+	    !observation_storage_rows(bytes, command.expected_revisions.capacity(),
+				      sizeof(critical_expected_revision)) ||
+	    !observation_storage_add(bytes, command.payload.capacity()) ||
+	    !observation_storage_add(bytes, command.accounting_intent.capacity()))
+		return false;
+	*output = bytes;
+	return true;
+}
+// The full world-list decoder prospectively admitted this storage already.
+// Measure only the actual selected room transferred to the final projection,
+// retaining the complete world list in the caller's live sum until destruction.
+bool current_room_heap(const flatfile_room_item_record &room, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	if (!output ||
+	    !observation_storage_rows(bytes, room.items.capacity(), sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &item : room.items)
+	{
+		for (const std::string *text : { &item.name, &item.short_description,
+						 &item.description, &item.action_description })
+			if (text->capacity() > 15 &&
+			    (text->capacity() == SIZE_MAX ||
+			     !observation_storage_add(bytes, text->capacity() + 1)))
+				return false;
+		if (!observation_storage_rows(bytes, item.dynamic_affects.capacity(),
+					      sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !observation_storage_rows(bytes, item.extra_descriptions.capacity(),
+					      sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &extra : item.extra_descriptions)
+		{
+			for (const std::string *text : { &extra.keyword, &extra.description })
+				if (text->capacity() > 15 &&
+				    (text->capacity() == SIZE_MAX ||
+				     !observation_storage_add(bytes, text->capacity() + 1)))
+					return false;
+			if (!observation_storage_rows(bytes, extra.spell_ids.capacity(),
+						      sizeof(int32_t)))
+				return false;
+		}
+	}
+	*output = bytes;
+	return true;
+}
+#endif
+} // namespace
+
+unsigned int flatfile_accounting_zone_reset_item_transaction::verify_record_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, flatfile_accounting_record *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_heap) noexcept
+{
+	if (!reserve_scratch_peak)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)original;
+	(void)output;
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_heap;
+	return ENOTSUP;
+#else
+	if (!output || root.empty() || !lock.matches(root))
+		return EINVAL;
+	size_t live = outer_live_scratch;
+	if (!observation_storage_add(live, sizeof(current_receipt_workspace)) ||
+	    !observation_storage_add(live, sizeof(initial_observation_reservation)) ||
+	    !reserve_scratch_peak(live, context))
+		return ENOBUFS;
+	initial_observation_reservation reservation{ reserve_scratch_peak, context };
+	try
+	{
+		current_receipt_workspace work;
+		auto reserve = initial_observation_reserve;
+		void *state = &reservation;
+		size_t value_heap = 0, record_heap = 0, plan_heap = 0;
+		observation_decode_bounded(original, &work.value, reserve, state, live,
+					   &value_heap);
+		need(observation_storage_add(live, value_heap), ENOBUFS);
+		checked(flatfile_accounting_lookup_bounded(root, lock, original.command,
+							   &work.record, reserve, state, live,
+							   &record_heap));
+		need(observation_storage_add(live, record_heap), ENOBUFS);
+		observation_historical_authority_bounded(root, lock, original.command, work.value,
+							 reserve, state, live);
+		observation_command_equal_bounded(work.record.command, original.command, reserve,
+						  state, live);
+		// passive_core owns the original completion result and returned core until
+		// assignment; the retained destination core is in the named workspace.
+		size_t peak = live;
+		need(observation_storage_add(peak, 2 * sizeof(critical_apply_result) +
+							   2 * sizeof(critical_completion)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		work.core = passive_core(work.record);
+		observation_verify_plan_bounded(original.command, work.value, &work.plan, reserve,
+						state, live, &plan_heap);
+		need(observation_storage_add(live, plan_heap), ENOBUFS);
+		observation_plan_encode_bounded(work.plan, &work.encoded_plan, reserve, state,
+						live);
+		need(observation_storage_add(live, work.encoded_plan.capacity()), ENOBUFS);
+		peak = live;
+		need(observation_storage_add(peak, 2 * sizeof(item_transfer_result)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		need(item_transfer_command_encode_result(expected_result(work.value.image),
+							 &work.typed) &&
+		     work.encoded_plan == work.record.plan &&
+		     std::equal(work.typed.begin(), work.typed.end(), work.record.result.begin()) &&
+		     work.record.durable_revision == work.value.image.expected_room_revision + 1);
+		checked(flatfile_accounting_storage::verify_source_claim_bounded(
+			root, lock, work.record, reserve, state, live));
+		// Fresh exact reserve and original reference validation/order. Admit the
+		// backing array and the actual per-event temporary before either exists.
+		peak = live;
+		need(observation_storage_rows(peak, work.plan.item_events.size(),
+					      sizeof(economic_accounting_item_reference)) &&
+			     observation_storage_add(peak,
+						     sizeof(economic_accounting_item_reference)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		work.references.reserve(work.plan.item_events.size());
+		for (const auto &event : work.plan.item_events)
+		{
+			need(event.event_index < UINT16_MAX, E2BIG);
+			economic_accounting_item_reference ref{};
+			ref.operation_id = original.command.operation_id;
+			ref.line_index = event.event_index;
+			ref.event_index = event.event_index;
+			ref.child_index = event.child_index;
+			ref.item_uid = event.uid;
+			ref.before_revision = event.before.revision;
+			ref.after_revision = event.after.revision;
+			ref.legacy_operation_id = original.command.operation_id;
+			ref.legacy_event_index = ref.line_index;
+			need(economic_accounting_item_reference_validate(ref));
+			work.references.push_back(ref);
+		}
+		need(observation_storage_rows(live, work.references.capacity(),
+					      sizeof(economic_accounting_item_reference)),
+		     ENOBUFS);
+		work.reference_span = work.references;
+		checked(flatfile_item_accounting_reference_verify_operation_bounded(
+			root, lock, original.command.operation_id, work.reference_span, reserve,
+			state, live));
+		checked(observation_read_origin_bounded(root, lock,
+							work.value.image.items.front().object_uid,
+							&work.origin, reserve, state, live));
+		need(work.origin.present);
+		size_t origin_heap = 0;
+		need(current_command_heap(work.origin.original, &origin_heap) &&
+			     observation_storage_add(live, origin_heap),
+		     ENOBUFS);
+		observation_command_equal_bounded(work.origin.original, work.record.command,
+						  reserve, state, live);
+		need(std::equal(work.origin.result.begin(), work.origin.result.end(),
+				work.record.result.begin()));
+		if (work.value.context.receipt_present)
+			need(receipt_core_equal(work.value.context.receipt, work.core));
+		need(lock.matches(root), EINVAL);
+		need(!reservation.rejected, ENOBUFS);
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_accounting_record>);
+		*output = std::move(work.record);
+		if (retained_output_heap)
+			*retained_output_heap = record_heap;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return reservation.rejected ? ENOBUFS : error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+#endif
+}
+
+unsigned int flatfile_accounting_zone_reset_item_transaction::read_current_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	flatfile_zone_reset_item_projection *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_heap) noexcept
+{
+	if (!reserve_scratch_peak)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)original;
+	(void)receipt;
+	(void)output;
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_heap;
+	return ENOTSUP;
+#else
+	if (!output || !lock.matches(root))
+		return EINVAL;
+	size_t live = outer_live_scratch;
+	if (!observation_storage_add(live, sizeof(current_projection_workspace)) ||
+	    !observation_storage_add(live, sizeof(initial_observation_reservation)) ||
+	    !reserve_scratch_peak(live, context))
+		return ENOBUFS;
+	initial_observation_reservation reservation{ reserve_scratch_peak, context };
+	try
+	{
+		current_projection_workspace work;
+		auto reserve = initial_observation_reserve;
+		void *state = &reservation;
+		size_t record_heap = 0, value_heap = 0, plan_heap = 0, world_heap = 0,
+		       custody_heap = 0;
+		checked(verify_record_locked_bounded(root, lock, original, &work.record, reserve,
+						     state, live, &record_heap));
+		need(observation_storage_add(live, record_heap), ENOBUFS);
+		size_t peak = live;
+		need(observation_storage_add(peak, 2 * sizeof(critical_apply_result) +
+							   2 * sizeof(critical_completion)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		work.core = passive_core(work.record);
+		need(receipt_core_equal(receipt, work.core), EEXIST);
+		// Preserve the original repeated decode and plan proof after receipt proof.
+		observation_decode_bounded(original, &work.value, reserve, state, live,
+					   &value_heap);
+		need(observation_storage_add(live, value_heap), ENOBUFS);
+		observation_current_authority_bounded(root, lock, work.value, reserve, state, live);
+		observation_verify_plan_bounded(original.command, work.value, &work.plan, reserve,
+						state, live, &plan_heap);
+		need(observation_storage_add(live, plan_heap), ENOBUFS);
+		checked(flatfile_world_item_recovery_list_all_locked_bounded(
+			root, lock, &work.corpses, &work.rooms, &work.saved, reserve, state, live,
+			&world_heap));
+		need(observation_storage_add(live, world_heap), ENOBUFS);
+		size_t selected = 0;
+		while (selected < work.rooms.size() &&
+		       work.rooms[selected].room_vnum != work.value.image.room_vnum)
+			++selected;
+		need(selected < work.rooms.size() &&
+			     work.rooms[selected].revision ==
+				     work.value.image.expected_room_revision + 1,
+		     ESTALE);
+		work.typed = work.record.result;
+		work.compiled_plan = work.record.plan;
+		checked(flatfile_room_reset_current_custody_storage::read_locked_bounded(
+			root, lock, original, work.typed, work.compiled_plan, work.rooms[selected],
+			&work.current.custody, reserve, state, live, &custody_heap));
+		need(observation_storage_add(live, custody_heap), ENOBUFS);
+		need(work.current.custody.size() == work.value.image.items.size(), ESTALE);
+		for (const auto &effect : work.plan.accounts)
+		{
+			if (effect.key.kind != economic_account_kind::pile)
+				continue;
+			checked(flatfile_accounting_pile_state_read_bounded(
+				root, lock, effect.key.authority_id, &work.pile, reserve, state,
+				live));
+			need(economic_account_key_equal(work.pile.account, effect.key) &&
+				     work.pile.epoch.bytes ==
+					     work.value.intent.admission.metadata.epoch.bytes &&
+				     work.pile.operation_id.bytes ==
+					     original.command.operation_id.bytes &&
+				     !work.pile.retired && work.pile.item_revision == 1 &&
+				     work.pile.balance == effect.after,
+			     ESTALE);
+		}
+		need(lock.matches(root), EINVAL);
+		// Only these small pointer initializer arrays live during the retained room
+		// measurement. The input's complete admitted world heap stays live above.
+		peak = live;
+		need(observation_storage_add(
+			     peak,
+			     6 * sizeof(const std::string *) +
+				     2 * sizeof(std::initializer_list<const std::string *>)) &&
+			     reserve(peak, state),
+		     ENOBUFS);
+		size_t room_heap = 0;
+		need(current_room_heap(work.rooms[selected], &room_heap) &&
+			     observation_storage_add(room_heap, custody_heap),
+		     ENOBUFS);
+		need(!reservation.rejected, ENOBUFS);
+		work.current.room = std::move(work.rooms[selected]);
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_zone_reset_item_projection>);
+		*output = std::move(work.current);
+		if (retained_output_heap)
+			*retained_output_heap = room_heap;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return reservation.rejected ? ENOBUFS : error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+#endif
+}
+
+unsigned int flatfile_zone_reset_item_publication_storage::read_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	flatfile_zone_reset_item_projection *output, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer_live_scratch, size_t *retained_output_heap) noexcept
+{
+	return flatfile_accounting_zone_reset_item_transaction::read_current_locked_bounded(
+		root, lock, original, receipt, output, reserve, context, outer_live_scratch,
+		retained_output_heap);
+}
