@@ -472,7 +472,7 @@ class quest_mobile_native_item_stage
 					   quest_mobile_native_item_stage *,
 					   bool (*)(size_t, void *) noexcept, void *,
 					   size_t) noexcept;
-	// Actual private bounded-cold metadata + raw heap, includes inline stage;
+	// Actual genuine flat warm/cold private metadata + raw heap, includes inline stage;
 	// excludes pooled slots/pages and reserved pointer already in registry capacity.
 	// Body leaves private allowance only at original full successful publication.
 	// Strong scalar output; original retained_bytes observation remains unchanged.
