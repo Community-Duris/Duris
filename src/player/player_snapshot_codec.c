@@ -902,6 +902,85 @@ struct live_item_encoder_scan
 		profile.canonical_encoded_bytes = encoded;
 		return true;
 	}
+	bool scan(const std::span<const player_item_snapshot> &items) noexcept
+	{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI
+		profile.fresh_decode_storage_policy_supported = true;
+		profile.canonical_encoder_storage_policy_supported = true;
+		profile.canonical_encoder_object_bytes = sizeof(encoder);
+		profile.item_codec_decoder_object_bytes = sizeof(decoder);
+#endif
+		if (!count(items.size(), sizeof(player_item_snapshot), profile.item_count, true))
+			return false;
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const auto &row = items[index];
+			// Same original parent-before-child/depth rule, without its temporary
+			// depth vector. No UID/relationship authority is granted by this scan.
+			size_t depth = 1, ancestor = index;
+			while (true)
+			{
+				const int32_t parent = items[ancestor].parent_index;
+				if (parent < PLAYER_SNAPSHOT_NO_PARENT ||
+				    parent >= static_cast<int32_t>(ancestor) ||
+				    depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+				{
+					result = player_snapshot_codec_result::invalid_value;
+					return false;
+				}
+				if (parent == PLAYER_SNAPSHOT_NO_PARENT)
+					break;
+				ancestor = static_cast<size_t>(parent);
+				++depth;
+			}
+			if (!numbers(sizeof(int32_t) + sizeof(int16_t) + sizeof(uint64_t) +
+				     sizeof(int64_t) + sizeof(int32_t) + sizeof(int8_t) +
+				     sizeof(uint8_t)) ||
+			    !string(row.name) || !string(row.short_description) ||
+			    !string(row.description) || !string(row.action_description) ||
+			    !numbers(row.values.size() * sizeof(int32_t) +
+				     row.timers.size() * sizeof(int64_t) + 5 * sizeof(uint32_t) +
+				     sizeof(int32_t) + sizeof(int8_t) + sizeof(int32_t) +
+				     2 * sizeof(int16_t) +
+				     row.bitvectors.size() * sizeof(uint64_t)))
+				return false;
+			for (const auto &affect : row.affects)
+				if (!numbers(affect.size() * sizeof(int16_t)))
+					return false;
+			if (!count(row.dynamic_affects.size(),
+				   sizeof(player_item_dynamic_affect_snapshot),
+				   profile.dynamic_affect_count) ||
+			    !numbers(row.dynamic_affects.size() *
+				     (2 * sizeof(int16_t) + sizeof(uint64_t))) ||
+			    !count(row.extra_descriptions.size(),
+				   sizeof(player_item_extra_description_snapshot),
+				   profile.extra_description_count))
+				return false;
+			for (const auto &description : row.extra_descriptions)
+				if (!string(description.keyword) ||
+				    !string(description.description) || !numbers(1) ||
+				    !count(description.spell_ids.size(), sizeof(int32_t),
+					   profile.spell_id_count) ||
+				    !numbers(description.spell_ids.size() * sizeof(int32_t)))
+					return false;
+		}
+		if (profile.fresh_decode_storage_policy_supported)
+		{
+			profile.decoded_payload_bytes = sizeof(std::vector<player_item_snapshot>);
+			if (!add(profile.decoded_payload_bytes,
+				 profile.decoded_row_storage_bytes) ||
+			    !add(profile.decoded_payload_bytes,
+				 profile.decoded_string_storage_bytes))
+				return false;
+		}
+		profile.relationship_scratch_bytes = sizeof(std::vector<size_t>);
+		if (items.size() > SIZE_MAX / sizeof(size_t) ||
+		    !add(profile.relationship_scratch_bytes, items.size() * sizeof(size_t)))
+			return false;
+		profile.canonical_encoded_bytes = encoded;
+		return true;
+	}
 };
 } // namespace
 
@@ -912,6 +991,19 @@ size_t player_item_snapshot_list_encoder_preflight_object_bytes() noexcept
 
 player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
 	const std::vector<player_item_snapshot> &items,
+	player_item_snapshot_list_allocation_profile *output) noexcept
+{
+	if (!output)
+		return player_snapshot_codec_result::invalid_value;
+	live_item_encoder_scan scan;
+	if (!scan.scan(items))
+		return scan.result;
+	*output = scan.profile;
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
+	const std::span<const player_item_snapshot> &items,
 	player_item_snapshot_list_allocation_profile *output) noexcept
 {
 	if (!output)

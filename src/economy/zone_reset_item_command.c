@@ -666,11 +666,12 @@ economic_accounting_error zone_reset_item_command_build_bounded(
 		return error::capacity;
 	work.peak = std::max(work.peak, work.phase);
 	// Empty facts produce the exact 256-byte intent. Source encoding occurs
-	// while its fresh bytes and inline source array remain live.
+	// while its fresh bytes, caller source array and encoder result remain live.
 	work.phase = base;
 	if (!room_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
 	    !room_bound_add(work.phase, ECONOMIC_INTENT_HEADER_BYTES) ||
-	    !room_bound_add(work.phase, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
+	    !room_bound_add(work.phase,
+			    2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
 		return error::capacity;
 	work.peak = std::max(work.peak, work.phase);
 	if (!reserve_scratch_peak(work.peak, context))
@@ -690,6 +691,7 @@ struct room_decode_workspace
 	economic_frozen_intent intent;
 	critical_command expected;
 	std::vector<uint8_t> actual_bytes, expected_bytes;
+	std::span<const uint8_t> payload_bytes;
 	size_t image_heap = 0, command_heap = 0, projection_wire = 0;
 	size_t binding_capacity = 0, binding_peak = 0;
 	size_t domain_capacity = 0, domain_peak = 0, expected_heap = 0;
@@ -703,8 +705,10 @@ struct room_decode_workspace
 	if (!room_bound_add(live, sizeof(economic_frozen_intent)) ||
 	    !room_bound_add(live, sizeof(economic_source_event)) ||
 	    !room_bound_add(live, economic_source_event_decode_object_bytes()) ||
+	    !room_bound_add(live, 2 * sizeof(std::span<const uint8_t>)) ||
 	    (command.accounting_intent.size() > ECONOMIC_INTENT_HEADER_BYTES &&
-	     !room_bound_add(live, command.accounting_intent.size() - ECONOMIC_INTENT_HEADER_BYTES)))
+	     !room_bound_add(live,
+			     command.accounting_intent.size() - ECONOMIC_INTENT_HEADER_BYTES)))
 		return false;
 	*out = live;
 	return true;
@@ -738,7 +742,7 @@ struct room_decode_workspace
 	if (!room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
 	    !room_bound_add(phase, sizeof(std::vector<uint8_t>)) ||
 	    !room_bound_add(phase, ECONOMIC_INTENT_HEADER_BYTES) ||
-	    !room_bound_add(phase, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
+	    !room_bound_add(phase, 2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)))
 		return false;
 	peak = std::max(peak, phase);
 	// verify_binding's binding result remains live across both hash helpers.
@@ -780,9 +784,11 @@ struct room_decode_workspace
 	return true;
 }
 
-[[maybe_unused]] error payload_decode_bounded(std::span<const uint8_t> bytes,
-	zone_reset_item_image *output, bool (*reserve)(size_t, void *) noexcept,
-	void *context, size_t outer_live, size_t *retained_heap)
+[[maybe_unused]] error payload_decode_bounded(const std::span<const uint8_t> &bytes,
+					      zone_reset_item_image *output,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer_live,
+					      size_t *retained_heap)
 {
 	if (bytes.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return error::capacity;
@@ -822,7 +828,8 @@ struct room_decode_workspace
 		return error::capacity;
 	size_t preliminary = live;
 	const size_t scan = std::max(player_item_snapshot_list_preflight_object_bytes(),
-		economic_source_event_decode_object_bytes());
+				     economic_source_event_decode_object_bytes() +
+					     sizeof(std::span<const uint8_t>));
 	if (!room_bound_add(preliminary, scan) || !reserve(preliminary, context))
 		return error::capacity;
 	zone_reset_item_image candidate;
@@ -971,8 +978,10 @@ economic_accounting_error zone_reset_item_command_decode_bounded(
 		    !reserve_scratch_peak(live, context))
 			return error::capacity;
 		room_decode_workspace work;
-		auto status = payload_decode_bounded(command.payload, &work.image,
-			reserve_scratch_peak, context, live, &work.image_heap);
+		work.payload_bytes = command.payload;
+		auto status = payload_decode_bounded(work.payload_bytes, &work.image,
+						     reserve_scratch_peak, context, live,
+						     &work.image_heap);
 		if (status != error::ok)
 			return status;
 		if (!room_bound_add(live, work.image_heap))

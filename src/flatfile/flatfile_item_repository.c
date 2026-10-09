@@ -5945,12 +5945,12 @@ bool custody_quest_wire_working(std::span<const uint8_t> bytes, size_t *working)
 	    (version < 6 && !custody_budget_add(result, string_requests)))
 		return false;
 	// Both quest DTOs/strings remain live through sequential v6 tail checks.
-	// Source decoding retains an event plus its nested ID DTO; later result
-	// decoding retains the actual transfer-result DTO. These phases do not sum.
+	// Source decoding retains its actual reader/event/nested ID/span objects;
+	// later result decoding retains the transfer-result DTO. These phases do not sum.
 	if (version == 6 &&
-	    !custody_budget_add(
-		    result, std::max(sizeof(economic_source_event) + sizeof(critical_operation_id),
-				     sizeof(item_transfer_result))))
+	    !custody_budget_add(result, std::max(economic_source_event_decode_object_bytes() +
+							 sizeof(std::span<const uint8_t>),
+						 sizeof(item_transfer_result))))
 		return false;
 	*working = result;
 	return true;
@@ -7138,4 +7138,909 @@ flatfile_item_repository_result flatfile_room_reset_current_custody_storage::rea
 	{
 		return flatfile_item_repository_result::invalid;
 	}
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+flatfile_item_repository_result custody_initial_load_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	ownership_catalog *catalog_out, flatfile_item_catalog_allocation_profile *profile_out,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !lock.matches(root) || !catalog_out || !profile_out ||
+	    !reserve_scratch_peak)
+		return flatfile_item_repository_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_item_repository_result::io_error;
+#else
+	constexpr size_t fixed =
+		sizeof(ownership_catalog) + sizeof(flatfile_item_catalog_allocation_profile);
+	constexpr size_t read_fixed = 2 * sizeof(std::string) + sizeof(std::vector<uint8_t>);
+	size_t base = outer_live_scratch, directory_size = root.size(), read_live = 0;
+	if (!custody_budget_add(base, fixed) ||
+	    !custody_budget_add(directory_size, sizeof("/domains") - 1))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	read_live = base;
+	if (!custody_budget_add(read_live, read_fixed) ||
+	    (directory_size > 15 &&
+	     (directory_size == SIZE_MAX || !custody_budget_add(read_live, directory_size + 1))) ||
+	    !reserve_scratch_peak(read_live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		ownership_catalog catalog;
+		flatfile_item_catalog_allocation_profile profile;
+		{
+			std::string directory(directory_size, '\0');
+			std::copy(root.begin(), root.end(), directory.begin());
+			std::copy_n("/domains", sizeof("/domains") - 1,
+				    directory.begin() + root.size());
+			// This existing filename fits the pinned ABI's inline string storage.
+			static_assert(sizeof("item_ownership") - 1 <= 15);
+			const std::string file_name(ownership_filename);
+			std::vector<uint8_t> bytes;
+			const auto read = flatfile_read_bounded(directory, file_name,
+								ownership_maximum_bytes, &bytes,
+								reserve_scratch_peak, context,
+								read_live);
+			if (read == flatfile_read_result::not_found)
+				return flatfile_item_repository_result::not_found;
+			if (read == flatfile_read_result::invalid)
+				return flatfile_item_repository_result::invalid;
+			if (read != flatfile_read_result::ok)
+				return flatfile_item_repository_result::io_error;
+			size_t scan_live = read_live;
+			if (!custody_budget_add(scan_live, bytes.capacity()) ||
+			    !custody_budget_add(scan_live,
+						flatfile_item_catalog_preflight_object_bytes()) ||
+			    !reserve_scratch_peak(scan_live, context))
+			{
+				errno = ENOBUFS;
+				return flatfile_item_repository_result::io_error;
+			}
+			const auto framed = flatfile_item_catalog_preflight(bytes, &profile);
+			if (framed != flatfile_item_repository_result::ok)
+				return framed;
+			if (!profile.storage_policy_supported)
+			{
+				errno = ENOTSUP;
+				return flatfile_item_repository_result::io_error;
+			}
+			size_t decode_live = read_live;
+			if (!custody_budget_add(decode_live, bytes.capacity()) ||
+			    !custody_budget_add(decode_live,
+						profile.authenticated_decode_working_bytes) ||
+			    !reserve_scratch_peak(decode_live, context))
+			{
+				errno = ENOBUFS;
+				return flatfile_item_repository_result::io_error;
+			}
+			if (!lock.matches(root))
+				return flatfile_item_repository_result::invalid;
+			const auto decoded = decode_catalog(bytes, &catalog);
+			if (decoded != flatfile_item_repository_result::ok)
+				return decoded;
+		} // File bytes and both paths die before any selected-row copy.
+		if (profile.decoded_catalog_payload_bytes < sizeof(ownership_catalog))
+			return flatfile_item_repository_result::invalid;
+		const size_t retained =
+			profile.decoded_catalog_payload_bytes - sizeof(ownership_catalog);
+		static_assert(std::is_nothrow_move_assignable_v<ownership_catalog>);
+		*catalog_out = std::move(catalog);
+		*profile_out = profile;
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = retained;
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::invalid;
+	}
+#endif
+}
+
+bool custody_initial_catalog_heap(const ownership_catalog &catalog, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	if (!output ||
+	    !custody_budget_product(catalog.owners.capacity(), sizeof(owner_state), &bytes) ||
+	    !custody_budget_product(catalog.items.capacity(),
+				    sizeof(flatfile_item_ownership_record), &rows) ||
+	    !custody_budget_add(bytes, rows) ||
+	    !custody_budget_product(catalog.operations.capacity(), sizeof(operation_state),
+				    &rows) ||
+	    !custody_budget_add(bytes, rows))
+		return false;
+	for (const auto &row : catalog.items)
+		if (!custody_budget_add(bytes, row.coin_payload.capacity()))
+			return false;
+	for (const auto &row : catalog.operations)
+		if (!custody_budget_add(bytes, row.quest_continuation.capacity()) ||
+		    !custody_budget_product(row.quest_xp_revisions.capacity(),
+					    sizeof(player_revision_t), &rows) ||
+		    !custody_budget_add(bytes, rows))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+bool custody_initial_item_copy_heap(const player_item_snapshot &item, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	const auto text = [&](const std::string &value) noexcept
+	{
+		return value.size() <= 15 ||
+		       (value.size() != SIZE_MAX && custody_budget_add(bytes, value.size() + 1));
+	};
+	if (!output || !text(item.name) || !text(item.short_description) ||
+	    !text(item.description) || !text(item.action_description) ||
+	    !custody_budget_product(item.dynamic_affects.size(),
+				    sizeof(player_item_dynamic_affect_snapshot), &rows) ||
+	    !custody_budget_add(bytes, rows) ||
+	    !custody_budget_product(item.extra_descriptions.size(),
+				    sizeof(player_item_extra_description_snapshot), &rows) ||
+	    !custody_budget_add(bytes, rows))
+		return false;
+	for (const auto &extra : item.extra_descriptions)
+		if (!text(extra.keyword) || !text(extra.description) ||
+		    !custody_budget_product(extra.spell_ids.size(), sizeof(int32_t), &rows) ||
+		    !custody_budget_add(bytes, rows))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+bool custody_initial_image_heap(const zone_reset_item_image &image, size_t *output) noexcept
+{
+	size_t bytes = 0, rows = 0;
+	if (!output ||
+	    !custody_budget_product(image.items.capacity(), sizeof(player_item_snapshot), &bytes) ||
+	    !custody_budget_product(image.recipes.capacity(),
+				    sizeof(native_mobile_birth_item_recipe), &rows) ||
+	    !custody_budget_add(bytes, rows) ||
+	    !custody_budget_product(image.coins.capacity(), sizeof(zone_reset_coin_output),
+				    &rows) ||
+	    !custody_budget_add(bytes, rows))
+		return false;
+	const auto text = [&](const std::string &value) noexcept
+	{
+		return value.capacity() <= 15 || (value.capacity() != SIZE_MAX &&
+						  custody_budget_add(bytes, value.capacity() + 1));
+	};
+	for (const auto &item : image.items)
+	{
+		if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+		    !text(item.action_description) ||
+		    !custody_budget_product(item.dynamic_affects.capacity(),
+					    sizeof(player_item_dynamic_affect_snapshot), &rows) ||
+		    !custody_budget_add(bytes, rows) ||
+		    !custody_budget_product(item.extra_descriptions.capacity(),
+					    sizeof(player_item_extra_description_snapshot),
+					    &rows) ||
+		    !custody_budget_add(bytes, rows))
+			return false;
+		for (const auto &extra : item.extra_descriptions)
+			if (!text(extra.keyword) || !text(extra.description) ||
+			    !custody_budget_product(extra.spell_ids.capacity(), sizeof(int32_t),
+						    &rows) ||
+			    !custody_budget_add(bytes, rows))
+				return false;
+	}
+	for (const auto &recipe : image.recipes)
+		if (!custody_budget_product(recipe.libraries.capacity(),
+					    sizeof(native_mobile_birth_library_recipe), &rows) ||
+		    !custody_budget_add(bytes, rows))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+// The original byte encoder grows only by scalar byte pushes and raw inserts.
+// This allocation-free mirror records the requests, including old/new buffers.
+struct custody_initial_byte_growth
+{
+	size_t size = 0, capacity = 0, peak = 0;
+	bool append(size_t count) noexcept
+	{
+		if (count > SIZE_MAX - size)
+			return false;
+		const size_t next = size + count;
+		if (next > capacity)
+		{
+			size_t fresh = size;
+			if (!custody_budget_add(fresh, std::max(size, count)))
+				return false;
+			size_t overlap = capacity;
+			if (!custody_budget_add(overlap, fresh))
+				return false;
+			peak = std::max(peak, overlap);
+			capacity = fresh;
+		}
+		size = next;
+		peak = std::max(peak, capacity);
+		return true;
+	}
+	bool number(size_t bytes) noexcept
+	{
+		while (bytes--)
+			if (!append(1))
+				return false;
+		return true;
+	}
+};
+
+bool custody_initial_catalog_encoder_working(const ownership_catalog &catalog,
+					     size_t *output) noexcept
+{
+	if (!output || catalog.owners.size() > ownership_maximum_entries ||
+	    catalog.items.size() > ownership_maximum_entries ||
+	    catalog.operations.size() > ownership_maximum_operations)
+		return false;
+	custody_initial_byte_growth payload, file;
+	if (!payload.number(3 * sizeof(uint32_t)))
+		return false;
+	for (const auto &owner : catalog.owners)
+	{
+		(void)owner;
+		if (!payload.number(sizeof(uint8_t) + 3 * sizeof(uint64_t)))
+			return false;
+	}
+	for (const auto &row : catalog.items)
+		if (row.coin_payload.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES ||
+		    !payload.number(6 * sizeof(uint64_t) + sizeof(int32_t) + 2 * sizeof(uint8_t) +
+				    sizeof(uint32_t)) ||
+		    (!row.coin_payload.empty() && !payload.append(row.coin_payload.size())) ||
+		    !payload.number(sizeof(uint16_t)))
+			return false;
+	for (const auto &row : catalog.operations)
+	{
+		size_t revisions = 0;
+		if (!custody_budget_product(row.quest_xp_revisions.size(),
+					    sizeof(player_revision_t), &revisions) ||
+		    !payload.append(row.operation_id.bytes.size()) ||
+		    !payload.append(row.command_digest.size()) ||
+		    !payload.number(sizeof(uint32_t) + 5 * sizeof(uint64_t) + sizeof(uint16_t) +
+				    2 * sizeof(uint8_t)) ||
+		    (row.coin_operation && !payload.append(row.coin_result.size())) ||
+		    !payload.number(sizeof(uint32_t)) ||
+		    (!row.quest_continuation.empty() &&
+		     !payload.append(row.quest_continuation.size())) ||
+		    !payload.number(sizeof(uint8_t) + sizeof(uint64_t)) ||
+		    !payload.number(revisions) ||
+		    !payload.number(sizeof(uint64_t) + sizeof(uint32_t) + sizeof(int32_t) +
+				    sizeof(uint8_t)))
+			return false;
+	}
+	if (payload.size > ownership_maximum_bytes || !file.append(ownership_magic.size()) ||
+	    !file.number(2 * sizeof(uint32_t) + sizeof(uint64_t)) ||
+	    !file.append(SHA256_DIGEST_LENGTH) || !file.append(payload.size) ||
+	    file.size > ownership_maximum_bytes)
+		return false;
+	size_t first = sizeof(encoder), second = 2 * sizeof(encoder) + SHA256_DIGEST_LENGTH;
+	if (!custody_budget_add(first, payload.peak) ||
+	    !custody_budget_add(second, payload.capacity) || !custody_budget_add(second, file.peak))
+		return false;
+	*output = std::max(first, second);
+	return true;
+}
+
+// Caller admits one item profile, its wire-preflight footprint, the quest
+// scanner and the prime policy before this allocation-free scan. Original
+// valid_catalog still supplies all semantic, topology and uniqueness checks.
+bool custody_initial_catalog_validation_working(const ownership_catalog &catalog,
+						size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t coins = 0;
+	for (const auto &row : catalog.items)
+		if (!row.coin_payload.empty())
+		{
+			player_item_snapshot_list_allocation_profile profile;
+			if (player_item_snapshot_list_preflight(
+				    row.coin_payload.data(), row.coin_payload.size(), &profile) !=
+				    player_snapshot_codec_result::ok ||
+			    !profile.fresh_decode_storage_policy_supported)
+				return false;
+			size_t working = sizeof(std::vector<player_item_snapshot>);
+			if (!custody_budget_add(working, profile.decoded_payload_bytes) ||
+			    !custody_budget_add(working, profile.relationship_scratch_bytes) ||
+			    !custody_budget_add(working, profile.item_codec_decoder_object_bytes))
+				return false;
+			coins = std::max(coins, working);
+		}
+	using key = std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES>;
+	using hash_set = std::unordered_set<key, operation_id_hash>;
+	constexpr size_t node_width = sizeof(
+		std::__detail::_Hash_node<key, std::__cache_default<key, operation_id_hash>::value>);
+	size_t buckets = 0, nodes = 0;
+	if (!custody_reserved_set_requests<key, operation_id_hash>(catalog.operations.size(),
+								   &buckets, &nodes))
+		return false;
+	size_t quest_peak = nodes;
+	for (size_t index = 0; index < catalog.operations.size(); ++index)
+		if (!catalog.operations[index].quest_continuation.empty())
+		{
+			size_t working = 0, previous_nodes = 0;
+			if (!custody_quest_wire_working(
+				    catalog.operations[index].quest_continuation, &working) ||
+			    !custody_budget_product(index, node_width, &previous_nodes) ||
+			    !custody_budget_add(working, previous_nodes))
+				return false;
+			quest_peak = std::max(quest_peak, working);
+		}
+	if (!custody_budget_add(quest_peak, sizeof(hash_set)) ||
+	    !custody_budget_add(quest_peak, buckets))
+		return false;
+	*output = std::max(coins, quest_peak);
+	return true;
+}
+
+flatfile_item_repository_result
+custody_initial_money_encode_bounded(const player_item_snapshot &item, bool reset_slot,
+				     std::vector<uint8_t> *output,
+				     flatfile_scratch_reserve_fn reserve_scratch_peak,
+				     void *context, size_t outer_live_scratch) noexcept
+{
+	if (!output || !reserve_scratch_peak)
+		return flatfile_item_repository_result::invalid;
+	size_t copy_heap = 0, base = outer_live_scratch;
+	if (!custody_initial_item_copy_heap(item, &copy_heap) ||
+	    !custody_budget_add(base, sizeof(player_item_snapshot)) ||
+	    !custody_budget_add(base, copy_heap) || !reserve_scratch_peak(base, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		auto literal = item;
+		literal.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		if (reset_slot)
+			literal.equipment_slot = -1;
+		// Match the original short-circuit before constructing its singleton.
+		if (!reset_slot && literal.type != ITEM_MONEY)
+			return flatfile_item_repository_result::invalid;
+		size_t scan_live = base;
+		if (!custody_budget_add(scan_live, sizeof(std::span<const player_item_snapshot>)) ||
+		    !custody_budget_add(scan_live,
+					sizeof(player_item_snapshot_list_allocation_profile)) ||
+		    !custody_budget_add(
+			    scan_live,
+			    player_item_snapshot_list_encoder_preflight_object_bytes()) ||
+		    !reserve_scratch_peak(scan_live, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		const std::span<const player_item_snapshot> singleton(&literal, 1);
+		player_item_snapshot_list_allocation_profile profile;
+		if (player_item_snapshot_list_encoder_preflight(singleton, &profile) !=
+		    player_snapshot_codec_result::ok)
+			return flatfile_item_repository_result::invalid;
+		size_t codec_working = 0, live = base, copies = 0;
+		// Initializer-list element and fresh singleton-vector row both copy
+		// the literal. All three nested heaps coexist during original encode.
+		if (!player_item_snapshot_list_encoder_working_bytes(profile, &codec_working) ||
+		    !custody_budget_add(copy_heap, sizeof(player_item_snapshot)) ||
+		    !custody_budget_product(2, copy_heap, &copies) ||
+		    !custody_budget_add(live, sizeof(singleton) + sizeof(profile)) ||
+		    !custody_budget_add(live, sizeof(std::vector<player_item_snapshot>)) ||
+		    !custody_budget_add(live, copies) || !custody_budget_add(live, codec_working) ||
+		    !reserve_scratch_peak(live, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		return player_item_snapshot_list_encode({ literal }, output) ==
+				       player_snapshot_codec_result::ok ?
+			       flatfile_item_repository_result::ok :
+			       flatfile_item_repository_result::invalid;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::invalid;
+	}
+}
+
+flatfile_item_repository_result custody_initial_valid_bounded(const ownership_catalog &catalog,
+							      flatfile_scratch_reserve_fn reserve,
+							      void *context, size_t outer) noexcept
+{
+	const size_t scan = std::max(sizeof(player_item_snapshot_list_allocation_profile) +
+					     player_item_snapshot_list_preflight_object_bytes(),
+				     std::max(sizeof(decoder) + sizeof(std::span<const uint8_t>),
+					      sizeof(std::__detail::_Prime_rehash_policy)));
+	size_t peak = outer, working = 0;
+	if (!custody_budget_add(peak, scan) || !reserve(peak, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	if (!custody_initial_catalog_validation_working(catalog, &working))
+		return flatfile_item_repository_result::invalid;
+	peak = outer;
+	if (!custody_budget_add(peak, working) || !reserve(peak, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	return valid_catalog(catalog) ? flatfile_item_repository_result::ok :
+					flatfile_item_repository_result::invalid;
+}
+
+flatfile_item_repository_result
+custody_initial_command_equal_bounded(const critical_command &left, const critical_command &right,
+				      flatfile_scratch_reserve_fn reserve, void *context,
+				      size_t outer) noexcept
+{
+	size_t base = outer;
+	if (!custody_budget_add(base, 2 * sizeof(std::vector<uint8_t>)) || !reserve(base, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	std::vector<uint8_t> a, b;
+	size_t working = 0, prospective = base;
+	if (critical_command_encoder_working_bytes(left, &working) !=
+	    critical_command_codec_result::ok)
+		return flatfile_item_repository_result::invalid;
+	if (!custody_budget_add(prospective, working))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	const auto first = critical_command_encode_bounded(left, &a, reserve, context, base);
+	if (first != critical_command_codec_result::ok)
+		return flatfile_item_repository_result::invalid;
+	if (!custody_budget_add(base, a.capacity()))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	if (critical_command_encoder_working_bytes(right, &working) !=
+	    critical_command_codec_result::ok)
+		return flatfile_item_repository_result::invalid;
+	prospective = base;
+	if (!custody_budget_add(prospective, working))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	const auto second = critical_command_encode_bounded(right, &b, reserve, context, base);
+	if (second != critical_command_codec_result::ok)
+		return flatfile_item_repository_result::invalid;
+	return a == b ? flatfile_item_repository_result::ok :
+			flatfile_item_repository_result::invalid;
+}
+
+bool custody_initial_vector_growth(size_t size, size_t capacity, size_t width,
+				   size_t *extra) noexcept
+{
+	if (!extra || size == SIZE_MAX)
+		return false;
+	if (size < capacity)
+	{
+		*extra = 0;
+		return true;
+	}
+	size_t fresh = size;
+	return custody_budget_add(fresh, std::max(size, size_t{ 1 })) &&
+	       custody_budget_product(fresh, width, extra);
+}
+
+struct custody_initial_stage_reservation
+{
+	flatfile_scratch_reserve_fn reserve = nullptr;
+	void *context = nullptr;
+	bool rejected = false;
+};
+bool custody_initial_stage_reserve(size_t bytes, void *context) noexcept
+{
+	auto *state = static_cast<custody_initial_stage_reservation *>(context);
+	const bool admitted = state->reserve(bytes, state->context);
+	state->rejected = state->rejected || !admitted;
+	return admitted;
+}
+struct custody_initial_stage_workspace
+{
+	custody_initial_stage_reservation reservation;
+	zone_reset_item_image image;
+	ownership_catalog catalog;
+	flatfile_item_catalog_allocation_profile profile;
+	std::unordered_set<uint64_t> born, before_uids;
+	flatfile_initial_room_reset_custody_stage stage;
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical_result{};
+};
+#endif
+} // namespace
+
+flatfile_item_repository_result flatfile_initial_room_reset_custody_storage::prepare_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	const flatfile_initial_room_reset_world_stage &world,
+	flatfile_initial_room_reset_custody_stage *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context, size_t outer_live_scratch,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !output || !reserve_scratch_peak || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)world;
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_item_repository_result::io_error;
+#else
+	size_t fixed = outer_live_scratch;
+	if (!custody_budget_add(fixed, sizeof(custody_initial_stage_workspace)) ||
+	    !custody_budget_add(fixed, sizeof(item_owner_identity)) ||
+	    !reserve_scratch_peak(fixed, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		custody_initial_stage_workspace work;
+		work.reservation.reserve = reserve_scratch_peak;
+		work.reservation.context = context;
+		auto &image = work.image;
+		auto &catalog = work.catalog;
+		auto &stage = work.stage;
+		auto &born = work.born;
+		auto &before_uids = work.before_uids;
+		auto reserve = custody_initial_stage_reserve;
+		void *reservation = &work.reservation;
+		size_t image_heap = 0, catalog_heap = 0, set_heap = 0, plan_heap = 0;
+		const auto live_bytes = [&](size_t *value) noexcept
+		{
+			*value = fixed;
+			return custody_budget_add(*value, image_heap) &&
+			       custody_budget_add(*value, catalog_heap) &&
+			       custody_budget_add(*value, set_heap) &&
+			       custody_budget_add(*value, plan_heap);
+		};
+		const auto admit = [&](size_t extra) noexcept
+		{
+			size_t live = 0;
+			if (!live_bytes(&live) || !custody_budget_add(live, extra) ||
+			    !reserve(live, reservation))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			return true;
+		};
+		const auto refusal = [&](flatfile_item_repository_result result) noexcept
+		{
+			if (work.reservation.rejected)
+			{
+				errno = ENOBUFS;
+				return flatfile_item_repository_result::io_error;
+			}
+			return result;
+		};
+		errno = 0;
+		if (!zone_reset_item_recovery_initial_bounded(original, reserve, reservation,
+							      fixed))
+			return refusal(errno == ENOMEM || errno == ENOTSUP ?
+					       flatfile_item_repository_result::io_error :
+					       flatfile_item_repository_result::invalid);
+		const auto decoded = zone_reset_item_command_decode_bounded(
+			original.command, &image, reserve, reservation, fixed);
+		if (decoded != economic_accounting_error::ok)
+			return refusal(decoded == economic_accounting_error::capacity ?
+					       flatfile_item_repository_result::io_error :
+					       flatfile_item_repository_result::invalid);
+		if (!custody_initial_image_heap(image, &image_heap))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		size_t live = 0;
+		if (!live_bytes(&live))
+			return flatfile_item_repository_result::io_error;
+		const auto equal = custody_initial_command_equal_bounded(
+			world.original_command, original.command, reserve, reservation, live);
+		if (equal != flatfile_item_repository_result::ok)
+			return refusal(equal);
+		if (world.room_revision_before != image.expected_room_revision ||
+		    world.room_revision_before == UINT64_MAX ||
+		    world.room_revision_after != world.room_revision_before + 1 ||
+		    (!world.room_before_present &&
+		     (!world.room_before_items.empty() || world.room_revision_before)) ||
+		    (world.room_before_present && !world.room_revision_before) ||
+		    !image.placement || image.placement->fall_selected)
+			return flatfile_item_repository_result::invalid;
+		if (!live_bytes(&live))
+			return flatfile_item_repository_result::io_error;
+		const auto loaded = custody_initial_load_bounded(root, lock, &catalog,
+								 &work.profile, reserve,
+								 reservation, live, &catalog_heap);
+		if (loaded != flatfile_item_repository_result::ok &&
+		    loaded != flatfile_item_repository_result::not_found)
+			return loaded;
+		if (!live_bytes(&live))
+			return flatfile_item_repository_result::io_error;
+		const auto validated =
+			custody_initial_valid_bounded(catalog, reserve, reservation, live);
+		if (validated != flatfile_item_repository_result::ok)
+			return refusal(validated);
+		if (catalog.revision == UINT64_MAX ||
+		    catalog.items.size() > ownership_maximum_entries - image.items.size())
+			return flatfile_item_repository_result::invalid;
+		const item_owner_identity selected{ item_owner_type::room,
+						    static_cast<uint64_t>(image.room_vnum), 0 };
+		const auto *before_owner = find_owner(&catalog, selected);
+		const uint64_t before_revision = before_owner ? before_owner->revision : 0;
+		if (before_revision != world.room_revision_before)
+			return flatfile_item_repository_result::invalid;
+		for (const auto &owner : catalog.owners)
+			if (owner.owner.type == selected.type && owner.owner.id == selected.id &&
+			    owner.owner.context_id)
+				return flatfile_item_repository_result::invalid;
+		size_t born_buckets = 0, born_nodes = 0, before_buckets = 0, before_nodes = 0;
+		if (!admit(sizeof(std::__detail::_Prime_rehash_policy)) ||
+		    !custody_reserved_set_requests<uint64_t, std::hash<uint64_t>>(
+			    image.items.size(), &born_buckets, &born_nodes) ||
+		    !custody_reserved_set_requests<uint64_t, std::hash<uint64_t>>(
+			    world.room_before_items.size(), &before_buckets, &before_nodes))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		size_t all_sets = born_buckets;
+		if (!custody_budget_add(all_sets, born_nodes) ||
+		    !custody_budget_add(all_sets, before_buckets) ||
+		    !custody_budget_add(all_sets, before_nodes) || !admit(all_sets))
+			return flatfile_item_repository_result::io_error;
+		born.reserve(image.items.size());
+		before_uids.reserve(world.room_before_items.size());
+		set_heap = all_sets;
+		for (const auto &item : image.items)
+			if (item.type < ITEM_LOWEST || item.type > ITEM_LAST ||
+			    item.type == ITEM_CORPSE || (item.extra_flags & ITEM_ARTIFACT) ||
+			    !born.insert(item.object_uid).second)
+				return flatfile_item_repository_result::invalid;
+		for (const auto &item : world.room_before_items)
+			if (!before_uids.insert(item.object_uid).second ||
+			    born.contains(item.object_uid))
+				return flatfile_item_repository_result::invalid;
+		size_t observed = 0;
+		for (const auto &row : catalog.items)
+		{
+			// All histories and foreign root/parent claims exclude reuse.
+			if (born.contains(row.item_uid) || born.contains(row.root_item_uid) ||
+			    born.contains(row.parent_item_uid))
+				return flatfile_item_repository_result::invalid;
+			if (!item_owner_identity_equal(row.owner, selected))
+			{
+				if ((row.owner.type == selected.type &&
+				     row.owner.id == selected.id) ||
+				    before_uids.contains(row.item_uid) ||
+				    before_uids.contains(row.root_item_uid) ||
+				    before_uids.contains(row.parent_item_uid))
+					return flatfile_item_repository_result::invalid;
+				continue;
+			}
+			if (row.state != item_custody_state::active)
+				continue; // Preserve unrelated same-room inactive history.
+			const auto found = std::find_if(
+				world.room_before_items.begin(), world.room_before_items.end(),
+				[&](const auto &item) { return item.object_uid == row.item_uid; });
+			if (found == world.room_before_items.end() || row.vnum != found->vnum ||
+			    !row.item_revision || row.equipment_slot)
+				return flatfile_item_repository_result::invalid;
+			const size_t index =
+				static_cast<size_t>(found - world.room_before_items.begin());
+			if (found->parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    (found->parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+			     static_cast<size_t>(found->parent_index) >= index))
+				return flatfile_item_repository_result::invalid;
+			const uint64_t parent =
+				found->parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					world.room_before_items[static_cast<size_t>(
+									found->parent_index)]
+						.object_uid;
+			size_t root_index = index;
+			for (size_t depth = 0; world.room_before_items[root_index].parent_index !=
+					       PLAYER_SNAPSHOT_NO_PARENT;
+			     ++depth)
+			{
+				const int32_t p = world.room_before_items[root_index].parent_index;
+				if (depth >= world.room_before_items.size() || p < 0 ||
+				    static_cast<size_t>(p) >= root_index)
+					return flatfile_item_repository_result::invalid;
+				root_index = static_cast<size_t>(p);
+			}
+			if (row.parent_item_uid != parent ||
+			    row.root_item_uid != world.room_before_items[root_index].object_uid)
+				return flatfile_item_repository_result::invalid;
+			if (!row.coin_payload.empty())
+			{
+				if (!admit(sizeof(std::vector<uint8_t>)) || !live_bytes(&live) ||
+				    !custody_budget_add(live, sizeof(std::vector<uint8_t>)))
+					return flatfile_item_repository_result::io_error;
+				std::vector<uint8_t> canonical;
+				const auto money = custody_initial_money_encode_bounded(
+					*found, false, &canonical, reserve, reservation, live);
+				if (money != flatfile_item_repository_result::ok)
+					return refusal(money);
+				if (canonical != row.coin_payload)
+					return flatfile_item_repository_result::invalid;
+			}
+			++observed;
+		}
+		if (observed != world.room_before_items.size())
+			return flatfile_item_repository_result::invalid;
+		for (const auto &operation : catalog.operations)
+			if (operation.operation_id.bytes == original.command.operation_id.bytes ||
+			    born.contains(operation.result.root_item_uid))
+				return flatfile_item_repository_result::invalid;
+		if (!live_bytes(&live))
+			return flatfile_item_repository_result::io_error;
+		const auto compiled = zone_reset_item_accounting_compile_bounded(
+			original.command, &stage.plan, reserve, reservation, live, &plan_heap);
+		if (compiled != economic_accounting_error::ok)
+			return refusal(compiled == economic_accounting_error::capacity ?
+					       flatfile_item_repository_result::io_error :
+					       flatfile_item_repository_result::invalid);
+		if (stage.plan.item_events.size() != image.items.size())
+			return flatfile_item_repository_result::invalid;
+		stage.catalog_before_present = loaded == flatfile_item_repository_result::ok;
+		stage.catalog_revision_before = catalog.revision;
+		stage.catalog_revision_after = catalog.revision + 1;
+		stage.owner_before_present = before_owner != nullptr;
+		stage.owner_revision_before = before_revision;
+		stage.owner_revision_after = world.room_revision_after;
+		if (!before_owner)
+		{
+			size_t growth = 0;
+			if (!custody_initial_vector_growth(catalog.owners.size(),
+							   catalog.owners.capacity(),
+							   sizeof(owner_state), &growth) ||
+			    !custody_budget_add(growth, sizeof(owner_state)) || !admit(growth))
+				return flatfile_item_repository_result::io_error;
+		}
+		auto *owner_after = ensure_owner(&catalog, selected);
+		if (!owner_after)
+			return flatfile_item_repository_result::io_error;
+		owner_after->revision = stage.owner_revision_after;
+		if (!custody_initial_catalog_heap(catalog, &catalog_heap))
+			return flatfile_item_repository_result::io_error;
+		for (size_t index = 0; index < image.items.size(); ++index)
+		{
+			const auto &item = image.items[index];
+			const auto &event = stage.plan.item_events[index];
+			if (event.uid != item.object_uid ||
+			    event.before.state != item_custody_state::absent ||
+			    event.after.state != item_custody_state::active ||
+			    event.after.revision != 1 ||
+			    !item_owner_identity_equal(event.after.owner, selected) ||
+			    event.after.equipment_slot ||
+			    event.after.root_uid != image.items.front().object_uid ||
+			    event.after.parent_uid !=
+				    (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					     0 :
+					     image.items[static_cast<size_t>(item.parent_index)]
+						     .object_uid))
+				return flatfile_item_repository_result::invalid;
+			if (!admit(sizeof(flatfile_item_ownership_record)))
+				return flatfile_item_repository_result::io_error;
+			flatfile_item_ownership_record row{ event.uid,
+							    event.after.root_uid,
+							    event.after.parent_uid,
+							    selected,
+							    1,
+							    item.vnum,
+							    item_custody_state::active,
+							    {},
+							    0 };
+			if (item.type == ITEM_MONEY)
+			{
+				if (!live_bytes(&live) ||
+				    !custody_budget_add(live,
+							sizeof(flatfile_item_ownership_record)))
+					return flatfile_item_repository_result::io_error;
+				const auto money = custody_initial_money_encode_bounded(
+					item, true, &row.coin_payload, reserve, reservation, live);
+				if (money != flatfile_item_repository_result::ok)
+					return refusal(money);
+			}
+			size_t growth = 0;
+			if (!custody_initial_vector_growth(
+				    catalog.items.size(), catalog.items.capacity(),
+				    sizeof(flatfile_item_ownership_record), &growth) ||
+			    !custody_budget_add(growth, sizeof(flatfile_item_ownership_record)) ||
+			    !custody_budget_add(growth, row.coin_payload.capacity()) ||
+			    !admit(growth))
+				return flatfile_item_repository_result::io_error;
+			static_assert(
+				std::is_nothrow_move_constructible_v<flatfile_item_ownership_record>);
+			catalog.items.push_back(std::move(row));
+			if (!custody_initial_catalog_heap(catalog, &catalog_heap))
+				return flatfile_item_repository_result::io_error;
+		}
+		std::sort(catalog.items.begin(), catalog.items.end(), item_less);
+		stage.result.root_item_uid = image.items.front().object_uid;
+		stage.result.item_count = static_cast<uint16_t>(image.items.size());
+		stage.result.to_owner_revision = stage.owner_revision_after;
+		stage.result.max_item_revision = 1;
+		if (!item_transfer_command_encode_result(stage.result, &work.canonical_result))
+			return flatfile_item_repository_result::invalid;
+		if (!live_bytes(&live))
+			return flatfile_item_repository_result::io_error;
+		const auto final_valid =
+			custody_initial_valid_bounded(catalog, reserve, reservation, live);
+		if (final_valid != flatfile_item_repository_result::ok)
+			return refusal(final_valid);
+		stage.operation.store = flatfile_authority_store::domains;
+		stage.operation.kind = flatfile_authority_operation_kind::write;
+		stage.operation.filename = ownership_filename;
+		size_t encode_working = 0;
+		if (!admit(2 * sizeof(custody_initial_byte_growth)) ||
+		    !custody_initial_catalog_encoder_working(catalog, &encode_working) ||
+		    !admit(encode_working))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		if (!encode_catalog(catalog, stage.catalog_revision_after,
+				    &stage.operation.bytes) ||
+		    !lock.matches(root))
+			return flatfile_item_repository_result::invalid;
+		// The real ROOM root owns accounting/source/item references, every
+		// actual pile head and the typed48 receipt in the same atomic bundle.
+		// Do not fabricate a generic item-transfer operation history entry.
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_initial_room_reset_custody_stage>);
+		size_t retained = plan_heap;
+		if (!custody_budget_add(retained, stage.operation.bytes.capacity()) ||
+		    (stage.operation.filename.capacity() > 15 &&
+		     !custody_budget_add(retained, stage.operation.filename.capacity() + 1)))
+			return flatfile_item_repository_result::io_error;
+		*output = std::move(stage);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = retained;
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::invalid;
+	}
+#endif
 }

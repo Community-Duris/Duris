@@ -276,3 +276,219 @@ economic_accounting_error economic_intent_plan_metadata(const critical_command &
 	*metadata = result;
 	return economic_accounting_error::ok;
 }
+
+namespace
+{
+[[maybe_unused]] bool intent_bound_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+[[maybe_unused]] bool intent_bound_array(size_t &bytes, size_t count, size_t width) noexcept
+{
+	return (!width || count <= SIZE_MAX / width) && intent_bound_add(bytes, count * width);
+}
+[[maybe_unused]] bool intent_bound_prepend(size_t old_size, size_t tag_size, size_t &capacity,
+					   size_t &peak) noexcept
+{
+	// Fresh vector(size); pinned libstdc++ insertion retains the old allocation
+	// while allocating size + max(size, inserted_count). Tags include their NUL.
+	capacity = old_size;
+	if (!intent_bound_add(capacity, std::max(old_size, tag_size)))
+		return false;
+	peak = old_size;
+	return intent_bound_add(peak, capacity);
+}
+struct intent_metadata_bound_workspace
+{
+	size_t base = 0, peak = 0, phase = 0, bytes = 0, fixed = 0;
+	size_t command_heap = 0, command_wire = 0;
+	size_t binding_capacity = 0, binding_peak = 0;
+	size_t domain_bytes = 0, domain_capacity = 0, domain_peak = 0;
+	size_t intent_capacity = 0, intent_peak = 0, digest_live = 0;
+};
+} // namespace
+
+economic_accounting_error economic_intent_decode_bounded(const std::span<const uint8_t> &encoded,
+							 economic_frozen_intent *output,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || encoded.size() < ECONOMIC_INTENT_HEADER_BYTES)
+		return error::corrupt_evidence;
+	if (encoded.size() > ECONOMIC_ACCOUNTING_MAX_INTENT_BYTES || !reserve)
+		return error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return error::capacity;
+#else
+	// The original decoder's result and by-value input span stay live. Source
+	// decoding dies before facts.assign, so its DTOs and the suffix request are
+	// sequential peaks. Header/valid checks also pass a transient span by value.
+	size_t fixed = sizeof(std::span<const uint8_t>);
+	if (encoded[27] == 1)
+	{
+		size_t source = sizeof(economic_source_event);
+		if (!intent_bound_add(source, economic_source_event_decode_object_bytes()) ||
+		    !intent_bound_add(source, sizeof(std::span<const uint8_t>)))
+			return error::capacity;
+		fixed = std::max(fixed, source);
+	}
+	size_t peak = outer_live;
+	if (!intent_bound_add(peak, sizeof(economic_frozen_intent)) ||
+	    !intent_bound_add(peak, sizeof(std::span<const uint8_t>)) ||
+	    !intent_bound_add(peak,
+			      std::max(fixed, encoded.size() - ECONOMIC_INTENT_HEADER_BYTES)) ||
+	    !reserve(peak, context))
+		return error::capacity;
+	try
+	{
+		return economic_intent_decode(encoded, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
+
+economic_accounting_error economic_intent_plan_metadata_bounded(
+	const critical_command &command, const economic_frozen_intent &intent,
+	economic_plan_metadata *output, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output)
+		return error::corrupt_evidence;
+	if (!reserve)
+		return error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)intent;
+	(void)context;
+	(void)outer_live;
+	return error::capacity;
+#else
+	size_t base = outer_live;
+	if (!intent_bound_add(base, sizeof(intent_metadata_bound_workspace)) ||
+	    !intent_bound_add(base, sizeof(std::span<const uint8_t>)) || !reserve(base, context))
+		return error::capacity;
+	auto status = valid(intent);
+	if (status != error::ok)
+		return status;
+	if (!critical_operation_id_equal(command.operation_id,
+					 intent.admission.metadata.operation_id))
+		return error::payload_conflict;
+	intent_metadata_bound_workspace work;
+	work.base = outer_live;
+	if (!intent_bound_add(work.base, sizeof(work)))
+		return error::capacity;
+	work.peak = base;
+	work.bytes = ECONOMIC_INTENT_HEADER_BYTES;
+	if (!intent_bound_add(work.bytes, intent.admission.facts.size()))
+		return error::capacity;
+	work.fixed = intent.admission.metadata.source_event ?
+			     2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) :
+			     sizeof(std::span<uint8_t>);
+	// Canonical comparison retains its output vector alongside encode's bytes.
+	if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		work.phase = work.base;
+		if (!intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
+		    !intent_bound_add(work.phase, work.bytes) ||
+		    !intent_bound_add(work.phase, work.fixed))
+			return error::capacity;
+		work.peak = std::max(work.peak, work.phase);
+	}
+	// Projection copies every input vector by size; clear() keeps the intent
+	// allocation. Its encoder reserves exact schema-1 wire bytes only once.
+	work.command_heap = command.payload.size();
+	if (!intent_bound_add(work.command_heap, command.accounting_intent.size()) ||
+	    !intent_bound_array(work.command_heap, command.keys.size(),
+				sizeof(critical_entity_key)) ||
+	    !intent_bound_array(work.command_heap, command.expected_revisions.size(),
+				sizeof(critical_expected_revision)))
+		return error::capacity;
+	work.command_wire = CRITICAL_COMMAND_HEADER_BYTES;
+	if (!intent_bound_array(work.command_wire, command.keys.size(),
+				CRITICAL_COMMAND_ENTITY_KEY_BYTES) ||
+	    !intent_bound_array(work.command_wire, command.expected_revisions.size(),
+				CRITICAL_COMMAND_EXPECTED_REVISION_BYTES) ||
+	    !intent_bound_add(work.command_wire, command.payload.size()) ||
+	    !intent_bound_prepend(work.command_wire, sizeof("DURIS-ECONOMIC-COMMAND-V1"),
+				  work.binding_capacity, work.binding_peak))
+		return error::capacity;
+	work.digest_live = work.binding_capacity;
+	if (!intent_bound_add(work.digest_live, sizeof(economic_digest)))
+		return error::capacity;
+	size_t command_encode_peak = work.command_wire;
+	if (!intent_bound_add(command_encode_peak, sizeof(std::vector<uint8_t>)))
+		return error::capacity;
+	work.phase = work.base;
+	if (!intent_bound_add(work.phase, sizeof(economic_digest)) ||
+	    !intent_bound_add(work.phase, sizeof(critical_command)) ||
+	    !intent_bound_add(work.phase, work.command_heap) ||
+	    !intent_bound_add(work.phase, sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.phase, std::max(command_encode_peak,
+						   std::max(work.binding_peak, work.digest_live))))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// The binding result persists across domain_hash; the projection is gone.
+	work.domain_bytes = command.payload.size();
+	if (!intent_bound_add(work.domain_bytes, 8) ||
+	    !intent_bound_prepend(work.domain_bytes, sizeof("DURIS-ECONOMIC-DOMAIN-V1"),
+				  work.domain_capacity, work.domain_peak))
+		return error::capacity;
+	work.digest_live = work.domain_capacity;
+	if (!intent_bound_add(work.digest_live, 2 * sizeof(economic_digest)))
+		return error::capacity;
+	work.phase = work.base;
+	if (!intent_bound_add(work.phase, sizeof(economic_digest)) ||
+	    !intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.phase, std::max(work.domain_peak, work.digest_live)))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	// Only after binding verification does the original construct metadata and
+	// digest the canonical intent. Moved hash parameter and source vector objects
+	// coexist; prepend's old/new requests and digest DTOs are separate phases.
+	if (!intent_bound_prepend(work.bytes, sizeof("DURIS-ECONOMIC-INTENT-V1"),
+				  work.intent_capacity, work.intent_peak))
+		return error::capacity;
+	work.digest_live = work.intent_capacity;
+	if (!intent_bound_add(work.digest_live, 2 * sizeof(economic_digest)))
+		return error::capacity;
+	work.phase = work.base;
+	size_t encode_peak = work.bytes;
+	if (!intent_bound_add(encode_peak, work.fixed) ||
+	    !intent_bound_add(work.phase, sizeof(economic_plan_metadata)) ||
+	    !intent_bound_add(work.phase, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !intent_bound_add(work.phase,
+			      std::max(encode_peak, std::max(work.intent_peak, work.digest_live))))
+		return error::capacity;
+	work.peak = std::max(work.peak, work.phase);
+	if (!reserve(work.peak, context))
+		return error::capacity;
+	try
+	{
+		return economic_intent_plan_metadata(command, intent, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}

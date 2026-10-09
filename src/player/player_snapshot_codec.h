@@ -4,6 +4,7 @@
 #include "player/player_snapshot.h"
 
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,13 @@ player_snapshot_codec_result player_item_snapshot_list_preflight(
 size_t player_item_snapshot_list_encoder_preflight_object_bytes() noexcept;
 player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
 	const std::vector<player_item_snapshot> &,
+	player_item_snapshot_list_allocation_profile *) noexcept;
+// Same allocation-free scan for a contiguous range, including a normalized
+// singleton before initializer-list/vector copies. The caller owns the input
+// span and must admit it before construction; both overloads use the same
+// private scan object's footprint and preserve strong profile output.
+player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
+	const std::span<const player_item_snapshot> &,
 	player_item_snapshot_list_allocation_profile *) noexcept;
 // Original encoder's maximum simultaneous object/request bytes, excluding its
 // caller-owned input, prior output and profile. Includes both validation vectors,
