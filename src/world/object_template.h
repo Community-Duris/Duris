@@ -123,6 +123,9 @@ class shop_trade_original_procedure_binding_stage
 	void commit_unchecked() noexcept;
 	void commit_flat_unchecked() noexcept;
 	static void observe_normal_binding(int, obj_proc_type, obj_proc_type) noexcept;
+	// Same original notification after actual binding; only this sealed flat
+	// catalog entry may advance, under the complete predecessor/index proof.
+	static void observe_normal_binding_flat(int, obj_proc_type, obj_proc_type) noexcept;
 	std::vector<binding> bindings_;
 	proclib_recovery_chain_stage chain_;
 	bool prepared_ = false;

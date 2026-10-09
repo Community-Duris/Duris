@@ -452,7 +452,7 @@
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "d60f4e01cd944371c1646daf4925ee2379996301933515d88b2bb0d57fbf7e04",
+      "src/world/db.c": "8ee1f03332abca5faa773fdc6f7195232c4b8876c7216ebb621a05f4d0f238b9",
       "src/world/db.h": "997fd7e954b917c3747fb28584f317c5966aa47885bf8abee09345708c66e183",
       "src/world/economic_initialized_world_owner.c": "b9cc81141a03ba8f7b407c27c972404e948bf302e588658005e986ba0de96c97",
       "src/world/economic_initialized_world_owner.h": "73d17bb19b6ee5198448c69ade7829f35811e72d55f5f5f568d61e9b2450384d",
@@ -469,7 +469,7 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/object_template.h": "12cd48ef385775098e6c7ad9e23866bb3fdbb5e801b4a86b3b17556011d372cb",
+      "src/world/object_template.h": "25333e47f039d5605a2348e9c77de8d2d9d2404e3272216346be1be4ed671fe5",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
       "src/world/quest_mobile_native.c": "58a03ebfbec6e25ec4194a85fe76d2a68d889d6edcd538988742f611e7972ad9",
       "src/world/quest_mobile_native.h": "6aeacec28b272151ad80252bd700d0c25100a4d4ab844c2db3c440d1548805f9",
@@ -51480,7 +51480,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6168
+          6200
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -52529,7 +52529,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8186
+          8218
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -52589,7 +52589,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53064,7 +53064,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53125,7 +53125,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53185,7 +53185,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53245,7 +53245,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53305,7 +53305,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53352,7 +53352,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8301
+          8333
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -54402,7 +54402,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6539
+          6571
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::prepare",
@@ -54462,7 +54462,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7515
+          7547
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publish",
@@ -54522,7 +54522,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7729
+          7761
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publication_step",
@@ -54582,7 +54582,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8026
+          8058
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::rebuild_enrollment",
@@ -54749,7 +54749,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6492
+          6524
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::capture_container_shell",
