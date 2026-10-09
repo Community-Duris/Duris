@@ -76,4 +76,19 @@ int world_activity_mundane_delay(P_char ch, bool quick_retry, bool legacy_zone_o
 void world_activity_schedule_mundane(P_char ch, bool quick_retry, bool legacy_zone_occupied);
 void world_activity_schedule_mundane_after(P_char ch, int delay);
 
+// Serialized actual owning activity registries/configuration/counters and all
+// current nested heap requests under GCC13/C++11 ABI. World/game objects and
+// scheduler/output storage excluded. Strong output, no allocation or authority.
+// Active native caller includes this once and refreshes CURRENT on every return;
+// observer alone never admits an original allocating activity notification.
+bool world_activity_storage_bytes(size_t *) noexcept;
+
+// Complete original object-connection/subtree/corpse/topology/wakeup provider.
+// Outer includes CURRENT activity/pending-deferred/output storage exactly once,
+// plus live caller inputs. Refresh all CURRENT owners on EVERY return, including
+// partial mutation/refusal. Native effect must be marked started before invocation;
+// never retry already-effected placement or RNG/advances on a false return.
+bool world_activity_object_enter_bounded(P_obj, bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
+
 #endif /* DURIS_WORLD_ACTIVITY_H */

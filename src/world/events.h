@@ -81,4 +81,30 @@ bool nevent_schedule_object_bounded(event_func_type, int, P_obj, nevent_schedule
 				    bool *returned, bool *succeeded,
 				    bool (*)(size_t, void *) noexcept, void *,
 				    size_t outer_live) noexcept;
+// CURRENT genuine pending-reschedule/deferred maps (inline + actual tree nodes)
+// and batch depth; other scheduler/pool/output storage excluded. Strong output.
+// Caller includes once and refreshes CURRENT on EVERY return, including refusal.
+bool nevent_native_reschedule_storage_bytes(size_t *) noexcept;
+class nevent_native_reschedule_batch final
+{
+    public:
+	nevent_native_reschedule_batch() noexcept = default;
+	~nevent_native_reschedule_batch();
+	nevent_native_reschedule_batch(const nevent_native_reschedule_batch &) = delete;
+	nevent_native_reschedule_batch &operator=(const nevent_native_reschedule_batch &) = delete;
+	// Caller owns inline batch and CURRENT observer once. Finish admits full
+	// original allocating flush; on refusal destructor only balances depth and
+	// retains original pending state. Already-returned advances must NEVER rerun.
+	bool begin_bounded(bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	bool finish_bounded(bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
+    private:
+	bool active_ = false;
+};
+// Completion/actual returned advance distinguished. Full original handle/catch
+// fallback semantics; strong output before invocation, prospective node request.
+bool nevent_advance_by_bounded(const nevent_handle &, unsigned long long, bool *,
+			       bool (*)(size_t, void *) noexcept, void *,
+			       size_t outer_live) noexcept;
+
 #endif /* _SOJ_EVENTS_H_ */
