@@ -274,7 +274,7 @@ struct comparer
 				observe(row.issues, issue::unobserved_account, SIZE_MAX, SIZE_MAX,
 					h);
 			const auto racewar = integer<int8_t>(cells[2]);
-			if (racewar < 0 || racewar > INT8_MAX)
+			if (racewar < 0)
 				observe(row.issues, issue::invalid_identity, SIZE_MAX, SIZE_MAX, h);
 			if (!holding.native_revision || *holding.native_revision == UINT64_MAX)
 				observe(row.issues, issue::unavailable_revision, SIZE_MAX, SIZE_MAX,
@@ -284,7 +284,7 @@ struct comparer
 			result.sql_money.push_back(row);
 			if (holding.kind == economic_sql_holding_kind::wallet)
 				sql_wallets.emplace_back(holding.native_id, h);
-			else if (canonical_account(cells[1]) && racewar >= 0 && racewar <= INT8_MAX)
+			else if (canonical_account(cells[1]) && racewar >= 0)
 			{
 				require(holding.native_context == racewar);
 				sql_banks.emplace_back(*canonical_account(cells[1]),
