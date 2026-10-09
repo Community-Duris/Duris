@@ -2,6 +2,7 @@
 #define ZONE_RESET_ITEM_OWNER_H
 
 #include "economy/zone_reset_item_command.h"
+#include <memory>
 
 struct obj_data;
 class critical_zone_reset_item_publication_owner;
@@ -206,6 +207,29 @@ class zone_reset_item_owner final
 	static int prepare_warm_action(warm_root &, uint8_t, size_t, size_t) noexcept;
 	static bool finish_warm_action(warm_root &,
 				       const quest_mobile_native_item_effect &) noexcept;
+	// Real once-only ROOT writers. Caller owns every input/prior retained root
+	// in the aggregate and its live pulse locals in outer_live. All supported
+	// returned variants are sealed before original intent I/O or native effects.
+	// Original SQL/inactive methods remain unchanged; these are private candidates.
+	struct warm_action_workspace;
+	static bool warm_checkpoint_storage(const warm_checkpoint *, size_t *) noexcept;
+	static bool make_warm_checkpoint_bounded(const critical_native_recovery_envelope &,
+						 const zone_reset_item_recovery_context &,
+						 std::unique_ptr<warm_checkpoint> *,
+						 bool (*)(size_t, void *) noexcept, void *,
+						 size_t outer_live) noexcept;
+	static bool settle_warm_checkpoint_bounded(warm_root &, bool (*)(size_t, void *) noexcept,
+						   void *, size_t outer_live) noexcept;
+	static bool checkpoint_warm_context_bounded(warm_root &,
+						    const zone_reset_item_recovery_context &,
+						    bool (*)(size_t, void *) noexcept, void *,
+						    size_t outer_live) noexcept;
+	static int prepare_warm_action_bounded(warm_root &, uint8_t, size_t, size_t,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live) noexcept;
+	static bool finish_warm_action_bounded(warm_root &, const quest_mobile_native_item_effect &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live) noexcept;
 	struct warm_child;
 	struct warm_registry;
 	static warm_registry *warm_head_, *warm_current_;

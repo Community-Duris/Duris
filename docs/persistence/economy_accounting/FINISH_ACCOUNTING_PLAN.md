@@ -9504,3 +9504,15 @@ tokens/preprocessing and review passed; 931 policies/399 source pins authenticat
 zero new/unmapped sites. Native tests stay batched. Four warm/cold integration and
 runtime/recovery qualification remain open; inactive/CLOSED accounting, incomplete
 coverage/BLOCKED release and ACTIVE goal remain. No additional gate or full acceptance.
+
+
+## Genuine room checkpoint writers and service bridges - 2026-10-09
+
+[Complete private writers](ROOM_ROOT_CHECKPOINT_WRITERS_2026-10-09.md) prepare
+full intent/not-attempted/returned variants prospectively and select actual outcome
+before fallible later work. Genuine coordinator copy/checkpoint/generation/ACK and
+warm service-step bridges are defined. Full four-route/pulse selection stays pending.
+RAW/final source review, C prefixes/header inverses/tokens/preprocessing passed;
+931 policies/399 pins authenticate with zero new/unmapped sites. Native tests remain
+batched. Cold restore/submission/global/placement/recovery integration is unfinished;
+inactive/CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist.
