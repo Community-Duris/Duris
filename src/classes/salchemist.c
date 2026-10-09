@@ -610,7 +610,10 @@ void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 			.discipline = craft_recipe_discipline::poison,
 			.recipe_vnum = static_cast<uint32_t>(poison_data[i].vnum),
 			.pouch_mutation = {},
-			.output_count = static_cast<uint32_t>(outputs.size())
+			.output_count = static_cast<uint32_t>(outputs.size()),
+			.refine_cost = {},
+			.refine_root_order = {},
+			.refine_material_name = {}
 		};
 		terms.notch = skill_notch_prepare(ch, SKILL_MIXPOISON, 6.25);
 		item_movement_reject reject = item_movement_reject::none;
@@ -1006,7 +1009,10 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 			.player_pid = static_cast<uint32_t>(GET_PID(ch)),
 			.discipline = craft_recipe_discipline::encrust_failure,
 			.recipe_vnum = static_cast<uint32_t>(jewel_vnum),
-			.pouch_mutation = {}
+			.pouch_mutation = {},
+			.refine_cost = {},
+			.refine_root_order = {},
+			.refine_material_name = {}
 		};
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
@@ -1097,7 +1103,10 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 						  .discipline = craft_recipe_discipline::encrust,
 						  .recipe_vnum = static_cast<uint32_t>(jewel_vnum),
 						  .pouch_mutation = {},
-						  .output_count = 1 };
+						  .output_count = 1,
+						  .refine_cost = {},
+						  .refine_root_order = {},
+						  .refine_material_name = {} };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_craft(
 		    ch, inputs, virtual_jewel ? 1 : 2, &new_item, 1, jewel_vnum, nullptr, nullptr,
