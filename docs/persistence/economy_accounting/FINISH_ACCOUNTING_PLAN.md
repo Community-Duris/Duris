@@ -56,6 +56,80 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Fresh-root authority facts reviewed; native season acceptance selected - 2026-10-09
+
+Architecture's FLAT_ROOT_GENESIS_ENROLLMENT_AUTHORITY_FACTS_2026-10-09.txt now
+PASSes root independent source/factual review and is CLOSED at finite scope.
+Directory:D:/Dev/Temp/flat-root-genesis-enrollment-authority-facts-20261009/.
+Note24,281 bytes,SHA256
+cbe4bf427ef1411640c6a0ddedf4fa07104440db1a9e434754aaa495baa7e403.
+PINS.json82,420 bytes,SHA256
+28bde4a09b735d3ed35bb073b647ee059a827ad806ea860a85b1a61cf5f9df7a.
+Root authenticates11 providers/28 exact ranges/26 direct reused artifacts,
+nine unchanged public-source comparisons/three original lock-store comparisons,
+and15 indexed payloads. Full note/verifier and actual relevant source cuts read;
+no worker verifier or repository module executed. No required factual correction.
+Actual src/tests/migrations/scripts remain unchanged through published1903ec050.
+
+Public mkdir success and EEXIST merge into path-validation success; neither
+validated existence nor emptiness/missing metadata proves original ROOT creation.
+Public provisioning fsyncs ROOT,not its parent;partial provision has no rollback
+or durable freshness receipt. Assigned mode/root getters precede provision/IP
+success and are not readiness. Ordinary world boot exits on configure failure
+without undoing earlier effects. Public IP reset has separate file-lock authority;
+missing IP returns success without image,existing records are read again under
+that lock and can change. It supplies no native season/enrollment fence.
+Immutable0003 explicitly seeds SQL1/active while preserving existing epoch/status.
+Client-free SQL epoch0 is unavailable,not native genesis. Active SQL loader and
+cached accessor are distinct;reset increments and marks resetting before destructive
+work,with potentially ambiguous COMMIT and completion/refusal preserved.
+
+Private native season081425b3 remains REPORT:two64-byte existing metadata files,
+genesis1/active,only actual successful ROOT mkdir authorizes fresh enrollment,
+root/parent sync,recovered borrowed ROOT lock,one original two-metadata bundle
+and exact accepting readback BEFORE IP. Marker binds format/genesis,not path/inode/
+accounting lineage or stale-backup protection. Missing/partial/corrupt/resetting
+strong refusal is reported,not inspected or executed. G1-G4 remain UNEXECUTED.
+Full ROOM captured season/worker/publication equality,stopped legacy enrollment,
+full caller/native/world/origin/ACK integration and Plan5 coherent restore remain
+owner dependencies. Reused journal recovery is effectful;no-enrollment mutation
+must not mean no recovery effects. Publication/apply/unlink-sync uncertainty stays
+under the original outcome owner;later absence does not prove settled durability.
+
+Prioritized queue:architecture and all previous packets CLOSED/event-dependent.
+ONE selected PRIVATE quest acceptance-preparation delivery,sole output:
+D:/Dev/Temp/flat-root-native-season-acceptance-delta-20261009/
+FLAT_ROOT_NATIVE_SEASON_ACCEPTANCE_DELTA_2026-10-09.txt,
+plus exact provider/range/reused-artifact pins,index and metadata-only verification.
+Benefit:implementation-ready genuine freshness/readback/order/refusal observations
+for future native journeys without granting authority from public validation,
+SQL0/cache,individual metadata validity or a coordinator-created fixture.
+Reuse reviewed G1-G4 and closed original ROOM/root/caller/world/origin controls.
+Bound controls to genuine fresh creation/enrollment;existing/provision-retry/legacy
+refusal;partial/corrupt/resetting/unknown cuts with original uncertainty owner;
+captured-season equality at real same-lock worker/publication. Preserve exact
+original/native/receipt/ACK/retirement joins. No new fixture ID,authority format,
+runner,operational enrollment/restore procedure or repeated domain inventory.
+
+Available:full0c574 report,reviewed fresh-root packet,unchanged public providers
+and closed original controls. Missing:private native-season/enrollment/configure/
+bootstrap/readback/capture/worker bodies,authentic fresh-root witness and legal
+fresh/existing/stopped-legacy/season/fault exports,current aggregate/caller/native/
+world/origin/ACK integration. Enumerate required legal observations,not invented
+hooks. Missing interfaces block dependent execution,not this bounded preparation.
+Quest owns only D: note/evidence;root independent acceptance review before closure.
+Primary retains native season/ROOM/source and Plan5 recovery/restore. Architecture
+has no new task;no adoption wait or reopening completed packets. No maintained
+edits/patches/imports/private commits,root provisioning,epoch/data seeding,
+compiler/preprocessor/tests/build/DB/server/native/gameplay/recovery/event/performance,
+operational enrollment/restore/deploy/activation. Preserve worktrees/jobs/proofs.
+Published readiness P1/F1 remain unresolved;private source/registration reports
+are not maintained adoption or executed qualification. Actual Goals BLOCKED,
+preparation not resumption. Required Plans1-5/applicable original R1-R8/integrated
+qualification/blockers/owner completion finish unmet;heartbeat ACTIVE. Root proof:
+D:/Dev/Temp/coordinator-root-genesis-review-20261009/review.py,authentication.json,
+semantic-review.json,publication-section.txt,inverse.json and publication identity.
+
 ## Bounded read acceptance reviewed; fresh-root authority facts selected - 2026-10-09
 
 Quest's SHARED_FLAT_BOUNDED_READ_ACCEPTANCE_DELTA_2026-10-09.txt now PASSes root
