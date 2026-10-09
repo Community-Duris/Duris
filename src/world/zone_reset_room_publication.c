@@ -3123,3 +3123,51 @@ bool zone_reset_room_publication_owner::retire_warm_flat_locked_bounded(
 		budget_context, live);
 #endif
 }
+
+bool zone_reset_room_publication_owner::service_step_bounded(
+	zone_reset_room_publication_stage &stage, size_t at, size_t step,
+	quest_mobile_native_item_effect &effect, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Genuine retained warm-FLAT factories only; other original paths stay original.
+	// All stage/private retention and CURRENT pool/output/Zombie allowances belong
+	// to caller outer exactly once and must be refreshed on EVERY return.
+	if (!reserve || !stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !stage.state_->consumed || stage.state_->placed ||
+	    at >= stage.state_->stage_pointers.size())
+		return false;
+	return stage.state_->stage_pointers[at]->publication_step_bounded(
+		step, stage.state_->objects[at], effect, reserve, context, outer_live);
+}
+
+bool zone_reset_room_publication_owner::copy_warm_bounded(const critical_command &command,
+							  critical_native_recovery_envelope *output,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer_live) noexcept
+{
+	return critical_zone_reset_item_publication_owner::copy_context_bounded(
+		command, output, reserve, context, outer_live);
+}
+bool zone_reset_room_publication_owner::checkpoint_warm_bounded(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor, uint64_t original_generation,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
+		expected, successor, reserve, context, outer_live, original_generation);
+}
+bool zone_reset_room_publication_owner::generation_warm_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t *generation,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	return critical_zone_reset_item_publication_owner::observe_generation_bounded(
+		expected, generation, reserve, context, outer_live);
+}
+bool zone_reset_room_publication_owner::acknowledge_warm_bounded(
+	const critical_native_recovery_envelope &expected, const critical_completion &receipt,
+	uint64_t original_generation, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	return critical_zone_reset_item_publication_owner::acknowledge_bounded(
+		expected, receipt, original_generation, reserve, context, outer_live);
+}
