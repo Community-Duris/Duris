@@ -2178,3 +2178,74 @@ owns independent review/publication;both handoffs are PENDING. Closed packets,
 worktrees and live jobs stay intact. Root evidence D: coordinator-smith-flat-
 original-o-reassessment-20261008/reassessment.json. Actual native Goals remain
 BLOCKED/unfinished;heartbeatACTIVE,no adoption wait or overall completion.
+
+## Flat persisted-image and original O acceptance review closed - 2026-10-08
+
+Root independently reviews both exact private preparations at public53d8a5d8a,
+with unchanged maintained source/test/migration trees through current primary
+d5ab7b2766999bd1c86826b764968c3c0026b7dc. Their bounded source/design/acceptance
+preparation PASSes; no product execution or native qualification is claimed.
+Root evidence D: coordinator-flat-image-original-o-review-20261008/review.json.
+Original worktrees, sealed packets and live jobs are preserved.
+
+Architecture SMITH_FLAT_PERSISTED_IMAGE_OBSERVATION_BOUNDARY_2026-10-08.txt,
+16,218 bytes,SHA256c43cc799f2a798289d1d26c6c1fac8599d69f0db651a180b654cd41d3bc4b539,
+has21 authenticated providers,26 pin groups/60 exact ranges,three indexed artifacts
+and six unchanged closed artifacts. Root separately checks actual snapshot file/
+codec,repository,store,authority recovery/commit,ownership/materialization and
+focused fixture cuts. Truthful partial queued capture is distinct from actual
+ALL persisted image; changing a mask does not supply missing fields. Raw file B,
+decoded F,normalized N(F),reconciled load M and full physical BEFORE P remain
+distinct. Immutable one-file read is not a recovered multi-file transaction cut.
+Owned load acquires player then authority and recovers; internal borrowed helpers
+still recover. They do not expose a public already-recovered Smith observation.
+Recovery can write; retain original recovered authority through first read,
+dependent validation/staging and sole commit,with no late recovery or lock
+reacquisition. Current commit refuses pending journals. General load may overlay,
+skip,promote or repair rows; it cannot replace pristine persisted-file comparison.
+Existing partial-save,passive inspector and split-image/corrupt-journal fixtures
+remain useful component coverage,without a genuine Smith owner/physical proof.
+
+Quest ORIGINAL_O_ADMISSION_CURSOR_ACCEPTANCE_2026-10-08.txt,
+17,923 bytes,SHA256d06f5d3d47b428e0be188351ca2221661a2d1ccffaa05d550b91fa12992b011a,
+has19 authenticated pins:17 public and two prior-owned handoffs at actual prep
+HEAD2c82835e. Closed special-placement facts/index remain unchanged. ONE future
+parsed O -> conditional D marker -> S case separates original quota/force,first
+incumbent/TAKE,pending/indexed lifetime,root alias,known-pure continuation and actual
+processed cut. Genuine O constructs before load chance: a miss can consume a UID
+and sets last_cmd1; the alchemist's preconstruction no-UID miss is a different
+route. Current actual-reset fixture generates M-only rows with accounting inactive;
+its fixed original-provider manifest is not bypassed. Private combined census,
+retained phase/result/cursor and legal original holds remain unavailable.
+These two preparations are CLOSED at their stated scopes,without native PASS.
+
+Root reads the full new
+[Smith flat readiness/room-P report](../SMITH_FLAT_READINESS_AND_ROOM_P_SOURCE_INTEGRATION_2026-10-08.md).
+Private de31dd04 flat readiness reportedly uses actual installed wallet/epoch,
+account/root/racewar and existing queue/journal/selected writer/ACK/operation hold,
+without bank/SQL requirements. Private0a6c0d7a composition and source reviews are
+reported,not inspected here. Maintained4e26 still exposes SQL-only Smith; a narrow
+primary-owned flat port is reported in progress. Architecture's next concrete
+trigger is actual maintained pipeline C/H or genuine compound/observation/fixture
+publication. Do not duplicate that port or reopen these closed packets.
+
+The same report adds a distinct room-P gap: original target frozen before loading,
+route/quota/force and constructed child/UID retained through known-pure refusal,
+load-miss alias cleared,and results consumed once. Root dispatches ONE bounded
+PRIVATE quest ORIGINAL_ROOM_P_TARGET_CONTINUATION_ACCEPTANCE_2026-10-08.txt.
+Use actual maintained P dispatcher/factory/lookup/lifetime/nesting and reset fixture,
+plus closed O/QP/effects findings. Distinguish current inactive/mobile P's
+construction-before-target lookup from reported warm room-P target-before-load;
+retain actual absent/self-target/refusal semantics. First reuse exact coverage if
+already complete; otherwise specify the smallest parsed P/conditional-marker/S
+case with legal target/lifetime/hold/load-miss negatives. No invented private
+cursor/API,controlled owner,changed policy,build or native execution is assigned.
+Private warm/current-P/shared-cursor/caller,authentic original observations/legal
+hold/fault and integrated provider export remain exact dependencies. Root owns
+review/publication; this sole active quest delivery is PENDING independent review.
+
+No compiler/preprocessing/native/gameplay/SQL/flat recovery tests ran. Required
+Plans1-5,applicable R1-R8 and owner completion disposition remain unfinished.
+Actual root/native Goals stay BLOCKED; heartbeat ACTIVE,without an adoption wait,
+false resumption or overall completion. Continued finite preparation does not
+change the broader finish line.

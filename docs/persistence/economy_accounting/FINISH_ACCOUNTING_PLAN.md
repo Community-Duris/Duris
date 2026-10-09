@@ -40,6 +40,23 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator closes flat-image/O preparation and selects room-P acceptance - 2026-10-08
+
+Architecture flat persisted-image boundary and quest original O admission/cursor
+preparation now PASS independent source/design/acceptance review at their exact
+scopes. Root authenticates21 providers/60 ranges/three indexed artifacts and19
+quest pins,eight closed artifacts unchanged. Actual file versus normalized/load
+view,original recovered lock lifetime and genuine O load-miss UID/conditional
+semantics stay distinct. No compiler/product/native qualification is claimed.
+Full review,proof paths and limits are in domain-separation/
+PREPARATION_BUNDLES_REVIEW_2026-10-08.md. New docs-only primaryd5ab7b276 reports
+private flat Smith readiness and room-P target/cursor composition;actual maintained
+flat port remains primary-owned/in progress. Architecture awaits its concrete
+published source trigger. Quest has ONE private room-P retained-target/child/
+continuation acceptance delta,excluding closed O/mobile-P/effects coverage.
+Exact ownership/dependencies and pending review are in the continuing charter.
+Native GoalsBLOCKED,heartbeatACTIVE;required primary finish line remains unmet.
+
 ## Coordinator preparation for reported flat-image/O caller join - 2026-10-08
 
 Primary53d8a5d8a is documentation-only;the private corrected flat participant and
