@@ -1,5 +1,26 @@
 # Finish accounting implementation plan
 
+## Local Docker test review: SQL prerequisites reproduced - 2026-10-09
+
+[Local combined candidate results](LOCAL_COMBINED_CANDIDATE_TEST_REVIEW_2026-10-09.md)
+record source 8e5be4942: both fresh strict production builds and the existing
+inactive flatfile boot preflight pass. Windows Docker works locally despite the
+WSL integration gap. The existing two SQL restore/service-boot cases execute
+with zero skips but stop before service boot: MariaDB 0065 rejects its own nullable
+default metadata representation; MySQL reaches schema 65 while the runtime
+manifest and compiled contract still pin 64. The existing native restore helper's
+11 missing providers and 0065 verifier executable mode are repaired with this
+review; schema contents and admission guards remain unchanged.
+
+Use these concrete failures when the existing SQL qualification resumes: retain
+exact schema guards while correcting the MariaDB representation, coherently
+measure/seal the schema 65 runtime contract, then rerun the same cases on a freshly
+built successor. Preserve current bounded primary work and independent Plan 5
+ownership. Later source changes, including 4f4507080 metadata reservations, are
+not qualified by the frozen 8e5 binaries. Original accepting journeys, complete
+prospective 32 MiB, publication/terminal/ACK, Plans 2-4, full Plan 5, R1-R8 and
+release remain open; admission stays closed. No speculative preparation task is needed.
+
 ## BS-R1 metadata reservations implemented - 2026-10-09
 
 The bounded file reader now reserves one actual `sizeof(struct stat)` before
