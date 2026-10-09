@@ -867,6 +867,56 @@ size_t economic_plan_allocation_preflight_working_bytes() noexcept
 	       sizeof(economic_accounting_plan_allocation_profile);
 }
 
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool plan_validation_storage(const economic_accounting_plan &plan, size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	bool ordinary = false, before_parent = false, after_parent = false;
+	size_t working = 0, request = 0;
+	for (const auto &account : plan.accounts)
+		ordinary = ordinary || economic_account_is_ordinary(account.key.kind);
+	for (const auto &item : plan.items_before)
+		before_parent = before_parent ||
+				((item.position.state == item_custody_state::active ||
+				  item.position.state == item_custody_state::quarantined) &&
+				 item.position.parent_uid);
+	for (const auto &item : plan.items_after)
+		after_parent = after_parent ||
+			       ((item.position.state == item_custody_state::active ||
+				 item.position.state == item_custody_state::quarantined) &&
+				item.position.parent_uid);
+	if (!economic_effects_validation_working_bytes(
+		    plan.accounts.size(), ordinary, plan.items_before.size(),
+		    plan.items_after.size(), plan.item_events.size(), before_parent, after_parent,
+		    &working))
+		return false;
+	request = sizeof(std::span<const economic_child_link>);
+	if (!plan.children.empty() &&
+	    (!plan_storage_add(request, sizeof(critical_operation_id)) ||
+	     !plan_storage_add(
+		     request,
+		     sizeof(std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(uint32_t) +
+							sizeof(uint64_t)>)) ||
+	     !plan_storage_add(request, sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>))))
+		return false;
+	working = std::max(working, request);
+	// zero(digest) passes a span by value; it does not coexist with validators.
+	working = std::max(working, sizeof(std::span<const uint8_t>));
+	if (plan.metadata.reason == economic_reason::gambling_stake ||
+	    plan.metadata.reason == economic_reason::gambling_payout ||
+	    plan.metadata.reason == economic_reason::gambling_loss ||
+	    plan.metadata.reason == economic_reason::gambling_interruption)
+		working = std::max(working, sizeof(economic_coin_vector));
+	*output = working;
+	return true;
+}
+#endif
+} // namespace
+
 economic_accounting_error
 economic_plan_allocation_preflight(const economic_accounting_plan &plan,
 				   economic_accounting_plan_allocation_profile *output) noexcept
@@ -918,42 +968,8 @@ economic_plan_allocation_preflight(const economic_accounting_plan &plan,
 				       (plan.children.size() % bit_width != 0),
 			       sizeof(std::_Bit_type)))
 		return economic_accounting_error::capacity;
-	for (const auto &account : plan.accounts)
-		scan.ordinary = scan.ordinary || economic_account_is_ordinary(account.key.kind);
-	for (const auto &item : plan.items_before)
-		scan.before_parent = scan.before_parent ||
-				     ((item.position.state == item_custody_state::active ||
-				       item.position.state == item_custody_state::quarantined) &&
-				      item.position.parent_uid);
-	for (const auto &item : plan.items_after)
-		scan.after_parent = scan.after_parent ||
-				    ((item.position.state == item_custody_state::active ||
-				      item.position.state == item_custody_state::quarantined) &&
-				     item.position.parent_uid);
-	if (!economic_effects_validation_working_bytes(
-		    plan.accounts.size(), scan.ordinary, plan.items_before.size(),
-		    plan.items_after.size(), plan.item_events.size(), scan.before_parent,
-		    scan.after_parent, &scan.validation_working))
+	if (!plan_validation_storage(plan, &scan.validation_working))
 		return economic_accounting_error::capacity;
-	scan.request = sizeof(std::span<const economic_child_link>);
-	if (!plan.children.empty() &&
-	    (!plan_storage_add(scan.request, sizeof(critical_operation_id)) ||
-	     !plan_storage_add(
-		     scan.request,
-		     sizeof(std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(uint32_t) +
-							sizeof(uint64_t)>)) ||
-	     !plan_storage_add(scan.request, sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>))))
-		return economic_accounting_error::capacity;
-	scan.validation_working = std::max(scan.validation_working, scan.request);
-	// zero(digest) passes a span by value; it does not coexist with validators.
-	scan.validation_working =
-		std::max(scan.validation_working, sizeof(std::span<const uint8_t>));
-	if (plan.metadata.reason == economic_reason::gambling_stake ||
-	    plan.metadata.reason == economic_reason::gambling_payout ||
-	    plan.metadata.reason == economic_reason::gambling_loss ||
-	    plan.metadata.reason == economic_reason::gambling_interruption)
-		scan.validation_working =
-			std::max(scan.validation_working, sizeof(economic_coin_vector));
 	profile.normalize_working_bytes = scan.normalize_base;
 	if (!plan_storage_add(profile.normalize_working_bytes,
 			      std::max(scan.child_working, scan.validation_working)))
@@ -963,7 +979,10 @@ economic_plan_allocation_preflight(const economic_accounting_plan &plan,
 	scan.encode_base = sizeof(economic_accounting_plan);
 	if (!plan_storage_add(scan.encode_base, profile.clone_heap_bytes))
 		return economic_accounting_error::capacity;
-	scan.request = sizeof(std::span<const uint8_t>); // writer::block parameter
+	scan.request =
+		std::max(sizeof(std::span<const uint8_t>),
+			 sizeof(std::initializer_list<size_t>) + sizeof(std::array<size_t, 6>));
+	// writer::block and the six-count initializer-list phase are sequential.
 	if (plan.metadata.source_event)
 		scan.request = std::max(
 			scan.request, 2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>));
@@ -981,5 +1000,250 @@ economic_plan_allocation_preflight(const economic_accounting_plan &plan,
 	profile.storage_policy_supported = true;
 #endif
 	*output = profile;
+	return economic_accounting_error::ok;
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct plan_decode_bound_workspace
+{
+	reader input;
+	std::span<const uint8_t> magic, source;
+	economic_accounting_plan result;
+	std::array<uint32_t, 6> counts{};
+	economic_accounting_plan_allocation_profile profile;
+	std::vector<uint8_t> canonical;
+	explicit plan_decode_bound_workspace(const std::span<const uint8_t> &encoded) noexcept
+		: input{ encoded }
+	{
+	}
+};
+#endif
+} // namespace
+
+economic_accounting_error economic_plan_decode_bounded(const std::span<const uint8_t> &encoded,
+						       economic_accounting_plan *plan,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live,
+						       size_t *retained_plan_heap_bytes) noexcept
+{
+	if (!plan || encoded.size() < ECONOMIC_PLAN_HEADER_BYTES)
+		return economic_accounting_error::corrupt_evidence;
+	if (encoded.size() > ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES)
+		return economic_accounting_error::capacity;
+	if (!reserve)
+		return economic_accounting_error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	(void)retained_plan_heap_bytes;
+	return economic_accounting_error::capacity;
+#else
+	size_t fixed = outer_live;
+	if (!plan_storage_add(fixed, sizeof(plan_decode_bound_workspace)))
+		return economic_accounting_error::capacity;
+	size_t header_working =
+		2 * sizeof(critical_operation_id) + 2 * sizeof(std::span<const uint8_t>);
+	header_working = std::max(header_working,
+				  sizeof(economic_source_event) + sizeof(std::span<const uint8_t>) +
+					  economic_source_event_decode_object_bytes());
+	size_t header_peak = fixed;
+	if (!plan_storage_add(header_peak, header_working) || !reserve(header_peak, context))
+		return economic_accounting_error::capacity;
+	try
+	{
+		plan_decode_bound_workspace work(encoded);
+		auto &input = work.input;
+		auto &result = work.result;
+		auto &counts = work.counts;
+		auto &canonical = work.canonical;
+		work.magic = input.take(4);
+		const auto &magic = work.magic;
+		if (!std::equal(magic.begin(), magic.end(), PLAN_MAGIC.begin()))
+			return economic_accounting_error::corrupt_evidence;
+		auto &meta = result.metadata;
+		meta.version = input.integer<uint16_t>();
+		input.zeros(2);
+		if (meta.version != ECONOMIC_ACCOUNTING_VERSION)
+			return economic_accounting_error::invalid_version;
+		meta.lineage = input.id();
+		meta.epoch = input.id();
+		meta.operation_id = input.id();
+		meta.original_operation_id = input.id();
+		meta.actor_kind = static_cast<economic_actor_kind>(input.integer<uint8_t>());
+		input.zeros(3);
+		meta.actor_id = input.integer<uint64_t>();
+		meta.writer_id = input.integer<uint32_t>();
+		meta.policy_version = input.integer<uint32_t>();
+		meta.compiler_version = input.integer<uint32_t>();
+		meta.reason = static_cast<economic_reason>(input.integer<uint16_t>());
+		input.zeros(2);
+		const auto present = input.integer<uint8_t>();
+		input.zeros(3);
+		work.source = input.take(ECONOMIC_SOURCE_EVENT_BYTES);
+		const auto &source = work.source;
+		if (present > 1)
+			return economic_accounting_error::corrupt_evidence;
+		if (present)
+		{
+			economic_source_event event = {};
+			const auto status = economic_source_event_decode(source, &event);
+			if (status != economic_accounting_error::ok)
+				return status;
+			meta.source_event = event;
+		}
+		else if (!zero(source))
+			return economic_accounting_error::corrupt_evidence;
+		input.block(meta.intent_digest);
+		input.block(meta.domain_digest);
+		for (auto &count : counts)
+			count = input.integer<uint32_t>();
+		input.zeros(16);
+		if (!input.good)
+			return economic_accounting_error::corrupt_evidence;
+		if (counts[0] > ECONOMIC_ACCOUNTING_MAX_ACCOUNTS ||
+		    counts[1] > ECONOMIC_ACCOUNTING_MAX_POSTINGS ||
+		    counts[2] > ECONOMIC_ACCOUNTING_MAX_CHILDREN ||
+		    counts[3] > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES ||
+		    counts[4] > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES ||
+		    counts[5] > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS)
+			return economic_accounting_error::capacity;
+		const size_t expected =
+			ECONOMIC_PLAN_HEADER_BYTES + ACCOUNT_BYTES * counts[0] +
+			POSTING_BYTES * counts[1] + ECONOMIC_CHILD_LINK_BYTES * counts[2] +
+			SNAPSHOT_BYTES * (counts[3] + counts[4]) + EVENT_BYTES * counts[5];
+		if (expected != encoded.size())
+			return economic_accounting_error::corrupt_evidence;
+		size_t heap = 0;
+		if (!plan_storage_rows(heap, counts[0], sizeof(economic_account_effect)) ||
+		    !plan_storage_rows(heap, counts[1], sizeof(economic_coin_posting)) ||
+		    !plan_storage_rows(heap, counts[2], sizeof(economic_child_link)) ||
+		    !plan_storage_rows(heap, counts[3], sizeof(economic_item_snapshot)) ||
+		    !plan_storage_rows(heap, counts[4], sizeof(economic_item_snapshot)) ||
+		    !plan_storage_rows(heap, counts[5], sizeof(economic_item_event)))
+			return economic_accounting_error::capacity;
+		size_t rows = 2 * sizeof(std::span<const uint8_t>);
+		if (counts[0])
+			rows = std::max(rows,
+					std::max(sizeof(economic_account_key) +
+							 2 * sizeof(std::span<const uint8_t>),
+						 2 * sizeof(economic_coin_vector) +
+							 2 * sizeof(std::span<const uint8_t>)));
+		if (counts[1])
+			rows = std::max(rows, 2 * sizeof(economic_coin_vector) +
+						      2 * sizeof(std::span<const uint8_t>));
+		if (counts[2])
+			rows = std::max(rows, 2 * sizeof(critical_operation_id) +
+						      2 * sizeof(std::span<const uint8_t>));
+		if (counts[3] || counts[4])
+			rows = std::max(
+				rows,
+				2 * sizeof(economic_item_position) +
+					2 * sizeof(std::span<const uint8_t>) +
+					sizeof(std::initializer_list<
+						std::vector<economic_item_snapshot> *>) +
+					sizeof(std::array<std::vector<economic_item_snapshot> *, 2>));
+		if (counts[5])
+			rows = std::max(rows, 2 * sizeof(economic_item_position) +
+						      2 * sizeof(std::span<const uint8_t>));
+		size_t live = fixed, row_peak = 0;
+		if (!plan_storage_add(live, heap))
+			return economic_accounting_error::capacity;
+		row_peak = live;
+		if (!plan_storage_add(row_peak, rows) || !reserve(row_peak, context))
+			return economic_accounting_error::capacity;
+		result.accounts.resize(counts[0]);
+		result.postings.resize(counts[1]);
+		result.children.resize(counts[2]);
+		result.items_before.resize(counts[3]);
+		result.items_after.resize(counts[4]);
+		result.item_events.resize(counts[5]);
+		for (auto &effect : result.accounts)
+		{
+			const auto status = economic_account_key_decode(
+				input.take(ECONOMIC_ACCOUNT_KEY_BYTES), &effect.key);
+			if (status != economic_accounting_error::ok)
+				return status;
+			effect.before = input.coins();
+			effect.after = input.coins();
+			effect.before_revision = input.integer<uint64_t>();
+			effect.after_revision = input.integer<uint64_t>();
+		}
+		for (auto &posting : result.postings)
+		{
+			posting.event_index = input.integer<uint32_t>();
+			posting.account_index = input.integer<uint16_t>();
+			posting.child_index = input.integer<uint16_t>();
+			posting.delta = input.coins();
+			posting.copper = input.integer<int64_t>();
+		}
+		for (auto &child : result.children)
+		{
+			child.operation_id = input.id();
+			child.domain = input.integer<uint32_t>();
+			child.discriminator = input.integer<uint64_t>();
+			child.parent_index = input.integer<uint16_t>();
+			child.relationship = input.integer<uint16_t>();
+		}
+		for (auto *items : { &result.items_before, &result.items_after })
+			for (auto &item : *items)
+			{
+				item.uid = input.integer<uint64_t>();
+				item.position = input.position();
+			}
+		for (auto &event : result.item_events)
+		{
+			event.event_index = input.integer<uint32_t>();
+			event.child_index = input.integer<uint16_t>();
+			input.zeros(2);
+			event.uid = input.integer<uint64_t>();
+			event.before = input.position();
+			event.after = input.position();
+		}
+		if (!input.good || input.offset != encoded.size())
+			return economic_accounting_error::corrupt_evidence;
+		size_t validation_working = 0;
+		if (!plan_validation_storage(result, &validation_working))
+			return economic_accounting_error::capacity;
+		size_t validation_peak = live;
+		if (!plan_storage_add(validation_peak, validation_working) ||
+		    !reserve(validation_peak, context))
+			return economic_accounting_error::capacity;
+		const auto status = economic_plan_validate_structure(result);
+		if (status != economic_accounting_error::ok)
+			return status;
+		size_t scan_peak = live;
+		if (!plan_storage_add(scan_peak,
+				      economic_plan_allocation_preflight_working_bytes()) ||
+		    !reserve(scan_peak, context))
+			return economic_accounting_error::capacity;
+		const auto profiled = economic_plan_allocation_preflight(result, &work.profile);
+		if (profiled != economic_accounting_error::ok)
+			return profiled;
+		if (!work.profile.storage_policy_supported)
+			return economic_accounting_error::capacity;
+		size_t encode_peak = live;
+		if (!plan_storage_add(encode_peak, work.profile.encode_working_bytes) ||
+		    !reserve(encode_peak, context))
+			return economic_accounting_error::capacity;
+		const auto canonical_status = economic_plan_encode(result, &canonical);
+		if (canonical_status != economic_accounting_error::ok)
+			return canonical_status;
+		if (canonical.size() != encoded.size() ||
+		    !std::equal(canonical.begin(), canonical.end(), encoded.begin()))
+			return economic_accounting_error::corrupt_evidence;
+		static_assert(std::is_nothrow_move_assignable_v<economic_accounting_plan>);
+		*plan = std::move(result);
+		if (retained_plan_heap_bytes)
+			*retained_plan_heap_bytes = heap;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+#endif
 	return economic_accounting_error::ok;
 }

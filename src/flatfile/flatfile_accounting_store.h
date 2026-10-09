@@ -129,4 +129,13 @@ class flatfile_accounting_storage
 			    flatfile_authority_commit_outcome *);
 };
 
+// Passive prospective storage admission for the complete authenticated lookup.
+// Same recovered lock, full index/active segment/stale-next fence and receipt
+// validation; inputs/prior output/context belong to outer. Strong heap scalar.
+flatfile_accounting_status
+flatfile_accounting_lookup_bounded(const std::string &, const flatfile_authority_lock &,
+				   const critical_command &, flatfile_accounting_record *,
+				   flatfile_scratch_reserve_fn, void *, size_t,
+				   size_t *retained_payload = nullptr) noexcept;
+
 #endif

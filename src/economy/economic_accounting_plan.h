@@ -143,4 +143,15 @@ economic_accounting_error
 economic_plan_allocation_preflight(const economic_accounting_plan &,
 				   economic_accounting_plan_allocation_profile *) noexcept;
 
+// Complete original wire decoder with prospective requests, original source/row
+// validators and full canonical byte equality. Caller admits actual input span,
+// input bytes and prior output heap in outer_live; retain returned payload through
+// output lifetime. No receipt/admission/authority proof is granted. Unsupported
+// request ABI refuses with capacity. Both outputs are strong on every refusal.
+economic_accounting_error
+economic_plan_decode_bounded(const std::span<const uint8_t> &encoded, economic_accounting_plan *,
+			     bool (*reserve)(size_t, void *) noexcept, void *context,
+			     size_t outer_live,
+			     size_t *retained_plan_heap_bytes = nullptr) noexcept;
+
 #endif

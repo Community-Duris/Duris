@@ -902,6 +902,7 @@ bool zone_reset_item_recovery_initial_bounded(const critical_native_recovery_env
 	if (!reserve || envelope.revision != 1 ||
 	    envelope.phase != critical_native_recovery_phase::execution_pending ||
 	    !recovery_bound_add(outer_live, sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(outer_live, sizeof(std::span<const uint8_t>)) ||
 	    !reserve(outer_live, context))
 		return false;
 	zone_reset_item_recovery_context v;
@@ -962,4 +963,28 @@ bool zone_reset_item_recovery_terminal(const critical_native_recovery_envelope &
 	zone_reset_item_recovery_context v;
 	return envelope.phase == critical_native_recovery_phase::continuation_pending &&
 	       envelope_decode(envelope, &v) && body_terminal(v);
+}
+
+bool zone_reset_item_recovery_valid_bounded(const critical_native_recovery_envelope &envelope,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	// A caller that originally checks INITIAL and valid must retain both passes.
+	if (!reserve || !envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending))
+		return false;
+	size_t live = outer_live;
+	if (!recovery_bound_add(live, sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(live, sizeof(std::span<const uint8_t>)) || !reserve(live, context))
+		return false;
+	zone_reset_item_recovery_context candidate;
+	return zone_reset_item_recovery_decode_bounded(envelope.command, envelope.attachment,
+						       &candidate, reserve, context,
+						       live) == error::ok &&
+	       (envelope.revision != 1 ||
+		(envelope.phase == critical_native_recovery_phase::execution_pending &&
+		 !candidate.receipt_present && no_progress(candidate))) &&
+	       (envelope.phase == critical_native_recovery_phase::execution_pending ||
+		body_terminal(candidate));
 }
