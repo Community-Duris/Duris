@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <utility>
 
+extern int top_of_objt;
+
 namespace
 {
 bool wallet_cost(P_char player, uint64_t mapping, uint32_t count, uint32_t fee,

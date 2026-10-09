@@ -39,6 +39,7 @@
 #include "core/utils.h"
 #include "account/account_reward.h"
 #include "magic/spell_item_lifecycle.h"
+#include "magic/spells.h"
 
 #include <algorithm>
 #include <array>
