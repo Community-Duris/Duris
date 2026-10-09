@@ -457,8 +457,8 @@
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "a1ea568c44c42dad958bd92542aeb0022b1c2eab437f56a572ea13eabead0866",
-      "src/world/db.h": "6139ee21439b32fd9204f2be5bbd606966a029e7e62a514dd98ab2cac940fdb5",
+      "src/world/db.c": "6bf6da4f9042a882a181f8f7824806d46c27120217484939103cac65b0070c94",
+      "src/world/db.h": "af134316bbdb82fdfe05f1e9460302cb5d671e5f66c3db11239f21628b9513d6",
       "src/world/economic_initialized_world_owner.c": "b9cc81141a03ba8f7b407c27c972404e948bf302e588658005e986ba0de96c97",
       "src/world/economic_initialized_world_owner.h": "73d17bb19b6ee5198448c69ade7829f35811e72d55f5f5f568d61e9b2450384d",
       "src/world/economic_initialized_world_snapshot.c": "8bc6c570684d1a7c1e8040e8051cb0ae73e1b89b5ff5d9c5feecb28207e30d66",
@@ -52537,7 +52537,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8701
+          8706
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -52597,7 +52597,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53072,7 +53072,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53133,7 +53133,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53193,7 +53193,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53253,7 +53253,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53313,7 +53313,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53360,7 +53360,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8816
+          8821
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -54410,7 +54410,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6981
+          6986
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::prepare",
@@ -54470,7 +54470,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8030
+          8035
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publish",
@@ -54530,7 +54530,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8244
+          8249
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publication_step",
@@ -54590,7 +54590,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8541
+          8546
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::rebuild_enrollment",
@@ -54757,7 +54757,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6934
+          6939
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::capture_container_shell",
