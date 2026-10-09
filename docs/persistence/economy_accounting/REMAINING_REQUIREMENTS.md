@@ -1,19 +1,19 @@
 # Double-entry economy: remaining requirements
 
-## Shared initial checkpoint code and worker/replay source integrated - 2026-10-08
+## Shared current SQL proof and deferred native codec coverage - 2026-10-08
 
-[Code milestone](SHARED_INITIAL_CHECKPOINT_CODE_MILESTONE_2026-10-08.md) records maintained passive DURSHOPv2 initial
-checkpoint encode/decode, preserving original catalog/read/write/trade behavior.
-Port source review passed:46 actual provider pins,four insertion-only inverses;
-changed-line format/token checks passed. Compiler/runtime qualification is deferred.
-Private combined candidate `e59b317e13073554c3ff650f986a013ad98849778cd540e0d1c6f259ae6b1bb7`
-joins actual detached capture, immutable carrier, worker lifetime/shutdown correction
-and root's historical shared SQL replay proof. Independent source reviews passed.
-All209 selected bodies authenticate; inventory is not completion. Producer invocation,
-complete budgets,root SQL dispatch/reconciliation,current proof/publication/ACK/origin
-and flat counterpart remain open. The broader source is unpromoted. Plans2-4/
-combinedPlan5/R1-R8/release remain unfinished;original Plan1 scope is preserved.
-Inactive behavior,declined spell path and activation/production gates stay intact.
+[Source and prepared coverage](SHARED_CURRENT_SQL_PROOF_AND_DEFERRED_CODEC_COVERAGE_2026-10-08.md) records the maintained initial
+checkpoint's new native harness/runner and central registration. Cases are
+UNEXECUTED; existing manual scheduling enforces temporary user-directed deferral.
+Remove the flag/reason at relevant major-plan readiness and perform qualification.
+Private candidate `01a1f0e11fe112bf3fcc74b779367e67df80f9038901ca1f4e9abbd66835f031`
+joins shared authority preparation and current SQL publication proof. Independent
+review corrected born-stock observation, physical route direction and stale
+snapshot counts. Coupled source review and290-provider/19-inverse join passed;
+all209 bodies authenticate, without full accounting acceptance. Genuine producer,
+complete budgets,root SQL integration,world publication/ACK/origin and flat work
+remain open. Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1
+scope and inactive/declined-spell/activation/production gates remain preserved.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
