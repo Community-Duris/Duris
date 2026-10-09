@@ -4835,6 +4835,11 @@ std::unordered_map<std::string, native_quest_acceptance_preparation> native_ques
 uint64_t native_quest_preparation_generation = 0;
 size_t native_quest_gameplay_retained_bytes = 0;
 size_t native_quest_birth_retained_bytes = 0;
+// Nonowning game-thread budget hook, installed only by the genuine flat ROOT.
+// The registered observer outlives all guards and reads actual current globals.
+// It conveys bytes only, never source/delivery/activation/ACK authority.
+bool (*native_quest_flat_global_observer)(size_t *) noexcept = nullptr;
+const void *native_quest_flat_global_scope = nullptr;
 
 size_t native_quest_pending_count()
 {
@@ -4856,6 +4861,8 @@ void native_quest_reset_for_tests()
 	native_quest_preparation_generation = 0;
 	native_quest_gameplay_retained_bytes = 0;
 	native_quest_birth_retained_bytes = 0;
+	native_quest_flat_global_observer = nullptr;
+	native_quest_flat_global_scope = nullptr;
 }
 bool native_quest_preparation_capacity(size_t incoming, bool include_driver = true,
 				       bool include_birth = true)
@@ -4880,6 +4887,18 @@ bool native_quest_preparation_capacity(size_t incoming, bool include_driver = tr
 	if (journal_storage > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
 		return false;
 	incoming += journal_storage;
+	// During the one real bounded flat pulse, ROOT scratch already owns the
+	// complete initial/CURRENT global allowance in every child outer. Outside
+	// that scope count actual persistent globals, including after charge(0).
+	// Never invoke new observers on original unregistered SQL/inactive paths.
+	if (native_quest_flat_global_observer && !native_quest_flat_global_scope)
+	{
+		size_t globals = 0;
+		if (!nevent_is_game_thread() || !native_quest_flat_global_observer(&globals) ||
+		    globals > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
+			return false;
+		incoming += globals;
+	}
 	for (const auto &[key, entry] : native_quest_acceptances)
 	{
 		if (entry.native_before.size() > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
@@ -8918,4 +8937,27 @@ bool item_movement_transaction_restore_held_retirement_recovery(
 	const critical_native_recovery_envelope &envelope) noexcept
 {
 	return item_held_retirement_publication_owner::restore(envelope);
+}
+
+// Scalar-only guard transitions. Actual ROOT clears scratch before ending,
+// then its existing charge(0) observes persistent globals outside the scope.
+bool item_native_quest_global_budget_scope_owner::begin(
+	const void *actual_guard, bool (*current_storage)(size_t *) noexcept) noexcept
+{
+	if (!actual_guard || !current_storage || !nevent_is_game_thread() ||
+	    native_quest_flat_global_scope ||
+	    (native_quest_flat_global_observer &&
+	     native_quest_flat_global_observer != current_storage))
+		return false;
+	native_quest_flat_global_observer = current_storage;
+	native_quest_flat_global_scope = actual_guard;
+	return true;
+}
+bool item_native_quest_global_budget_scope_owner::end(const void *actual_guard) noexcept
+{
+	if (!actual_guard || !nevent_is_game_thread() ||
+	    native_quest_flat_global_scope != actual_guard)
+		return false;
+	native_quest_flat_global_scope = nullptr;
+	return true;
 }
