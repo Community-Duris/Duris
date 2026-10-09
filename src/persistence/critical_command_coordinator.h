@@ -302,6 +302,13 @@ struct critical_zone_reset_recovery_validators
 	bool (*terminal_bounded)(const critical_native_recovery_envelope &,
 				 bool (*)(size_t, void *) noexcept, void *,
 				 size_t) noexcept = nullptr;
+	bool (*successor_bounded)(const critical_native_recovery_envelope &,
+				  const critical_native_recovery_envelope &,
+				  bool (*)(size_t, void *) noexcept, void *,
+				  size_t) noexcept = nullptr;
+	bool (*publication_bounded)(const critical_native_recovery_envelope &,
+				    const critical_completion &, bool (*)(size_t, void *) noexcept,
+				    void *, size_t) noexcept = nullptr;
 };
 
 // Pure auction NAR checks. All callbacks must be registered by the genuine
@@ -427,6 +434,31 @@ class critical_zone_reset_item_publication_owner final
 					    size_t) noexcept,
 				   void *transfer_context, bool (*)(size_t, void *) noexcept,
 				   void *budget_context, size_t outer_live) noexcept;
+	// Complete original same-phase context CAS. Full prepared clone and pure
+	// callbacks precede the pinned journal rewrite; no allocating work follows
+	// durable success. Callback/outer/persistent-storage contract matches retire.
+	static bool checkpoint_context_bounded(const critical_native_recovery_envelope &,
+					       const critical_native_recovery_envelope &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live,
+					       uint64_t expected_generation = 0) noexcept;
+	// Original receipt/delivery-authenticated execution->continuation ACK. Both
+	// full envelope clones and domain proofs precede the pinned durable CAS;
+	// original ROOM fences survive physical ACK until terminal retirement.
+	static bool acknowledge_bounded(const critical_native_recovery_envelope &,
+					const critical_completion &, uint64_t,
+					bool (*)(size_t, void *) noexcept, void *,
+					size_t outer_live) noexcept;
+	// Full current native carrier copy and original generation observation.
+	// Strong outputs, complete original command/BODY proof and actual fresh
+	// clone/key/codec storage; no new delivery/source/ACK authority.
+	static bool copy_context_bounded(const critical_command &,
+					 critical_native_recovery_envelope *,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
+	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
+					       uint64_t *, bool (*)(size_t, void *) noexcept,
+					       void *, size_t outer_live) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.

@@ -6114,3 +6114,470 @@ bool critical_zone_reset_item_publication_owner::retire_bounded(
 	}
 #endif
 }
+
+namespace
+{
+bool room_checkpoint_heap(const critical_native_recovery_envelope &envelope, bool fresh,
+			  size_t &bytes) noexcept
+{
+	const auto &command = envelope.command;
+	const size_t keys = fresh ? command.keys.size() : command.keys.capacity();
+	const size_t revisions = fresh ? command.expected_revisions.size() :
+					 command.expected_revisions.capacity();
+	return keys <= CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_entity_key) &&
+	       room_retire_add(bytes, keys * sizeof(critical_entity_key)) &&
+	       revisions <= CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_expected_revision) &&
+	       room_retire_add(bytes, revisions * sizeof(critical_expected_revision)) &&
+	       room_retire_add(bytes,
+			       fresh ? command.payload.size() : command.payload.capacity()) &&
+	       room_retire_add(bytes, fresh ? command.accounting_intent.size() :
+					      command.accounting_intent.capacity()) &&
+	       room_retire_add(bytes,
+			       fresh ? envelope.attachment.size() : envelope.attachment.capacity());
+}
+bool room_checkpoint_size_bounded(const critical_native_recovery_envelope &envelope,
+				  size_t *retained, bool (*reserve)(size_t, void *) noexcept,
+				  void *context, size_t outer) noexcept
+{
+	if (!retained || !native_transport_command(envelope.command) ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
+	    !envelope.command.publication_required || !envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
+	    envelope.attachment.empty() ||
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return false;
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(std::vector<uint8_t>)) || !reserve(live, context))
+		return false;
+	std::vector<uint8_t> encoded;
+	if (critical_command_encode_bounded(envelope.command, &encoded, reserve, context, live) !=
+		    critical_command_codec_result::ok ||
+	    encoded.size() >
+		    CRITICAL_COORDINATOR_MAX_BYTES - NATIVE_COORDINATOR_ENVELOPE_OVERHEAD ||
+	    envelope.attachment.size() > CRITICAL_COORDINATOR_MAX_BYTES -
+						 NATIVE_COORDINATOR_ENVELOPE_OVERHEAD -
+						 encoded.size())
+		return false;
+	*retained =
+		encoded.size() + envelope.attachment.size() + NATIVE_COORDINATOR_ENVELOPE_OVERHEAD;
+	return true;
+}
+bool room_checkpoint_equal_bounded(const critical_command &left, const critical_command &right,
+				   bool (*reserve)(size_t, void *) noexcept, void *context,
+				   size_t outer) noexcept
+{
+	size_t a = 0, b = 0;
+	if (critical_command_encoder_working_bytes(left, &a) != critical_command_codec_result::ok ||
+	    critical_command_encoder_working_bytes(right, &b) !=
+		    critical_command_codec_result::ok ||
+	    a < sizeof(std::vector<uint8_t>) || b < sizeof(std::vector<uint8_t>))
+		return false;
+	size_t first = outer, second = outer;
+	if (!room_retire_add(first, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(first, a) ||
+	    !room_retire_add(second, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(second, a - sizeof(std::vector<uint8_t>)) ||
+	    !room_retire_add(second, b) || !reserve(std::max(first, second), context))
+		return false;
+	try
+	{
+		return critical_command_equal(left, right);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // complete original native checkpoint size and equality
+
+bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer,
+	uint64_t expected_generation) noexcept
+{
+	if (!reserve || !zone_reset_typed_command(expected.command) ||
+	    successor.phase != expected.phase || expected.revision == UINT64_MAX ||
+	    successor.revision != expected.revision + 1)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(critical_native_recovery_envelope)) ||
+	    !room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !reserve(live, budget_context))
+		return false;
+	uint64_t generation = 0;
+	operation_state *reserved_operation = nullptr;
+	size_t original_retained = 0, successor_retained = 0;
+	bool prior_uncertain = false;
+	try
+	{
+		critical_native_recovery_envelope prepared;
+		if (!room_checkpoint_size_bounded(expected, &original_retained, reserve,
+						  budget_context, live) ||
+		    !room_checkpoint_equal_bounded(expected.command, successor.command, reserve,
+						   budget_context, live) ||
+		    !room_checkpoint_size_bounded(successor, &successor_retained, reserve,
+						  budget_context, live))
+			return false;
+		size_t copy_live = live;
+		if (!room_checkpoint_heap(successor, true, copy_live) ||
+		    !reserve(copy_live, budget_context))
+			return false;
+		prepared = successor; // Full command and BODY clone before reservation/effects.
+		if (!room_checkpoint_heap(prepared, false, live))
+			return false;
+		const std::string identity = operation_key(expected.command.operation_id);
+		{
+			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			auto found = operations.find(identity);
+			if (!health.initialized || stop_requested || found == operations.end() ||
+			    !room_retire_matches_bounded(*found->second, expected, reserve,
+							 budget_context, live) ||
+			    found->second->publication_checkpointing ||
+			    found->second->native_ack_uncertain || !coordinator_generation ||
+			    coordinator_generation_exhausted ||
+			    (expected_generation &&
+			     coordinator_generation != expected_generation) ||
+			    (lifecycle_guard_active &&
+			     lifecycle_guard_thread != std::this_thread::get_id()) ||
+			    (expected.phase == critical_native_recovery_phase::execution_pending ?
+				     !operation_is_publication_pending(*found->second) :
+				     (found->second->phase !=
+					      critical_operation_phase::native_continuation_pending ||
+				      !found->second->native_physical_released)) ||
+			    !zone_reset_validators_ready() ||
+			    !zone_reset_validators.valid_bounded ||
+			    !zone_reset_validators.successor_bounded ||
+			    !zone_reset_validators.valid_bounded(expected, reserve, budget_context,
+								 live) ||
+			    !zone_reset_validators.successor_bounded(expected, prepared, reserve,
+								     budget_context, live))
+				return false;
+			if (found->second->flat_transaction)
+			{
+				const size_t extra = found->second->flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
+			if (found->second->room_flat_transaction)
+			{
+				const size_t extra = found->second->room_flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
+			const size_t reserved =
+				std::max(found->second->retained_bytes, successor_retained);
+			if (reserved >
+			    CRITICAL_COORDINATOR_MAX_BYTES -
+				    (health.retained_bytes - found->second->retained_bytes))
+				return false;
+			prior_uncertain = found->second->native_context_uncertain;
+			found->second->retained_bytes = reserved;
+			found->second->publication_checkpointing = true;
+			generation = coordinator_generation;
+			reserved_operation = found->second.get();
+			++publication_checkpoints_inflight;
+			++guarded_publications_inflight;
+			update_depth();
+		}
+		const auto result = critical_command_journal_replace_native_recovery_bounded(
+			expected, prepared, reserve, budget_context, live);
+		// Same original exact operation pin and nonallocating post-durable recheck.
+		// No codec/allocation/budget callback follows confirmed journal replacement.
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+		auto found = operations.find(identity);
+		if (found == operations.end() || coordinator_generation != generation ||
+		    found->second.get() != reserved_operation ||
+		    !found->second->publication_checkpointing || !found->second->native ||
+		    found->second->native->revision != expected.revision ||
+		    found->second->native->phase != expected.phase ||
+		    found->second->native->attachment != expected.attachment)
+			return false;
+		auto &state = *found->second;
+		state.publication_checkpointing = false;
+		if (result != critical_command_journal_result::ok)
+		{
+			state.native_context_uncertain =
+				prior_uncertain ||
+				result == critical_command_journal_result::append_uncertain;
+			if (!state.native_context_uncertain)
+				state.retained_bytes = original_retained;
+			update_depth();
+			return false;
+		}
+		state.native->revision = prepared.revision;
+		state.native->attachment = std::move(prepared.attachment);
+		state.retained_bytes = successor_retained;
+		state.native_context_uncertain = false;
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_zone_reset_item_publication_owner::acknowledge_bounded(
+	const critical_native_recovery_envelope &expected, const critical_completion &receipt,
+	uint64_t generation, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer) noexcept
+{
+	if (!reserve || !generation || !zone_reset_typed_command(expected.command) ||
+	    expected.phase != critical_native_recovery_phase::execution_pending ||
+	    expected.revision == UINT64_MAX ||
+	    receipt.operation_id.bytes != expected.command.operation_id.bytes ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied) ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    !receipt.durable_revision || receipt.error_code ||
+	    receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_RESULT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, 2 * sizeof(critical_native_recovery_envelope)) ||
+	    !room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !reserve(live, budget_context))
+		return false;
+	std::string identity;
+	critical_native_recovery_envelope frozen, successor;
+	operation_state *pinned = nullptr;
+	bool prior_uncertain = false;
+	try
+	{
+		// Every fallible copy/encoding precedes the pinned journal CAS.
+		size_t copy_live = live;
+		if (!room_checkpoint_heap(expected, true, copy_live) ||
+		    !reserve(copy_live, budget_context))
+			return false;
+		frozen = expected;
+		if (!room_checkpoint_heap(frozen, false, live))
+			return false;
+		copy_live = live;
+		if (!room_checkpoint_heap(frozen, true, copy_live) ||
+		    !reserve(copy_live, budget_context))
+			return false;
+		successor = frozen;
+		if (!room_checkpoint_heap(successor, false, live))
+			return false;
+		++successor.revision;
+		successor.phase = critical_native_recovery_phase::continuation_pending;
+		// Move assignment materializes the operation_key return object alongside
+		// the already-live identity; its allocation is already in the main prefix.
+		size_t key_live = live;
+		if (!room_retire_add(key_live, sizeof(std::string)) ||
+		    !reserve(key_live, budget_context))
+			return false;
+		identity = operation_key(frozen.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !health.initialized || stop_requested ||
+		    coordinator_generation != generation || coordinator_generation_exhausted ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !operation_is_publication_pending(*found->second) ||
+		    !found->second->retain_until_publication ||
+		    found->second->publication_checkpointing ||
+		    found->second->native_context_uncertain ||
+		    !room_retire_matches_bounded(*found->second, frozen, reserve, budget_context,
+						 live) ||
+		    !native_receipt_equal(found->second->publication_completion, receipt) ||
+		    !zone_reset_validators_ready() || !zone_reset_validators.publication_bounded ||
+		    !zone_reset_validators.successor_bounded ||
+		    !zone_reset_validators.publication_bounded(frozen, receipt, reserve,
+							       budget_context, live) ||
+		    !zone_reset_validators.successor_bounded(frozen, successor, reserve,
+							     budget_context, live))
+			return false;
+		prior_uncertain = found->second->native_ack_uncertain;
+		pinned = found->second.get();
+		pinned->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	auto result = critical_command_journal_result::io_failure;
+	try
+	{
+		result = critical_command_journal_replace_native_recovery_bounded(
+			frozen, successor, reserve, budget_context, live);
+	}
+	catch (...)
+	{
+	}
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	--publication_checkpoints_inflight;
+	--guarded_publications_inflight;
+	publication_checkpoint_finished.notify_all();
+	auto found = operations.find(identity);
+	// No allocation, command encoding or owner callback after durable CAS.
+	if (found == operations.end() || coordinator_generation != generation ||
+	    found->second.get() != pinned || !found->second->publication_checkpointing ||
+	    !operation_is_publication_pending(*found->second) || !found->second->native ||
+	    found->second->native->revision != frozen.revision ||
+	    found->second->native->phase != frozen.phase ||
+	    found->second->native->attachment != frozen.attachment)
+		return false;
+	auto &state = *found->second;
+	state.publication_checkpointing = false;
+	if (result != critical_command_journal_result::ok)
+	{
+		state.native_ack_uncertain =
+			prior_uncertain ||
+			result == critical_command_journal_result::append_uncertain;
+		return false;
+	}
+	state.native->revision = successor.revision;
+	state.native->phase = successor.phase;
+	state.phase = critical_operation_phase::native_continuation_pending;
+	state.native_ack_uncertain = false;
+	state.native_physical_released = true;
+	// Original constructor evidence must transfer before this lifetime can
+	// progress. Recipe-only historical births preserve their original ACK.
+	// Type22 fences remain until genuine durable terminal transfer and retirement.
+	// Reset consumes no player-save hold and creates no command-only cache entry.
+	// The original envelope remains until the birth owner retires its terminal tail.
+	update_depth();
+	work_available.notify_all();
+	return true;
+#endif
+}
+
+bool critical_zone_reset_item_publication_owner::copy_context_bounded(
+	const critical_command &command, critical_native_recovery_envelope *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!output || !reserve || !zone_reset_typed_command(command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(critical_native_recovery_envelope)) ||
+	    !room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+		return false;
+	try
+	{
+		// The original phase1/phase2 attempts differ only in this actual phase test.
+		// One same-lock lookup preserves both complete predicates and proofs.
+		const std::string identity = operation_key(command.operation_id);
+		critical_native_recovery_envelope copy;
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (!health.initialized || stop_requested || found == operations.end() ||
+		    !found->second->native || found->second->publication_checkpointing ||
+		    found->second->native_context_uncertain ||
+		    found->second->native_ack_uncertain ||
+		    !room_checkpoint_equal_bounded(command, found->second->command, reserve,
+						   context, live))
+			return false;
+		const auto &state = *found->second;
+		const auto phase = state.native->phase;
+		if (phase == critical_native_recovery_phase::execution_pending ?
+			    !operation_is_publication_pending(state) :
+			    (phase != critical_native_recovery_phase::continuation_pending ||
+			     state.phase != critical_operation_phase::native_continuation_pending ||
+			     !state.native_physical_released))
+			return false;
+		// Inspect actual current vectors without constructing an uncharged carrier.
+		const auto &current = state.command;
+		if (current.keys.size() >
+			    CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_entity_key) ||
+		    current.expected_revisions.size() >
+			    CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_expected_revision) ||
+		    !room_retire_add(live, current.keys.size() * sizeof(critical_entity_key)) ||
+		    !room_retire_add(live, current.expected_revisions.size() *
+						   sizeof(critical_expected_revision)) ||
+		    !room_retire_add(live, current.payload.size()) ||
+		    !room_retire_add(live, current.accounting_intent.size()) ||
+		    !room_retire_add(live, state.native->attachment.size()) ||
+		    !reserve(live, context))
+			return false;
+		// Same original native_envelope field copies into one actual fresh object.
+		// Direct fields avoid a separate uncharged return carrier or fabricated BODY.
+		copy.command = current;
+		copy.revision = state.native->revision;
+		copy.phase = phase;
+		copy.attachment = state.native->attachment;
+		if (!zone_reset_validators_ready() || !zone_reset_validators.valid_bounded ||
+		    !zone_reset_validators.valid_bounded(copy, reserve, context, live))
+			return false;
+		*output = std::move(copy);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_zone_reset_item_publication_owner::observe_generation_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!output || !reserve || !zone_reset_typed_command(expected.command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+		return false;
+	try
+	{
+		const std::string identity = operation_key(expected.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->retain_until_publication ||
+		    !room_retire_matches_bounded(*found->second, expected, reserve, context,
+						 live) ||
+		    !health.initialized || !coordinator_generation ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    found->second->publication_checkpointing ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()))
+			return false;
+		*output = coordinator_generation;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
