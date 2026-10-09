@@ -1,0 +1,9 @@
+# Shared current coordinator ownership providers - 2026-10-09
+
+The private shared-budget owner now supplies a genuine once-only ownership split. Actual opt-in seven-owner ROOT registration supplies its real guard, outside current observer and reserve callback. A coordinator-owned lender can borrow its current bytes only for that actual callback/guard and cannot nest, rebind or reset during a borrow. ROOT can authenticate and subtract borrowed coordinator bytes before caching its own scratch high-water value. Shared capacity adds those borrowed bytes once during the callback; outside it, it takes a fresh passive observation. The five real static slots are counted once in the selected aggregate.
+
+No coordinator current bytes enter the retained birth cache through this provider. End clears the exact lender/guard/current fields together. Reset before startup replay refuses an active registered guard or borrow and otherwise clears scalar registration without observation. Unregistered original paths preserve their capacity behavior.
+
+Complete independent database-specialist RAW review and final formatted architect review passed. Whole inverses, tokens/logical preprocessing, strong outputs and protected unrelated files passed. All 400 source pins authenticate; 931 writer policies remain unchanged, zero new/unmapped sites. Evidence: tmp/shared-coordinator-budget-scope-owner-20261009 and tmp/shared-coordinator-budget-scope-integrated-20261009.
+
+This provider remains unregistered until its real ROOT and coordinator lender callers are joined. All locked checkpoint/ACK/copy/generation/refusal/admission and journal companion paths must be converted before enabling the full selector. Full startup replay-prefix, pulse and native qualification remain open. Native checks stay deferred to major-plan readiness; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
