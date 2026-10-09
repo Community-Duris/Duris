@@ -61,12 +61,35 @@ struct player_item_snapshot_list_allocation_profile
 
 // Passive actual inline decoder footprint; no allocation or authority.
 size_t player_item_snapshot_list_decoder_object_bytes() noexcept;
+// The passive wire scan's two simultaneously live named objects. Callback
+// closures and scalar call frames follow the existing codec storage policy.
+size_t player_item_snapshot_list_preflight_object_bytes() noexcept;
 
 // Output remains unchanged on failure. A successful scan covers the full span
 // before any item allocation; the existing semantic decode is still required.
 player_snapshot_codec_result player_item_snapshot_list_preflight(
 	const uint8_t *encoded, size_t encoded_size,
 	player_item_snapshot_list_allocation_profile *profile_out) noexcept;
+
+// Allocation-free profile of the actual live item-list encoder before it copies
+// or allocates bytes. Models the same append sequence and fresh validation decode
+// as the original encoder; original semantic encode/decode remains authoritative.
+// Input/prior output/profile objects are caller-owned outer-live storage. Reserve
+// the scan object's footprint before profiling, then retain the admitted peak
+// through codec output transfer. Unsupported request policies cannot admit work.
+size_t player_item_snapshot_list_encoder_preflight_object_bytes() noexcept;
+player_snapshot_codec_result player_item_snapshot_list_encoder_preflight(
+	const std::vector<player_item_snapshot> &,
+	player_item_snapshot_list_allocation_profile *) noexcept;
+// Original encoder's maximum simultaneous object/request bytes, excluding its
+// caller-owned input, prior output and profile. Includes both validation vectors,
+// the decoder object, decoded rows/strings and relationship-validation scratch.
+bool player_item_snapshot_list_encoder_working_bytes(
+	const player_item_snapshot_list_allocation_profile &, size_t *) noexcept;
+player_snapshot_codec_result player_item_snapshot_list_encode_bounded(
+	const std::vector<player_item_snapshot> &, std::vector<uint8_t> *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept;
 
 constexpr size_t PLAYER_ITEM_PROPERTIES_MAX_BYTES = 16 + PLAYER_SNAPSHOT_MAX_ROWS * 12;
 constexpr size_t PLAYER_ITEM_PROPERTIES_MAX_HEX_BYTES = PLAYER_ITEM_PROPERTIES_MAX_BYTES * 2;

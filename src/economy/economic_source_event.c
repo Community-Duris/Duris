@@ -57,6 +57,14 @@ bool economic_source_event_valid(const economic_source_event &event)
 	       !critical_operation_id_is_zero(event.generation);
 }
 
+size_t economic_source_event_decode_object_bytes() noexcept
+{
+	// reader::id/block/take can keep both local and returned identity/span
+	// objects alive with the decoder's input and result. No wire allocation.
+	return sizeof(reader) + sizeof(economic_source_event) +
+	       2 * sizeof(critical_operation_id) + 2 * sizeof(std::span<const uint8_t>);
+}
+
 economic_accounting_error
 economic_source_event_encode(const economic_source_event &event,
 			     std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> *encoded)

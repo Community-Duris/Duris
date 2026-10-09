@@ -199,6 +199,16 @@ bool critical_command_equal(const critical_command &left, const critical_command
 const char *critical_failure_stage_name(critical_failure_stage stage);
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded);
+// Allocation-free original encoder profile. Includes its local vector object
+// and exact fresh reserve request under the qualified libstdc++13 policy. Input,
+// old output, scalar frames and allocator internals remain caller obligations.
+// Refusal leaves working_bytes unchanged; no execution authority is granted.
+critical_command_codec_result critical_command_encoder_working_bytes(
+	const critical_command &, size_t *working_bytes) noexcept;
+critical_command_codec_result critical_command_encode_bounded(
+	const critical_command &, std::vector<uint8_t> *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept;
 critical_command_codec_result critical_command_decode(const uint8_t *encoded, size_t size,
 						      critical_command *command);
 

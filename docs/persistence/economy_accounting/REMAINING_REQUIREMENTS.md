@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## ROOM codec admission contracts - 2026-10-09
+
+[Bounded codec checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) resolves the
+missing pure builder/decoder/profile/canonical encoder interfaces with source review.
+Full genuine caller32MiB, recovered provider/INITIAL overlap and returned-envelope
+lifetime still need integration and native qualification. No backend or route
+qualification is promoted; tests stay batched at major-plan readiness.
+
 ## BS-R1 metadata reservations implemented - 2026-10-09
 
 Bounded read/lock helpers now reserve the actual simultaneously live file metadata

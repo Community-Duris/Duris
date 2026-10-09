@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## ROOM codec admission contracts - 2026-10-09
+
+[Source checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) adds allocation-free
+item/recipe profiles, bounded ROOM construction/decoding, private installed-authority
+forwarding and bounded canonical command encoding. Independent source review
+passed; original codec bodies, 931 policies and closed admission are preserved.
+Tests/builds remain in the major-plan batch. Actual pulse-owned scratch lifetime,
+provider arrays, INITIAL and output handoff integration remain unfinished; the
+earlier ec632 executable checkpoint does not qualify this source successor.
+
 ## Local Docker test review: SQL prerequisites reproduced - 2026-10-09
 
 [Local combined candidate results](LOCAL_COMBINED_CANDIDATE_TEST_REVIEW_2026-10-09.md)

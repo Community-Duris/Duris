@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Current source and executable scope - 2026-10-09
+
+[ROOM codec checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) records source-
+reviewed bounded construction helpers, with original bodies and writer policies
+preserved. Producer/provider/INITIAL/output-lifetime integration and qualification
+remain open. The [executable checkpoint](COMBINED_EXECUTABLE_CANDIDATE_CHECKPOINT_2026-10-09.md)
+passed both production builds and inactive flat preflight for ec632155; later
+BS-R1 and codec successors are unbuilt. ec632 SQL smoke was unavailable; the
+[peer's newer local review](LOCAL_COMBINED_CANDIDATE_TEST_REVIEW_2026-10-09.md)
+reports SQL prerequisite failures before boot. SQL qualification remains open. Earlier
+pending-build entries below are historical. Admission CLOSED; release BLOCKED;
+the ongoing goal remains active, with Plan1 complete only at its recorded scope.
+
 ## Guarded combined-source candidate - 2026-10-09
 
 [Candidate handoff](COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md) records

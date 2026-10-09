@@ -73,4 +73,31 @@ economic_accounting_error
 native_mobile_birth_recipe_decode(std::span<const uint8_t>, std::span<const player_item_snapshot>,
 				  std::vector<native_mobile_birth_item_recipe> *) noexcept;
 
+// Allocation-free profiles of the existing canonical NBR1 codec. Counts and
+// wire length are portable; fresh allocation requests require the policy bits.
+// Nested library-vector objects are already included in sizeof(recipe rows).
+// These are explicit object/request bytes, not allocator metadata or frame padding.
+struct native_mobile_birth_recipe_allocation_profile
+{
+	size_t item_count = 0, library_count = 0, wire_bytes = 0;
+	size_t decoded_row_storage_bytes = 0, decoded_library_storage_bytes = 0;
+	size_t decoded_payload_bytes = 0, encoded_capacity_bytes = 0;
+	size_t validation_inline_storage_bytes = 0, preflight_inline_storage_bytes = 0;
+	size_t encoder_inline_storage_bytes = 0, decoder_inline_storage_bytes = 0;
+	bool fresh_decode_storage_policy_supported = false;
+	bool fresh_encode_storage_policy_supported = false;
+};
+
+// Reserve this explicit profile/preflight footprint BEFORE invoking a profile.
+// Input spans/forests/wire, the profile output and all prior codec outputs belong
+// to the caller's outer-live charge. Keep admitted payload/object requests live
+// through the original codec call and output transfer; no lifetime is granted here.
+size_t native_mobile_birth_recipe_profile_inline_storage_bytes() noexcept;
+economic_accounting_error native_mobile_birth_recipe_encode_profile(
+	std::span<const player_item_snapshot>, std::span<const native_mobile_birth_item_recipe>,
+	native_mobile_birth_recipe_allocation_profile *) noexcept;
+economic_accounting_error native_mobile_birth_recipe_decode_profile(
+	std::span<const uint8_t>, std::span<const player_item_snapshot>,
+	native_mobile_birth_recipe_allocation_profile *) noexcept;
+
 #endif
