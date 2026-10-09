@@ -142,6 +142,79 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Two-stage admission blueprint reviewed; bounded component driver preparation - 2026-10-09
+
+Architecture BS_R1_PUBLISHED_TWO_STAGE_ADMISSION_ACCEPTANCE_DELTA_2026-10-09.txt
+now PASS independent root source/factual review and CLOSED at its finite scope.
+D:/Dev/Temp/bs-r1-published-two-stage-admission-acceptance-delta-20261009/.
+Note 22,630 bytes, SHA256
+5f6fca8d08ce02dc7e825333ddfaf661e2670c31e4b95650148fe6160c4e36cf.
+PINS 101,423 bytes, SHA256
+3cb00662f75baded4cab3f8bf33508698fd2ce56d3e80d6d04f30c6e4bb45943.
+Root reads full note/verifier and actual repaired reader/acquisition/recovery
+bodies; independently authenticates five providers/17 ranges/two unchanged
+headers/four unchanged cuts/four optional non-equalities/11 reused inputs/nine
+payloads. Source 4f45070807ac9bc86501bf81613b7b4b643bc2b9 remains exact at
+aca9a7aff6d096314a667b12e24aff5fd5123be5. Preserved H5c53e1e remains clean.
+All proposed component/native controls remain UNEXECUTED; metadata is not acceptance.
+
+Reviewed phase assertions match source: reader arithmetic overflow before first
+admission yields zero callbacks; early denial or later genuine missing-file/
+metadata/I/O result yields one; admitted valid-file vector denial/success yields
+two. Early ENOBUFS supplies no absence witness. Old bytes/size/capacity persist
+on returned failure; success transfers actual new retention, without errno=0
+promise or blind old-reservation restoration. Acquisition overflow yields zero
+acquisition callbacks; a reached request yields one with both checked stat terms.
+Constructor events remain separate. Real failed-helper cleanup and same-unheld-
+object retry/destruction need original owning-thread lifetime.
+
+Nested recovery records base B then B+sizeof(stat): early nested denial and
+genuine missing journal both have two requests, but return io_error/ENOBUFS and
+ok respectively. Valid file can reach vector callback three; full structural
+scan can reach decoded/apply callback four. No accepting pending journal is
+fabricated. Peaks are absolute phase reservations, not cumulative allocation
+sums; conservative allowances prohibit a new underbound claim without actual
+layout/overlap proof. Passive observer traces do not prove allocation/syscall
+nonexecution or confer genuine accounting source/world/ACK authority.
+
+Prioritized queue: Architecture ONE optional private implementation preparation
+in D:/Dev/Temp/bs-r1-component-boundary-driver-20261009/:
+BS_R1_COMPONENT_BOUNDARY_DRIVER_2026-10-09.cpp, concise integration/limits note,
+exact dependency pins and metadata-only proof. Implement CLOSED bounded reader
+early/observed-filesystem/vector/success/arithmetic and acquisition refusal/
+failure-cleanup/retry/success assertions against real public primitives. Add only
+genuine missing-journal versus nested-denial comparison if offline physical lock
+prerequisites permit; no fabricated authority journal or native accepting owner.
+This makes a concrete optional component regression driver reviewable for primary,
+reducing future fixture implementation work instead of repeating prose inventories.
+Fixed callback observes without allocations/logging/filesystem or errno mutation.
+Future fixture must use fresh exclusive task scratch and refuse reused/shared/
+accounting roots; preparation creates no actual native fixture or root. Code
+must preserve incoming capacity/errno/owning-thread lock lifetime, distinguish
+arithmetic charge probes from authentic census, and retain evidence safely.
+
+Available inputs: exact 4f public reader/lock/recovery bodies/headers and CLOSED
+phase assertions. Determine linkage dependencies from actual source; no invented
+registered runner. Unavailable supported-ABI compilation/capacity observations,
+actual maintained target/private overlap/legal stronger failure exports/full
+authentic aggregate caller remain explicit. Root independent code/hash review
+required before publication. Primary owns maintained tests/builds/qualification;
+Plan5 restore and quest paths stay excluded. No maintained edit, compiler/
+preprocessor/product/tests/native/DB/root execution, private commit/import or
+adoption wait. This preparation is neither implemented integration nor qualification.
+
+Quest INITIAL/ROOM readiness remains CLOSED and event-dependent on genuine
+accepting producer/fault/source/world/terminal capability; no new published
+interface enables its original journeys. Actual ec632 builds/inactive preflight
+remain owner-reported historical results, not qualification of repaired 4f.
+SQL smoke and original full caller32MiB/integrated native/release requirements
+remain open. Preserve all bundles, worktrees/jobs and source ownership.
+Actual Goals remain BLOCKED unchanged; no resumption or broader completion.
+Heartbeat ACTIVE until the original Plans1-5/applicable R1-R8/integrated proof,
+resolved required blockers and owner completion plus selected handoffs finish.
+Root independent raw authentication/source/semantic and exact publication inverse:
+D:/Dev/Temp/coordinator-two-stage-acceptance-review-20261009/.
+
 ## Primary metadata repair supersedes optional patch; executable checkpoint reported - 2026-10-09
 
 Actual published 4f45070807ac9bc86501bf81613b7b4b643bc2b9 implements the finite
