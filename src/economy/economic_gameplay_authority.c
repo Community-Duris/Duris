@@ -400,6 +400,35 @@ economic_accounting_error economic_gameplay_authority::prepare_native_mobile_bir
 	}
 }
 
+bool economic_gameplay_authority::observe_craft_wallet_checkpoint(
+	uint32_t pid, economic_native_money_checkpoint_projection *output) noexcept
+{
+	if (!output || !pid || pid > INT32_MAX ||
+	    (!persistence_mode_requires_mysql() &&
+	     (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	      persistence_mode_sql_enabled())))
+		return false;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version || critical_operation_id_is_zero(selected->lineage) ||
+		    critical_operation_id_is_zero(selected->epoch))
+			return false;
+		const auto wallet = selected->wallets.find(pid);
+		if (wallet == selected->wallets.end() ||
+		    !mapping_valid(wallet->second, economic_account_kind::wallet, selected->lineage,
+				   0))
+			return false;
+		*output = { selected->lineage, selected->epoch, wallet->second };
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool economic_gameplay_authority::observe_shop_checkpoint(
 	uint32_t pid, std::string_view account_name, uint8_t racewar,
 	economic_shop_checkpoint_projection *output) noexcept

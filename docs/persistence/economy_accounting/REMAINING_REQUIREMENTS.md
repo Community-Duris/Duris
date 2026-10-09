@@ -1,5 +1,18 @@
 # Double-entry economy: remaining requirements
 
+## Maintained Smith flat readiness implementation - 2026-10-08
+
+[Source milestone](SMITH_MAINTAINED_FLAT_READINESS_2026-10-08.md) applies the four
+reviewed Smith flat-profile/wallet-observer files with required retained-capacity
+correction. Genuine original queue, journal, selected flat writer, revision ACK
+and hold remain the owners; original32MiB and SQL/inactive policies are preserved.
+Source review, formatting, provider/inverse and application checks passed.
+Execution remains deferred until major-plan readiness. The broader private
+source manifest is `e9459d7ba0a90b11c930743e1767a7ac877d39df7898219410c650353e28332d`;
+its actual equipped SHOP birth correspondence is source-reviewed and unpromoted.
+Full Smith/shared-birth carriers, Plans2-4/combinedPlan5/R1-R8/release remain open;
+the original Plan1 acceptance retains its recorded scope. Goal active; gates closed.
+
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
 [Source integration](SMITH_FLAT_READINESS_AND_ROOM_P_SOURCE_INTEGRATION_2026-10-08.md)

@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 struct char_data;
@@ -192,7 +193,7 @@ bool player_save_pipeline_shop_checkpoint_release(const player_shop_checkpoint_t
 						  const critical_operation_id &operation_id);
 bool player_save_pipeline_shop_checkpoint_cancel(const player_shop_checkpoint_token &token);
 
-// A separate SQL Smith readiness profile. Root zero selects no PC input tree;
+// Separate SQL and regular-flat Smith readiness profiles. Root zero selects no PC input tree;
 // the original checkpoint retains the acknowledged filtered EQ/INV and STATUS
 // level. Complete physical PC images, runtime grant grouping and wallet/native
 // authority are independently frozen by the original Smith owner.
@@ -208,6 +209,12 @@ struct player_smith_checkpoint_stage
 	uint32_t level = 0;
 };
 class smith_native_compound_owner;
+struct economic_native_money_checkpoint_projection;
+struct player_smith_flat_checkpoint_cut
+{
+	std::string selected_root;
+	uint64_t ownership_epoch = 0, execution_hold_generation = 0;
+};
 class player_save_smith_checkpoint_owner final
 {
     private:
@@ -224,10 +231,12 @@ class player_save_smith_checkpoint_owner final
 	// worker ACK supplied the recorded revision. Preserves its captured component
 	// mask and receipts; never recreates uncaptured components or a full physical
 	// PC forest. No submission, release, source or publication capability follows.
-	static bool observe_held(const player_smith_checkpoint_token &, P_char,
-				 const critical_operation_id &, player_smith_checkpoint_stage *,
-				 std::vector<player_item_snapshot> * = nullptr,
-				 player_snapshot *original_acknowledged_body = nullptr) noexcept;
+	static bool observe_held(
+		const player_smith_checkpoint_token &, P_char, const critical_operation_id &,
+		player_smith_checkpoint_stage *, std::vector<player_item_snapshot> * = nullptr,
+		player_snapshot *original_acknowledged_body = nullptr,
+		player_smith_flat_checkpoint_cut *flat_cut_out = nullptr,
+		economic_native_money_checkpoint_projection *flat_wallet_out = nullptr) noexcept;
 };
 
 class shop_trade_preparation_owner;
