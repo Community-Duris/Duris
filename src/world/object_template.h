@@ -133,6 +133,14 @@ class shop_trade_original_procedure_binding_stage
 					  shop_trade_original_procedure_binding_stage &,
 					  bool (*reserve_scratch_peak)(size_t, void *) noexcept,
 					  void *, size_t outer_live_scratch) noexcept;
+	// Genuine cold restored ordinary native bindings: full sealed flat boot
+	// catalog/current UID/native parse/predecessor proof, no live scope retag.
+	// Caller independently proves frozen command/source/custody/receipt cut and
+	// owns all input/prior output storage in outer; callback grants no authority.
+	static bool prepare_native_birth_cold_flat_bounded(
+		const std::span<const quest_mobile_native_item_binding> &,
+		shop_trade_original_procedure_binding_stage &, bool (*)(size_t, void *) noexcept,
+		void *, size_t outer_live_scratch) noexcept;
 	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
 	bool valid_flat() const noexcept;

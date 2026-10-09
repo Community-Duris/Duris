@@ -2556,3 +2556,16 @@ Corrected RAW/final source review/prefix/inverse/tokens/preprocessing passed;
 931 policies/399 pins authenticate, zero new/unmapped sites. Native tests batched.
 Full warm/cold pulse/submission/recovery qualification remains unfinished; inactive/
 CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal remain.
+
+
+## Genuine cold flat native binding implemented - 2026-10-09
+
+[Private cold provider](COLD_NATIVE_FLAT_BINDING_ADMISSION_2026-10-09.md) verifies
+actual restored ordinary stages, sealed catalog/procedure/native parse, UID grouping
+and genuine predecessor chain without inventing live factory source or rerolling.
+Actual chain/hash/map/vector requests retain their whole prefix; strong output.
+RAW/final source review/Cprefix/headerinverse/tokens/preprocessing passed;
+931 policies/399 pins authenticate, zero new/unmapped sites. Cold restore/adopt/
+enrollment/four-route pulse and native recovery qualification remain open. Tests
+stay batched; inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
+ACTIVE primary goal remain. No additional acceptance gate.
