@@ -82,6 +82,10 @@ class economic_gameplay_authority
 	// Selected SQL boot policy keeps legacy writers closed while genuine replay
 	// and published lifetimes recover. It is not fresh admission/readiness.
 	static bool active_sql_recovery();
+	// Pure installed regular wallet mapping only. No admission, native effect,
+	// publication or ACK authority; refusal leaves output unchanged.
+	static bool observe_craft_wallet_checkpoint(
+		uint32_t pid, economic_native_money_checkpoint_projection *output) noexcept;
 	static bool observe_shop_checkpoint(uint32_t pid, std::string_view account_name,
 					    uint8_t racewar,
 					    economic_shop_checkpoint_projection *output) noexcept;

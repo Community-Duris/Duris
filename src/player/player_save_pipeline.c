@@ -141,6 +141,7 @@ enum class literal_checkpoint_profile : uint8_t
 	held_retirement,
 	auction,
 	smith,
+	flat_smith,
 };
 
 struct literal_inventory_checkpoint
@@ -188,12 +189,17 @@ struct literal_inventory_checkpoint
 	bool held = false;
 	bool restored_sql_drop = false;
 	uint64_t execution_hold_generation = 0;
+	// Smith-only retained flat context; no flat SHOP route or bank authority.
+	std::string smith_flat_root, smith_flat_account;
+	uint8_t smith_flat_racewar = 0;
+	uint64_t smith_flat_ownership_epoch = 0;
+	economic_native_money_checkpoint_projection smith_flat_mapping{};
 };
 std::array<literal_inventory_checkpoint, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
 	literal_inventory_checkpoints = {};
-#ifndef __NO_MYSQL__
+bool smith_flat_context_matches(const literal_inventory_checkpoint &, P_char) noexcept;
+bool smith_profile(literal_checkpoint_profile) noexcept;
 uint64_t literal_inventory_generation = 0;
-#endif
 constexpr player_component_mask_t LITERAL_INVENTORY_COMPONENTS = PLAYER_COMPONENT_EQUIPMENT |
 								 PLAYER_COMPONENT_INVENTORY;
 
@@ -218,12 +224,24 @@ bool literal_inventory_capacity_locked(size_t incoming_bytes,
 			return false;
 		incoming_bytes += checkpoint.payload.size();
 		const size_t original_body_bytes =
-			checkpoint.profile == literal_checkpoint_profile::smith ?
+			smith_profile(checkpoint.profile) ?
 				checkpoint.original_shop_body.capacity() :
 				checkpoint.original_shop_body.size();
 		if (original_body_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
 			return false;
 		incoming_bytes += original_body_bytes;
+		for (size_t amount :
+		     { checkpoint.profile == literal_checkpoint_profile::flat_smith ?
+			       checkpoint.smith_flat_root.capacity() :
+			       0,
+		       checkpoint.profile == literal_checkpoint_profile::flat_smith ?
+			       checkpoint.smith_flat_account.capacity() :
+			       0 })
+		{
+			if (amount > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
+				return false;
+			incoming_bytes += amount;
+		}
 		for (const auto *body :
 		     { &checkpoint.original_native_quest_before,
 		       &checkpoint.original_native_quest_after,
@@ -345,8 +363,7 @@ player_component_mask_t literal_checkpoint_components(const literal_inventory_ch
 {
 	if (slot.profile == literal_checkpoint_profile::held_retirement)
 		return HELD_RETIREMENT_CHECKPOINT_COMPONENTS;
-	return slot.profile == literal_checkpoint_profile::shop ||
-			       slot.profile == literal_checkpoint_profile::smith ||
+	return slot.profile == literal_checkpoint_profile::shop || smith_profile(slot.profile) ||
 			       slot.profile == literal_checkpoint_profile::auction ||
 			       slot.native_money_only ?
 		       SHOP_CHECKPOINT_COMPONENTS :
@@ -458,6 +475,11 @@ bool literal_checkpoint_blob(const player_snapshot &snapshot,
 			 cash == checkpoint.native_money_before)) &&
 		       native_quest_checkpoint_blob(snapshot, blob);
 	}
+	if (checkpoint.profile == literal_checkpoint_profile::flat_smith)
+		return smith_flat_context_matches(
+			       checkpoint,
+			       find_character_by_runtime_id(checkpoint.token.actor_runtime_id)) &&
+		       shop_checkpoint_blob(snapshot, blob);
 	if (checkpoint.profile == literal_checkpoint_profile::shop ||
 	    checkpoint.profile == literal_checkpoint_profile::smith ||
 	    checkpoint.profile == literal_checkpoint_profile::auction)
@@ -471,17 +493,27 @@ bool literal_checkpoint_blob(const player_snapshot &snapshot,
 bool prepare_smith_enqueue_locked(const literal_inventory_checkpoint *slot,
 				  const player_snapshot &snapshot, std::vector<uint8_t> *body)
 {
-	if (!slot || slot->profile != literal_checkpoint_profile::smith)
+	if (!slot || !smith_profile(slot->profile))
 		return true;
 	if (!body || slot->held || !snapshot.revision ||
 	    (snapshot.components & SHOP_CHECKPOINT_COMPONENTS) != SHOP_CHECKPOINT_COMPONENTS ||
 	    player_snapshot_encode(snapshot, body) != player_snapshot_codec_result::ok)
 		return false;
-	const size_t bytes = slot->payload.size();
-	if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
-	    body->capacity() > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
-		return false;
-	return literal_inventory_capacity_locked(bytes + body->capacity(), slot);
+	size_t bytes = slot->payload.size();
+	for (size_t amount : { body->capacity(),
+			       slot->profile == literal_checkpoint_profile::flat_smith ?
+				       slot->smith_flat_root.capacity() :
+				       0,
+			       slot->profile == literal_checkpoint_profile::flat_smith ?
+				       slot->smith_flat_account.capacity() :
+				       0 })
+	{
+		if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+		    amount > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += amount;
+	}
+	return literal_inventory_capacity_locked(bytes, slot);
 }
 
 void note_literal_enqueue_locked(literal_inventory_checkpoint *checkpoint,
@@ -1279,7 +1311,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 		retained_bytes =
 			retained_bytes - queued.encoded_size_bound + snapshot.encoded_size_bound;
 		retained = retained_snapshot(std::move(snapshot), std::move(residence));
-		if (literal && literal->profile == literal_checkpoint_profile::smith)
+		if (literal && smith_profile(literal->profile))
 			literal->original_shop_body = std::move(smith_checkpoint_body);
 		note_literal_enqueue_locked(literal, literal_revision);
 		++health.coalesced;
@@ -1310,7 +1342,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 		++health.overloads;
 		return player_save_pipeline_result::overloaded;
 	}
-	if (literal && literal->profile == literal_checkpoint_profile::smith)
+	if (literal && smith_profile(literal->profile))
 		literal->original_shop_body = std::move(smith_checkpoint_body);
 	note_literal_enqueue_locked(literal, literal_revision);
 	++health.captured;
@@ -1547,6 +1579,9 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 			      literal->profile == literal_checkpoint_profile::native_quest ||
 			      literal->profile == literal_checkpoint_profile::held_retirement) &&
 			     !economic_gameplay_authority::active_regular_sql()))
+				return player_save_pipeline_result::unavailable;
+			if (literal->profile == literal_checkpoint_profile::flat_smith &&
+			    !smith_flat_context_matches(*literal, ch))
 				return player_save_pipeline_result::unavailable;
 			literal_root_uid = literal->token.root_uid;
 			if (literal->profile == literal_checkpoint_profile::auction)
@@ -1948,6 +1983,8 @@ bool shop_actor_matches(const player_shop_checkpoint_token &token, P_char actor)
 
 bool literal_checkpoint_actor_matches(const literal_inventory_checkpoint &checkpoint, P_char actor)
 {
+	if (checkpoint.profile == literal_checkpoint_profile::flat_smith)
+		return smith_flat_context_matches(checkpoint, actor);
 	if (checkpoint.profile == literal_checkpoint_profile::native_quest ||
 	    checkpoint.profile == literal_checkpoint_profile::held_retirement)
 		return economic_gameplay_authority::active_regular_sql() && actor && IS_PC(actor) &&
@@ -2257,6 +2294,102 @@ bool smith_actor_matches(const player_smith_checkpoint_token &token, P_char acto
 				  actor) &&
 	       !actor->only.pc->load_degraded_components;
 }
+bool smith_profile(literal_checkpoint_profile p) noexcept
+{
+	return p == literal_checkpoint_profile::smith ||
+	       p == literal_checkpoint_profile::flat_smith;
+}
+bool smith_regular_flat(P_char actor) noexcept
+{
+	economic_native_money_checkpoint_projection mapping{};
+	const char *root = persistence_mode_flatfile_root();
+	return actor && IS_PC(actor) && actor->only.pc && GET_PID(actor) > 0 &&
+	       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	       !persistence_mode_sql_enabled() && root && *root &&
+	       economic_gameplay_authority::observe_craft_wallet_checkpoint(GET_PID(actor),
+									    &mapping);
+}
+bool smith_flat_source_cut(P_char actor, std::string *root,
+			   economic_native_money_checkpoint_projection *mapping,
+			   uint64_t *ownership_epoch) noexcept
+{
+	try
+	{
+		if (!actor || !root || !mapping || !ownership_epoch || !nevent_is_game_thread() ||
+		    !IS_PC(actor) || !actor->only.pc || GET_PID(actor) <= 0 || !actor->runtime_id ||
+		    find_character_by_runtime_id(actor->runtime_id) != actor ||
+		    IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
+		    actor->only.pc->load_degraded_components || !smith_regular_flat(actor) ||
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		    persistence_mode_sql_enabled() ||
+		    selected_snapshot_apply() != flatfile_player_snapshot_apply_selected)
+			return false;
+		const char *selected = persistence_mode_flatfile_root(),
+			   *account = get_account_name_safe(actor);
+		const int racewar = GET_RACEWAR(actor);
+		const uint64_t epoch = player_save_execution_guard::current_ownership_epoch();
+		if (!selected || !*selected || !account || !*account || racewar < 0 ||
+		    racewar > INT8_MAX || !epoch)
+			return false;
+		std::string selected_root(selected);
+		economic_native_money_checkpoint_projection actual{};
+		if (!economic_gameplay_authority::observe_craft_wallet_checkpoint(GET_PID(actor),
+										  &actual) ||
+		    !persistence_mode_flatfile_root() ||
+		    selected_root != persistence_mode_flatfile_root() ||
+		    player_save_execution_guard::current_ownership_epoch() != epoch)
+			return false;
+		*root = std::move(selected_root);
+		*mapping = actual;
+		*ownership_epoch = epoch;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool smith_flat_context_matches(const literal_inventory_checkpoint &slot, P_char actor) noexcept
+{
+	try
+	{
+		if (slot.profile != literal_checkpoint_profile::flat_smith ||
+		    find_character_by_runtime_id(slot.token.actor_runtime_id) != actor ||
+		    !smith_actor_matches({ slot.token.pid, slot.token.actor_runtime_id,
+					   slot.token.root_uid, slot.token.generation },
+					 actor))
+			return false;
+		const char *account = get_account_name_safe(actor);
+		std::string root;
+		economic_native_money_checkpoint_projection mapping{};
+		uint64_t epoch = 0;
+		return account && slot.smith_flat_account == account &&
+		       GET_RACEWAR(actor) == slot.smith_flat_racewar &&
+		       smith_flat_source_cut(actor, &root, &mapping, &epoch) &&
+		       slot.smith_flat_root == root && slot.smith_flat_ownership_epoch == epoch &&
+		       slot.smith_flat_mapping.lineage.bytes == mapping.lineage.bytes &&
+		       slot.smith_flat_mapping.epoch.bytes == mapping.epoch.bytes &&
+		       economic_account_key_equal(slot.smith_flat_mapping.player_wallet,
+						  mapping.player_wallet);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool smith_checkpoint_mode_matches(const literal_inventory_checkpoint &slot, P_char actor) noexcept
+{
+	return slot.profile == literal_checkpoint_profile::smith ?
+		       economic_gameplay_authority::active_regular_sql() :
+		       smith_flat_context_matches(slot, actor);
+}
+bool smith_checkpoint_pipeline_ready_locked(const literal_inventory_checkpoint &slot) noexcept
+{
+	return health.initialized && !stop_requested && accepting && health.replay_complete &&
+	       !health.replay_blocked && !find_terminal_fence_locked(slot.token.pid) &&
+	       !find_target_save_login_fence_locked(slot.token.pid) &&
+	       (slot.profile != literal_checkpoint_profile::flat_smith || execution_started);
+}
 }
 
 player_literal_inventory_state
@@ -2265,20 +2398,12 @@ player_save_smith_checkpoint_owner::begin(P_char actor, uint64_t original_runtim
 {
 	P_obj root = nullptr; // Smith consumes NPC stock, never a PC carried root.
 
-#ifdef __NO_MYSQL__
-	(void)actor;
-	(void)original_runtime;
-	(void)root;
-	(void)room_vnum;
-	(void)token_out;
-	return player_literal_inventory_state::refused;
-#else
 	if (!nevent_is_game_thread() || !actor || !token_out || !original_runtime ||
 	    find_character_by_runtime_id(original_runtime) != actor ||
 	    actor->runtime_id != original_runtime || !IS_PC(actor) || !actor->only.pc ||
 	    GET_PID(actor) <= 0 || !actor->runtime_id ||
 	    find_character_by_runtime_id(actor->runtime_id) != actor ||
-	    !economic_gameplay_authority::active_regular_sql() ||
+	    (!economic_gameplay_authority::active_regular_sql() && !smith_regular_flat(actor)) ||
 	    (root && (!root->obj_uid || !OBJ_CARRIED_BY(root, actor))) ||
 	    IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
 	    player_save_journal_pid_quarantined(GET_PID(actor)))
@@ -2292,20 +2417,49 @@ player_save_smith_checkpoint_owner::begin(P_char actor, uint64_t original_runtim
 		    player_snapshot_capture_result::ok ||
 	    !shop_checkpoint_blob(captured, &blob, &level))
 		return player_literal_inventory_state::refused;
+	literal_inventory_checkpoint prepared;
+	prepared.profile = economic_gameplay_authority::active_regular_sql() ?
+				   literal_checkpoint_profile::smith :
+				   literal_checkpoint_profile::flat_smith;
+	prepared.level = level;
+	prepared.payload = std::move(blob);
+	if (prepared.profile == literal_checkpoint_profile::flat_smith)
+	{
+		economic_native_money_checkpoint_projection mapping{};
+		if (!smith_flat_source_cut(actor, &prepared.smith_flat_root, &mapping,
+					   &prepared.smith_flat_ownership_epoch))
+			return player_literal_inventory_state::refused;
+		try
+		{
+			prepared.smith_flat_account = get_account_name_safe(actor);
+		}
+		catch (...)
+		{
+			return player_literal_inventory_state::refused;
+		}
+		prepared.smith_flat_racewar = static_cast<uint8_t>(GET_RACEWAR(actor));
+		// Retain only the genuine Smith wallet cut. No bank authority.
+		prepared.smith_flat_mapping = { mapping.lineage, mapping.epoch,
+						mapping.player_wallet };
+	}
 	player_smith_checkpoint_token token;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!economic_gameplay_authority::active_regular_sql() || !health.initialized ||
-		    stop_requested || !accepting || !health.replay_complete ||
-		    health.replay_blocked || find_target_save_login_fence_locked(GET_PID(actor)) ||
+		if ((prepared.profile == literal_checkpoint_profile::smith ?
+			     !economic_gameplay_authority::active_regular_sql() :
+			     (!smith_regular_flat(actor) || !execution_started)) ||
+		    !health.initialized || stop_requested || !accepting ||
+		    !health.replay_complete || health.replay_blocked ||
+		    find_target_save_login_fence_locked(GET_PID(actor)) ||
 		    find_terminal_fence_locked(GET_PID(actor)))
 			return player_literal_inventory_state::refused;
 		if (auto *existing = find_literal_inventory_locked(GET_PID(actor)))
 		{
-			if (existing->profile != literal_checkpoint_profile::smith ||
+			if (existing->profile != prepared.profile ||
+			    !smith_checkpoint_mode_matches(*existing, actor) ||
 			    existing->token.actor_runtime_id != actor->runtime_id ||
-			    existing->token.root_uid != root_uid || existing->payload != blob ||
-			    existing->held)
+			    existing->token.root_uid != root_uid ||
+			    existing->payload != prepared.payload || existing->held)
 				return player_literal_inventory_state::refused;
 			*token_out = { existing->token.pid, existing->token.actor_runtime_id,
 				       existing->token.root_uid, existing->token.generation };
@@ -2320,14 +2474,29 @@ player_save_smith_checkpoint_owner::begin(P_char actor, uint64_t original_runtim
 				slot = &candidate;
 				break;
 			}
-		if (!slot || !literal_inventory_capacity_locked(blob.size()))
+		size_t bytes = prepared.payload.size();
+		for (size_t amount : { prepared.profile == literal_checkpoint_profile::flat_smith ?
+					       prepared.smith_flat_root.capacity() :
+					       0,
+				       prepared.profile == literal_checkpoint_profile::flat_smith ?
+					       prepared.smith_flat_account.capacity() :
+					       0 })
+		{
+			if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+			    amount > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+				return player_literal_inventory_state::refused;
+			bytes += amount;
+		}
+		if (!slot || !literal_inventory_capacity_locked(bytes))
 			return player_literal_inventory_state::refused;
 		token = { GET_PID(actor), actor->runtime_id, root_uid,
-			  ++literal_inventory_generation };
-		slot->profile = literal_checkpoint_profile::smith;
-		slot->level = level;
-		slot->token = smith_checkpoint_identity(token);
-		slot->payload = std::move(blob);
+			  literal_inventory_generation + 1 };
+		prepared.token = smith_checkpoint_identity(token);
+		if (!smith_checkpoint_mode_matches(prepared, actor))
+			return player_literal_inventory_state::refused;
+		static_assert(std::is_nothrow_move_assignable_v<literal_inventory_checkpoint>);
+		*slot = std::move(prepared);
+		++literal_inventory_generation;
 	}
 	// Make the installed original slot recoverable before enqueue can throw.
 	*token_out = token;
@@ -2350,31 +2519,31 @@ player_save_smith_checkpoint_owner::begin(P_char actor, uint64_t original_runtim
 	}
 	*token_out = token;
 	return player_literal_inventory_state::pending;
-#endif
 }
 
 player_literal_inventory_state
 player_save_smith_checkpoint_owner::poll(const player_smith_checkpoint_token &token, P_char actor,
 					 player_smith_checkpoint_stage *stage_out)
 {
-#ifdef __NO_MYSQL__
-	(void)token;
-	(void)actor;
-	(void)stage_out;
-	return player_literal_inventory_state::refused;
-#else
 	if (!nevent_is_game_thread() || token.root_uid)
 		return player_literal_inventory_state::refused;
 	const auto identity = smith_checkpoint_identity(token);
+	bool flat = false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		const auto *literal = find_literal_inventory_locked(token.pid);
-		if (!literal || literal->profile != literal_checkpoint_profile::smith ||
-		    literal->token != identity || literal->held)
+		if (!literal || !smith_profile(literal->profile) || literal->token != identity ||
+		    literal->held ||
+		    (literal->profile == literal_checkpoint_profile::flat_smith &&
+		     (!smith_checkpoint_pipeline_ready_locked(*literal) ||
+		      !smith_flat_context_matches(*literal, actor))))
 			return player_literal_inventory_state::refused;
+		flat = literal->profile == literal_checkpoint_profile::flat_smith;
 	}
-	if (!economic_gameplay_authority::active_regular_sql() ||
-	    !smith_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid))
+	if (!smith_actor_matches(token, actor) ||
+	    (flat ? !smith_regular_flat(actor) :
+		    !economic_gameplay_authority::active_regular_sql()) ||
+	    player_save_journal_pid_quarantined(token.pid))
 	{
 		player_save_smith_checkpoint_owner::cancel(token);
 		return player_literal_inventory_state::refused;
@@ -2393,8 +2562,10 @@ player_save_smith_checkpoint_owner::poll(const player_smith_checkpoint_token &to
 		return player_literal_inventory_state::pending;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	auto *literal = find_literal_inventory_locked(token.pid);
-	if (!literal || literal->profile != literal_checkpoint_profile::smith ||
-	    literal->token != identity || literal->held)
+	if (!literal || !smith_profile(literal->profile) || literal->token != identity ||
+	    literal->held || !smith_checkpoint_mode_matches(*literal, actor) ||
+	    (literal->profile == literal_checkpoint_profile::flat_smith &&
+	     !smith_checkpoint_pipeline_ready_locked(*literal)))
 		return player_literal_inventory_state::refused;
 	if (literal->payload != blob)
 	{
@@ -2415,17 +2586,11 @@ player_save_smith_checkpoint_owner::poll(const player_smith_checkpoint_token &to
 	if (stage_out)
 		*stage_out = { literal->acknowledged_revision, literal->level };
 	return player_literal_inventory_state::database_acknowledged;
-#endif
 }
 
 bool player_save_smith_checkpoint_owner::hold(const player_smith_checkpoint_token &token,
 					      const critical_operation_id &operation_id)
 {
-#ifdef __NO_MYSQL__
-	(void)token;
-	(void)operation_id;
-	return false;
-#else
 	if (!nevent_is_game_thread() || token.root_uid ||
 	    std::all_of(operation_id.bytes.begin(), operation_id.bytes.end(),
 			[](uint8_t byte) { return !byte; }) ||
@@ -2437,11 +2602,14 @@ bool player_save_smith_checkpoint_owner::hold(const player_smith_checkpoint_toke
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	auto *literal = find_literal_inventory_locked(token.pid);
 	player_revision_snapshot revision = {};
-	if (!economic_gameplay_authority::active_regular_sql() || !health.initialized ||
+	if (!literal ||
+	    !smith_checkpoint_mode_matches(*literal,
+					   find_character_by_runtime_id(token.actor_runtime_id)) ||
+	    !smith_checkpoint_pipeline_ready_locked(*literal) || !health.initialized ||
 	    stop_requested || !accepting || !health.replay_complete || health.replay_blocked ||
 	    find_terminal_fence_locked(token.pid) ||
 	    find_target_save_login_fence_locked(token.pid) || !literal ||
-	    literal->profile != literal_checkpoint_profile::smith ||
+	    !smith_profile(literal->profile) ||
 	    literal->token != smith_checkpoint_identity(token) || literal->held ||
 	    !literal->captured_revision ||
 	    literal->acknowledged_revision != literal->captured_revision ||
@@ -2452,10 +2620,18 @@ bool player_save_smith_checkpoint_owner::hold(const player_smith_checkpoint_toke
 	    revision.queued_components || revision.inflight_components ||
 	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
 		return false;
+	if (literal->profile == literal_checkpoint_profile::flat_smith)
+	{
+		uint64_t generation = 0;
+		if (!player_save_execution_guard::install_live_publication_hold(
+			    token.pid, operation_id, &generation))
+			return false;
+		// No fallible work follows the real original operation exclusion.
+		literal->execution_hold_generation = generation;
+	}
 	literal->operation_id = operation_id;
 	literal->held = true;
 	return true;
-#endif
 }
 
 bool player_save_smith_checkpoint_owner::cancel(const player_smith_checkpoint_token &token)
@@ -2469,8 +2645,9 @@ bool player_save_smith_checkpoint_owner::cancel(const player_smith_checkpoint_to
 	// Absence consumes no save/publication reservation and grants no ACK authority.
 	if (!literal)
 		return true;
-	if (literal->profile != literal_checkpoint_profile::smith ||
-	    literal->token != smith_checkpoint_identity(token) || literal->held)
+	if (!smith_profile(literal->profile) ||
+	    literal->token != smith_checkpoint_identity(token) || literal->held ||
+	    literal->execution_hold_generation)
 		return false;
 	*literal = {};
 	return true;
@@ -2479,21 +2656,14 @@ bool player_save_smith_checkpoint_owner::cancel(const player_smith_checkpoint_to
 bool player_save_smith_checkpoint_owner::observe_held(
 	const player_smith_checkpoint_token &token, P_char actor,
 	const critical_operation_id &operation, player_smith_checkpoint_stage *output,
-	std::vector<player_item_snapshot> *items_out,
-	player_snapshot *original_acknowledged_body) noexcept
+	std::vector<player_item_snapshot> *items_out, player_snapshot *original_acknowledged_body,
+	player_smith_flat_checkpoint_cut *flat_cut_out,
+	economic_native_money_checkpoint_projection *flat_wallet_out) noexcept
 {
-#ifdef __NO_MYSQL__
-	(void)token;
-	(void)actor;
-	(void)operation;
-	(void)output;
-	(void)items_out;
-	(void)original_acknowledged_body;
-	return false;
-#else
 	if (!output || !nevent_is_game_thread() || token.root_uid ||
-	    !economic_gameplay_authority::active_regular_sql() ||
-	    !smith_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid) ||
+	    !smith_actor_matches(token, actor) ||
+	    (!economic_gameplay_authority::active_regular_sql() && !smith_regular_flat(actor)) ||
+	    player_save_journal_pid_quarantined(token.pid) ||
 	    player_save_worker_pid_pending(token.pid))
 		return false;
 	try
@@ -2512,12 +2682,32 @@ bool player_save_smith_checkpoint_owner::observe_held(
 		    !health.replay_complete || health.replay_blocked ||
 		    find_terminal_fence_locked(token.pid) ||
 		    find_target_save_login_fence_locked(token.pid) || !slot ||
-		    slot->profile != literal_checkpoint_profile::smith ||
+		    !smith_profile(slot->profile) || !smith_checkpoint_mode_matches(*slot, actor) ||
+		    !smith_checkpoint_pipeline_ready_locked(*slot) ||
 		    slot->token != smith_checkpoint_identity(token) || !slot->held ||
 		    slot->restored_sql_drop || slot->operation_id.bytes != operation.bytes ||
 		    slot->payload != blob || slot->level != level || !slot->captured_revision ||
 		    slot->acknowledged_revision != slot->captured_revision ||
 		    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+			return false;
+		player_smith_flat_checkpoint_cut flat_cut;
+		economic_native_money_checkpoint_projection flat_wallet{};
+		std::optional<player_save_execution_guard::held_publication_reservation> reservation;
+		if (slot->profile == literal_checkpoint_profile::flat_smith)
+		{
+			if (!slot->execution_hold_generation || !slot->smith_flat_ownership_epoch)
+				return false;
+			reservation.emplace(slot->smith_flat_ownership_epoch, token.pid, operation,
+					    slot->execution_hold_generation);
+			if (!reservation->matches_pid(token.pid))
+				return false;
+			flat_cut = { slot->smith_flat_root, slot->smith_flat_ownership_epoch,
+				     slot->execution_hold_generation };
+			flat_wallet = { slot->smith_flat_mapping.lineage,
+					slot->smith_flat_mapping.epoch,
+					slot->smith_flat_mapping.player_wallet };
+		}
+		else if (flat_cut_out || flat_wallet_out)
 			return false;
 		player_snapshot acknowledged;
 		std::vector<uint8_t> canonical, acknowledged_blob;
@@ -2535,6 +2725,10 @@ bool player_save_smith_checkpoint_owner::observe_held(
 		    canonical != slot->original_shop_body)
 			return false;
 		static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+		static_assert(std::is_nothrow_move_assignable_v<player_smith_flat_checkpoint_cut>);
+		if (reservation &&
+		    (!reservation->valid() || !smith_flat_context_matches(*slot, actor)))
+			return false;
 		if (original_acknowledged_body)
 			*original_acknowledged_body = std::move(acknowledged);
 		// Unrelated dirty STATUS marks may advance while the native operation is held.
@@ -2543,6 +2737,10 @@ bool player_save_smith_checkpoint_owner::observe_held(
 		// Copying values exposes no execution hold or ACK capability.
 		if (items_out)
 			*items_out = std::move(captured.items);
+		if (flat_cut_out)
+			*flat_cut_out = std::move(flat_cut);
+		if (flat_wallet_out)
+			*flat_wallet_out = flat_wallet;
 		*output = { slot->acknowledged_revision, slot->level };
 		return true;
 	}
@@ -2550,7 +2748,6 @@ bool player_save_smith_checkpoint_owner::observe_held(
 	{
 		return false;
 	}
-#endif
 }
 
 namespace
