@@ -2847,6 +2847,126 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Native current preparation reviewed; INITIAL storage and compiler acceptance selected - 2026-10-09
+
+This checkpoint supersedes the immediate queue below. Published primary
+d5da4d09beb2202e912c1d4b3f6b2f0b0eacd288 adds bounded genuine ROOM INITIAL
+world/custody storage and pure accounting compiler dependencies:21 paths,
+2644 insertions/40 deletions,15 production .c/.h paths. Root read actual source
+and the complete
+[published handoff](https://github.com/Community-Duris/Duris/blob/d5da4d09beb2202e912c1d4b3f6b2f0b0eacd288/docs/persistence/economy_accounting/ROOM_INITIAL_STORAGE_COMPILER_ADMISSION_2026-10-09.md).
+Its finite source review/format/token-preservation results remain reported;
+private primary evidence/progress/adoption are unobserved. No successor build,
+component/native execution or whole-memory qualification was performed here.
+
+Architecture's literal capture/request/lifetime packet is CLOSED PASS at finite
+source/design/metadata scope, independently reviewed by root:
+D:/Dev/Temp/published-literal-capture-request-lifetime-map-20261009.
+Note27587 bytes,SHA256
+d78a2e1d34fd32ea37175366184b2449cc13cae7423c9a60cd0f31d51de8a2a2;
+PINS53761 bytes,SHA256
+8f6c52527fd1cf04a56f5d81afb465ffbd5f5c44e29df3981ede5958be07f2ef;
+INDEX15943 bytes,SHA256
+ecdf94952dd792e07eb65e8ccf5676cc2ffecc1070a0f28b0d766ce270499741.
+Root authenticated16 raw providers,53 exact ranges,8 complete original body/
+signature equalities,4 additions-only raw inverses,13 reused files and67 sealed
+driver files/50 a0-to-0df closure equalities. Four capture/runtime leaf files
+remain byte-exact at d5. The closed ITEM/RECIPE driver's whole closure equality
+ends at0df: d5 changes the codec/shared compiler providers. Preserve the driver
+at its original a0 pin; no reopening, adaptation or qualification is inferred.
+
+Complete map and original source review covers supported N+3 literal callbacks,
+original identity audit and ancestor DTO/set lifetimes, logical capture_budget
+versus requested/retained heap, SSO/growth/hash overlap, full literal AF/extra/
+spellbook controls and strong output/scalar transfer. Runtime observation counts
+the complete active item/root/parent union and preserves the serialized-source
+contract across count/callback/original projection. Mutation outside that
+documented contract is not an accepting fixture or authority repair. No concrete
+within-contract defect was identified. Native/legal fixture, ABI/allocator and
+whole-owner arithmetic qualification remain UNEXECUTED, not certified by review.
+
+Quest's native-current/backend acceptance packet is CLOSED PASS at finite
+source/design/metadata scope after ONE required ACK uncertainty correction:
+D:/Dev/Temp/published-room-native-current-backend-acceptance-delta-20261009.
+Corrected note37533 bytes,SHA256
+799f77a95ca3906bc43329659db07eb348b2550901cf4ed55cb928383dbf0bb9;
+PINS7860852 bytes,SHA256
+8810417180c8ddc1ff6733309867a681373779d7c1b3fa75c7dc1b738144dd97;
+INDEX749 bytes,SHA256
+ba775dc487cbd915ba1100ce2d364cbbd3725d30c2c0c14ee491e811a71865fe.
+Root authenticated45 whole providers,38 ranges,19 forward/19 inverse diffs,
+39 complete original-function equalities,15 reused artifacts and3 closed indexes/
+12 payloads. All5 original sealed files are preserved in the sibling
+history-before-ack-uncertainty-correction directory. The single paragraph raw
+inverse recovers the original note36886 bytes,SHA256
+1ff26f52ecc10bc17e039c42c3ef52e99ad6c7a550f13b01bd1454c90e7490bf;
+all original PINS fields and verifier/saved receipt bytes remain exact.
+
+Prior native_ack_uncertain alone is not a mandatory refusal: under the exact
+original expected envelope/generation/receipt/publication/successor guards the
+owner may retry its journal CAS. Failed CAS retains prior_uncertain OR
+append_uncertain; confirmed success clears ACK uncertainty. Context uncertainty
+is an actual pre-CAS refusal guard. Review preserves four real current-check
+caller cuts, full factory/progress/canonical/physical-list/runtime correspondence
+and distinguishes SQL native binding/publication guards from pending target
+ownership and coordinator lifecycle guards. N1-N4 remain UNEXECUTED. Genuine
+flat source/binding/publication/checkpoint/ACK authority is still unavailable.
+
+### Evolving queue and exact ownership
+
+1. Architecture has ONE active private delivery:
+   PUBLISHED_ROOM_COMPILER_REQUEST_AUTHORITY_MAP_2026-10-09.txt with sealed
+   source/PINS/metadata verifier/receipt/INDEX, immutable0df->d5. Map actual pure
+   compiler/intent/plan/types/ROOM command and singleton span encoder contracts,
+   original intent/binding/domain/digest/witness/coin/full normalization,
+   fresh-clone sizes versus retained caller capacities, sequential validator
+   scratch/child-remap and two encoder clones. Derive precise future supported/
+   unsupported/overflow/callback-denial/strong plan+scalar acceptance cases.
+   Benefit is implementation-ready component qualification and authority map;
+   do not duplicate primary's maintained arithmetic or quest's storage stage work.
+2. Quest has ONE active private delivery:
+   PUBLISHED_ROOM_INITIAL_STORAGE_ACCEPTANCE_OVERLAY_2026-10-09.txt with sealed
+   source/PINS/metadata verifier/receipt/INDEX, immutable0df->d5. Reuse CLOSED
+   GWCIL/native-current/INITIAL freeze controls. Actual new world/custody stages
+   require full catalog/revision/source/ROOM topology/absence, historical born/
+   before UID sets/foreign links, owner counters/full normalized money/canonical
+   op bytes, same recovered lock and world-stage lifetime across custody plus
+   retained compiler plan. Derive future request-order/refusal/overflow/copy/
+   codec strong-stage AND retained-scalar assertions. Distinguish the explicit
+   callback rejection record from incidental errno. No absence-only substitute,
+   recapture, borrowed binding or new authority. Pure compiler math stays with
+   architecture; neither chat waits for the other's delivery.
+3. Available inputs are actual published original methods/new companions and
+   already CLOSED findings. Missing actual INITIAL observation CALLER, accepting
+   flat native authority route, supported compiler/library ABI execution and
+   fresh major-batch qualification block only dependent steps. Each new private
+   packet requires root independent source/design/proof review before closure.
+   Primary owns maintained source/caller/integration and qualification; Plan5
+   owns suite/SQL recovery. No maintained edits, compiler/preprocessor/link/run,
+   native/DB/fixture roots, fabricated authorities/stubs or private commits.
+4. Published stage/plan/type/intent profiles are allocation admission helpers,
+   not command/source/native/publication permission. Unsupported policy refuses;
+   strong outputs and retained heap exclude inline DTOs as specified. INITIAL
+   observation caller and publication/submission INTERNAL bounds, complete32MiB,
+   accepting/recovery journeys and integrated primary completion remain open.
+   Writer regeneration reports931 policies/391 pins, three joined shared
+   dependencies; no writer coverage or release promotion follows from new pins.
+5. Required MariaDB0065/MySQLschema65 qualification failures remain open. Older
+   authenticated8e5/ec632 evidence cannot qualify d5. Required primary Plans1-5,
+   applicable original R1-R8/backend/gameplay/persistence/recovery/integrated
+   proof, resolved blockers and owner completion plus selected sidework reviews/
+   handoffs remain the finish line. Finite preparation cannot satisfy it.
+
+Root proof D:/Dev/Temp/coordinator-native-current-preparation-review-20261009
+contains architecture-authentication.json,quest-authentication.json,complete
+finite semantic-review.json,new primary raw source/diff and3 raw publication
+inverses. Only the3 coordinator-owned disposition docs change. Preserve sealed
+packets, isolated clean5c53/2c828 worker checkouts and jobs. Actual root Goal and
+reported worker Goals remain BLOCKED unchanged; authorized preparation does not
+resume them. Heartbeat stays ACTIVE, quiet on unchanged/non-actionable state.
+No other-chat messages, adoption waits, deployment/activation or production
+mutations. Monitor until the broader published completion audit or user pause.
+
 ## Item recipe driver reviewed; native current source and leaf boundary map selected - 2026-10-09
 
 This checkpoint supersedes the immediate queue below. New published primary
