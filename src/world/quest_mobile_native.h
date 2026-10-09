@@ -50,6 +50,28 @@ player_snapshot_codec_result
 quest_mobile_native_image_decode(std::span<const uint8_t>,
 				 quest_mobile_native_image *output) noexcept;
 
+// Passive allocation-free whole native-image framing/storage shape. It retains
+// v1 unknown cash and v2 literal cash; no item/UID/source/world authority.
+// Storage totals require the explicit pinned libstdc++13/C++11 ABI policy.
+struct quest_mobile_native_image_allocation_profile
+{
+	player_item_snapshot_list_allocation_profile items;
+	size_t decoded_image_payload_bytes = 0;
+	size_t forest_validation_heap_peak_bytes = 0;
+	size_t forest_validation_inline_bytes = 0;
+	size_t canonical_image_bytes = 0;
+	size_t canonical_encode_working_bytes = 0;
+	size_t decode_working_bytes = 0;
+	bool storage_policy_supported = false;
+};
+// Untrusted shape only: no image/reference digest check or authentication.
+// Strong output. Full existing semantic decode and byte-for-byte canonical
+// comparison still follow before publication. OpenSSL/system allocator storage
+// is outside this explicit C++ payload/request profile.
+player_snapshot_codec_result
+quest_mobile_native_image_preflight(std::span<const uint8_t>,
+				    quest_mobile_native_image_allocation_profile *) noexcept;
+
 // Pure native cash revision policy, not admitted source/transition authority.
 // Missing BEFORE means birth; unknown historical cash cannot be adopted here.
 // A cash change advances both its revision and mobile revision exactly once.

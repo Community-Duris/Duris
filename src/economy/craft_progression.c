@@ -193,6 +193,14 @@ craft_progression_publication_result publish(const critical_operation_id &operat
 			return craft_progression_publication_result::ready;
 		if (!attempt.applied)
 		{
+			if (terms.frozen_progression &&
+			    actor->only.pc->skills[terms.discipline ==
+								   craft_recipe_discipline::craft ?
+							   SKILL_CRAFT :
+							   SKILL_FORGE]
+					    .learned !=
+				    static_cast<int>(terms.progression_skill_before))
+				return craft_progression_publication_result::failed;
 			const auto pending =
 				std::count_if(attempts.begin(), attempts.end(),
 					      [&](const auto &entry)
@@ -208,6 +216,13 @@ craft_progression_publication_result publish(const critical_operation_id &operat
 			attempt.applied = true;
 			if (terms.discipline == craft_recipe_discipline::poison)
 				skill_notch_apply(actor, SKILL_MIXPOISON, terms.notch);
+			else if (terms.frozen_progression)
+				skill_notch_apply(actor,
+						  terms.discipline ==
+								  craft_recipe_discipline::craft ?
+							  SKILL_CRAFT :
+							  SKILL_FORGE,
+						  terms.notch);
 			else if (!craft_recipe_is_alchemy(terms.discipline))
 				notch_skill(actor,
 					    terms.discipline == craft_recipe_discipline::craft ?
@@ -245,6 +260,59 @@ void acknowledged(const critical_operation_id &operation)
 
 void notify(P_char actor, bool committed, const craft_recipe_continuation &terms)
 {
+	if (terms.frozen_progression)
+	{
+		if (!committed)
+		{
+			send_to_char(
+				"Your work could not be committed; your requirements were retained.\r\n",
+				actor);
+			return;
+		}
+		for (P_obj output = actor->carrying; output; output = output->next_content)
+			if (output->obj_uid == terms.output_uid &&
+			    OBJ_VNUM(output) == static_cast<int>(terms.recipe_vnum))
+			{
+				act("&+W$n &+Lfinishes their work, admiring their new $p.&N", TRUE,
+				    actor, output, nullptr, TO_ROOM);
+				act("&+WYou &+Lfinish your work, admiring your new $p.&N", FALSE,
+				    actor, output, nullptr, TO_CHAR);
+				break;
+			}
+		return;
+	}
+	if (terms.discipline == craft_recipe_discipline::refine)
+	{
+		if (!committed)
+		{
+			send_to_char(
+				"The refining attempt could not be committed; your materials, ore and coins were preserved.\r\n",
+				actor);
+			return;
+		}
+		send_to_char("You take the item and gently pour the melted ore over the item...\n",
+			     actor);
+		send_to_char("You take the item and gently pour the melted ore over the item...\n",
+			     actor);
+		const bool success = craft_refine_succeeded(terms);
+		const bool coins = !success && terms.refine_ore_count != 1;
+		// The consumed material name is frozen data, passed as a value rather than an
+		// act format or a freed object's pointer. Room text needs no temporary object.
+		send_to_char_f(
+			actor,
+			"&+LYou &+Ltake your %s&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
+			"&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn %s &+Land start to spread it about your %ss&+L, which %s&N\r\n",
+			coins ? "&+Wcoins" : "&+yore", coins ? "&+ymetal" : "&+yore",
+			terms.refine_material_name.c_str(),
+			success ? "&+ycrack &+Land &+yreform&+L under the intense &+rheat&+L." :
+				  "&-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!");
+		act(success ?
+			    "&+W$n &+Ltakes their &+yore&+L to the &+yforge&+L and spreads the molten ore about their materials, which &+ycrack &+Land &+yreform&+L under the intense &+rheat&+L.&N" :
+		    coins ? "&+W$n &+Ltakes their &+Wcoins&+L to the &+yforge&+L and spreads the molten metal about their materials, which &-L&+Rshatter&n &+Lfrom the intense &+rheat&+L!&N" :
+			    "&+W$n &+Ltakes their &+yore&+L to the &+yforge&+L and spreads the molten ore about their materials, which &-L&+Rshatter&n &+Lfrom the intense &+rheat&+L!&N",
+		    TRUE, actor, 0, 0, TO_ROOM);
+		return;
+	}
 	if (!craft_recipe_is_alchemy(terms.discipline))
 		return;
 	if (!committed)

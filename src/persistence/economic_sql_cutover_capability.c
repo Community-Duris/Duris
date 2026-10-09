@@ -210,11 +210,13 @@ bool economic_sql_cutover_transaction_owner::begin(
 	maintenance_ = guard.maintenance_;
 	local_runtime_ = guard.local_runtime_;
 	local_maintenance_ = guard.local_maintenance_;
+	runtime_handoff_ = guard.runtime_handoff_;
 	local_exclusive_ = std::move(guard.local_exclusive_);
 	active_ = true;
 	started_ = false;
 	outcome_uncertain_ = true;
 	publication_pending_ = false;
+	runtime_commit_attempted_ = false;
 	terminal_outcome_ = economic_sql_cutover_terminal_outcome::unresolved;
 	sql_resources_released_ = false;
 
@@ -232,6 +234,7 @@ bool economic_sql_cutover_transaction_owner::begin(
 	guard.maintenance_ = false;
 	guard.local_runtime_ = false;
 	guard.local_maintenance_ = false;
+	guard.runtime_handoff_ = false;
 	guard.authority_id_ = 0;
 
 	try
@@ -324,6 +327,8 @@ bool economic_sql_cutover_transaction_owner::commit_and_retain_publication() noe
 	    !maintenance_ || !runtime_lock_ || !writer_lock_ || local_runtime_ ||
 	    !local_maintenance_ || !local_exclusive_.owns_lock() || !is_valid())
 		return false;
+	if (runtime_handoff_)
+		runtime_commit_attempted_ = true;
 	if (mysql_commit(connection_) || mysql_thread_id(connection_) != session_ ||
 	    (connection_->server_status & SERVER_STATUS_IN_TRANS))
 	{
@@ -349,13 +354,25 @@ bool economic_sql_cutover_transaction_owner::commit_and_retain_publication() noe
 
 bool economic_sql_cutover_transaction_owner::is_valid_for_publication() noexcept
 {
+	return is_valid_for_retained_terminal(economic_sql_cutover_terminal_outcome::committed);
+}
+
+bool economic_sql_cutover_transaction_owner::is_valid_for_retained_terminal(
+	economic_sql_cutover_terminal_outcome expected) noexcept
+{
 #ifdef __NO_MYSQL__
+	(void)expected;
 	return false;
 #else
-	if (!active_ || !publication_pending_ || started_ || outcome_uncertain_ ||
-	    terminal_outcome_ != economic_sql_cutover_terminal_outcome::committed || !connection_ ||
-	    !session_ || !sql_authority_id_ || !maintenance_ || !runtime_lock_ || !writer_lock_ ||
-	    local_runtime_ || !local_maintenance_ || sql_resources_released_ ||
+	if ((expected != economic_sql_cutover_terminal_outcome::committed &&
+	     expected != economic_sql_cutover_terminal_outcome::rolled_back) ||
+	    (expected == economic_sql_cutover_terminal_outcome::committed &&
+	     !publication_pending_) ||
+	    (expected == economic_sql_cutover_terminal_outcome::rolled_back &&
+	     (!runtime_handoff_ || publication_pending_ || runtime_commit_attempted_)) ||
+	    !active_ || started_ || outcome_uncertain_ || terminal_outcome_ != expected ||
+	    !connection_ || !session_ || !sql_authority_id_ || !maintenance_ || !runtime_lock_ ||
+	    !writer_lock_ || local_runtime_ || !local_maintenance_ || sql_resources_released_ ||
 	    !local_exclusive_.owns_lock())
 		return false;
 	try
@@ -392,8 +409,25 @@ bool economic_sql_cutover_transaction_owner::is_valid_for_publication() noexcept
 bool economic_sql_cutover_transaction_owner::finish_publication(
 	economic_sql_lifecycle_guard *lifetime_guard) noexcept
 {
+	return return_retained_terminal(lifetime_guard,
+					economic_sql_cutover_terminal_outcome::committed);
+}
+
+bool economic_sql_cutover_transaction_owner::finish_aborted_runtime(
+	economic_sql_lifecycle_guard *lifetime_guard) noexcept
+{
+	return runtime_handoff_ &&
+	       return_retained_terminal(lifetime_guard,
+					economic_sql_cutover_terminal_outcome::rolled_back);
+}
+
+bool economic_sql_cutover_transaction_owner::return_retained_terminal(
+	economic_sql_lifecycle_guard *lifetime_guard,
+	economic_sql_cutover_terminal_outcome expected) noexcept
+{
 #ifdef __NO_MYSQL__
 	(void)lifetime_guard;
+	(void)expected;
 	return false;
 #else
 	if (!lifetime_guard || lifetime_guard->connection_ || lifetime_guard->session_ ||
@@ -405,16 +439,24 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	    lifetime_guard->coordinator_release_ || lifetime_guard->authority_id_ ||
 	    lifetime_guard->coordinator_generation_ || lifetime_guard->coordinator_lease_id_ ||
 	    lifetime_guard->local_exclusive_.owns_lock() ||
-	    lifetime_guard->local_exclusive_.mutex() || !publication_pending_ ||
-	    !is_valid_for_publication())
+	    lifetime_guard->local_exclusive_.mutex() || lifetime_guard->runtime_handoff_ ||
+	    !is_valid_for_retained_terminal(expected))
 		return false;
 
 	// Finish admission only after publication, while this owner still holds every
 	// SQL/local fence. A refusal leaves both the output and retained owner intact.
 	try
 	{
-		if (!critical_command_coordinator_owner::finish_cutover_transaction(
-			    coordinator_generation_, coordinator_lease_id_, connection_, session_))
+		const bool returned =
+			runtime_handoff_ ?
+				critical_command_coordinator_owner::
+					return_runtime_cutover_to_lifecycle_guard(
+						coordinator_generation_, coordinator_lease_id_,
+						connection_, session_) :
+				critical_command_coordinator_owner::finish_cutover_transaction(
+					coordinator_generation_, coordinator_lease_id_, connection_,
+					session_);
+		if (!returned)
 			return false;
 	}
 	catch (...)
@@ -434,6 +476,7 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	lifetime_guard->maintenance_ = maintenance_;
 	lifetime_guard->local_runtime_ = local_runtime_;
 	lifetime_guard->local_maintenance_ = local_maintenance_;
+	lifetime_guard->runtime_handoff_ = runtime_handoff_;
 	lifetime_guard->authority_id_ = sql_authority_id_;
 	lifetime_guard->local_exclusive_ = std::move(local_exclusive_);
 
@@ -451,12 +494,15 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	maintenance_ = false;
 	local_runtime_ = false;
 	local_maintenance_ = false;
+	runtime_handoff_ = false;
 	return true;
 #endif
 }
 
 bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 {
+	if (runtime_handoff_)
+		return false; // Preserve boot/session/lease until actual runtime return.
 #ifdef __NO_MYSQL__
 	return false;
 #else
@@ -526,6 +572,8 @@ bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 
 bool economic_sql_cutover_transaction_owner::commit() noexcept
 {
+	if (runtime_handoff_)
+		return false; // Adopted runtime commits require retained publication.
 #ifdef __NO_MYSQL__
 	return false;
 #else
@@ -558,8 +606,22 @@ bool economic_sql_cutover_transaction_owner::commit() noexcept
 #endif
 }
 
+bool economic_sql_cutover_transaction_owner::rollback_and_retain_runtime() noexcept
+{
+	if (!runtime_handoff_ || runtime_commit_attempted_)
+		return false;
+	// The original rollback authenticates the exact recovery session and latches
+	// its real SQL outcome. Adopted release_after_terminal deliberately refuses.
+	(void)rollback();
+	return is_valid_for_retained_terminal(economic_sql_cutover_terminal_outcome::rolled_back);
+}
+
 bool economic_sql_cutover_transaction_owner::rollback() noexcept
 {
+	// Retain the original lease/session on ambiguous adopted COMMIT. An idle
+	// session or a successful later ROLLBACK is not durable abort evidence.
+	if (runtime_handoff_ && runtime_commit_attempted_)
+		return false;
 #ifdef __NO_MYSQL__
 	return false;
 #else

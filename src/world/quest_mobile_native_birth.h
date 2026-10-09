@@ -27,6 +27,46 @@ struct quest_mobile_native_image;
 struct native_mobile_wallet_origin;
 struct quest_mobile_native_constructor_recipe;
 struct quest_mobile_native_reference;
+struct economic_source_event;
+// RAM-only original dispatcher values. The private owning entry point below
+// is the sole source of a retained frame; this DTO grants no admission authority.
+struct quest_mobile_original_reset_locals
+{
+	int cmd_no = 0, last_cmd = 1, last_mob_load = 0, respawn = 0;
+	int temp = 0, ival = 0, configured_shop = -1, replicated_shop = -1;
+	P_char mob = nullptr, last_mob = nullptr, tmp_mob = nullptr, last_mob_followable = nullptr;
+	P_obj obj = nullptr, obj_to = nullptr;
+	arti_data artidata{};
+	char buf[MAX_STRING_LENGTH]{};
+	bool initialized = false, command_entered = false;
+	struct original_p_progress
+	{
+		bool begun = false, eligible = false;
+		// Actual non-mobile room-P route only. Original warm factory owns all
+		// constructor/load/discard/nest phases; no lower effect bits are guessed.
+		bool room_path = false, room_prepared = false;
+		int room_result = 0;
+		bool factory_started = false, factory_returned = false;
+		bool artifact_started = false, artifact_returned = false, artifact_owned = false;
+		bool target_returned = false, load_started = false, load_returned = false,
+		     load_passed = false;
+		bool discard_started = false, discard_returned = false, nest_started = false,
+		     nest_returned = false, nest_succeeded = false;
+		uint64_t object_uid = 0, target_uid = 0;
+	} p;
+	// Original opened O cut only. Factory progress remains in its original warm
+	// owner; these retained values never authorize a constructor or placement.
+	struct original_o_progress
+	{
+		bool begun = false, eligible = false;
+		bool incumbent_returned = false, incumbent_take = false;
+		P_obj incumbent = nullptr;
+		uint64_t incumbent_uid = 0;
+		bool root_returned = false;
+		int root_result = 0;
+		uint64_t object_uid = 0;
+	} o;
+};
 class item_native_quest_publication_owner;
 class quest_mobile_native_birth_owner final
 {
@@ -63,8 +103,39 @@ class quest_mobile_native_birth_owner final
 	friend void quest_mobile_native_birth_pulse(bool) noexcept;
 	friend bool quest_mobile_native_birth_recovery_pulse() noexcept;
 	static bool begin_reset(int zone, int force) noexcept;
+	static quest_mobile_original_reset_locals *original_reset_locals(int, int) noexcept;
+	// Genuine open-slot hold only. Retryable means the actual dispatcher has not
+	// entered its next effect; unknown/returned-failure cuts are retained closed.
+	static bool hold_reset(uint32_t, int, bool retryable) noexcept;
+	static bool reset_objects_current() noexcept;
+	// Nonallocating observations wired only at the real sequential dispatcher cuts.
+	static void observe_reset_command(uint32_t slot, int original_last_cmd) noexcept;
+	static void observe_reset_processed(uint32_t slot, int original_last_cmd) noexcept;
+	static void observe_reset_abort(uint32_t slot, int original_last_cmd) noexcept;
+	static void observe_reset_stop(uint32_t slot, int original_last_cmd) noexcept;
+	// Current execution permission is distinct from retained invocation identity.
+	// Source observations share the existing lazy invocation with M and grant no
+	// source claim, SQL, constructor, publication or ACK authority.
+	friend class zone_reset_item_owner;
+	static bool capture_room_reset_source(uint32_t command_slot, int room_rnum,
+					      economic_source_event *, int32_t *zone_vnum) noexcept;
+	static bool capture_retained_room_reset_source(uint32_t, int, economic_source_event *,
+						       int32_t *) noexcept;
+	static bool capture_reset_child_source(uint32_t, economic_source_event *,
+					       int32_t *) noexcept;
+	static bool capture_retained_reset_child_source(uint32_t, economic_source_event *,
+							int32_t *) noexcept;
+	static bool capture_reset_dispatch_scope(economic_source_event *, int32_t *,
+						 int *original_force = nullptr) noexcept;
+	static bool capture_reset_abort_scope(economic_source_event *, int32_t *, uint32_t *,
+					      int *) noexcept;
+	static bool capture_reset_boundary(uint32_t, int, economic_source_event *,
+					   int32_t *) noexcept;
 	static void finish_reset() noexcept;
 	static void seal_mobile() noexcept;
+	// Pure owning source capture/carrier only. General shared admission stays closed.
+	static bool capture_shared_checkpoint(size_t) noexcept;
+	static bool prepare_shared_capture(size_t) noexcept;
 	static void block_mobile() noexcept;
 	static P_char prepare_mobile(int rnum, int room, uint32_t slot, int shop) noexcept;
 	static bool capture_alchemist_spawn(P_char, int original_room) noexcept;
@@ -74,12 +145,16 @@ class quest_mobile_native_birth_owner final
 	static bool carry(P_obj, P_char) noexcept;
 	static bool equip(P_obj, P_char, int) noexcept;
 	static bool nest(P_obj, P_obj, P_char) noexcept;
-	static P_obj original_object(int rnum) noexcept;
+	// False retains output and means an observation/owner gap; true/null is
+	// authentic absence. Selection grants no foreign-target custody authority.
+	static bool original_object(int rnum, P_obj *selected) noexcept;
 	static void skipped_item(P_char, P_obj) noexcept;
 	static size_t pending_mobiles(int rnum) noexcept;
 	static size_t pending_items(int rnum) noexcept;
 	static bool pending_shop(int rnum, int room, int shop) noexcept;
 	static bool restore(const critical_command &) noexcept;
+	static bool restore_command(const critical_command &,
+				    const std::vector<uint8_t> *) noexcept;
 	static void completions(const critical_completion *, size_t) noexcept;
 	static void pulse(bool) noexcept;
 	static void pulse_policy(bool prepare_original_resets, bool recovery_only) noexcept;

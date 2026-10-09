@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <climits>
 #include <cstring>
 #include <limits>
 #include <new>
@@ -197,7 +198,7 @@ bool room_less(const flatfile_room_item_record &left, const flatfile_room_item_r
 }
 
 bool valid_item_list(const std::vector<player_item_snapshot> &items, bool require_one_root,
-		     std::unordered_set<uint64_t> *item_uids)
+		     std::unordered_set<uint64_t> *item_uids, bool allow_room_zero = false)
 {
 	std::vector<uint8_t> encoded;
 	if (!item_uids ||
@@ -207,8 +208,8 @@ bool valid_item_list(const std::vector<player_item_snapshot> &items, bool requir
 	for (const auto &item : items)
 	{
 		roots += item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ? 1 : 0;
-		if (!item.object_uid || item.vnum <= 0 || item.equipment_slot != -1 ||
-		    !item_uids->insert(item.object_uid).second)
+		if (!item.object_uid || item.vnum < 0 || (!allow_room_zero && !item.vnum) ||
+		    item.equipment_slot != -1 || !item_uids->insert(item.object_uid).second)
 			return false;
 	}
 	return !require_one_root || roots == 1;
@@ -271,7 +272,7 @@ bool valid_catalog(const world_item_catalog &catalog)
 			    (index && !room_less(catalog.rooms[index - 1], room)) ||
 			    !std::all_of(room.money.begin(), room.money.end(),
 					 [](int32_t value) { return value >= 0; }) ||
-			    !valid_item_list(room.items, false, &item_uids))
+			    !valid_item_list(room.items, false, &item_uids, true))
 				return false;
 		}
 	}
@@ -800,6 +801,24 @@ flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_re
 	*corpses = std::move(catalog.corpses);
 	*saved_items = std::move(catalog.saved_items);
 	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_recovery_list_all_locked(
+    const std::string &root, const flatfile_authority_lock &lock,
+    std::vector<flatfile_corpse_record> *corpses,
+    std::vector<flatfile_room_item_record> *rooms,
+    std::vector<flatfile_saved_world_item_record> *saved_items, std::string *error)
+{
+    if (root.empty() || !lock.matches(root) || !corpses || !rooms || !saved_items)
+        return flatfile_world_item_result::invalid;
+    world_item_catalog catalog;
+    const auto loaded = load_catalog(root, &catalog, error);
+    if (loaded != flatfile_world_item_result::ok)
+        return loaded;
+    *corpses = std::move(catalog.corpses);
+    *rooms = std::move(catalog.rooms);
+    *saved_items = std::move(catalog.saved_items);
+    return flatfile_world_item_result::ok;
 }
 
 flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,
@@ -2058,4 +2077,114 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 		return flatfile_world_item_result::invalid;
 	mutation->catalog_revision = catalog.revision;
 	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_initial_room_reset_world_storage::prepare_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_initial_room_reset_world_stage *output) noexcept
+{
+	if (root.empty() || !output || !lock.matches(root))
+		return flatfile_world_item_result::invalid;
+	try
+	{
+		zone_reset_item_image image;
+		if (!zone_reset_item_recovery_initial(original) ||
+		    zone_reset_item_command_decode(original.command, &image) !=
+			    economic_accounting_error::ok ||
+		    !image.placement || image.placement->fall_selected)
+			return flatfile_world_item_result::invalid;
+		for (const auto &item : image.items)
+			if (item.type < ITEM_LOWEST || item.type > ITEM_LAST ||
+			    item.type == ITEM_CORPSE || (item.extra_flags & ITEM_ARTIFACT))
+				return flatfile_world_item_result::invalid;
+		world_item_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, nullptr);
+		if (loaded != flatfile_world_item_result::ok &&
+		    loaded != flatfile_world_item_result::not_found)
+			return loaded;
+		if (!valid_catalog(catalog) || catalog.revision == UINT64_MAX)
+			return flatfile_world_item_result::invalid;
+		std::unordered_set<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &item : image.items)
+			if (!born.insert(item.object_uid).second)
+				return flatfile_world_item_result::invalid;
+		const auto absent = [&](const std::vector<player_item_snapshot> &items)
+		{
+			return std::none_of(items.begin(), items.end(), [&](const auto &item)
+					    { return born.contains(item.object_uid); });
+		};
+		for (const auto &corpse : catalog.corpses)
+			if (!absent(corpse.items))
+				return flatfile_world_item_result::conflict;
+		for (const auto &saved : catalog.saved_items)
+			if (!absent(saved.items))
+				return flatfile_world_item_result::conflict;
+		for (const auto &room : catalog.rooms)
+			if (!absent(room.items))
+				return flatfile_world_item_result::conflict;
+		flatfile_room_item_record key{};
+		key.room_vnum = image.room_vnum;
+		auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key,
+					     room_less);
+		const bool present = room != catalog.rooms.end() &&
+				     room->room_vnum == image.room_vnum;
+		const uint64_t before = present ? room->revision : 0;
+		if (before != image.expected_room_revision || before == UINT64_MAX ||
+		    (!present && catalog.rooms.size() >= room_maximum))
+			return flatfile_world_item_result::conflict;
+		flatfile_initial_room_reset_world_stage stage;
+		stage.original_command = original.command;
+		stage.catalog_before_present = loaded == flatfile_world_item_result::ok;
+		stage.catalog_before_revision = stage.catalog_before_present ? catalog.revision : 0;
+		stage.room_before_present = present;
+		stage.room_revision_before = before;
+		stage.room_revision_after = before + 1;
+		if (present)
+			stage.room_before_items = room->items;
+		else
+		{
+			flatfile_room_item_record created{};
+			created.room_vnum = image.room_vnum;
+			created.revision = 1;
+			room = catalog.rooms.insert(room, std::move(created));
+		}
+		if (room->items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - image.items.size() ||
+		    room->items.size() > static_cast<size_t>(INT32_MAX) - image.items.size())
+			return flatfile_world_item_result::conflict;
+		auto added = image.items;
+		// Original DURWRLD stores detached objects at slot -1, while the
+		// canonical constructor command and custody use the original slot0.
+		if (!canonicalize_detached_items(&added))
+			return flatfile_world_item_result::invalid;
+		const int32_t offset = static_cast<int32_t>(room->items.size());
+		room->items.reserve(room->items.size() + added.size());
+		for (auto &item : added)
+		{
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				item.parent_index += offset;
+			room->items.push_back(std::move(item));
+		}
+		room->revision = stage.room_revision_after;
+		++catalog.revision;
+		stage.catalog_revision_after = catalog.revision;
+		stage.operation.store = flatfile_authority_store::domains;
+		stage.operation.kind = flatfile_authority_operation_kind::write;
+		stage.operation.filename = catalog_filename;
+		if (!encode_catalog(catalog, &stage.operation.bytes) || !lock.matches(root))
+			return flatfile_world_item_result::invalid;
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_initial_room_reset_world_stage>);
+		*output = std::move(stage);
+		return flatfile_world_item_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_world_item_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_world_item_result::invalid;
+	}
 }

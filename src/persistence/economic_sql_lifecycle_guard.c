@@ -282,6 +282,8 @@ bool economic_sql_lifecycle_guard::release_named_lock(MYSQL *connection, unsigne
 
 bool economic_sql_lifecycle_guard::release() noexcept
 {
+	if (runtime_handoff_)
+		return false; // Only the actual boot return owner may consume this exclusion.
 	if (owner_thread_ != std::thread::id{} && owner_thread_ != std::this_thread::get_id())
 		return false;
 	acquisition_confirmed_ = false;
@@ -631,6 +633,120 @@ economic_sql_currency_writer_guard::acquire(MYSQL *connection,
 		if (output)
 			(void)output->release();
 		return EIO;
+	}
+#endif
+}
+
+bool economic_sql_lifecycle_guard::promote_runtime_to_maintenance(
+	economic_sql_runtime_world_writer_guard &writer,
+	economic_sql_cutover_capability *output) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)writer;
+	(void)output;
+	return false;
+#else
+	try
+	{
+		if (!output || output->sql_authority_id_ || output->sql_session_ ||
+		    output->coordinator_generation_ || output->coordinator_lease_id_ ||
+		    maintenance_ || !local_runtime_ || local_maintenance_ || writer_lock_ ||
+		    local_exclusive_.mutex() || runtime_release_attempted_ ||
+		    writer_release_attempted_ || coordinator_release_ || coordinator_generation_ ||
+		    coordinator_lease_id_ || !authority_id_ || writer.runtime_ != this ||
+		    writer.connection_ != connection_ || writer.session_ != session_ ||
+		    writer.thread_ != owner_thread_ || writer.release_attempted_ || !writer.valid())
+			return false;
+		std::lock_guard lock(authority_mutex());
+		if (!runtime_authority_active() || maintenance_authority_active())
+			return false;
+		uint64_t generation = 0, lease = 0;
+		if (!critical_command_coordinator_owner::transfer_lifecycle_guard_to_cutover_lease(
+			    &generation, &lease))
+			return false;
+		// From this point all ownership moves are nonthrowing. Bind the real
+		// lease immediately and move its existing SQL/local exclusion intact.
+		static_assert(
+			std::is_nothrow_move_assignable_v<std::unique_lock<std::shared_mutex>>);
+		coordinator_release_ = critical_command_coordinator_owner::release_cutover_lease;
+		coordinator_generation_ = generation;
+		coordinator_lease_id_ = lease;
+		local_exclusive_ = std::move(writer.local_);
+		writer_lock_ = writer.lock_;
+		runtime_handoff_ = true;
+		maintenance_ = true;
+		local_runtime_ = false;
+		local_maintenance_ = true;
+		maintenance_authority_active() = true;
+		runtime_authority_active() = false;
+		writer.connection_ = nullptr;
+		writer.runtime_ = nullptr;
+		writer.session_ = 0;
+		writer.thread_ = {};
+		writer.lock_ = false;
+		writer.confirmed_ = false;
+		writer.release_attempted_ = false;
+		output->sql_authority_id_ = authority_id_;
+		output->sql_session_ = session_;
+		output->coordinator_generation_ = generation;
+		output->coordinator_lease_id_ = lease;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool economic_sql_lifecycle_guard::restore_runtime_writer(
+	economic_sql_runtime_world_writer_guard *writer) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)writer;
+	return false;
+#else
+	try
+	{
+		if (!writer || writer->connection_ || writer->runtime_ || writer->session_ ||
+		    writer->thread_ != std::thread::id{} || writer->lock_ || writer->confirmed_ ||
+		    writer->release_attempted_ || writer->local_.mutex() || !runtime_handoff_ ||
+		    !maintenance_ || local_runtime_ || !local_maintenance_ || !writer_lock_ ||
+		    !local_exclusive_.owns_lock() || runtime_release_attempted_ ||
+		    writer_release_attempted_ || coordinator_release_ || coordinator_generation_ ||
+		    coordinator_lease_id_ || !is_valid_authority() ||
+		    !critical_command_coordinator_lifecycle_guard_held_by_current_thread() ||
+		    !critical_command_coordinator_owner::boot_recovery_ready())
+			return false;
+		std::lock_guard lock(authority_mutex());
+		if (runtime_authority_active() || !maintenance_authority_active() ||
+		    !critical_command_coordinator_lifecycle_guard_held_by_current_thread() ||
+		    !critical_command_coordinator_owner::boot_recovery_ready())
+			return false;
+		// All ownership moves below are nonthrowing. The original SQL locks remain
+		// on this same session; the currency gate remains locked through the move.
+		static_assert(
+			std::is_nothrow_move_assignable_v<std::unique_lock<std::shared_mutex>>);
+		writer->connection_ = connection_;
+		writer->runtime_ = this;
+		writer->session_ = session_;
+		writer->thread_ = owner_thread_;
+		writer->local_ = std::move(local_exclusive_);
+		writer->lock_ = writer_lock_;
+		writer->confirmed_ = true;
+		writer->release_attempted_ = false;
+		writer_lock_ = false;
+		maintenance_ = false;
+		local_maintenance_ = false;
+		local_runtime_ = true;
+		runtime_handoff_ = false;
+		maintenance_authority_active() = false;
+		runtime_authority_active() = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
 	}
 #endif
 }

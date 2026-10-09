@@ -155,16 +155,16 @@ import json
 from pathlib import Path
 
 history = json.loads(Path("migrations/migration_manifest.json").read_text())["migrations"]
-if len(history) != 62 or history[-1]["sequence"] != 62 or \
-        history[-1]["id"] != "0062_economic_pending_claim_consumption":
-    raise RuntimeError("current lifecycle qualification requires sealed canonical schema62")
+if len(history) != 64 or history[-1]["sequence"] != 64 or \
+        history[-1]["id"] != "0064_auction_custody_history":
+    raise RuntimeError("current lifecycle qualification requires sealed canonical schema64")
 DURIS_LIFECYCLE_HEAD_PY
     python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
     python3 scripts/migration_runner.py run
     head=$(mysql --no-defaults --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" \
-        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=62 AND migration_id='0062_economic_pending_claim_consumption') FROM mud_schema_history")
-    [[ "$head" == $'62\t62\t1' ]] || {
-        echo 'Current lifecycle qualification did not reach the registered schema62 head' >&2
+        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=64 AND migration_id='0064_auction_custody_history') FROM mud_schema_history")
+    [[ "$head" == $'64\t64\t1' ]] || {
+        echo 'Current lifecycle qualification did not reach the registered schema64 head' >&2
         exit 1
     }
     bash migrations/verify_runtime_compatibility.sh
@@ -184,6 +184,9 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/persistence/critical_command_journal.c \
     src/persistence/economic_sql_source_snapshot.c \
     src/economy/economic_sql_source_normalize.c \
+    src/economy/economic_sql_runtime_cache_correspondence.c \
+    src/item/item_ownership_runtime.c \
+    src/world/new_events.c \
     src/persistence/economic_sql_baseline_transaction.c \
     src/economy/shop_trade_recovery_manifest.c \
     src/persistence/economic_sql_auction_retained.c \
@@ -215,6 +218,75 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/economy/item_transfer_accounting.c \
     src/item/economic_accounting_item_reference.c \
     src/player/player_snapshot_codec.c \
+    src/account/session_audit_command.c \
+    src/account/session_audit_repository.c \
+    src/combat/combat_outcome_command.c \
+    src/combat/combat_outcome_repository.c \
+    src/core/utility.c \
+    src/economy/auction_listing_accounting.c \
+    src/economy/auction_native_command_context.c \
+    src/economy/auction_native_publication.c \
+    src/economy/boon_reward_command.c \
+    src/economy/boon_reward_repository.c \
+    src/economy/collector_accounting.c \
+    src/economy/collector_codec.c \
+    src/economy/collector_command.c \
+    src/economy/collector_policy.c \
+    src/economy/collector_repository.c \
+    src/economy/economic_command_admission.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/native_mobile_birth_accounting.c \
+    src/economy/native_mobile_birth_command.c \
+    src/economy/native_mobile_birth_constructor_recipe.c \
+    src/economy/native_mobile_birth_recipe.c \
+    src/economy/native_mobile_birth_recovery.c \
+    src/economy/native_mobile_birth_result.c \
+    src/economy/native_quest_coin_give.c \
+    src/economy/native_quest_cost.c \
+    src/economy/shop_trade_accounting.c \
+    src/economy/shop_trade_command.c \
+    src/economy/shop_trade_recovery_image.c \
+    src/guild/artifact_guild_command.c \
+    src/guild/artifact_guild_repository.c \
+    src/item/held_retirement_recovery.c \
+    src/item/item_transfer_repository.c \
+    src/item/lockpick_retirement_continuation.c \
+    src/persistence/corpse_lifecycle_command.c \
+    src/persistence/corpse_lifecycle_repository.c \
+    src/persistence/critical_command_repository.c \
+    src/persistence/economic_sql_auction_listing_transaction.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
+    src/persistence/economic_sql_native_mobile_birth_transaction.c \
+    src/persistence/economic_sql_shop_trade_transaction.c \
+    src/persistence/persistence_mode.c \
+    src/persistence/persistence_observability.c \
+    src/persistence/player_death_restitution_command.c \
+    src/persistence/player_death_restitution_repository.c \
+    src/persistence/quest_mobile_native_origin_sql.c \
+    src/persistence/quest_mobile_native_sql.c \
+    src/persistence/quest_reward_obligation_repository.c \
+    src/persistence/shop_item_runtime_payload.c \
+    src/persistence/sql_room_item_payload.c \
+    src/player/player_death_conflict_repository.c \
+    src/player/player_death_recovery_query.c \
+    src/player/player_load_repository.c \
+    src/player/player_load_topology.c \
+    src/player/player_save_journal.c \
+    src/player/player_save_pipeline.c \
+    src/player/player_save_worker.c \
+    src/player/player_snapshot_repository.c \
+    src/sql/item_extra_descr_codec.c \
+    src/sql/sql.c \
+    src/sql/sql_player.c \
+    src/sql/sql_pool.c \
+    src/world/db.c \
+    src/world/epic_command.c \
+    src/world/native_quest_recovery_context.c \
+    src/world/quest_mobile_native.c \
+    src/world/zone_touch_command.c \
+    src/world/zone_touch_repository.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TEMP/lifecycle-owner"
 # The composed owner harness below also exercises faulted lease transfers.
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \

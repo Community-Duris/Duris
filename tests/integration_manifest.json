@@ -958,6 +958,9 @@
         "GenerationTests.test_fallback_mode_captures_database_authority",
         "GenerationTests.test_rpo_measures_from_capture_start",
         "GenerationTests.test_required_drill_receipt_is_current_and_qualified",
+        "GenerationTests.test_manifest_requires_an_exact_version_one_object",
+        "RestoreTests.test_bad_generation_manifest_refuses_before_candidate_or_service",
+        "RestoreTests.test_restore_requires_a_version_one_tombstone_object",
         "GenerationTests.test_full_manifest_and_checksum_tamper_both_modes",
         "GenerationTests.test_failures_preserve_live_and_last_two_generations",
         "GenerationTests.test_fsync_verify_and_publication_failures_preserve_previous",
@@ -2688,6 +2691,118 @@
       "timeout_seconds": 900,
       "covers": [
         "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_recent_item_history",
+      "path": "tests/async/test_reconcile_economy_accounting.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ItemOwnerHistoryTests.test_creation_sentinel_and_missing_historical_owner_are_explicit",
+        "ItemOwnerHistoryTests.test_every_recorded_previous_owner_matches_the_preceding_state",
+        "ItemOwnerHistoryTests.test_lineage_history_checks_the_same_opening_owner",
+        "ItemOwnerHistoryTests.test_malformed_previous_owner_refuses_without_private_values",
+        "ItemOwnerHistoryTests.test_opening_owner_mismatch_cannot_pass_a_verified_original_plan",
+        "ItemOwnerHistoryTests.test_owner_history_cli_finding_is_global_bounded_and_read_only",
+        "ReconciliationTests.test_invalid_selected_item_action_refuses_every_cli_view_and_limit",
+        "ReconciliationTests.test_selected_item_history_refuses_invalid_action_before_origin_lookup",
+        "ReconciliationTests.test_supply_state_checked_before_scope_skips_and_counted_once",
+        "ReconciliationTests.test_tombstone_action_cli_preserves_finding_and_original_projection",
+        "ReconciliationTests.test_tombstone_requires_destroy_action_in_both_history_scopes",
+        "ReconciliationTests.test_unreferenced_money_effect_requires_revision_advance",
+        "ReconciliationTests.test_zero_net_money_effect_precedes_revision_advance",
+        "ReconciliationTests.test_zero_net_money_effects_preserve_revision",
+        "ReconciliationTests.test_zero_net_money_invalid_history_still_refuses"
+      ],
+      "arguments": [
+        "ItemOwnerHistoryTests.test_creation_sentinel_and_missing_historical_owner_are_explicit",
+        "ItemOwnerHistoryTests.test_every_recorded_previous_owner_matches_the_preceding_state",
+        "ItemOwnerHistoryTests.test_lineage_history_checks_the_same_opening_owner",
+        "ItemOwnerHistoryTests.test_malformed_previous_owner_refuses_without_private_values",
+        "ItemOwnerHistoryTests.test_opening_owner_mismatch_cannot_pass_a_verified_original_plan",
+        "ItemOwnerHistoryTests.test_owner_history_cli_finding_is_global_bounded_and_read_only",
+        "ReconciliationTests.test_invalid_selected_item_action_refuses_every_cli_view_and_limit",
+        "ReconciliationTests.test_selected_item_history_refuses_invalid_action_before_origin_lookup",
+        "ReconciliationTests.test_supply_state_checked_before_scope_skips_and_counted_once",
+        "ReconciliationTests.test_tombstone_action_cli_preserves_finding_and_original_projection",
+        "ReconciliationTests.test_tombstone_requires_destroy_action_in_both_history_scopes",
+        "ReconciliationTests.test_unreferenced_money_effect_requires_revision_advance",
+        "ReconciliationTests.test_zero_net_money_effect_precedes_revision_advance",
+        "ReconciliationTests.test_zero_net_money_effects_preserve_revision",
+        "ReconciliationTests.test_zero_net_money_invalid_history_still_refuses",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_reconcile_economy_accounting.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_recent_equipment_history",
+      "path": "tests/async/test_item_equipment_reconciliation.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ItemEquipmentTests.test_missing_owner_evidence_remains_separate_from_equipment_history",
+        "ItemHistoryPositionTests.test_full_cli_refuses_invalid_history_at_every_view_and_limit",
+        "ItemHistoryPositionTests.test_invalid_intermediate_positions_are_not_hidden_by_a_valid_final_row",
+        "ItemHistoryPositionTests.test_resulting_slot_uses_the_event_projection_and_preserves_unknown",
+        "ItemHistoryPositionTests.test_selected_and_lineage_projections_count_a_bad_legacy_event_once",
+        "ItemHistoryPositionTests.test_unanchored_and_unattributed_invalid_events_are_still_checked",
+        "ProvenancePreviousOwnerTests.test_all_history_collections_preserve_known_previous_owner_without_private_fields",
+        "ProvenancePreviousOwnerTests.test_exact_projections_deduplicate_but_conflicting_or_unknown_sources_stay_visible",
+        "ProvenancePreviousOwnerTests.test_full_cli_preserves_conflicting_previous_owners_and_global_refusal_at_every_limit",
+        "ProvenancePreviousOwnerTests.test_malformed_present_previous_owner_refuses_the_view_without_private_values"
+      ],
+      "arguments": [
+        "ItemEquipmentTests.test_missing_owner_evidence_remains_separate_from_equipment_history",
+        "ItemHistoryPositionTests.test_full_cli_refuses_invalid_history_at_every_view_and_limit",
+        "ItemHistoryPositionTests.test_invalid_intermediate_positions_are_not_hidden_by_a_valid_final_row",
+        "ItemHistoryPositionTests.test_resulting_slot_uses_the_event_projection_and_preserves_unknown",
+        "ItemHistoryPositionTests.test_selected_and_lineage_projections_count_a_bad_legacy_event_once",
+        "ItemHistoryPositionTests.test_unanchored_and_unattributed_invalid_events_are_still_checked",
+        "ProvenancePreviousOwnerTests.test_all_history_collections_preserve_known_previous_owner_without_private_fields",
+        "ProvenancePreviousOwnerTests.test_exact_projections_deduplicate_but_conflicting_or_unknown_sources_stay_visible",
+        "ProvenancePreviousOwnerTests.test_full_cli_preserves_conflicting_previous_owners_and_global_refusal_at_every_limit",
+        "ProvenancePreviousOwnerTests.test_malformed_present_previous_owner_refuses_the_view_without_private_values",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_item_equipment_reconciliation.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_recent_uid_scope",
+      "path": "tests/async/test_economic_sql_uid_scope.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "UidScopeTests.test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse"
+      ],
+      "arguments": [
+        "UidScopeTests.test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_uid_scope.py"
       ],
       "required_markers": []
     },

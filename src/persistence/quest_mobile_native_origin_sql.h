@@ -29,4 +29,35 @@ int quest_mobile_native_origin_sql_retain_locked(
 int quest_mobile_native_origin_sql_lock(MYSQL *, const quest_mobile_native_reference &,
 					quest_mobile_native_published_origin *) noexcept;
 
+// Distinct ordinary NMB4 / MBR4 published origins. Shared/unknown roles refuse;
+// old entrypoints retain their historical command/result policy. The complete
+// original prospective terminal attachment is stored byte-for-byte in the SAME
+// existing origin table, under the same original session/lock/DML contract.
+// Retention authenticates the exact still-born publication image/custody/wallet.
+// Lock authenticates historical committed origin first, then the exact supplied
+// current lifetime reference; advanced cash/stock revisions remain permitted.
+// An absent origin remains present=false and grants no reconstruction authority.
+// No COMMIT, journal/world effects, schema, source admission or ACK authority.
+int quest_mobile_native_origin_sql_retain_ordinary_wallet_locked(
+	MYSQL *, const critical_native_recovery_envelope &) noexcept;
+int quest_mobile_native_origin_sql_lock_ordinary_wallet(
+	MYSQL *, const quest_mobile_native_reference &,
+	quest_mobile_native_published_origin *) noexcept;
+
+// Distinct initial shared SHOP NMB4/MBR4 origin policy, in the SAME existing
+// origin table. Retention requires the genuine successful terminal envelope,
+// its complete original checkpoint and full still-born SQL publication proof.
+// Caller owns the original reconnect-disabled IN_TRANS session and confirms
+// COMMIT before journal retirement. Identical retained bytes alone permit retry.
+// Reader authenticates canonical shared terminal/history before current native
+// lifetime and immutable origin locks; advanced native/stock revisions are
+// permitted. Current SHOP/owner/cash/custody/physical/world proof is separate.
+// No historical/ordinary predicate is broadened. Absence is unknown, not a
+// reconstruction permission. No transaction lifecycle, source, world or ACK
+// authority is granted. All refusing reads preserve the caller's output.
+int quest_mobile_native_origin_sql_retain_shared_shop_locked(
+	MYSQL *, const critical_native_recovery_envelope &) noexcept;
+int quest_mobile_native_origin_sql_lock_shared_shop(MYSQL *, const quest_mobile_native_reference &,
+						    quest_mobile_native_published_origin *) noexcept;
+
 #endif

@@ -13,7 +13,8 @@ constexpr uint32_t ECONOMIC_WRITER_ITEM_TRANSFER = 6;
 economic_accounting_error item_transfer_accounting_intent(
 	const critical_command &command, const critical_operation_id &lineage,
 	const critical_operation_id &epoch, uint32_t actor_pid, std::vector<uint8_t> *encoded,
-	economic_source_kind lifecycle_source = {});
+	economic_source_kind lifecycle_source = {},
+	const economic_account_key *fresh_player_wallet = nullptr);
 // Explicit v11 structural freeze, independent of schema1 execution. Actor is
 // the frozen final giver. Consumption requires the parent's original quest-action
 // or quest-completion event; accepting an offering has no reward/source sidecar.
@@ -46,6 +47,13 @@ economic_accounting_error item_native_mobile_money_accounting_effects(
 	const economic_account_key &original_native_wallet, economic_accounting_plan *) noexcept;
 
 bool item_transfer_accounting_command_supported(const critical_command &command) noexcept;
+
+// Pure expected fixed refinement fee. Actual PC wallet mapping and before/after
+// denominations must be verified by the existing atomic backend owner. No
+// native mutation, admission, publication or new mapping is supplied here.
+economic_accounting_error
+item_transfer_refine_wallet_accounting_effects(const item_transfer_payload &,
+					       economic_accounting_plan *) noexcept;
 
 // Resolve one frozen craft against its locked input custody. Outputs start
 // absent; consumed inputs retire and an optional pouch retains its custody at

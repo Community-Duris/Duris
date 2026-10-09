@@ -1,4 +1,5 @@
 #include "economy/coin_physical_recovery.h"
+#include "world/db.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "economy/coin_transfer_accounting.h"
@@ -11,10 +12,12 @@
 #include "player/player_snapshot_codec.h"
 #include "world/handler.h"
 #include "world/object_template.h"
+#include "flatfile/flatfile_accounting_coin_transaction.h"
+#include "flatfile/flatfile_authority_transaction.h"
+#include "core/mm.h"
 #ifndef __NO_MYSQL__
 #include "persistence/critical_command_repository.h"
 #include "persistence/sql_room_coin_payload.h"
-#include "core/mm.h"
 #include "player/player_sql_transaction_cleanup.h"
 #else
 #include "flatfile/flatfile_accounting_authority.h"
@@ -39,6 +42,7 @@
 #include <vector>
 #include <openssl/sha.h>
 
+extern mm_ds *dead_obj_pool;
 extern P_obj object_list;
 extern P_char character_list;
 extern P_desc descriptor_list;
@@ -873,10 +877,53 @@ class coin_physical_recovery_owner final
 		physical fresh;
 		if (!census(value, fresh) || fresh.object || !runtime_matches(value, native, false))
 			return false;
+		if (!quest_mobile_native_item_cold_prepend_body_ready(stage.object_) ||
+		    !quest_mobile_native_item_cold_prepend_cut_ready(1))
+			return false;
 		// Last fallible enrollment step. No parser/handler/callback follows.
 		if (!item_ownership_runtime_hydrate_many_atomic(&native.item, 1))
 			return false;
 		P_obj object = stage.object_;
+		quest_mobile_native_item_observe_native_prepend(object);
+		object->next = object_list;
+		if (object_list)
+			object_list->prev = object;
+		object_list = object;
+		object->loc_p = LOC_ROOM;
+		object->loc.room = room;
+		object->next_content = world[room].contents;
+		world[room].contents = object;
+		++obj_index[prototype->R_num].number;
+		stage.object_ = nullptr;
+		stage.pool_ = nullptr;
+		return true;
+	}
+    private:
+	friend class flatfile_coin_boot_stage;
+	static bool enroll_flat(const shape &value, const native_state &native, inert_item_stage &stage)
+	{
+		const auto *prototype = flatfile_coin_boot_templates::find(native.item.vnum);
+		const int room = real_room(static_cast<int>(value.room));
+		if (!stage.get() || !prototype || !obj_index || room < 0 || room > top_of_world ||
+		    prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    prototype->R_num != stage.object_->R_num ||
+		    obj_index[prototype->R_num].virtual_number != native.item.vnum ||
+		    obj_index[prototype->R_num].func.obj ||
+		    obj_index[prototype->R_num].number < 0 ||
+		    obj_index[prototype->R_num].number == INT_MAX ||
+		    !coin_physical_publication_room_safe(room, stage.object_))
+			return false;
+		physical fresh;
+		if (!census(value, fresh) || fresh.object || !runtime_matches(value, native, false))
+			return false;
+		if (!quest_mobile_native_item_cold_prepend_body_ready(stage.object_) ||
+		    !quest_mobile_native_item_cold_prepend_cut_ready(1))
+			return false;
+		// Last fallible enrollment step. No parser/handler/callback follows.
+		if (!item_ownership_runtime_hydrate_many_atomic(&native.item, 1))
+			return false;
+		P_obj object = stage.object_;
+		quest_mobile_native_item_observe_native_prepend(object);
 		object->next = object_list;
 		if (object_list)
 			object_list->prev = object;
@@ -1462,3 +1509,159 @@ bool coin_physical_recovery_restore_room(MYSQL *connection, uint64_t uid) noexce
 	}
 }
 #endif
+
+flatfile_coin_boot_stage::~flatfile_coin_boot_stage() noexcept
+{
+	reset();
+}
+
+flatfile_coin_boot_stage::flatfile_coin_boot_stage(flatfile_coin_boot_stage &&other) noexcept
+{
+	*this = std::move(other);
+}
+
+flatfile_coin_boot_stage &flatfile_coin_boot_stage::operator=(flatfile_coin_boot_stage &&other) noexcept
+{
+	if (this != &other)
+	{
+		reset();
+		prepared_ = std::move(other.prepared_);
+		identity_ = other.identity_;
+		literal_ = std::move(other.literal_);
+		root_ = std::move(other.root_);
+		cut_ = other.cut_;
+		published_ = other.published_;
+		other.published_ = nullptr;
+		other.cut_ = nullptr;
+	}
+	return *this;
+}
+
+void flatfile_coin_boot_stage::reset() noexcept
+{
+	if (published_)
+	{
+		// The shared restore side-effect guard still lives. Remove only the UID
+		// this holder proved absent and enrolled; original extraction unlinks the
+		// global/room chains and restores the prototype's physical count.
+		published_->obj_uid = 0;
+		extract_obj(published_, FALSE);
+		published_ = nullptr;
+		item_ownership_runtime_forget(identity_.item_uid);
+		// The original whole-room stage owns its already-proved counter. This
+		// holder required that exact counter before preparation and never changes
+		// it, so rollback needs no allocating counter reconstruction.
+	}
+	prepared_ = inert_item_stage{};
+	cut_ = nullptr;
+}
+
+void flatfile_coin_boot_stage::finish() noexcept
+{
+	// Only after all original world/corpse/room placements and verifications pass.
+	published_ = nullptr;
+	cut_ = nullptr;
+}
+
+bool flatfile_coin_boot_stage::prepare(const std::string &root,
+	const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_coin_boot_stage &output) noexcept
+{
+	if (!nevent_is_game_thread() || output.cut_ || output.published_ || output.prepared_.get())
+		return false;
+	try
+	{
+		flatfile_room_coin_pile retained;
+		if (flatfile_accounting_coin_transaction::read_room_boot_pile_locked(root, lock, uid,
+			&retained, nullptr))
+			return false;
+		shape value;
+		value.room = retained.identity.owner.id;
+		value.pile = std::make_unique<item_transfer_payload>();
+		value.pile->selected_item_uid = uid;
+		physical existing;
+		item_ownership_runtime_entry cached;
+		if (!census(value, existing) || existing.object ||
+			item_ownership_runtime_lookup(uid, &cached))
+			return false;
+		flatfile_coin_boot_stage candidate;
+		candidate.root_ = root;
+		candidate.identity_ = retained.identity;
+		candidate.literal_ = std::move(retained.item);
+		uint64_t owner_revision = 0;
+		if (!item_ownership_runtime_peek_owner_revision(candidate.identity_.owner,
+			&owner_revision) || owner_revision != candidate.identity_.owner_revision)
+			return false;
+		std::array<int32_t, 4> denominations;
+		std::copy_n(candidate.literal_.values.begin(), 4, denominations.begin());
+		auto staged = inert_item_stage::prepare_money_for_flat_boot(candidate.literal_, uid, denominations,
+			candidate.prepared_);
+		if (staged == inert_item_stage_result::allocation_unavailable &&
+			flatfile_coin_boot_templates::ready())
+		{
+			if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+				dead_obj_pool->next_off != offsetof(obj_data, next) ||
+				!mm_try_reserve_free_slot(dead_obj_pool))
+				return false;
+			staged = inert_item_stage::prepare_money_for_flat_boot(candidate.literal_, uid, denominations,
+				candidate.prepared_);
+		}
+		if (staged != inert_item_stage_result::ok || !lock.matches(root))
+			return false;
+		candidate.cut_ = &lock;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool flatfile_coin_boot_stage::publish() noexcept
+{
+	if (!nevent_is_game_thread() || !cut_ || !cut_->matches(root_) || !prepared_.get() || published_)
+		return false;
+	try
+	{
+		// Re-read original proof inside the still-held cut before the last fallible
+		// enrollment step; no supplied snapshot can grant this capability.
+		flatfile_room_coin_pile current;
+		if (flatfile_accounting_coin_transaction::read_room_boot_pile_locked(root_, *cut_,
+			identity_.item_uid, &current, nullptr) ||
+			!exact_runtime_identity(identity_, current.identity))
+			return false;
+		std::vector<uint8_t> before, after;
+		if (player_item_snapshot_list_encode({ literal_ }, &before) != player_snapshot_codec_result::ok ||
+			player_item_snapshot_list_encode({ current.item }, &after) != player_snapshot_codec_result::ok ||
+			before != after)
+			return false;
+		shape value;
+		value.room = identity_.owner.id;
+		value.pile = std::make_unique<item_transfer_payload>();
+		value.pile->selected_item_uid = identity_.item_uid;
+		value.pile->item_count = 1;
+		value.pile->from_owner = value.pile->to_owner = identity_.owner;
+		value.pile->items[0].vnum = identity_.vnum;
+		value.pile->items[0].expected_item_revision = identity_.item_revision;
+		native_state native;
+		native.committed = native.item_exists = true;
+		native.item = identity_;
+		native.from_revision = native.to_revision = identity_.owner_revision;
+		native.literal = literal_;
+		P_obj object = prepared_.object_;
+		if (!coin_physical_recovery_owner::enroll_flat(value, native, prepared_))
+			return false;
+		published_ = object;
+		physical placed;
+		item_ownership_runtime_entry cached;
+		return cut_->matches(root_) && census(value, placed) && placed.object == published_ &&
+			capture_equal(published_, literal_) &&
+			item_ownership_runtime_lookup(identity_.item_uid, &cached) &&
+			exact_runtime_identity(cached, identity_);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}

@@ -53,6 +53,21 @@ const object_template *find_object_template(int vnum);
 // Catalog failure or stale boot provenance returns false/nullptr, not partial
 // coverage or authority to restore/ACK. Pointers last until world teardown/reboot.
 bool recovery_object_templates_ready() noexcept;
+// Private value lookup for the original flat money boot owner. Same complete
+// immutable catalog/provenance checks; no native enrollment/command/ACK authority.
+// Existing SQL readiness/lookup/finalization and their caller gates stay intact.
+class flatfile_coin_boot_templates final
+{
+	friend class inert_item_stage;
+	friend class flatfile_coin_boot_stage;
+	friend class coin_physical_recovery_owner;
+	friend class shop_trade_native_publication_owner;
+	friend class shop_trade_original_item_stage;
+	friend class shop_trade_original_procedure_binding_stage;
+	friend bool finalize_flatfile_shop_recovery_object_template_bindings() noexcept;
+	static bool ready() noexcept;
+	static const object_template *find(int vnum) noexcept;
+};
 // One serialized SQL boot finalization after optional subsystem bindings and
 // before worker/critical startup. Validates the complete already-parsed catalog,
 // then snapshots existing function pointers without parsing/allocating/callbacks
@@ -62,6 +77,9 @@ bool recovery_object_templates_ready() noexcept;
 // No UID, economic, source, native publication or ACK authority is granted.
 // Later lazy instance binding/staleness remains a separate prerequisite.
 bool finalize_recovery_object_template_bindings() noexcept;
+// Same pre-worker complete catalog binding seal for the flat SHOP boot owner.
+// Runtime/foreign-thread/non-flat calls refuse; this supplies no source or ACK authority.
+bool finalize_flatfile_shop_recovery_object_template_bindings() noexcept;
 const object_template *find_recovery_object_template(int vnum) noexcept;
 struct player_item_snapshot;
 class shop_trade_native_publication_owner;
@@ -83,6 +101,7 @@ class shop_trade_original_procedure_binding_stage
 	friend class shop_trade_native_publication_owner;
 	friend class auction_native_publication_owner;
 	friend class quest_mobile_native_birth_owner;
+	friend class zone_reset_item_owner;
 	friend class quest_mobile_published_saved_forest;
 	friend int proclibObj_add(P_obj, char *, char *);
 	friend P_obj instantiate_object_template(const object_template &);
@@ -94,15 +113,21 @@ class shop_trade_original_procedure_binding_stage
 	};
 	static bool prepare(std::span<const P_obj>, std::span<const player_item_snapshot>,
 			    shop_trade_original_procedure_binding_stage &) noexcept;
+	static bool prepare_flat(std::span<const P_obj>, std::span<const player_item_snapshot>,
+				 shop_trade_original_procedure_binding_stage &) noexcept;
 	static bool prepare_native_birth(std::span<const quest_mobile_native_item_binding>,
 					 shop_trade_original_procedure_binding_stage &) noexcept;
 	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
+	bool valid_flat() const noexcept;
 	void commit_unchecked() noexcept;
+	void commit_flat_unchecked() noexcept;
 	static void observe_normal_binding(int, obj_proc_type, obj_proc_type) noexcept;
 	std::vector<binding> bindings_;
 	proclib_recovery_chain_stage chain_;
 	bool prepared_ = false;
+	// Backend identity remains with the original retained stage, not caller values.
+	bool flat_ = false;
 };
 
 P_obj instantiate_object_template(const object_template &prototype);

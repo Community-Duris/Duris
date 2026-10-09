@@ -46,6 +46,11 @@ bool item_transfer_repository_execute(
 	item_transfer_custody_delta *custody_delta = nullptr,
 	item_transfer_source_custody_hook source_custody_hook = nullptr,
 	void *original_owner_context = nullptr);
+// Read-only real PC wallet fence for refinement inside the existing admitted
+// root transaction. Locks the native player row and compares all four literal
+// denominations/revision; output values alone never substitute for that read.
+bool item_transfer_repository_refine_wallet_lock(MYSQL *, const critical_command &,
+						 bool original_after);
 // Compound commands may use one inbox operation for consecutive transfer
 // segments. The offset keeps their item-ledger event indexes disjoint.
 bool item_transfer_repository_execute_at_offset(
@@ -119,6 +124,27 @@ bool item_transfer_repository_execute_native_mobile_fee(
 	std::span<const player_item_snapshot> original_player_items,
 	item_native_mobile_fee_result *, unsigned int *result_code, bool *mutation_applied,
 	quest_mobile_native_image *after) noexcept;
+
+struct smith_native_compound_images;
+struct smith_native_player_grant_projection;
+struct economic_accounting_plan;
+// Explicit original Smith17 participant only, borrowed from the admitted root's
+// reconnect-disabled transaction. Caller authenticates/retains the full native
+// historical BEFORE, complete physical PC BEFORE/AFTER, actual grant facts,
+// acknowledged save fence, wallet mapping/source and original command carrier.
+// Native lifetime, wallet/save, canonical two owners and complete global custody
+// lock before physical reads and any DML. No owner/source creation, independent
+// transaction, commit/retry, accounting record, publication or ACK is supplied.
+// mutation_attempted is MONOTONIC: never cleared and set before every potentially
+// writing helper. False always requires original rollback; all other outputs are
+// unchanged. True returns verified actual effects/result, not commit authority.
+bool item_transfer_repository_execute_smith_native(
+	MYSQL *, const critical_command &, const smith_native_compound_images &original_images,
+	const smith_native_player_grant_projection &original_grant,
+	uint64_t original_acknowledged_save_revision,
+	const economic_account_key &original_player_wallet, item_transfer_result *,
+	unsigned int *result_code, bool *mutation_attempted, item_transfer_custody_delta *,
+	economic_accounting_plan *expected_effects) noexcept;
 
 // Read-only complete globally sorted publication cut. Caller already owns the
 // original native lifetime, final-giver save fence and sorted revision locks.

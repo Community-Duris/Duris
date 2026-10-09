@@ -470,16 +470,14 @@ bool collector_purchase_cold_restore_owner::restore(const critical_command &orig
 						    collector_purchase_effect_fn effect,
 						    collector_completion_fn notify) noexcept
 {
-#ifdef __NO_MYSQL__
-	(void)original;
-	(void)effect;
-	(void)notify;
-	return false;
-#else
 	try
 	{
 		if (!nevent_is_game_thread() || !effect || !notify ||
+#ifndef __NO_MYSQL__
 		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#else
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#endif
 		    !original.publication_required ||
 		    original.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 		    !critical_command_envelope_valid(original))
@@ -540,7 +538,6 @@ bool collector_purchase_cold_restore_owner::restore(const critical_command &orig
 	{
 		return false;
 	}
-#endif
 }
 
 bool collector_transaction_submit_purchase_identified(P_char character,

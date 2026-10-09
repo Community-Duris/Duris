@@ -82,8 +82,25 @@ static void unchanged_refusal(const item_transfer_payload &payload)
 	       sentinel.payloads == std::vector<std::vector<uint8_t>>({ { 4, 5, 6 } }));
 }
 
+#include "modern_room_fixture_support.inc"
+#include "modern_room_component_cases.inc"
+#include "collector_physical_component_cases.inc"
+#include "auction_physical_component_cases.inc"
+#include "physical_provider_union_cases.inc"
+#include "economy/economic_sql_runtime_cache_correspondence.h"
+#include "runtime_cache_correspondence_cases.inc"
+#include "auction_legacy_identity_cases.inc"
+#include "modern_room_explicit_boundary_cases.inc"
+
 int main()
 {
+	modern_room_component_cases();
+	collector_physical_component_cases();
+	auction_physical_component_cases();
+	physical_provider_union_cases();
+	runtime_cache_correspondence_cases();
+	auction_legacy_identity_component_cases();
+	modern_room_explicit_boundary_cases();
 	std::vector<player_item_snapshot> items = { item(100, -1), item(101, 0), item(102, 1) };
 	auto payload = command(items);
 	sql_room_item_payload_batch batch;

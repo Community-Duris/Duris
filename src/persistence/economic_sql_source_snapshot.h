@@ -50,6 +50,34 @@ struct economic_sql_source_limits
 	uint64_t maximum_cell_bytes = 64 * 1024 * 1024;
 	uint64_t maximum_single_cell_bytes = 1024 * 1024;
 };
+struct economic_sql_physical_source_snapshot
+{
+	uint32_t version = 1;
+	// Unchanged source2 DTO, framing and counters. The extra raw projections
+	// reuse its pet/shop/siege rows and shopkeeper id/shop_id mapping.
+	economic_sql_source_snapshot source2;
+	std::vector<economic_sql_source_table> physical_sources;
+	// EPH1 binds source2.custody_digest (ESC2) and every extra table digest.
+	economic_sql_source_digest digest = {};
+	// Aggregate limits cover source2 plus physical_sources, without retaining
+	// a second copy of any source2 table or cell.
+	uint64_t rows = 0, cell_bytes = 0, cells = 0;
+	bool operator==(const economic_sql_physical_source_snapshot &) const = default;
+};
+// Capture source2 plus persisted physical rows/mappings/equipment in ONE
+// caller-owned RR consistent transaction, on the original session. It may be
+// READ ONLY or writable; this provider only SELECTs. Caller owns prior writes
+// and quiescence/boundary qualification. The provider never starts a transaction.
+// Never ends that transaction. Caller retains rollback on every failure.
+// Same connection/engine/metadata/limits contract as capture_sources below.
+// Raw NULLs, orphans and malformed numeric bytes remain evidence; no owner
+// resolution, native hydration or activation authority is supplied. Modern
+// sql_room_item_payload roots and live/reset world objects need other providers.
+// Existing ESM1/EIM1/EIE2/ESC2 registries and bytes stay unchanged. No partial
+// output on failure. Only source2 version 2 is captured by this API.
+unsigned int economic_sql_capture_physical_sources_in_transaction(
+	MYSQL *, const economic_sql_source_limits &,
+	economic_sql_physical_source_snapshot *) noexcept;
 // Own one RR consistent READ ONLY transaction on an otherwise idle autocommit
 // connection. Automatic reconnect must be disabled. Never commit, modify source
 // rows, provision, or recover. Retain metadata locks and require InnoDB sources.
@@ -82,4 +110,10 @@ unsigned int economic_sql_capture_sources_in_transaction(MYSQL *,
 // A caller can manufacture matching hashes; this is NOT an authority capability.
 unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &,
 					   const economic_sql_source_limits & = {}) noexcept;
+// Pure EPH1/source2 framing and aggregate-budget validation in both profiles.
+// Also binds pet/shop equipment IDs 1:1 to their EIM1 rows. This proves neither
+// SQL provenance nor native custody/complete source coverage or activation.
+unsigned int
+economic_sql_validate_physical_sources(const economic_sql_physical_source_snapshot &,
+				       const economic_sql_source_limits & = {}) noexcept;
 #endif

@@ -14,6 +14,7 @@
 #include "economy/native_mobile_birth_accounting.h"
 #include "persistence/shop_item_runtime_payload.h"
 #include "economy/shop_trade_recovery_manifest.h"
+#include "item/craft_recipe_continuation.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -61,6 +62,102 @@ bool execute(MYSQL *connection, const std::string &sql)
 unsigned int failure_code()
 {
 	return errno ? static_cast<unsigned int>(errno) : EILSEQ;
+}
+
+bool refine_count(MYSQL *connection, const std::string &table, const std::string &predicate,
+		  size_t expected)
+{
+	if (!execute(connection, "SELECT COUNT(*) FROM " + table + " WHERE " + predicate))
+		return false;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_rows(rows.get()) != 1)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows.get());
+	uint64_t count = 0;
+	if (!row || !row[0])
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	const std::string text(row[0]);
+	const auto parsed = std::from_chars(text.data(), text.data() + text.size(), count);
+	if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() ||
+	    count != expected)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	return true;
+}
+
+bool refine_financial_rows(MYSQL *connection, const critical_operation_id &operation,
+			   const economic_accounting_plan &plan, bool append)
+{
+	constexpr const char *coins[] = { "copper", "silver", "gold", "platinum" };
+	auto row = [&](const char *table,
+		       const std::vector<std::pair<std::string, std::string>> &fields)
+	{
+		std::string columns, values, predicate;
+		for (const auto &field : fields)
+		{
+			columns += (columns.empty() ? "" : ",") + field.first;
+			values += (values.empty() ? "" : ",") + field.second;
+			predicate += (predicate.empty() ? "" : " AND ") + field.first + "=" +
+				     field.second;
+		}
+		return (!append ||
+			execute(connection, "INSERT INTO " + std::string(table) + "(" + columns +
+						    ") VALUES(" + values + ")")) &&
+		       refine_count(connection, table, predicate, 1);
+	};
+	for (size_t i = 0; i < plan.accounts.size(); ++i)
+	{
+		const auto &a = plan.accounts[i];
+		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> key{};
+		if (economic_account_key_encode(a.key, &key) != economic_accounting_error::ok)
+			return false;
+		std::vector<std::pair<std::string, std::string>> fields{
+			{ "operation_id", id(operation) },
+			{ "account_index", std::to_string(i) },
+			{ "account_key", hex(key) },
+			{ "before_revision", std::to_string(a.before_revision) },
+			{ "after_revision", std::to_string(a.after_revision) }
+		};
+		for (size_t j = 0; j < 4; ++j)
+		{
+			fields.emplace_back("before_" + std::string(coins[j]),
+					    std::to_string(a.before[j]));
+			fields.emplace_back("after_" + std::string(coins[j]),
+					    std::to_string(a.after[j]));
+		}
+		if (!row("economic_accounting_account_effect", fields))
+			return false;
+	}
+	for (size_t i = 0; i < plan.postings.size(); ++i)
+	{
+		const auto &a = plan.postings[i];
+		std::vector<std::pair<std::string, std::string>> fields{
+			{ "operation_id", id(operation) },
+			{ "line_index", std::to_string(i) },
+			{ "event_index", std::to_string(a.event_index) },
+			{ "account_index", std::to_string(a.account_index) },
+			{ "child_index", std::to_string(a.child_index) },
+			{ "copper_value", std::to_string(a.copper) }
+		};
+		for (size_t j = 0; j < 4; ++j)
+			fields.emplace_back("delta_" + std::string(coins[j]),
+					    std::to_string(a.delta[j]));
+		if (!row("economic_accounting_coin_posting", fields))
+			return false;
+	}
+	return refine_count(connection, "economic_accounting_account_effect",
+			    "operation_id=" + id(operation), plan.accounts.size()) &&
+	       refine_count(connection, "economic_accounting_coin_posting",
+			    "operation_id=" + id(operation), plan.postings.size());
 }
 
 std::string optional_id(const critical_operation_id &value)
@@ -596,12 +693,25 @@ unsigned int economic_sql_item_transfer_lock(MYSQL *connection, const critical_c
 				return EILSEQ;
 		}
 		const auto &metadata = intent.admission.metadata;
-		const auto lock_error = economic_sql_lock_authority(
-			connection, metadata.lineage, metadata.epoch,
-			std::span<const economic_sql_mapping_request>{}, &candidate.authority);
+		item_transfer_payload payload{};
+		craft_recipe_continuation refine;
+		if (!item_transfer_command_decode_payload(command, &payload))
+			return EILSEQ;
+		std::vector<economic_sql_mapping_request> requests;
+		if (craft_refine_from_payload(payload, &refine) && refine.refine_ore_count != 1)
+			requests.push_back({ { metadata.lineage, economic_account_kind::wallet,
+					       refine.refine_cost.wallet_mapping_id, 0 },
+					     1,
+					     refine.player_pid });
+		const auto lock_error = economic_sql_lock_authority(connection, metadata.lineage,
+								    metadata.epoch, requests,
+								    &candidate.authority);
 		if (lock_error)
 			return lock_error;
 		candidate.session_id = mysql_thread_id(connection);
+		if (refine.discipline == craft_recipe_discipline::refine &&
+		    !item_transfer_repository_refine_wallet_lock(connection, command, false))
+			return failure_code();
 		if (candidate.held_retirement)
 		{
 			uint64_t observed = 0;
@@ -677,6 +787,16 @@ unsigned int economic_sql_item_transfer_record(MYSQL *connection, const critical
 		plan.items_before = custody_delta->before;
 		plan.items_after = custody_delta->after;
 		plan.item_events = custody_delta->events;
+		item_transfer_payload payload{};
+		craft_recipe_continuation refine;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    item_transfer_refine_wallet_accounting_effects(payload, &plan) !=
+			    economic_accounting_error::ok)
+			return EILSEQ;
+		const bool refining = craft_refine_from_payload(payload, &refine);
+		if (refining &&
+		    !item_transfer_repository_refine_wallet_lock(connection, command, true))
+			return failure_code();
 		if (held_retirement_transport_command(command))
 		{
 			economic_accounting_plan expected;
@@ -697,6 +817,9 @@ unsigned int economic_sql_item_transfer_record(MYSQL *connection, const critical
 		if (economic_plan_encode(plan, &encoded_plan) != economic_accounting_error::ok)
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, encoded_plan, 0))
+			return failure_code();
+		if (refining &&
+		    !refine_financial_rows(connection, command.operation_id, plan, true))
 			return failure_code();
 		if (!insert_source_claim(connection, intent.admission.metadata))
 			return failure_code();
@@ -787,15 +910,24 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 				return failure_code();
 		}
 		if (result_code)
+		{
+			item_transfer_payload failed_payload = {};
+			craft_recipe_continuation failed_refine;
+			if (!item_transfer_command_decode_payload(command, &failed_payload) ||
+			    (craft_refine_from_payload(failed_payload, &failed_refine) &&
+			     !refine_financial_rows(connection, command.operation_id, {}, false)))
+				return EILSEQ;
 			return !values[4] && !values[6] && !account_count && !posting_count &&
 					       !child_count && !event_count && !before_count &&
 					       !after_count && !reference_count &&
 					       !source_claim_count ?
 				       0 :
 				       EILSEQ;
+		}
 		if (!result_payload || result_size != ITEM_TRANSFER_RESULT_BYTES || !values[4] ||
-		    values[4]->size() != 32 || !values[6] || event_count == 0 || account_count ||
-		    posting_count || child_count || event_count != reference_count)
+		    values[4]->size() != 32 || !values[6] || event_count == 0 ||
+		    account_count > 2 || posting_count > 2 || child_count ||
+		    event_count != reference_count)
 			return EILSEQ;
 		if (source_claim_count !=
 		    static_cast<uint64_t>(intent.admission.metadata.source_event.has_value()))
@@ -815,6 +947,8 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 								  values[6]->size()),
 					 &plan) != economic_accounting_error::ok ||
 		    economic_plan_validate_structure(plan) != economic_accounting_error::ok ||
+		    plan.accounts.size() != account_count ||
+		    plan.postings.size() != posting_count ||
 		    plan.item_events.size() != event_count ||
 		    plan.items_before.size() != before_count ||
 		    plan.items_after.size() != after_count ||
@@ -845,12 +979,29 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 			std::vector<uint8_t> encoded_expected;
 			if (item_transfer_craft_accounting_effects(payload, inputs, &expected) !=
 				    economic_accounting_error::ok ||
+			    item_transfer_refine_wallet_accounting_effects(payload, &expected) !=
+				    economic_accounting_error::ok ||
 			    economic_plan_normalize(&expected) != economic_accounting_error::ok ||
 			    economic_plan_encode(expected, &encoded_expected) !=
 				    economic_accounting_error::ok ||
 			    encoded_expected != canonical_plan)
 				return EILSEQ;
 		}
+		craft_recipe_continuation refine;
+		const bool refining = craft_refine_from_payload(payload, &refine);
+		if ((!refining && (account_count || posting_count)) ||
+		    (refining &&
+		     !refine_financial_rows(connection, command.operation_id, plan, false)))
+			return EILSEQ;
+		if (refining && refine.refine_ore_count != 1 &&
+		    !refine_count(
+			    connection, "economic_account_mapping",
+			    "mapping_id=" + std::to_string(refine.refine_cost.wallet_mapping_id) +
+				    " AND lineage=" + id(expected_metadata.lineage) +
+				    " AND account_kind=1 AND context_id=0 AND backend_kind=1 AND locator_kind=1 AND native_id=" +
+				    std::to_string(refine.player_pid),
+			    1))
+			return EILSEQ;
 		for (size_t index = 0; index < plan.item_events.size(); ++index)
 		{
 			const auto &event = plan.item_events[index];

@@ -635,6 +635,46 @@ flatfile_accounting_status flatfile_accounting_storage::lookup_retained_locked(
 		},
 		error);
 }
+flatfile_accounting_status flatfile_accounting_storage::list_retained_bucket_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, size_t bucket,
+	std::vector<flatfile_accounting_record> *records, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(records && !critical_operation_id_is_zero(lineage) &&
+				bucket < FLATFILE_ACCOUNTING_BUCKETS);
+			recover(root, lock, error);
+			auto value = load_context(root, bucket, error);
+			require(value.index.lineage.bytes == lineage.bytes, status::conflict);
+			std::vector<flatfile_accounting_record> candidate;
+			candidate.reserve(value.index.entries.size());
+			if (!value.index.entries.empty())
+				for (uint32_t segment = 0; segment <= last_segment(value.index);
+				     ++segment)
+				{
+					const auto bytes = segment == last_segment(value.index) ?
+						std::move(value.active) :
+						load_segment(root, value.index, segment, error);
+					for (const auto *item : segment_entries(value.index, segment))
+					{
+						auto record = decode_record(std::span<const uint8_t>(bytes)
+							.subspan(header_bytes + 32 + item->offset, item->bytes));
+						economic_frozen_intent intent;
+						checked(economic_intent_decode(record.command.accounting_intent,
+							&intent));
+						require(intent.admission.metadata.lineage.bytes == lineage.bytes &&
+							record.command.operation_id.bytes == item->id.bytes);
+						candidate.push_back(std::move(record));
+					}
+				}
+			std::sort(candidate.begin(), candidate.end(), [](const auto &a, const auto &b)
+				{ return a.command.operation_id.bytes < b.command.operation_id.bytes; });
+			*records = std::move(candidate);
+		}, error);
+}
+
 flatfile_accounting_status
 flatfile_accounting_storage::stage(const std::string &root, const flatfile_authority_lock &lock,
 				   const flatfile_accounting_record &record,

@@ -9,11 +9,14 @@
 #include "economy/economic_gameplay_authority.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_snapshot.h"
+#include "economy/shop_trade_flat_native_checkpoint.h"
+#include <memory>
 #ifndef __NO_MYSQL__
 #include "persistence/shop_item_runtime_payload.h"
 #endif
 
 class shop_trade_native_checkpoint_owner;
+struct flatfile_accounting_shop_projection;
 
 // Local preparation cancellation only, after the exact player hold/slot has
 // been released before admission. Literal bytes belong to the original selected
@@ -80,6 +83,17 @@ class shop_trade_preparation_token final
 	uint64_t generation_ = 0;
 };
 
+// Original regular-flat identity; never converts to the SQL preparation token.
+class shop_trade_flat_preparation_token final
+{
+    public:
+	shop_trade_flat_preparation_token() = default;
+
+    private:
+	friend class shop_trade_preparation_owner;
+	critical_operation_id operation_id_{};
+	uint64_t generation_ = 0;
+};
 enum class shop_trade_preparation_state : uint8_t
 {
 	refused,
@@ -101,6 +115,14 @@ struct shop_trade_checkpoint_context
 	std::vector<player_item_snapshot> keeper_items;
 };
 
+// Original held save/source values only; no native write permission.
+struct shop_trade_flat_checkpoint_context
+{
+	shop_trade_checkpoint_context original;
+	player_flat_shop_checkpoint_token player_token;
+	player_snapshot original_queued_ack;
+	player_flat_shop_checkpoint_cut player_hold_cut;
+};
 #ifndef __NO_MYSQL__
 // Retained original native facts only. Public construction grants no write or
 // completion authority: only the native owner can seal/resolve these values.
@@ -165,6 +187,52 @@ class shop_trade_preparation_owner final
 	// physical rows, account ownership, epoch, revisions and session exclusion.
 	static bool checkpoint_context(const shop_trade_preparation_token &,
 				       shop_trade_checkpoint_context *output) noexcept;
+	// Explicit flat capture/readiness only. Production driver/admission stay closed.
+	static shop_trade_preparation_state
+	begin_flat(P_char actor, P_char keeper, P_obj selected, P_obj stock, P_obj destination,
+		   uint32_t shop, shop_trade_action, int64_t price,
+		   shop_trade_flat_preparation_token *) noexcept;
+	static shop_trade_preparation_state poll_flat(const shop_trade_flat_preparation_token &,
+						      P_char actor, P_char keeper, P_obj selected,
+						      P_obj stock, P_obj destination) noexcept;
+	static bool cancel_flat(const shop_trade_flat_preparation_token &) noexcept;
+	// Freeze only this original proved READY flat source. Exact retries retain
+	// its original acceptance time; no submission/publication route follows.
+	static bool build_accounted_command_flat(const shop_trade_flat_preparation_token &,
+						 P_char actor, P_char keeper, P_obj selected,
+						 P_obj stock, P_obj destination,
+						 critical_command *) noexcept;
+
+	// Retain and submit this original READY flat command with its existing hold.
+	// This does not enable admission, producer driving, publication or ACK.
+	static critical_submit_result
+	submit_accounted_flat(const shop_trade_flat_preparation_token &, P_char actor,
+			      P_char keeper, P_obj selected, P_obj stock, P_obj destination,
+			      shop_trade_accounted_publication_fn,
+			      shop_trade_completion_fn) noexcept;
+
+    private:
+	// Retry borrows the same original stage without recapture or new write permission.
+	static bool
+	begin_native_checkpoint_flat(const shop_trade_flat_preparation_token &, P_char actor,
+				     P_char keeper, P_obj selected, P_obj stock, P_obj destination,
+				     shop_trade_flat_checkpoint_context *,
+				     const shop_trade_flat_native_checkpoint_stage **,
+				     shop_trade_flat_native_checkpoint_phase *) noexcept;
+	static bool seal_native_checkpoint_flat(
+		const shop_trade_flat_preparation_token &,
+		std::unique_ptr<shop_trade_flat_native_checkpoint_stage> &&) noexcept;
+	static bool
+	start_native_checkpoint_flat(const shop_trade_flat_preparation_token &) noexcept;
+	static bool retain_native_outcome_flat(const shop_trade_flat_preparation_token &,
+					       flatfile_authority_transaction_result,
+					       flatfile_authority_commit_outcome) noexcept;
+	static bool resolve_native_checkpoint_flat(
+		const shop_trade_flat_preparation_token &,
+		const shop_trade_flat_native_checkpoint_resolution &) noexcept;
+	static bool
+	completed_native_checkpoint_flat(const shop_trade_flat_preparation_token &,
+					 const shop_trade_flat_native_checkpoint_stage **) noexcept;
 
     private:
 	static void drive(const shop_trade_preparation_token &) noexcept;
@@ -195,10 +263,35 @@ class shop_trade_preparation_owner final
 
 class shop_trade_native_checkpoint_owner final
 {
+    private:
+	friend class shop_trade_native_publication_owner;
+	// Physical read-only reuse. Only the actual live publisher supplies the
+	// authenticated CURRENT projection under its original borrowed root lock.
+	static bool observe_flat_publication_sources_locked(
+		const std::string &, const flatfile_authority_lock &, P_char actor, P_char keeper,
+		uint32_t shop, const flatfile_accounting_shop_projection &current,
+		const std::vector<player_item_snapshot> &physical_pc,
+		const std::vector<player_item_snapshot> &physical_keeper,
+		int64_t runtime_keeper_cash) noexcept;
+
+	// Supplement the mandatory original cold world/literal witness. Null bodies
+	// require actual complete identity absence; UID-zero pet absence stays unresolved.
+	// Cash is the caller-authenticated original BEFORE/CURRENT publication phase.
+	static bool observe_flat_cold_publication_sources_locked(
+		const std::string &, const flatfile_authority_lock &, P_char actor, P_char keeper,
+		uint32_t shop, const flatfile_accounting_shop_projection &current,
+		const std::vector<player_item_snapshot> &physical_pc,
+		const std::vector<player_item_snapshot> &physical_keeper,
+		int64_t authenticated_stage_keeper_cash) noexcept;
+
     public:
 	static shop_trade_preparation_state attempt(const shop_trade_preparation_token &,
 						    P_char actor, P_char keeper, P_obj selected,
 						    P_obj stock, P_obj destination) noexcept;
+	static shop_trade_preparation_state attempt_flat(const shop_trade_flat_preparation_token &,
+							 P_char actor, P_char keeper,
+							 P_obj selected, P_obj stock,
+							 P_obj destination) noexcept;
 };
 
 bool shop_trade_transaction_keeper_busy(uint32_t shop_id);

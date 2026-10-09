@@ -100,7 +100,11 @@ with tempfile.TemporaryDirectory(prefix="persistence-mode-") as directory:
     ]
     subprocess.run([*common_compile, "-o", str(database_binary)], check=True)
     subprocess.run(
-        [*common_compile, "-D__NO_MYSQL__", "-o", str(flat_binary)], check=True
+        [*common_compile, "-D__NO_MYSQL__",
+         str(SRC / "flatfile/flatfile_season_state.c"),
+         str(SRC / "flatfile/flatfile_authority_transaction.c"),
+         str(SRC / "flatfile/flatfile_store.c"),
+         "-pthread", "-lcrypto", "-o", str(flat_binary)], check=True
     )
     for binary in (database_binary, flat_binary):
         subprocess.run([str(binary), "default"], check=True)

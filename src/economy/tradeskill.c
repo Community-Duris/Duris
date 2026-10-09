@@ -23,7 +23,11 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/tradeskill.h"
+#include "economy/smith_native_producer.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/currency_transaction.h"
+#include <algorithm>
+#include <new>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -218,6 +222,65 @@ struct smith_data
 		    { 28917, { 46, 47, 49, 45, 35, 78, 77, 86, 87, 85, -1 } }, // torg
 		    { 37755, { 30, 26, 22, 23, 24, 25, 21, 11, 12, 13, 14, 15, 16, -1 } }, // nax
 		    { 0, { -1 } } };
+
+bool smith_native_producer::catalog(int32_t mobile_vnum, int original_menu_choice,
+				    smith_native_catalog_selection *output) noexcept
+{
+	if (!output || original_menu_choice < 1)
+		return false;
+	try
+	{
+		size_t index = 0;
+		while (index < sizeof(smith_array) / sizeof(smith_array[0]) &&
+		       smith_array[index].vnum > 0 && smith_array[index].vnum != mobile_vnum)
+			++index;
+		// Preserve the original numeric bound against the smith-array index.
+		// Invalid/sentinel catalogue entries cannot grant factory authority.
+		if (index >= sizeof(smith_array) / sizeof(smith_array[0]) ||
+		    smith_array[index].vnum <= 0 || size_t(original_menu_choice) > index ||
+		    original_menu_choice > SMITH_MAX_ITEMS)
+			return false;
+		const int forge_index = smith_array[index].items[original_menu_choice - 1];
+		if (forge_index < 0 || forge_index >= MAX_FORGE_ITEMS)
+			return false;
+		const auto &entry = forge_item_list[forge_index];
+		if (!entry.keywords || !entry.long_desc || !entry.short_desc)
+			return false;
+		smith_native_catalog_selection candidate;
+		candidate.smith_index = static_cast<uint32_t>(index);
+		candidate.menu_choice = static_cast<uint32_t>(original_menu_choice);
+		candidate.forge_index = static_cast<uint32_t>(forge_index);
+		for (size_t i = 0; i < candidate.ore_vnums.size() && entry.ore_needed[i]; ++i)
+		{
+			if (entry.ore_needed[i] < 0)
+				return false;
+			candidate.ore_vnums[i] = entry.ore_needed[i];
+			++candidate.ore_count;
+		}
+		if (!candidate.ore_count ||
+		    candidate.ore_count > sizeof(forge_prices) / sizeof(forge_prices[0]))
+			return false;
+		const int fee = forge_prices[candidate.ore_count - 1];
+		if (fee <= 0 || uint32_t(fee) != smith_native_tier_fee(candidate.ore_count))
+			return false;
+		candidate.fee = static_cast<uint32_t>(fee);
+		candidate.keywords = entry.keywords;
+		candidate.long_description = entry.long_desc;
+		candidate.short_description = entry.short_desc;
+		candidate.affect_choices = { entry.loc0, entry.min0, entry.max0,
+					     entry.loc1, entry.min1, entry.max1 };
+		candidate.allow_anti = entry.allow_anti;
+		candidate.classes = entry.classes;
+		candidate.wear_flags = entry.wear_flags;
+		candidate.bitvectors = { entry.aff1, entry.aff2, entry.aff3, entry.aff4 };
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 P_obj get_hammer(P_char ch)
 {
@@ -2496,12 +2559,170 @@ int get_matstart(P_obj obj)
 	return matstart;
 }
 
+namespace
+{
+void do_accounted_refine(P_char ch, char *arg)
+{
+	if (!ch || !IS_PC(ch) || GET_PID(ch) <= 0)
+		return;
+	char material_arg[MAX_STRING_LENGTH], ignored[MAX_STRING_LENGTH];
+	argument_interpreter(arg, material_arg, ignored);
+	if (!*material_arg)
+	{
+		send_to_char(
+			"What &+ysalvaged &+Ymaterial &nwould you like to &+yre&+Yfi&+yne?\r\n",
+			ch);
+		return;
+	}
+	P_obj material = get_obj_in_list(material_arg, ch->carrying);
+	if (!material)
+	{
+		send_to_char(
+			"&nYou must have the item you wish to &+yre&+Yfi&+yne &nin your inventory.&n\r\n",
+			ch);
+		return;
+	}
+	const int vnum = OBJ_VNUM(material);
+	if (vnum < 400000 || vnum > 400208)
+	{
+		send_to_char("That item is not a &+ysalvaged&n item!\r\n", ch);
+		return;
+	}
+	if (vnum == get_matstart(material) + 4)
+	{
+		send_to_char("That &+bmaterial&n is already of the &+Bhighest&n quality.\n", ch);
+		return;
+	}
+	P_obj staged_output = nullptr;
+	try
+	{
+		std::vector<P_obj> inputs;
+		craft_recipe_continuation terms;
+		terms.player_pid = static_cast<uint32_t>(GET_PID(ch));
+		terms.discipline = craft_recipe_discipline::refine;
+		terms.recipe_vnum = vnum + 1;
+		terms.refine_material_vnum = vnum;
+		if (!material->short_description || !*material->short_description ||
+		    strlen(material->short_description) >= 512)
+		{
+			send_to_char("The refining authority could not retain this material.\r\n",
+				     ch);
+			return;
+		}
+		terms.refine_material_name = material->short_description;
+		unsigned int materials = 0;
+		// Retain the original inventory order: first two materials, all eligible ore.
+		for (P_obj object = ch->carrying; object; object = object->next_content)
+		{
+			const int object_vnum = OBJ_VNUM(object);
+			const bool selected_material = object_vnum == vnum && materials < 2;
+			const bool ore = object_vnum >= 194 && object_vnum <= 233;
+			if (!selected_material && !ore)
+				continue;
+			if (inputs.size() == ITEM_TRANSFER_MAX_ITEMS || !object->obj_uid)
+			{
+				send_to_char(
+					"The refining authority cannot retain these inputs.\r\n",
+					ch);
+				return;
+			}
+			inputs.push_back(object);
+			terms.refine_root_order.push_back(object->obj_uid);
+			if (selected_material)
+				++materials;
+			if (ore)
+			{
+				++terms.refine_ore_count;
+				terms.refine_last_ore_vnum = object_vnum;
+			}
+		}
+		if (materials < 2)
+		{
+			send_to_char(
+				"You need at least &+Y2 &nof the &+ymaterials&n in your inventory in order to &+yre&+Yfi&+yne&n it.\r\n",
+				ch);
+			return;
+		}
+		if (terms.refine_ore_count != 1 &&
+		    !currency_transaction_can_submit_nonrebasable(ch))
+		{
+			send_to_char(
+				"The refining authority is busy; your inputs were preserved.\r\n",
+				ch);
+			return;
+		}
+		if (terms.refine_ore_count != 1)
+		{
+			coin_transfer_endpoint endpoint;
+			economic_native_money_checkpoint_projection mapping;
+			if (ch->only.pc->wallet_revision == UINT64_MAX ||
+			    !currency_transaction_coin_wallet(ch, -50000, &endpoint) ||
+			    !economic_gameplay_authority::observe_craft_wallet_checkpoint(
+				    terms.player_pid, &mapping))
+			{
+				send_to_char(
+					"You must have &+Wexactly &+Rone&n &+Lm&+yi&+Ln&+ye&+Ld ore &nin your inventory or 50 &+Wplatinum&n in order to &+yre&+Yfi&+yne&n it.\r\n",
+					ch);
+				return;
+			}
+			terms.refine_cost = { mapping.player_wallet.authority_id,
+					      ch->only.pc->wallet_revision,
+					      ch->only.pc->wallet_revision + 1, endpoint.before,
+					      endpoint.after };
+			if (!craft_refine_cost_valid(terms.refine_cost))
+				return;
+		}
+		// One original roll is frozen in the same durable craft command.
+		terms.refine_roll = number(1, 100);
+		terms.output_count = craft_refine_succeeded(terms) ? 1 : 0;
+		terms.output_uid = *std::min_element(terms.refine_root_order.begin(),
+						     terms.refine_root_order.end());
+		if (terms.output_count)
+		{
+			staged_output = read_object(vnum + 1, VIRTUAL);
+			if (!staged_output)
+			{
+				send_to_char(
+					"The refined material could not be prepared; your inputs were preserved.\r\n",
+					ch);
+				return;
+			}
+			terms.output_uid = staged_output->obj_uid;
+		}
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_craft(
+			    ch, inputs.data(), inputs.size(),
+			    terms.output_count ? &staged_output : nullptr, terms.output_count,
+			    terms.recipe_vnum, nullptr, nullptr, 0, &reject, nullptr, nullptr, 0,
+			    chaos_pouch_usage_mode::generated, &terms))
+		{
+			if (staged_output)
+				extract_obj(staged_output, FALSE);
+			staged_output = nullptr;
+			send_to_char(
+				"The refining authority could not commit the attempt; your inputs and coins were preserved.\r\n",
+				ch);
+			return;
+		}
+		// The original retained owner now owns this output and the frozen outcome.
+		staged_output = nullptr;
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (staged_output)
+			extract_obj(staged_output, FALSE);
+		send_to_char(
+			"The refining authority could not retain the attempt; your inputs and coins were preserved.\r\n",
+			ch);
+	}
+}
+}
+
 void do_refine(P_char ch, char *arg, int /*cmd*/)
 {
 	if (economic_gameplay_authority::active())
 	{
-		send_to_char("Refining is unavailable while economic accounting is active.\r\n",
-			     ch);
+		do_accounted_refine(ch, arg);
 		return;
 	}
 	P_obj obj;

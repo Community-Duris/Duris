@@ -2,6 +2,7 @@
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/economic_sql_item_transfer_transaction.h"
 #include "player/player_snapshot_codec.h"
+#include "persistence/quest_mobile_native_sql.h"
 #include "world/object_template.h"
 #include "world/quest_mobile_native.h"
 
@@ -330,11 +331,179 @@ void check(MYSQL *db, const original_cut &original, unsigned int expected)
 	assert(scalar(db, "SELECT COUNT(*) FROM quest_mobile_native") == 1);
 }
 
+// This extends the original SQL publication-cut component, not native birth or
+// admission authority. The original seed() facts remain explicit fixture data;
+// successful publication below is the actual existing production API call.
+struct catalog_cut
+{
+	economic_sql_physical_source_snapshot physical;
+	sql_room_item_source_snapshot rooms;
+	quest_mobile_native_sql_catalog native;
+};
+
+catalog_cut capture_catalog_cut(MYSQL *db)
+{
+	catalog_cut result;
+	const economic_sql_source_limits limits;
+	const auto session = mysql_thread_id(db);
+	assert((db->server_status & SERVER_STATUS_IN_TRANS) && session);
+	assert(!economic_sql_capture_physical_sources_in_transaction(db, limits, &result.physical));
+	assert(!sql_room_item_payload_capture_sources_in_transaction(db, limits, result.physical,
+								     &result.rooms));
+	assert(!quest_mobile_native_sql_capture_catalog_in_transaction(
+		db, result.physical, result.rooms, limits, &result.native));
+	assert(mysql_thread_id(db) == session && (db->server_status & SERVER_STATUS_IN_TRANS) &&
+	       (db->server_status & SERVER_STATUS_AUTOCOMMIT));
+	assert(result.native.original_session == session &&
+	       result.native.physical_digest == result.physical.digest);
+	return result;
+}
+
+void catalog_publication_check(MYSQL *db, const original_cut &original)
+{
+	const auto observed = capture_catalog_cut(db);
+	const auto &report = observed.native;
+	assert(report.catalog.size() == 1 && report.catalog[0].image &&
+	       report.catalog[0].mobile_instance_id == MOBILE &&
+	       report.catalog[0].mobile_revision == original.current.reference.mobile_revision &&
+	       report.catalog[0].stock_revision == original.current.reference.stock_revision &&
+	       report.catalog[0].lifetime_state == uint8_t(quest_mobile_lifetime_state::live) &&
+	       image_bytes(*report.catalog[0].image) == image_bytes(original.current));
+	for (const auto &cell : report.catalog[0].cells)
+		assert(cell);
+	assert(report.catalog[0].flags == 0 && report.catalog[0].owner_revision &&
+	       report.items.size() == original.current.items.size() &&
+	       report.native_custody.size() == report.items.size() &&
+	       report.unmatched_active_custody.empty() && report.malformed_custody.empty() &&
+	       report.extra_custody.empty() && report.findings.empty());
+	const auto clock = *report.catalog[0].owner_revision;
+	assert(clock.row < observed.physical.source2.tables[12].rows.size() &&
+	       clock.digest == observed.physical.source2.tables[12].rows[clock.row].digest);
+	for (const auto &witness : report.items)
+	{
+		assert(witness.current_field_correspondence && witness.flags == 0 &&
+		       witness.catalog_row == 0 && witness.custody && witness.equipment &&
+		       witness.owner_revision && witness.observed_item_revision &&
+		       witness.root_item_uid == UID && !witness.parent_item_uid);
+		const auto custody = *witness.custody, equipment = *witness.equipment;
+		assert(custody.row < observed.physical.source2.tables[11].rows.size() &&
+		       custody.digest ==
+			       observed.physical.source2.tables[11].rows[custody.row].digest &&
+		       equipment.row <
+			       observed.physical.source2.item_equipment_sources[0].rows.size() &&
+		       equipment.digest == observed.physical.source2.item_equipment_sources[0]
+						   .rows[equipment.row]
+						   .digest);
+		// This original publication fixture observes item2/3 and native stock7/8:
+		// the item revision is borrowed SQL evidence, never stock-derived.
+		assert(*witness.observed_item_revision != *report.catalog[0].stock_revision);
+	}
+	assert(report.rows == observed.rooms.rows + 1 && report.cells == observed.rooms.cells + 6);
+	// No origin/lineage tables or authenticated birth facts were provided to the
+	// inspector; original publication assertions still belong to check().
+}
+
+void catalog_reader_components(MYSQL *db)
+{
+	using namespace quest_mobile_native_catalog_flags;
+	const auto original = cut(true, false, 8, 8);
+	query(db, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+	query(db, "START TRANSACTION");
+	seed(db, original);
+	check(db, original, 0);
+	catalog_publication_check(db, original);
+	// These rolled-back perturbations are component reader facts, never a native
+	// producer/admission pass. Each captures a new same-session RR cut after the
+	// fixture's own writes; no pre-write packet is reused as post-write evidence.
+	auto perturb = [&](const std::string &sql, uint64_t flag, bool current,
+			   size_t related_count = 1, size_t extra_count = 0)
+	{
+		query(db, "SAVEPOINT native_catalog_reader");
+		query(db, sql);
+		const auto observed = capture_catalog_cut(db);
+		assert(observed.native.items.size() == 1 &&
+		       observed.native.items[0].current_field_correspondence == current &&
+		       observed.physical.source2.tables[11].rows.size() == related_count &&
+		       observed.native.related_custody.size() == related_count &&
+		       observed.native.native_custody.size() == 1 &&
+		       observed.native.extra_custody.size() == extra_count);
+		for (const auto &source : observed.native.related_custody)
+			assert(source.row < observed.physical.source2.tables[11].rows.size() &&
+			       source.digest ==
+				       observed.physical.source2.tables[11].rows[source.row].digest);
+		if (flag)
+			assert(std::any_of(observed.native.findings.begin(),
+					   observed.native.findings.end(), [&](const auto &finding)
+					   { return finding.flag & flag; }));
+		else
+			assert(observed.native.findings.empty());
+		query(db, "ROLLBACK TO SAVEPOINT native_catalog_reader");
+		query(db, "RELEASE SAVEPOINT native_catalog_reader");
+		catalog_publication_check(db, original);
+	};
+	perturb("UPDATE quest_mobile_native SET mobile_revision=mobile_revision+1 WHERE mobile_instance_id=" +
+			std::to_string(MOBILE),
+		invalid_row, false);
+	perturb("UPDATE item_owner_revision SET revision=revision+1 WHERE owner_type=12 AND owner_id=" +
+			std::to_string(MOBILE) + " AND owner_context_id=0",
+		owner_clock_mismatch, false);
+	perturb("UPDATE item_current_owner SET equipment_slot=1 WHERE item_uid=" +
+			std::to_string(UID),
+		custody_mismatch, false);
+	const std::string extra =
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,equipment_slot) VALUES(" +
+		std::to_string(UID + 50) + "," + std::to_string(UID) + "," + std::to_string(UID) +
+		"," + std::to_string(uint8_t(item_owner_type::player)) + "," + std::to_string(PID) +
+		",0,1,9001,";
+	perturb(extra + "1,0)", extra_related_custody, false, 2, 1);
+	perturb(extra + "2,0)", 0, true, 2);
+	perturb(extra + "3,0)", 0, true, 2);
+	// CHECK(state BETWEEN1 AND3) makes malformed state a separate raw-reader
+	// component case, not a legal SQL perturbation of this genuine schema.
+
+	query(db, "SAVEPOINT native_catalog_terminal");
+	auto terminal = original.current;
+	terminal.reference.mobile_revision = terminal.reference.stock_revision = UINT64_MAX;
+	const auto terminal_bytes = image_bytes(terminal); // Original native canonical codec.
+	query(db,
+	      "UPDATE quest_mobile_native SET mobile_revision=18446744073709551615,stock_revision=18446744073709551615,canonical_image=X'" +
+		      hex(terminal_bytes) + "' WHERE mobile_instance_id=" + std::to_string(MOBILE));
+	query(db,
+	      "UPDATE item_owner_revision SET revision=18446744073709551615 WHERE owner_type=12 AND owner_id=" +
+		      std::to_string(MOBILE) + " AND owner_context_id=0");
+	quest_mobile_native_sql_row locked;
+	assert(!quest_mobile_native_sql_lock(db, MOBILE, &locked) && locked.present &&
+	       image_bytes(locked.image) == terminal_bytes);
+	const auto terminal_cut = capture_catalog_cut(db);
+	assert(terminal_cut.native.findings.empty() && terminal_cut.native.items.size() == 1 &&
+	       terminal_cut.native.items[0].current_field_correspondence &&
+	       terminal_cut.native.catalog[0].mobile_revision == UINT64_MAX &&
+	       terminal_cut.native.catalog[0].stock_revision == UINT64_MAX &&
+	       terminal_cut.native.items[0].observed_item_revision == 3);
+	query(db, "ROLLBACK TO SAVEPOINT native_catalog_terminal");
+	query(db, "RELEASE SAVEPOINT native_catalog_terminal");
+	catalog_publication_check(db, original);
+	const auto retained = capture_catalog_cut(db);
+	query(db, "ROLLBACK");
+	assert(scalar(db, "SELECT COUNT(*) FROM quest_mobile_native") == 0);
+	quest_mobile_native_sql_catalog output;
+	output.original_session = 777;
+	output.rows = 888;
+	output.catalog.resize(1);
+	output.catalog[0].cells[0] = "catalog output sentinel";
+	assert(quest_mobile_native_sql_capture_catalog_in_transaction(
+		       db, retained.physical, retained.rooms, {}, &output) == EBUSY);
+	assert(output.original_session == 777 && output.rows == 888 && output.catalog.size() == 1 &&
+	       output.catalog[0].cells[0] == "catalog output sentinel" && output.items.empty());
+}
+
 void example(MYSQL *db, const original_cut &original, unsigned int expected)
 {
 	query(db, "START TRANSACTION");
 	seed(db, original);
 	check(db, original, expected);
+	if (!expected)
+		catalog_publication_check(db, original);
 	query(db, "ROLLBACK");
 	assert(scalar(db, "SELECT COUNT(*) FROM quest_mobile_native") == 0);
 }
@@ -367,6 +536,7 @@ int main()
 	assert(mysql_real_connect(db, host, user, password, database,
 				  port ? std::strtoul(port, nullptr, 10) : 3306, socket, 0));
 	query(db, "SET SESSION innodb_lock_wait_timeout=1");
+	query(db, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
 	for (const char *table :
 	     { "quest_mobile_native", "item_current_owner", "item_owner_revision", "player_data",
 	       "player_items", "player_item_runtime_state" })
@@ -426,6 +596,7 @@ int main()
 	reconnect = false;
 	assert(!mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect));
 	check(db, original, 0);
+	catalog_publication_check(db, original);
 	query(db, "ROLLBACK");
 	query(db, "SET autocommit=0");
 	query(db, "START TRANSACTION");
@@ -437,6 +608,7 @@ int main()
 	query(db, "ROLLBACK");
 	query(db, "SET autocommit=1");
 	assert(scalar(db, "SELECT COUNT(*) FROM quest_mobile_native") == 0);
+	catalog_reader_components(db);
 	mysql_close(db);
 	// Actual db.c catalog is unbootstrapped in this bounded SQL component.
 	assert(!recovery_object_templates_ready());

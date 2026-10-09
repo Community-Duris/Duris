@@ -1,6 +1,9 @@
 #include "flatfile/flatfile_accounting_coin_transaction.h"
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_accounting_pile_state.h"
+#include "flatfile/flatfile_accounting_pile_baseline.h"
+#include "flatfile/flatfile_accounting_baseline.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -17,6 +20,14 @@
 #include <climits>
 #include <new>
 #include <optional>
+#include <map>
+#include <set>
+#include <cstring>
+#include <dirent.h>
+#include <fcntl.h>
+#include <memory>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace
 {
@@ -734,6 +745,278 @@ unsigned int flatfile_accounting_coin_transaction::read_room_pile_locked(
 				       selected->vnum,
 				       item_custody_state::active };
 		candidate.item = std::move(native.item);
+		*output = std::move(candidate);
+		return 0;
+	}
+	catch (const failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+}
+
+namespace
+{
+// No control file may select legacy boot only when the evidence namespace is
+// absent or actually empty. A remaining index/segment/claim/head is a damaged
+// prior accounting installation, never proof of never-accounted room money.
+bool empty_boot_evidence_namespace(const std::string &root)
+{
+	const int fd = open((root + "/economic-evidence").c_str(),
+		O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	if (fd < 0)
+	{
+		need(errno == ENOENT, EIO);
+		return true;
+	}
+	struct stat info{};
+	if (fstat(fd, &info) || !S_ISDIR(info.st_mode) || info.st_uid != geteuid() || (info.st_mode & 0077))
+	{
+		close(fd);
+		throw failure{ EILSEQ };
+	}
+	std::unique_ptr<DIR, int (*)(DIR *)> directory(fdopendir(fd), closedir);
+	if (!directory)
+	{
+		close(fd);
+		throw failure{ EIO };
+	}
+	for (;;)
+	{
+		errno = 0;
+		const auto *entry = readdir(directory.get());
+		if (!entry)
+		{
+			need(!errno, EIO);
+			return true;
+		}
+		if (std::strcmp(entry->d_name, ".") && std::strcmp(entry->d_name, ".."))
+			return false;
+	}
+}
+}
+
+unsigned int flatfile_accounting_coin_transaction::read_room_boot_pile_locked(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_room_coin_pile *output, std::string *error) noexcept
+{
+	try
+	{
+		need(!root.empty() && lock.matches(root) && uid && output, EINVAL);
+		const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+		need(recovered == flatfile_authority_transaction_result::ok,
+			recovered == flatfile_authority_transaction_result::io_error ? EIO : EILSEQ);
+		flatfile_accounting_pile_state head;
+		checked(flatfile_accounting_pile_state_read(root, lock, uid, &head, error));
+		flatfile_accounting_record retained;
+		checked(flatfile_accounting_storage::lookup_retained_locked(root, lock,
+			head.operation_id, &retained, error));
+		if (retained.command.type == critical_command_type::economic_baseline)
+			return flatfile_accounting_pile_baseline_read_room_locked(root, lock,
+				retained.command, uid, output, error);
+		return read_room_pile_locked(root, lock, uid, output, error);
+	}
+	catch (const failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
+}
+
+unsigned int flatfile_accounting_coin_transaction::read_room_boot_locked(
+	const std::string &root, const flatfile_authority_lock &lock, size_t maximum,
+	flatfile_room_coin_boot_view *output, std::string *error) noexcept
+{
+	try
+	{
+		need(!root.empty() && lock.matches(root) && maximum && output, EINVAL);
+		// Recover the original journal before observing the evidence namespace.
+		// The control reader maps absent control to EILSEQ: legacy eligibility is
+		// proved by the actual empty namespace, never by weakening that reader.
+		const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+		need(recovered == flatfile_authority_transaction_result::ok,
+			recovered == flatfile_authority_transaction_result::io_error ? EIO : EILSEQ);
+		if (empty_boot_evidence_namespace(root))
+		{
+			*output = {};
+			return 0;
+		}
+		flatfile_economic_control control;
+		checked(flatfile_economic_control_read(root, lock, &control, error));
+		std::vector<flatfile_accounting_pile_state> heads;
+		const auto listed = flatfile_accounting_pile_state_list(root, lock, maximum,
+			&heads, error);
+		checked(listed);
+		std::map<uint64_t, int32_t> history;
+		std::set<int32_t> rooms;
+		for (size_t bucket = 0; bucket < FLATFILE_ACCOUNTING_BUCKETS; ++bucket)
+		{
+			if (!(control.evidence_initialized[bucket / 8] & (1U << (bucket % 8))))
+				continue;
+			std::vector<flatfile_accounting_record> records;
+			checked(flatfile_accounting_storage::list_retained_bucket_locked(
+				root, lock, control.lineage, bucket, &records, error));
+			for (const auto &record : records)
+			{
+				if (record.command.type == critical_command_type::economic_baseline)
+				{
+					// A rejected baseline grants no opening or physical authority.
+					if (record.result_code)
+						continue;
+					flatfile_accounting_record retained;
+					std::vector<uint8_t> witness;
+					checked(flatfile_accounting_baseline_lookup(root, lock,
+						record.command, &retained, &witness, error));
+					std::optional<economic_prepared_baseline> prepared;
+					checked(economic_baseline_decode(witness, &prepared));
+					need(prepared.has_value());
+					for (const auto &holding : prepared->witness().holdings)
+					{
+						if (holding.account.kind != economic_account_kind::pile)
+							continue;
+						const auto uid = holding.account.authority_id;
+						const auto &items = prepared->witness().items;
+						const auto item = std::find_if(items.begin(), items.end(),
+							[&](const economic_baseline_item &entry)
+							{ return entry.snapshot.uid == uid; });
+						need(uid && uid != UINT64_MAX && !holding.account.context_id &&
+							holding.account.lineage.bytes == control.lineage.bytes && item != items.end());
+						const auto &position = item->snapshot.position;
+						need(position.root_uid == uid && !position.parent_uid && !position.equipment_slot &&
+							position.state == item_custody_state::active &&
+							holding.native_revision && position.revision == holding.native_revision &&
+							holding.source_digest == item->source_digest &&
+							position.owner.type == item_owner_type::room && position.owner.id &&
+							position.owner.id <= INT_MAX && !position.owner.context_id,
+							EOPNOTSUPP);
+						const auto room = static_cast<int32_t>(position.owner.id);
+						const auto known = history.find(uid);
+						need(known == history.end() || known->second == room);
+						need(known != history.end() || history.size() < maximum, ENOSPC);
+						history.emplace(uid, room);
+						// Only subsequent typed COIN effects fence aggregate money.
+						// Current baseline source is verified only when its head still
+						// selects that baseline; a genuine COIN may have changed it.
+					}
+					continue;
+				}
+				if (record.command.type != critical_command_type::coin_transfer)
+					continue;
+				const auto value = decode(record.command);
+				verify(root, lock, record);
+				// Authenticated no-effect rejections may name an absent new UID.
+				// Never demand a source claim, head or native root for that attempt.
+				if (record.result_code)
+					continue;
+				checked_retained_claim(flatfile_accounting_storage::verify_source_claim(
+					root, lock, record, error));
+				const bool drop = value.accounts[0].kind == economic_account_kind::wallet &&
+					value.accounts[1].kind == economic_account_kind::pile;
+				const bool pickup = value.accounts[0].kind == economic_account_kind::pile &&
+					value.accounts[1].kind == economic_account_kind::wallet;
+				if (!drop && !pickup)
+				{
+					need(value.accounts[0].kind != economic_account_kind::pile &&
+						value.accounts[1].kind != economic_account_kind::pile, EOPNOTSUPP);
+					continue;
+				}
+				checked(flatfile_item_repository_verify_coin_root_locked(root, lock,
+					record.command, record.result, error));
+				need(record.command.publication_required &&
+					coin_transfer_accounting_command_supported(record.command), EOPNOTSUPP);
+				item_transfer_payload pile;
+				const auto &endpoint = drop ? value.payload.destination : value.payload.source;
+				need(item_transfer_command_decode_payload(endpoint.change, &pile) &&
+					pile.item_count == 1 && !pile.multi_root &&
+					pile.selected_item_uid == pile.items[0].item_uid &&
+					pile.items[0].root_item_uid == pile.selected_item_uid &&
+					!pile.items[0].parent_item_uid, EOPNOTSUPP);
+				const auto room = drop ? pile.to_owner : pile.from_owner;
+				need(room.type == item_owner_type::room && room.id && room.id <= INT_MAX &&
+					!room.context_id, EOPNOTSUPP);
+				const uint64_t uid = pile.selected_item_uid;
+				need(uid && uid != UINT64_MAX, EILSEQ);
+				const auto known = history.find(uid);
+				need(known == history.end() || known->second == static_cast<int32_t>(room.id));
+				need(known != history.end() || history.size() < maximum, ENOSPC);
+				history.emplace(uid, static_cast<int32_t>(room.id));
+				rooms.insert(static_cast<int32_t>(room.id));
+			}
+		}
+		// Full head/baseline/typed-history union catches missing and orphan
+		// heads, including retired lifetimes. Each current head selects its own
+		// original proof; baseline authority is never guessed into a COIN command.
+		need(heads.size() == history.size(), ENODATA);
+		std::vector<flatfile_item_ownership_record> catalog;
+		if (!heads.empty())
+			checked(flatfile_item_repository_recovery_catalog_locked(root, lock, &catalog, error));
+		flatfile_room_coin_boot_view candidate;
+		candidate.history_uids.reserve(history.size());
+		candidate.piles.reserve(heads.size());
+		for (const auto &head : heads)
+		{
+			const uint64_t uid = head.account.authority_id;
+			const auto known = history.find(uid);
+			need(known != history.end() && head.account.lineage.bytes == control.lineage.bytes,
+				ENODATA);
+			candidate.history_uids.push_back(uid);
+			if (!head.retired)
+			{
+				flatfile_room_coin_pile pile;
+				checked(read_room_boot_pile_locked(root, lock, uid, &pile, error));
+				need(pile.identity.owner.id == static_cast<uint64_t>(known->second));
+				candidate.piles.push_back(std::move(pile));
+				continue;
+			}
+			// A consumed lifetime must be the sole matching native root, destroyed
+			// at its current head revision. No surviving root/child is a substitute.
+			flatfile_accounting_record last;
+			checked(flatfile_accounting_storage::lookup_retained_locked(root, lock,
+				head.operation_id, &last, error));
+			const auto last_identity = decode(last.command);
+			need(!last.result_code && last.command.publication_required &&
+				coin_transfer_accounting_command_supported(last.command) &&
+				last_identity.intent.admission.metadata.epoch.bytes == head.epoch.bytes);
+			verify(root, lock, last);
+			checked_retained_claim(flatfile_accounting_storage::verify_source_claim(root, lock,
+				last, error));
+			checked(flatfile_item_repository_verify_coin_root_locked(root, lock,
+				last.command, last.result, error));
+			economic_accounting_plan last_plan;
+			checked(economic_plan_decode(last.plan, &last_plan));
+			const auto effect = std::find_if(last_plan.accounts.begin(), last_plan.accounts.end(),
+				[&](const economic_account_effect &value)
+				{ return economic_account_key_equal(value.key, head.account); });
+			need(effect != last_plan.accounts.end() && effect->after_revision == head.item_revision &&
+				effect->after == economic_coin_vector{} && effect->after == head.balance);
+			const flatfile_item_ownership_record *selected = nullptr;
+			for (const auto &entry : catalog)
+				if (entry.item_uid == uid || entry.root_item_uid == uid || entry.parent_item_uid == uid)
+				{
+					need(!selected && entry.item_uid == uid && entry.root_item_uid == uid &&
+						!entry.parent_item_uid && entry.state == item_custody_state::destroyed &&
+						entry.item_revision == head.item_revision &&
+						entry.owner.type == item_owner_type::destruction &&
+						!entry.owner.id && !entry.owner.context_id);
+					selected = &entry;
+				}
+			need(selected, ENODATA);
+		}
+		candidate.fenced_rooms.assign(rooms.begin(), rooms.end());
 		*output = std::move(candidate);
 		return 0;
 	}

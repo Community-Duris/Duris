@@ -2,6 +2,13 @@
 #include "item/held_retirement_transport.h"
 #include "persistence/economic_sql_bank_transaction.h"
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
+#include "economy/native_mobile_birth_recovery.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
+#include "flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.h"
+#include "flatfile/flatfile_accounting_zone_reset_item_transaction.h"
+#include "persistence/persistence_mode.h"
+#include "persistence/economic_sql_zone_reset_item_transaction.h"
+#include "persistence/zone_reset_item_origin_sql.h"
 #include "persistence/economic_sql_collector_transaction.h"
 #include "persistence/economic_sql_shop_trade_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
@@ -67,6 +74,283 @@
 #include <string>
 #include <vector>
 #include <type_traits>
+
+// This is the exact global friend declared by the original worker owner.
+class critical_shared_native_sql_execution_owner final
+{
+    public:
+	static bool current(const critical_shared_native_execution_owner &owner) noexcept
+	{
+		return owner.current();
+	}
+};
+
+// The exact global friend of both the coordinator pin and flat participant.
+// No stored lock or independent caller capability can enter this execution.
+class critical_shared_native_flat_execution_owner final
+{
+    public:
+	static critical_apply_result
+	apply(const critical_shared_native_execution_owner &owner) noexcept
+	{
+		using transaction = flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+		transaction *proposal = nullptr;
+		const auto refusal = [&](unsigned int error) noexcept
+		{
+			return critical_apply_result{
+				proposal && proposal->publication_possible() ?
+					critical_apply_outcome::ambiguous_commit :
+					critical_apply_outcome::retryable_failure,
+				0, error
+			};
+		};
+		try
+		{
+			if (!owner.current() ||
+			    owner.phase() != critical_native_recovery_phase::execution_pending)
+				return refusal(EACCES);
+			proposal = owner.flat_transaction();
+			// A pure proposal can never commit on a later callback's lock.
+			// Release only genuinely not-published heap ownership, then restage
+			// the SAME original carrier after actual locked absent-receipt proof.
+			if (proposal && !proposal->publication_possible())
+			{
+				if (!owner.release_unpublished_flat_transaction(proposal))
+					return refusal(EBUSY);
+				proposal = nullptr;
+			}
+			const char *configured = persistence_mode_flatfile_root();
+			if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+			    persistence_mode_requires_mysql() || !configured || !*configured)
+				return refusal(EACCES);
+			const std::string root(configured);
+			flatfile_authority_lock lock;
+			// This local lock is acquired and destroyed by this SAME worker.
+			// Recovery precedes every retained/native/custody/epoch read.
+			if (!lock.acquire(root, nullptr) ||
+			    flatfile_authority_transaction_recover(root, lock, nullptr) !=
+				    flatfile_authority_transaction_result::ok)
+				return refusal(EIO);
+			if (!owner.current())
+				return refusal(EACCES);
+			if (proposal)
+			{
+				// Possible publication is irrevocably reconciliation-only. Exact
+				// original bytes stay in the same operation across callbacks.
+				auto result = proposal->reconcile_locked(root, lock);
+				if (!owner.current())
+					result.outcome = critical_apply_outcome::ambiguous_commit;
+				return result;
+			}
+			if (!native_mobile_birth_shared_shop_recovery_execution_valid(
+				    owner.command(), owner.attachment(), owner.revision()))
+				return refusal(EILSEQ);
+			critical_native_recovery_envelope original;
+			original.command = owner.command();
+			original.revision = owner.revision();
+			original.phase = owner.phase();
+			original.attachment.assign(owner.attachment().begin(),
+						   owner.attachment().end());
+			auto retained = transaction::verify_retained_locked(root, lock, original);
+			if (retained.outcome == critical_apply_outcome::already_applied)
+			{
+				critical_completion receipt{};
+				receipt.operation_id = original.command.operation_id;
+				receipt.outcome = retained.outcome;
+				receipt.durable_revision = retained.durable_revision;
+				receipt.error_code = retained.error_code;
+				receipt.failure_stage = retained.failure_stage;
+				receipt.result_size = retained.result_size;
+				receipt.result_payload = retained.result_payload;
+				flatfile_shared_native_birth_projection current;
+				const auto error = transaction::read_current_locked(
+					root, lock, original, receipt, &current);
+				if (error || !owner.current())
+				{
+					retained.outcome = critical_apply_outcome::ambiguous_commit;
+					retained.error_code = error ? error : EACCES;
+				}
+				return retained;
+			}
+			if (retained.outcome != critical_apply_outcome::retryable_failure ||
+			    retained.error_code != ENOENT)
+				return retained;
+			std::unique_ptr<transaction> prepared;
+			const auto error =
+				transaction::prepare_locked(root, lock, original, &prepared);
+			if (error)
+				return refusal(error);
+			size_t retained_bytes = 0;
+			if (!prepared || !prepared->retained_bytes(&retained_bytes))
+				return refusal(EOVERFLOW);
+			auto *prepared_pointer = prepared.get();
+			if (!owner.retain_flat_transaction(prepared, retained_bytes))
+				return refusal(ENOSPC);
+			proposal = prepared_pointer;
+			if (!owner.current())
+			{
+				// Cleanup-only release remains tied to this exact executing pin
+				// even when shutdown changes stop/generation before joining us.
+				if (!proposal->publication_possible() &&
+				    owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				return refusal(EACCES);
+			}
+			auto result = proposal->commit_locked(root, lock);
+			if (!proposal->publication_possible())
+			{
+				if (owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				else
+					return refusal(EBUSY);
+			}
+			else if (!owner.current())
+				result.outcome = critical_apply_outcome::ambiguous_commit;
+			return result;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return refusal(ENOMEM);
+		}
+		catch (...)
+		{
+			return refusal(EIO);
+		}
+	}
+};
+// Distinct genuine queued ROOM pin; never a bare-command executor or ACK permit.
+class critical_zone_reset_item_flat_execution_owner final
+{
+    public:
+	static critical_apply_result
+	apply(const critical_zone_reset_item_execution_owner &owner) noexcept
+	{
+		using transaction = flatfile_accounting_zone_reset_item_transaction;
+		transaction *proposal = nullptr;
+		const auto refusal = [&](unsigned int error) noexcept
+		{
+			return critical_apply_result{
+				proposal && proposal->publication_possible() ?
+					critical_apply_outcome::ambiguous_commit :
+					critical_apply_outcome::retryable_failure,
+				0, error
+			};
+		};
+		try
+		{
+			if (!owner.current() ||
+			    owner.phase() != critical_native_recovery_phase::execution_pending)
+				return refusal(EACCES);
+			proposal = owner.flat_transaction();
+			// A pure proposal can never commit on a later callback's lock.
+			// Release only genuinely not-published heap ownership, then restage
+			// the SAME original carrier after actual locked absent-receipt proof.
+			if (proposal && !proposal->publication_possible())
+			{
+				if (!owner.release_unpublished_flat_transaction(proposal))
+					return refusal(EBUSY);
+				proposal = nullptr;
+			}
+			const char *configured = persistence_mode_flatfile_root();
+			if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+			    persistence_mode_requires_mysql() || !configured || !*configured)
+				return refusal(EACCES);
+			const std::string root(configured);
+			flatfile_authority_lock lock;
+			// This local lock is acquired and destroyed by this SAME worker.
+			// Recovery precedes every retained/native/custody/epoch read.
+			if (!lock.acquire(root, nullptr) ||
+			    flatfile_authority_transaction_recover(root, lock, nullptr) !=
+				    flatfile_authority_transaction_result::ok)
+				return refusal(EIO);
+			if (!owner.current())
+				return refusal(EACCES);
+			if (proposal)
+			{
+				// Possible publication is irrevocably reconciliation-only. Exact
+				// original bytes stay in the same operation across callbacks.
+				auto result = proposal->reconcile_locked(root, lock);
+				if (!owner.current())
+					result.outcome = critical_apply_outcome::ambiguous_commit;
+				return result;
+			}
+			critical_native_recovery_envelope original;
+			original.command = owner.command();
+			original.revision = owner.revision();
+			original.phase = owner.phase();
+			original.attachment.assign(owner.attachment().begin(),
+						   owner.attachment().end());
+			// Full original INITIAL ZRR1 and its literal command are validated
+			// outside the coordinator mutex, before any domain storage stage.
+			if (!zone_reset_item_recovery_initial(original) || !owner.current())
+				return refusal(EILSEQ);
+			auto retained = transaction::verify_retained_locked(root, lock, original);
+			if (retained.outcome == critical_apply_outcome::already_applied)
+			{
+				critical_completion receipt{};
+				receipt.operation_id = original.command.operation_id;
+				receipt.outcome = retained.outcome;
+				receipt.durable_revision = retained.durable_revision;
+				receipt.error_code = retained.error_code;
+				receipt.failure_stage = retained.failure_stage;
+				receipt.result_size = retained.result_size;
+				receipt.result_payload = retained.result_payload;
+				flatfile_zone_reset_item_projection current;
+				const auto error = transaction::read_current_locked(
+					root, lock, original, receipt, &current);
+				if (error || !owner.current())
+				{
+					retained.outcome = critical_apply_outcome::ambiguous_commit;
+					retained.error_code = error ? error : EACCES;
+				}
+				return retained;
+			}
+			if (retained.outcome != critical_apply_outcome::retryable_failure ||
+			    retained.error_code != ENOENT)
+				return retained;
+			std::unique_ptr<transaction> prepared;
+			const auto error =
+				transaction::prepare_locked(root, lock, original, &prepared);
+			if (error)
+				return refusal(error);
+			size_t retained_bytes = 0;
+			if (!prepared || !prepared->retained_bytes(&retained_bytes))
+				return refusal(EOVERFLOW);
+			auto *prepared_pointer = prepared.get();
+			if (!owner.retain_flat_transaction(prepared, retained_bytes))
+				return refusal(ENOSPC);
+			proposal = prepared_pointer;
+			if (!owner.current())
+			{
+				// Cleanup-only release remains tied to this exact executing pin
+				// even when shutdown changes stop/generation before joining us.
+				if (!proposal->publication_possible() &&
+				    owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				return refusal(EACCES);
+			}
+			auto result = proposal->commit_locked(root, lock);
+			if (!proposal->publication_possible())
+			{
+				if (owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				else
+					return refusal(EBUSY);
+			}
+			else if (!owner.current())
+				result.outcome = critical_apply_outcome::ambiguous_commit;
+			return result;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return refusal(ENOMEM);
+		}
+		catch (...)
+		{
+			return refusal(EIO);
+		}
+	}
+};
 
 namespace
 {
@@ -231,20 +515,103 @@ bool accounted_native_birth_envelope(const critical_command &command)
 #else
 	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	       command.type == critical_command_type::native_mobile_birth &&
-	       native_mobile_birth_payload_version_supported(command.payload_version) &&
+	       (native_mobile_birth_payload_version_supported(command.payload_version) ||
+		economic_sql_native_mobile_birth_ordinary_wallet_command_supported(command)) &&
 	       command.publication_required && command.accepted_at_usec &&
 	       critical_command_envelope_valid(command);
 #endif
 }
 
-unsigned int verify_native_birth_stored_receipt(const stored_operation &stored)
+unsigned int verify_native_birth_stored_receipt(const critical_command &command,
+						const stored_operation &stored)
 {
+	if (command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+	{
+		native_mobile_birth_cash_role_result result;
+		return stored.result_code == 0 && stored.failure_stage == 0 &&
+				       stored.durable_revision == 1 &&
+				       native_mobile_birth_cash_role_result_decode(
+					       stored.result_payload, &result) &&
+				       result.role ==
+					       native_mobile_birth_cash_role::ordinary_wallet ?
+			       0 :
+			       EILSEQ;
+	}
 	native_mobile_birth_result result;
 	return stored.result_code == 0 && stored.failure_stage == 0 &&
 			       stored.durable_revision == 1 &&
 			       native_mobile_birth_result_decode(stored.result_payload, &result) ?
 		       0 :
 		       EILSEQ;
+}
+
+// The passive checkpoint is paired only with the genuine borrowed execution.
+bool shared_native_execution_current(const critical_command &command,
+				     const critical_shared_native_execution_owner *owner,
+				     const flatfile_shopkeeper_record *checkpoint) noexcept
+{
+	return owner && checkpoint && critical_shared_native_sql_execution_owner::current(*owner) &&
+	       &owner->command() == &command &&
+	       owner->phase() == critical_native_recovery_phase::execution_pending;
+}
+
+unsigned int verify_shared_native_birth_stored_receipt(const stored_operation &stored)
+{
+	native_mobile_birth_cash_role_result result;
+	return stored.result_code == 0 && stored.failure_stage == 0 &&
+			       native_mobile_birth_cash_role_result_decode(stored.result_payload,
+									   &result) &&
+			       result.role == native_mobile_birth_cash_role::shared_shopkeeper &&
+			       stored.durable_revision ==
+				       std::max(uint64_t{ 1 }, result.shared.owner_revision_after) ?
+		       0 :
+		       EILSEQ;
+}
+
+// Classification only. Original-ID proof still precedes live source/epoch
+// eligibility; this repository seam does not open producer admission.
+bool accounted_zone_reset_envelope(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	return economic_sql_zone_reset_item_command_supported(command);
+#endif
+}
+
+unsigned int verify_zone_reset_stored_root(MYSQL *connection, const critical_command &command,
+					   const stored_operation &stored)
+{
+	item_transfer_result result{};
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> typed{};
+	if (stored.result_code || stored.failure_stage ||
+	    stored.result_payload.size() != typed.size() ||
+	    !item_transfer_command_decode_result(stored.result_payload.data(),
+						 stored.result_payload.size(), &result) ||
+	    !item_transfer_command_encode_result(result, &typed) ||
+	    !std::equal(typed.begin(), typed.end(), stored.result_payload.begin()) ||
+	    stored.durable_revision != result.to_owner_revision)
+		return EILSEQ;
+	auto error = economic_sql_zone_reset_item_verify_retained(connection, command, 0,
+								  stored.result_payload);
+	if (error)
+		return error;
+	// Missing carrier is unknown, never permission to reconstruct or backfill it
+	// from a retired journal. Its complete original bytes must match this replay.
+	zone_reset_item_retained_origin origin;
+	const auto origin_error =
+		zone_reset_item_origin_sql_lock(connection, command.operation_id, &origin);
+	if (origin_error)
+		return static_cast<unsigned int>(origin_error);
+	std::vector<uint8_t> expected, actual;
+	if (!origin.present || origin.result != typed ||
+	    critical_command_encode(command, &expected) != critical_command_codec_result::ok ||
+	    critical_command_encode(origin.original, &actual) !=
+		    critical_command_codec_result::ok ||
+	    actual != expected)
+		return EILSEQ;
+	return 0;
 }
 
 bool root_transaction_active(MYSQL *connection)
@@ -1053,7 +1420,16 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 	{
 		destination = NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION;
 		event_type = NATIVE_MOBILE_BIRTH_OUTBOX_EVENT;
-		payload_version = NATIVE_MOBILE_BIRTH_RESULT_VERSION;
+		payload_version = command.payload_version ==
+						  NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ?
+					  NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION :
+					  NATIVE_MOBILE_BIRTH_RESULT_VERSION;
+	}
+	else if (command.type == critical_command_type::zone_reset_item_birth)
+	{
+		destination = ZONE_RESET_ITEM_OUTBOX_DESTINATION;
+		event_type = ZONE_RESET_ITEM_OUTBOX_EVENT;
+		payload_version = ZONE_RESET_ITEM_RESULT_VERSION;
 	}
 	return insert_outbox_event(connection, command.operation_id, 0, destination, event_type,
 				   payload_version, payload, payload_size);
@@ -1119,7 +1495,17 @@ unsigned int verify_accounted_root_outbox(MYSQL *connection, const critical_comm
 		{
 			destination = NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION;
 			event_type = NATIVE_MOBILE_BIRTH_OUTBOX_EVENT;
-			payload_version = NATIVE_MOBILE_BIRTH_RESULT_VERSION;
+			payload_version =
+				command.payload_version ==
+						NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ?
+					NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_VERSION :
+					NATIVE_MOBILE_BIRTH_RESULT_VERSION;
+		}
+		else if (command.type == critical_command_type::zone_reset_item_birth)
+		{
+			destination = ZONE_RESET_ITEM_OUTBOX_DESTINATION;
+			event_type = ZONE_RESET_ITEM_OUTBOX_EVENT;
+			payload_version = ZONE_RESET_ITEM_RESULT_VERSION;
 		}
 		else if (command.type == critical_command_type::coin_transfer)
 		{
@@ -1866,8 +2252,11 @@ unsigned int verify_native_quest_root(MYSQL *connection, const critical_command 
 }
 }
 
-static critical_apply_result apply_with_writer(MYSQL *connection, const critical_command &command,
-					       economic_sql_currency_writer_guard *pooled_writer)
+static critical_apply_result
+apply_with_writer(MYSQL *connection, const critical_command &command,
+		  economic_sql_currency_writer_guard *pooled_writer,
+		  const critical_shared_native_execution_owner *shared_owner = nullptr,
+		  const flatfile_shopkeeper_record *shared_checkpoint = nullptr)
 {
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
@@ -1876,9 +2265,16 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
 	const bool accounted_native_money = accounted_native_money_envelope(command);
 	const bool accounted_native_fee = accounted_native_fee_envelope(command);
-	const bool accounted_native_birth = accounted_native_birth_envelope(command);
+	const bool accounted_shared_birth =
+		shared_native_execution_current(command, shared_owner, shared_checkpoint);
+	if ((shared_owner || shared_checkpoint) && !accounted_shared_birth)
+		return { critical_apply_outcome::retryable_failure, 0, EACCES };
+	const bool accounted_native_birth = accounted_shared_birth ||
+					    accounted_native_birth_envelope(command);
+	const bool accounted_zone_reset = accounted_zone_reset_envelope(command);
 	const bool accounted_native_root = accounted_native_quest || accounted_native_birth ||
-					   accounted_native_fee || accounted_native_money;
+					   accounted_native_fee || accounted_native_money ||
+					   accounted_zone_reset;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
 	const bool accounted_auction = accounted_auction_envelope(command);
@@ -1900,8 +2296,9 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	};
 	auto root_failure = [accounted_bank, accounted_coin, accounted_item, accounted_collector,
 			     accounted_shop, accounted_auction, accounted_native_root,
-			     accounted_native_birth, &native_transaction, &native_cleanup,
-			     &native_mutation_applied, &rollback_root](unsigned int error)
+			     accounted_native_birth, accounted_zone_reset, &native_transaction,
+			     &native_cleanup, &native_mutation_applied,
+			     &rollback_root](unsigned int error)
 	{
 		if (accounted_native_root && native_transaction)
 		{
@@ -1920,7 +2317,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 				};
 		}
 		// A birth conflict carries no durable rejection; retain journal/stage.
-		if (accounted_native_birth && error == EEXIST)
+		if ((accounted_native_birth || accounted_zone_reset) && error == EEXIST)
 			return critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      EEXIST };
 		if ((accounted_bank || accounted_coin || accounted_item || accounted_shop ||
@@ -1981,11 +2378,11 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	const bool audit_command = !accounted_bank &&
 				   session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
-	    (!accounted_bank && !accounted_native_birth && !test_command && !epic_command &&
-	     !currency_command && !coin_command && !corpse_command && !restitution_command &&
-	     !item_command && !auction_command && !collector_command && !shop_command &&
-	     !combat_command && !artifact_guild_command && !boon_command && !zone_command &&
-	     !audit_command) ||
+	    (!accounted_bank && !accounted_native_birth && !accounted_zone_reset && !test_command &&
+	     !epic_command && !currency_command && !coin_command && !corpse_command &&
+	     !restitution_command && !item_command && !auction_command && !collector_command &&
+	     !shop_command && !combat_command && !artifact_guild_command && !boon_command &&
+	     !zone_command && !audit_command) ||
 	    (!accounted_bank && !accounted_coin && !accounted_item && !accounted_collector &&
 	     !accounted_shop && !accounted_auction && !accounted_native_root &&
 	     !critical_command_valid(command)))
@@ -2030,6 +2427,9 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		native_transaction.emplace(connection, native_cleanup);
 		native_transaction->starting();
 	}
+	if (accounted_shared_birth &&
+	    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+		return root_failure(EACCES);
 	if (!execute(connection, "START TRANSACTION"))
 		return root_failure(mysql_errno(connection));
 	if (!insert_inbox(connection, command, command_hash, keys_hash))
@@ -2066,7 +2466,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 			if (!identity_matches(stored, command, command_hash, keys_hash))
 			{
 				rollback_root();
-				return { accounted_native_birth ?
+				return { (accounted_native_birth || accounted_zone_reset) ?
 						 critical_apply_outcome::retryable_failure :
 						 critical_apply_outcome::terminal_failure,
 					 0, EEXIST };
@@ -2113,15 +2513,43 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 						connection, command, item_payload,
 						stored.result_code, stored.result_payload);
 			}
-			else if (accounted_native_birth)
+			else if (accounted_shared_birth)
 			{
-				retained_error = verify_native_birth_stored_receipt(stored);
+				retained_error =
+					shared_native_execution_current(command, shared_owner,
+									shared_checkpoint) ?
+						verify_shared_native_birth_stored_receipt(stored) :
+						EACCES;
 				if (!retained_error)
 					retained_error =
-						economic_sql_native_mobile_birth_verify_retained(
-							connection, command, stored.result_code,
-							stored.result_payload);
+						economic_sql_native_mobile_birth_shared_shop_verify_retained(
+							connection, command, *shared_checkpoint,
+							stored.result_code, stored.result_payload);
+				if (!retained_error &&
+				    !shared_native_execution_current(command, shared_owner,
+								     shared_checkpoint))
+					retained_error = EACCES;
 			}
+			else if (accounted_native_birth)
+			{
+				retained_error =
+					verify_native_birth_stored_receipt(command, stored);
+				if (!retained_error)
+					retained_error =
+						command.payload_version ==
+								NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ?
+							economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+								connection, command,
+								stored.result_code,
+								stored.result_payload) :
+							economic_sql_native_mobile_birth_verify_retained(
+								connection, command,
+								stored.result_code,
+								stored.result_payload);
+			}
+			else if (accounted_zone_reset)
+				retained_error =
+					verify_zone_reset_stored_root(connection, command, stored);
 			else if (accounted_item)
 				retained_error = economic_sql_item_transfer_verify_retained(
 					connection, command, stored.result_code,
@@ -2159,6 +2587,10 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 				     player_sql_cleanup_disposition::idle_verified ||
 			     native_cleanup.cleanup_error))
 				return root_failure(native_cleanup.cleanup_error);
+			if (accounted_shared_birth &&
+			    !shared_native_execution_current(command, shared_owner,
+							     shared_checkpoint))
+				return root_failure(EACCES);
 			return stored_result(stored.result_code ?
 						     critical_apply_outcome::terminal_failure :
 						     critical_apply_outcome::already_applied,
@@ -2462,14 +2894,103 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 			  applied.result_payload.begin());
 		return applied;
 	}
+	if (accounted_shared_birth)
+	{
+		auto error = accounted_session_check(connection, &root_session, true);
+		if (!error &&
+		    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			error = EACCES;
+		if (error)
+			return root_failure(error);
+		std::unique_ptr<economic_sql_native_mobile_birth_shared_shop_transaction> accounting;
+		error = economic_sql_native_mobile_birth_shared_shop_transaction::prepare(
+			connection, command, *shared_checkpoint, &accounting);
+		if (error || !accounting)
+			return root_failure(error ? error : EILSEQ);
+		if (!shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			return root_failure(EACCES);
+		// Original root's conservative marker precedes participant DML.
+		native_mutation_applied = true;
+		error = accounting->apply();
+		if (!error &&
+		    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			error = EACCES;
+		if (!error)
+			error = accounting->finalize();
+		if (!error && accounting->result_code())
+			error = EILSEQ;
+		if (error)
+			return root_failure(error);
+		const auto *result = accounting->result();
+		const auto durable_revision = accounting->durable_revision();
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> encoded{};
+		if (!result || result->role != native_mobile_birth_cash_role::shared_shopkeeper ||
+		    durable_revision !=
+			    std::max(uint64_t{ 1 }, result->shared.owner_revision_after) ||
+		    !native_mobile_birth_cash_role_result_encode(*result, &encoded))
+			return root_failure(EILSEQ);
+		if (!shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			return root_failure(EACCES);
+		if (!insert_outbox(connection, command, encoded.data(), encoded.size()) ||
+		    !finish_inbox(connection, command, durable_revision, 0, encoded.data(),
+				  encoded.size()))
+		{
+			const auto error = database_error(connection);
+			return root_failure(error ? error : errno ? errno : EIO);
+		}
+		error = accounting->verify_root_completion();
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command, 0, encoded.data(),
+							     encoded.size());
+		if (!error)
+			error = accounted_session_check(connection, &root_session, true);
+		if (!error &&
+		    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			error = EACCES;
+		if (error)
+			return root_failure(error);
+		native_transaction->committing();
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			rollback_root();
+			return { connection_error(error) ||
+						 native_cleanup.disposition !=
+							 player_sql_cleanup_disposition::
+								 idle_verified ||
+						 native_cleanup.cleanup_error ?
+					 critical_apply_outcome::ambiguous_commit :
+					 critical_apply_outcome::retryable_failure,
+				 0, error ? error : EIO };
+		}
+		if (!native_transaction->committed())
+		{
+			rollback_root();
+			return { critical_apply_outcome::ambiguous_commit, 0,
+				 native_cleanup.cleanup_error ? native_cleanup.cleanup_error :
+								ENOTCONN };
+		}
+		if (!shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			return { critical_apply_outcome::ambiguous_commit, 0, EACCES };
+		critical_apply_result applied{ critical_apply_outcome::applied, durable_revision,
+					       0 };
+		applied.result_size = encoded.size();
+		std::copy(encoded.begin(), encoded.end(), applied.result_payload.begin());
+		return applied;
+	}
 	if (accounted_native_birth)
 	{
 		auto error = accounted_session_check(connection, &root_session, true);
 		if (error)
 			return root_failure(error);
 		std::unique_ptr<economic_sql_native_mobile_birth_transaction> accounting;
-		error = economic_sql_native_mobile_birth_transaction::prepare(connection, command,
-									      &accounting);
+		const bool ordinary_wallet = command.payload_version ==
+					     NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION;
+		error = ordinary_wallet ?
+				economic_sql_native_mobile_birth_transaction::prepare_ordinary_wallet(
+					connection, command, &accounting) :
+				economic_sql_native_mobile_birth_transaction::prepare(
+					connection, command, &accounting);
 		if (error || !accounting)
 			return root_failure(error ? error : EILSEQ);
 		// Conservative before-first-DML marker. Failed cleanup cannot prove absence.
@@ -2482,10 +3003,85 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		if (error)
 			return root_failure(error);
 		std::array<uint8_t, NATIVE_MOBILE_BIRTH_RESULT_BYTES> encoded{};
-		if (!native_mobile_birth_result_encode(accounting->result(), &encoded))
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> ordinary_encoded{};
+		const uint8_t *result_payload = encoded.data();
+		size_t result_size = encoded.size();
+		if (ordinary_wallet)
+		{
+			const auto *result = accounting->ordinary_wallet_result();
+			if (!result || !native_mobile_birth_cash_role_result_encode(
+					       *result, &ordinary_encoded))
+				return root_failure(EILSEQ);
+			result_payload = ordinary_encoded.data();
+			result_size = ordinary_encoded.size();
+		}
+		else if (!native_mobile_birth_result_encode(accounting->result(), &encoded))
+			return root_failure(EILSEQ);
+		if (!insert_outbox(connection, command, result_payload, result_size) ||
+		    !finish_inbox(connection, command, 1, 0, result_payload, result_size))
+		{
+			const auto failure = database_error(connection);
+			return root_failure(failure ? failure : errno ? errno : EIO);
+		}
+		error = accounting->verify_root_completion();
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command, 0, result_payload,
+							     result_size);
+		if (!error)
+			error = accounted_session_check(connection, &root_session, true);
+		if (error)
+			return root_failure(error);
+		native_transaction->committing();
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto commit_error = mysql_errno(connection);
+			rollback_root();
+			return { connection_error(commit_error) ||
+						 native_cleanup.disposition !=
+							 player_sql_cleanup_disposition::
+								 idle_verified ||
+						 native_cleanup.cleanup_error ?
+					 critical_apply_outcome::ambiguous_commit :
+					 critical_apply_outcome::retryable_failure,
+				 0, commit_error ? commit_error : EIO };
+		}
+		if (!native_transaction->committed())
+		{
+			rollback_root();
+			return { critical_apply_outcome::ambiguous_commit, 0,
+				 native_cleanup.cleanup_error ? native_cleanup.cleanup_error :
+								ENOTCONN };
+		}
+		critical_apply_result applied{ critical_apply_outcome::applied, 1, 0 };
+		applied.result_size = result_size;
+		std::copy_n(result_payload, result_size, applied.result_payload.begin());
+		return applied;
+	}
+	if (accounted_zone_reset)
+	{
+		auto error = accounted_session_check(connection, &root_session, true);
+		if (error)
+			return root_failure(error);
+		std::unique_ptr<economic_sql_zone_reset_item_transaction> accounting;
+		error = economic_sql_zone_reset_item_transaction::prepare(connection, command,
+									  &accounting);
+		if (error || !accounting)
+			return root_failure(error ? error : EILSEQ);
+		// Conservative before-first-DML marker. Failed cleanup cannot prove absence.
+		native_mutation_applied = true;
+		error = accounting->apply();
+		if (!error)
+			error = accounting->finalize();
+		if (!error && accounting->result_code())
+			error = EILSEQ; // This adapter has no durable rejected-reset result.
+		if (error)
+			return root_failure(error);
+		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded{};
+		if (!item_transfer_command_encode_result(accounting->result(), &encoded))
 			return root_failure(EILSEQ);
 		if (!insert_outbox(connection, command, encoded.data(), encoded.size()) ||
-		    !finish_inbox(connection, command, 1, 0, encoded.data(), encoded.size()))
+		    !finish_inbox(connection, command, accounting->result().to_owner_revision, 0,
+				  encoded.data(), encoded.size()))
 		{
 			const auto failure = database_error(connection);
 			return root_failure(failure ? failure : errno ? errno : EIO);
@@ -2519,7 +3115,8 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 				 native_cleanup.cleanup_error ? native_cleanup.cleanup_error :
 								ENOTCONN };
 		}
-		critical_apply_result applied{ critical_apply_outcome::applied, 1, 0 };
+		critical_apply_result applied{ critical_apply_outcome::applied,
+					       accounting->result().to_owner_revision, 0 };
 		applied.result_size = encoded.size();
 		std::copy(encoded.begin(), encoded.end(), applied.result_payload.begin());
 		return applied;
@@ -3888,7 +4485,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 {
 	if (!accounted_native_quest_envelope(command) &&
 	    !accounted_native_birth_envelope(command) && !accounted_native_fee_envelope(command) &&
-	    !accounted_native_money_envelope(command))
+	    !accounted_native_money_envelope(command) && !accounted_zone_reset_envelope(command))
 		return apply_with_writer(connection, command, nullptr);
 	if (!connection)
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
@@ -3950,8 +4547,14 @@ bool critical_command_repository_finish_item_transfer_in_transaction(
 			    encoded.size());
 }
 
-critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
-								  void *context)
+static critical_apply_result reconcile_with_owner(MYSQL *, const critical_command &,
+						  const critical_shared_native_execution_owner *,
+						  const flatfile_shopkeeper_record *);
+
+static critical_apply_result
+apply_from_pool_with_owner(const critical_command &command, void *context,
+			   const critical_shared_native_execution_owner *shared_owner,
+			   const flatfile_shopkeeper_record *shared_checkpoint)
 {
 	const bool accounted_coin = accounted_coin_envelope(command) &&
 				    coin_transfer_accounting_command_supported(command);
@@ -3959,7 +4562,13 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
 	const bool accounted_native_money = accounted_native_money_envelope(command);
 	const bool accounted_native_fee = accounted_native_fee_envelope(command);
-	const bool accounted_native_birth = accounted_native_birth_envelope(command);
+	const bool accounted_shared_birth =
+		shared_native_execution_current(command, shared_owner, shared_checkpoint);
+	if ((shared_owner || shared_checkpoint) && !accounted_shared_birth)
+		return { critical_apply_outcome::retryable_failure, 0, EACCES };
+	const bool accounted_native_birth = accounted_shared_birth ||
+					    accounted_native_birth_envelope(command);
+	const bool accounted_zone_reset = accounted_zone_reset_envelope(command);
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
 	const bool accounted_auction = accounted_auction_envelope(command);
@@ -3967,7 +4576,7 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 	    !accounted_bank_envelope(command) && !accounted_coin && !accounted_item &&
 	    !accounted_collector && !accounted_shop && !accounted_auction &&
 	    !accounted_native_quest && !accounted_native_birth && !accounted_native_fee &&
-	    !accounted_native_money)
+	    !accounted_native_money && !accounted_zone_reset)
 		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
 
 	(void)context;
@@ -3993,7 +4602,8 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 			transaction_owner.starting();
 			try
 			{
-				applied = apply_with_writer(connection, command, &writer);
+				applied = apply_with_writer(connection, command, &writer,
+							    shared_owner, shared_checkpoint);
 			}
 			catch (const std::bad_alloc &)
 			{
@@ -4009,6 +4619,13 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 						    player_sql_cleanup_disposition::idle_verified &&
 					    !cleanup.cleanup_error;
 		}
+		if (accounted_shared_birth &&
+		    (applied.outcome == critical_apply_outcome::applied ||
+		     applied.outcome == critical_apply_outcome::already_applied) &&
+		    (!clean_transaction ||
+		     !shared_native_execution_current(command, shared_owner, shared_checkpoint)))
+			applied = { critical_apply_outcome::ambiguous_commit, 0,
+				    cleanup.cleanup_error ? cleanup.cleanup_error : EACCES };
 		if (!writer.release())
 		{
 			if (writer.retire_pooled_session())
@@ -4038,8 +4655,8 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 			owner.starting();
 			try
 			{
-				const auto reconciled =
-					critical_command_repository_reconcile(connection, command);
+				const auto reconciled = reconcile_with_owner(
+					connection, command, shared_owner, shared_checkpoint);
 				if (reconciled.outcome == critical_apply_outcome::already_applied ||
 				    reconciled.outcome == critical_apply_outcome::applied ||
 				    reconciled.outcome == critical_apply_outcome::terminal_failure)
@@ -4052,15 +4669,31 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 		}
 		if (cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
 		    cleanup.cleanup_error)
+		{
 			sql_pool_discard_connection(connection);
+			if (accounted_shared_birth)
+				applied = { critical_apply_outcome::ambiguous_commit, 0,
+					    cleanup.cleanup_error ? cleanup.cleanup_error :
+								    ENOTCONN };
+		}
+		if (accounted_shared_birth &&
+		    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			applied = { critical_apply_outcome::ambiguous_commit, 0, EACCES };
 	}
 	sql_pool_release(connection);
 	mysql_thread_end();
+	if (accounted_shared_birth &&
+	    (applied.outcome == critical_apply_outcome::applied ||
+	     applied.outcome == critical_apply_outcome::already_applied) &&
+	    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+		return { critical_apply_outcome::ambiguous_commit, 0, EACCES };
 	return applied;
 }
 
-critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
-							    const critical_command &command)
+static critical_apply_result
+reconcile_with_owner(MYSQL *connection, const critical_command &command,
+		     const critical_shared_native_execution_owner *shared_owner,
+		     const flatfile_shopkeeper_record *shared_checkpoint)
 {
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
@@ -4070,9 +4703,16 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
 	const bool accounted_native_money = accounted_native_money_envelope(command);
 	const bool accounted_native_fee = accounted_native_fee_envelope(command);
-	const bool accounted_native_birth = accounted_native_birth_envelope(command);
+	const bool accounted_shared_birth =
+		shared_native_execution_current(command, shared_owner, shared_checkpoint);
+	if ((shared_owner || shared_checkpoint) && !accounted_shared_birth)
+		return { critical_apply_outcome::retryable_failure, 0, EACCES };
+	const bool accounted_native_birth = accounted_shared_birth ||
+					    accounted_native_birth_envelope(command);
+	const bool accounted_zone_reset = accounted_zone_reset_envelope(command);
 	const bool accounted_native_root = accounted_native_quest || accounted_native_birth ||
-					   accounted_native_fee || accounted_native_money;
+					   accounted_native_fee || accounted_native_money ||
+					   accounted_zone_reset;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
 	const bool accounted_auction = accounted_auction_envelope(command);
@@ -4134,6 +4774,9 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 			native_transaction.emplace(connection, native_cleanup);
 			native_transaction->starting();
 		}
+		if (accounted_shared_birth &&
+		    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+			return root_failure(EACCES);
 		if (!execute(connection, "START TRANSACTION"))
 			return root_failure(mysql_errno(connection));
 	}
@@ -4163,8 +4806,9 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	{
 		if (accounted_root)
 			rollback_root();
-		return { accounted_native_birth ? critical_apply_outcome::retryable_failure :
-						  critical_apply_outcome::terminal_failure,
+		return { (accounted_native_birth || accounted_zone_reset) ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
 			 0, EEXIST };
 	}
 	if (command.type == critical_command_type::item_transfer && !accounted_native_root)
@@ -4239,14 +4883,35 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 			}
 		}
 
+		else if (accounted_shared_birth)
+		{
+			error = shared_native_execution_current(command, shared_owner,
+								shared_checkpoint) ?
+					verify_shared_native_birth_stored_receipt(stored) :
+					EACCES;
+			if (!error)
+				error = economic_sql_native_mobile_birth_shared_shop_verify_retained(
+					connection, command, *shared_checkpoint, stored.result_code,
+					stored.result_payload);
+			if (!error && !shared_native_execution_current(command, shared_owner,
+								       shared_checkpoint))
+				error = EACCES;
+		}
 		else if (accounted_native_birth)
 		{
-			error = verify_native_birth_stored_receipt(stored);
+			error = verify_native_birth_stored_receipt(command, stored);
 			if (!error)
-				error = economic_sql_native_mobile_birth_verify_retained(
-					connection, command, stored.result_code,
-					stored.result_payload);
+				error = command.payload_version ==
+							NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ?
+						economic_sql_native_mobile_birth_ordinary_wallet_verify_retained(
+							connection, command, stored.result_code,
+							stored.result_payload) :
+						economic_sql_native_mobile_birth_verify_retained(
+							connection, command, stored.result_code,
+							stored.result_payload);
 		}
+		else if (accounted_zone_reset)
+			error = verify_zone_reset_stored_root(connection, command, stored);
 		else if (accounted_item)
 			error = economic_sql_item_transfer_verify_retained(
 				connection, command, stored.result_code,
@@ -4274,9 +4939,81 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 		     native_cleanup.cleanup_error))
 			return root_failure(native_cleanup.cleanup_error);
 	}
+	if (accounted_shared_birth &&
+	    !shared_native_execution_current(command, shared_owner, shared_checkpoint))
+		return root_failure(EACCES);
 	return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
 						  critical_apply_outcome::already_applied,
 			     stored);
+}
+
+critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
+								  void *context)
+{
+	return apply_from_pool_with_owner(command, context, nullptr, nullptr);
+}
+
+critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
+							    const critical_command &command)
+{
+	return reconcile_with_owner(connection, command, nullptr, nullptr);
+}
+
+critical_apply_result critical_command_repository_apply_shared_native_from_pool(
+	const critical_shared_native_execution_owner &owner, void *context)
+{
+#ifdef __NO_MYSQL__
+	(void)owner;
+	(void)context;
+	return { critical_apply_outcome::retryable_failure, 0, ENOTSUP };
+#else
+	bool execution_entered = false;
+	try
+	{
+		if (!critical_shared_native_sql_execution_owner::current(owner) ||
+		    owner.phase() != critical_native_recovery_phase::execution_pending)
+			return { critical_apply_outcome::retryable_failure, 0, EACCES };
+		const auto &command = owner.command();
+		flatfile_shopkeeper_record checkpoint;
+		{
+			native_mobile_birth_shared_shop_recovery_context original;
+			const auto error = native_mobile_birth_shared_shop_recovery_decode(
+				command, owner.attachment(), &original);
+			if (error != economic_accounting_error::ok)
+				return { critical_apply_outcome::retryable_failure, 0,
+					 error == economic_accounting_error::capacity ? ENOMEM :
+											EILSEQ };
+			if (!flatfile_shopkeeper_initial_checkpoint_decode(
+				    original.original_checkpoint, &checkpoint))
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		} // Release passive decode temporaries before the original SQL participant.
+		if (!native_mobile_birth_shared_shop_recovery_execution_valid(
+			    command, owner.attachment(), owner.revision()) ||
+		    !shared_native_execution_current(command, &owner, &checkpoint))
+			return { critical_apply_outcome::retryable_failure, 0, EACCES };
+		execution_entered = true;
+		return apply_from_pool_with_owner(command, context, &owner, &checkpoint);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { execution_entered ? critical_apply_outcome::ambiguous_commit :
+					     critical_apply_outcome::retryable_failure,
+			 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { execution_entered ? critical_apply_outcome::ambiguous_commit :
+					     critical_apply_outcome::retryable_failure,
+			 0, EIO };
+	}
+#endif
+}
+
+critical_apply_result critical_command_repository_apply_shared_native_flat(
+	const critical_shared_native_execution_owner &owner, void *context)
+{
+	(void)context; // Only the selected configured root is execution authority.
+	return critical_shared_native_flat_execution_owner::apply(owner);
 }
 
 critical_apply_result
@@ -4508,6 +5245,13 @@ critical_apply_result critical_command_repository_verify_ordinary_drop_in_transa
 		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
 	}
 #endif
+}
+
+critical_apply_result critical_command_repository_apply_zone_reset_item_flat(
+	const critical_zone_reset_item_execution_owner &owner, void *context)
+{
+	(void)context; // Only the genuine private pin and configured root select execution.
+	return critical_zone_reset_item_flat_execution_owner::apply(owner);
 }
 
 critical_apply_result

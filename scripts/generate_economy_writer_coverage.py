@@ -60,6 +60,8 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "coin.flat_boot_stage_rollback": "Rolls back only the original boot-stage UID proved absent before enrollment: clears its runtime UID, removes the staged physical projection and forgets its runtime cache entry while the shared restore guard lives. No durable pile value, custody row, source claim or accounting receipt is retired; complete boot/restart qualification remains unverified.",
+    "shop.flat_refusal_cleanup": "After the original authenticated never-admitted cancellation and exact retained flat preparation/source checks, extracts only the original NOWHERE produced candidate. Started/returned latches prevent repeated cleanup; no committed item custody, keeper holding or economic root is destroyed. Native refusal/restart qualification remains unverified.",
     "quest.native_birth_reset_capture": "Original successful reset-M decision retains one invocation/source, reserved native UID and detached constructor. No live list/count/room, economic or custody publication occurs here.",
     "quest.native_birth_command_capture": "Captures actual final ordered stock/cash/literals and constructor/stock recipes into the original command; detached staging is not a committed birth or ACK.",
     "quest.native_birth_alchemist_decision": "Eligible detached original chance sets the existing latch before one RNG draw and retains missed/selected. No vial allocation/publication; a nonreturned attempt cannot be rerolled.",
@@ -177,6 +179,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "shop.flat_cold_keeper_cash_projection": "Projects the exact committed CURRENT flat keeper scalar cash into the four original keeper denominations only after retained native receipt, current source/lifetime, complete stock/custody and runtime checks. No new coin posting, accounting root or guarded ACK is authorized. Accounted SHOP admission and full native/backend/restart qualification remain closed and unverified.",
     "coin.cold_room_projection": "Restores an existing original-UID room coin pile from the original borrowed SQL session after locked current custody, literal, source, indexed plan, retained root/child and ledger proof. It projects locked owner revisions and exact literal bytes without a new issuance, command, posting or ACK. Flatfile support and complete current native/restart qualification remain unverified.",
     "auction.native_item_publication": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
     "movement.pick_break_committed_publication": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",

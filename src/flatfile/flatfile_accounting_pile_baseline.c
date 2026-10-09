@@ -2,6 +2,12 @@
 
 #include "flatfile/flatfile_item_repository.h"
 #include "player/player_snapshot_codec.h"
+#include "flatfile/flatfile_accounting_baseline.h"
+#include "flatfile/flatfile_accounting_authority.h"
+#include "core/defines.h"
+#include <algorithm>
+#include <climits>
+
 
 #include <cerrno>
 #include <new>
@@ -92,6 +98,168 @@ try
 		false
 	};
 	*source = std::move(captured);
+	return 0;
+}
+catch (const std::bad_alloc &)
+{
+	return ENOMEM;
+}
+catch (...)
+{
+	return EIO;
+}
+
+// Authenticate an existing opening baseline without re-running genesis capture.
+// The caller selects the original command using the retained head operation ID.
+unsigned int flatfile_accounting_pile_baseline_read_room_locked(const std::string &root,
+								const flatfile_authority_lock &lock,
+								const critical_command &original,
+								uint64_t uid,
+								flatfile_room_coin_pile *output,
+								std::string *error) noexcept
+try
+{
+	if (root.empty() || !lock.matches(root) || !uid || !output ||
+	    original.type != critical_command_type::economic_baseline ||
+	    original.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(original))
+		return EINVAL;
+	const auto accounting_error = [](flatfile_accounting_status status)
+	{
+		return status == flatfile_accounting_status::not_found ? ENOENT :
+		       status == flatfile_accounting_status::io_error  ? EIO :
+		       status == flatfile_accounting_status::capacity  ? ENOMEM :
+									 EILSEQ;
+	};
+	const auto native_error = [](flatfile_item_repository_result status)
+	{
+		return status == flatfile_item_repository_result::not_found ? ENOENT :
+		       status == flatfile_item_repository_result::io_error  ? EIO :
+									      EILSEQ;
+	};
+	flatfile_accounting_pile_state head;
+	auto status = flatfile_accounting_pile_state_read(root, lock, uid, &head, error);
+	if (status != flatfile_accounting_status::ok)
+		return accounting_error(status);
+	if (head.retired || !head.item_revision ||
+	    head.account.kind != economic_account_kind::pile || head.account.authority_id != uid ||
+	    head.account.context_id || head.operation_id.bytes != original.operation_id.bytes)
+		return ESTALE;
+	flatfile_economic_authority_snapshot authority;
+	const auto authority_error = economic_flatfile_lock_authority(
+		root, lock, head.account.lineage, head.epoch, {}, &authority, error);
+	if (authority_error)
+		return authority_error;
+	flatfile_accounting_record receipt;
+	std::vector<uint8_t> encoded_witness;
+	status = flatfile_accounting_baseline_lookup(root, lock, original, &receipt,
+						     &encoded_witness, error);
+	if (status != flatfile_accounting_status::ok)
+		return accounting_error(status);
+	std::optional<economic_prepared_baseline> prepared;
+	if (economic_baseline_decode(encoded_witness, &prepared) != economic_accounting_error::ok ||
+	    !prepared)
+		return EILSEQ;
+	const auto &witness = prepared->witness();
+	if (witness.lineage.bytes != head.account.lineage.bytes ||
+	    witness.epoch.bytes != head.epoch.bytes ||
+	    prepared->plan().metadata.operation_id.bytes != original.operation_id.bytes)
+		return ESTALE;
+	const economic_baseline_holding *holding = nullptr;
+	const economic_baseline_item *item = nullptr;
+	for (const auto &entry : witness.holdings)
+		if (economic_account_key_equal(entry.account, head.account))
+		{
+			if (holding)
+				return EILSEQ;
+			holding = &entry;
+		}
+	for (const auto &entry : witness.items)
+		if (entry.snapshot.uid == uid || entry.snapshot.position.root_uid == uid ||
+		    entry.snapshot.position.parent_uid == uid)
+		{
+			if (item || entry.snapshot.uid != uid)
+				return EILSEQ;
+			item = &entry;
+		}
+	if (!holding || !item || holding->balance != head.balance ||
+	    holding->native_revision != head.item_revision ||
+	    holding->source_digest != item->source_digest)
+		return EILSEQ;
+	const auto &position = item->snapshot.position;
+	if (position.root_uid != uid || position.parent_uid || position.equipment_slot ||
+	    position.state != item_custody_state::active ||
+	    position.revision != head.item_revision ||
+	    position.owner.type != item_owner_type::room || !position.owner.id ||
+	    position.owner.id > INT_MAX || position.owner.context_id)
+		return EOPNOTSUPP;
+	// Read the complete catalog, including inactive rows, before selecting the UID.
+	std::vector<flatfile_item_ownership_record> catalog;
+	auto native_status =
+		flatfile_item_repository_recovery_catalog_locked(root, lock, &catalog, error);
+	if (native_status != flatfile_item_repository_result::ok)
+		return native_error(native_status);
+	const flatfile_item_ownership_record *selected = nullptr;
+	for (const auto &entry : catalog)
+		if (entry.item_uid == uid || entry.root_item_uid == uid ||
+		    entry.parent_item_uid == uid)
+		{
+			if (selected || entry.item_uid != uid || entry.root_item_uid != uid ||
+			    entry.parent_item_uid || entry.equipment_slot ||
+			    entry.state != position.state ||
+			    entry.item_revision != position.revision ||
+			    !item_owner_identity_equal(entry.owner, position.owner))
+				return EILSEQ;
+			selected = &entry;
+		}
+	if (!selected)
+		return ENOENT;
+	std::vector<flatfile_item_ownership_record> owned;
+	uint64_t owner_revision = 0;
+	native_status = flatfile_item_repository_load_owner_locked(root, lock, position.owner,
+								   &owner_revision, &owned, error);
+	if (native_status != flatfile_item_repository_result::ok)
+		return native_error(native_status);
+	if (!owner_revision || std::count_if(owned.begin(), owned.end(), [&](const auto &entry)
+					     { return entry.item_uid == uid; }) != 1)
+		return EILSEQ;
+	flatfile_coin_pile_source native;
+	native_status =
+		flatfile_item_repository_read_coin_pile_locked(root, lock, uid, &native, error);
+	if (native_status != flatfile_item_repository_result::ok)
+		return native_error(native_status);
+	const auto &literal = native.item;
+	if (literal.object_uid != uid || literal.vnum != selected->vnum ||
+	    literal.type != ITEM_MONEY || literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+	    literal.equipment_slot != -1)
+		return EILSEQ;
+	for (size_t index = 0; index < 4; ++index)
+		if (literal.values[index] < 0 || literal.values[index] != head.balance[index])
+			return EILSEQ;
+	std::vector<uint8_t> canonical;
+	if (player_item_snapshot_list_encode({ literal }, &canonical) !=
+		    player_snapshot_codec_result::ok ||
+	    (!selected->coin_payload.empty() && canonical != selected->coin_payload) ||
+	    source_digest(native,
+			  selected->coin_payload.empty() ? canonical : selected->coin_payload) !=
+		    holding->source_digest)
+		return EILSEQ;
+	flatfile_room_coin_pile candidate;
+	candidate.lineage = authority.lineage;
+	candidate.epoch = authority.epoch;
+	candidate.lineage_revision = authority.lineage_revision;
+	candidate.root_operation = original.operation_id;
+	candidate.retained_root_revision = receipt.durable_revision;
+	candidate.identity = { uid,
+			       uid,
+			       0,
+			       position.owner,
+			       head.item_revision,
+			       owner_revision,
+			       selected->vnum,
+			       item_custody_state::active };
+	candidate.item = std::move(native.item);
+	*output = std::move(candidate);
 	return 0;
 }
 catch (const std::bad_alloc &)

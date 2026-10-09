@@ -45,16 +45,36 @@ bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_
 #ifndef __NO_MYSQL__
 struct st_mysql;
 struct economic_sql_shop_trade_publication;
+#endif
+class flatfile_authority_lock;
+struct critical_completion;
+struct critical_native_recovery_envelope;
 class shop_trade_native_publication_owner;
+class quest_mobile_native_birth_owner;
 // Only the integrated native publication owner can consume its original locked
 // projection. An observed revision or caller-supplied boolean grants no access.
 class shop_trade_current_runtime_owner final
 {
     private:
 	friend class shop_trade_native_publication_owner;
+	friend class quest_mobile_native_birth_owner;
+#ifndef __NO_MYSQL__
+	// Original owner plus full current shared SQL proof only. This projects
+	// selected SHOP cache/clock; no physical world, actor, COMMIT or ACK proof.
+	static bool publish_native_birth(st_mysql *, const critical_command &,
+					 const flatfile_shopkeeper_record &original_checkpoint,
+					 const critical_completion &) noexcept;
 	static bool publish(st_mysql *, const shop_trade_payload &,
 			    const economic_sql_shop_trade_publication &) noexcept;
-};
 #endif
+	// Distinct original NMB4 shared-birth projection. Full original carrier and
+	// actual borrowed recovered root lock; no physical publication or ACK.
+	static bool publish_native_birth_flat(const std::string &, const flatfile_authority_lock &,
+					      const critical_native_recovery_envelope &,
+					      const critical_completion &) noexcept;
+	// Genuine CURRENT stored cut only; physical publication and ACK stay caller-owned.
+	static bool publish_flat(const std::string &, const flatfile_authority_lock &,
+				 const critical_command &, const critical_completion &) noexcept;
+};
 
 #endif

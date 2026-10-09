@@ -7,9 +7,10 @@
 #include <string>
 
 // Borrowed-lock cold value only: current native literal/custody and authenticated
-// existing ordinary COIN proof. Not an original envelope, admission token,
+// original selected baseline or ordinary COIN proof. Not an original envelope, admission token,
 // publication/save reservation or ACK. Flat evidence keeps zero child receipts;
-// pile_endpoint_operation is the original embedded endpoint ID, not a new child.
+// pile_endpoint_operation is the original embedded COIN endpoint ID, not a new child.
+// Baseline values retain zero endpoint/result fields; no COIN is reconstructed.
 struct flatfile_room_coin_pile
 {
 	critical_operation_id lineage = {}, epoch = {}, root_operation = {},
@@ -18,6 +19,17 @@ struct flatfile_room_coin_pile
 	item_ownership_runtime_entry identity = {};
 	player_item_snapshot item;
 	item_transfer_result retained_pile_result = {};
+};
+
+// Values for the original whole-world detached boot owner. Successful typed
+// history fences old aggregate room money even after full consumption. Every
+// active pile is independently authenticated by read_room_pile_locked. No
+// command, native write, enrollment capability or ACK is reconstructed here.
+struct flatfile_room_coin_boot_view
+{
+	std::vector<uint64_t> history_uids;
+	std::vector<int32_t> fenced_rooms;
+	std::vector<flatfile_room_coin_pile> piles;
 };
 
 class flatfile_authority_lock;
@@ -32,6 +44,19 @@ class flatfile_accounting_coin_transaction
 	// current active-epoch head/custody/full literal. No wallet-current adoption,
 	// mutation, application, activation, boot publication, or legacy fallback.
 	// errno-style refusal; output remains unchanged on every failure.
+	// Complete catalog-required retained history plus EPH1 census under the
+	// caller's original cut. Rejected attempts grant no pile/head authority.
+	// Missing/corrupt successful proof refuses before any physical staging;
+	// outputs remain unchanged. maximum is the existing physical census bound.
+	static unsigned int read_room_boot_locked(const std::string &root,
+		const flatfile_authority_lock &lock, size_t maximum,
+		flatfile_room_coin_boot_view *output, std::string *error) noexcept;
+	// Original cold boot only: select the actual current head's retained proof.
+	// Baseline and typed COIN use their own native/witness contracts; values
+	// cannot authorize admission, mutation, activation or publication ACK.
+	static unsigned int read_room_boot_pile_locked(const std::string &root,
+		const flatfile_authority_lock &lock, uint64_t uid,
+		flatfile_room_coin_pile *output, std::string *error) noexcept;
 	static unsigned int read_room_pile_locked(const std::string &root,
 						  const flatfile_authority_lock &lock, uint64_t uid,
 						  flatfile_room_coin_pile *output,

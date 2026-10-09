@@ -123,8 +123,14 @@ uint32_t insert_player(uint32_t pid, const char *name, const char *account)
 }
 } // namespace
 
+#include "auction_physical_fixture_support.inc"
+#include "auction_physical_component_cases.inc"
+#include "auction_legacy_identity_cases.inc"
+
 int main()
 {
+	auction_physical_component_cases();
+	auction_legacy_identity_component_cases();
 	const char *host = getenv("DB_HOST"), *user = getenv("DB_USER"),
 		   *password = getenv("DB_PASSWD"), *database = getenv("AUCTION_TEST_DB_NAME"),
 		   *port_value = getenv("DB_PORT");
@@ -177,6 +183,8 @@ int main()
 	auction_command_result result = apply(list_command);
 	const uint32_t auction_id = result.auction_id;
 	assert(auction_id && result.event_type == auction_event_type::listed);
+	auction_physical_native_v1_readback(connection, auction_id);
+	auction_legacy_identity_native_readback(connection, auction_id);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(seller)) == 9);
 	assert(scalar("SELECT owner_type FROM item_current_owner WHERE item_uid=" +
 		      std::to_string(item_uid)) == 6);

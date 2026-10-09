@@ -102,6 +102,14 @@ unsigned int economic_flatfile_lock_authority(const std::string &, const flatfil
 					      std::span<const flatfile_economic_mapping_request>,
 					      flatfile_economic_authority_snapshot *,
 					      std::string *);
+// Complete CURRENT selected epoch/mapping/native-index proof under borrowed lock.
+// Caller resolves original journals before this cut. No recovery/write/acquire;
+// original bounds, checks and output preservation match the recovering reader.
+unsigned int economic_flatfile_read_current_authority_locked(
+	const std::string &, const flatfile_authority_lock &, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, std::span<const flatfile_economic_mapping_request>,
+	flatfile_economic_authority_snapshot *, std::string *);
+
 // The private lifecycle owner must supply proven native effects and an operation
 // receipt in the same bundle. Helpers never publish or authorize creation,
 // baseline or activation. Bootstrap additionally requires external durable proof

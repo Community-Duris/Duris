@@ -35,6 +35,7 @@ class Cursor:
                      "root_item_uid": 3, "parent_item_uid": None, "to_owner_type": 1,
                      "to_owner_id": 8, "to_owner_context_id": 0, "item_revision": 1,
                      "from_equipment_slot": 0, "to_equipment_slot": 5,
+                     "from_owner_type": 7, "from_owner_id": 0, "from_owner_context_id": 0,
                      "from_owner_revision": 0, "reason_type": 2}]
         if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
             return [{
@@ -42,6 +43,7 @@ class Cursor:
                 "root_item_uid": uid, "parent_item_uid": None, "to_owner_type": 1,
                 "to_owner_id": 7, "to_owner_context_id": 0, "item_revision": 1,
                 "from_equipment_slot": 0, "to_equipment_slot": 5,
+                "from_owner_type": 7, "from_owner_id": 0, "from_owner_context_id": 0,
                 "from_owner_revision": 0, "reason_type": 2, "operation_outcome": 1,
                 "operation_epoch": b"e" * 16,
             } for uid in (1, 5)]
@@ -58,6 +60,18 @@ class Cursor:
 
 
 class UidScopeTests(unittest.TestCase):
+    def test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse(self):
+        from economic_sql_audit_snapshot import item_ledger_previous_owner
+        self.assertEqual(item_ledger_previous_owner({}), {})
+        row = dict(from_owner_type=None, from_owner_id=None, from_owner_context_id=None)
+        self.assertEqual(item_ledger_previous_owner(row), {})
+        for owner in ([7, 0, 0], [1, 2**64-1, 2**64-1], [12, 7, 0]):
+            self.assertEqual(item_ledger_previous_owner(dict(zip(row, owner))), {"from_owner": owner})
+        for owner in ([1, None, 0], [None, 7, 0], [1, 7, None], [True, 7, 0],
+                      [1, 7.0, 0], [13, 7, 0], [1, -1, 0], [1, 7, 2**64]):
+            with self.subTest(owner=owner), self.assertRaisesRegex(ExportError, "invalid native item previous owner"):
+                item_ledger_previous_owner(dict(zip(row, owner)))
+
     def test_compound_item_actions_follow_retained_supply_endpoints(self):
         import copy
         import economic_sql_audit_snapshot as exporter
@@ -118,6 +132,11 @@ class UidScopeTests(unittest.TestCase):
                 states = [evidence["ownership_events"][0]["state"], references[0]["ledger_state"],
                           history[0][0]["state"], history[6][0]["state"]]
                 self.assertEqual(states, [expected_state] * 4)
+                for event in (evidence["ownership_events"][0], history[0][0], history[6][0]):
+                    self.assertEqual(event["from_owner"], [old_owner, row["from_owner_id"], 0])
+                self.assertTrue(all("l.from_owner_id,l.from_owner_context_id" in query
+                                    for query in cursor.queries
+                                    if "SELECT l.operation_id,l.event_index,l.item_uid" in query))
                 self.assertEqual(row, original)
                 self.assertNotIn("private-compound", json.dumps([evidence, references, history]))
                 queries = [query for query in cursor.queries

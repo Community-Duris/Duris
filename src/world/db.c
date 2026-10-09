@@ -1,3 +1,4 @@
+#include "world/zone_reset_room_nesting.h"
 #include "economy/native_mobile_birth_recovery.h"
 
 /*
@@ -24,6 +25,7 @@
 #include "world/db.h"
 #include "world/handler.h"
 #include "world/quest_mobile_native_birth.h"
+#include "world/zone_reset_item_owner.h"
 #include "world/native_mobile_birth_procedure.h"
 #include "world/native_mobile_birth_reset_tail.h"
 #include "world/events.h"
@@ -45,6 +47,7 @@
 #include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_ownership_runtime.h"
 #include "persistence/persistence_mode.h"
 #include "redis/redis_world_runtime.h"
 #include "ships/ships.h"
@@ -62,6 +65,7 @@
 #include <type_traits>
 #include <algorithm>
 #include <new>
+#include <limits>
 #include "world/object_template.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_capture.h"
@@ -77,6 +81,10 @@
 #include "account/newbie_kit_plan.h"
 #include "economy/economic_gameplay_authority.h"
 #include "world/zone_story_quest_runtime.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
+#include "economy/native_mobile_birth_cash_role_recipe.h"
+#include "world/native_mobile_birth_artifact.h"
+#include "world/quest_mobile_native.h"
 
 /*
  * external variables
@@ -105,6 +113,7 @@ extern int portal_id;
 extern float exp_mods[EXPMOD_MAX + 1];
 extern P_nevent current_nevent;
 extern void obj_affect_remove(P_obj, struct obj_affect *);
+extern void event_balance_affects(P_char, P_char, P_obj, void *);
 void delete_knownShapes(P_char ch);
 void proclib_obj_event(P_char, P_char, P_obj obj, void *);
 int proclibObj_add(P_obj obj, char *procName, char *args);
@@ -779,11 +788,12 @@ void boot_db(int mini_mode)
 	// populated native keeper sidecars need them during persistent restoration.
 	// Failure only closes that recovery prerequisite; existing boot/loading stays
 	// available and no partially prepared catalog becomes visible.
-	if (persistence_mode_requires_mysql())
+	if (persistence_mode_requires_mysql() ||
+	    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		const auto error = prepare_recovery_object_templates();
 		if (error)
-			logit(LOG_STATUS, "SQL recovery object-template catalog unavailable (%u)",
+			logit(LOG_STATUS, "Recovery object-template catalog unavailable (%u)",
 			      error);
 	}
 
@@ -3717,6 +3727,7 @@ bool quest_mobile_native_stage::restore_constructor(
 						      construct_native_mobile_capsule, &session) ||
 	    !constructor_finish_capsule(session, &recipe))
 		return false;
+	shared_affect_constructor_restored_ = true;
 	character_ = session.prepared;
 	session.cleanup.character = nullptr;
 	session.keep_binding = true;
@@ -3771,6 +3782,7 @@ bool quest_mobile_native_stage::restore_constructor_v2(
 						      construct_native_mobile_capsule, &session) ||
 	    !constructor_finish_capsule_v2(session, &recipe, original_quest_binding))
 		return false;
+	shared_affect_constructor_restored_ = true;
 	character_ = session.prepared;
 	session.cleanup.character = nullptr;
 	session.keep_binding = true;
@@ -3792,8 +3804,553 @@ bool quest_mobile_native_stage::prepare(int nr, int type, bool apply_mob_gold)
 	return true;
 }
 
+player_snapshot_capture_result quest_mobile_native_stage::capture_shopkeeper_checkpoint(
+	P_char actual, uint64_t original_runtime, int actual_pending_room, int configured_shop,
+	const quest_mobile_native_reference &reference,
+	const quest_mobile_native_constructor_recipe &original_constructor,
+	const native_mobile_birth_cash_role_recipe &original_role, int64_t observed_saved_at,
+	flatfile_shopkeeper_record *output) const noexcept
+{
+	if (!output || !nevent_is_game_thread() || !actual || character_ != actual ||
+	    !original_runtime || publication_next_step_ || publication_step_started_ ||
+	    publication_consumed_ || publication_runtime_id_ || restoration_active_ ||
+	    mobile_probe_mode || !world || !mob_index || !shop_index ||
+	    actual_pending_room <= NOWHERE || actual_pending_room > top_of_world ||
+	    configured_shop < 0 || configured_shop >= number_of_shops || observed_saved_at < 0)
+		return player_snapshot_capture_result::invalid_identity;
+	// The private stage owns this exact detached pointer. No runtime lookup may
+	// replace it, and its original generation must still be absent from world.
+	const P_char mob = character_;
+	if (mob->runtime_id != original_runtime || find_character_by_runtime_id(original_runtime) ||
+	    !IS_NPC(mob) || !mob->only.npc || !IS_ALIVE(mob) || mob->in_room != NOWHERE ||
+	    mob->next || mob->next_in_room || mob->desc || mob->nevents || mob->nevents_tail ||
+	    mob->character_maintenance_in_world || mob->following || mob->followers || mob->group ||
+	    mob->lobj || mob->linked || mob->linking || mob->obj_linked || GET_OPPONENT(mob))
+		return player_snapshot_capture_result::invalid_identity;
+	const int rnum = GET_RNUM(mob), room_vnum = world[actual_pending_room].number;
+	if (rnum < 0 || rnum > top_of_mobt || room_vnum <= 0 ||
+	    mob->only.npc->shopkeeper_shop_id != configured_shop ||
+	    shop_index[configured_shop].keeper != rnum ||
+	    shop_index[configured_shop].in_room != room_vnum || !IS_SHOPKEEPER(mob) ||
+	    !quest_mobile_native_reference_valid(reference) ||
+	    reference.provenance != quest_mobile_birth_provenance::reset ||
+	    reference.mobile_vnum != mob_index[rnum].virtual_number ||
+	    reference.birthplace_vnum != room_vnum || GET_BIRTHPLACE(mob) != room_vnum ||
+	    original_constructor.mobile_vnum != reference.mobile_vnum ||
+	    original_constructor.reset_room_vnum != room_vnum ||
+	    original_constructor.reset_shop_index != configured_shop ||
+	    !native_mobile_birth_constructor_recipe_valid(original_constructor) ||
+	    !native_mobile_birth_cash_role_recipe_valid(original_role) ||
+	    original_role.role != native_mobile_birth_cash_role::shared_shopkeeper ||
+	    original_role.configured_shop_matches != 1)
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		// Reject a detached stage accidentally enrolled in a cyclic/live list.
+		std::unordered_set<P_char> live_seen;
+		for (P_char live = character_list; live; live = live->next)
+			if (live == mob || !live_seen.insert(live).second)
+				return player_snapshot_capture_result::invalid_identity;
+		std::vector<uint8_t> constructor_bytes, role_constructor_bytes;
+		native_mobile_birth_cash_role_recipe observed_role;
+		native_mobile_birth_cash_role_recipe_bytes expected_role{}, observed_role_bytes{};
+		if (!native_mobile_birth_constructor_recipe_encode_blob(original_constructor,
+									&constructor_bytes) ||
+		    !native_mobile_birth_constructor_recipe_encode_blob(original_role.original,
+									&role_constructor_bytes) ||
+		    constructor_bytes != role_constructor_bytes ||
+		    !native_mobile_birth_cash_role_recipe_capture(original_constructor,
+								  &observed_role) ||
+		    !native_mobile_birth_cash_role_recipe_encode(original_role, &expected_role) ||
+		    !native_mobile_birth_cash_role_recipe_encode(observed_role,
+								 &observed_role_bytes) ||
+		    expected_role != observed_role_bytes)
+			return player_snapshot_capture_result::invalid_identity;
+		// Recheck original witnesses against actual loaded inputs without replaying
+		// the constructor, its RNG, clocks, zone modifier or shop binding.
+		constructor_digest build{}, procedure{}, tail{}, raw{};
+		constructor_binding binding{}, quest{};
+		if (!mob_f || ferror(mob_f) ||
+		    !native_mobile_birth_running_artifact_digest(&build) ||
+		    build != original_constructor.build_digest ||
+		    !native_mobile_birth_procedure_capture(original_constructor.mobile_vnum, build,
+							   &procedure) ||
+		    procedure != original_constructor.procedure_after ||
+		    !native_mobile_birth_reset_tail_capture(original_constructor.mobile_vnum,
+							    room_vnum, configured_shop, &tail) ||
+		    tail != original_constructor.reset_tail ||
+		    !constructor_binding_tag_v2(mob_index[rnum].func.mob, &binding) ||
+		    binding != original_constructor.binding_after ||
+		    !constructor_binding_tag_v2(mob_index[rnum].qst_func, &quest) ||
+		    quest != original_constructor.quest_binding ||
+		    !constructor_cache_matches(rnum, original_constructor) ||
+		    !constructor_template_digest(mob_index[rnum].pos,
+						 original_constructor.template_bytes, &raw) ||
+		    raw != original_constructor.template_digest)
+			return player_snapshot_capture_result::invalid_identity;
+		const std::array<const char *, 4> strings{ mob->player.name,
+							   mob->player.short_descr,
+							   mob->player.long_descr,
+							   mob->player.description };
+		for (size_t i = 0; i < strings.size(); ++i)
+		{
+			constructor_digest actual_string{};
+			if (!constructor_string_digest(strings[i], &actual_string) ||
+			    actual_string != original_constructor.string_digests[i])
+				return player_snapshot_capture_result::invalid_identity;
+		}
+		flatfile_shopkeeper_record record{};
+		record.shop_id = static_cast<uint32_t>(configured_shop);
+		record.mob_vnum = mob_index[rnum].virtual_number;
+		record.room_vnum = room_vnum;
+		record.revision = 1; // Actual first-checkpoint policy, never an existing-row guess.
+		record.saved_at = observed_saved_at;
+		record.roaming = shop_index[configured_shop].shop_is_roaming != 0;
+		if (GET_COPPER(mob) < 0 || GET_SILVER(mob) < 0 || GET_GOLD(mob) < 0 ||
+		    GET_PLATINUM(mob) < 0)
+			return player_snapshot_capture_result::malformed_source;
+		record.cash = static_cast<int64_t>(GET_COPPER(mob)) + 10LL * GET_SILVER(mob) +
+			      100LL * GET_GOLD(mob) + 1000LL * GET_PLATINUM(mob);
+		if (record.cash < 0 || record.cash > INT_MAX)
+			return player_snapshot_capture_result::malformed_source;
+		std::unordered_set<const affected_type *> seen;
+		for (const affected_type *affect = mob->affected; affect; affect = affect->next)
+		{
+			if (!seen.insert(affect).second)
+				return player_snapshot_capture_result::object_cycle;
+			if (IS_SET(affect->flags, AFFTYPE_NOSAVE))
+				continue;
+			// Existing keeper catalog's saved-affect bound; no format change.
+			if (record.affects.size() >= 4096)
+				return player_snapshot_capture_result::limit_exceeded;
+			record.affects.push_back(
+				{ affect->type,
+				  affect->duration,
+				  affect->modifier,
+				  affect->location,
+				  { affect->bitvector, affect->bitvector2, affect->bitvector3,
+				    affect->bitvector4, affect->bitvector5 } });
+		}
+		const auto items = quest_mobile_native_items_observe(mob, reference, &record.items);
+		if (items != player_snapshot_capture_result::ok)
+			return items;
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_shopkeeper_record>);
+		*output = std::move(record);
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+	catch (...)
+	{
+		return player_snapshot_capture_result::malformed_source;
+	}
+}
+
+bool quest_mobile_native_stage::prepare_shared_shopkeeper_affects(
+	P_char actual, uint64_t runtime, int room, const quest_mobile_native_reference &reference,
+	const flatfile_shopkeeper_record &checkpoint, size_t historical_prefix) noexcept
+{
+	if (!nevent_is_game_thread() || !shared_affect_constructor_restored_ || !actual ||
+	    actual != character_ || !runtime || actual->runtime_id != runtime ||
+	    publication_consumed_ || publication_runtime_id_ || publication_next_step_ ||
+	    publication_step_started_ || restoration_active_ || mobile_probe_mode || !world ||
+	    !mob_index || !shop_index || number_of_shops < 0 || room <= NOWHERE ||
+	    room > top_of_world || historical_prefix > 8 || checkpoint.affects.size() > 4096 ||
+	    !IS_NPC(actual) || !actual->only.npc || !IS_ALIVE(actual) ||
+	    actual->in_room != NOWHERE || actual->next || actual->next_in_room || actual->desc ||
+	    actual->nevents || actual->nevents_tail || actual->character_maintenance_in_world ||
+	    find_character_by_runtime_id(runtime) ||
+	    !quest_mobile_native_reference_valid(reference) ||
+	    reference.provenance != quest_mobile_birth_provenance::reset)
+		return false;
+	try
+	{
+		std::vector<uint8_t> encoded;
+		flatfile_shopkeeper_record canonical;
+		if (!flatfile_shopkeeper_initial_checkpoint_encode(checkpoint, &encoded) ||
+		    !flatfile_shopkeeper_initial_checkpoint_decode(encoded, &canonical))
+			return false;
+		if (shared_affect_checkpoint_)
+			return shared_affect_actor_ == actual &&
+			       shared_affect_runtime_ == runtime && shared_affect_room_ == room &&
+			       shared_affect_historical_prefix_ == historical_prefix &&
+			       *shared_affect_checkpoint_ == encoded &&
+			       shared_shopkeeper_affect_rows_current(actual);
+		if (actual->affected || actual->following || actual->followers || actual->group ||
+		    actual->lobj || actual->linked || actual->linking || actual->obj_linked ||
+		    GET_OPPONENT(actual))
+			return false;
+		const int rnum = GET_RNUM(actual);
+		if (rnum < 0 || rnum > top_of_mobt || !IS_SHOPKEEPER(actual) ||
+		    canonical.shop_id >= static_cast<uint32_t>(number_of_shops) ||
+		    actual->only.npc->shopkeeper_shop_id != static_cast<int>(canonical.shop_id) ||
+		    shop_index[canonical.shop_id].keeper != rnum ||
+		    shop_index[canonical.shop_id].in_room != world[room].number ||
+		    canonical.mob_vnum != mob_index[rnum].virtual_number ||
+		    canonical.room_vnum != world[room].number ||
+		    reference.mobile_vnum != canonical.mob_vnum ||
+		    reference.birthplace_vnum != canonical.room_vnum ||
+		    GET_BIRTHPLACE(actual) != canonical.room_vnum ||
+		    canonical.roaming != (shop_index[canonical.shop_id].shop_is_roaming != 0) ||
+		    GET_COPPER(actual) < 0 || GET_SILVER(actual) < 0 || GET_GOLD(actual) < 0 ||
+		    GET_PLATINUM(actual) < 0)
+			return false;
+		const int64_t cash = static_cast<int64_t>(GET_COPPER(actual)) +
+				     10LL * GET_SILVER(actual) + 100LL * GET_GOLD(actual) +
+				     1000LL * GET_PLATINUM(actual);
+		if (cash != canonical.cash || cash > INT_MAX)
+			return false;
+		for (const auto &saved : canonical.affects)
+		{
+			// Exact existing flatfile keeper materializer bounds and omitted flags.
+			if (saved.type < std::numeric_limits<sh_int>::min() ||
+			    saved.type > std::numeric_limits<sh_int>::max() || saved.location < 0 ||
+			    saved.location > std::numeric_limits<ubyte>::max())
+				return false;
+			for (uint64_t bits : saved.bitvectors)
+				if (bits > ULONG_MAX)
+					return false;
+		}
+		flatfile_shopkeeper_record observed = canonical;
+		if (quest_mobile_native_items_observe(actual, reference, &observed.items) !=
+		    player_snapshot_capture_result::ok)
+			return false;
+		std::vector<uint8_t> observed_bytes;
+		if (!flatfile_shopkeeper_initial_checkpoint_encode(observed, &observed_bytes) ||
+		    observed_bytes != encoded)
+			return false;
+		// List membership/cycles are checked before retaining this genuine body.
+		std::unordered_set<P_char> seen;
+		for (P_char live = character_list; live; live = live->next)
+			if (live == actual || live->runtime_id == runtime ||
+			    !seen.insert(live).second)
+				return false;
+		auto bytes = std::make_unique<const std::vector<uint8_t>>(std::move(encoded));
+		auto rows = std::make_unique<const std::vector<flatfile_shopkeeper_affect_record>>(
+			std::move(canonical.affects));
+		std::vector<affected_type *> installed(rows->size(), nullptr);
+		shared_affect_checkpoint_ = std::move(bytes);
+		shared_affect_rows_ = std::move(rows);
+		shared_affect_installed_ = std::move(installed);
+		shared_affect_actor_ = actual;
+		shared_affect_runtime_ = runtime;
+		shared_affect_room_ = room;
+		shared_affect_historical_prefix_ = historical_prefix;
+		return true;
+	}
+	catch (...)
+	{
+		return false; // Pure preparation has no affect, scheduler or world effects.
+	}
+}
+
+bool quest_mobile_native_stage::shared_shopkeeper_affect_charge(size_t *bytes) const noexcept
+{
+	if (!bytes)
+		return false;
+	size_t candidate = *bytes;
+	auto add = [&](size_t count, size_t width)
+	{
+		if (width && count > (std::numeric_limits<size_t>::max() - candidate) / width)
+			return false;
+		candidate += count * width;
+		return true;
+	};
+	if (shared_affect_checkpoint_ &&
+	    (!shared_affect_rows_ || !add(1, sizeof(std::vector<uint8_t>)) ||
+	     !add(shared_affect_checkpoint_->capacity(), sizeof(uint8_t)) ||
+	     !add(1, sizeof(std::vector<flatfile_shopkeeper_affect_record>)) ||
+	     !add(shared_affect_rows_->capacity(), sizeof(flatfile_shopkeeper_affect_record)) ||
+	     !add(shared_affect_installed_.capacity(), sizeof(affected_type *)) ||
+	     // Reserve the complete bounded real AF row bytes before the first service;
+	     // installed prefix and remaining capacity together are charged once.
+	     !add(shared_affect_rows_->size(), sizeof(affected_type)) ||
+	     (!shared_affect_rows_->empty() && !add(2, sizeof(nevent_data)))))
+		return false;
+	*bytes = candidate;
+	return true;
+}
+
+bool quest_mobile_native_stage::shared_shopkeeper_affect_rows_current(P_char actual) const noexcept
+{
+	if (!shared_affect_rows_ || !actual || actual != shared_affect_actor_ ||
+	    actual->runtime_id != shared_affect_runtime_ || shared_affect_step_started_ ||
+	    shared_affect_prefix_ > shared_affect_rows_->size() ||
+	    shared_affect_installed_.size() != shared_affect_rows_->size())
+		return false;
+	affected_type *node = actual->affected;
+	for (size_t i = shared_affect_prefix_; i; --i)
+	{
+		const auto &saved = (*shared_affect_rows_)[i - 1];
+		if (!node || node != shared_affect_installed_[i - 1] || node->flags ||
+		    node->type != saved.type || node->duration != saved.duration ||
+		    node->modifier != saved.modifier || node->location != saved.location ||
+		    node->bitvector != saved.bitvectors[0] ||
+		    node->bitvector2 != saved.bitvectors[1] ||
+		    node->bitvector3 != saved.bitvectors[2] ||
+		    node->bitvector4 != saved.bitvectors[3] ||
+		    node->bitvector5 != saved.bitvectors[4])
+			return false;
+		node = node->next;
+	}
+	return node == nullptr;
+}
+
+bool quest_mobile_native_stage::observe_shared_shopkeeper_balance(P_char actual) noexcept
+{
+	if (!actual || actual != shared_affect_actor_ ||
+	    actual->runtime_id != shared_affect_runtime_)
+		return false;
+	P_nevent found = nullptr, previous = nullptr;
+	size_t count = 0;
+	for (P_nevent event = actual->nevents; event; event = event->next_char_nev)
+	{
+		if (++count > 262144 || event->prev_char_nev != previous)
+			return false;
+		previous = event;
+		if (event->func != event_balance_affects)
+			continue;
+		if (found || event->ch != actual ||
+		    event->owner_runtime_id != shared_affect_runtime_ || event->victim ||
+		    event->obj || event->data || event->data_destroy || event->cld ||
+		    !nevent_handle_is_active(nevent_handle_from_event(event)))
+			return false;
+		found = event;
+	}
+	if (previous != actual->nevents_tail)
+		return false;
+	if (shared_affect_balance_observed_)
+		return found == shared_affect_balance_event_ && found &&
+		       found->sequence == shared_affect_balance_sequence_;
+	if (!found)
+		return false;
+	shared_affect_balance_event_ = found;
+	shared_affect_balance_sequence_ = found->sequence;
+	shared_affect_balance_observed_ = true;
+	return true;
+}
+
+bool quest_mobile_native_stage::park_shared_shopkeeper_balance(P_char actual) noexcept
+{
+	if (!shared_affect_balance_observed_)
+	{
+		// This exact service began with an empty event list; observe only the
+		// real balance callback it could have issued, including exceptional exit.
+		if (!observe_shared_shopkeeper_balance(actual))
+			return actual && !actual->nevents && !actual->nevents_tail;
+	}
+	if (shared_affect_park_started_)
+		return shared_affect_park_returned_ && shared_affect_park_succeeded_;
+	if (!observe_shared_shopkeeper_balance(actual))
+		return false; // Missing/stale generation is never parking evidence.
+	shared_affect_park_started_ = true;
+	try
+	{
+		const auto canceled = nevent_cancel(
+			{ shared_affect_balance_event_, shared_affect_balance_sequence_ });
+		shared_affect_park_returned_ = true;
+		shared_affect_park_succeeded_ = canceled == nevent_cancel_result::canceled ||
+						canceled == nevent_cancel_result::deferred;
+		return shared_affect_park_succeeded_ && !actual->nevents && !actual->nevents_tail;
+	}
+	catch (...)
+	{
+		// Real nevent_cancel neuters the callback and detaches owner links before
+		// the potentially throwing deferred-queue allocation. Nonreturn remains
+		// held/unknown; neither generation absence nor inactivity permits resume.
+		return false;
+	}
+}
+
+bool quest_mobile_native_stage::apply_shared_shopkeeper_affects(P_char actual, bool park) noexcept
+{
+	if (!shared_affect_rows_ || !actual || actual != shared_affect_actor_ ||
+	    actual->runtime_id != shared_affect_runtime_ || !IS_ALIVE(actual) ||
+	    shared_affect_step_started_ || shared_affect_park_started_ ||
+	    (shared_affect_balance_prepare_started_ && !shared_affect_balance_prepare_returned_) ||
+	    !shared_shopkeeper_affect_rows_current(actual))
+		return false;
+	bool succeeded = false;
+	try
+	{
+		// Canonical checkpoint rows form a sorted multiset. Preserve original
+		// materializer forward iteration and the real service's head prepend.
+		while (shared_affect_prefix_ < shared_affect_rows_->size())
+		{
+			const auto &saved = (*shared_affect_rows_)[shared_affect_prefix_];
+			affected_type affect{}; // All omitted keeper fields, including flags, zero.
+			affect.type = static_cast<sh_int>(saved.type);
+			affect.duration = saved.duration;
+			affect.modifier = saved.modifier;
+			affect.location = static_cast<ubyte>(saved.location);
+			affect.bitvector = static_cast<unsigned long>(saved.bitvectors[0]);
+			affect.bitvector2 = static_cast<unsigned long>(saved.bitvectors[1]);
+			affect.bitvector3 = static_cast<unsigned long>(saved.bitvectors[2]);
+			affect.bitvector4 = static_cast<unsigned long>(saved.bitvectors[3]);
+			affect.bitvector5 = static_cast<unsigned long>(saved.bitvectors[4]);
+			shared_affect_step_started_ = true;
+			affected_type *inserted = affect_to_char(actual, &affect);
+			// Latch the actual returned node before any scheduler observation/refusal.
+			shared_affect_installed_[shared_affect_prefix_] = inserted;
+			++shared_affect_prefix_;
+			shared_affect_step_started_ = false;
+			if (!inserted || !shared_shopkeeper_affect_rows_current(actual))
+				break;
+			if (shared_affect_balance_observed_ &&
+			    !observe_shared_shopkeeper_balance(actual))
+				break;
+			(void)observe_shared_shopkeeper_balance(actual);
+		}
+		succeeded = shared_affect_prefix_ == shared_affect_rows_->size() &&
+			    shared_shopkeeper_affect_rows_current(actual);
+		if (succeeded && !shared_affect_rows_->empty() && !shared_affect_balance_observed_)
+		{
+			// Only before ANY observed generation may the missing balance event
+			// be prepared separately. Never replay already inserted AF rows.
+			shared_affect_balance_prepare_started_ = true;
+			shared_affect_balance_prepare_returned_ = false;
+			const auto scheduled = add_event(event_balance_affects, 0, actual, nullptr,
+							 nullptr, 0, nullptr, 0);
+			shared_affect_balance_prepare_returned_ = true;
+			if (scheduled.was_scheduled())
+				succeeded = observe_shared_shopkeeper_balance(actual);
+			else
+			{
+				shared_affect_balance_prepare_started_ = false;
+				succeeded = false;
+			}
+		}
+		else if (succeeded && !shared_affect_rows_->empty())
+			succeeded = observe_shared_shopkeeper_balance(actual);
+	}
+	catch (...)
+	{
+		// A started, nonreturned affect service remains latched/unknown forever.
+		succeeded = false;
+	}
+	// Every before-room service exit observes and parks its exact owned event,
+	// even after nonreturn. Never leave its callable detached/NOWHERE generation.
+	if (park && !park_shared_shopkeeper_balance(actual))
+		succeeded = false;
+	return succeeded;
+}
+
+bool quest_mobile_native_stage::restore_shared_shopkeeper_affects_before_room(P_char actual) noexcept
+{
+	if (!nevent_is_game_thread() || !shared_affect_checkpoint_ ||
+	    shared_affect_historical_prefix_ > 1 || !actual || actual != shared_affect_actor_ ||
+	    actual->runtime_id != shared_affect_runtime_ || actual->in_room != NOWHERE ||
+	    !IS_NPC(actual) || !actual->only.npc || !IS_ALIVE(actual) || actual->desc ||
+	    actual->next_in_room || publication_step_started_ ||
+	    (publication_consumed_ ?
+		     (publication_runtime_id_ != shared_affect_runtime_ ||
+		      find_character_by_runtime_id(publication_runtime_id_) != actual ||
+		      publication_next_step_ > 1) :
+		     (actual != character_ ||
+		      find_character_by_runtime_id(shared_affect_runtime_))))
+		return false;
+	if (shared_affect_park_started_)
+		return shared_affect_park_returned_ && shared_affect_park_succeeded_ &&
+		       !(shared_affect_balance_prepare_started_ &&
+			 !shared_affect_balance_prepare_returned_) &&
+		       shared_affect_prefix_ == shared_affect_rows_->size() && !actual->nevents &&
+		       !actual->nevents_tail && shared_affect_before_room_ready_ &&
+		       shared_shopkeeper_affect_rows_current(actual);
+	if (!apply_shared_shopkeeper_affects(actual, true))
+		return false;
+	shared_affect_before_room_ready_ = true;
+	return true;
+}
+
+bool quest_mobile_native_stage::finish_shared_shopkeeper_affects_after_room(P_char actual,
+									    int room) noexcept
+{
+	if (!nevent_is_game_thread() || !shared_affect_checkpoint_ || !actual ||
+	    actual != shared_affect_actor_ || actual->runtime_id != shared_affect_runtime_ ||
+	    !publication_consumed_ || publication_runtime_id_ != shared_affect_runtime_ ||
+	    find_character_by_runtime_id(publication_runtime_id_) != actual || !IS_NPC(actual) ||
+	    !IS_ALIVE(actual) || !world || room != shared_affect_room_ || room <= NOWHERE ||
+	    room > top_of_world || actual->in_room != room || publication_step_started_ ||
+	    shared_affect_step_started_)
+		return false;
+	// Genuine indexed body must occur exactly once in the actual room chain.
+	P_char slow = world[room].people, fast = slow;
+	while (fast && fast->next_in_room)
+	{
+		slow = slow->next_in_room;
+		fast = fast->next_in_room->next_in_room;
+		if (slow == fast)
+			return false;
+	}
+	size_t present = 0;
+	for (P_char body = world[room].people; body; body = body->next_in_room)
+		if (body == actual)
+			++present;
+	if (present != 1)
+		return false;
+	if (shared_affect_complete_)
+		return shared_shopkeeper_affect_rows_current(
+			actual); // Never rearm a consumed generation.
+	if (shared_affect_historical_prefix_ > 1)
+	{
+		if (!apply_shared_shopkeeper_affects(actual, false))
+			return false;
+	}
+	else
+	{
+		if (!shared_affect_before_room_ready_ ||
+		    shared_affect_prefix_ != shared_affect_rows_->size() ||
+		    !shared_shopkeeper_affect_rows_current(actual))
+			return false;
+		if (!shared_affect_rows_->empty())
+		{
+			if (!shared_affect_balance_observed_ || !shared_affect_park_started_ ||
+			    !shared_affect_park_returned_ || !shared_affect_park_succeeded_)
+				return false;
+			if (shared_affect_resume_started_)
+				return false; // Nonreturned, failed or stale issued generation stays held.
+			if (get_scheduled(actual, event_balance_affects))
+				return false; // No foreign/preexisting callback may impersonate resume.
+			shared_affect_resume_started_ = true;
+			shared_affect_resume_returned_ = false;
+			try
+			{
+				const auto scheduled = add_event(event_balance_affects, 0, actual,
+								 nullptr, nullptr, 0, nullptr, 0);
+				shared_affect_resume_returned_ = true;
+				if (!scheduled.was_scheduled())
+				{
+					shared_affect_resume_started_ = false;
+					return false; // Known no-generation refusal may retry this event only.
+				}
+				shared_affect_resumed_event_ = scheduled.handle.event;
+				shared_affect_resumed_sequence_ = scheduled.handle.sequence;
+				const auto *event = scheduled.handle.event;
+				if (!event || !nevent_handle_is_active(scheduled.handle) ||
+				    event->func != event_balance_affects || event->ch != actual ||
+				    event->owner_runtime_id != shared_affect_runtime_ ||
+				    event->victim || event->obj || event->data ||
+				    event->data_destroy || event->cld ||
+				    get_scheduled(actual, event_balance_affects) != event)
+					return false;
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+	}
+	shared_affect_complete_ = true;
+	return true;
+}
+
 bool quest_mobile_native_stage::discard_empty() noexcept
 {
+	if (shared_affect_checkpoint_)
+		return false; // Retained cold original; no affect/extract rollback.
+
 	if (!nevent_require_game_thread("native_mobile_discard") || !character_ ||
 	    !discard_unpublished_mobile(character_))
 		return false;
@@ -3803,6 +4360,9 @@ bool quest_mobile_native_stage::discard_empty() noexcept
 
 bool quest_mobile_native_stage::publish(int room_rnum, P_char *live_after_hooks)
 {
+	if (shared_affect_checkpoint_)
+		return false; // Only the original private step owner may consume this cold body.
+
 	if (!nevent_require_game_thread("native_mobile_publish") || !character_ ||
 	    !live_after_hooks || mobile_probe_mode || !world || room_rnum < 0 ||
 	    room_rnum > top_of_world)
@@ -4072,6 +4632,8 @@ bool quest_mobile_native_stage::restore_published(
 		encoded_choices[i] = choice.chosen | (choice.requested << 1);
 		delays[i] = choice.delay;
 	}
+	if (shared_affect_checkpoint_ && prefix != shared_affect_historical_prefix_)
+		return false;
 	if (restoration_active_)
 	{
 		if (restoration_room_ != room || restoration_prefix_ != prefix ||
@@ -4127,6 +4689,9 @@ bool quest_mobile_native_stage::restore_published(
 		}
 		if (prefix > 1 && !quest_mobile_native_room_restore_owner::restore(
 					  mob, room, &restoration_room_step_))
+			return false;
+		if (shared_affect_checkpoint_ && prefix > 1 &&
+		    !finish_shared_shopkeeper_affects_after_room(mob, room))
 			return false;
 		if (prefix == 1 && (mob->in_room != NOWHERE || restoration_room_step_))
 			return false;
@@ -4197,6 +4762,8 @@ bool quest_mobile_native_stage::choose_publication_step(
 	    find_character_by_runtime_id(publication_runtime_id_) != expected ||
 	    !IS_NPC(expected) || !expected->only.npc)
 		return false;
+	if (shared_affect_checkpoint_ && step >= 2 && !shared_affect_complete_)
+		return false;
 	try
 	{
 		native_mobile_birth_recovery_choice choice;
@@ -4265,6 +4832,12 @@ bool quest_mobile_native_stage::publication_step(size_t step, int room_rnum, P_c
 			if (current == mob)
 				return false;
 	}
+	// Shared cold AF refusal is a separate owned service. Never rewrite the
+	// original room-step started/returned/succeeded facts to represent it.
+	if (shared_affect_checkpoint_ && step >= 2 && !shared_affect_complete_)
+		return false;
+	if (shared_affect_checkpoint_ && step <= 1 && !shared_affect_before_room_ready_)
+		return false;
 	const bool scheduled_step = step == 2 || step == 4 || step == 5 || step == 6;
 	if (scheduled_step &&
 	    (!choice.chosen || (choice.requested ? choice.delay <= 0 : choice.delay != 0)))
@@ -4968,10 +5541,73 @@ const object_template *find_recovery_object_template(int vnum) noexcept
 	return &found->prototype;
 }
 
+bool flatfile_coin_boot_templates::ready() noexcept
+{
+	return recovery_template_sealed &&
+	       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY && obj_index &&
+	       obj_index == recovery_template_index && obj_f == recovery_template_file &&
+	       top_of_objt == recovery_template_top && top_of_objt >= 0 &&
+	       recovery_object_templates.size() == static_cast<size_t>(top_of_objt) + 1;
+}
+
+const object_template *flatfile_coin_boot_templates::find(int vnum) noexcept
+{
+	if (!ready())
+		return nullptr;
+	const auto found = std::lower_bound(recovery_object_templates.begin(),
+					    recovery_object_templates.end(), vnum,
+					    [](const auto &entry, int value)
+					    { return entry.vnum < value; });
+	if (found == recovery_object_templates.end() || found->vnum != vnum)
+		return nullptr;
+	const int number = found->prototype.R_num;
+	if (number < 0 || number > top_of_objt || obj_index[number].virtual_number != vnum ||
+	    obj_index[number].pos != found->position ||
+	    obj_index[number].func.obj != found->special)
+		return nullptr;
+	return &found->prototype;
+}
+
+bool finalize_flatfile_shop_recovery_object_template_bindings() noexcept
+{
+	// This serialized flat pre-worker boot step snapshots existing bindings only.
+	// Out-of-phase callers may not mutate a live or foreign-thread catalog.
+	if (!nevent_is_game_thread() || game_booted ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	if (!flatfile_coin_boot_templates::ready())
+	{
+		invalidate_recovery_object_templates();
+		return false;
+	}
+	// Prove every parsed entry first. No partial function snapshot is exposed
+	// if any native identity changed; no parser/allocation/callback is used.
+	for (size_t position = 0; position < recovery_object_templates.size(); ++position)
+	{
+		const auto &entry = recovery_object_templates[position];
+		const int number = entry.prototype.R_num;
+		if (number < 0 || number > top_of_objt || entry.position < 0 ||
+		    (position && recovery_object_templates[position - 1].vnum >= entry.vnum) ||
+		    obj_index[number].virtual_number != entry.vnum ||
+		    obj_index[number].pos != entry.position)
+		{
+			invalidate_recovery_object_templates();
+			return false;
+		}
+	}
+	// All existing startup assignments are now complete. Only the catalog's
+	// binding snapshot changes; parsed values/addresses and native index stay.
+	for (auto &entry : recovery_object_templates)
+		entry.special = obj_index[entry.prototype.R_num].func.obj;
+	return true;
+}
+
 bool shop_trade_original_procedure_binding_stage::prepare(
 	std::span<const P_obj> objects, std::span<const player_item_snapshot> literals,
 	shop_trade_original_procedure_binding_stage &output) noexcept
 {
+	if (output.prepared_ && output.flat_)
+		return false;
 	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
 	    objects.size() != literals.size() || objects.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
 	    !recovery_object_templates_ready())
@@ -5041,10 +5677,90 @@ bool shop_trade_original_procedure_binding_stage::prepare(
 		return false;
 	}
 }
+
+bool shop_trade_original_procedure_binding_stage::prepare_flat(
+	std::span<const P_obj> objects, std::span<const player_item_snapshot> literals,
+	shop_trade_original_procedure_binding_stage &output) noexcept
+{
+	if (output.prepared_ && !output.flat_)
+		return false;
+	if (!nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    objects.size() != literals.size() || objects.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+	try
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		std::map<int, size_t> by_number;
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			const P_obj object = objects[i];
+			const auto &literal = literals[i];
+			const auto *prototype = flatfile_coin_boot_templates::find(literal.vnum);
+			if (!object || !prototype || object->R_num != prototype->R_num ||
+			    object->obj_uid != literal.object_uid || object->type != literal.type ||
+			    object->extra_flags != literal.extra_flags)
+				return false;
+			const int number = prototype->R_num;
+			const auto found = std::lower_bound(recovery_object_templates.begin(),
+							    recovery_object_templates.end(),
+							    literal.vnum,
+							    [](const auto &entry, int value)
+							    { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != literal.vnum || &found->prototype != prototype)
+				return false;
+			const auto position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			auto [located, added] =
+				by_number.emplace(number, candidate.bindings_.size());
+			if (added)
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			auto &binding = candidate.bindings_[located->second];
+			// Simulate normal per-instance order in the original forest: parsed
+			// proclib first, then ITEM_SWITCH only while no proc is installed.
+			if (IS_SET(object->extra_flags, ITEM_PROCLIB))
+			{
+				bool eligible = false;
+				if (!proclib_saved_binding_eligible(object, &eligible) || !eligible)
+					return false;
+				if (binding.after != proclib_obj_cmd_bridge)
+				{
+					binding.predecessor = binding.after;
+					binding.chain_needed = true;
+					binding.after = proclib_obj_cmd_bridge;
+				}
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		std::vector<proclib_recovery_chain_stage::request> requests;
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+				requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+		if (!proclib_recovery_chain_stage::prepare(requests, candidate.chain_))
+			return false;
+		candidate.flat_ = true;
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 bool shop_trade_original_procedure_binding_stage::prepare_native_birth(
 	std::span<const quest_mobile_native_item_binding> originals,
 	shop_trade_original_procedure_binding_stage &output) noexcept
 {
+	if (output.prepared_ && output.flat_)
+		return false;
 	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
 	    originals.size() > PLAYER_SNAPSHOT_MAX_OBJECTS || !recovery_object_templates_ready())
 		return false;
@@ -5124,8 +5840,31 @@ size_t shop_trade_original_procedure_binding_stage::retained_bytes() const noexc
 }
 bool shop_trade_original_procedure_binding_stage::valid() const noexcept
 {
+	if (flat_)
+		return false;
 	if (!prepared_ || !nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
 	    !recovery_object_templates_ready() || !chain_.valid())
+		return false;
+	for (const auto &binding : bindings_)
+	{
+		if (binding.catalog_index >= recovery_object_templates.size())
+			return false;
+		const auto &entry = recovery_object_templates[binding.catalog_index];
+		const int number = entry.prototype.R_num;
+		if (number < 0 || number > top_of_objt ||
+		    obj_index[number].virtual_number != entry.vnum ||
+		    obj_index[number].pos != entry.position || entry.special != binding.before ||
+		    obj_index[number].func.obj != binding.before)
+			return false;
+	}
+	return true;
+}
+
+bool shop_trade_original_procedure_binding_stage::valid_flat() const noexcept
+{
+	if (!flat_ || !prepared_ || !nevent_is_game_thread() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    !flatfile_coin_boot_templates::ready() || !chain_.valid())
 		return false;
 	for (const auto &binding : bindings_)
 	{
@@ -5152,6 +5891,14 @@ void shop_trade_original_procedure_binding_stage::commit_unchecked() noexcept
 	}
 	prepared_ = false;
 }
+void shop_trade_original_procedure_binding_stage::commit_flat_unchecked() noexcept
+{
+	// The private flat owner has just proved valid_flat() under its complete cut.
+	// Reuse the original allocation-free batch; no new binding or callback policy.
+	commit_unchecked();
+	flat_ = false;
+}
+
 void shop_trade_original_procedure_binding_stage::observe_normal_binding(
 	int number, obj_proc_type before, obj_proc_type after) noexcept
 {
@@ -5193,6 +5940,231 @@ const object_template *find_object_template(int vnum)
 	return found == starter_object_templates.end() ? nullptr : &found->second;
 }
 
+namespace
+{
+// Only genuine constructor/list hooks write this observation. It is dormant when
+// no detached constructor survives. All list links remain the original owner's.
+uint64_t reset_order_epoch = 0, reset_order_sequence = 0;
+P_obj reset_order_pending = nullptr;
+bool reset_order_active = false, reset_order_broken = false;
+
+bool reset_order_list_shape() noexcept
+{
+	for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	P_obj previous = nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (object->prev != previous)
+			return false;
+		previous = object;
+	}
+	return true;
+}
+bool reset_order_identity(P_obj object) noexcept
+{
+	return object && object->reset_order_epoch == reset_order_epoch &&
+	       object->reset_order_sequence &&
+	       object->reset_order_sequence <= reset_order_sequence &&
+	       object->reset_order_uid == object->obj_uid &&
+	       object->reset_order_rnum == object->R_num;
+}
+bool reset_order_valid() noexcept
+{
+	if (!reset_order_active || reset_order_broken || !reset_order_list_shape())
+		return false;
+	uint64_t previous = 0;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (!reset_order_identity(object) || object->reset_order_state != 1 ||
+		    (previous && object->reset_order_sequence >= previous))
+			return false; // Unobserved prepend, alias/reuse or reordered live list.
+		previous = object->reset_order_sequence;
+	}
+	for (P_obj slow = reset_order_pending, fast = reset_order_pending;
+	     fast && fast->reset_order_next;)
+	{
+		slow = slow->reset_order_next;
+		fast = fast->reset_order_next->reset_order_next;
+		if (slow == fast)
+			return false;
+	}
+	P_obj prior = nullptr;
+	previous = 0;
+	for (P_obj object = reset_order_pending; object; object = object->reset_order_next)
+	{
+		if (!reset_order_identity(object) || object->reset_order_prev != prior ||
+		    (object->reset_order_state != 2 && object->reset_order_state != 3) ||
+		    object->next || object->prev ||
+		    (previous && object->reset_order_sequence >= previous))
+			return false;
+		// Live entries require state 1 above; pending entries require 2/3.
+		// The same pointer cannot pass both complete loops.
+		previous = object->reset_order_sequence;
+		prior = object;
+	}
+	return true;
+}
+void reset_order_stamp(P_obj object, unsigned char state) noexcept
+{
+	object->reset_order_epoch = reset_order_epoch;
+	object->reset_order_sequence = ++reset_order_sequence;
+	object->reset_order_uid = object->obj_uid;
+	object->reset_order_rnum = object->R_num;
+	object->reset_order_state = state;
+}
+bool reset_order_begin() noexcept
+{
+	if (reset_order_active)
+		return reset_order_valid();
+	if (reset_order_pending || reset_order_epoch == UINT64_MAX || !reset_order_list_shape())
+		return false;
+	uint64_t count = 0;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (count == UINT64_MAX)
+			return false;
+		++count;
+	}
+	++reset_order_epoch;
+	reset_order_sequence = count;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		object->reset_order_epoch = reset_order_epoch;
+		object->reset_order_sequence = count--;
+		object->reset_order_uid = object->obj_uid;
+		object->reset_order_rnum = object->R_num;
+		object->reset_order_state = 1;
+		object->reset_order_prev = object->reset_order_next = nullptr;
+	}
+	reset_order_broken = false;
+	reset_order_active = true;
+	return true;
+}
+bool reset_order_detached(P_obj object) noexcept
+{
+	if (!reset_order_begin() || reset_order_sequence == UINT64_MAX)
+		return false;
+	reset_order_stamp(object, 2); // Before the original string/proclib/initializer cut.
+	object->reset_order_next = reset_order_pending;
+	if (reset_order_pending)
+		reset_order_pending->reset_order_prev = object;
+	reset_order_pending = object;
+	return true;
+}
+void reset_order_remove_pending(P_obj object) noexcept
+{
+	if (object->reset_order_prev)
+		object->reset_order_prev->reset_order_next = object->reset_order_next;
+	else
+		reset_order_pending = object->reset_order_next;
+	if (object->reset_order_next)
+		object->reset_order_next->reset_order_prev = object->reset_order_prev;
+	object->reset_order_prev = object->reset_order_next = nullptr;
+	if (!reset_order_pending)
+		reset_order_active = false;
+}
+void reset_order_prepend(P_obj object) noexcept
+{
+	if (!nevent_is_game_thread() || !reset_order_active)
+		return; // Ordinary inactive construction stays exactly as before.
+	if (!reset_order_valid() || reset_order_sequence == UINT64_MAX)
+	{
+		reset_order_broken = true;
+		return; // Observation cannot change original ordinary gameplay outcome.
+	}
+	reset_order_stamp(object, 1);
+}
+bool reset_order_publication_ready(P_obj object) noexcept
+{
+	if (!object->reset_order_epoch)
+		return !reset_order_active ||
+		       (reset_order_valid() && reset_order_sequence != UINT64_MAX);
+	if (!reset_order_valid() || !reset_order_identity(object) || object->reset_order_state != 3)
+		return false;
+	for (P_obj pending = reset_order_pending; pending; pending = pending->reset_order_next)
+		if (pending == object)
+			return true;
+	return false;
+}
+void reset_order_enroll(P_obj object) noexcept
+{
+	if (!object->reset_order_epoch)
+	{
+		// A cold restoration has no genuine original construction observation.
+		// Keep its existing actual prepend; record that real prepend if needed.
+		reset_order_prepend(object);
+		if (object_list)
+			object_list->prev = object;
+		object->next = object_list;
+		object_list = object;
+		return;
+	}
+	P_obj previous = nullptr, next = object_list;
+	while (next && next->reset_order_sequence > object->reset_order_sequence)
+	{
+		previous = next;
+		next = next->next;
+	}
+	// All preflight occurred before consumption. Insert at the genuinely
+	// observed original position; do not reorder any previously live objects.
+	object->prev = previous;
+	object->next = next;
+	if (previous)
+		previous->next = object;
+	else
+		object_list = object;
+	if (next)
+		next->prev = object;
+	object->reset_order_state = 1;
+	reset_order_remove_pending(object);
+}
+}
+
+bool quest_mobile_native_item_cold_prepend_body_ready(P_obj object) noexcept
+{
+	return object && object != object_list && !object->next && !object->prev &&
+	       !object->reset_order_epoch && !object->reset_order_sequence &&
+	       !object->reset_order_uid && !object->reset_order_rnum &&
+	       !object->reset_order_state && !object->reset_order_prev && !object->reset_order_next;
+}
+bool quest_mobile_native_item_cold_prepend_cut_ready(size_t count) noexcept
+{
+	return nevent_is_game_thread() &&
+	       (!reset_order_active ||
+		(reset_order_valid() && count <= UINT64_MAX - reset_order_sequence));
+}
+void quest_mobile_native_item_observe_native_prepend(P_obj object) noexcept
+{
+	if (!nevent_is_game_thread() || !reset_order_active)
+		return;
+	if (!quest_mobile_native_item_cold_prepend_body_ready(object))
+	{
+		reset_order_broken = true;
+		return; // Never mint a second ordinal for an observed hot body.
+	}
+	reset_order_prepend(object);
+}
+void quest_mobile_native_item_observe_extraction(P_obj object) noexcept
+{
+	if (!nevent_is_game_thread() || !reset_order_active)
+		return;
+	if (!reset_order_valid() || !reset_order_identity(object) || object->reset_order_state != 1)
+		reset_order_broken = true;
+	// The actual extractor is about to remove/release this pointer. No cached
+	// pointer may survive a pool reuse, including an invalid pending extraction.
+	if (object->reset_order_epoch == reset_order_epoch &&
+	    (object->reset_order_state == 2 || object->reset_order_state == 3))
+		reset_order_remove_pending(object);
+	object->reset_order_epoch = object->reset_order_sequence = 0;
+	object->reset_order_state = 0;
+}
+
 P_obj instantiate_object_template(const object_template &prototype)
 {
 	// Only this main-thread adapter touches the pool, index, list or events.
@@ -5227,6 +6199,7 @@ P_obj instantiate_object_template(const object_template &prototype)
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.room = NOWHERE;
 	obj_index[nr].number++;
+	reset_order_prepend(obj);
 	if (object_list)
 		object_list->prev = obj;
 	obj->next = object_list;
@@ -5347,6 +6320,7 @@ struct quest_mobile_native_item_stage::implementation
 	bool library_event_requested = false;
 	extra_descr_data *allocated_spell_description = nullptr;
 	quest_mobile_native_zombie_stage zombie;
+	bool preparation_completed = false; // Genuine factory return, never admission.
 	bool admitted = false, published = false, general_initialized = false;
 	bool general_periodic = false, parsed_proclib = false;
 	size_t next_step = 0;
@@ -5365,6 +6339,43 @@ struct quest_mobile_native_item_stage::implementation
 	P_obj shell_probe_object = nullptr;
 	uint64_t shell_probe_uid = 0;
 };
+bool quest_mobile_native_item_stage::original_reset_target(int rnum, P_obj *selected,
+							   bool *pending) noexcept
+{
+	if (!nevent_is_game_thread() || !selected || !pending || rnum < 0 || !obj_index ||
+	    rnum > top_of_objt || !reset_order_valid())
+		return false;
+	P_obj best = nullptr;
+	bool detached = false;
+	for (P_obj live = object_list; live; live = live->next)
+		if (live->R_num == rnum)
+		{
+			best = live;
+			break; // Authenticated original global list is newest first.
+		}
+	for (P_obj object = reset_order_pending; object; object = object->reset_order_next)
+		if (object->R_num == rnum &&
+		    (!best || object->reset_order_sequence > best->reset_order_sequence))
+		{
+			// A retained failed/in-progress constructor is never a target or a
+			// reason to silently choose an older matching object instead.
+			if (object->reset_order_state != 3)
+				return false;
+			best = object;
+			detached = true;
+			break;
+		}
+	*selected = best;
+	*pending = detached;
+	return true;
+}
+bool quest_mobile_native_item_stage::owns_pending_original_target(P_obj target) const noexcept
+{
+	return state_ && nevent_is_game_thread() && state_->preparation_completed &&
+	       !state_->published && state_->object == target && target &&
+	       target->obj_uid == state_->uid && target->R_num == state_->rnum &&
+	       reset_order_publication_ready(target) && target->reset_order_epoch;
+}
 P_obj quest_mobile_native_item_stage::object() const noexcept
 {
 	return state_ ? state_->object : nullptr;
@@ -5470,6 +6481,9 @@ bool quest_mobile_native_item_stage::discard_unadmitted() noexcept
 	}
 	// Never free_obj/extract_obj: unpublished instances have no index/list/events,
 	// barb removal, Redis, artifact or other gameplay/extraction side effects.
+	if (obj->reset_order_epoch == reset_order_epoch &&
+	    (obj->reset_order_state == 2 || obj->reset_order_state == 3))
+		reset_order_remove_pending(obj);
 	mm_release(s.pool, obj);
 	delete state_;
 	state_ = nullptr;
@@ -5525,6 +6539,25 @@ bool quest_mobile_native_item_stage::capture_container_shell(
 bool quest_mobile_native_item_stage::prepare(int nr, int type, uint64_t supplied_reserved_uid,
 					     quest_mobile_native_item_stage *output) noexcept
 {
+	return prepare_impl(nr, type, supplied_reserved_uid, output, false);
+}
+
+bool quest_mobile_native_item_stage::prepare_retaining(
+	int nr, int type, uint64_t supplied_reserved_uid,
+	quest_mobile_native_item_stage *output) noexcept
+{
+	return prepare_impl(nr, type, supplied_reserved_uid, output, true);
+}
+
+bool quest_mobile_native_item_stage::empty() const noexcept
+{
+	return state_ == nullptr;
+}
+
+bool quest_mobile_native_item_stage::prepare_impl(int nr, int type, uint64_t supplied_reserved_uid,
+						  quest_mobile_native_item_stage *output,
+						  bool retain_failed_candidate) noexcept
+{
 	if (!nevent_is_game_thread() || !output || output->state_ || !supplied_reserved_uid ||
 	    supplied_reserved_uid == UINT64_MAX || supplied_reserved_uid > ULONG_MAX ||
 	    !obj_index || !dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
@@ -5537,6 +6570,22 @@ bool quest_mobile_native_item_stage::prepare(int nr, int type, uint64_t supplied
 	if (nr < 0 || nr > top_of_objt)
 		return false;
 	quest_mobile_native_item_stage candidate;
+	// The original body owns its candidate until success. Retained callers
+	// also inherit an exact surviving candidate when original cleanup refuses;
+	// never report empty ownership merely because preparation returned false.
+	struct failure_retention
+	{
+		implementation *&candidate, *&output;
+		bool retain;
+		~failure_retention() noexcept
+		{
+			if (retain && candidate)
+			{
+				output = candidate;
+				candidate = nullptr;
+			}
+		}
+	} retention{ candidate.state_, output->state_, retain_failed_candidate };
 	try
 	{
 		const object_template prototype = parse_object_template(nr);
@@ -5613,6 +6662,11 @@ bool quest_mobile_native_item_stage::prepare(int nr, int type, uint64_t supplied
 		SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		obj->loc_p = LOC_NOWHERE;
 		obj->loc.room = NOWHERE;
+		if (!reset_order_detached(obj))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
 		// Same immutable prototype string sharing; no index count/list enrollment.
 		if (!obj_index[nr].keys)
 			obj_index[nr].keys =
@@ -5751,6 +6805,8 @@ bool quest_mobile_native_item_stage::prepare(int nr, int type, uint64_t supplied
 			candidate.discard_unadmitted();
 			return false;
 		}
+		s.preparation_completed = true;
+		obj->reset_order_state = 3;
 		output->state_ = candidate.state_;
 		candidate.state_ = nullptr;
 		return true;
@@ -5760,6 +6816,132 @@ bool quest_mobile_native_item_stage::prepare(int nr, int type, uint64_t supplied
 		candidate.discard_unadmitted();
 		return false;
 	}
+}
+
+bool quest_mobile_native_item_stage::room_graph_ready(
+	std::span<quest_mobile_native_item_stage *> stages, quest_mobile_native_item_stage &root,
+	quest_mobile_native_item_stage &child, quest_mobile_native_item_stage &target,
+	bool detaching) noexcept
+{
+	if (!nevent_is_game_thread() || !obj_index || stages.empty() ||
+	    stages.size() > ITEM_TRANSFER_MAX_ITEMS || &root == &child || &child == &target)
+		return false;
+	try
+	{
+		std::unordered_map<P_obj, size_t> selected;
+		std::unordered_set<uint64_t> uids;
+		std::vector<bool> linked(stages.size(), false);
+		selected.reserve(stages.size());
+		uids.reserve(stages.size());
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			if (!stages[i] || !stages[i]->state_)
+				return false;
+			const auto &s = *stages[i]->state_;
+			const P_obj object = s.object;
+			if (!s.preparation_completed || s.admitted || s.published ||
+			    s.metadata_borrowed_world || s.current_step_started || s.next_step ||
+			    s.shell_probe_started || s.rebuilding_enrollment || !object || !s.uid ||
+			    object->obj_uid != s.uid || object->R_num != s.rnum ||
+			    s.index != obj_index || s.rnum < 0 || s.rnum > top_of_objt ||
+			    obj_index[s.rnum].virtual_number != s.vnum ||
+			    obj_index[s.rnum].pos != s.position ||
+			    obj_index[s.rnum].func.obj != s.original_proc || object->next ||
+			    object->prev || object->nevents || object->nevents_tail ||
+			    IS_ARTIFACT(object) || object->type == ITEM_CORPSE ||
+			    !selected.emplace(object, i).second || !uids.insert(s.uid).second)
+				return false;
+		}
+		if (!root.state_ || !child.state_ || !target.state_)
+			return false;
+		const auto belongs = [&](quest_mobile_native_item_stage &stage)
+		{
+			const auto found = selected.find(stage.state_->object);
+			return found != selected.end() && stages[found->second] == &stage;
+		};
+		if (!belongs(root) || !belongs(child) || !belongs(target))
+			return false;
+		const P_obj actual_root = root.state_->object, actual_child = child.state_->object;
+		if (actual_root->loc_p != LOC_NOWHERE || actual_root->loc.room != NOWHERE ||
+		    actual_root->next_content ||
+		    (!detaching &&
+		     (actual_child->loc_p != LOC_NOWHERE || actual_child->loc.room != NOWHERE ||
+		      actual_child->contains || actual_child->next_content)) ||
+		    (detaching && (actual_child->loc_p != LOC_INSIDE ||
+				   actual_child->loc.inside != target.state_->object)))
+			return false;
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			P_obj object = stages[i]->state_->object;
+			if (object != actual_root && (detaching || object != actual_child) &&
+			    (object->loc_p != LOC_INSIDE || !selected.count(object->loc.inside)))
+				return false;
+			for (P_obj nested = object->contains; nested; nested = nested->next_content)
+			{
+				const auto found = selected.find(nested);
+				if (found == selected.end() || linked[found->second] ||
+				    nested->loc_p != LOC_INSIDE || nested->loc.inside != object)
+					return false;
+				linked[found->second] = true;
+			}
+		}
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			P_obj object = stages[i]->state_->object;
+			const bool needs_parent = object != actual_root &&
+						  (detaching || object != actual_child);
+			if (linked[i] != needs_parent)
+				return false;
+			if (!needs_parent)
+				continue;
+			size_t depth = 0;
+			for (P_obj node = object; node != actual_root; node = node->loc.inside)
+				if (++depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+				    node->loc_p != LOC_INSIDE || !selected.count(node->loc.inside))
+					return false;
+		}
+		// Every selected real UID/pointer must still be absent from live world.
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj live = object_list; live; live = live->next)
+		{
+			if (live->prev != previous || selected.count(live) ||
+			    uids.count(live->obj_uid))
+				return false;
+			previous = live;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+zone_reset_room_nest_result quest_mobile_native_item_stage::nest_room(
+	std::span<quest_mobile_native_item_stage *> stages, quest_mobile_native_item_stage &root,
+	quest_mobile_native_item_stage &child, quest_mobile_native_item_stage &target) noexcept
+{
+	if (!room_graph_ready(stages, root, child, target, false))
+		return zone_reset_room_nest_result::refused;
+	return zone_reset_room_local_nesting::nest(child.state_->object, target.state_->object,
+						   root.state_->object);
+}
+
+bool quest_mobile_native_item_stage::detach_room(std::span<quest_mobile_native_item_stage *> stages,
+						 quest_mobile_native_item_stage &root,
+						 quest_mobile_native_item_stage &child,
+						 quest_mobile_native_item_stage &target) noexcept
+{
+	return room_graph_ready(stages, root, child, target, true) &&
+	       zone_reset_room_local_nesting::detach(child.state_->object, target.state_->object,
+						     root.state_->object);
 }
 
 namespace
@@ -6355,15 +7537,190 @@ P_obj quest_mobile_native_item_stage::publish() noexcept
 		     s.rnum, s.original_proc == proclib_obj_cmd_bridge ? s.effective_proc :
 									 s.original_proc)))
 		return nullptr;
+	if (!reset_order_publication_ready(s.object))
+		return nullptr;
 	P_obj object = s.object;
 	s.object = nullptr;
 	s.published = true; // Consume before any original caller room/mobile hook.
 	++obj_index[s.rnum].number;
-	if (object_list)
-		object_list->prev = object;
-	object->next = object_list;
-	object_list = object;
+	reset_order_enroll(object);
 	return object;
+}
+bool quest_mobile_native_item_stage::publish_many(
+	std::span<quest_mobile_native_item_stage *> stages, std::span<P_obj> output,
+	std::span<const item_ownership_runtime_entry> custody) noexcept
+{
+	if (!nevent_is_game_thread() || !obj_index || stages.empty() ||
+	    stages.size() > ITEM_TRANSFER_MAX_ITEMS || output.size() != stages.size() ||
+	    custody.size() != stages.size())
+		return false;
+	try
+	{
+		std::unordered_map<uint64_t, size_t> by_uid;
+		std::unordered_set<const implementation *> states;
+		std::unordered_set<P_obj> objects;
+		std::unordered_map<int, size_t> prototype_counts;
+		std::vector<bool> linked(stages.size(), false);
+		by_uid.reserve(stages.size());
+		states.reserve(stages.size());
+		objects.reserve(stages.size());
+		prototype_counts.reserve(stages.size());
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			if (!stages[i] || !stages[i]->state_)
+				return false;
+			const auto &s = *stages[i]->state_;
+			const auto &entry = custody[i];
+			if (!s.admitted || s.published || !s.object || !s.uid || s.rnum < 0 ||
+			    s.rnum > top_of_objt || s.index != obj_index ||
+			    s.object->obj_uid != s.uid || s.object->R_num != s.rnum ||
+			    s.object->next || s.object->prev ||
+			    obj_index[s.rnum].virtual_number != s.vnum ||
+			    obj_index[s.rnum].pos != s.position || obj_index[s.rnum].number < 0 ||
+			    !states.insert(&s).second || !objects.insert(s.object).second ||
+			    !by_uid.emplace(s.uid, i).second || entry.item_uid != s.uid ||
+			    !entry.root_item_uid || !entry.item_revision || !entry.owner_revision ||
+			    entry.vnum != s.vnum || entry.state != item_custody_state::active ||
+			    entry.owner.type != item_owner_type::room || !entry.owner.id ||
+			    entry.owner.id > INT32_MAX || entry.owner.context_id)
+				return false;
+			const auto current = obj_index[s.rnum].func.obj;
+			if (current != s.original_proc &&
+			    !((s.parsed_proclib || s.restored_bridge_request) &&
+			      current == proclib_obj_cmd_bridge) &&
+			    !(s.object->type == ITEM_SWITCH && !s.original_proc &&
+			      current == item_switch))
+				return false;
+			if (((s.parsed_proclib || s.restored_bridge_request) &&
+			     current != proclib_obj_cmd_bridge) ||
+			    (s.object->type == ITEM_SWITCH && !current) ||
+			    (current == proclib_obj_cmd_bridge &&
+			     !proclib_recovery_chain_stage::predecessor_matches(
+				     s.rnum, s.original_proc == proclib_obj_cmd_bridge ?
+						     s.effective_proc :
+						     s.original_proc)))
+				return false;
+			++prototype_counts[s.rnum];
+		}
+		for (const auto &[rnum, count] : prototype_counts)
+			if (count > static_cast<size_t>(INT_MAX - obj_index[rnum].number))
+				return false;
+		// Complete parent/root and reciprocal local forest checks. No root is
+		// already enrolled in a room or another native ownership domain.
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			const auto &entry = custody[i];
+			const P_obj object = stages[i]->state_->object;
+			const auto root = by_uid.find(entry.root_item_uid);
+			if (root == by_uid.end() || root->second > i ||
+			    custody[root->second].parent_item_uid ||
+			    custody[root->second].root_item_uid != entry.root_item_uid ||
+			    !item_owner_identity_equal(custody[root->second].owner, entry.owner) ||
+			    custody[root->second].owner_revision != entry.owner_revision)
+				return false;
+			if (!entry.parent_item_uid)
+			{
+				if (entry.item_uid != entry.root_item_uid ||
+				    object->loc_p != LOC_NOWHERE || object->loc.room != NOWHERE ||
+				    object->next_content)
+					return false;
+			}
+			else
+			{
+				const auto parent = by_uid.find(entry.parent_item_uid);
+				if (parent == by_uid.end() || parent->second >= i ||
+				    custody[parent->second].root_item_uid != entry.root_item_uid ||
+				    !item_owner_identity_equal(custody[parent->second].owner,
+							       entry.owner) ||
+				    object->loc_p != LOC_INSIDE ||
+				    object->loc.inside != stages[parent->second]->state_->object)
+					return false;
+			}
+			for (P_obj child = object->contains; child; child = child->next_content)
+			{
+				const auto found = by_uid.find(child->obj_uid);
+				if (found == by_uid.end() ||
+				    stages[found->second]->state_->object != child ||
+				    custody[found->second].parent_item_uid != entry.item_uid ||
+				    linked[found->second])
+					return false;
+				linked[found->second] = true;
+			}
+		}
+		for (size_t i = 0; i < custody.size(); ++i)
+			if (linked[i] != bool(custody[i].parent_item_uid))
+				return false;
+		// No fixed inventory subset: check the entire existing global list,
+		// with cycle and reciprocal links, for every selected UID/pointer.
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj live = object_list; live; live = live->next)
+		{
+			if (live->prev != previous || by_uid.count(live->obj_uid) ||
+			    objects.count(live))
+				return false;
+			previous = live;
+		}
+		std::vector<uint64_t> selected_uids;
+		selected_uids.reserve(custody.size());
+		for (const auto &entry : custody)
+			selected_uids.push_back(entry.item_uid);
+		std::sort(selected_uids.begin(), selected_uids.end());
+		std::vector<item_ownership_runtime_entry> cached_links;
+		if (!item_ownership_runtime_published_native_observer::snapshot_links(
+			    selected_uids, custody.size(), &cached_links))
+			return false;
+		for (const auto &cached : cached_links)
+		{
+			const auto found = by_uid.find(cached.item_uid);
+			if (found == by_uid.end())
+				return false;
+			const auto &expected = custody[found->second];
+			if (cached.root_item_uid != expected.root_item_uid ||
+			    cached.parent_item_uid != expected.parent_item_uid ||
+			    !item_owner_identity_equal(cached.owner, expected.owner) ||
+			    cached.item_revision != expected.item_revision ||
+			    cached.owner_revision > expected.owner_revision ||
+			    cached.vnum != expected.vnum || cached.state != expected.state)
+				return false;
+		}
+		size_t cold_prepend_count = 0;
+		for (const auto *stage : stages)
+		{
+			if (!reset_order_publication_ready(stage->state_->object))
+				return false;
+			if (!stage->state_->object->reset_order_epoch)
+				++cold_prepend_count;
+		}
+		if (reset_order_active && cold_prepend_count > UINT64_MAX - reset_order_sequence)
+			return false;
+		if (!item_ownership_runtime_hydrate_many_atomic(custody.data(), custody.size()))
+			return false;
+		// All allocation, validation and rollback-capable projection precede
+		// consumption. These original list/index writes cannot fail or invoke
+		// gameplay. Metadata remains owned for actual once-only service steps.
+		for (size_t i = 0; i < stages.size(); ++i)
+		{
+			auto &s = *stages[i]->state_;
+			P_obj object = s.object;
+			s.object = nullptr;
+			s.published = true;
+			++obj_index[s.rnum].number;
+			reset_order_enroll(object);
+			output[i] = object;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 size_t quest_mobile_native_item_stage::publication_step_count() const noexcept
 {
@@ -6809,6 +8166,12 @@ bool quest_mobile_native_item_stage::rebuild_enrollment(
 	}
 }
 
+bool quest_mobile_native_item_stage::can_release_published() const noexcept
+{
+	return state_ && nevent_is_game_thread() && state_->published &&
+	       state_->next_step == publication_step_count() && !state_->zombie.game_;
+}
+
 bool quest_mobile_native_item_stage::release_published() noexcept
 {
 	if (!state_ || !nevent_is_game_thread() || !state_->published ||
@@ -6941,20 +8304,51 @@ void reset_zone(int zone, int force_item_repop)
 	if (economic_gameplay_authority::active() &&
 	    !quest_mobile_native_birth_owner::begin_reset(zone, force_item_repop))
 		return;
-	const int respawn = get_property("artifact.respawn", 0);
-	int cmd_no, last_cmd = 1, last_mob_load = 0;
-	int temp, ival, configured_shop, replicated_shop;
-	P_char mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
-	P_obj obj, obj_to;
-	arti_data artidata;
-	char buf[MAX_STRING_LENGTH];
-
-	logit(LOG_STATUS, "reset_zone: reseting zone '%s', force_item_repop: %d",
-	      zone_table[zone].filename, force_item_repop);
-	for (cmd_no = 0;; cmd_no++)
+	quest_mobile_original_reset_locals inactive_locals;
+	auto *retained = native_sql_reset ? quest_mobile_native_birth_owner::original_reset_locals(
+						    zone, force_item_repop) :
+					    &inactive_locals;
+	if (!retained)
+		return;
+	auto &original = *retained;
+	if (!original.initialized)
 	{
+		original.respawn = get_property("artifact.respawn", 0);
+		original.initialized = true;
+		logit(LOG_STATUS, "reset_zone: reseting zone '%s', force_item_repop: %d",
+		      zone_table[zone].filename, force_item_repop);
+	}
+	const int respawn = original.respawn;
+	auto &cmd_no = original.cmd_no;
+	auto &last_cmd = original.last_cmd;
+	auto &last_mob_load = original.last_mob_load;
+	auto &temp = original.temp;
+	auto &ival = original.ival;
+	auto &configured_shop = original.configured_shop;
+	auto &replicated_shop = original.replicated_shop;
+	auto &mob = original.mob;
+	auto &last_mob = original.last_mob;
+	auto &tmp_mob = original.tmp_mob;
+	auto &last_mob_followable = original.last_mob_followable;
+	auto &obj = original.obj;
+	auto &obj_to = original.obj_to;
+	auto &artidata = original.artidata;
+	auto &buf = original.buf;
+
+	for (;; cmd_no++)
+	{
+		if (native_sql_reset)
+			quest_mobile_native_birth_owner::observe_reset_command(cmd_no, last_cmd);
 		if (ZCMD.command == 'S')
+		{
+			if (native_sql_reset)
+			{
+				quest_mobile_native_birth_owner::observe_reset_stop(cmd_no,
+										    last_cmd);
+				zone_reset_item_owner::finish_warm_capture(cmd_no, last_cmd);
+			}
 			break;
+		}
 		// Zone item commands lack a durable reset-generation identity. Refuse
 		// before read_object or any live placement during an accounting epoch.
 		if (economic_gameplay_authority::active() &&
@@ -6964,6 +8358,9 @@ void reset_zone(int zone, int force_item_repop)
 		      quest_mobile_native_birth_owner::owns(mob)))
 		{
 			last_cmd = 0;
+			if (native_sql_reset)
+				quest_mobile_native_birth_owner::observe_reset_processed(cmd_no,
+											 last_cmd);
 			continue;
 		}
 
@@ -6976,6 +8373,9 @@ void reset_zone(int zone, int force_item_repop)
 				quest_mobile_native_birth_owner::block_mobile();
 			mob = last_mob = tmp_mob = last_mob_followable = NULL;
 			last_cmd = last_mob_load = 0;
+			if (native_sql_reset)
+				quest_mobile_native_birth_owner::observe_reset_processed(cmd_no,
+											 last_cmd);
 			continue;
 		}
 
@@ -6984,10 +8384,13 @@ void reset_zone(int zone, int force_item_repop)
 		   other equip, items, riders), and if the original mob loaded, let's
 		   let it all happen */
 
-		if (last_cmd || !ZCMD.if_flag ||
+		if ((native_sql_reset && original.command_entered) || last_cmd || !ZCMD.if_flag ||
 		    (last_mob_load &&
 		     ((ZCMD.command == 'G') || (ZCMD.command == 'E') || (ZCMD.command == 'R'))) ||
 		    (last_mob_followable && (ZCMD.command == 'F')))
+		{
+			if (native_sql_reset)
+				original.command_entered = true;
 			switch (ZCMD.command)
 			{
 			case 'Y':
@@ -7314,6 +8717,150 @@ void reset_zone(int zone, int force_item_repop)
 				break;
 
 			case 'O': /* load an object to room */
+				if (native_sql_reset)
+				{
+					auto &progress = original.o;
+					const auto hold = [&](bool pure) noexcept
+					{
+						quest_mobile_native_birth_owner::hold_reset(
+							cmd_no, last_cmd,
+							pure && zone_reset_item_owner::
+									warm_capture_retryable(
+										cmd_no));
+					};
+					// This is the genuine open original O cut; never create a
+					// replacement invocation after an aborted dispatcher.
+					if (!zone_reset_item_owner::begin_warm_capture())
+					{
+						hold(true);
+						return;
+					}
+					if (!progress.begun)
+					{
+						if (ZCMD.arg1 < 0 || ZCMD.arg1 > top_of_objt ||
+						    ZCMD.arg3 < 0 || ZCMD.arg3 > top_of_world)
+						{
+							hold(false);
+							return;
+						}
+						obj_index[ZCMD.arg1].limit = ZCMD.arg2;
+						const size_t pending =
+							quest_mobile_native_birth_owner::
+								pending_items(ZCMD.arg1);
+						if (pending >= static_cast<size_t>(UINT_MAX) ||
+						    pending > static_cast<size_t>(INT64_MAX) ||
+						    static_cast<int64_t>(
+							    obj_index[ZCMD.arg1].number) >
+							    INT64_MAX -
+								    static_cast<int64_t>(pending))
+						{
+							hold(true);
+							return;
+						}
+						progress.eligible =
+							((static_cast<int64_t>(
+								  obj_index[ZCMD.arg1].number) +
+							  static_cast<int64_t>(pending)) <
+								 ZCMD.arg2 &&
+							 ZCMD.arg4 == 100) ||
+							force_item_repop;
+						progress.begun =
+							true; // Original quota/force choice returned.
+					}
+					if (!progress.eligible)
+					{
+						last_cmd = 0;
+						break;
+					}
+					if (!progress.incumbent_returned)
+					{
+						P_obj incumbent = nullptr;
+						uint64_t uid = 0;
+						if (!zone_reset_item_owner::original_room_incumbent(
+							    cmd_no, ZCMD.arg3, &incumbent, &uid))
+						{
+							hold(true);
+							return;
+						}
+						progress.incumbent = incumbent;
+						progress.incumbent_uid = uid;
+						progress.incumbent_take =
+							incumbent &&
+							IS_SET(incumbent->wear_flags, ITEM_TAKE);
+						progress.incumbent_returned = true;
+					}
+					// Equality against the original indexed body comes BEFORE
+					// dereference. Never select another object by UID/VNUM.
+					if (progress.incumbent &&
+					    !zone_reset_item_owner::warm_object_current(
+						    progress.incumbent, progress.incumbent_uid))
+					{
+						bool current = false;
+						for (P_obj live = object_list; live;
+						     live = live->next)
+							if (live == progress.incumbent)
+							{
+								current =
+									live->obj_uid ==
+										progress.incumbent_uid &&
+									live->R_num == ZCMD.arg1 &&
+									OBJ_ROOM(live) &&
+									live->loc.room == ZCMD.arg3;
+								break;
+							}
+						if (!current)
+						{
+							hold(false);
+							return;
+						}
+					}
+					if (progress.incumbent && !progress.incumbent_take)
+					{
+						last_cmd = 0; // Preserve the original TAKE branch.
+						break;
+					}
+					if (!progress.root_returned)
+					{
+						if (!zone_reset_item_owner::warm_capture_retryable(
+							    cmd_no))
+						{
+							hold(false);
+							return;
+						}
+						obj = nullptr; // The incumbent lives only in its separate retained field.
+						const auto result =
+							zone_reset_item_owner::capture_warm_root(
+								cmd_no, ZCMD.arg3, &obj);
+						if (result !=
+							    zone_reset_item_root_result::captured &&
+						    result !=
+							    zone_reset_item_root_result::load_missed)
+						{
+							// Null preparation is held, never original read_object failure.
+							hold(result == zone_reset_item_root_result::
+									       refused ||
+							     result == zone_reset_item_root_result::
+									       held_refusal);
+							return;
+						}
+						progress.root_result = static_cast<int>(result);
+						progress.object_uid = obj ? obj->obj_uid : 0;
+						progress.root_returned = true;
+					}
+					if (progress.root_result ==
+						    static_cast<int>(
+							    zone_reset_item_root_result::captured) &&
+					    (!obj || !zone_reset_item_owner::warm_object_current(
+							     obj, progress.object_uid)))
+					{
+						hold(false);
+						return;
+					}
+					// Captured original placement remains unpublished; original
+					// load-miss cleanup also returns last_cmd=1 without reroll.
+					last_cmd = 1;
+					break;
+				}
 				obj_index[ZCMD.arg1].limit =
 					ZCMD.arg2; // set the limit from zone file
 
@@ -7385,6 +8932,264 @@ void reset_zone(int zone, int force_item_repop)
 				break;
 
 			case 'P': /* object to object */
+				if (native_sql_reset &&
+				    (original.p.room_path ||
+				     (!original.p.begun &&
+				      !quest_mobile_native_birth_owner::owns(mob))))
+				{
+					auto &progress = original.p;
+					progress.room_path =
+						true; // Actual first non-mobile P cut, retained on yield.
+					const auto hold = [&](bool pure) noexcept
+					{
+						quest_mobile_native_birth_owner::hold_reset(
+							cmd_no, last_cmd,
+							pure && zone_reset_item_owner::
+									warm_capture_retryable(
+										cmd_no));
+					};
+					if (!zone_reset_item_owner::begin_warm_capture())
+					{
+						hold(true);
+						return;
+					}
+					if (!progress.begun)
+					{
+						last_cmd = 0;
+						if (ZCMD.arg1 < 0 || ZCMD.arg1 > top_of_objt ||
+						    ZCMD.arg3 < 0 || ZCMD.arg3 > top_of_objt)
+						{
+							hold(false);
+							return;
+						}
+						obj_index[ZCMD.arg1].limit = ZCMD.arg2;
+						const size_t pending =
+							quest_mobile_native_birth_owner::
+								pending_items(ZCMD.arg1);
+						if (pending >= static_cast<size_t>(UINT_MAX))
+						{
+							hold(true); // Unknown original census cannot be bypassed by force.
+							return;
+						}
+						progress.eligible =
+							static_cast<int64_t>(
+								obj_index[ZCMD.arg1].number) +
+									static_cast<int64_t>(
+										pending) <
+								ZCMD.arg2 ||
+							force_item_repop;
+						progress.begun =
+							true; // Original quota/force decision returned once.
+					}
+					if (!progress.eligible)
+						break;
+					if (!progress.room_prepared)
+					{
+						if (!zone_reset_item_owner::warm_capture_retryable(
+							    cmd_no))
+						{
+							hold(false);
+							return;
+						}
+						obj = obj_to = nullptr;
+						const auto captured =
+							zone_reset_item_owner::capture_warm_child(
+								cmd_no, &obj);
+						if (captured !=
+						    zone_reset_item_warm_result::constructed)
+						{
+							// The warm owner retains its real factory; a null
+							// preparation is never original read_object failure.
+							hold(captured ==
+								     zone_reset_item_warm_result::
+									     refused ||
+							     captured ==
+								     zone_reset_item_warm_result::
+									     held_refusal);
+							return;
+						}
+						progress.object_uid = obj ? obj->obj_uid : 0;
+						progress.room_prepared = true;
+					}
+					if (!obj || !zone_reset_item_owner::warm_object_current(
+							    obj, progress.object_uid))
+					{
+						hold(false);
+						return;
+					}
+					const auto placed =
+						zone_reset_item_owner::place_warm_child(cmd_no);
+					if (placed == zone_reset_item_warm_result::load_missed)
+					{
+						obj = nullptr; // The actual original cleanup destroyed this alias.
+						progress.object_uid = 0;
+					}
+					else if (placed != zone_reset_item_warm_result::captured)
+					{
+						// Only the owner's actual known-pure pre-load hold may
+						// continue this same prepared child and frozen target.
+						hold(placed ==
+						     zone_reset_item_warm_result::held_refusal);
+						return;
+					}
+					progress.room_result = static_cast<int>(placed);
+					last_cmd = 1;
+					break; // Consume the terminal result before the genuine processed cut.
+				}
+				if (native_sql_reset)
+				{
+					auto &progress = original.p;
+					const auto hold = [&](bool retryable) noexcept {
+						quest_mobile_native_birth_owner::hold_reset(
+							cmd_no, last_cmd, retryable);
+					};
+					if (!progress.begun)
+					{
+						last_cmd = 0;
+						obj_index[ZCMD.arg1].limit = ZCMD.arg2;
+						progress.eligible =
+							ZCMD.arg1 >= 0 && ZCMD.arg3 >= 0 &&
+							((static_cast<int64_t>(
+								  obj_index[ZCMD.arg1].number) +
+							  static_cast<int64_t>(
+								  quest_mobile_native_birth_owner::
+									  pending_items(
+										  ZCMD.arg1))) <
+								 ZCMD.arg2 ||
+							 force_item_repop);
+						progress.begun =
+							true; // Actual limit/quota decision returned.
+					}
+					if (!progress.eligible)
+					{
+						if ((static_cast<int64_t>(
+							     obj_index[ZCMD.arg1].number) +
+						     static_cast<int64_t>(
+							     quest_mobile_native_birth_owner::
+								     pending_items(ZCMD.arg1))) <
+						    ZCMD.arg2)
+							logit(LOG_OBJ,
+							      "P cmd: obj: %d to_obj: %d, chance: %d, limit %d(%d)",
+							      obj_index[ZCMD.arg1].virtual_number,
+							      (ZCMD.arg3 >= 0) ?
+								      obj_index[ZCMD.arg3]
+									      .virtual_number :
+								      -2,
+							      ZCMD.arg4, ZCMD.arg2,
+							      obj_index[ZCMD.arg1].number);
+						break;
+					}
+					if (!progress.factory_started)
+					{
+						progress.factory_started = true;
+						obj = quest_mobile_native_birth_owner::prepare_item(
+							ZCMD.arg1);
+						progress.factory_returned = true;
+						if (obj)
+							progress.object_uid = obj->obj_uid;
+						else
+							logit(LOG_DEBUG,
+							      "reset_zone(): (zone %d) obj %d [%d] not loadable",
+							      zone, ZCMD.arg1,
+							      obj_index[ZCMD.arg1].virtual_number);
+					}
+					if (!progress.factory_returned || !obj)
+					{
+						hold(false); // Preparation refusal never authorizes legacy '!'.
+						return;
+					}
+					if (!progress.artifact_returned)
+					{
+						if (progress.artifact_started)
+						{
+							hold(false);
+							return;
+						}
+						progress.artifact_started = true;
+						progress.artifact_owned =
+							IS_ARTIFACT(obj) &&
+							get_artifact_data_sql(
+								obj_index[ZCMD.arg1].virtual_number,
+								&artidata) &&
+							artidata.owned;
+						progress.artifact_returned = true;
+					}
+					if (progress.artifact_owned)
+					{
+						progress.discard_started = true;
+						progress.discard_returned =
+							quest_mobile_native_birth_owner::discard_item(
+								obj);
+						if (!progress.discard_returned)
+						{
+							hold(false);
+							return;
+						}
+						obj = nullptr;
+						break;
+					}
+					if (!progress.target_returned)
+					{
+						if (!quest_mobile_native_birth_owner::original_object(
+							    ZCMD.arg3, &obj_to))
+						{
+							hold(true); // Genuine pure observation; factory stays once-only.
+							return;
+						}
+						progress.target_uid = obj_to ? obj_to->obj_uid : 0;
+						progress.target_returned = true;
+					}
+					if (!obj_to)
+						break;
+					const bool suppress_artifact =
+						IS_ARTIFACT(obj) &&
+						(respawn == 0 ||
+						 (respawn == 1 && force_item_repop != 2));
+					if (!suppress_artifact && !progress.load_returned)
+					{
+						if (progress.load_started)
+						{
+							hold(false);
+							return;
+						}
+						progress.load_started = true;
+						ival = itemvalue(obj);
+						progress.load_passed =
+							ITEM_LOAD_CHECK(obj, ival, ZCMD.arg4);
+						progress.load_returned = true;
+					}
+					if (suppress_artifact || !progress.load_passed)
+					{
+						progress.discard_started = true;
+						progress.discard_returned =
+							quest_mobile_native_birth_owner::discard_item(
+								obj);
+						if (!progress.discard_returned)
+						{
+							hold(false);
+							return;
+						}
+						obj = nullptr;
+						if (!suppress_artifact)
+							last_cmd = 1;
+						break;
+					}
+					if (!progress.nest_started)
+					{
+						progress.nest_started = true;
+						progress.nest_succeeded =
+							quest_mobile_native_birth_owner::nest(
+								obj, obj_to, mob);
+						progress.nest_returned = true;
+					}
+					if (!progress.nest_returned || !progress.nest_succeeded)
+					{
+						hold(false); // A failed native leg may already have changed stock.
+						return;
+					}
+					last_cmd = 1;
+					break;
+				}
 				last_cmd = 0;
 				obj_index[ZCMD.arg1].limit =
 					ZCMD.arg2; // set the limit from zone file
@@ -7429,11 +9234,24 @@ void reset_zone(int zone, int force_item_repop)
 							}
 						}
 
-						obj_to =
-							native_sql_reset ?
+						if (native_sql_reset)
+						{
+							if (!quest_mobile_native_birth_owner::
+								    original_object(ZCMD.arg3,
+										    &obj_to))
+							{
 								quest_mobile_native_birth_owner::
-									original_object(ZCMD.arg3) :
-								get_obj_num(ZCMD.arg3);
+									block_mobile();
+								quest_mobile_native_birth_owner::
+									observe_reset_abort(
+										cmd_no, last_cmd);
+								quest_mobile_native_birth_owner::
+									finish_reset();
+								return;
+							}
+						}
+						else
+							obj_to = get_obj_num(ZCMD.arg3);
 						if (obj_to)
 						{
 							if (IS_ARTIFACT(obj) &&
@@ -7460,8 +9278,21 @@ void reset_zone(int zone, int force_item_repop)
 								break;
 							}
 							if (native_sql_reset)
-								quest_mobile_native_birth_owner::nest(
-									obj, obj_to, mob);
+							{
+								if (!quest_mobile_native_birth_owner::
+									    nest(obj, obj_to, mob))
+								{
+									quest_mobile_native_birth_owner::
+										block_mobile();
+									quest_mobile_native_birth_owner::
+										observe_reset_abort(
+											cmd_no,
+											last_cmd);
+									quest_mobile_native_birth_owner::
+										finish_reset();
+									return;
+								}
+							}
 							else
 								obj_to_obj(obj, obj_to);
 							last_cmd = 1;
@@ -7910,8 +9741,11 @@ void reset_zone(int zone, int force_item_repop)
 				last_cmd = 0;
 				break;
 			}
+		}
 		else
 			last_cmd = 0;
+		if (native_sql_reset)
+			quest_mobile_native_birth_owner::observe_reset_processed(cmd_no, last_cmd);
 	}
 
 	if (native_sql_reset)

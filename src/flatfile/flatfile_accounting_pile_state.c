@@ -4,6 +4,14 @@
 #include <algorithm>
 #include <array>
 #include <climits>
+#include <cerrno>
+#include <charconv>
+#include <cstring>
+#include <dirent.h>
+#include <fcntl.h>
+#include <memory>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <cstdio>
 #include <new>
 #include <openssl/sha.h>
@@ -126,6 +134,75 @@ try
 	if (status == flatfile_accounting_status::ok)
 		*state = candidate;
 	return status;
+}
+catch (const std::bad_alloc &)
+{
+	return flatfile_accounting_status::io_error;
+}
+
+flatfile_accounting_status flatfile_accounting_pile_state_list(
+	const std::string &root, const flatfile_authority_lock &lock, size_t maximum,
+	std::vector<flatfile_accounting_pile_state> *states, std::string *error)
+try
+{
+	if (root.empty() || !lock.matches(root) || !maximum || !states)
+		return flatfile_accounting_status::invalid;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			flatfile_accounting_status::io_error : flatfile_accounting_status::invalid;
+	const int fd = open((root + "/economic-evidence").c_str(),
+		O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	if (fd < 0)
+		return errno == ENOENT ? flatfile_accounting_status::not_found :
+			flatfile_accounting_status::io_error;
+	struct stat info{};
+	if (fstat(fd, &info) || !S_ISDIR(info.st_mode) || info.st_uid != geteuid() ||
+		(info.st_mode & 0077))
+	{
+		close(fd);
+		return flatfile_accounting_status::invalid;
+	}
+	std::unique_ptr<DIR, int (*)(DIR *)> directory(fdopendir(fd), closedir);
+	if (!directory)
+	{
+		close(fd);
+		return flatfile_accounting_status::io_error;
+	}
+	std::vector<flatfile_accounting_pile_state> candidate;
+	for (;;)
+	{
+		errno = 0;
+		const auto *entry = readdir(directory.get());
+		if (!entry)
+		{
+			if (errno)
+				return flatfile_accounting_status::io_error;
+			break;
+		}
+		if (std::strncmp(entry->d_name, "pile-head-", 10))
+			continue;
+		const std::string name(entry->d_name);
+		uint64_t uid = 0;
+		if (name.size() != 30 || name.substr(26) != ".eph")
+			return flatfile_accounting_status::invalid;
+		const auto parsed = std::from_chars(name.data() + 10, name.data() + 26, uid, 16);
+		if (parsed.ec != std::errc{} || parsed.ptr != name.data() + 26 || !uid ||
+			filename(uid) != name)
+			return flatfile_accounting_status::invalid;
+		if (candidate.size() == maximum)
+			return flatfile_accounting_status::capacity;
+		flatfile_accounting_pile_state state;
+		const auto status = read(root, uid, &state, error);
+		if (status != flatfile_accounting_status::ok)
+			return status == flatfile_accounting_status::not_found ?
+				flatfile_accounting_status::invalid : status;
+		candidate.push_back(std::move(state));
+	}
+	std::sort(candidate.begin(), candidate.end(), [](const auto &a, const auto &b)
+		{ return a.account.authority_id < b.account.authority_id; });
+	*states = std::move(candidate);
+	return flatfile_accounting_status::ok;
 }
 catch (const std::bad_alloc &)
 {
