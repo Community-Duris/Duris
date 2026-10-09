@@ -41,6 +41,11 @@ promotion. Source preparation is distinct from a passing release gate.
 
 ## Next genuine caller integration
 
+The subsequent [provider/INITIAL/caller checkpoint](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
+implements the guard and finite recovered-provider/codec/copy phases below.
+Native recapture, genuine INITIAL observation and publication/submission internals
+remain open; neither checkpoint qualifies the whole original aggregate budget.
+
 The original pulse must own the prospective allowance through the returned
 envelope's publication/submission lifetime. The flat preparation owner must
 include image clones, configured-root path/lock, simultaneously live recovered

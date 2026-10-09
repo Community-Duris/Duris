@@ -478,4 +478,19 @@ class flatfile_room_reset_current_custody_storage final
 		    std::vector<flatfile_item_ownership_record> *output) noexcept;
 };
 
+// Passive exact-owner counter/active inventory read under the existing lock.
+// Full catalog decode/authentication precedes owner filtering; this projection
+// alone grants no full-store absence/source/UID/execution or ACK authority.
+// Caller includes root/lock/owner/prior outputs in outer and retains admitted
+// peaks until temporary destruction. Optional retained output counts actual
+// transferred row capacity and copied coin payload requests (inline output
+// vector excluded). All outputs stay unchanged on refusal. Same pinned
+// libstdc++13 C++11 ABI policy; no allocating diagnostics or lock/replay actions.
+flatfile_item_repository_result flatfile_item_repository_load_owner_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    const item_owner_identity &owner, uint64_t *owner_revision,
+    std::vector<flatfile_item_ownership_record> *items,
+    flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
+
 #endif

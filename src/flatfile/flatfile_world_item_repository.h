@@ -217,4 +217,19 @@ class flatfile_initial_room_reset_world_storage final
 		       flatfile_initial_room_reset_world_stage *output) noexcept;
 };
 
+// Prospective storage admission for the same complete passive world read.
+// Caller accounts for root/lock, existing outputs and callback context in outer;
+// retains each admitted peak until this call's temporaries have died, then uses
+// retained_output_payload_bytes (if supplied) for the transferred row/string/item
+// requests, excluding the caller's inline vector objects. Strong outputs on every
+// refusal, including that scalar. No lock acquisition, recovery or new authority.
+// Requires the pinned libstdc++13 C++11 ABI request policy; no allocating diagnostics.
+flatfile_world_item_result flatfile_world_item_recovery_list_all_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    std::vector<flatfile_corpse_record> *corpses,
+    std::vector<flatfile_room_item_record> *rooms,
+    std::vector<flatfile_saved_world_item_record> *saved_items,
+    flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
+
 #endif

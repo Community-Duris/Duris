@@ -619,6 +619,297 @@ bool zone_reset_item_recovery_valid(const critical_native_recovery_envelope &env
 	zone_reset_item_recovery_context v;
 	return envelope_decode(envelope, &v);
 }
+namespace
+{
+[[maybe_unused]] bool recovery_bound_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+[[maybe_unused]] bool recovery_bound_array(size_t &bytes, size_t count, size_t width) noexcept
+{
+	return (!width || count <= SIZE_MAX / width) && recovery_bound_add(bytes, count * width);
+}
+[[maybe_unused]] bool recovery_image_heap(const zone_reset_item_image &image,
+					 size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const auto text = [&](const std::string &value)
+	{
+		// Supported fresh decoder strings use the pinned local capacity 15.
+		// Local characters already belong to the row's inline object storage.
+		return value.capacity() <= 15 ||
+		       (value.capacity() != SIZE_MAX &&
+			recovery_bound_add(bytes, value.capacity() + 1));
+	};
+	if (!recovery_bound_array(bytes, image.items.capacity(), sizeof(player_item_snapshot)) ||
+	    !recovery_bound_array(bytes, image.recipes.capacity(),
+				  sizeof(native_mobile_birth_item_recipe)) ||
+	    !recovery_bound_array(bytes, image.coins.capacity(), sizeof(zone_reset_coin_output)))
+		return false;
+	for (const auto &item : image.items)
+	{
+		if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+		    !text(item.action_description) ||
+		    !recovery_bound_array(bytes, item.dynamic_affects.capacity(),
+					  sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !recovery_bound_array(bytes, item.extra_descriptions.capacity(),
+					  sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : item.extra_descriptions)
+			if (!text(description.keyword) || !text(description.description) ||
+			    !recovery_bound_array(bytes, description.spell_ids.capacity(), sizeof(int32_t)))
+				return false;
+	}
+	for (const auto &recipe : image.recipes)
+		if (!recovery_bound_array(bytes, recipe.libraries.capacity(),
+					  sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	*output = bytes;
+	return true;
+}
+[[maybe_unused]] size_t recovery_validation_objects() noexcept
+{
+	// Receipt validation, and the later per-item/effect validation, are separate
+	// phases. read_item's local and returned value may coexist without NRVO.
+	return std::max({ sizeof(critical_completion),
+		sizeof(item_transfer_result) + sizeof(std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES>),
+		2 * sizeof(zone_reset_item_recovery_item) +
+			2 * sizeof(zone_reset_item_recovery_effect) +
+			sizeof(zone_reset_item_recovery_action) });
+}
+[[maybe_unused]] size_t recovery_preflight_objects() noexcept
+{
+	// Caller view is separate. preflight's local view survives its receipt/row
+	// checks; read_receipt can retain its local and returned completion objects.
+	return sizeof(wire_view) + std::max(
+		2 * sizeof(critical_completion),
+		2 * sizeof(zone_reset_item_recovery_effect) +
+			2 * sizeof(zone_reset_item_recovery_action));
+}
+[[maybe_unused]] error recovery_canonical_bounded(const critical_command &command,
+	std::vector<uint8_t> *canonical, zone_reset_item_image *image,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t live,
+	size_t *retained) noexcept
+{
+	const auto encoded = critical_command_encode_bounded(command, canonical, reserve, context, live);
+	if (encoded != critical_command_codec_result::ok)
+		return encoded == critical_command_codec_result::overflow ||
+			encoded == critical_command_codec_result::unsupported_version ?
+				error::capacity : error::corrupt_evidence;
+	if (!recovery_bound_add(live, canonical->capacity()))
+		return error::capacity;
+	const auto decoded = zone_reset_item_command_decode_bounded(command, image,
+		reserve, context, live);
+	if (decoded != error::ok)
+		return decoded == error::capacity ? error::capacity : error::corrupt_evidence;
+	size_t image_heap = 0;
+	if (!recovery_image_heap(*image, &image_heap) || !recovery_bound_add(live, image_heap))
+		return error::capacity;
+	*retained = live;
+	return error::ok;
+}
+} // namespace
+
+economic_accounting_error zone_reset_item_recovery_encode_bounded(
+	const critical_command &command, const zone_reset_item_recovery_context &v,
+	std::vector<uint8_t> *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!output)
+		return error::corrupt_evidence;
+	if (!reserve)
+		return error::capacity;
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)v;
+	(void)context;
+	(void)outer_live;
+	return error::capacity;
+#else
+	try
+	{
+		size_t live = outer_live;
+		if (!recovery_bound_add(live, sizeof(std::vector<uint8_t>)) ||
+		    !recovery_bound_add(live, sizeof(zone_reset_item_image)) || !reserve(live, context))
+			return error::capacity;
+		std::vector<uint8_t> canonical;
+		zone_reset_item_image image;
+		auto status = recovery_canonical_bounded(command, &canonical, &image,
+			reserve, context, live, &live);
+		if (status != error::ok)
+			return status;
+		size_t validation = live;
+		if (!recovery_bound_add(validation, recovery_validation_objects()) ||
+		    !reserve(validation, context))
+			return error::capacity;
+		if (!context_valid(command, image, v))
+			return error::corrupt_evidence;
+		size_t size = HEADER_BYTES + canonical.size() + BODY_BYTES;
+		size_t retained = sizeof(zone_reset_item_recovery_context) + canonical.size();
+		if (size > LIMIT || retained > LIMIT ||
+		    v.items.size() > (LIMIT - retained) / sizeof(zone_reset_item_recovery_item))
+			return error::capacity;
+		retained += v.items.size() * sizeof(zone_reset_item_recovery_item);
+		for (const auto &item : v.items)
+		{
+			if (size > LIMIT - ITEM_BYTES || item.effects.size() > LIMIT - size - ITEM_BYTES ||
+			    item.effects.size() > (LIMIT - retained) / sizeof(zone_reset_item_recovery_effect))
+				return error::capacity;
+			size += ITEM_BYTES + item.effects.size();
+			retained += item.effects.size() * sizeof(zone_reset_item_recovery_effect);
+		}
+		// Fresh vector(size,0) requests exactly size under the supported policy.
+		if (!recovery_bound_add(live, sizeof(std::vector<uint8_t>)) ||
+		    !recovery_bound_add(live, size) || !reserve(live, context))
+			return error::capacity;
+		std::vector<uint8_t> bytes(size, 0);
+		put(bytes.data(), MAGIC, 4);
+		put(bytes.data() + 4, ZONE_RESET_ITEM_RECOVERY_VERSION, 2);
+		put(bytes.data() + 8, canonical.size(), 4);
+		std::copy(canonical.begin(), canonical.end(), bytes.begin() + HEADER_BYTES);
+		auto *body = bytes.data() + HEADER_BYTES + canonical.size();
+		body[0] = v.receipt_present ? 1 : 0;
+		body[1] = static_cast<uint8_t>(v.stage);
+		body[2] = bits(v.whole_binding);
+		body[3] = bits(v.batch_publication);
+		body[4] = bits(v.room_placement);
+		body[5] = v.runtime_applied ? 1 : 0;
+		write_receipt(body + STATE_BYTES, v.receipt);
+		put(body + STATE_BYTES + RECEIPT_BYTES, v.items.size(), 4);
+		size_t offset = HEADER_BYTES + canonical.size() + BODY_BYTES;
+		for (const auto &item : v.items)
+		{
+			auto *encoded = bytes.data() + offset;
+			put(encoded, item.object_uid, 8);
+			put(encoded + 8, item.next_step, 4);
+			encoded[12] = static_cast<uint8_t>((item.current_step_started ? 1 : 0) |
+							   (item.admitted ? 2 : 0) |
+							   (item.published ? 4 : 0));
+			put(encoded + 16, item.effects.size(), 4);
+			offset += ITEM_BYTES;
+			for (const auto &e : item.effects)
+				bytes[offset++] = bits(e);
+		}
+		*output = std::move(bytes);
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+#endif
+}
+
+economic_accounting_error zone_reset_item_recovery_decode_bounded(
+	const critical_command &command, std::span<const uint8_t> bytes,
+	zone_reset_item_recovery_context *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_context_heap_bytes) noexcept
+{
+	if (!output)
+		return error::corrupt_evidence;
+	if (!reserve)
+		return error::capacity;
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)bytes;
+	(void)context;
+	(void)outer_live;
+	(void)retained_context_heap_bytes;
+	return error::capacity;
+#else
+	try
+	{
+		size_t live = outer_live;
+		if (!recovery_bound_add(live, sizeof(wire_view)) ||
+		    !recovery_bound_add(live, sizeof(std::vector<uint8_t>)) ||
+		    !recovery_bound_add(live, sizeof(zone_reset_item_image)) ||
+		    !recovery_bound_add(live, sizeof(zone_reset_item_recovery_context)))
+			return error::capacity;
+		size_t preliminary = live;
+		if (!recovery_bound_add(preliminary, recovery_preflight_objects()) ||
+		    !reserve(preliminary, context))
+			return error::capacity;
+		wire_view view;
+		std::vector<uint8_t> canonical;
+		zone_reset_item_image image;
+		zone_reset_item_recovery_context candidate;
+		const auto checked = preflight(&command, bytes, &view);
+		if (checked != error::ok)
+			return checked;
+		auto status = recovery_canonical_bounded(command, &canonical, &image,
+			reserve, context, live, &live);
+		if (status != error::ok)
+			return status == error::capacity ? error::capacity : error::payload_conflict;
+		if (!std::equal(canonical.begin(), canonical.end(), view.command.begin(),
+				view.command.end()) || view.count != image.recipes.size())
+			return error::payload_conflict;
+		size_t validation = live;
+		if (!recovery_bound_add(validation, std::max(recovery_validation_objects(),
+			2 * sizeof(critical_completion))) || !reserve(validation, context))
+			return error::capacity;
+		read_body(view.body, &candidate);
+		if (!context_valid_range(command, image, candidate, view.count,
+			[&](size_t i) { return read_item(bytes.data() + view.item_offsets[i]); },
+			[&](size_t i) { return static_cast<size_t>(
+				get(bytes.data() + view.item_offsets[i] + 16, 4)); },
+			[&](size_t i, size_t e) {
+				return effect(bytes[view.item_offsets[i] + ITEM_BYTES + e]); }))
+			return error::corrupt_evidence;
+		// All wire semantics and recipe correlations are proven before reserve.
+		size_t heap = 0;
+		if (!recovery_bound_array(heap, view.count, sizeof(zone_reset_item_recovery_item)))
+			return error::capacity;
+		for (size_t i = 0; i < view.count; ++i)
+			if (!recovery_bound_array(heap, static_cast<size_t>(
+				get(bytes.data() + view.item_offsets[i] + 16, 4)),
+				sizeof(zone_reset_item_recovery_effect)))
+				return error::capacity;
+		if (!recovery_bound_add(live, heap) ||
+		    !recovery_bound_add(live, 2 * sizeof(zone_reset_item_recovery_item) +
+			2 * sizeof(zone_reset_item_recovery_effect)) || !reserve(live, context))
+			return error::capacity;
+		candidate.items.reserve(view.count);
+		for (size_t i = 0; i < view.count; ++i)
+		{
+			const size_t offset = view.item_offsets[i];
+			auto item = read_item(bytes.data() + offset);
+			const size_t count = static_cast<uint32_t>(get(bytes.data() + offset + 16, 4));
+			item.effects.reserve(count);
+			for (size_t e = 0; e < count; ++e)
+				item.effects.push_back(effect(bytes[offset + ITEM_BYTES + e]));
+			candidate.items.push_back(std::move(item));
+		}
+		*output = std::move(candidate);
+		if (retained_context_heap_bytes)
+			*retained_context_heap_bytes = heap;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+#endif
+}
+
+bool zone_reset_item_recovery_initial_bounded(const critical_native_recovery_envelope &envelope,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || envelope.revision != 1 ||
+	    envelope.phase != critical_native_recovery_phase::execution_pending ||
+	    !recovery_bound_add(outer_live, sizeof(zone_reset_item_recovery_context)) ||
+	    !reserve(outer_live, context))
+		return false;
+	zone_reset_item_recovery_context v;
+	return zone_reset_item_recovery_decode_bounded(envelope.command, envelope.attachment,
+		&v, reserve, context, outer_live) == error::ok &&
+		!v.receipt_present && no_progress(v);
+}
+
 bool zone_reset_item_recovery_initial(const critical_native_recovery_envelope &envelope) noexcept
 {
 	zone_reset_item_recovery_context v;

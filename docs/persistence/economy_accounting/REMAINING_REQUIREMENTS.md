@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## ROOM provider and INITIAL caller admission - 2026-10-09
+
+[Source integration](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
+joins prospective recovered provider arrays, INITIAL/canonical codec phases,
+image/returned-envelope clones and the real pulse's retained scratch guard.
+Independent source review passes without upgrading runtime qualification.
+Native recapture, genuine INITIAL observation, publication/submission internals,
+full aggregate32MiB and original gameplay/recovery/release gates remain open.
+Native tests/builds stay in the major-plan batch. Admission remains closed.
+
 ## ROOM codec admission contracts - 2026-10-09
 
 [Bounded codec checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) resolves the

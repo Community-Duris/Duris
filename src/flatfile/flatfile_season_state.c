@@ -90,6 +90,26 @@ flatfile_season_state_result read_records(const std::string &root, std::vector<u
 		return flatfile_season_state_result::invalid;
 	return flatfile_season_state_result::ok;
 }
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+    _GLIBCXX_USE_CXX11_ABI
+struct season_bounded_read_workspace
+{
+	explicit season_bounded_read_workspace(size_t directory_size)
+	    : directory(directory_size, '\0'), state_name(state_filename),
+	      enrollment_name(enrollment_filename) {}
+	std::string directory, state_name, enrollment_name;
+	std::vector<uint8_t> state, marker;
+	flatfile_season_state observed;
+};
+
+bool season_storage_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+#endif
 } // namespace
 
 flatfile_season_state_result
@@ -115,6 +135,82 @@ flatfile_season_state_read_locked(const std::string &root, const flatfile_author
 	{
 		return flatfile_season_state_result::io_error;
 	}
+}
+
+flatfile_season_state_result flatfile_season_state_read_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    flatfile_season_state *output, flatfile_scratch_reserve_fn reserve_scratch_peak,
+    void *context, size_t outer_live_scratch) noexcept
+{
+	if (root.empty() || !output || !reserve_scratch_peak || !lock.matches(root))
+		return flatfile_season_state_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+    !_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return flatfile_season_state_result::io_error;
+#else
+	size_t directory_size = root.size(), live = outer_live_scratch;
+	// Direct length/copy construction has no root+suffix growth temporary.
+	// State name is inline; the fresh copied enrollment name requests length+1.
+	static_assert(sizeof("season_state") - 1 <= 15);
+	static_assert(sizeof("season_enrollment") - 1 > 15);
+	if (!season_storage_add(directory_size, sizeof("/metadata") - 1) ||
+	    !season_storage_add(live, sizeof(season_bounded_read_workspace)) ||
+	    (directory_size > 15 &&
+	     (directory_size == SIZE_MAX || !season_storage_add(live, directory_size + 1))) ||
+	    !season_storage_add(live, sizeof("season_enrollment")) ||
+	    !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_season_state_result::io_error;
+	}
+	try
+	{
+		season_bounded_read_workspace work(directory_size);
+		std::copy(root.begin(), root.end(), work.directory.begin());
+		std::copy_n("/metadata", sizeof("/metadata") - 1,
+			    work.directory.begin() + root.size());
+		const auto a = flatfile_read_bounded(work.directory, work.state_name, record_bytes,
+		    &work.state, reserve_scratch_peak, context, live);
+		// The first file's fresh capacity remains live through the second SAME-FD
+		// reader's metadata and vector peak. Both reads retain original ordering.
+		if (!season_storage_add(live, work.state.capacity()))
+		{
+			errno = ENOBUFS;
+			return flatfile_season_state_result::io_error;
+		}
+		const auto b = flatfile_read_bounded(work.directory, work.enrollment_name, record_bytes,
+		    &work.marker, reserve_scratch_peak, context, live);
+		if (a == flatfile_read_result::io_error || b == flatfile_read_result::io_error)
+			return flatfile_season_state_result::io_error;
+		if (a == flatfile_read_result::not_found && b == flatfile_read_result::not_found)
+			return flatfile_season_state_result::not_found;
+		if (a != flatfile_read_result::ok || b != flatfile_read_result::ok)
+			return flatfile_season_state_result::invalid;
+		// checked_record calls are sequential; their digest dies before decode's
+		// final aggregate assignment temporary. Charge the larger actual object
+		// alongside both file capacities and the already-charged observed DTO.
+		if (!season_storage_add(live, work.marker.capacity()) ||
+		    !season_storage_add(live, std::max(sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+						     sizeof(flatfile_season_state))) ||
+		    !reserve_scratch_peak(live, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_season_state_result::io_error;
+		}
+		if (!decode(work.state, work.marker, &work.observed) ||
+		    work.observed.status != flatfile_season_status::active || !lock.matches(root))
+			return flatfile_season_state_result::invalid;
+		*output = work.observed;
+		return flatfile_season_state_result::ok;
+	}
+	catch (...)
+	{
+		return flatfile_season_state_result::io_error;
+	}
+#endif
 }
 
 flatfile_season_state_result

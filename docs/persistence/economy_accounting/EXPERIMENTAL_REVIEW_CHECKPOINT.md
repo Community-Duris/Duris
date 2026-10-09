@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Joined ROOM provider and INITIAL caller source - 2026-10-09
+
+[Current source checkpoint](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
+records the independently reviewed actual pulse guard, bounded world/custody/
+passive-season readers, INITIAL codec and prospective copy/move handoffs.
+Original SQL preparation and leaf bodies are preserved. Source inverses and
+388 pins authenticate; all 931 writer policies and closed admission survive.
+This successor is unbuilt/untested under major-plan batching; prior executable
+results do not qualify it. Native recapture, genuine INITIAL observation,
+publication/submission overlap and complete native/recovery/release gates remain.
+Independent bounded literal capture is separate WIP. Plan1 remains complete only
+at its recorded scope; Plans2-4/fullPlan5/R1-R8/release are unfinished.
+
 ## Current source and executable scope - 2026-10-09
 
 [ROOM codec checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) records source-

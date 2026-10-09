@@ -1,5 +1,16 @@
 # Finish accounting implementation plan
 
+## ROOM provider and INITIAL caller admission - 2026-10-09
+
+[Joined caller checkpoint](ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
+implements the real pulse-owned guard, bounded world/custody/passive-season
+readers, INITIAL contracts and prospective image/codec/output handoffs.
+Independent source review passed; original SQL/leaf bodies and 931 policies
+are preserved. No native tests/builds ran for this successor; tests remain batched.
+Native recapture, genuine INITIAL observation, publication preparation/submission
+overlap and full aggregate/native/release qualification remain open. Admission
+stays CLOSED; the goal remains active. Independent capture WIP is excluded.
+
 ## ROOM codec admission contracts - 2026-10-09
 
 [Source checkpoint](ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) adds allocation-free

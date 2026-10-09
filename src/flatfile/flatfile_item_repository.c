@@ -6301,6 +6301,168 @@ flatfile_item_repository_result flatfile_shared_shop_current_custody_storage::re
 }
 
 flatfile_item_repository_result
+flatfile_item_repository_load_owner_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    const item_owner_identity &owner, uint64_t *owner_revision,
+    std::vector<flatfile_item_ownership_record> *items,
+    flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (!lock.matches(root) || !item_owner_identity_valid(owner) || !owner_revision || !items ||
+	    !reserve_scratch_peak)
+		return flatfile_item_repository_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+    !_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_item_repository_result::io_error;
+#else
+	constexpr size_t fixed = sizeof(ownership_catalog) +
+	    sizeof(std::vector<flatfile_item_ownership_record>) +
+	    sizeof(flatfile_item_catalog_allocation_profile);
+	constexpr size_t read_fixed = 2 * sizeof(std::string) + sizeof(std::vector<uint8_t>);
+	size_t base = outer_live_scratch, directory_size = root.size(), read_live = 0;
+	if (!custody_budget_add(base, fixed) ||
+	    !custody_budget_add(directory_size, sizeof("/domains") - 1))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	read_live = base;
+	if (!custody_budget_add(read_live, read_fixed) ||
+	    (directory_size > 15 &&
+	     (directory_size == SIZE_MAX || !custody_budget_add(read_live, directory_size + 1))) ||
+	    !reserve_scratch_peak(read_live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		ownership_catalog catalog;
+		std::vector<flatfile_item_ownership_record> selected;
+		flatfile_item_catalog_allocation_profile profile;
+		{
+			std::string directory(directory_size, '\0');
+			std::copy(root.begin(), root.end(), directory.begin());
+			std::copy_n("/domains", sizeof("/domains") - 1,
+				    directory.begin() + root.size());
+			// This existing filename fits the pinned ABI's inline string storage.
+			static_assert(sizeof("item_ownership") - 1 <= 15);
+			const std::string file_name(ownership_filename);
+			std::vector<uint8_t> bytes;
+			const auto read = flatfile_read_bounded(directory, file_name,
+			    ownership_maximum_bytes, &bytes, reserve_scratch_peak, context, read_live);
+			if (read == flatfile_read_result::not_found)
+				return flatfile_item_repository_result::not_found;
+			if (read == flatfile_read_result::invalid)
+				return flatfile_item_repository_result::invalid;
+			if (read != flatfile_read_result::ok)
+				return flatfile_item_repository_result::io_error;
+			size_t scan_live = read_live;
+			if (!custody_budget_add(scan_live, bytes.capacity()) ||
+			    !custody_budget_add(scan_live, flatfile_item_catalog_preflight_object_bytes()) ||
+			    !reserve_scratch_peak(scan_live, context))
+			{
+				errno = ENOBUFS;
+				return flatfile_item_repository_result::io_error;
+			}
+			const auto framed = flatfile_item_catalog_preflight(bytes, &profile);
+			if (framed != flatfile_item_repository_result::ok)
+				return framed;
+			if (!profile.storage_policy_supported)
+			{
+				errno = ENOTSUP;
+				return flatfile_item_repository_result::io_error;
+			}
+			size_t decode_live = read_live;
+			if (!custody_budget_add(decode_live, bytes.capacity()) ||
+			    !custody_budget_add(decode_live, profile.authenticated_decode_working_bytes) ||
+			    !reserve_scratch_peak(decode_live, context))
+			{
+				errno = ENOBUFS;
+				return flatfile_item_repository_result::io_error;
+			}
+			if (!lock.matches(root))
+				return flatfile_item_repository_result::invalid;
+			const auto decoded = decode_catalog(bytes, &catalog);
+			if (decoded != flatfile_item_repository_result::ok)
+				return decoded;
+		} // File bytes and both paths die before any selected-row copy.
+		const owner_state *stored_owner = find_owner(&catalog, owner);
+		if (!stored_owner)
+			return flatfile_item_repository_result::not_found;
+		if (profile.decoded_catalog_payload_bytes < sizeof(ownership_catalog) ||
+		    !custody_budget_add(base, profile.decoded_catalog_payload_bytes -
+							 sizeof(ownership_catalog)))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		// Reallocation constructs the new copied row before relocating old rows.
+		// Their nested coin vectors transfer without allocating under this ABI.
+		static_assert(std::is_nothrow_move_constructible_v<flatfile_item_ownership_record>);
+		size_t copied_coin_bytes = 0;
+		for (const auto &entry : catalog.items)
+			if (entry.state == item_custody_state::active &&
+			    item_owner_identity_equal(entry.owner, owner))
+			{
+				size_t capacity = selected.capacity(), old_rows = 0, new_rows = 0;
+				size_t next_coin_bytes = copied_coin_bytes, copy_live = base;
+				const bool grows = selected.size() == capacity;
+				if (grows)
+				{
+					capacity = selected.size();
+					if (!custody_budget_add(capacity, std::max(selected.size(), size_t{1})) ||
+					    !custody_budget_product(selected.capacity(),
+							 sizeof(flatfile_item_ownership_record), &old_rows))
+					{
+						errno = ENOBUFS;
+						return flatfile_item_repository_result::io_error;
+					}
+				}
+				if (!custody_budget_product(capacity, sizeof(flatfile_item_ownership_record), &new_rows) ||
+				    !custody_budget_add(next_coin_bytes, entry.coin_payload.size()) ||
+				    !custody_budget_add(copy_live, old_rows) ||
+				    !custody_budget_add(copy_live, new_rows) ||
+				    !custody_budget_add(copy_live, next_coin_bytes) ||
+				    !reserve_scratch_peak(copy_live, context))
+				{
+					errno = ENOBUFS;
+					return flatfile_item_repository_result::io_error;
+				}
+				selected.push_back(entry);
+				copied_coin_bytes = next_coin_bytes;
+			}
+		size_t retained = 0;
+		if (!custody_budget_product(selected.capacity(), sizeof(flatfile_item_ownership_record), &retained) ||
+		    !custody_budget_add(retained, copied_coin_bytes))
+		{
+			errno = ENOBUFS;
+			return flatfile_item_repository_result::io_error;
+		}
+		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_item_ownership_record>>);
+		*owner_revision = stored_owner->revision;
+		*items = std::move(selected);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = retained;
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::invalid;
+	}
+#endif
+}
+
+flatfile_item_repository_result
 flatfile_shared_shop_current_custody_storage::read_original_projection_locked_bounded(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const quest_mobile_native_image &image,
