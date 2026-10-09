@@ -1,22 +1,24 @@
 # Double-entry economy: remaining requirements
 
-## Shared cold world and flat custody source joined - 2026-10-08
+## Shared flat execution owner source joined - 2026-10-08
 
-[Source integration](SHARED_COLD_WORLD_AND_FLAT_CUSTODY_SOURCE_2026-10-08.md) records three independently accepted private slices:
-initial flat custody with actual empty-owner clocks and equipped SHOP roots,
-genuine saved-affect/event ownership, and corrected original cold world recovery.
-Candidate `50af125db55837627e2965c935ce042d109f5f6c3de4314369b7e0ea65440579`
-joins584 providers/35 inverses and210 authenticated bodies (171 source,30 tests,
-5 schema,4 other). Both independent cold-world review findings are corrected;
-rejected packet48d6 stays unselected. Pure preparation budget refusal retains the
-whole actor/stock; ALL retry prefixes charge before services. Runtime/adoption,
-SQL cleanup, actual room ordering and full checkpoint proof remain required.
-The source is unpromoted/unexecuted and actual shared producer admission remains
-CLOSED. Flat atomic participant69484205 needs review corrections and is not
-selected here; genuine flat execution/authority/origin/world integration,
-progressed startup, transient budgets and major-plan qualification remain open.
-Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1 acceptance,
-inactive/declined-spell/production/activation gates and unrelated WIP are preserved.
+[Source integration](SHARED_FLAT_EXECUTION_OWNER_SOURCE_2026-10-08.md) records genuine flat callback, original coordinator
+proposal ownership/capacity and distinct flat producer preparation, plus required
+atomic CURRENT custody/receipt and shutdown cleanup corrections. Independently
+accepted candidate `0238370773930da6c7b46f1db60835553d041b2e02d84439f08fb73389dad6d6`
+has212 authenticated paths (173 source,30 tests,5 schema,4 other),1297 provider
+records/37 exact inverses. Each callback releases its fresh root lock on its own
+worker; possible publication is reconciliation-only. Genuine capacity reservation
+precedes commit and persists through native CAS/retry. Shutdown cleanup frees only
+known-not-published heap ownership under the same executing pin. Prior standalone
+atomic69484205 and newline-changing cleanupafdd remain unselected.
+The candidate is unpromoted/unexecuted and producer admission stays CLOSED.
+Actual producer caller, full flat world/origin/ACK, progressed startup, transient
+budget and major-plan qualification remain. Two undeclared sql_enabled callsites
+and missing transaction object registration are queued readiness corrections.
+Original Plan1 scope stays accepted; Plans2-4/combinedPlan5/R1-R8/release remain
+unfinished. Unrelated WIP, peer documents, inactive/declined-spell/production and
+activation guards are preserved. The ongoing goal remains active.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
