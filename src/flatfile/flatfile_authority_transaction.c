@@ -13,6 +13,7 @@
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
+#include <sys/stat.h>
 #include <type_traits>
 
 namespace
@@ -390,7 +391,10 @@ bool flatfile_authority_lock::acquire_bounded(const std::string &root,
 	};
 	size_t directory_size = root.size();
 	size_t live = outer_live_scratch;
-	if (!add(directory_size, sizeof("/domains") - 1) || !add(live, 3 * sizeof(std::string)) ||
+	// Both helper metadata objects remain live through flock and return.
+	if (!add(live, sizeof(struct stat)) || !add(live, sizeof(struct stat)) ||
+	    !add(directory_size, sizeof("/domains") - 1) ||
+	    !add(live, 3 * sizeof(std::string)) ||
 	    (root.size() > 15 && (root.size() == SIZE_MAX || !add(live, root.size() + 1))) ||
 	    (directory_size > 15 &&
 	     (directory_size == SIZE_MAX || !add(live, directory_size + 1))) ||
