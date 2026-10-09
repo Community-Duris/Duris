@@ -1,19 +1,21 @@
 # Double-entry economy: remaining requirements
 
-## Shared current SQL proof and deferred native codec coverage - 2026-10-08
+## Shared original producer, SQL worker and terminal origin source joined - 2026-10-08
 
-[Source and prepared coverage](SHARED_CURRENT_SQL_PROOF_AND_DEFERRED_CODEC_COVERAGE_2026-10-08.md) records the maintained initial
-checkpoint's new native harness/runner and central registration. Cases are
-UNEXECUTED; existing manual scheduling enforces temporary user-directed deferral.
-Remove the flag/reason at relevant major-plan readiness and perform qualification.
-Private candidate `01a1f0e11fe112bf3fcc74b779367e67df80f9038901ca1f4e9abbd66835f031`
-joins shared authority preparation and current SQL publication proof. Independent
-review corrected born-stock observation, physical route direction and stale
-snapshot counts. Coupled source review and290-provider/19-inverse join passed;
-all209 bodies authenticate, without full accounting acceptance. Genuine producer,
-complete budgets,root SQL integration,world publication/ACK/origin and flat work
-remain open. Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1
-scope and inactive/declined-spell/activation/production gates remain preserved.
+[Source integration](SHARED_PRODUCER_SQL_AND_TERMINAL_ORIGIN_SOURCE_2026-10-08.md) records actual original checkpoint/time
+capture and passive retry, immutable carrier/progress ownership, distinct genuine
+SQL worker and inbox-first shared transaction/reconciliation, and terminal-origin
+retention/reader. Independent source reviews passed all three scoped slices.
+Candidate `ad42513ceb58e369ad6bbea17cce4c0f218339210dc1b9138c95998bcf75b0ae`
+authenticates674 worker/producer provider records,63 inverses and210 bodies;
+earlier origin join101/13 also passed. Composition is not runtime qualification.
+The larger source remains unpromoted; shared admission/live publication/CAS/ACK
+stays closed. Coordinator selection,role-specific world/cash/SHOP/custody/affects,
+origin COMMIT/retirement,full transition budgets and flat work remain open.
+Major-plan executable qualification remains deferred and required. Maintained
+codec/native-test milestones be7a166f/b4965e22 keep their separate scopes.
+Plans2-4/combinedPlan5/R1-R8/release are unfinished; original Plan1 acceptance and
+inactive/declined-spell/production/activation gates remain preserved.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 
