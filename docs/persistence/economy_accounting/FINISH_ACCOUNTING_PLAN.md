@@ -196,6 +196,103 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Terminal retention storage published; preserve active factory preparation - 2026-10-09
+
+Primary43ecc9b081b15753d82ecd0adac9769f36a35808, actual immediate parent
+coordinator1790458c45c293be78c5c992c9c06a82768fd01f, changes a precise dependency:
+original ROOM terminal BODY retention storage now exists in published source.
+Earlier63de/d818 no-writer statements remain valid only at their historical pins.
+Actual continuing root Goal remains BLOCKED unchanged; primary's handoff reports
+its own Goal ACTIVE separately. No platform Goal or blocked native interface is
+resumed by this source publication. Heartbeat remains ACTIVE.
+
+Root clean-fast-forwarded its coordinator checkout and read the complete84-line
+[terminal retention handoff](https://github.com/Community-Duris/Duris/blob/43ecc9b081b15753d82ecd0adac9769f36a35808/docs/persistence/economy_accounting/ROOM_TERMINAL_RETENTION_STORAGE_2026-10-09.md),
+complete seven-source delta/private headers,original commit/encoder/atomic leaves
+and original warm terminal callback. Thirteen paths,700 insertions/14 registry
+deletions. Raw provider/diff metadata authenticates all three C files as exact
+old byte prefixes and four headers as additions-only with exact inverses.
+Source is implemented; reported primary token/preprocessing/format/931-policy/
+393-pin review is not root-executed qualification. No build/native/gameplay/
+persistence/fault/restart journey ran for this successor per its handoff.
+
+retain_terminal_locked_bounded requires original continuation envelope/revision/
+phase and full terminal proof before recovery; retries recover the authority
+journal under the SAME borrowed configured-root lock before staging. Immutable
+birth success/original command/full receipt and terminal BODY decode/core proof
+precede retention. Existing identical canonical BODY succeeds idempotently;
+conflict/malformed/inaccessible evidence refuses. Missing origin is not absence.
+New domains record contains exact original BODY,not a new envelope/revision/
+generation/delivery/ACK. No lock reacquisition or synthetic terminal record.
+
+The prospective commit preserves pending-journal refusal,original canonical
+encoding/duplicate/store validation,atomic journal publication,ordered apply,
+original fault cuts and final journal unlink/sync. Public economic_evidence
+prohibition remains; existing private typed entitlement is unchanged. Encoder
+growth,simultaneous payload/file/digest,operation clones/paths and atomic working
+objects are source-profiled under pinned GCC13/C++11 ABI. Full caller/root/lock/
+old outputs/context and coordinator live prefix remain outer obligations; root
+does not certify numeric32MiB,allocator behavior or combined lifetime admission.
+Null diagnostics/callback,status/outcome/errno/sticky denial stay distinct.
+
+Committed outcome proves durable AUTHORITY JOURNAL only. Terminal retention
+success additionally requires complete commit result ok,committed outcome,exact
+secure BODY readback and final borrowed lock proof. Error/refusal/uncertain
+publication/apply/unlink/sync/readback must preserve the genuine coordinator
+journal,carrier and fences; retry recovers before fresh staging. Authority
+retention success is still distinct from native checkpoint/ACK/retirement.
+
+Tracked source has only declaration/definition of retain_terminal_locked_bounded;
+no native caller. Original warm callback retains __NO_MYSQL__ refusal; its SQL
+transaction remains original. Six checked original owner/coordinator/factory/
+binding providers are byte-identical to1790458. begin_reset_flat still has only
+declaration/definition. Genuine selected-root/lock/budget callback integration,
+warm CURRENT custody/coin/native forest normalization by authenticated UID/parent,
+cold present/completed/reconstruction/pending counterparts,once-only effects/
+checkpoint/physical-release/ACK and complete mixed-journal retirement admission
+remain open. Full non-ROOM validator contracts must survive retirement changes.
+No SQL creation_origin fabrication,warm-only substitution or guessed allowance.
+
+Prioritized evolving queue at this source event:
+1. KEEP one bounded active delivery per chat: architecture d818 factory/binding
+   authority note; quest d818 factory/binding acceptance delta. Compact snapshots
+   show both same turns active/aligned,without failure. Preserve their pins,
+   worker worktrees,CLOSED terminal seals and jobs. Send only narrow successor
+   dependency correction; do not repin,restart or assign a second active delivery.
+2. At those handoffs reassess this concrete queued opportunity against successors:
+   architecture PUBLISHED_ROOM_TERMINAL_RETENTION_AUTHORITY_BOUNDARY_2026-10-09.txt
+   and quest PUBLISHED_ROOM_TERMINAL_RETENTION_ACCEPTANCE_DELTA_2026-10-09.txt,
+   private minimal sealed source/metadata on D:. Benefit: implementation-ready
+   genuine terminal-transfer callback wiring and authentic retry/fault acceptance
+   blueprints. Inputs are43ecc/actual179045 parent,seven new providers,original
+   commit/recovery/atomic/coordinator/native owner definitions and CLOSED63de
+   terminal/ACK/current plus current factory packets when reviewed. Architecture
+   would map authority/commit outcome/lifetime/borrowed lock/transfer ownership;
+   quest would map bounded original writer absence/idempotency/conflict,actual
+   existing fault cuts,recovered retry/exact readback and strong refusal evidence.
+   These are QUEUED,not assigned or reviewed; no numerical primary math duplicate.
+3. Unavailable dependencies are now native callback/dispatcher/owner fixture and
+   supported runtime/original failure controls,complete coordinator/mixed-journal
+   retirement/full capture32MiB and integrated native/Plan5 qualification; the
+   storage writer itself is AVAILABLE source. Missing execution blocks dependent
+   execution only. Primary owns shared implementation/contracts/math/publication;
+   Plan5 owns its suite,SQL0065/schema65 and backup/restore/recovery. Root/worker
+   preparation must not replace,modify or execute those owners' required work.
+4. Same protections: workers own private distinct notes/metadata; root only three
+   coordination docs. No maintained source/test/schema edit,compile/preprocess/
+   link/component/native/DB/root fixture,private commit/import/registration,
+   other chats/adoption waits,activation/deployment/production. Source/design
+   review and audited metadata-only verification remain independent obligations.
+
+Root raw source/dependency/publication proof:
+D:/Dev/Temp/coordinator-terminal-retention-frontier-20261009.
+Only three disposition docs receive a raw insertion with exact byte inverse.
+Required Plans1-5,applicable original R1-R8/backend/gameplay/persistence/recovery,
+required blockers/owner completion and selected sidework handoffs remain open.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED persists;
+private primary progress/adoption is unknown. No completion or pause is justified.
+
+
 ## Immutable-terminal preparation reviewed; flat factory binding next - 2026-10-09
 
 Both original63de preparation packets are independently reviewed and CLOSED as
