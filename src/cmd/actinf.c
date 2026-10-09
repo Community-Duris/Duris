@@ -795,6 +795,8 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print, const Outp
 		{
 			strcat(buf, "It looks like a drink container.");
 		}
+		else if (IS_SET(mode, LISTOBJ_STATS) && object->short_description)
+			strcat(buf, object->short_description);
 	}
 	if (IS_SET(mode, LISTOBJ_STATS))
 	{
@@ -830,6 +832,8 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print, const Outp
 		{
 			strcat(buf, " (&+bmagic&n)");
 		}
+		if (IS_OBJ_STAT(object, ITEM_NODROP) && IS_AFFECTED2(ch, AFF2_DETECT_MAGIC))
+			strcat(buf, " (&+rcursed&n)");
 		if (IS_OBJ_STAT(object, ITEM_GLOW))
 		{
 			strcat(buf, " (&+Mglowing&n)");
@@ -2353,7 +2357,7 @@ void display_room_auras(P_char ch, int room_no)
 	if (!ch || !IS_ALIVE(ch))
 		return;
 
-	if ((IS_AFFECTED2(ch, AFF2_DETECT_GOOD) ||
+	if ((IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) || IS_AFFECTED2(ch, AFF2_DETECT_GOOD) ||
 	     (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
 	      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
 	     affected_by_spell(ch, SPELL_AURA_SIGHT) ||
@@ -2368,7 +2372,8 @@ void display_room_auras(P_char ch, int room_no)
 			.send(LOG_PUBLIC);
 	}
 
-	if ((IS_AFFECTED2(ch, AFF2_DETECT_EVIL) || affected_by_spell(ch, SPELL_AURA_SIGHT) ||
+	if ((IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) || IS_AFFECTED2(ch, AFF2_DETECT_EVIL) ||
+	     affected_by_spell(ch, SPELL_AURA_SIGHT) ||
 	     (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
 	      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)) ||
 	     affected_by_spell(ch, SPELL_FAERIE_SIGHT)) &&
@@ -3123,7 +3128,8 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			{ /* If an object was found */
 				if (!found)
 				{
-					show_obj_to_char(found_object, ch, LISTOBJ_ACTIONDESC,
+					show_obj_to_char(found_object, ch,
+							 LISTOBJ_ACTIONDESC | LISTOBJ_STATS,
 							 TRUE); /* Show no-description */
 				}
 				else
@@ -3239,10 +3245,11 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 					send_to_char(world[room_no].description, ch,
 						     profile.context);
 				}
-
-				display_room_auras(ch, room_no);
 			}
 		}
+
+		if (vis_mode != 3 && vis_mode != 4)
+			display_room_auras(ch, room_no);
 
 		// cmd == CMD_LOOKOUT -> Mode = -1 (for look out on ship).
 		if (IS_MAP_ROOM(room_no) && !IS_MAP_ROOM(ch->in_room) && cmd != CMD_LOOKOUT &&
@@ -3699,6 +3706,54 @@ void do_read(P_char ch, char *argument, int /*cmd*/)
 	do_look(ch, buf, -4);
 }
 
+static void show_detected_item_magic(P_char ch, P_obj obj)
+{
+	if (!IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) &&
+	    !(has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+	      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST)))
+		return;
+	if (object_has_magical_proc(obj))
+		send_to_char("&+bYou sense this item holds great power.&n\n", ch);
+	if (obj->type == ITEM_WEAPON && IS_OBJ_STAT2(obj, ITEM2_MAGIC))
+	{
+		// Report the enchantment that lets a weapon overcome innate weapon immunity.
+		send_to_char(
+			"&+bYou sense this weapon can overcome the defenses of creatures immune to ordinary weapons.&n\n",
+			ch);
+	}
+	if (obj->type != ITEM_WAND && obj->type != ITEM_STAFF)
+		return;
+
+	const int maximum = obj->value[1];
+	const int current = obj->value[2];
+	if (current < 0 || maximum < 0)
+	{
+		act("$p seems to be bugged - please notify a god-type fellow, and report the item via the BUG command!",
+		    FALSE, ch, obj, 0, TO_CHAR);
+		return;
+	}
+	if (current == 0)
+	{
+		send_to_char("This object appears inert of the magic it once held.\n", ch);
+		return;
+	}
+	const auto ratio = 100LL * current / MAX(1, maximum);
+	const char *message;
+	if (ratio >= 100)
+		message = "$p seems to be unused.";
+	else if (ratio > 90)
+		message = "$p seems to be slightly used.";
+	else if (ratio > 55)
+		message = "$p seems to be somehow depleted of its magic.";
+	else if (ratio > 45)
+		message = "$p seems to be about halfway full.";
+	else if (ratio > 10)
+		message = "$p seems to be worn out.";
+	else
+		message = "$p seems to be almost dried up.";
+	act(message, FALSE, ch, obj, 0, TO_CHAR);
+}
+
 void do_examine(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH + 4], buf2[MAX_INPUT_LENGTH];
@@ -3731,6 +3786,9 @@ void do_examine(P_char ch, char *argument, int /*cmd*/)
 				     FIND_NO_TRACKS,
 			     ch, &tmp_char, &tmp_object);
 	}
+
+	if (tmp_object)
+		show_detected_item_magic(ch, tmp_object);
 
 	if (tmp_object && chaos_material_pouch_is_active(tmp_object))
 	{
@@ -3792,43 +3850,6 @@ void do_examine(P_char ch, char *argument, int /*cmd*/)
 		act(buf, FALSE, ch, tmp_object, 0, TO_CHAR);
 		salvage_examine_item(ch, tmp_object);
 		crafting_examine_support_item(ch, tmp_object);
-
-		if ((GET_ITEM_TYPE(tmp_object) == ITEM_WAND ||
-		     GET_ITEM_TYPE(tmp_object) == ITEM_STAFF) &&
-		    (IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) ||
-		     (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
-		      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST))))
-		{
-			int max = tmp_object->value[1];
-			if (max < 1)
-				max = 1;
-			int curr = tmp_object->value[2];
-			int ratio = (int)(100 * curr / max);
-
-			if (curr < 0 || max < 0)
-				snprintf(
-					buf, sizeof buf,
-					"$p seems to be bugged - please notify a god-type fellow, and report the item via the BUG command!");
-
-			if (ratio >= 100)
-				snprintf(buf, sizeof buf, "$p seems to be unused.");
-			else if (ratio > 90)
-				snprintf(buf, sizeof buf, "$p seems to be slightly used.");
-			else if (ratio > 55)
-				snprintf(buf, sizeof buf,
-					 "$p seems to be somehow depleted of its magic.");
-			else if (ratio > 45)
-				snprintf(buf, sizeof buf, "$p seems to be about halfway full.");
-			else if (ratio > 10)
-				snprintf(buf, sizeof buf, "$p seems to be worn out.");
-			else if (ratio > 0)
-				snprintf(buf, sizeof buf, "$p seems to be almost dried up.");
-			else if (ratio == 0)
-				snprintf(buf, sizeof buf,
-					 "$p seems to be completely drained of its magic.");
-
-			act(buf, FALSE, ch, tmp_object, 0, TO_CHAR);
-		}
 
 		if (GET_ITEM_TYPE(tmp_object) == ITEM_WEAPON)
 		{
@@ -7074,8 +7095,7 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 	buf[0] = 0;
 
 	/*
-	 * loop through affected list, show them the ones they can see, if
-	 * affected by detect magic, show remaining durations too. JAB
+	 * Show visible effects and their durations. Detect Magic reveals additional effects.
 	 */
 	if (ch->affected)
 	{
@@ -7108,36 +7128,14 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 					continue;
 					break;
 
-				// These get reported, only if detect magic active
-				case SONG_CHARMING:
-				case SPELL_CHARM_PERSON:
-				case SPELL_PROTECT_FROM_ACID:
-				case SPELL_PROTECT_FROM_COLD:
-				case SPELL_PROTECT_FROM_EVIL:
-				case SPELL_PROTECT_FROM_FIRE:
-				case SPELL_PROTECT_FROM_GAS:
-				case SPELL_PROTECT_FROM_GOOD:
-				case SPELL_PROTECT_FROM_LIGHTNING:
-				case SPELL_PROT_FROM_UNDEAD:
-				case SPELL_PROT_UNDEAD:
-				case SPELL_SLOW_POISON:
-				case SPELL_VAMPIRIC_TOUCH:
-				case SPELL_ETHEREAL_FORM:
-				case SPELL_HOLY_DHARMA:
-				case SPELL_SANCTUARY:
-				case SPELL_SANCTUM_DRACONIS:
-				case SPELL_BLUR:
-				case SPELL_FAERIE_SIGHT:
-					if (!IS_AFFECTED2(ch, AFF2_DETECT_MAGIC))
-					{
-						continue;
-					}
-					break;
-
 				// The rest always get reported.
 				default:
 					break;
 				}
+
+				if (spell_affect_requires_detect_magic(aff->type) &&
+				    !IS_AFFECTED2(ch, AFF2_DETECT_MAGIC))
+					continue;
 
 				if (IS_SET(aff->flags, AFFTYPE_NOSHOW))
 				{
@@ -8938,6 +8936,9 @@ bool get_equipment_list(P_char ch, char *buf, int list_only)
 				     (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
 				      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST))))
 					strcat(buf, " (&+bmagic&n)");
+				if (IS_OBJ_STAT(t_obj, ITEM_NODROP) &&
+				    IS_AFFECTED2(ch, AFF2_DETECT_MAGIC))
+					strcat(buf, " (&+rcursed&n)");
 				if (get_obj_affect(t_obj, SKILL_ENCHANT))
 					strcat(buf, " (&+mEnchanted&n)");
 				if (IS_OBJ_STAT(t_obj, ITEM_GLOW))

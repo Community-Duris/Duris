@@ -80,6 +80,7 @@ void spell_detect_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 			{
 				af1->duration = KludgeDuration(ch, level, level);
 			}
+		send_to_char("&+bYour sight of magical auras is renewed.&n\n", victim);
 		return;
 	}
 	bzero(&af, sizeof(af));
@@ -88,7 +89,7 @@ void spell_detect_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	af.bitvector2 = AFF2_DETECT_MAGIC;
 
 	affect_to_char(victim, &af);
-	send_to_char("&+bYour eyes tingle.\n", victim);
+	send_to_char("&+bYour vision sharpens; magical auras become visible.&n\n", victim);
 }
 
 void spell_detect_invisibility(int level, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,

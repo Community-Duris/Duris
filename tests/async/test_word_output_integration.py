@@ -27,11 +27,15 @@ for filename, signatures in [
                 "void format_to_snoopers(char *from_string, char *to_string)\n{"]),
     ("modify.c", ["char *next_page(", "void free_paging_data(", "void show_string(", "void page_string_real("]),
     ("actcomm.c", ["void do_tell(", "void do_reply(", "int say(", "void do_gcc("]),
+    ("objmisc.c", ["bool object_has_magical_proc("]),
+    ("affects.c", ["int KludgeDuration("]),
+    ("spell_detection.c", ["void spell_detect_magic("]),
     ("actinf.c", ["char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)",
                   "char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print,",
                   "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)",
                   "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show,",
-                  "void show_exits_to_char(", "void display_room_auras("]),
+                  "void show_exits_to_char(", "void display_room_auras(",
+                  "static void show_detected_item_magic(", "bool get_equipment_list("]),
     ("weather.c", ["void send_to_weather_sector("]),
     ("fight.c", ["void dam_message("]),
     ("prompt.c", ["void make_prompt("]),
@@ -39,6 +43,17 @@ for filename, signatures in [
     ("gmcp.c", ["void gmcp_broadcast_channel("])
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
+
+look = extract_function("actinf.c", "void new_look(")
+room_call = look.index("display_room_auras(ch, room_no)")
+description_end = look.index("profile.context);")
+assert room_call > description_end
+assert "if (vis_mode != 3 && vis_mode != 4)" in look[description_end:room_call]
+assert "LISTOBJ_ACTIONDESC | LISTOBJ_STATS" in look
+examine = extract_function("actinf.c", "void do_examine(")
+assert examine.index("show_detected_item_magic(ch, tmp_object)") < examine.index("// check legend lore")
+score = extract_function("actinf.c", "void do_score(")
+assert "spell_affect_requires_detect_magic(aff->type)" in score
 
 benchmark = os.environ.get("OUTPUT_BENCHMARK") == "1"
 

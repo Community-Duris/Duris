@@ -1,6 +1,7 @@
 #include "world/weather.h"
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
+#include "world/epic.h"
 #include "item/objmisc.h"
 static zone_data test_zones[1]{};
 zone_data *zone_table = test_zones;
@@ -38,10 +39,27 @@ room_affect *get_spell_from_room(P_room, int)
 {
 	return nullptr;
 }
-bool affected_by_spell(P_char, int)
+bool affected_by_spell(P_char ch, int spell)
 {
-	return 0;
+	for (auto *affect = ch->affected; affect; affect = affect->next)
+		if (affect->type == spell)
+			return true;
+	return false;
 }
+struct affected_type *affect_to_char(P_char ch, struct affected_type *prototype)
+{
+	auto *affect = new affected_type(*prototype);
+	affect->next = ch->affected;
+	ch->affected = affect;
+	ch->specials.affected_by2 |= affect->bitvector2;
+	return affect;
+}
+const char *where[MAX_WEAR]{};
+const char *set_master_text[1]{};
+int get_numb_free_hands(P_char) { return 2; }
+int wield_item_size(P_char, P_obj) { return 1; }
+bool has_eq_slot(P_char, int) { return true; }
+int epic_stone(P_obj, P_char, int, char *) { return 0; }
 int in_weather_sector(int)
 {
 	return 7;
