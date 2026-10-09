@@ -2847,6 +2847,142 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Constructor packets reviewed CLOSED; ROOM warm preparation selected - 2026-10-09
+
+Root independently reviews both private constructor preparation packets at original
+3890eac3d892f174aba0abfd97d33072fbee59e0 and actual parent
+c5910719018c42260bc54166a81462c212b22d08, selected by c15363eb0080bbfd148ed8371a5a0a6d87d198e1.
+Disposition: SOURCE/DESIGN/METADATA PASS, independent review CLOSED. Neither
+packet implements a new maintained caller or executes component/native acceptance.
+All quest CC1-CC4 remain UNEXECUTED; genuine native commands remain UNAVAILABLE.
+No adoption/import is inferred and original pins are not changed by successors.
+Evidence: D:/Dev/Temp/coordinator-constructor-caller-review-20261009.
+Root authenticates raw Git providers, complete original definitions, forward/inverse
+source reconstruction, complete inventory/seals and audited read-only verifier stdout.
+
+Architecture packet: D:/Dev/Temp/published-native-constructor-codec-caller-boundary-20261009.
+23 complete providers,107 selected cuts,45 original signature/body/catch equalities,
+two whole-provider inverses,three new definitions,eight unchanged adjacent and ten
+successor-continuity witnesses authenticate. Its unchanged strict verifier reproduces
+the exact receipt. Required declaration-order correction is now independently PASS:
+observed_role and both fixed NBC4 arrays are declared before the entire short-circuit
+if and coexist with both constructor vectors during encodes and role comparisons.
+The role's constructor subobject is counted inside its containing object,not twice.
+Only two original prose sentences and the current note's index seal changed.
+Exact inverse restores original note29207/SHA18cc54c41ddb5e5c468a83668ac626b1cb2c3e4641b2df9b37d333f3bee8fead.
+All141 original files are preserved in distinct sibling
+published-native-constructor-codec-caller-boundary-20261009-original-seal-before-capture-lifetime-correction.
+Correction sibling published-native-constructor-codec-caller-boundary-20261009-capture-lifetime-correction
+seals its exact old/new prose and inverse. PINS,verifier,receipt and every source/cut
+payload remain byte-identical. Original history is preserved,not silently rewritten.
+
+Architecture corrected principal seals (bytes/SHA256):
+- PUBLISHED_NATIVE_CONSTRUCTOR_CODEC_CALLER_BOUNDARY_2026-10-09.txt: 29446/87e0a40f1b96fee18564ebc65ead35bd5bf4a9bdaa891b881e36a912e574ae96
+- PINS.json: 111858/8c63ecb8d57eb7f3f185dc1bd75315ee28803d6dd25f3a9699b59048c9fc5867
+- INDEX.json: 23171/1ba8c42dcc7ab1d02006307856c19d2b53bed751c4fd5c5e74299a0810c3798f
+- verify.py: 23293/e2c6de3c3100d03871541a2cef65e8a71b7e0241feaa34cc461264fc32d96a9f
+- VERIFICATION.json: 950/33ac93666d207f49bfa6bceb9015cb5c9b61157dba4c03bf371cd4aae418fe6d
+
+Quest packet: D:/Dev/Temp/published-native-constructor-codec-acceptance-delta-20261009.
+24 complete providers,22 original definitions,26 selected ranges,three new complete
+definitions,ten forward/ten inverse diffs,whole original C prefix,header insertion
+inverse,eight adjacent equalities and one minimal CLOSED context authenticate.
+Its audited stdlib/read-only Git verifier reproduces its exact sealed receipt.
+CC1 specifies actual NBC1/2/3 wire and encode lifetime peaks;CC2 allocation-free
+original decode predicates/strong outputs;CC3 original refusal ordering,policy,
+overflow,callback/errno/failure controls;CC4 authentic capture,NBC4/NMB3/NMB4
+nesting/full intent/participant/canonical-command proof. This prepares future
+original-provider execution and preserves native authority without copied fixtures.
+Quest principal seals (bytes/SHA256):
+- PUBLISHED_NATIVE_CONSTRUCTOR_CODEC_ACCEPTANCE_DELTA_2026-10-09.txt: 17359/9f8e5e1da1fdb2c89f495ceec4e5d9937c7e5c0c3d7d1085ead37d52851eb2d9
+- PINS.json: 2759501/5432f6f0a6a13c9c15d996a6c071f726e627ace0b7ad5648d06337c95f1dc772
+- INDEX.json: 670/da1146810ee305a73034724c37d48a053f53ce22bcd64a675a992354705f9b7b
+- verify.py: 10104/38104abb98c88808b1deb76e76829c1b13578c41ce8a7f4a9f3e97e6779f6f70
+- VERIFICATION.json: 1542/5c435c16dad45b58af5dbd0a5958aeca95b3f47e7ba7edd6c17afc1806cc8eab
+
+Published successors assessed separately,not used to repin CLOSED constructor packets:
+2c8fcc4845f72c1e5a3e83330aab1f82e7ed5f28 actual parentf648b6c864b840566589a7559b93f1b55d562ab4
+adds full prospective v3/v4 command build/decode companions. 9fc84fd388067b659cf8dcce7ce4c6453da4776e
+actual parent2c8fcc adds specifically v3 wallet compilation. 34f4fbf54fb5128d22efc256df1c5c41140ed8ad
+actual parent9fc84 adds ordinary and shared cash-role compiler companions.
+Root reads all appended definitions/headers/full handoffs and original wallet
+compiler; source-only metadata PASS authenticates eight full original C-prefix/
+header inverses and exact scoped forward/inverse diffs. Native command composition
+now calls bounded constructor,image,recipe and intent leaves and preserves full
+canonical command comparison. New compilers retain genuine wallet/SHOP identity,
+known cash/revision1,original item DFS/event order,metadata and full normalization.
+Known zero ordinary cash creates revision1 wallet without issuance/postings;shared
+SHOP retains participant/owner/cash proof and creates no wallet or cash issuance.
+Strong plan/heap outputs require caller-owned inline/input/old-output prefix.
+This is available source and useful future preparation,not root-executed native
+qualification or aggregate lifetime certification. Published private source-review/
+policy-site claims remain reported claims; root does not access their proof bodies.
+At9fc84 census,the v3 compiler has no accepting production call outside its own
+new definition/declaration;34f4 now supplies its ordinary cash-role companion call.
+Actual result/recovery/live transaction callers still require owner integration.
+Mixed journal/coordinator/capture/result-matching and accepting ROOM publication/
+warm-cold effects/checkpoint/ACK/guarded same-lock terminal callback remain open.
+Historical v1/v2 compiler stays unchanged;new v3 companion refuses other versions.
+
+Prioritized evolving queue and exact next ownership:
+1. Selected architecture output is the private
+   PUBLISHED_ROOM_FLAT_WARM_PREPARATION_AUTHORITY_BOUNDARY_2026-10-09.txt,
+   under D:/Dev/Temp/published-room-flat-warm-preparation-authority-boundary-20261009.
+   One bounded source/design delivery maps actual root-to-stage-to-pulse ownership,
+   borrowed O/P factory/source/current-root identity,complete literal/canonical and
+   placement witnesses,retained-command lineage/epoch retry,and transfer/recensus
+   refusal state. Benefit: later native publication integrates genuine authority
+   and lifetime admission without recapture or invented global rollback.
+2. Selected quest output is the private
+   PUBLISHED_ROOM_FLAT_WARM_PREPARATION_ACCEPTANCE_DELTA_2026-10-09.txt,
+   under D:/Dev/Temp/published-room-flat-warm-preparation-acceptance-delta-20261009.
+   One bounded four-cut blueprint covers genuine source/root/factory provenance,
+   full literal/placement/forest equivalence,retained-envelope retry and post-transfer
+   recensus,actual request/refusal/strong-stage boundaries with unchanged SQL controls.
+   Benefit: implementation-ready native acceptance uses original owner fixtures and
+   distinguishes prepared-stage success from publication/checkpoint/ACK/retirement.
+   All future component/native cuts stay UNEXECUTED/genuine commands UNAVAILABLE.
+3. Both use source4a168a0f566ce1dd468098dbe13669011a15a6c6 and actual parent
+   c15363eb0080bbfd148ed8371a5a0a6d87d198e1: world/zone_reset_item_owner.c/.h,
+   world/zone_reset_room_publication.c/.h and complete named root/leaf/pulse/retry
+   definitions plus smallest genuine factory/source/selected-root controls.
+   Root authenticates all four providers unchanged at current34f4. Reuse CLOSED
+   literal/compiler/factory/terminal context only where needed;do not reopen it.
+   Unavailable dependencies: accepting flat front door,genuine native owner/fault
+   fixtures,full effects/current refresh/checkpoint/ACK/same-lock terminal transfer
+   and complete caller/coordinator/journal/capture aggregate admission. These block
+   execution,not useful source preparation. No invented runner,UID/source authority,
+   alternate math/profile/encoder,maintained implementation edit or product/DB run.
+   Require complete originals/signatures/bodies/catches,exact scoped forward/inverse
+   metadata,unchanged SQL body witnesses,strict all-payload index,audited read-only
+   verifier and exact receipt. Root independently reviews before disposition.
+4. Command/compiler preparation using new2c8fcc/9fc84/34f4 is next queued candidate,
+   separate from selected ROOM delivery. Reassess current source at each handoff.
+   Primary owns implementation/math/admission/integration/qualification;Plan5 owns
+   suite/SQL/recovery. Workers own only their distinct private note/PINS/index/verifier/
+   receipt directories. Root publishes only its three coordination docs. No adoption wait.
+
+Quest historical-execution scope clarification remains pending; a genuinely newer
+human answer takes priority. The completed constructor delivery does not answer it.
+Quest reports preserved clean unpublished mergef4e20219113fdaee7d3ead787418d89683e05590,
+component PASS claims/QP04 failure and both SQL/flat production builds failing at
+world/db.c6999 calling private flatfile_coin_boot_templates::ready (declared5544),
+exit2. Those unrelated product/build claims are UNREVIEWED and are not constructor
+qualification. Quest reports unused private SQL service shut down normally and owned
+container stopped with evidence retained;root did not execute/kill/restart/delete jobs.
+No genuine quest gameplay/SQL capture or current ELF is claimed. Preserve all merge/
+job/log/artifact evidence;no reset/revert/private import/publication. Root does not
+resolve the pending user's scope answer or authorize further deferred gameplay.
+
+Constructor reviews close finite preparation only. CLOSED terminal43ecc/a18bb(TR1-6
+UNEXECUTED),factoryd818 including CURRENT/RETAINED correction/history,immutable63de
+and every earlier seal remain preserved. Actual root Goal remains BLOCKED unchanged;
+no replacement/resumption/completion. Plans1-5/R1-R8/backend/gameplay/persistence/
+recovery,SQL0065/schema65,Plan5,aggregate32MiB/ABI/allocator and owner completion
+remain required/open. Broader completion audit fails. Heartbeat remains ACTIVE;
+accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. No controls
+waived,no other chats,activation/deployment/production mutation or private artifact commits.
+
 ## Warm preparation and image successors queued; provenance correction - 2026-10-09
 
 Three concrete published successors add useful available source. Genuine flat ROOM
