@@ -1843,3 +1843,183 @@ critical_command_journal_result critical_command_journal_retire_native_recovery_
 	}
 #endif
 }
+
+namespace
+{
+struct journal_replace_workspace
+{
+	journal_frame expected, successor;
+	std::vector<journal_frame> frames;
+	native_rewrite_attempt attempt;
+	std::string temporary;
+};
+bool journal_command_equal_admitted(const critical_command &left, const critical_command &right,
+				    journal_admission_budget &budget, size_t outer) noexcept
+{
+	size_t a = 0, b = 0;
+	if (critical_command_encoder_working_bytes(left, &a) != critical_command_codec_result::ok ||
+	    critical_command_encoder_working_bytes(right, &b) !=
+		    critical_command_codec_result::ok ||
+	    a < sizeof(std::vector<uint8_t>) || b < sizeof(std::vector<uint8_t>))
+		return false;
+	size_t first = outer, second = outer;
+	if (!journal_admit_add(first, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !journal_admit_add(first, a) ||
+	    !journal_admit_add(second, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !journal_admit_add(second, a - sizeof(std::vector<uint8_t>)) ||
+	    !journal_admit_add(second, b) || !budget.admit(std::max(first, second), &budget))
+		return false;
+	try
+	{
+		return critical_command_equal(left, right);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // full original equality, not an alternate command identity
+
+critical_command_journal_result critical_command_journal_replace_native_recovery_bounded(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!reserve)
+		return critical_command_journal_result::quota_exceeded;
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized)
+		return critical_command_journal_result::not_initialized;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	try
+	{
+		size_t base = outer;
+		if (!journal_admit_add(base, sizeof(journal_replace_workspace)) ||
+		    !journal_admit_add(base, sizeof(journal_admission_budget)) ||
+		    !reserve(base, context))
+			return critical_command_journal_result::quota_exceeded;
+		journal_admission_budget budget{ reserve, context };
+		journal_replace_workspace work;
+		size_t live = base;
+		if (!journal_build_native_admitted(expected, &work.expected, budget, live))
+			return budget.rejected ? critical_command_journal_result::quota_exceeded :
+						 critical_command_journal_result::invalid;
+		if (!journal_frame_heap(work.expected, live))
+			return critical_command_journal_result::quota_exceeded;
+		if (!journal_build_native_admitted(successor, &work.successor, budget, live))
+			return budget.rejected ? critical_command_journal_result::quota_exceeded :
+						 critical_command_journal_result::invalid;
+		if (!journal_frame_heap(work.successor, live))
+			return critical_command_journal_result::quota_exceeded;
+		if (expected.revision == UINT64_MAX ||
+		    successor.revision != expected.revision + 1 ||
+		    !journal_command_equal_admitted(expected.command, successor.command, budget,
+						    live) ||
+		    (expected.phase == critical_native_recovery_phase::continuation_pending &&
+		     successor.phase != expected.phase))
+			return budget.rejected ? critical_command_journal_result::quota_exceeded :
+						 critical_command_journal_result::invalid;
+		if (health.append_uncertain && !native_rewrite_uncertain.active)
+			return critical_command_journal_result::append_uncertain;
+		const auto scanned = journal_scan_admitted(&work.frames, budget, live);
+		if (scanned != critical_command_journal_result::ok)
+		{
+			record_result(scanned);
+			return scanned;
+		}
+		if (native_rewrite_uncertain.active)
+		{
+			size_t confirm_live = live;
+			if (!journal_admit_array(confirm_live, work.frames.capacity(),
+						 sizeof(journal_frame)))
+				return critical_command_journal_result::quota_exceeded;
+			for (const auto &frame : work.frames)
+				if (!journal_frame_heap(frame, confirm_live))
+					return critical_command_journal_result::quota_exceeded;
+			if (!journal_admit_add(confirm_live, sizeof(struct stat)) ||
+			    !journal_admit_add(confirm_live, sizeof(native_rewrite_attempt)) ||
+			    !budget.admit(confirm_live, &budget))
+				return critical_command_journal_result::quota_exceeded;
+			const auto confirmed =
+				confirm_native_rewrite(work.frames, work.expected, &work.successor);
+			record_result(confirmed);
+			return confirmed;
+		}
+		const auto found = std::find_if(work.frames.begin(), work.frames.end(),
+						[&](const journal_frame &frame) {
+							return critical_operation_id_equal(
+								frame.operation_id,
+								work.expected.operation_id);
+						});
+		if (found == work.frames.end() || !found->native ||
+		    found->bytes != work.expected.bytes)
+			return critical_command_journal_result::invalid;
+		*found = std::move(work.successor);
+		// Recount actual survivors: successor ownership has moved into the frame
+		// vector, while the replaced old frame has been destroyed. No double count.
+		live = base;
+		if (!journal_frame_heap(work.expected, live) ||
+		    !journal_frame_heap(work.successor, live) ||
+		    !journal_admit_array(live, work.frames.capacity(), sizeof(journal_frame)))
+			return critical_command_journal_result::quota_exceeded;
+		size_t total = 0;
+		for (const auto &frame : work.frames)
+		{
+			if (!journal_frame_heap(frame, live) || total > journal_quota ||
+			    frame.bytes.size() > journal_quota - total)
+				return critical_command_journal_result::quota_exceeded;
+			total += frame.bytes.size();
+		}
+		size_t temporary_size = journal_directory.size();
+		if (!journal_admit_add(temporary_size, 1) ||
+		    !journal_admit_add(temporary_size, std::strlen(JOURNAL_TEMP)) ||
+		    !journal_admit_add(live, sizeof(native_rewrite_attempt)) ||
+		    !journal_admit_add(live, work.expected.bytes.size()) ||
+		    !journal_admit_add(live, found->bytes.size()) ||
+		    !journal_admit_add(live, total) ||
+		    (temporary_size > 15 &&
+		     !journal_admit_add(live, std::max(temporary_size, size_t{ 30 }) + 1)) ||
+		    !budget.admit(live, &budget))
+			return critical_command_journal_result::quota_exceeded;
+		work.attempt.expected = work.expected.bytes;
+		work.attempt.successor = found->bytes;
+		work.attempt.retirement = false;
+		work.attempt.postimage.reserve(total);
+		for (const auto &frame : work.frames)
+			work.attempt.postimage.insert(work.attempt.postimage.end(),
+						      frame.bytes.begin(), frame.bytes.end());
+		work.temporary.reserve(temporary_size);
+		work.temporary.append(journal_directory);
+		work.temporary.push_back('/');
+		work.temporary.append(JOURNAL_TEMP);
+		bool renamed = false;
+		const auto result = journal_rewrite_admitted(work.frames, work.temporary, &renamed);
+		// Every allocation and budget callback precedes the irreversible namespace
+		// change. The original exact attempt is promoted by nonallocating moves.
+		if (result != critical_command_journal_result::ok && renamed)
+		{
+			work.attempt.active = true;
+			native_rewrite_uncertain = std::move(work.attempt);
+			publish_native_rewrite_storage();
+			health.append_uncertain = true;
+			record_result(critical_command_journal_result::append_uncertain);
+			return critical_command_journal_result::append_uncertain;
+		}
+		if (result == critical_command_journal_result::ok)
+		{
+			++health.checkpoints;
+			update_health(work.frames);
+		}
+		record_result(result);
+		return result;
+	}
+	catch (...)
+	{
+		record_result(critical_command_journal_result::quota_exceeded);
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
+}
