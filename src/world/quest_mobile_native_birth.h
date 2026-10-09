@@ -108,6 +108,8 @@ class quest_mobile_native_birth_owner final
 	// entered its next effect; unknown/returned-failure cuts are retained closed.
 	static bool hold_reset(uint32_t, int, bool retryable) noexcept;
 	static bool reset_objects_current() noexcept;
+	static bool reset_actor_holds_current() noexcept;
+	static bool reset_resume_current() noexcept;
 	// Nonallocating observations wired only at the real sequential dispatcher cuts.
 	static void observe_reset_command(uint32_t slot, int original_last_cmd) noexcept;
 	static void observe_reset_processed(uint32_t slot, int original_last_cmd) noexcept;
