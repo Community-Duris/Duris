@@ -4893,3 +4893,207 @@ bool zone_reset_item_owner::prepare_flat_ack_successor_bounded(
 		return false;
 	}
 }
+
+bool zone_reset_item_owner::observe_completed_flat_bounded(warm_root &root,
+							   warm_command_scratch &scratch,
+							   size_t outer_live) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    scratch.root != &root || !scratch.output || root.preparation_owner != &scratch ||
+	    !scratch.global_scope || !root.submitted || root.blocked || root.retired)
+		return false;
+	size_t entry = scratch.current_bytes(), entry_heap = 0;
+	if (!warm_scratch_envelope_heap(*scratch.output, false, &entry_heap) ||
+	    !warm_scratch_add(entry, entry_heap) || outer_live < entry)
+		return false;
+	const size_t caller_extra = outer_live - entry;
+	if (!root.coordinator_generation &&
+	    !zone_reset_room_publication_owner::generation_warm_bounded(
+		    root.original_envelope, &root.coordinator_generation,
+		    reserve_warm_command_scratch, &scratch, outer_live))
+		return false;
+	if (root.completed)
+		return true;
+	size_t live = outer_live;
+	if (!warm_scratch_add(live, sizeof(critical_completion)) ||
+	    !reserve_warm_command_scratch(live, &scratch))
+		return false;
+	critical_completion receipt{};
+	const bool available = zone_reset_room_publication_owner::completion_warm_bounded(
+		root.original_envelope.command.operation_id, &receipt, reserve_warm_command_scratch,
+		&scratch, live);
+	if (available)
+	{
+		if (!critical_completion_disposition_valid(receipt))
+			root.blocked = true;
+		else
+		{
+			root.completion = receipt;
+			root.completed =
+				true; // Actual available receipt retained before later census.
+		}
+	}
+	size_t current = scratch.current_bytes(), heap = 0;
+	if (warm_scratch_envelope_heap(*scratch.output, false, &heap) &&
+	    warm_scratch_add(current, heap) && warm_scratch_add(current, caller_extra) &&
+	    warm_scratch_add(current, sizeof(receipt)))
+		(void)rebase_warm_command_scratch(scratch, current);
+	return root.completed && !root.blocked;
+}
+
+bool zone_reset_item_owner::cleanup_refusal_bounded(
+	const critical_command &command, const critical_completion &receipt, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	if (!original_context || !reserve || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql())
+		return false;
+	auto &root = *static_cast<warm_root *>(original_context);
+	auto *scratch = static_cast<warm_command_scratch *>(budget_context);
+	if (!scratch || scratch->root != &root || root.preparation_owner != scratch ||
+	    !scratch->global_scope)
+		return false;
+	try
+	{
+		if (!root.completed || !same_warm_completion(root.completion, receipt) ||
+		    root.cold || root.context.whole_binding.started ||
+		    root.context.batch_publication.started || root.context.room_placement.started)
+			return false;
+		size_t live = outer_live;
+		if (!warm_scratch_add(live, sizeof(std::vector<uint8_t>)) ||
+		    !warm_scratch_add(live, sizeof(std::span<quest_mobile_native_item_stage *>)) ||
+		    !reserve(live, budget_context))
+			return false;
+		std::vector<uint8_t> canonical;
+		if (critical_command_encode_bounded(command, &canonical, reserve, budget_context,
+						    live) != critical_command_codec_result::ok ||
+		    canonical != root.canonical_command ||
+		    !warm_scratch_add(live, canonical.capacity()))
+			return false;
+		if (root.refusal_cleanup_returned)
+			return true;
+		if (root.refusal_cleanup_started ||
+		    !warm_root_current_bounded(root, *scratch, live))
+			return false;
+		if (root.refusal_factories.empty())
+		{
+			size_t request = live;
+			if (root.children.size() == SIZE_MAX ||
+			    (root.children.size() + 1 > root.refusal_factories.capacity() &&
+			     !warm_scratch_array(request, root.children.size() + 1,
+						 sizeof(quest_mobile_native_item_stage *))) ||
+			    !reserve(request, budget_context))
+				return false;
+			root.refusal_factories.reserve(root.children.size() + 1);
+			root.refusal_factories.push_back(&root.stage.state_->factory);
+			for (const auto &child : root.children)
+				if (child->stage.state_ &&
+				    child->result == zone_reset_item_warm_result::captured)
+					root.refusal_factories.push_back(
+						&child->stage.state_->factory);
+		}
+		if (!reserve(live, budget_context) ||
+		    !zone_reset_room_publication_owner::discard_refused_warm(root.publication))
+			return false;
+		// Original coordinator pins/reproves exact never-admitted delivery. This is
+		// the original unadmitted disposal; no durable economic action is replayed.
+		root.refusal_cleanup_started = true;
+		for (auto child = root.children.rbegin(); child != root.children.rend(); ++child)
+			if ((*child)->stage.state_)
+			{
+				auto &body = *(*child)->stage.state_;
+				quest_mobile_native_item_stage *target = nullptr;
+				for (auto *factory : root.refusal_factories)
+					if (factory->object() &&
+					    factory->object()->obj_uid == (*child)->target_uid)
+					{
+						if (target)
+							return false;
+						target = factory;
+					}
+				std::span<quest_mobile_native_item_stage *> factories(
+					root.refusal_factories);
+				if (!target ||
+				    !quest_mobile_native_item_stage::detach_room_bounded(
+					    factories, root.stage.state_->factory, body.factory,
+					    *target, reserve, budget_context, live))
+					return false;
+				root.refusal_factories.erase(
+					std::find(root.refusal_factories.begin(),
+						  root.refusal_factories.end(), &body.factory));
+				if (!discard_child(&(*child)->stage))
+					return false;
+				(void)reserve(live, budget_context);
+			}
+		root.refusal_factories.clear();
+		if (!discard_root(&root.stage))
+			return false;
+		root.refusal_cleanup_returned =
+			true; // Actual destruction success BEFORE any further refusal.
+		(void)reserve(live, budget_context);
+		return true; // A census refusal cannot relabel completed destruction as false.
+	}
+	catch (...)
+	{
+		(void)reserve(outer_live, budget_context);
+		return false;
+	}
+}
+
+struct zone_reset_item_owner::flat_refusal_workspace
+{
+	warm_root &root;
+	warm_command_scratch &scratch;
+	bool cleanup_called = false, cleanup_succeeded = false;
+};
+
+bool zone_reset_item_owner::cleanup_refusal_flat_relay(const critical_command &command,
+						       const critical_completion &receipt,
+						       void *opaque,
+						       size_t coordinator_live) noexcept
+{
+	auto *work = static_cast<flat_refusal_workspace *>(opaque);
+	return work &&
+	       cleanup_refusal_bounded(command, receipt, &work->root, reserve_warm_command_scratch,
+				       &work->scratch, coordinator_live);
+}
+
+bool zone_reset_item_owner::cancel_refused_flat_bounded(warm_root &root,
+							warm_command_scratch &scratch,
+							size_t outer_live) noexcept
+{
+	if (scratch.root != &root || !scratch.output || root.preparation_owner != &scratch ||
+	    !scratch.global_scope || !root.submitted || !root.completed || root.blocked ||
+	    root.retired ||
+	    root.completion.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	size_t entry = scratch.current_bytes(), entry_heap = 0;
+	if (!warm_scratch_envelope_heap(*scratch.output, false, &entry_heap) ||
+	    !warm_scratch_add(entry, entry_heap) || outer_live < entry)
+		return false;
+	const size_t caller_extra = outer_live - entry;
+	size_t live = outer_live;
+	if (!warm_scratch_add(live, sizeof(flat_refusal_workspace)) ||
+	    !reserve_warm_command_scratch(live, &scratch))
+		return false;
+	flat_refusal_workspace work{ root, scratch };
+	const bool removed = zone_reset_room_publication_owner::cancel_warm_bounded(
+		root.original_envelope, root.completion, root.coordinator_generation,
+		cleanup_refusal_flat_relay, &work, reserve_warm_command_scratch, &scratch, live,
+		&work.cleanup_called, &work.cleanup_succeeded);
+	// Actual disposal and actual coordinator removal are distinct returned facts.
+	// Removal refusal cannot repeat a cleanup whose native effect already returned.
+	if (work.cleanup_called && work.cleanup_succeeded)
+		root.refusal_cleanup_returned = true;
+	if (removed)
+		root.retired = true;
+	// The retained root/guard outlive cleanup; native stage pointers may be gone.
+	// Refresh all actual globals before any fallible proof or next pulse handoff.
+	size_t current = scratch.current_bytes(), heap = 0;
+	if (!warm_scratch_envelope_heap(*scratch.output, false, &heap) ||
+	    !warm_scratch_add(current, heap) || !warm_scratch_add(current, caller_extra) ||
+	    !warm_scratch_add(current, sizeof(work)))
+		return removed;
+	(void)rebase_warm_command_scratch(scratch, current);
+	return removed;
+}
