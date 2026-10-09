@@ -552,64 +552,6 @@ bool original_command_current() noexcept
 	return a.command == b.command && a.if_flag == b.if_flag && a.arg1 == b.arg1 &&
 	       a.arg2 == b.arg2 && a.arg3 == b.arg3 && a.arg4 == b.arg4;
 }
-bool actor_hold_current(const original_reset_dispatch_cursor::actor_hold &hold) noexcept
-{
-	if (!hold.character)
-		return !hold.runtime_id && !hold.owner;
-	if (!hold.runtime_id)
-		return false;
-	if (!hold.owner)
-		return find_character_by_runtime_id(hold.runtime_id) == hold.character;
-	for (const auto &candidate : births)
-		if (candidate && candidate.get() == hold.owner)
-			return candidate->character == hold.character &&
-			       candidate->runtime_id == hold.runtime_id &&
-			       candidate->reference.birth_operation.bytes ==
-				       hold.birth_operation.bytes &&
-			       !candidate->mobile_consumed &&
-			       candidate->mobile.character() == hold.character;
-	return false;
-}
-bool capture_actor_hold(P_char actor, original_reset_dispatch_cursor::actor_hold *output) noexcept
-{
-	if (!output)
-		return false;
-	if (!actor)
-	{
-		*output = {};
-		return true;
-	}
-	for (const auto &b : births)
-		if (b && b->character == actor && !b->mobile_consumed &&
-		    b->mobile.character() == actor && b->runtime_id)
-		{
-			*output = { actor, b->runtime_id, b.get(), b->reference.birth_operation };
-			return true;
-		}
-	// The original live list supplies a genuine current pointer, then the
-	// runtime index seals its generation. Never find a replacement by VNUM.
-	if (!character_runtime_index_is_consistent())
-		return false;
-	for (P_char live = character_list; live; live = live->next)
-		if (live == actor && live->runtime_id &&
-		    find_character_by_runtime_id(live->runtime_id) == live)
-		{
-			*output = { actor, live->runtime_id, nullptr, {} };
-			return true;
-		}
-	return false;
-}
-bool reset_actor_holds_current() noexcept
-{
-	const auto &locals = reset_dispatch.locals;
-	const P_char actors[] = { locals.mob, locals.last_mob, locals.tmp_mob,
-				  locals.last_mob_followable };
-	for (size_t i = 0; i < 4; ++i)
-		if (reset_dispatch.actors[i].character != actors[i] ||
-		    !actor_hold_current(reset_dispatch.actors[i]))
-			return false;
-	return true;
-}
 bool reset_holds_birth(const original_birth &birth) noexcept
 {
 	if (!reset_in_progress || reset_dispatch.completed)
@@ -627,17 +569,6 @@ bool reset_holds_birth(const original_birth &birth) noexcept
 		if (hold.owner == &birth)
 			return true;
 	return false;
-}
-bool reset_resume_current() noexcept
-{
-	if (!reset_dispatch.held || !reset_dispatch.retryable || !reset_dispatch_current() ||
-	    reset_dispatch.aborted || reset_dispatch.completed)
-		return false;
-	if (reset_dispatch.entry_pending)
-		return !reset_dispatch.open && reset_dispatch.next_slot == 0 &&
-		       !reset_dispatch.locals.initialized &&
-		       critical_operation_id_is_zero(reset_invocation);
-	return original_command_current() && reset_actor_holds_current();
 }
 bool reset_invocation_ready() noexcept
 {
@@ -937,6 +868,46 @@ bool validate_ordinary_progressed_origin(const critical_native_recovery_envelope
 #endif
 }
 
+bool quest_mobile_native_birth_owner::reset_actor_holds_current() noexcept
+{
+	const auto actor_hold_current = [](const original_reset_dispatch_cursor::actor_hold &hold) noexcept
+	{
+		if (!hold.character)
+			return !hold.runtime_id && !hold.owner;
+		if (!hold.runtime_id)
+			return false;
+		if (!hold.owner)
+			return find_character_by_runtime_id(hold.runtime_id) == hold.character;
+		for (const auto &candidate : births)
+			if (candidate && candidate.get() == hold.owner)
+				return candidate->character == hold.character &&
+				       candidate->runtime_id == hold.runtime_id &&
+				       candidate->reference.birth_operation.bytes ==
+					       hold.birth_operation.bytes &&
+				       !candidate->mobile_consumed &&
+				       candidate->mobile.character() == hold.character;
+		return false;
+	};
+	const auto &locals = reset_dispatch.locals;
+	const P_char actors[] = { locals.mob, locals.last_mob, locals.tmp_mob,
+				  locals.last_mob_followable };
+	for (size_t i = 0; i < 4; ++i)
+		if (reset_dispatch.actors[i].character != actors[i] ||
+		    !actor_hold_current(reset_dispatch.actors[i]))
+			return false;
+	return true;
+}
+bool quest_mobile_native_birth_owner::reset_resume_current() noexcept
+{
+	if (!reset_dispatch.held || !reset_dispatch.retryable || !reset_dispatch_current() ||
+	    reset_dispatch.aborted || reset_dispatch.completed)
+		return false;
+	if (reset_dispatch.entry_pending)
+		return !reset_dispatch.open && reset_dispatch.next_slot == 0 &&
+		       !reset_dispatch.locals.initialized &&
+		       critical_operation_id_is_zero(reset_invocation);
+	return original_command_current() && reset_actor_holds_current();
+}
 bool quest_mobile_native_birth_owner::validate_progressed_origin(
 	const critical_native_recovery_envelope &original_birth,
 	const quest_mobile_native_image &current,
@@ -1342,6 +1313,35 @@ bool quest_mobile_native_birth_owner::hold_reset(uint32_t slot, int last_cmd,
 	    !reset_invocation_ready())
 		return false;
 	reset_dispatch.last_cmd = last_cmd;
+	const auto capture_actor_hold = [](P_char actor, original_reset_dispatch_cursor::actor_hold *output) noexcept
+	{
+		if (!output)
+			return false;
+		if (!actor)
+		{
+			*output = {};
+			return true;
+		}
+		for (const auto &b : births)
+			if (b && b->character == actor && !b->mobile_consumed &&
+			    b->mobile.character() == actor && b->runtime_id)
+			{
+				*output = { actor, b->runtime_id, b.get(), b->reference.birth_operation };
+				return true;
+			}
+		// The original live list supplies a genuine current pointer, then the
+		// runtime index seals its generation. Never find a replacement by VNUM.
+		if (!character_runtime_index_is_consistent())
+			return false;
+		for (P_char live = character_list; live; live = live->next)
+			if (live == actor && live->runtime_id &&
+			    find_character_by_runtime_id(live->runtime_id) == live)
+			{
+				*output = { actor, live->runtime_id, nullptr, {} };
+				return true;
+			}
+		return false;
+	};
 	const auto &locals = reset_dispatch.locals;
 	const P_char actors[] = { locals.mob, locals.last_mob, locals.tmp_mob,
 				  locals.last_mob_followable };

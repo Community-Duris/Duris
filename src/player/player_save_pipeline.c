@@ -9170,7 +9170,7 @@ bool player_save_restored_publication_owner::publish_shop_flat(
 						void *) noexcept;
 				void *context;
 			} cleanup{ owner, native_publish, context };
-			const auto borrowed_cleanup = [](const critical_command &command,
+			const auto borrowed_cleanup = [](const critical_command &refused_command,
 							 const critical_completion &sealed,
 							 void *opaque) noexcept
 			{
@@ -9179,7 +9179,8 @@ bool player_save_restored_publication_owner::publish_shop_flat(
 				auto &actual = *static_cast<original_cleanup *>(opaque);
 				// Coordinator already proved the complete original refusal.
 				// This synchronous private adapter borrows that exact owner.
-				return critical_command_equal(actual.owner.command_, command) &&
+				return critical_command_equal(actual.owner.command_,
+							      refused_command) &&
 				       actual.owner.completion_.operation_id.bytes ==
 					       sealed.operation_id.bytes &&
 				       actual.publish(actual.owner, actual.context);
