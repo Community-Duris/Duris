@@ -196,6 +196,92 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Immutable ROOM and saved terminal readers enable bounded preparation - 2026-10-09
+
+Published primary63de0d45d294979026f16b21c9eec16533beb121, actual immediate parent
+coordinatore306a0664cf8c078dfa495210eddc9136cec6adc, supplies a concrete source
+event after the CLOSED lazy-binding/CURRENT review. Temporary independent
+exhaustion is superseded only for the two bounded preparation deliveries below.
+Actual continuing Goal remains BLOCKED unchanged; worker completion-boundary
+checks confirm their actual Goals BLOCKED unchanged. Heartbeat stays ACTIVE.
+No blocked native interface or actual Goal is resumed by source availability.
+
+Root clean-fast-forwarded its coordinator checkout, read the full72-line
+[immutable/terminal handoff](https://github.com/Community-Duris/Duris/blob/63de0d45d294979026f16b21c9eec16533beb121/docs/persistence/economy_accounting/ROOM_IMMUTABLE_TERMINAL_READER_2026-10-09.md),
+complete four-file production diff/private headers, original terminal predicate
+and actual published new symbol sites. Ten changed paths,576 insertions/eight
+registry deletions; two C providers retain exact original byte prefixes and two
+headers have exact additions-only inverses. New private immutable origin/receipt
+and saved BODY readers plus bounded terminal decoder are SOURCE implemented.
+Reported independent primary review/format/token/931 policies/393 pins are not
+root-executed qualification. No builds/native/gameplay/persistence/recovery ran
+for this successor per report; older binaries do not qualify it. Private primary
+progress/adoption is unknown. Root records raw providers/diff/inverses only.
+
+Actual immutable reader proves origin/root UID, full canonical command/intent/
+binding, lookup then historical control/epoch, successful full receipt/compiler
+plan/source claim/reference bucket and result correlation under one recovered
+lock. It does not require current season/epoch or current room/piles. Saved
+terminal reader authenticates that immutable success FIRST, then secure
+root/domains/room_reset_terminal_<uid>.zrt bytes. Original full bounded decoder
+and body_terminal predicate plus receipt-core correlation remain mandatory.
+Genuine saved-file absence transfers present=false only after full origin proof;
+missing origin remains ENODATA, malformed/IO refuses. No reader synthesizes
+BODY/envelope/revision/generation/delivery/effects/ACK or retirement permission.
+Original full ordered recipe effects/noops, physical stage/runtime and once-only
+action fields remain decoder/terminal requirements. Full caller/old outputs,
+origin/receipt, paths/spans/wire/context dynamic overlap, sticky denied scratch
+and strong multi-output transfers remain future owner aggregate obligations.
+New reader catches consult sticky refusal, including bad_alloc/other failures;
+old e7 exception mapping must not be blindly substituted. No math certificate.
+
+Prioritized evolving queue: one bounded active delivery in each existing chat.
+1. Architecture: private
+   PUBLISHED_ROOM_IMMUTABLE_TERMINAL_AUTHORITY_BOUNDARY_2026-10-09.txt and minimal
+   sealed original-source/metadata proof on D:. Output is command/state/authority
+   and retained-lifetime map, actual read ordering/field/ownership edges, and
+   implementation-ready genuine writer handoff obligations. Benefit: primary's
+   future terminal writer/publication owner integration. Use63de/e306 actual four
+   providers and necessary authentic original definitions, full handoff and
+   CLOSED native/current/ACK/lazy-binding/compiler/INITIAL controls. Separate
+   immutable history, saved terminal observation, current publication, genuine
+   delivery/checkpoint/ACK/retirement authority. No quest case matrix/new writer.
+2. Quest: private
+   PUBLISHED_ROOM_IMMUTABLE_TERMINAL_ACCEPTANCE_DELTA_2026-10-09.txt and minimal
+   sealed original-source/metadata proof on D:. Output is at most six prioritized
+   future acceptance cuts for full immutable proof, genuine changed-current
+   historical success versus CURRENT rejection, authentic saved absence, full
+   terminal BODY/receipt correlation, malformed/IO/nonterminal/mismatch and
+   prospective refusal/strong outputs/true lifetime. Benefit: genuine primary
+   ROOM fixture binding. Reuse CLOSED e7/current/native/ACK acceptance controls,
+   record original inputs/status/evidence and smallest genuine command or
+   UNAVAILABLE. All component/native cases UNEXECUTED; no architecture duplicate.
+3. Exact unavailable dependencies for both: genuine original private owner
+   fixture/failure controls, retained flat backend/root/source/factory/native
+   binding/pending census, terminal writer and actual warm/cold publication,
+   durable transfer BEFORE retirement/ACK, complete INTERNAL/submission bounds,
+   supported ABI/allocator/full32MiB and fresh integrated major-batch qualification.
+   Source explicitly has no terminal writer. Plan5 owns real write audit/backup/
+   restore/failure/restart and required SQL0065/schema65 remediation. Missing
+   execution prerequisites block dependent execution only, not these designs.
+4. Preserve clean5c53/2c828 worker checkouts, all CLOSED exact seals and live jobs.
+   Workers own only distinct private notes/metadata; primary owns shared source/
+   contracts/math/integration/writer/execution, Plan5 owns its suite/SQL/recovery.
+   No maintained edits, compile/preprocess/link/product/component/native/DB/root
+   fixture, fabricated authority/BODY, import/registration/private commits/push,
+   other-chat messages, adoption waits, deployment/activation/production actions.
+   Root independent review remains PENDING for both new deliveries. Reassess at
+   handoff; preserve old pins, no inventory repeats or reopened closed bundles.
+
+Exact assignments and root source-only proof retained at
+D:/Dev/Temp/coordinator-room-terminal-reader-preparation-20261009.
+Root updates only its three disposition docs by raw insertion/exact inverse.
+Both chats acknowledged and are preparing their one delivery. Broader required
+Plans1-5, applicable original R1-R8/backend/gameplay/persistence/recovery proof,
+resolved required blockers/owner completion and selected sidework reviews/handoffs
+remain the finish line. Published accounting inactive/admission CLOSED/coverage
+incomplete/release BLOCKED persists. These readers or preparation do not finish it.
+
 ## Lazy-binding and CURRENT acceptance preparation reviewed - 2026-10-09
 
 This checkpoint supersedes the immediate queue below. Root independently reviewed
