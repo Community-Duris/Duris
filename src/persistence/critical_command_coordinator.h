@@ -418,6 +418,17 @@ class critical_zone_reset_item_publication_owner final
 {
 	friend class zone_reset_room_publication_owner;
 	static critical_submit_result submit(critical_native_recovery_envelope);
+	// Complete original ROOM admission with a genuinely owned admitted clone.
+	// outer includes authentic caller input/context/output once, excludes ALL
+	// coordinator storage. Every reserve runs under the original coordinator
+	// mutex with its complete fresh current census added exactly once; it must
+	// not acquire coordinator/journal locks. Output is a genuine current snapshot,
+	// never a lease, and is unchanged until an actual census succeeds. The full
+	// ROOT/journal aggregate handoff and qualified selector remain separate.
+	static critical_submit_result submit_bounded(const critical_native_recovery_envelope &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer_live,
+						     size_t *current_coordinator_bytes) noexcept;
 	static bool copy_context(const critical_command &,
 				 critical_native_recovery_envelope *) noexcept;
 	static bool checkpoint_context(const critical_native_recovery_envelope &,
