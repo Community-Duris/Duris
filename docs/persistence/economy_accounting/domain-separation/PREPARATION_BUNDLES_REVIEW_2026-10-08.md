@@ -2588,3 +2588,94 @@ No maintained edits/new API/schema/friend facade,private import/patch/commit or
 compiler/preprocess/test/server/DB/native execution. Preserve packets/worktrees/
 live jobs. Actual root/native Goals remain BLOCKED,finite preparation does not
 resume them;heartbeatACTIVE and broader completion audit remains outstanding.
+
+## Initial checkpoint codec and correspondence preparation reviewed - 2026-10-08
+
+Independent root review accepts both exactbe7a166faa97f7c1788abb02dc74d96673b0ec43
+preparations. Architecture verdict:SOURCE-ONLY PASS WITH LIMITATIONS under actual
+passive catalog/item wire contract;no new functional round-trip/canonical/output
+refusal defect established. One nonblocking P3 comment finding C1 is confirmed.
+Quest verdict:PASS bounded original-observation/canonical-bytes/retained-replay
+acceptance preparation. Neither verdict is a build/native/recovery PASS,private
+carrier review or original source/transaction/publication authority.
+
+Architecture SHARED_INITIAL_CHECKPOINT_CODEC_SOURCE_REVIEW_2026-10-08.txt:
+14,367 bytes,SHA256d8b3f9f8450558a6f320b17744c70d164772e4b50e0e3b6df4e4f24f8d60af25.
+PINS.json30,661 bytes,SHA2569bc80d6b0c501890b68ad48bb8f83ab48669c9030d088f1ac25484fae8026714.
+Root authenticates14 raw providers/36 new ranges,two real parent preimages/four
+insertion inverses,five unchanged reused providers/seven ranges/10 anchors and
+24 preserved closed files. Removing only four additions reproduces the complete
+original C/H bodies:existing catalog/read/write/trade helpers remain exact.
+Root separately reads wrapper/framing/affect comparator/item encode/decode/native
+capture cuts. Both APIs validate on locals then publish via final no-throw swap/
+move. Comparator covers all serialized affect fields,ties are identical values,
+duplicate multiplicity survives;supplied item/nested-vector order remains intact.
+Outer extents/counts precede catalog allocations,then checksum/original value/
+forest checks and exact canonical reencoding. No maintained caller/test invokes
+new wrappers;tests/schema remain exact. No executable qualification is performed.
+
+C1 P3 at flatfile_shopkeeper_repository.c571:the new comment attributes string
+exclusion to the original item mask. Actual item codec writes/reads all four
+supplied strings unconditionally. Valid mask0/name x remains x;ordinary native
+capture filters selected STRUNG strings upstream. No data-loss defect is asserted.
+Optional comment-only correction,primary-owned and NOT applied:replace lines570-571
+with wording such as 'Decode the bounded existing wire representation,preserving
+all supplied item strings and values without copying unused input capacities.'
+Do not rely on mask bits to remove unobserved strings or authenticate full native
+capture. The wrapper cannot recover literal values omitted before it is called.
+
+Concrete complete-transition memory input for the primary owner:
+accepted initial wire maximum4,423,785 bytes =105+4096*56+4,194,304;minimum legal
+empty/no-affect wire109 bytes. Neither bounds peak allocation. Actual reused item
+encoder checks total size AFTER constructing bytes. Source-derived rejected input
+with4096 roots and four4096-byte strings each can construct68,014,084 item bytes
+(4+4096*(221+4*4096)) before size refusal if allocations succeed. Root separately
+checks field-width arithmetic;no such allocation/test is executed. Nested rejected
+inputs may grow further. Decoder bounds object counts before resize but can allocate
+bounded default rows before discovering missing nested extents. Outer preflight is
+not complete nested allocation-free validation. These inherited limits do not
+contradict the passive accepted wire contract;complete native transition budget
+remains unfinished and primary-owned. No portable peak/retained-budget claim.
+
+Quest SHARED_INITIAL_CHECKPOINT_CODEC_ACCEPTANCE_DELTA_2026-10-08.txt:
+29,812 bytes,SHA2566d27c10869f8327acec367b5e5d2ed646d8197dc7351ed6c66df8e635c610833.
+Root authenticates24 raw Git pins and5 preserved closed inputs. The future case
+correlates actual original keeper room/time/roaming/cash,saved-affect multiset and
+complete equipped/carried literal forest with public encode/decode/reencode bytes,
+then SAME operation/source/attempt original bytes through authentic retained replay.
+Canonical wrong original values may parse successfully but must fail the genuine
+original-observation join. Deterministic framing1 is not catalog/file clock,SQL
+absence-before0/presence-after1 or write capability. Ordinary native masks and
+wire-valid slots/order do not prove full literal native capture/custody.
+
+New report-only receipt0->1,empty-owner presence preservation/nonempty checked
+increment,borrowed worker state/lifetime/attempt/generation/revision and historical
+MBR4 SELECT/inbox/result/outbox proof remain requirements awaiting actual source
+and legal native exports. Legitimate later current clocks must not invalidate
+immutable original receipt;passive decode cannot exercise that SQL replay branch.
+Existing repository component has real providers but no new-wrapper invocation;
+its default record revision2 is not INITIAL. Source-token capture fixture is not
+native capture. Full-engine flat/M-only old-manifest reset and existing synthetic
+SQL revision9 SHOP cannot substitute for initial shared native birth/restart.
+Future actual public-wrapper component tests require no friend facade,but remain
+unexecuted under major-plan deferral. No native runner/oracle schema is invented.
+
+Root proof:D:/Dev/Temp/coordinator-initial-checkpoint-codec-review-20261008/review.json,
+review-final.py and review-anchors.py. Initial verifier schema/display errors are
+retained and corrected;all pins/inverses/anchors authenticate. Both clean original
+worktrees and all sealed packets stay preserved. Only coordinator docs publish;
+no private artifacts/source imports/commits or product execution. Smith missing-
+API P1 remains unresolved;optional backend repair guidance remains available.
+
+Both current finite deliveries are CLOSED. Next architecture events:actual codec/
+comment/capture/carrier/transition-budget/worker/replay/root providers,changed Smith
+backend repair/selector,or genuine native exports/integrated provider. Quest next
+events:materially changed original capture/receipt/carrier/replay contract,genuine
+producer/caller/legal original-observation phase exports or integrated provider
+at major-plan readiness. Available seam is prepared;no duplicate inventory or
+new filler assignment. Producer invocation,root SQL dispatch/reconciliation,
+current physical proof/publication/ACK/origin,flat counterpart and prior original
+O/P/SHOP/keeper/history dependencies remain required. Actual root/native Goals
+remain BLOCKED and unfinished;finite preparation does not resume them. Heartbeat
+ACTIVE until broader published Plans1-5/R1-R8/integrated qualification,required
+blockers and owner completion disposition pass the continuing completion audit.
