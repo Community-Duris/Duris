@@ -136,4 +136,13 @@ critical_command_journal_retire_native_recovery_bounded(const critical_native_re
 // It is a census hook, not an independent concurrent admission protocol.
 size_t critical_command_journal_native_rewrite_storage_bytes() noexcept;
 
+// Full original single native replacement: immutable command, exact expected
+// body, revision+1 and nonregressing phase, complete mixed scan and exact
+// uncertain postimage confirmation. Same callback/outer/current-retention
+// contract as bounded retirement; persistent rewrite storage counted once
+// separately. No callback/allocation after rename or durable promotion.
+critical_command_journal_result critical_command_journal_replace_native_recovery_bounded(
+	const critical_native_recovery_envelope &, const critical_native_recovery_envelope &,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 #endif

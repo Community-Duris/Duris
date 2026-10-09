@@ -9243,3 +9243,16 @@ RAW/final prefix/headerinverse/tokens/preprocessor and delivery dependency PASS;
 Scheduler/problem-buffer/periodic/service-step/root and original warm/cold/checkpoint/
 ACK/recovery qualification remain unfinished. Protected WIP, inactive/CLOSED
 accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist; no newgate.
+
+
+## Complete bounded single native journal replacement implemented - 2026-10-09
+
+[Owning provider](MIXED_JOURNAL_REPLACEMENT_ADMISSION_2026-10-09.md) preserves
+complete original immutable command/revision/phase and exact mixed-journal CAS,
+full successor/postimage/path lifetimes, write/fsync/rename/directory order and
+exact uncertain confirmation. Actual survivor recensus and nonallocating promotion
+avoid double counting and post-rename refusal. RAW/final prefix/headerinverse/tokens/
+preprocessor PASS;931policies/398pins authenticate, zero new/unmapped sites. Native
+checks stay batched. Bounded coordinator/root joins and original scheduler/warm/cold/
+ACK/fault/mixed qualification remain open. Protected WIP, inactive/CLOSED accounting,
+incomplete coverage/BLOCKED release and ACTIVE goal persist; no new gate.
