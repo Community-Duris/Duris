@@ -45473,7 +45473,7 @@
         ],
         [
           "src/world/object_template.h",
-          157,
+          165,
           "item_lifecycle"
         ]
       ],
@@ -65468,7 +65468,7 @@
     },
     {
       "path": "src/world/object_template.h",
-      "line": 157,
+      "line": 165,
       "family": "item_lifecycle",
       "excerpt": "P_obj instantiate_object_template(const object_template &prototype);"
     },
@@ -66553,7 +66553,7 @@
       "src/specs/specs.venthix.c": "e892e0e408e1b9b05651639220af21a73b91a6981f1265fd3fe1881dc409a500",
       "src/specs/specs.venthix.h": "e870c65370b0e918dfc7a1cbec0c48854ebed9a591b82226f2680138e6d1e8a5",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "c4723da626a349730cc76e7d0d02340c3a8a33d1a53b98a67ceea0ff6061f92a",
+      "src/world/db.c": "a1ea568c44c42dad958bd92542aeb0022b1c2eab437f56a572ea13eabead0866",
       "src/world/db.h": "6139ee21439b32fd9204f2be5bbd606966a029e7e62a514dd98ab2cac940fdb5",
       "src/world/handler.c": "02e741711658c10ef5a68a0e7e9ddc40833ac0b78ff3549a1e23c3b99af3e872",
       "src/world/handler.h": "4458f1568e45ba904120eb1ae24bbbb603f12f1ccedee829aa04c08c80fecdcb",
@@ -66566,7 +66566,7 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/object_template.h": "4197820f70a17e81ab36c1039780b0f0d150961b23210eff9f5374c9100c63a7",
+      "src/world/object_template.h": "7dd2291d0b72fc9330a8aac00154784f22be65715fe9f2822dbd7c2109480e98",
       "src/world/quest_mobile_native.c": "d95a3330125a2e14176218184f9c59df68bc5abc2c361c2fc83fffce803582f7",
       "src/world/quest_mobile_native.h": "49ea690af488d383230b7c84dea4b195d13dea010e184d26594b4fc287b5da60",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
