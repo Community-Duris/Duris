@@ -3,6 +3,7 @@
 
 #include "persistence/sql_room_item_payload.h"
 #include "persistence/critical_command_coordinator.h"
+class flatfile_authority_lock;
 class quest_mobile_native_item_stage;
 class zone_reset_original_room_placement_stage;
 #include <unordered_set>
@@ -115,6 +116,22 @@ class zone_reset_room_publication_owner final
 	static bool refresh_warm_locked(MYSQL *, const critical_command &,
 					const critical_completion &,
 					zone_reset_room_publication_stage &) noexcept;
+	// Same genuine original warm root/command and recovered selected-root lock.
+	// Reader authenticates the full CURRENT room; comparison values grant no
+	// factory/physical/ACK permission. Caller owns prior stage/input/lock storage
+	// in outer_live and retains admission peaks through metadata transfer.
+	static bool refresh_warm_flat_locked_bounded(const std::string &,
+						     const flatfile_authority_lock &,
+						     const critical_native_recovery_envelope &,
+						     const critical_completion &,
+						     zone_reset_room_publication_stage &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer_live) noexcept;
+	// Complete original physical/cache proof for an already consumed warm flat
+	// forest. Pure observation; no mutation, source or publication entitlement.
+	static bool verify_warm_flat_current_bounded(const zone_reset_room_publication_stage &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer_live) noexcept;
 	static bool reserve_warm_consume(zone_reset_room_publication_stage &,
 					 const std::unordered_set<uint64_t> &) noexcept;
 	static bool place_warm(zone_reset_room_publication_stage &,

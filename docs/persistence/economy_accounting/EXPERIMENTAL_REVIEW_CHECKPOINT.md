@@ -2219,3 +2219,20 @@ deferred. Recovery/full mixed-journal/coordinator and actual ROOM warm/cold
 execution/checkpoint/ACK/terminal qualification remain open. No plan or release
 completion is claimed. Accounting inactive/admission CLOSED, coverage incomplete/
 release BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Genuine flat ROOM CURRENT refresh dependency implemented - 2026-10-09
+
+[The ROOM refresh source](ROOM_FLAT_CURRENT_REFRESH_ADMISSION_2026-10-09.md) adds
+private bounded warm refresh and full physical verification under the same
+borrowed recovered root lock. Full authenticated current projection, selected UID/
+parent normalization and room-derived revision, genuine pending factory/absence
+or consumed global/room/runtime proof remain required. Actual deep copies/buffers
+and both observer input spans are prospectively admitted; graph/custody transfer
+stays strong. Independent raw/corrected/final review, original C prefix/header
+inverse and tokens/preprocessor PASS. All 931 policies/393 pins authenticate, zero
+new/unmapped sites. Native tests remain deferred. Helpers remain uncalled; actual
+warm/cold publication/checkpoint/effects/ACK/terminal and mixed-journal/coordinator
+work remains open. No plan/release completion claim. Accounting inactive/admission
+CLOSED, coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE
+persist.

@@ -2332,3 +2332,508 @@ bool zone_reset_room_publication_owner::prepare_warm_flat_bounded(
 	}
 #endif
 }
+
+#include "flatfile/flatfile_accounting_zone_reset_item_transaction.h"
+
+namespace
+{
+// Exact fresh copy-construction requests, including nested row-owned payload.
+// No allocator metadata/stack-padding claim; request ABI is checked by caller.
+bool room_snapshot_fresh_heap(const player_item_snapshot &item, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const auto text = [&](const std::string &value) noexcept
+	{
+		return value.size() <= 15 ||
+		       (value.size() != SIZE_MAX && room_prepare_add(bytes, value.size() + 1));
+	};
+	if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+	    !text(item.action_description) ||
+	    !room_prepare_array(bytes, item.dynamic_affects.size(),
+				sizeof(player_item_dynamic_affect_snapshot)) ||
+	    !room_prepare_array(bytes, item.extra_descriptions.size(),
+				sizeof(player_item_extra_description_snapshot)))
+		return false;
+	for (const auto &description : item.extra_descriptions)
+		if (!text(description.keyword) || !text(description.description) ||
+		    !room_prepare_array(bytes, description.spell_ids.size(), sizeof(int32_t)))
+			return false;
+	*output = bytes;
+	return true;
+}
+bool room_snapshot_inline_census(const player_item_snapshot &item, size_t &bytes) noexcept
+{
+	// Preserve the old retained_size policy's conservative inline-text term.
+	const auto text = [&](const std::string &value) noexcept
+	{ return value.capacity() > 15 || room_prepare_add(bytes, value.capacity() + 1); };
+	if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+	    !text(item.action_description))
+		return false;
+	for (const auto &description : item.extra_descriptions)
+		if (!text(description.keyword) || !text(description.description))
+			return false;
+	return true;
+}
+bool room_same_item_bounded(const player_item_snapshot &actual,
+			    const player_item_snapshot &expected,
+			    bool (*reserve)(size_t, void *) noexcept, void *context,
+			    size_t outer_live) noexcept
+{
+	size_t actual_heap = 0, expected_heap = 0, live = outer_live;
+	if (!reserve || !room_snapshot_fresh_heap(actual, &actual_heap) ||
+	    !room_snapshot_fresh_heap(expected, &expected_heap) ||
+	    !room_prepare_array(live, 2, sizeof(player_item_snapshot)) ||
+	    !room_prepare_array(live, 2, sizeof(std::vector<uint8_t>)) ||
+	    !room_prepare_add(live, actual_heap) || !room_prepare_add(live, expected_heap) ||
+	    !reserve(live, context))
+		return false;
+	try
+	{
+		// Same original normalization and both full canonical encodes. Singleton
+		// reserve/push avoids initializer-list copies without reducing validation.
+		player_item_snapshot a(actual), b(expected);
+		a.parent_index = b.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		a.equipment_slot = b.equipment_slot = 0;
+		std::vector<uint8_t> encoded_a, encoded_b;
+		{
+			size_t phase = live;
+			if (!room_prepare_add(phase, sizeof(std::vector<player_item_snapshot>)) ||
+			    !room_prepare_add(phase, sizeof(player_item_snapshot)) ||
+			    !room_prepare_add(phase, actual_heap) || !reserve(phase, context))
+				return false;
+			std::vector<player_item_snapshot> singleton;
+			singleton.reserve(1);
+			singleton.push_back(a);
+			if (player_item_snapshot_list_encode_bounded(singleton, &encoded_a, reserve,
+								     context, phase) !=
+			    player_snapshot_codec_result::ok)
+				return false;
+		}
+		if (!room_prepare_add(live, encoded_a.capacity()))
+			return false;
+		{
+			size_t phase = live;
+			if (!room_prepare_add(phase, sizeof(std::vector<player_item_snapshot>)) ||
+			    !room_prepare_add(phase, sizeof(player_item_snapshot)) ||
+			    !room_prepare_add(phase, expected_heap) || !reserve(phase, context))
+				return false;
+			std::vector<player_item_snapshot> singleton;
+			singleton.reserve(1);
+			singleton.push_back(b);
+			if (player_item_snapshot_list_encode_bounded(singleton, &encoded_b, reserve,
+								     context, phase) !=
+			    player_snapshot_codec_result::ok)
+				return false;
+		}
+		return encoded_a == encoded_b;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+size_t room_uid_index(const std::vector<player_item_snapshot> &items, uint64_t uid) noexcept
+{
+	size_t found = SIZE_MAX;
+	for (size_t at = 0; at < items.size(); ++at)
+		if (items[at].object_uid == uid)
+		{
+			if (found != SIZE_MAX)
+				return SIZE_MAX;
+			found = at;
+		}
+	return found;
+}
+bool room_absent_native(const std::vector<player_item_snapshot> &items) noexcept
+{
+	for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	P_obj previous = nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (object->prev != previous ||
+		    std::any_of(items.begin(), items.end(), [object](const auto &item)
+				{ return item.object_uid == object->obj_uid; }))
+			return false;
+		previous = object;
+	}
+	return true;
+}
+struct room_physical_workspace
+{
+	std::vector<uint8_t> seen;
+	std::vector<player_item_snapshot> observed;
+	std::vector<uint64_t> selected;
+	std::vector<item_ownership_runtime_entry> actual;
+};
+struct room_refresh_workspace
+{
+	flatfile_zone_reset_item_projection projection;
+	sql_room_item_graph ordered;
+	std::vector<item_ownership_runtime_entry> custody;
+	std::vector<player_item_snapshot> native;
+	std::vector<uint8_t> a, b;
+	std::vector<uint64_t> uids;
+	std::vector<item_ownership_runtime_entry> runtime;
+};
+}
+
+bool zone_reset_room_publication_owner::verify_warm_flat_current_bounded(
+	const zone_reset_room_publication_stage &stage, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !stage.state_->consumed || !nevent_is_game_thread() || !reserve)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		const auto &state = *stage.state_;
+		const size_t count = state.graph.items.size();
+		if (!count || count > ITEM_TRANSFER_MAX_ITEMS || state.objects.size() != count ||
+		    state.custody.size() != count)
+			return false;
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_physical_workspace)) ||
+		    !room_prepare_add(live, count) || !reserve(live, context))
+			return false;
+		room_physical_workspace work;
+		work.seen.resize(count, 0);
+		for (size_t at = 0; at < count; ++at)
+			if (!state.objects[at] ||
+			    room_uid_index(state.graph.items, state.graph.items[at].object_uid) !=
+				    at)
+				return false;
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_obj previous = nullptr;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (object->prev != previous)
+				return false;
+			previous = object;
+			const size_t at = room_uid_index(state.graph.items, object->obj_uid);
+			if (at != SIZE_MAX)
+			{
+				if (state.objects[at] != object || work.seen[at])
+					return false;
+				work.seen[at] = 1;
+			}
+		}
+		if (std::find(work.seen.begin(), work.seen.end(), 0) != work.seen.end())
+			return false;
+		for (size_t at = 1; at < count; ++at)
+		{
+			const size_t parent = room_uid_index(state.graph.items,
+							     state.custody[at].parent_item_uid);
+			if (parent == SIZE_MAX || state.objects[at]->loc_p != LOC_INSIDE ||
+			    state.objects[at]->loc.inside != state.objects[parent])
+				return false;
+		}
+		P_obj root = state.objects[0];
+		if (state.placed)
+		{
+			if (!world || state.room < 0 || state.room > top_of_world ||
+			    root->loc_p != LOC_ROOM || root->loc.room != state.room)
+				return false;
+			for (P_obj slow = world[state.room].contents, fast = slow;
+			     fast && fast->next_content;)
+			{
+				slow = slow->next_content;
+				fast = fast->next_content->next_content;
+				if (slow == fast)
+					return false;
+			}
+			size_t matches = 0;
+			for (P_obj object = world[state.room].contents; object;
+			     object = object->next_content)
+			{
+				if (object->loc_p != LOC_ROOM || object->loc.room != state.room)
+					return false;
+				if (object == root)
+					++matches;
+			}
+			if (matches != 1)
+				return false;
+		}
+		else if (root->loc_p != LOC_NOWHERE || root->loc.room != NOWHERE ||
+			 root->next_content)
+			return false;
+		size_t observed_heap = 0;
+		if (player_item_snapshot_tree_capture_literal_bounded(
+			    root, &work.observed, nullptr, reserve, context, live,
+			    &observed_heap) != player_snapshot_capture_result::ok ||
+		    work.observed.size() != count || !room_prepare_add(live, observed_heap))
+			return false;
+		std::fill(work.seen.begin(), work.seen.end(), 0);
+		for (size_t row = 0; row < work.observed.size(); ++row)
+		{
+			const auto &item = work.observed[row];
+			const size_t at = room_uid_index(state.graph.items, item.object_uid);
+			if (at == SIZE_MAX || work.seen[at] ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(row) ||
+			    (item.parent_index < 0 ? 0 :
+						     work.observed[item.parent_index].object_uid) !=
+				    state.custody[at].parent_item_uid ||
+			    !room_same_item_bounded(item, state.graph.items[at], reserve, context,
+						    live))
+				return false;
+			work.seen[at] = 1;
+		}
+		if (!room_prepare_array(live, count, sizeof(uint64_t)) || !reserve(live, context))
+			return false;
+		work.selected.reserve(count);
+		for (const auto &item : state.graph.items)
+			work.selected.push_back(item.object_uid);
+		std::sort(work.selected.begin(), work.selected.end());
+		size_t observer_live = live;
+		if (!room_prepare_array(observer_live, 2, sizeof(std::span<const uint64_t>)) ||
+		    !reserve(observer_live, context))
+			return false;
+		if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+			    work.selected, ITEM_TRANSFER_MAX_ITEMS, &work.actual, reserve, context,
+			    observer_live) ||
+		    work.actual.size() != count ||
+		    !room_prepare_array(live, work.actual.capacity(),
+					sizeof(item_ownership_runtime_entry)) ||
+		    !reserve(live, context))
+			return false;
+		std::fill(work.seen.begin(), work.seen.end(), 0);
+		for (const auto &entry : work.actual)
+		{
+			const size_t at = room_uid_index(state.graph.items, entry.item_uid);
+			if (at == SIZE_MAX || work.seen[at] ||
+			    !same_custody(entry, state.custody[at]) ||
+			    entry.owner_revision != state.graph.owner_revision)
+				return false;
+			work.seen[at] = 1;
+		}
+		uint64_t revision = 0;
+		return item_ownership_runtime_peek_owner_revision(state.graph.owner, &revision) &&
+		       revision == state.graph.owner_revision;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
+	const std::string &selected_root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const critical_completion &receipt,
+	zone_reset_room_publication_stage &stage, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!stage.state_ || !stage.state_->warm || !stage.state_->flat_backend ||
+	    !nevent_is_game_thread() || !reserve || !lock.matches(selected_root) ||
+	    stage.state_->selected_root != selected_root || stage.state_->cold_adoption ||
+	    stage.state_->cold_reconstruction || stage.state_->cold_pending ||
+	    receipt.operation_id.bytes != original.command.operation_id.bytes ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied) ||
+	    receipt.error_code || receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_RESULT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	try
+	{
+		auto &state = *stage.state_;
+		const size_t count = state.original.items.size();
+		if (!count || count > ITEM_TRANSFER_MAX_ITEMS || state.objects.size() != count ||
+		    state.stage_pointers.size() != count || state.factory_sources.size() != count ||
+		    state.original.operation_id.bytes != original.command.operation_id.bytes ||
+		    state.original.expected_room_revision == UINT64_MAX ||
+		    receipt.durable_revision != state.original.expected_room_revision + 1)
+			return false;
+		size_t live = outer_live;
+		if (!room_prepare_add(live, sizeof(room_refresh_workspace)) ||
+		    !reserve(live, context))
+			return false;
+		room_refresh_workspace work;
+		size_t projection_heap = 0;
+		if (flatfile_zone_reset_item_publication_storage::read_locked_bounded(
+			    selected_root, lock, original, receipt, &work.projection, reserve,
+			    context, live, &projection_heap) != 0 ||
+		    !room_prepare_add(live, projection_heap) ||
+		    work.projection.room.room_vnum != state.original.room_vnum ||
+		    work.projection.room.revision != receipt.durable_revision ||
+		    work.projection.custody.size() != count)
+			return false;
+		// The provider authenticates the WHOLE room and custody history. Select each
+		// original UID exactly once; prior unrelated room forests remain untouched.
+		if (!room_prepare_array(live, count, sizeof(player_item_snapshot)) ||
+		    !room_prepare_array(live, count, sizeof(player_load_item_identity)) ||
+		    !room_prepare_array(live, count, sizeof(item_ownership_runtime_entry)))
+			return false;
+		for (const auto &item : state.original.items)
+		{
+			size_t heap = 0;
+			if (!room_snapshot_fresh_heap(item, &heap) || !room_prepare_add(live, heap))
+				return false;
+		}
+		if (!reserve(live, context))
+			return false;
+		work.ordered.owner = { item_owner_type::room,
+				       static_cast<uint64_t>(state.original.room_vnum), 0 };
+		work.ordered.owner_revision = work.projection.room.revision;
+		work.ordered.items.reserve(count);
+		work.ordered.identities.reserve(count);
+		work.custody.reserve(count);
+		for (size_t at = 0; at < count; ++at)
+		{
+			const auto &item = state.original.items[at];
+			const size_t row =
+				room_uid_index(work.projection.room.items, item.object_uid);
+			if (room_uid_index(state.original.items, item.object_uid) != at ||
+			    row == SIZE_MAX ||
+			    !room_same_item_bounded(work.projection.room.items[row], item, reserve,
+						    context, live))
+				return false;
+			size_t match = SIZE_MAX;
+			for (size_t i = 0; i < work.projection.custody.size(); ++i)
+				if (work.projection.custody[i].item_uid == item.object_uid)
+				{
+					if (match != SIZE_MAX)
+						return false;
+					match = i;
+				}
+			if (match == SIZE_MAX || item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(at))
+				return false;
+			const auto &identity = work.projection.custody[match];
+			const uint64_t parent =
+				item.parent_index < 0 ?
+					0 :
+					state.original.items[item.parent_index].object_uid;
+			if (identity.root_item_uid != state.original.items[0].object_uid ||
+			    identity.parent_item_uid != parent || identity.item_revision != 1 ||
+			    identity.vnum != item.vnum ||
+			    identity.state != item_custody_state::active ||
+			    !item_owner_identity_equal(identity.owner, work.ordered.owner))
+				return false;
+			// Only actual DTO temporaries overlap these three non-growing pushes.
+			size_t row_live = live;
+			if (!room_prepare_add(row_live, sizeof(player_load_item_identity)) ||
+			    !room_prepare_add(row_live, sizeof(item_ownership_runtime_entry)) ||
+			    !reserve(row_live, context))
+				return false;
+			player_load_item_identity projected{};
+			projected.item_uid = identity.item_uid;
+			projected.root_item_uid = identity.root_item_uid;
+			projected.parent_item_uid = identity.parent_item_uid;
+			projected.owner = identity.owner;
+			projected.item_revision = identity.item_revision;
+			projected.owner_revision = work.ordered.owner_revision;
+			projected.state = identity.state;
+			work.ordered.items.push_back(item);
+			work.ordered.identities.push_back(projected);
+			work.custody.push_back(
+				{ identity.item_uid, identity.root_item_uid,
+				  identity.parent_item_uid, identity.owner, identity.item_revision,
+				  work.ordered.owner_revision, item.vnum, identity.state });
+		}
+		if (!state.consumed)
+		{
+			size_t native_heap = 0;
+			if (player_item_snapshot_tree_capture_literal_bounded(
+				    state.objects[0], &work.native, nullptr, reserve, context, live,
+				    &native_heap) != player_snapshot_capture_result::ok ||
+			    !room_prepare_add(live, native_heap) ||
+			    player_item_snapshot_list_encode_bounded(work.native, &work.a, reserve,
+								     context, live) !=
+				    player_snapshot_codec_result::ok ||
+			    !room_prepare_add(live, work.a.capacity()) ||
+			    player_item_snapshot_list_encode_bounded(state.original.items, &work.b,
+								     reserve, context, live) !=
+				    player_snapshot_codec_result::ok ||
+			    !room_prepare_add(live, work.b.capacity()) || work.a != work.b)
+				return false;
+			size_t progress_live = live;
+			if (!room_prepare_array(progress_live, 2,
+						sizeof(quest_mobile_native_item_progress)) ||
+			    !reserve(progress_live, context))
+				return false;
+			for (size_t at = 0; at < count; ++at)
+			{
+				auto *factory = state.stage_pointers[at];
+				quest_mobile_native_item_progress progress{};
+				if (!factory ||
+				    !factory->flat_factory_matches(selected_root,
+								   state.factory_sources[at]) ||
+				    factory->object() != state.objects[at] ||
+				    !factory->owns_pending_original_target(state.objects[at]) ||
+				    !factory->read_progress(&progress) ||
+				    progress.admitted != state.admitted || progress.published ||
+				    progress.next_step || progress.current_step_started)
+					return false;
+			}
+			if (!room_absent_native(state.original.items) ||
+			    !room_prepare_array(live, count, sizeof(uint64_t)) ||
+			    !reserve(live, context))
+				return false;
+			work.uids.reserve(count);
+			for (const auto &item : state.original.items)
+				work.uids.push_back(item.object_uid);
+			std::sort(work.uids.begin(), work.uids.end());
+			size_t observer_live = live;
+			if (!room_prepare_array(observer_live, 2,
+						sizeof(std::span<const uint64_t>)) ||
+			    !reserve(observer_live, context))
+				return false;
+			if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
+				    work.uids, ITEM_TRANSFER_MAX_ITEMS, &work.runtime, reserve,
+				    context, observer_live) ||
+			    !work.runtime.empty())
+				return false;
+		}
+		else
+		{
+			if (state.graph.owner_revision != work.ordered.owner_revision ||
+			    state.custody.size() != work.custody.size())
+				return false;
+			for (size_t at = 0; at < count; ++at)
+				if (!same_custody(state.custody[at], work.custody[at]))
+					return false;
+			if (!verify_warm_flat_current_bounded(stage, reserve, context, live))
+				return false;
+		}
+		// Preserved inline-text census allowance precedes nonthrowing transfer.
+		for (const auto &item : work.ordered.items)
+			if (!room_snapshot_inline_census(item, live))
+				return false;
+		if (!lock.matches(selected_root) || !reserve(live, context))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<sql_room_item_graph>);
+		state.graph = std::move(work.ordered);
+		state.custody = std::move(work.custody);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
