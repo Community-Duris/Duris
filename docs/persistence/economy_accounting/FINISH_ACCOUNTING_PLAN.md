@@ -7088,3 +7088,23 @@ warm/cold publication, bounded current proof, once-only checkpoints, durable
 terminal transfer and accepting/restart qualification remain open. Accounting
 stays inactive, admission CLOSED, coverage incomplete and release BLOCKED.
 The primary goal remains ACTIVE; Plans 2–4, combined Plan 5 and R1–R8 are open.
+
+
+## ROOM CURRENT storage admission milestone — 2026-10-09
+
+[The source repair](ROOM_CURRENT_STORAGE_ADMISSION_2026-10-09.md) joins complete private bounded receipt/CURRENT
+verification, original source-claim and full operation-reference proofs, and
+actual full room/custody/history/money readers under the same recovered lock.
+Prospective retained and temporary storage is admitted without changing
+original ordinary readers. Independent exact-candidate source review, inverses
+and changed-line format/token checks pass. All 931 policies retain scope; 393
+authenticated pins include the two real reference-reader dependencies. Zero
+new/unmapped lexical sites does not establish full accounting completion.
+
+Builds/tests remain in the major-plan batch. Genuine flat backend/root/source
+lifetime, factory binding, warm/cold publication, once-only checkpoints, durable
+terminal transfer, ACK, full aggregate scratch and accepting/restart
+qualification remain open. Separate flat-binding drafts and unrelated edits
+are excluded. The primary goal remains ACTIVE; accounting inactive, admission
+CLOSED, coverage incomplete and release BLOCKED. Plans 2–4, combined Plan 5
+and R1–R8 remain unfinished.

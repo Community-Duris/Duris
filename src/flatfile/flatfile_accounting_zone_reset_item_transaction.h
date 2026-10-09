@@ -60,6 +60,20 @@ class flatfile_accounting_zone_reset_item_transaction final
 	static unsigned int read_origin_locked(const std::string &, const flatfile_authority_lock &,
 					       uint64_t,
 					       zone_reset_item_retained_origin *) noexcept;
+	// Complete original receipt/current proof with prospective transitive storage.
+	// Caller includes original/root/lock/receipt/prior outputs in outer. Returned
+	// heap excludes inline output DTO; no execution, source or ACK authority.
+	static unsigned int
+	verify_record_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				     const critical_native_recovery_envelope &,
+				     flatfile_accounting_record *, flatfile_scratch_reserve_fn,
+				     void *, size_t,
+				     size_t *retained_output_heap = nullptr) noexcept;
+	static unsigned int read_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &,
+		const critical_native_recovery_envelope &, const critical_completion &,
+		flatfile_zone_reset_item_projection *, flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_output_heap = nullptr) noexcept;
 	static unsigned int
 	observe_initial_locked(const std::string &, const flatfile_authority_lock &,
 			       const critical_native_recovery_envelope &) noexcept;
@@ -103,6 +117,11 @@ class flatfile_zone_reset_item_publication_storage final
 					const critical_native_recovery_envelope &,
 					const critical_completion &,
 					flatfile_zone_reset_item_projection *) noexcept;
+	static unsigned int
+	read_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &, const critical_completion &,
+			    flatfile_zone_reset_item_projection *, flatfile_scratch_reserve_fn,
+			    void *, size_t, size_t *retained_output_heap = nullptr) noexcept;
 	static unsigned int read_origin_locked(const std::string &, const flatfile_authority_lock &,
 					       uint64_t,
 					       zone_reset_item_retained_origin *) noexcept;

@@ -120,6 +120,11 @@ class flatfile_accounting_storage
 							      const flatfile_authority_lock &,
 							      const flatfile_accounting_record &,
 							      std::string *);
+	// Same original owning lock and complete source claim proof; passive bounded storage.
+	static flatfile_accounting_status
+	verify_source_claim_bounded(const std::string &, const flatfile_authority_lock &,
+				    const flatfile_accounting_record &, flatfile_scratch_reserve_fn,
+				    void *, size_t) noexcept;
 	static flatfile_authority_transaction_result
 	commit(const std::string &, const flatfile_authority_lock &,
 	       const std::vector<flatfile_authority_operation> &, std::string *);
