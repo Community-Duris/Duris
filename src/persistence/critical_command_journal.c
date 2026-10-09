@@ -1,3 +1,4 @@
+#include <atomic>
 #include "item/held_retirement_transport.h"
 #include "item/native_quest_transport.h"
 #include "persistence/critical_command_journal.h"
@@ -57,6 +58,8 @@ struct native_rewrite_attempt
 	std::vector<uint8_t> expected, successor, postimage, retiring_child;
 };
 native_rewrite_attempt native_rewrite_uncertain;
+std::atomic<size_t> native_rewrite_storage{ 0 };
+void publish_native_rewrite_storage() noexcept;
 bool journal_has_native = false;
 
 uint64_t now_msec()
@@ -538,6 +541,7 @@ confirm_native_rewrite(const std::vector<journal_frame> &frames, const journal_f
 	if (!synced || !closed)
 		return critical_command_journal_result::append_uncertain;
 	native_rewrite_uncertain = {};
+	publish_native_rewrite_storage();
 	health.append_uncertain = false;
 	++health.checkpoints;
 	update_health(frames);
@@ -736,6 +740,7 @@ transition_native_record(const critical_native_recovery_envelope &expected,
 		{
 			attempt.active = true;
 			native_rewrite_uncertain = std::move(attempt);
+			publish_native_rewrite_storage();
 			health.append_uncertain = true;
 			record_result(critical_command_journal_result::append_uncertain);
 			return critical_command_journal_result::append_uncertain;
@@ -766,6 +771,7 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 		return false;
 	health = {};
 	native_rewrite_uncertain = {};
+	publish_native_rewrite_storage();
 	journal_has_native = false;
 	journal_directory = directory;
 	if (mkdir(directory, 0700) != 0 && errno != EEXIST)
@@ -814,6 +820,7 @@ void critical_command_journal_shutdown(void)
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	health.initialized = false;
 	native_rewrite_uncertain = {};
+	publish_native_rewrite_storage();
 	journal_has_native = false;
 	journal_directory.clear();
 	journal_path.clear();
@@ -1234,5 +1241,605 @@ void critical_command_journal_reset_for_tests(void)
 	journal_quota = 0;
 	health = {};
 	native_rewrite_uncertain = {};
+	publish_native_rewrite_storage();
 	journal_has_native = false;
+}
+
+#include "persistence/critical_command_coordinator.h"
+
+namespace
+{
+bool journal_admit_add(size_t &bytes, size_t amount) noexcept
+{
+	if (bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+	    amount > CRITICAL_COORDINATOR_MAX_BYTES - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool journal_admit_array(size_t &bytes, size_t count, size_t unit) noexcept
+{
+	return (!unit || count <= CRITICAL_COORDINATOR_MAX_BYTES / unit) &&
+	       journal_admit_add(bytes, count * unit);
+}
+bool journal_command_heap(const critical_command &command, bool fresh, size_t &bytes) noexcept
+{
+	return journal_admit_array(bytes, fresh ? command.keys.size() : command.keys.capacity(),
+				   sizeof(critical_entity_key)) &&
+	       journal_admit_array(bytes,
+				   fresh ? command.expected_revisions.size() :
+					   command.expected_revisions.capacity(),
+				   sizeof(critical_expected_revision)) &&
+	       journal_admit_add(bytes,
+				 fresh ? command.payload.size() : command.payload.capacity()) &&
+	       journal_admit_add(bytes, fresh ? command.accounting_intent.size() :
+						command.accounting_intent.capacity());
+}
+bool journal_frame_heap(const journal_frame &frame, size_t &bytes) noexcept
+{
+	return journal_command_heap(frame.command, false, bytes) &&
+	       journal_admit_add(bytes, frame.bytes.capacity()) &&
+	       journal_admit_add(bytes, frame.native_attachment.capacity());
+}
+void publish_native_rewrite_storage() noexcept
+{
+	// Called only by the original journal-mutex owner. Readers observe this
+	// scalar without taking journal/coordinator locks or dereferencing vectors.
+	size_t bytes = native_rewrite_uncertain.active ? sizeof(native_rewrite_attempt) : 0;
+	if (native_rewrite_uncertain.expected.capacity() > SIZE_MAX - bytes)
+		bytes = SIZE_MAX;
+	else
+		bytes += native_rewrite_uncertain.expected.capacity();
+	if (native_rewrite_uncertain.successor.capacity() > SIZE_MAX - bytes)
+		bytes = SIZE_MAX;
+	else
+		bytes += native_rewrite_uncertain.successor.capacity();
+	if (native_rewrite_uncertain.postimage.capacity() > SIZE_MAX - bytes)
+		bytes = SIZE_MAX;
+	else
+		bytes += native_rewrite_uncertain.postimage.capacity();
+	if (native_rewrite_uncertain.retiring_child.capacity() > SIZE_MAX - bytes)
+		bytes = SIZE_MAX;
+	else
+		bytes += native_rewrite_uncertain.retiring_child.capacity();
+	native_rewrite_storage.store(bytes, std::memory_order_release);
+}
+struct journal_admission_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	bool rejected = false;
+	static bool admit(size_t peak, void *opaque) noexcept
+	{
+		auto &self = *static_cast<journal_admission_budget *>(opaque);
+		if (!self.reserve(peak, self.context))
+		{
+			self.rejected = true;
+			return false;
+		}
+		return true;
+	}
+};
+bool journal_cash_role_valid_admitted(const critical_native_recovery_envelope &envelope,
+				      journal_admission_budget &budget, size_t live) noexcept
+{
+	if (envelope.command.type != critical_command_type::native_mobile_birth ||
+	    envelope.command.payload_version != NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+		return true;
+	const bool shared = std::any_of(envelope.command.keys.begin(), envelope.command.keys.end(),
+					[](const auto &key)
+					{ return key.type == critical_entity_type::shopkeeper; });
+	return shared ? native_mobile_birth_shared_shop_recovery_valid_bounded(
+				envelope, journal_admission_budget::admit, &budget, live) :
+			native_mobile_birth_cash_role_recovery_valid_bounded(
+				envelope, journal_admission_budget::admit, &budget, live);
+}
+struct journal_native_build_workspace
+{
+	std::vector<uint8_t> command;
+	journal_frame built;
+};
+bool journal_build_native_admitted(const critical_native_recovery_envelope &envelope,
+				   journal_frame *output, journal_admission_budget &budget,
+				   size_t outer) noexcept
+{
+	if (!output || !native_command_valid(envelope.command) || !envelope.revision ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
+	    !native_phase_valid(envelope.phase) || envelope.attachment.empty() ||
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	try
+	{
+		size_t live = outer;
+		if (!journal_admit_add(live, sizeof(journal_native_build_workspace)) ||
+		    !budget.admit(live, &budget))
+			return false;
+		journal_native_build_workspace work;
+		if (!journal_cash_role_valid_admitted(envelope, budget, live) ||
+		    critical_command_encode_bounded(envelope.command, &work.command,
+						    journal_admission_budget::admit, &budget,
+						    live) != critical_command_codec_result::ok ||
+		    work.command.size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES ||
+		    !journal_admit_add(live, work.command.capacity()))
+			return false;
+		const size_t payload = JOURNAL_NATIVE_PREFIX_SIZE + work.command.size() +
+				       envelope.attachment.size();
+		if (!journal_admit_add(live, JOURNAL_HEADER_SIZE + payload) ||
+		    !journal_command_heap(envelope.command, true, live) ||
+		    !journal_admit_add(live, envelope.attachment.size()) ||
+		    !budget.admit(live, &budget))
+			return false;
+		auto &built = work.built;
+		built.bytes.reserve(JOURNAL_HEADER_SIZE + payload);
+		built.bytes.insert(built.bytes.end(), JOURNAL_MAGIC, JOURNAL_MAGIC + 4);
+		append_le<uint32_t>(built.bytes, JOURNAL_NATIVE_VERSION);
+		append_le<uint64_t>(built.bytes, JOURNAL_HEADER_SIZE + payload);
+		append_le<uint32_t>(built.bytes, static_cast<uint32_t>(payload));
+		append_le<uint32_t>(built.bytes, 0);
+		built.bytes.insert(built.bytes.end(), envelope.command.operation_id.bytes.begin(),
+				   envelope.command.operation_id.bytes.end());
+		append_le<uint32_t>(built.bytes, static_cast<uint32_t>(work.command.size()));
+		append_le<uint64_t>(built.bytes, envelope.revision);
+		append_le<uint8_t>(built.bytes, static_cast<uint8_t>(envelope.phase));
+		append_le<uint8_t>(built.bytes, 0);
+		append_le<uint16_t>(built.bytes, 0);
+		append_le<uint32_t>(built.bytes, static_cast<uint32_t>(envelope.attachment.size()));
+		built.bytes.insert(built.bytes.end(), work.command.begin(), work.command.end());
+		built.bytes.insert(built.bytes.end(), envelope.attachment.begin(),
+				   envelope.attachment.end());
+		size_t checksum_live = live;
+		if (!journal_admit_add(checksum_live, 4) || !budget.admit(checksum_live, &budget))
+			return false;
+		const uint32_t checksum = native_checksum(built.bytes.data(), built.bytes.size());
+		for (size_t index = 0; index < sizeof(checksum); ++index)
+			built.bytes[20 + index] = static_cast<uint8_t>(checksum >> (index * 8));
+		built.operation_id = envelope.command.operation_id;
+		built.command = envelope.command;
+		built.native = true;
+		built.native_revision = envelope.revision;
+		built.native_phase = envelope.phase;
+		built.native_attachment = envelope.attachment;
+		*output = std::move(built);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+struct journal_scan_workspace
+{
+	std::vector<uint8_t> data;
+	std::vector<journal_frame> frames;
+};
+struct journal_decode_workspace
+{
+	journal_frame frame;
+	std::vector<uint8_t> canonical;
+	critical_native_recovery_envelope original;
+};
+critical_command_journal_result journal_scan_admitted(std::vector<journal_frame> *output,
+						      journal_admission_budget &budget,
+						      size_t outer,
+						      size_t *physical_output = nullptr) noexcept
+{
+	if (!output)
+		return critical_command_journal_result::unsafe_permissions;
+	size_t guard_live = outer;
+	if (!journal_admit_add(guard_live, sizeof(struct stat)) ||
+	    !budget.admit(guard_live, &budget))
+		return critical_command_journal_result::quota_exceeded;
+	if (!safe_regular(journal_path, 0600))
+		return critical_command_journal_result::unsafe_permissions;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	size_t base = outer;
+	if (!journal_admit_add(base, sizeof(journal_scan_workspace)) ||
+	    !journal_admit_add(base, sizeof(struct stat)) || !budget.admit(base, &budget))
+		return critical_command_journal_result::quota_exceeded;
+	journal_scan_workspace work;
+	const int fd = open(journal_path.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+		return critical_command_journal_result::io_failure;
+	struct stat status = {};
+	if (fstat(fd, &status) != 0 || status.st_size < 0 ||
+	    static_cast<uint64_t>(status.st_size) > journal_quota)
+	{
+		close(fd);
+		return critical_command_journal_result::quota_exceeded;
+	}
+	size_t file_live = base;
+	if (!journal_admit_add(file_live, static_cast<size_t>(status.st_size)) ||
+	    !budget.admit(file_live, &budget))
+	{
+		close(fd);
+		return critical_command_journal_result::quota_exceeded;
+	}
+	try
+	{
+		work.data.resize(static_cast<size_t>(status.st_size));
+	}
+	catch (...)
+	{
+		close(fd);
+		return critical_command_journal_result::quota_exceeded;
+	}
+	size_t read_offset = 0;
+	while (read_offset < work.data.size())
+	{
+		const ssize_t count =
+			read(fd, work.data.data() + read_offset, work.data.size() - read_offset);
+		if (count < 0 && errno == EINTR)
+			continue;
+		if (count <= 0)
+			break;
+		read_offset += static_cast<size_t>(count);
+	}
+	close(fd);
+	if (read_offset != work.data.size())
+		return critical_command_journal_result::io_failure;
+	try
+	{
+		size_t offset = 0, physical = 0;
+		bool contains_native = false;
+		while (offset < work.data.size())
+		{
+			// Match the original pre-parse unique limit, including duplicates.
+			if (work.frames.size() >= CRITICAL_COMMAND_JOURNAL_MAX_RECORDS ||
+			    work.data.size() - offset < JOURNAL_HEADER_SIZE ||
+			    memcmp(work.data.data() + offset, JOURNAL_MAGIC, 4))
+				return critical_command_journal_result::corrupt_data;
+			size_t cursor = offset + 4;
+			uint32_t version = 0, payload_size = 0, checksum = 0;
+			uint64_t record_size = 0;
+			if (!read_le(work.data.data(), work.data.size(), &cursor, &version) ||
+			    !read_le(work.data.data(), work.data.size(), &cursor, &record_size) ||
+			    !read_le(work.data.data(), work.data.size(), &cursor, &payload_size) ||
+			    !read_le(work.data.data(), work.data.size(), &cursor, &checksum) ||
+			    (version != JOURNAL_VERSION && version != JOURNAL_NATIVE_VERSION) ||
+			    record_size != JOURNAL_HEADER_SIZE + payload_size ||
+			    record_size > work.data.size() - offset)
+				return critical_command_journal_result::corrupt_data;
+			size_t live = base;
+			if (!journal_admit_add(live, work.data.capacity()) ||
+			    !journal_admit_array(live, work.frames.capacity(),
+						 sizeof(journal_frame)))
+				return critical_command_journal_result::quota_exceeded;
+			for (const auto &prior : work.frames)
+				if (!journal_frame_heap(prior, live))
+					return critical_command_journal_result::quota_exceeded;
+			if (!journal_admit_add(live, sizeof(journal_decode_workspace)) ||
+			    !journal_admit_add(live, sizeof(critical_operation_id)) ||
+			    !budget.admit(live, &budget))
+				return critical_command_journal_result::quota_exceeded;
+			critical_operation_id operation{};
+			memcpy(operation.bytes.data(), work.data.data() + cursor,
+			       operation.bytes.size());
+			cursor += operation.bytes.size();
+			const uint8_t *payload = work.data.data() + cursor;
+			journal_decode_workspace decoded;
+			size_t command_heap = 0;
+			if (version == JOURNAL_NATIVE_VERSION)
+			{
+				size_t checksum_live = live;
+				if (!journal_admit_add(checksum_live, 4) ||
+				    !budget.admit(checksum_live, &budget))
+					return critical_command_journal_result::quota_exceeded;
+				if (payload_size >
+					    JOURNAL_NATIVE_PREFIX_SIZE +
+						    CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+						    CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES ||
+				    native_checksum(work.data.data() + offset,
+						    static_cast<size_t>(record_size)) != checksum ||
+				    payload_size < JOURNAL_NATIVE_PREFIX_SIZE)
+					return critical_command_journal_result::corrupt_data;
+				size_t at = 0;
+				uint32_t command_size = 0, attachment_size = 0;
+				uint64_t revision = 0;
+				uint8_t phase = 0, reserved8 = 0;
+				uint16_t reserved16 = 0;
+				if (!read_le(payload, payload_size, &at, &command_size) ||
+				    !read_le(payload, payload_size, &at, &revision) ||
+				    !read_le(payload, payload_size, &at, &phase) ||
+				    !read_le(payload, payload_size, &at, &reserved8) ||
+				    !read_le(payload, payload_size, &at, &reserved16) ||
+				    !read_le(payload, payload_size, &at, &attachment_size) ||
+				    reserved8 || reserved16 || !revision ||
+				    !native_phase_valid(
+					    static_cast<critical_native_recovery_phase>(phase)) ||
+				    !command_size ||
+				    command_size > CRITICAL_COMMAND_MAX_ENCODED_BYTES ||
+				    !attachment_size ||
+				    attachment_size >
+					    CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES ||
+				    command_size > payload_size - at ||
+				    attachment_size != payload_size - at - command_size)
+					return critical_command_journal_result::corrupt_data;
+				if (critical_command_decode_bounded(
+					    payload + at, command_size, &decoded.frame.command,
+					    journal_admission_budget::admit, &budget, live,
+					    &command_heap) != critical_command_codec_result::ok)
+					return budget.rejected ?
+						       critical_command_journal_result::
+							       quota_exceeded :
+						       critical_command_journal_result::corrupt_data;
+				if (!native_command_valid(decoded.frame.command) ||
+				    (held_retirement_transport_command(decoded.frame.command) &&
+				     static_cast<critical_native_recovery_phase>(phase) !=
+					     critical_native_recovery_phase::execution_pending))
+					return critical_command_journal_result::corrupt_data;
+				if (!journal_admit_add(live, command_heap) ||
+				    critical_command_encode_bounded(
+					    decoded.frame.command, &decoded.canonical,
+					    journal_admission_budget::admit, &budget,
+					    live) != critical_command_codec_result::ok)
+					return critical_command_journal_result::quota_exceeded;
+				if (decoded.canonical.size() != command_size ||
+				    !std::equal(decoded.canonical.begin(), decoded.canonical.end(),
+						payload + at))
+					return critical_command_journal_result::corrupt_data;
+				at += command_size;
+				if (!journal_admit_add(live, decoded.canonical.capacity()) ||
+				    !journal_admit_add(live, attachment_size) ||
+				    !budget.admit(live, &budget))
+					return critical_command_journal_result::quota_exceeded;
+				decoded.original.command = std::move(decoded.frame.command);
+				decoded.original.revision = revision;
+				decoded.original.phase =
+					static_cast<critical_native_recovery_phase>(phase);
+				decoded.original.attachment.assign(payload + at,
+								   payload + payload_size);
+				if (!journal_cash_role_valid_admitted(decoded.original, budget,
+								      live))
+					return budget.rejected ?
+						       critical_command_journal_result::
+							       quota_exceeded :
+						       critical_command_journal_result::corrupt_data;
+				decoded.frame.command = std::move(decoded.original.command);
+				decoded.frame.native_attachment =
+					std::move(decoded.original.attachment);
+				decoded.frame.native_revision = revision;
+				decoded.frame.native_phase =
+					static_cast<critical_native_recovery_phase>(phase);
+				decoded.frame.native = true;
+			}
+			else
+			{
+				if (crc32(0, payload, payload_size) != checksum)
+					return critical_command_journal_result::corrupt_data;
+				if (critical_command_decode_bounded(
+					    payload, payload_size, &decoded.frame.command,
+					    journal_admission_budget::admit, &budget, live,
+					    &command_heap) != critical_command_codec_result::ok)
+					return budget.rejected ?
+						       critical_command_journal_result::
+							       quota_exceeded :
+						       critical_command_journal_result::corrupt_data;
+				if (!journal_admit_add(live, command_heap))
+					return critical_command_journal_result::quota_exceeded;
+			}
+			if (!critical_operation_id_equal(operation,
+							 decoded.frame.command.operation_id))
+				return critical_command_journal_result::corrupt_data;
+			++physical;
+			contains_native = contains_native || decoded.frame.native;
+			if (contains_native && physical > CRITICAL_COMMAND_JOURNAL_MAX_RECORDS)
+				return critical_command_journal_result::corrupt_data;
+			const auto prior = std::find_if(
+				work.frames.begin(), work.frames.end(), [&](const journal_frame &f)
+				{ return critical_operation_id_equal(f.operation_id, operation); });
+			if (prior != work.frames.end())
+			{
+				// Exact original payload bytes, not canonical command equality.
+				if (decoded.frame.native || prior->native ||
+				    prior->bytes.size() != JOURNAL_HEADER_SIZE + payload_size ||
+				    !std::equal(prior->bytes.begin() + JOURNAL_HEADER_SIZE,
+						prior->bytes.end(), payload))
+					return critical_command_journal_result::corrupt_data;
+				++health.duplicates;
+				offset += static_cast<size_t>(record_size);
+				continue;
+			}
+			if (!journal_admit_add(live, static_cast<size_t>(record_size)) ||
+			    !budget.admit(live, &budget))
+				return critical_command_journal_result::quota_exceeded;
+			decoded.frame.bytes.assign(work.data.begin() + offset,
+						   work.data.begin() + offset +
+							   static_cast<size_t>(record_size));
+			decoded.frame.operation_id = operation;
+			if (work.frames.size() == work.frames.capacity())
+			{
+				const size_t request = work.frames.size() +
+						       std::max(work.frames.size(), size_t{ 1 });
+				if (!journal_admit_array(live, request, sizeof(journal_frame)) ||
+				    !budget.admit(live, &budget))
+					return critical_command_journal_result::quota_exceeded;
+			}
+			work.frames.push_back(std::move(decoded.frame));
+			offset += static_cast<size_t>(record_size);
+		}
+		*output = std::move(work.frames);
+		if (physical_output)
+			*physical_output = physical;
+		return critical_command_journal_result::ok;
+	}
+	catch (...)
+	{
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
+}
+struct journal_retire_workspace
+{
+	journal_frame expected;
+	std::vector<journal_frame> frames;
+	native_rewrite_attempt attempt;
+	std::string temporary;
+};
+critical_command_journal_result journal_rewrite_admitted(const std::vector<journal_frame> &frames,
+							 const std::string &temporary,
+							 bool *renamed) noexcept
+{
+	*renamed = false;
+	const int fd = open(temporary.c_str(),
+			    O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC | O_NOFOLLOW, 0600);
+	if (fd < 0)
+		return critical_command_journal_result::io_failure;
+	bool ok = fchmod(fd, 0600) == 0;
+	for (const auto &frame : frames)
+		if (!write_all(fd, frame.bytes.data(), frame.bytes.size()))
+			ok = false;
+	if (ok && fsync(fd))
+		ok = false;
+	if (close(fd))
+		ok = false;
+	if (!ok || rename(temporary.c_str(), journal_path.c_str()))
+	{
+		unlink(temporary.c_str());
+		return critical_command_journal_result::io_failure;
+	}
+	*renamed = true;
+	const int directory = open(journal_directory.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+	if (directory < 0 || fsync(directory))
+	{
+		if (directory >= 0)
+			close(directory);
+		return critical_command_journal_result::io_failure;
+	}
+	return close(directory) ? critical_command_journal_result::io_failure :
+				  critical_command_journal_result::ok;
+}
+} // namespace
+
+size_t critical_command_journal_native_rewrite_storage_bytes() noexcept
+{
+	return native_rewrite_storage.load(std::memory_order_acquire);
+}
+critical_command_journal_result critical_command_journal_retire_native_recovery_bounded(
+	const critical_native_recovery_envelope &expected, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer) noexcept
+{
+	if (!reserve)
+		return critical_command_journal_result::quota_exceeded;
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized)
+		return critical_command_journal_result::not_initialized;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	try
+	{
+		size_t live = outer;
+		if (!journal_admit_add(live, sizeof(journal_retire_workspace)) ||
+		    !journal_admit_add(live, sizeof(journal_admission_budget)) ||
+		    !reserve(live, context))
+			return critical_command_journal_result::quota_exceeded;
+		journal_admission_budget budget{ reserve, context };
+		journal_retire_workspace work;
+		if (expected.phase != critical_native_recovery_phase::continuation_pending ||
+		    !journal_build_native_admitted(expected, &work.expected, budget, live))
+			return budget.rejected ? critical_command_journal_result::quota_exceeded :
+						 critical_command_journal_result::invalid;
+		if (!journal_frame_heap(work.expected, live))
+			return critical_command_journal_result::quota_exceeded;
+		if (health.append_uncertain && !native_rewrite_uncertain.active)
+			return critical_command_journal_result::append_uncertain;
+		const auto scanned = journal_scan_admitted(&work.frames, budget, live);
+		if (scanned != critical_command_journal_result::ok)
+		{
+			record_result(scanned);
+			return scanned;
+		}
+		if (native_rewrite_uncertain.active)
+		{
+			size_t confirm_live = live;
+			if (!journal_admit_array(confirm_live, work.frames.capacity(),
+						 sizeof(journal_frame)))
+				return critical_command_journal_result::quota_exceeded;
+			for (const auto &frame : work.frames)
+				if (!journal_frame_heap(frame, confirm_live))
+					return critical_command_journal_result::quota_exceeded;
+			if (!journal_admit_add(confirm_live, sizeof(struct stat)) ||
+			    !journal_admit_add(confirm_live, sizeof(native_rewrite_attempt)) ||
+			    !budget.admit(confirm_live, &budget))
+				return critical_command_journal_result::quota_exceeded;
+			const auto confirmed =
+				confirm_native_rewrite(work.frames, work.expected, nullptr);
+			record_result(confirmed);
+			return confirmed;
+		}
+		const auto found = std::find_if(work.frames.begin(), work.frames.end(),
+						[&](const journal_frame &frame) {
+							return critical_operation_id_equal(
+								frame.operation_id,
+								work.expected.operation_id);
+						});
+		if (found == work.frames.end() || !found->native ||
+		    found->bytes != work.expected.bytes)
+			return critical_command_journal_result::invalid;
+		work.frames.erase(found);
+		if (!journal_admit_array(live, work.frames.capacity(), sizeof(journal_frame)))
+			return critical_command_journal_result::quota_exceeded;
+		size_t total = 0;
+		for (const auto &frame : work.frames)
+		{
+			if (!journal_frame_heap(frame, live) || total > journal_quota ||
+			    frame.bytes.size() > journal_quota - total)
+				return critical_command_journal_result::quota_exceeded;
+			total += frame.bytes.size();
+		}
+		const size_t temporary_size =
+			journal_directory.size() + 1 + std::strlen(JOURNAL_TEMP);
+		if (!journal_admit_add(live, sizeof(native_rewrite_attempt)) ||
+		    !journal_admit_add(live, work.expected.bytes.size()) ||
+		    !journal_admit_add(live, total) ||
+		    (temporary_size > 15 &&
+		     !journal_admit_add(live, std::max(temporary_size, size_t{ 30 }) + 1)) ||
+		    !budget.admit(live, &budget))
+			return critical_command_journal_result::quota_exceeded;
+		work.attempt.expected = work.expected.bytes;
+		work.attempt.retirement = true;
+		work.attempt.postimage.reserve(total);
+		for (const auto &frame : work.frames)
+			work.attempt.postimage.insert(work.attempt.postimage.end(),
+						      frame.bytes.begin(), frame.bytes.end());
+		// Explicit reserve has the pinned SSO growth request admitted above.
+		work.temporary.reserve(temporary_size);
+		work.temporary.append(journal_directory);
+		work.temporary.push_back('/');
+		work.temporary.append(JOURNAL_TEMP);
+		bool renamed = false;
+		const auto result = journal_rewrite_admitted(work.frames, work.temporary, &renamed);
+		if (result != critical_command_journal_result::ok && renamed)
+		{
+			work.attempt.active = true;
+			native_rewrite_uncertain = std::move(work.attempt);
+			publish_native_rewrite_storage();
+			health.append_uncertain = true;
+			record_result(critical_command_journal_result::append_uncertain);
+			return critical_command_journal_result::append_uncertain;
+		}
+		if (result == critical_command_journal_result::ok)
+		{
+			++health.checkpoints;
+			update_health(work.frames);
+		}
+		record_result(result);
+		return result;
+	}
+	catch (...)
+	{
+		record_result(critical_command_journal_result::quota_exceeded);
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
 }

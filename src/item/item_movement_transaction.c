@@ -4876,6 +4876,10 @@ bool native_quest_preparation_capacity(size_t incoming, bool include_driver = tr
 			return false;
 		incoming += native_quest_birth_retained_bytes;
 	}
+	const size_t journal_storage = critical_command_journal_native_rewrite_storage_bytes();
+	if (journal_storage > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)
+		return false;
+	incoming += journal_storage;
 	for (const auto &[key, entry] : native_quest_acceptances)
 	{
 		if (entry.native_before.size() > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming)

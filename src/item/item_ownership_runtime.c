@@ -1790,3 +1790,307 @@ size_t item_ownership_runtime_size(void)
 {
 	return entries.size();
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool hydrate_storage_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool hydrate_storage_rows(size_t &bytes, size_t count, size_t width) noexcept
+{
+	return (!width || count <= SIZE_MAX / width) && hydrate_storage_add(bytes, count * width);
+}
+template <typename Container> size_t hydrate_node_bytes() noexcept
+{
+	using node =
+		std::__detail::_Hash_node<typename Container::value_type,
+					  std::__cache_default<typename Container::key_type,
+							       typename Container::hasher>::value>;
+	return sizeof(node);
+}
+template <typename Container>
+bool hydrate_hash_heap(const Container &container, size_t &bytes) noexcept
+{
+	// GCC13's bucket_count==1 uses its embedded singleton bucket. Every allocated
+	// prime bucket array has at least two slots, including an empty reserved map.
+	return hydrate_storage_rows(bytes, container.size(), hydrate_node_bytes<Container>()) &&
+	       (container.bucket_count() == 1 ||
+		hydrate_storage_rows(bytes, container.bucket_count(),
+				     sizeof(std::__detail::_Hash_node_base *)));
+}
+bool hydrate_cache_bytes(size_t &bytes) noexcept
+{
+	bytes = sizeof(entries) + sizeof(owner_revisions);
+	return hydrate_hash_heap(entries, bytes) && hydrate_hash_heap(owner_revisions, bytes);
+}
+struct hydrate_previous_entry
+{
+	uint64_t item_uid;
+	bool existed;
+	item_ownership_runtime_entry value;
+};
+struct hydrate_previous_owner
+{
+	item_owner_identity owner;
+	bool existed;
+	uint64_t revision;
+};
+struct hydrate_workspace
+{
+	std::vector<hydrate_previous_entry> previous_entries;
+	std::vector<hydrate_previous_owner> previous_owners;
+	std::unordered_set<uint64_t> item_uids;
+	std::unordered_map<item_owner_identity, uint64_t, owner_hash, owner_equal> incoming_owners;
+	hydrate_previous_entry saved_entry{};
+	hydrate_previous_owner saved_owner{};
+	// The owning maps have their original, private, unchanged default load factor
+	// of one. This actual policy object models reserve's real prime bucket request.
+	std::__detail::_Prime_rehash_policy policy;
+};
+struct hydrate_live_storage
+{
+	hydrate_workspace &work;
+	const size_t &fixed;
+	bool bytes(size_t &output) const noexcept
+	{
+		size_t cache = 0;
+		output = fixed;
+		return hydrate_cache_bytes(cache) && hydrate_storage_add(output, cache) &&
+		       hydrate_storage_rows(output, work.previous_entries.capacity(),
+					    sizeof(hydrate_previous_entry)) &&
+		       hydrate_storage_rows(output, work.previous_owners.capacity(),
+					    sizeof(hydrate_previous_owner)) &&
+		       hydrate_hash_heap(work.item_uids, output) &&
+		       hydrate_hash_heap(work.incoming_owners, output);
+	}
+	bool admit(size_t extra, bool (*reserve)(size_t, void *) noexcept,
+		   void *context) const noexcept
+	{
+		size_t current = 0;
+		return bytes(current) && hydrate_storage_add(current, extra) && reserve &&
+		       reserve(current, context);
+	}
+};
+template <typename Container>
+bool hydrate_reserve_bucket_request(const Container &container, size_t count,
+				    std::__detail::_Prime_rehash_policy &policy,
+				    size_t &request) noexcept
+{
+	// Exact GCC13 _Rehash_base::reserve -> _Hashtable::rehash sequence. Existing
+	// buckets are already in the live census and survive until fresh allocation
+	// and rehash complete. No insertion rehash occurs after these complete reserves.
+	if (container.size() == SIZE_MAX || container.max_load_factor() != policy.max_load_factor())
+		return false;
+	policy._M_reset();
+	const size_t buckets =
+		policy._M_next_bkt(std::max(policy._M_bkt_for_elements(count),
+					    policy._M_bkt_for_elements(container.size() + 1)));
+	request = 0;
+	return buckets == container.bucket_count() ||
+	       hydrate_storage_rows(request, buckets, sizeof(std::__detail::_Hash_node_base *));
+}
+#endif
+} // namespace
+
+bool item_ownership_runtime_cache_storage_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	if (!output)
+		return false;
+	size_t candidate = 0;
+	if (!hydrate_cache_bytes(candidate))
+		return false;
+	*output = candidate;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool item_ownership_runtime_hydrate_many_atomic_bounded(const item_ownership_runtime_entry *batch,
+							size_t count,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	if ((!batch && count) || count > ITEM_OWNERSHIP_RUNTIME_MAX)
+		return false;
+	if (!count)
+		return true;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	size_t initial_cache = 0;
+	if (!hydrate_cache_bytes(initial_cache) || outer_live < initial_cache)
+		return false;
+	size_t fixed = outer_live - initial_cache;
+	if (!hydrate_storage_add(fixed, sizeof(hydrate_workspace)) ||
+	    !hydrate_storage_add(fixed, sizeof(hydrate_live_storage)))
+		return false;
+	size_t initial = fixed;
+	if (!hydrate_storage_add(initial, initial_cache) || !reserve || !reserve(initial, context))
+		return false;
+	hydrate_workspace work;
+	hydrate_live_storage live{ work, fixed };
+	size_t new_entries = 0;
+	try
+	{
+		size_t request = 0;
+		if (!hydrate_storage_rows(request, count, sizeof(hydrate_previous_entry)) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		work.previous_entries.reserve(count);
+		if (!hydrate_reserve_bucket_request(work.item_uids, count, work.policy, request) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		work.item_uids.reserve(count);
+		if (!hydrate_reserve_bucket_request(work.incoming_owners, count, work.policy,
+						    request) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		work.incoming_owners.reserve(count);
+		for (size_t index = 0; index < count; ++index)
+		{
+			const item_ownership_runtime_entry &entry = batch[index];
+			if (!entry.item_uid || !entry.root_item_uid ||
+			    !item_owner_identity_valid(entry.owner) ||
+			    entry.state == item_custody_state::absent || entry.vnum < 0)
+				return false;
+			// Unique-key insertion does not allocate for a duplicate. Complete reserve
+			// already prevents rehash; the request is the actual owning hash node.
+			request = work.item_uids.find(entry.item_uid) == work.item_uids.end() ?
+					  hydrate_node_bytes<decltype(work.item_uids)>() :
+					  0;
+			if (!live.admit(request, reserve, context) ||
+			    !work.item_uids.insert(entry.item_uid).second)
+				return false;
+			const auto incoming_owner = work.incoming_owners.find(entry.owner);
+			if (incoming_owner != work.incoming_owners.end())
+			{
+				if (incoming_owner->second != entry.owner_revision)
+					return false;
+			}
+			else
+			{
+				if (!live.admit(hydrate_node_bytes<decltype(work.incoming_owners)>(),
+						reserve, context))
+					return false;
+				work.incoming_owners.emplace(entry.owner, entry.owner_revision);
+			}
+			const auto found = entries.find(entry.item_uid);
+			if (found != entries.end() &&
+			    (found->second.item_revision > entry.item_revision ||
+			     (found->second.item_revision == entry.item_revision &&
+			      (found->second.root_item_uid != entry.root_item_uid ||
+			       found->second.parent_item_uid != entry.parent_item_uid ||
+			       !item_owner_identity_equal(found->second.owner, entry.owner) ||
+			       found->second.vnum != entry.vnum ||
+			       found->second.state != entry.state))))
+				return false;
+			work.saved_entry.item_uid = entry.item_uid;
+			work.saved_entry.existed = found != entries.end();
+			if (found != entries.end())
+				work.saved_entry.value = found->second;
+			else
+			{
+				if (!live.admit(sizeof(item_ownership_runtime_entry), reserve,
+						context))
+					return false;
+				work.saved_entry.value = item_ownership_runtime_entry{};
+			}
+			work.previous_entries.push_back(work.saved_entry);
+			if (found == entries.end())
+				++new_entries;
+		}
+		request = 0;
+		if (!hydrate_storage_rows(request, work.incoming_owners.size(),
+					  sizeof(hydrate_previous_owner)) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		work.previous_owners.reserve(work.incoming_owners.size());
+		for (const auto &[owner, revision] : work.incoming_owners)
+		{
+			const auto found = owner_revisions.find(owner);
+			if (found != owner_revisions.end() && found->second > revision)
+				return false;
+			work.saved_owner.owner = owner;
+			work.saved_owner.existed = found != owner_revisions.end();
+			work.saved_owner.revision = found != owner_revisions.end() ? found->second :
+										     0;
+			work.previous_owners.push_back(work.saved_owner);
+		}
+		if (entries.size() > ITEM_OWNERSHIP_RUNTIME_MAX - new_entries)
+			return false;
+		size_t entry_target = entries.size(), owner_target = owner_revisions.size();
+		if (!hydrate_storage_add(entry_target, new_entries) ||
+		    !hydrate_storage_add(owner_target, work.incoming_owners.size()) ||
+		    !hydrate_reserve_bucket_request(entries, entry_target, work.policy, request) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		entries.reserve(entry_target);
+		if (!hydrate_reserve_bucket_request(owner_revisions, owner_target, work.policy,
+						    request) ||
+		    !live.admit(request, reserve, context))
+			return false;
+		owner_revisions.reserve(owner_target);
+		// Admit the exact final monotonic node peak BEFORE the first data mutation.
+		// Reserves cover every possible insertion, including already-present owners;
+		// inserts need no further budget callback and cannot leave partial effects on
+		// a resource refusal. Allocation failure uses the original content rollback.
+		size_t new_owners = 0;
+		for (const auto &owner : work.previous_owners)
+			if (!owner.existed)
+				++new_owners;
+		request = 0;
+		if (!hydrate_storage_rows(request, new_entries,
+					  hydrate_node_bytes<decltype(entries)>()) ||
+		    !hydrate_storage_rows(request, new_owners,
+					  hydrate_node_bytes<decltype(owner_revisions)>()) ||
+		    !live.admit(request, reserve, context))
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	try
+	{
+		for (size_t index = 0; index < count; ++index)
+			entries.insert_or_assign(batch[index].item_uid, batch[index]);
+		for (const auto &[owner, revision] : work.incoming_owners)
+			owner_revisions.insert_or_assign(owner, revision);
+	}
+	catch (...)
+	{
+		// POD/noexcept hash/equality operations make allocation the ordinary failure;
+		// the noexcept companion also restores contents for any library refusal.
+		for (const hydrate_previous_entry &entry : work.previous_entries)
+			if (entry.existed)
+				entries[entry.item_uid] = entry.value;
+			else
+				entries.erase(entry.item_uid);
+		for (const hydrate_previous_owner &owner : work.previous_owners)
+			if (owner.existed)
+				owner_revisions[owner.owner] = owner.revision;
+			else
+				owner_revisions.erase(owner.owner);
+		return false;
+	}
+	return true;
+#endif
+}
