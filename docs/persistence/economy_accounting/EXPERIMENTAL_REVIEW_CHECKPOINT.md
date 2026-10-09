@@ -2356,3 +2356,17 @@ PASS; 931 policies/393 pins authenticate, zero new/unmapped sites. Native tests 
 batched. Actual full warm/cold root/context/effect/checkpoint/ACK join remains open;
 private handoff remains uncalled. Accounting inactive/admission CLOSED, coverage
 incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Actual native Zombie publication dependency implemented - 2026-10-09
+
+[Owning source](NATIVE_ZOMBIE_PUBLICATION_ADMISSION_2026-10-09.md) adds the actual
+registry/vector/game/nested-zombie retention observer and private prospectively
+admitted unchanged original nonallocating publication. Full UID/generator/ID/state/
+reservation/capacity/prototype/procedure guards remain; no callback follows transfer.
+Caller retains registry/private-stage ownership exactly once and recounts both on
+every return. Independent RAW/final source/prefix/inverse/tokens PASS; all931 policies/
+393pins authenticate, zero new/unmapped sites. Native tests stay batched. Actual
+scheduler/diagnostic/service-step/root and preparation/restore joins remain open;
+leaf remains uncalled. Original scoped Plan1 acceptance, inactive accounting/CLOSED
+admission, coverage incomplete/release BLOCKED, protected WIP and root ACTIVE persist.
