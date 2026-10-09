@@ -684,10 +684,10 @@ namespace
 {
 	// Caller view is separate. preflight's local view survives its receipt/row
 	// checks; read_receipt can retain its local and returned completion objects.
-	return sizeof(wire_view) + std::max(
-		2 * sizeof(critical_completion),
-		2 * sizeof(zone_reset_item_recovery_effect) +
-			2 * sizeof(zone_reset_item_recovery_action));
+	return sizeof(wire_view) + sizeof(std::span<const uint8_t>) +
+	       std::max(2 * sizeof(critical_completion),
+			2 * sizeof(zone_reset_item_recovery_effect) +
+				2 * sizeof(zone_reset_item_recovery_action));
 }
 [[maybe_unused]] error recovery_canonical_bounded(const critical_command &command,
 	std::vector<uint8_t> *canonical, zone_reset_item_image *image,
@@ -1051,4 +1051,128 @@ bool zone_reset_item_recovery_terminal_bounded(const critical_native_recovery_en
 	const std::span<const uint8_t> bytes(envelope.attachment);
 	return zone_reset_item_recovery_terminal_body_decode_bounded(
 		       envelope.command, bytes, &decoded, reserve, context, live) == error::ok;
+}
+
+namespace
+{
+bool recovery_envelope_decode_admitted(const critical_native_recovery_envelope &envelope,
+				       zone_reset_item_recovery_context *output,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer, size_t *retained_heap) noexcept
+{
+	if (!reserve || !output || !retained_heap || !envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending))
+		return false;
+	// Caller admits the actual output context. This actual vector-to-wire span
+	// is separate and remains through the complete owning original decode.
+	size_t live = outer, heap = 0;
+	if (!recovery_bound_add(live, sizeof(std::span<const uint8_t>)) ||
+	    !reserve(live, context) ||
+	    zone_reset_item_recovery_decode_bounded(envelope.command, envelope.attachment, output,
+						    reserve, context, live, &heap) != error::ok ||
+	    (envelope.revision == 1 &&
+	     (envelope.phase != critical_native_recovery_phase::execution_pending ||
+	      output->receipt_present || !no_progress(*output))) ||
+	    (envelope.phase == critical_native_recovery_phase::continuation_pending &&
+	     !body_terminal(*output)))
+		return false;
+	*retained_heap = heap;
+	return true;
+}
+
+bool recovery_command_equal_admitted(const critical_command &left, const critical_command &right,
+				     bool (*reserve)(size_t, void *) noexcept, void *context,
+				     size_t outer) noexcept
+{
+	size_t a = 0, b = 0;
+	if (!reserve ||
+	    critical_command_encoder_working_bytes(left, &a) != critical_command_codec_result::ok ||
+	    critical_command_encoder_working_bytes(right, &b) !=
+		    critical_command_codec_result::ok ||
+	    a < sizeof(std::vector<uint8_t>) || b < sizeof(std::vector<uint8_t>))
+		return false;
+	// Keep both original equality vectors and actual nested encoder result;
+	// the first encoded heap remains live throughout the second original pass.
+	size_t first = outer, second = outer;
+	if (!recovery_bound_add(first, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !recovery_bound_add(first, a) ||
+	    !recovery_bound_add(second, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !recovery_bound_add(second, a - sizeof(std::vector<uint8_t>)) ||
+	    !recovery_bound_add(second, b) || !reserve(std::max(first, second), context))
+		return false;
+	try
+	{
+		return critical_command_equal(left, right);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // namespace
+
+bool zone_reset_item_recovery_successor_bounded(const critical_native_recovery_envelope &expected,
+						const critical_native_recovery_envelope &successor,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer_live) noexcept
+{
+	if (!reserve || expected.revision == UINT64_MAX ||
+	    successor.revision != expected.revision + 1)
+		return false;
+	size_t live = outer_live;
+	// Full original contexts coexist. Two temporary action DTOs are created
+	// by original successor_effect; reserve them before any context construction.
+	if (!recovery_bound_add(live, 2 * sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(live, 2 * sizeof(zone_reset_item_recovery_action)) ||
+	    !reserve(live, context))
+		return false;
+	zone_reset_item_recovery_context before, after;
+	size_t before_heap = 0, after_heap = 0;
+	if (!recovery_command_equal_admitted(expected.command, successor.command, reserve, context,
+					     live) ||
+	    !recovery_envelope_decode_admitted(expected, &before, reserve, context, live,
+					       &before_heap) ||
+	    !recovery_bound_add(live, before_heap) ||
+	    !recovery_envelope_decode_admitted(successor, &after, reserve, context, live,
+					       &after_heap))
+		return false;
+	if (expected.phase == critical_native_recovery_phase::continuation_pending ||
+	    successor.phase == critical_native_recovery_phase::continuation_pending)
+		return successor.phase == critical_native_recovery_phase::continuation_pending &&
+		       expected.attachment == successor.attachment && body_terminal(after);
+	// Exactly the original full monotonic receipt/stage/once-only/action/effect/
+	// UID/cursor transition predicate; no reduced shape or synthetic progress.
+	return successor_context(before, after);
+}
+
+bool zone_reset_item_recovery_publication_bounded(const critical_native_recovery_envelope &envelope,
+						  const critical_completion &current,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+	size_t live = outer_live;
+	if (!recovery_bound_add(live, sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(live, sizeof(zone_reset_item_image)) || !reserve(live, context))
+		return false;
+	zone_reset_item_recovery_context value;
+	zone_reset_item_image image;
+	size_t context_heap = 0, image_heap = 0;
+	if (!recovery_envelope_decode_admitted(envelope, &value, reserve, context, live,
+					       &context_heap) ||
+	    !body_terminal(value) || !recovery_bound_add(live, context_heap) ||
+	    zone_reset_item_command_decode_bounded(envelope.command, &image, reserve, context,
+						   live) != error::ok ||
+	    !recovery_image_heap(image, &image_heap) || !recovery_bound_add(live, image_heap) ||
+	    !recovery_bound_add(live, sizeof(item_transfer_result)) ||
+	    !recovery_bound_add(live, sizeof(std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES>)) ||
+	    !reserve(live, context))
+		return false;
+	// Original complete result bytes/revision/shape and economic core match;
+	// attempts/times/replay outcome may differ exactly as before. Delivery,
+	// current physical proof, ACK and generation remain the actual owner's duty.
+	return receipt_result_valid(envelope.command, image, true, current) &&
+	       receipt_core_equal(value.receipt, current);
 }

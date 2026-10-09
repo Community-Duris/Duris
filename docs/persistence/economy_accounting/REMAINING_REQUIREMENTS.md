@@ -2924,3 +2924,18 @@ every return. Independent RAW/final source/prefix/inverse/tokens PASS; all931 po
 scheduler/diagnostic/service-step/root and preparation/restore joins remain open;
 leaf remains uncalled. Original scoped Plan1 acceptance, inactive accounting/CLOSED
 admission, coverage incomplete/release BLOCKED, protected WIP and root ACTIVE persist.
+
+
+## Complete ROOM successor and publication predicates implemented - 2026-10-09
+
+[Owning source](ROOM_SUCCESSOR_PUBLICATION_ADMISSION_2026-10-09.md) preserves original
+full canonical equality, both complete decoded contexts, monotonic action/effect/receipt/
+stage/UID/cursor rules and exact continuation BODY. Publication preserves full terminal
+context/image/result/revision/receipt-core proof. Independent review found/fixed the
+existing nested preflight parser's second live input span in its actual owning profile.
+Original unbounded/SQL/inactive bodies unchanged; exact correction/inverses/tokens and
+RAW/final source review PASS. All931 policies/393pins authenticate; zero new/unmapped
+sites. Native tests stay batched. Coordinator checkpoint/successor registration/ACK/
+journal replacement and full warm/cold root/effect/placement joins remain unfinished;
+private predicates remain uncalled. Protected WIP, inactive/CLOSED accounting, coverage
+incomplete/release BLOCKED and primary ACTIVE goal persist; no completion claim.
