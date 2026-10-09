@@ -66825,8 +66825,8 @@
       "src/flatfile/flatfile_item_accounting_reference.h": "b7623894a25f3898995f2e4dd531b9380ba7fcb49e3b9ba05a7e5d856f8530d5",
       "src/world/new_events.c": "f91c5cc9483023ae43083b84e1dff243c73e082dd8ba36757848288cac005855",
       "src/world/events.h": "21025252da8263bdafefd79fd39c610bfae2c546b9da8956e223b6b79c10bc95",
-      "src/core/utility.c": "6efc8ad366b80abc500eabe0f07ff0d39da4e3708b3bfb9c6f0895a2bcf7e6af",
-      "src/core/utility.h": "5eb16e44423115edc6797fad4b1c368aa5f010b004472267bf78480ad8d5a8b6",
+      "src/core/utility.c": "b48ed5b71394903d3f5cba6d30a5c0173306e6f99e3d03e47d9db44f58e05774",
+      "src/core/utility.h": "57137e76c2b6877eef1efc6cd2de5a00b382f78c30a7ff8858d0845699c0953d",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",

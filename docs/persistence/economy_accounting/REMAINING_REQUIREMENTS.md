@@ -2992,3 +2992,16 @@ Native tests stay batched. Full fanout/logging/scheduler/service/root and origin
 warm/cold/checkpoint/ACK/recovery qualification remain unfinished. Protected WIP,
 inactive/CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal
 persist; no new gate or complete nativebudget claim.
+
+
+## Full original diagnostic fanout/logging admitted - 2026-10-09
+
+[Owning implementation](NATIVE_DIAGNOSTIC_DELIVERY_ADMISSION_2026-10-09.md) joins
+real bounded formatter/output providers with the original debug recipient order,
+retained malloc and ALL-current output rejoin before every send. Logit preserves
+actual timestamp/counter/path/open/mkdir/reopen/fallback/file-output lifetime/order.
+RAW/final prefix/headerinverse/tokens/preprocessor and delivery dependency PASS;
+931policies/398pins authenticate, zero new/unmapped sites. Native tests stay batched.
+Scheduler/problem-buffer/periodic/service-step/root and original warm/cold/checkpoint/
+ACK/recovery qualification remain unfinished. Protected WIP, inactive/CLOSED
+accounting, incomplete coverage/BLOCKED release and ACTIVE goal persist; no newgate.
