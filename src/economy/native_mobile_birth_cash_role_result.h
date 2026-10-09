@@ -46,4 +46,29 @@ bool native_mobile_birth_cash_role_result_matches(
 	const critical_command &, const native_mobile_birth_shared_shop_participant &,
 	const economic_accounting_plan &, const native_mobile_birth_cash_role_result &) noexcept;
 
+// Prospective complete role result build/matches. Caller includes inputs, old
+// output and inline output result in outer_live, retaining absolute simultaneous
+// admission through transfer. Full original repeated command/compiler proof,
+// canonical plan pair, image/role/payload/plan digests and exact result equality
+// remain required. Supported requests require GCC13 libstdc++ C++11 ABI.
+// Build output stays strong; matching remains false on any refusal. A caller's
+// sticky forwarding callback may distinguish its budget refusal without errno.
+// These helpers grant no source, wallet, SHOP, storage or ACK authority.
+economic_accounting_error native_mobile_birth_cash_role_result_build_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	native_mobile_birth_cash_role_result *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_result_build_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	const economic_accounting_plan &, native_mobile_birth_cash_role_result *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+bool native_mobile_birth_cash_role_result_matches_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	const native_mobile_birth_cash_role_result &, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+bool native_mobile_birth_cash_role_result_matches_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	const economic_accounting_plan &, const native_mobile_birth_cash_role_result &,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 #endif
