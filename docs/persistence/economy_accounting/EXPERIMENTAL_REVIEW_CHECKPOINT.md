@@ -2286,3 +2286,20 @@ Native tests remain deferred. Actual factory/root/cache integration and complete
 ROOM warm/cold/coordinator/terminal qualification remain open. No plan/release
 completion claim. Accounting inactive/admission CLOSED, coverage incomplete/release
 BLOCKED, protected WIP and primary goal ACTIVE persist.
+
+
+## Genuine native ROOM forest publisher dependency implemented - 2026-10-09
+
+[The native forest publisher source](NATIVE_ROOM_FOREST_PUBLICATION_ADMISSION_2026-10-09.md)
+adds the complete owning bounded publisher. Full stage/proc/predecessor/counter/
+forest/global/cached/reset-order proof is preserved through equivalent complete
+linear lookup and genuine bounded cache observation/atomic hydration. All actual
+spans, bit-vector words, UID reserve and transferred cached rows are admitted
+prospectively. Original irreversible consumption tail is byte-exact; no allocation
+or budget callback follows hydration success/consumption. Caller must retain
+current cache on every return. Independent raw/final review, original C prefix/
+header inverse, tokens/preprocessor and tail checks PASS. All 931 policies/393 pins
+authenticate; zero new/unmapped sites. Native tests/mixed workloads remain deferred.
+Actual root warm/cold/effects/checkpoints/ACK/guarded coordinator/terminal qualification
+remain open. No plan/release completion claim. Accounting inactive/admission CLOSED,
+coverage incomplete/release BLOCKED, protected WIP and primary goal ACTIVE persist.

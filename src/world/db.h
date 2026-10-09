@@ -489,6 +489,21 @@ class quest_mobile_native_item_stage
 	static bool publish_many(std::span<quest_mobile_native_item_stage *>,
 				 std::span<struct obj_data *>,
 				 std::span<const item_ownership_runtime_entry>) noexcept;
+	// Complete private ROOM forest publication with prospective scratch requests.
+	// Three input spans are borrowed by reference; actual copied spans/temporary
+	// lookups/bit-vector/selection/full cached-link capture and atomic hydration
+	// are admitted before requests. Complete original predicates remain required.
+	// Caller outer includes initial runtime cache observer EXACTLY ONCE and all
+	// already-live inputs/stages/old outputs. Retain admitted peak through return
+	// and refresh CURRENT cache allowance on EVERY return (even false after a
+	// global reserve). No allocations/budget callbacks after first consumption.
+	// Pinned GCC13 libstdc++ C++11 ABI; unsupported policy refuses. No new source,
+	// admission, physical proof or ACK authority; original method unchanged.
+	static bool publish_many_bounded(const std::span<quest_mobile_native_item_stage *> &,
+					 const std::span<struct obj_data *> &,
+					 const std::span<const item_ownership_runtime_entry> &,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t outer_live) noexcept;
 	size_t publication_step_count() const noexcept;
 	bool publication_step(size_t, struct obj_data *expected,
 			      quest_mobile_native_item_effect &) noexcept;
