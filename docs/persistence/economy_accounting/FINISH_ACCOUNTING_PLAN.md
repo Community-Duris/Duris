@@ -196,6 +196,77 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Native constructor codec admission preparation selected - 2026-10-09
+
+Published primary3890eac3d892f174aba0abfd97d33072fbee59e0 has actual parent
+c5910719018c42260bc54166a81462c212b22d08. Root reads the complete new C/H,
+handoff NATIVE_CONSTRUCTOR_CODEC_ADMISSION_2026-10-09.md and real adjacent native
+constructor/cash-role command and capture bodies. The original complete C is an
+exact prefix; removing the unique header insertion restores its complete parent.
+All four adjacent providers remain byte-identical. Root metadata proof PASS is
+D:/Dev/Temp/coordinator-constructor-codec-frontier-20261009/source-authentication.json.
+No compile/preprocess/link/product/native/DB execution or private import occurred.
+
+Two prospective NBC1/NBC2/NBC3 codec companions now exist: encode_blob_bounded
+and decode_bounded. They call unchanged full original codecs after supported-policy
+and absolute outer-live admission. They grant shape/wire evidence only. Actual
+native cash-role recipe/command, original NMB3 constructor payload and world capture
+still call unbounded original entry points; no accepting bounded caller is published.
+The primary handoff reports private source authentication, not executed qualification.
+
+New bounded independent preparation, one active delivery per existing chat:
+Architecture owns private PUBLISHED_NATIVE_CONSTRUCTOR_CODEC_CALLER_BOUNDARY_2026-10-09.txt.
+Map new leaf-to-real NBC4/NMB4/NMB3 caller boundaries using complete definitions,
+actual simultaneous caller-owned inputs/old output and transfer lifetimes, callback
+refusal/error/unsupported-policy ordering, and retained original authority checks.
+Connect each missing caller/companion dependency to its actual source operation;
+do not implement primary math/admission or repeat a broad inventory. Benefit:
+integration can use the new leaf without mistaking it for whole-command admission.
+Quest owns private PUBLISHED_NATIVE_CONSTRUCTOR_CODEC_ACCEPTANCE_DELTA_2026-10-09.txt.
+Prepare the smallest implementation-ready acceptance blueprint for new wrappers,
+all three original wire profiles, refusal/overflow/unsupported policy/strong outputs,
+semantic refusal and real nested cash-role re-encoding and full binding obligations.
+Use actual original predicate/body and available maintained harness patterns only;
+keep prospective component checks separate from genuine native owner acceptance.
+Benefit: later original-provider qualification preserves actual wire/identity/outcome
+controls and exposes precisely which fixture/allocator/caller prerequisites are missing.
+
+Available inputs: source3890 and actual parentc591, full original codec/C/H and
+unchanged cash-role recipe/command, native mobile command, world capture and original
+maintained tests. Reuse CLOSED contextual packets at their original pins; do not
+repin/reopen them. Unavailable: published accepting bounded native caller, image/intent
+companions, full command/compiler/journal/coordinator/capture prefix admission,
+genuine native fixture/failure controls and private constructor-leaf/integrated proof
+bodies. Missing inputs block dependent execution, not these narrow preparations.
+All proposed checks remain UNEXECUTED and genuine native commands UNAVAILABLE.
+
+Each worker seals its private note, whole provider/preimage pins, exact original
+function/body/catch and C-prefix/header-inverse proof, minimal context reuse and
+size/hash index with stdlib/read-only Git metadata verifier. Root independently
+reviews exact scope and proof before publishing delivery disposition. No product
+execution, maintained source/test/schema edits, private commits/import/registration,
+new authority/wire/fixture seams or primary/Plan5 duplication are authorized.
+
+Evolving priority queue: (1) finish and independently review these two concrete new
+leaf/caller and acceptance deltas; (2) reassess published accepting native callback/
+dispatcher, full command/image/intent or mixed-journal/coordinator-prefix/capture
+admission successor; (3) authentic fixture/failure-control source permits only the
+dependent original-provider qualification step under then-current authorization;
+(4) required supported aggregate32MiB/ABI/allocator, Plans1-5/R1-R8, SQL0065/schema65,
+backend/gameplay/persistence/recovery/Plan5 and published owner completion stay open.
+No adoption wait, invented case or repeated unchanged broad batch. At delivery,
+reassess current published source and select next work only on concrete useful inputs.
+
+Terminal retention packets remain independently CLOSED at original43ecc/a18bb pins;
+all six TR cuts UNEXECUTED/genuine commands UNAVAILABLE. Factory/binding packets
+stay CLOSED at originald818, including quest's two-segment CURRENT/RETAINED correction
+and preserved history; immutable-terminal packets stay CLOSED at original63de.
+All other completed packets/worktrees/jobs preserved. Root actual Goal BLOCKED
+unchanged; worker blocked native Goals are not resumed by preparation. Continuing
+heartbeat ACTIVE through broader finish audit or user pause. Primary owns shared
+implementation/contracts/math/integration/qualification; Plan5 owns suite/SQL/recovery.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED unchanged.
+
 ## Terminal retention preparations independently reviewed - 2026-10-09
 
 Both selected terminal-retention packets PASS independent SOURCE/DESIGN review and
