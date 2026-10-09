@@ -53,6 +53,24 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator reviews room-P preparation and routes actual flat Smith source - 2026-10-08
+
+Maintained0411528f0 publishes actual four-file flat Smith readiness,fulfilling the
+architecture source trigger. Root reads full report/diff and authenticates raw
+Git bodies;one observer report hash equals CRLF representation while committed
+LF SHA616f9ca5 is authoritative. No semantic divergence demonstrated. Tests/schema
+remain unchanged;private broader candidate and full native owner stay unavailable.
+Quest room-P target/child continuation preparation PASSes independent source/
+acceptance review:16 pins,six preserved closed artifacts,actual constructor/lookup/
+self-refusal/last_cmd/load-miss and fixture limits corroborated. No native run.
+The finite P/D/S case remains owner-dependent;it is closed preparation,not executed
+acceptance. Architecture now reviews actual flat-profile/context/hold/three capacity
+cuts;quest prepares ONE complementary future native flat-context/hold/capacity
+acceptance delta. Both private deliveries are PENDING root review. Exact scope,
+proof,ownership and dependencies are in the continuing charter/preparation review.
+Primary major-plan execution deferral remains;actual native GoalsBLOCKED,
+heartbeatACTIVE,required Plans1-5/R1-R8 and owner completion still unfinished.
+
 ## Coordinator closes flat-image/O preparation and selects room-P acceptance - 2026-10-08
 
 Architecture flat persisted-image boundary and quest original O admission/cursor

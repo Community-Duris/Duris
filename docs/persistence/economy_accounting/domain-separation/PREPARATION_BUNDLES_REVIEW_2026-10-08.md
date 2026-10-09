@@ -2249,3 +2249,73 @@ Plans1-5,applicable R1-R8 and owner completion disposition remain unfinished.
 Actual root/native Goals stay BLOCKED; heartbeat ACTIVE,without an adoption wait,
 false resumption or overall completion. Continued finite preparation does not
 change the broader finish line.
+
+## Maintained flat Smith source arrives; room-P preparation reviewed - 2026-10-08
+
+Primary0411528f076f219a81ed2dc028460c0f4d166713 publishes the actual four-file
+[maintained Smith flat readiness port](../SMITH_MAINTAINED_FLAT_READINESS_2026-10-08.md),
+parent48cccd49c. Root reads the full report and four-file source diff,authenticates
+all four raw Git bodies,and verifies tests/async and migrations unchanged. This
+supersedes the waiting-for-maintained-flat-source trigger above. The implemented
+flat save profile is now observable; genuine compound Smith/native owner,full
+persisted/physical/native-history correspondence and execution remain unavailable.
+Private broader candidatee9459d7b/equipped SHOP correction are reported only.
+Actual source publication supplies useful independent preparation;it does not
+resume the blocked native Goals or qualify the larger private candidate.
+
+One report hash has an exact line-ending provenance distinction:
+economic_gameplay_authority.c committed LF blob12b4766a8455ece6e5d0f41020240b47c783dd7b
+is52,336 bytes,SHA256616f9ca581cff1095ce7b58e33b98416935e6443f4052bb30a221f96b2f27a73.
+Reported a9ea76da7e39a49c69b3d03e81be6baff22320db98a269d63596d3d3c8e295f5
+exactly matches that body converted to CRLF;other three report hashes match raw
+Git LF. Initial assertion failure and corrected explicit authentication remain
+preserved. No semantic divergence is demonstrated;no primary report rewrite.
+Root proof D: coordinator-room-p-and-flat-port-review-20261008/review.json.
+
+Quest ORIGINAL_ROOM_P_TARGET_CONTINUATION_ACCEPTANCE_2026-10-08.txt,
+19,368 bytes,SHA2564a76b2495fdc406fb9049f1645f81e8fd970aaa353a0ae1c7c22173489a5934f,
+now PASSes independent bounded source/acceptance preparation review. All16 exact
+pins authenticate:15 publicd5ab7b276 and one prior-owned prep blueprint;all seven
+selected source/four fixture providers remain exact at current041. Six closed
+artifact hashes stay unchanged. Actual constructor/UID/prepend/global target
+lookup,nesting/lifetime and fixture cuts are separately corroborated. Maintained
+inactive/mobile P constructs before target lookup;reported warm room-P freezes
+before loading. Same-prototype public lookup can select the child itself;nesting
+refuses while dispatcher still sets last_cmd1. A conditional D marker alone is
+not graph/processed proof. P chance is not an entry prerequisite as it is for
+ordinary O;genuine P load miss can consume a UID. The smallest future distinct
+parent/child P/D/S case requires real supported target/source and original phase/
+child/result observations. Private current-P/warm/cursor/caller and legal holds/
+fault/lifetime cuts remain unavailable. Existing M-only inactive actual-reset
+fixture/manual nesting does not qualify P. This finite preparation is CLOSED,
+without native execution or any private implementation review.
+
+Two bounded PRIVATE deliveries are active on the new actual source:
+
+- Architecture:SMITH_MAINTAINED_FLAT_READINESS_SOURCE_REVIEW_2026-10-08.txt,
+  independent review of exact pipeline C/H and economic authority C/H plus genuine
+  maintained dependencies. Trace backend/callback selection,passive wallet cut,
+  runtime/context/epoch identity,begin state/generation,queue/ACK/hold/cancel and
+  output refusal. Independently assess all three root/account allocated-capacity
+  cuts with canonical body/slot/shared32MiB,overflow/replacement and SQL/other-profile
+  preservation. Reuse closed correspondence/flat-image packets. Return source-only
+  findings or concrete reachable defects with exact pins;root review is PENDING.
+- Quest:SMITH_FLAT_READINESS_ACCEPTANCE_DELTA_2026-10-08.txt,ONE smallest future
+  genuine flat begin/queue/journal/selected writer/ACK/hold/observation case with
+  bounded mode/callback,root/account/racewar/wallet/ownership-epoch/runtime,stale
+  context/output-refusal and real measured spare-capacity negatives. Reuse sealed
+  SQL cross-proof/retention and flat-image findings without duplicating architecture
+  review. Original friend declaration is not a native entry;controlled callbacks,
+  string lengths,fabricated buffers or output epoch/generation copies cannot
+  replace authentic owner,capacity or hold capability. Root review is PENDING.
+
+Primary owns maintained implementation,shared authorities and Plan5. Neither
+assignment permits maintained edits/private import/commit,new observer API/schema,
+friend access,accepting doubles or executable qualification. Exact unavailable
+steps:genuine compound/native caller and exports,legal integrated phase/context/
+hold/fault cuts,full native/persisted proof and authenticated integrated provider
+export at major-plan readiness. One active delivery per chat;no cross-chat adoption
+wait. Existing worktrees/live jobs/sealed packets stay intact. No compiler,
+preprocessing,product tests,server,DB or native run. Actual root/native Goals stay
+BLOCKED,heartbeatACTIVE;required Plans1-5/R1-R8 and published owner completion
+remain unfinished.
