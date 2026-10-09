@@ -4595,3 +4595,70 @@ bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scrat
 	(void)quest_mobile_native_birth_owner::charge();
 	return false;
 }
+
+bool zone_reset_item_owner::restore_cold_flat_bindings(
+	const std::span<quest_mobile_native_item_stage *> &factories, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	if (!original_context || !reserve || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql())
+		return false;
+	auto &root = *static_cast<warm_root *>(original_context);
+	if (!root.cold || !root.submitted || !root.completed || root.blocked ||
+	    factories.size() != root.forest.items.size())
+		return false;
+	if (root.cold_binding_restored)
+		return true;
+	try
+	{
+		if (!root.cold_bindings_prepared)
+		{
+			struct input_workspace
+			{
+				std::vector<quest_mobile_native_item_binding> inputs;
+				std::span<const quest_mobile_native_item_binding> view;
+			};
+			size_t live = outer_live;
+			if (!warm_scratch_add(live, sizeof(input_workspace)) ||
+			    !warm_scratch_add(live, sizeof(quest_mobile_native_item_binding)) ||
+			    !warm_scratch_array(live, factories.size(),
+						sizeof(quest_mobile_native_item_binding)) ||
+			    !reserve(live, budget_context))
+				return false;
+			input_workspace work;
+			work.inputs.reserve(factories.size());
+			for (size_t at = 0; at < factories.size(); ++at)
+			{
+				const auto *factory = factories[at];
+				if (!factory || !factory->object() ||
+				    factory->object()->obj_uid != root.forest.items[at].object_uid)
+					return false;
+				work.inputs.push_back(factory->binding_input());
+			}
+			work.view = work.inputs;
+			const bool prepared = shop_trade_original_procedure_binding_stage::
+				prepare_native_birth_cold_flat_bounded(work.view,
+								       root.whole_bindings, reserve,
+								       budget_context, live);
+			if (prepared)
+				root.cold_bindings_prepared = true;
+			if (!reserve(live, budget_context) || !prepared)
+				return false;
+		}
+		if (!root.whole_bindings.valid_flat())
+			return false;
+		// Only authentic recorded success rebuilds allocation-free actual bindings.
+		// Genuine unstarted action remains staged for the real intent/return driver.
+		if (root.context.whole_binding.succeeded)
+		{
+			root.whole_bindings.commit_flat_unchecked();
+			root.cold_binding_restored = true;
+		}
+		return reserve(outer_live, budget_context);
+	}
+	catch (...)
+	{
+		(void)reserve(outer_live, budget_context);
+		return false;
+	}
+}
