@@ -3,6 +3,7 @@
 #include "economy/shop.h"
 #include "account/account.h"
 #include "core/prototypes.h"
+#include "core/files.h"
 #include "core/utils.h"
 #include "world/world_singletons.h"
 #include "persistence/persistence_mode.h"

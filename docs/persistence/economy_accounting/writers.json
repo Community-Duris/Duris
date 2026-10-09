@@ -66678,7 +66678,7 @@
       "src/persistence/zone_reset_item_origin_sql.h": "4b4a79185adf97dc5198f5f62e0bd399cd6e42c018ecff0169558d333a20987b",
       "src/flatfile/flatfile_season_state.h": "4cf34ecb58579af33cb2ad5430bd59f99df6545e861b91bee58223bd31aeba06",
       "src/flatfile/flatfile_store.c": "2f4777879df65ef34ca46d75f7485c165ce30a0048113f6237c455cc508c11bd",
-      "src/economy/shop_trade_flat_native_checkpoint.c": "876e9cd4e8050aa19ebb8444e38daac61f5656576d931c1691be0d9040b09861",
+      "src/economy/shop_trade_flat_native_checkpoint.c": "2e3a9d06c2320accab0e6bd9aeec181cb652937ef8c3fc1673d52b1febf42053",
       "src/flatfile/flatfile_accounting_pile_state.h": "b000df4544bae4bb749788449f065a1b04d9ae876227d8167968ad99fc8fb2d3",
       "tests/async/component_registry.inc": "1796a1d55765d404f8abf38811add36c6c31b7705a6e92767f0823f0f58b1b7b",
       "src/flatfile/flatfile_corpse_ownership.h": "4dcecdaeea059e35699a6697cd8e6ee7af9c2bca5ea7a4bd7133aaab3b4b746e",
