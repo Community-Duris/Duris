@@ -574,3 +574,190 @@ bool shop_trade_original_item_stage::retained_bytes(const player_item_snapshot &
 		return false;
 	}
 }
+
+namespace
+{
+bool literal_raw_add(size_t &value, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - value)
+		return false;
+	value += extra;
+	return true;
+}
+constexpr size_t literal_raw_header_bytes() noexcept
+{
+#ifdef MEMCHK
+	return sizeof(ALLOCATION_HEADER);
+#else
+	return 0;
+#endif
+}
+}
+inert_item_stage_result inert_item_stage::allocate_literal_bounded(
+	const object_template &prototype, const player_item_snapshot &literal,
+	inert_item_stage &output, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live, size_t *retained_output_heap) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)prototype;
+	(void)literal;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	(void)retained_output_heap;
+	return inert_item_stage_result::unsupported;
+#else
+	struct allocation_scan
+	{
+		size_t heap = 0;
+	};
+	if (!reserve ||
+	    sizeof(allocation_scan) + sizeof(const std::string *[4]) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + sizeof(allocation_scan) + sizeof(const std::string *[4]),
+		     context))
+		return inert_item_stage_result::allocation_unavailable;
+	allocation_scan scan;
+	const std::string *texts[] = { &literal.name, &literal.short_description,
+				       &literal.description, &literal.action_description };
+	// Each __try_malloc request owns its MEMCHK header; all earlier raw requests
+	// coexist until candidate destruction/transfer. No pool pages are counted twice.
+	for (const auto *value : texts)
+		if (value->size() == SIZE_MAX || !literal_raw_add(scan.heap, value->size() + 1) ||
+		    !literal_raw_add(scan.heap, literal_raw_header_bytes()))
+			return inert_item_stage_result::allocation_unavailable;
+	for (const auto &description : literal.extra_descriptions)
+		if (description.keyword.size() == SIZE_MAX ||
+		    description.description.size() == SIZE_MAX ||
+		    !literal_raw_add(scan.heap, sizeof(extra_descr_data)) ||
+		    !literal_raw_add(scan.heap, description.keyword.size() + 1) ||
+		    !literal_raw_add(scan.heap, description.description.size() + 1) ||
+		    !literal_raw_add(scan.heap, 3 * literal_raw_header_bytes()))
+			return inert_item_stage_result::allocation_unavailable;
+	size_t peak = outer_live;
+	if (!literal_raw_add(peak, sizeof(allocation_scan)) ||
+	    !literal_raw_add(peak, sizeof(texts)) ||
+	    !literal_raw_add(peak, sizeof(inert_item_stage)) ||
+	    !literal_raw_add(peak, sizeof(unsigned long *[5])) ||
+	    !literal_raw_add(peak, scan.heap) || !reserve(peak, context))
+		return inert_item_stage_result::allocation_unavailable;
+	const int number = prototype.R_num;
+	if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+	    dead_obj_pool->next_off != offsetof(obj_data, next))
+		return inert_item_stage_result::allocation_unavailable;
+	inert_item_stage candidate;
+	candidate.pool_ = dead_obj_pool;
+	candidate.object_ = static_cast<P_obj>(mm_try_get(candidate.pool_));
+	if (!candidate.object_)
+		return inert_item_stage_result::allocation_unavailable;
+	P_obj object = candidate.object_;
+	object->R_num = number;
+	object->obj_uid = static_cast<unsigned long>(literal.object_uid);
+	object->g_key = static_cast<long>(literal.generated_key);
+	object->type = literal.type;
+	object->str_mask = literal.string_mask;
+	object->loc_p = LOC_NOWHERE;
+	object->loc.room = NOWHERE;
+	object->material = literal.material;
+	object->craftsmanship = literal.craftsmanship;
+	object->wear_flags = literal.wear_flags;
+	object->extra_flags = literal.extra_flags;
+	object->extra2_flags = literal.extra2_flags;
+	object->anti_flags = literal.anti_flags;
+	object->anti2_flags = literal.anti2_flags;
+	object->weight = literal.weight;
+	object->cost = literal.cost;
+	object->condition = literal.condition;
+	static_assert(sizeof(object->value) / sizeof(object->value[0]) == 8);
+	for (size_t index = 0; index < literal.values.size(); ++index)
+		object->value[index] = literal.values[index];
+	for (size_t index = 0; index < literal.timers.size(); ++index)
+		object->timer[index] = static_cast<time_t>(literal.timers[index]);
+	unsigned long *bitvectors[] = { &object->bitvector, &object->bitvector2,
+					&object->bitvector3, &object->bitvector4,
+					&object->bitvector5 };
+	for (size_t index = 0; index < literal.bitvectors.size(); ++index)
+		*bitvectors[index] = static_cast<unsigned long>(literal.bitvectors[index]);
+	static_assert(sizeof(object->affected) / sizeof(object->affected[0]) == 4);
+	for (size_t index = 0; index < literal.affects.size(); ++index)
+	{
+		object->affected[index].location =
+			static_cast<decltype(object->affected[index].location)>(
+				literal.affects[index][0]);
+		object->affected[index].modifier =
+			static_cast<decltype(object->affected[index].modifier)>(
+				literal.affects[index][1]);
+	}
+	if (!allocate_text(literal.name, &object->name) ||
+	    !allocate_text(literal.short_description, &object->short_description) ||
+	    !allocate_text(literal.description, &object->description) ||
+	    !allocate_text(literal.action_description, &object->action_description))
+		return inert_item_stage_result::allocation_unavailable;
+	extra_descr_data **tail = &object->ex_description;
+	for (const auto &description : literal.extra_descriptions)
+	{
+		auto *node = static_cast<extra_descr_data *>(__try_malloc(
+			sizeof(extra_descr_data), MEM_TAG_EXDESCD, __FILE__, __LINE__));
+		if (!node)
+			return inert_item_stage_result::allocation_unavailable;
+		std::memset(node, 0, sizeof(*node));
+		*tail = node;
+		tail = &node->next;
+		if (!allocate_text(description.keyword, &node->keyword) ||
+		    !allocate_text(description.description, &node->description))
+			return inert_item_stage_result::allocation_unavailable;
+	}
+	output = std::move(candidate);
+	if (retained_output_heap)
+		*retained_output_heap = scan.heap;
+	return inert_item_stage_result::ok;
+#endif
+}
+
+#include "world/events.h"
+extern mm_ds *dead_obj_affect_pool;
+extern mm_ds_list *mmds_list;
+// Serialized current retained pools, including unused pages after cleanup/refusal.
+bool native_mobile_birth_literal_pool_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	const mm_ds_list *slow = mmds_list, *fast = mmds_list;
+	while (fast && fast->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	size_t bytes = 0;
+	if (dead_obj_pool && dead_obj_pool == dead_obj_affect_pool)
+		return false;
+	for (const mm_ds *pool : { dead_obj_pool, dead_obj_affect_pool })
+	{
+		if (!pool)
+			continue;
+		bool found = false;
+		for (const auto *entry = mmds_list; entry; entry = entry->next)
+			if (entry->mmds == pool)
+			{
+				if (found)
+					return false;
+				found = true;
+			}
+		if (!found || !literal_raw_add(bytes, sizeof(mm_ds)) ||
+		    !literal_raw_add(bytes, sizeof(mm_ds_list)) ||
+		    !literal_raw_add(bytes, 2 * literal_raw_header_bytes()) ||
+		    pool->pages_owned > SIZE_MAX / 4096 ||
+		    !literal_raw_add(bytes, pool->pages_owned * 4096))
+			return false;
+	}
+	*output = bytes;
+	return true;
+#endif
+}
