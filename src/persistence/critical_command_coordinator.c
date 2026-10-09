@@ -6470,3 +6470,114 @@ bool critical_zone_reset_item_publication_owner::acknowledge_bounded(
 	return true;
 #endif
 }
+
+bool critical_zone_reset_item_publication_owner::copy_context_bounded(
+	const critical_command &command, critical_native_recovery_envelope *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!output || !reserve || !zone_reset_typed_command(command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(critical_native_recovery_envelope)) ||
+	    !room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+		return false;
+	try
+	{
+		// The original phase1/phase2 attempts differ only in this actual phase test.
+		// One same-lock lookup preserves both complete predicates and proofs.
+		const std::string identity = operation_key(command.operation_id);
+		critical_native_recovery_envelope copy;
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (!health.initialized || stop_requested || found == operations.end() ||
+		    !found->second->native || found->second->publication_checkpointing ||
+		    found->second->native_context_uncertain ||
+		    found->second->native_ack_uncertain ||
+		    !room_checkpoint_equal_bounded(command, found->second->command, reserve,
+						   context, live))
+			return false;
+		const auto &state = *found->second;
+		const auto phase = state.native->phase;
+		if (phase == critical_native_recovery_phase::execution_pending ?
+			    !operation_is_publication_pending(state) :
+			    (phase != critical_native_recovery_phase::continuation_pending ||
+			     state.phase != critical_operation_phase::native_continuation_pending ||
+			     !state.native_physical_released))
+			return false;
+		// Inspect actual current vectors without constructing an uncharged carrier.
+		const auto &current = state.command;
+		if (current.keys.size() >
+			    CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_entity_key) ||
+		    current.expected_revisions.size() >
+			    CRITICAL_COORDINATOR_MAX_BYTES / sizeof(critical_expected_revision) ||
+		    !room_retire_add(live, current.keys.size() * sizeof(critical_entity_key)) ||
+		    !room_retire_add(live, current.expected_revisions.size() *
+						   sizeof(critical_expected_revision)) ||
+		    !room_retire_add(live, current.payload.size()) ||
+		    !room_retire_add(live, current.accounting_intent.size()) ||
+		    !room_retire_add(live, state.native->attachment.size()) ||
+		    !reserve(live, context))
+			return false;
+		// Same original native_envelope field copies into one actual fresh object.
+		// Direct fields avoid a separate uncharged return carrier or fabricated BODY.
+		copy.command = current;
+		copy.revision = state.native->revision;
+		copy.phase = phase;
+		copy.attachment = state.native->attachment;
+		if (!zone_reset_validators_ready() || !zone_reset_validators.valid_bounded ||
+		    !zone_reset_validators.valid_bounded(copy, reserve, context, live))
+			return false;
+		*output = std::move(copy);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_zone_reset_item_publication_owner::observe_generation_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!output || !reserve || !zone_reset_typed_command(expected.command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	if (!room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, expected.command.operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) || !reserve(live, context))
+		return false;
+	try
+	{
+		const std::string identity = operation_key(expected.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->retain_until_publication ||
+		    !room_retire_matches_bounded(*found->second, expected, reserve, context,
+						 live) ||
+		    !health.initialized || !coordinator_generation ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    found->second->publication_checkpointing ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()))
+			return false;
+		*output = coordinator_generation;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
