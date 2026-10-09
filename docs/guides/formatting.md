@@ -55,17 +55,17 @@ staged file prevents the same formatting patch from being mirrored safely, the
 working tree is left alone. Hooks are per-clone git config, so each checkout
 runs the installer once.
 
-- Bypass a single commit with `git commit --no-verify`.
+- Follow `AGENTS.md` and repair failed checks rather than bypassing repository checks.
 - If clang-format is not installed, the hook warns and lets the commit
   through rather than blocking work.
 - `core.hooksPath` replaces `.git/hooks` wholesale; the installer warns if you
   already have hooks there.
 
-## The whole tree is formatted
+## Checking the whole tree
 
-Every tracked C/C++ file under `src/`, `migrations/tools/`, `areas/src/`, and
-`tests/async/` matches `.clang-format`, and `--all --check` verifies that in
-about 12 seconds:
+`--all --check` verifies tracked C/C++ files under `src/`, `migrations/tools/`,
+`areas/src/`, and `tests/`. It reports the files that currently differ from
+`.clang-format`; elapsed time depends on the tree and formatter version:
 
 ```bash
 ./scripts/format.sh --all          # re-format everything, iterated to a fixpoint

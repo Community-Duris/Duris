@@ -141,5 +141,7 @@ procedure in the [database guide](../reference/DATABASE.md) for existing data.
 The Compose stack intentionally selects `ENVIRONMENT=local`, a development
 server build, loopback host publishing, a self-signed certificate, and automatic
 fresh/local migration application. Do not expose it as the production service.
-Production requires operator-provided certificates, remote database TLS,
-qualified migration rollout, backups, and the checked-in systemd service.
+Production requires operator-provided listener certificates, an explicitly
+qualified database transport and target, verified database TLS whenever traffic
+leaves loopback, a qualified migration rollout, backups, and the checked-in
+systemd service.

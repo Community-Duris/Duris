@@ -28,14 +28,20 @@ about.
 | Option | Meaning |
 | --- | --- |
 | `--tool=TOOL` | `memcheck` (default), `helgrind`, `drd`, `massif`, `callgrind` |
-| `--port N` | Bind port, default 4000. **7777 is refused**: it is `DFLT_PORT`, and `src/sql/sql.c` only redirects to `duris_dev` on other ports. |
+| `--port N` | Bind port, default 4000. The wrapper refuses hardcoded `7777`; it does not follow `DURIS_PRODUCTION_PORT` or qualify the selected persistence target. Use a server-valid port above 1024, distinct from the configured production port. |
 | `--build` | `make -C src`, then copy `bin/server/dms_new` to `bin/server/dms` |
 | `--gen-suppressions` | Print paste-ready suppression blocks for every error |
 | `--trace-children` | Follow `exec()` across a copyover (off by default) |
 | `-- ...` | Everything after `--` goes to valgrind verbatim |
 
-The standard build already compiles with `-g` and no `-O`, so no special build
-is needed for readable stacks.
+The standard build includes debug information and the `-Og` hardening profile,
+so no special build is needed for readable stacks. Before running, qualify
+`ENVIRONMENT=local` and the selected isolated authority using the
+[runbook](../operations/RUNBOOK.md#pre-service-safety-gate). For SQL, use an
+explicit allow-listed loopback development database; for native flat files, use
+private state and a matching client-free build. A non-7777 port alone is not a
+database safety guarantee. `--build` can replace `bin/server/dms`; verify that
+no service is using this checkout's runtime before promoting a diagnostic build.
 
 ## What to expect
 
@@ -74,6 +80,8 @@ comment saying why the library cannot free that allocation.
   uninitialised reads that ASan misses. Use whichever fits, not both at once
   (the sanitizer runtime and Valgrind conflict).
 - `scripts/gdbdms` — plain GDB session on the same binary, defaulting to
-  development port 4000 and refusing production port 7777. GDB is declared
+  port 4000 and refusing hardcoded port 7777. Its guard also does not follow
+  `DURIS_PRODUCTION_PORT` or qualify database authority; apply the same preflight.
+  GDB is declared
   directly in the developer dependency manifest rather than relying on
   Valgrind's package recommendation.

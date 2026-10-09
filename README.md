@@ -27,44 +27,55 @@ database schema, regression tests, and operational scripts.
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
     Player["MUD client"]
 
     subgraph Server["DurisMUD server process"]
-        Network["Telnet / TLS / WebSocket"]
-        Loop["Single event loop<br/>commands, combat, world ticks"]
-        Snapshots["Revisioned snapshots<br/>player and world"]
-        Commands["Critical commands<br/>economy, ownership, outcomes"]
-        Legacy["Bounded compatibility queues<br/>item, scalar, large payload"]
+        Loop["World thread<br/>live state and I/O"]
+        Workers["Typed workers<br/>loads / snapshots<br/>critical operations"]
+        Telemetry["Telemetry<br/>optional SQL writer"]
 
-        Network <--> Loop
-        Loop -->|immutable jobs| Snapshots
-        Loop -->|operation IDs| Commands
-        Loop -->|remaining events| Legacy
+        Loop -->|owned jobs| Workers
+        Workers -->|results for publication| Loop
+        Loop -.->|observations| Telemetry
     end
 
-    Content["World + runtime data<br/>areas/ and lib/"]
-    Content -->|boot and reset data| Loop
-    Loop -->|boot, bounded reads, legacy routes| Database[("MySQL / MariaDB<br/>durable authority")]
-    Snapshots -->|revision guarded| Database
-    Commands -->|inbox, ledger, outbox| Database
-    Legacy -->|deduplicated events| Database
-    Snapshots -.-|optional immutable world recovery| Redis[("Redis cache / recovery")]
-    Player <-->|game protocol| Network
+    Mode{"Durable backend<br/>select one"}
+    Database[("MySQL / MariaDB")]
+    Flatfile[("Flat-file authority<br/>client-free build")]
+    Mode -->|mariadb-primary| Database
+    Mode -->|flatfile-primary| Flatfile
+
+    Content["World data<br/>areas/ and lib/"]
+    Content -->|boot / reset| Loop
+    Workers -->|load and commit| Mode
+    Telemetry -.->|SQL only| Database
+    Loop -.-|optional cache / recovery| Redis[("Redis")]
+    Player <-->|Telnet / TLS / WebSocket| Loop
 
     classDef focal fill:#f4ecd9,stroke:#9e3b25,color:#2e2418,stroke-width:2px;
     class Loop focal;
 ```
 
-The C-style sources under `src/` are compiled as C++20. By default, network I/O and
-mutable game state share one readiness/deadline loop using `poll()`, with commands
-and world phases retaining their 250 ms simulation boundaries. Immutable revisioned snapshots and
-non-coalescing operation-ID commands cross typed worker boundaries; the older item,
-scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
-MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
-outbox state, migration history, and lifecycle evidence. Redis is optional and limited
-to reconstructible caches plus validated world-recovery generations. See the full
-[architecture guide](docs/reference/ARCHITECTURE.md) and [database guide](docs/reference/DATABASE.md).
+The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
+state share one loop with bounded `poll()` network turns between simulation pulses. Workers receive owned requests,
+immutable revisioned snapshots, and non-coalescing operation-ID commands; the world
+thread validates matching results before publishing live changes. The older item,
+scalar, and large-payload queues retain bounded compatibility roles. Interactive
+character loading still has synchronous fallback paths.
+
+`PERSISTENCE_MODE` selects one durable backend at boot: `mariadb-primary` uses
+MySQL/MariaDB, while `flatfile-primary` requires a client-free build and private
+flat-file authority. The binary must match the selected mode; mixed fallback is
+rejected. For critical operations, RAM admission, journal durability, native commit,
+live publication, and client receipt are separate stages.
+
+Telemetry is opt-in and writes only to SQL. Redis optionally provides reconstructible
+caches and validated world-recovery generations; custody-bearing world restoration
+still requires SQL reconciliation in this checkout. See the full
+[architecture guide](docs/reference/ARCHITECTURE.md), its
+[newer branch implementations](docs/reference/ARCHITECTURE.md#newer-branch-implementations),
+and the [database guide](docs/reference/DATABASE.md) for detailed contracts and limits.
 
 An opt-in `--persistent-transport` mode keeps client sockets and their TLS,
 Telnet/MCCP and WebSocket/compression state in a persistent parent while the
@@ -394,7 +405,7 @@ make test-db
 `make test-all` covers maintained builds, generated world data, Python
 regressions, and native tests. `make test-db` additionally creates disposable
 MySQL containers for schema contracts, immutable migration checks, and the full
-historical 145-step legacy upgrade, replay, fresh-bootstrap equivalence, and
+historical 150-step legacy upgrade, replay, fresh-bootstrap equivalence, and
 runtime-compatibility test. It never targets the database configured in `.env`.
 
 During development, run the smallest relevant regression directly:
@@ -469,17 +480,17 @@ for searchable guides with source links, code highlighting, and diagrams.
 The complete index, including builder references and standalone diagrams, is
 in [`docs/README_docs.md`](docs/README_docs.md).
 
-[build]: https://github.com/LuminariMUD/DurisMUD/actions/workflows/build.yml
-[build-badge]: https://img.shields.io/github/actions/workflow/status/LuminariMUD/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
-[commit-badge]: https://img.shields.io/github/last-commit/LuminariMUD/DurisMUD?style=flat-square&logo=github
-[commits]: https://github.com/LuminariMUD/DurisMUD/commits/master
+[build]: https://github.com/Community-Duris/Duris/actions/workflows/build.yml
+[build-badge]: https://img.shields.io/github/actions/workflow/status/Community-Duris/Duris/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
+[commit-badge]: https://img.shields.io/github/last-commit/Community-Duris/Duris?style=flat-square&logo=github
+[commits]: https://github.com/Community-Duris/Duris/commits/master
 [compiler-badge]: https://img.shields.io/badge/compiler-g%2B%2B-A42E2B?style=flat-square&logo=gnu&logoColor=white
 [cpp20-badge]: https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white
 [database-badge]: https://img.shields.io/badge/database-MySQL%20%2F%20MariaDB-4479A1?style=flat-square&logo=mysql&logoColor=white
 [format-badge]: https://img.shields.io/badge/style-clang--format-262D3A?style=flat-square&logo=llvm&logoColor=white
 [formatting]: docs/guides/formatting.md
-[issues]: https://github.com/LuminariMUD/DurisMUD/issues
-[issues-badge]: https://img.shields.io/github/issues/LuminariMUD/DurisMUD?style=flat-square&logo=github
+[issues]: https://github.com/Community-Duris/Duris/issues
+[issues-badge]: https://img.shields.io/github/issues/Community-Duris/Duris?style=flat-square&logo=github
 [linux-badge]: https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black
 [redis-badge]: https://img.shields.io/badge/Redis-optional-DC382D?style=flat-square&logo=redis&logoColor=white
 [tls-badge]: https://img.shields.io/badge/TLS-GnuTLS-386892?style=flat-square&logo=gnu&logoColor=white

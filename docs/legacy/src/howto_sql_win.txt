@@ -1,9 +1,0 @@
-./mysqladmin create duris_dev -hlocalhost --user=root -p
-
-./mysql -hlocalhost --user=root -p
-mysql> GRANT ALL PRIVILEGES ON duris_dev.* TO duris@localhost IDENTIFIED BY 'duris';
-./mysql -hlocalhost --user=duris -pduris duris_dev < /cygdrive/d/eclwork/duris/SQL_CREATE_SCRIPT
-
-mysql> use duris_dev;
-mysql> show tables;
-mysql> show databases;

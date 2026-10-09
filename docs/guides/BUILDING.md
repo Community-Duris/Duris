@@ -43,8 +43,8 @@ the corresponding file repositories instead of this compatibility surface.
 
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated
-world data, the active runtime, package artifacts, and runtime history. Every
-compiled artifact belongs below `bin/`, whose contents are gitignored:
+world data, the active runtime, package artifacts, and runtime history. The default
+compiled-artifact layout is below `bin/`, whose contents are gitignored:
 
 | Path | Contents |
 | --- | --- |
@@ -62,6 +62,19 @@ outputs, generated lookup tables, diagnostic-build output, coverage/profile
 data, and Python/tool caches. It preserves `.env`, logs, player and account
 data, and the hand-maintained `areas/world.justice`, `world.tab`, and
 `world.weather` runtime inputs.
+
+For a separate server build, `BIN_ROOT` can select an absolute task-specific
+`bin` directory. On Windows through WSL, for example:
+
+```bash
+make -C src BIN_ROOT=/mnt/d/Dev/Builds/Duris/local-dev/bin \
+  PERSISTENCE_BACKEND=flatfile BUILD_PROFILE=development
+```
+
+The server Makefile places its objects, executable and backend/profile stamp
+under that root. Existing launch and diagnostic wrappers still select the
+checkout's `bin/server/`; an external build requires an explicit runtime path.
+Do not move an active build or running executable to adopt this layout.
 
 ## Compile flags
 
@@ -82,7 +95,7 @@ one server binary supports both the enabled and disabled runtime configurations.
 and exist so a wrapper (notably `scripts/build-san.sh`) can add instrumentation
 without discarding the warning profile or the feature defines.
 
-Link libraries: `mysqlclient`, `gnutls`, `ssl`, `crypto`, `cjson`, `hiredis`,
+Link libraries: `mysqlclient` (MariaDB backend), `gnutls`, `ssl`, `crypto`, `cjson`, `hiredis`, `hiredis_ssl`,
 `bsd`, `curl`, `xml2`, `z`, `crypt`, `pthread`. Both backends link `curl`
 (libcurl, the `libcurl4-gnutls-dev` package): it carries the SMTP path for account
 password recovery, which stays disabled at runtime unless `MAIL_ENABLED=TRUE`.
@@ -185,21 +198,25 @@ when every required output exists and all area sources and tools are unchanged.
 Per-area source directories (`areas/wld/`, `areas/mob/`, ...) hold editable
 area data; the combined outputs land in `areas/world.*`.
 
-`scripts/cycle_mud.sh` performs both steps automatically when the helper
-binaries are missing, so first boot after a fresh clone works without manual
-intervention.
+`scripts/cycle_mud.sh` builds missing helpers and regenerates the full combined
+world on every cycle iteration. Its `--minimal` mode uses the tracked
+`areas_mini` dataset instead. The launcher's regeneration does not use the
+root Makefile's unchanged-input stamp to skip a cycle.
 
 ## Verifying a build
 
 - Recompile check: `make -C src` must complete without errors or warnings in
   touched files.
 - Full build and regression gate: `make test-all`.
-- Smoke test on a development port (uses `duris_dev`, never production):
-
-  ```bash
-  ./bin/server/dms 4000 &
-  sleep 5 && nc localhost 4000   # confirm greeting, then shut down
-  ```
+- Smoke-test only after qualifying the local environment and selected authority
+  using [the runbook](../operations/RUNBOOK.md#pre-service-safety-gate). A
+  development port alone does not select an isolated database: only the names
+  `duris` and `duris_prod` are redirected to `duris_dev` away from the configured
+  production port. Use `ENVIRONMENT=local`, an explicit allow-listed loopback
+  development target, or private native flat-file state with the matching build.
+  Start `./scripts/cycle_mud.sh --dev` in the foreground, confirm the greeting
+  from a second terminal, and finish with the in-game shutdown command. Verify
+  auxiliary listener ports as well as the plain-telnet port.
 
 - If you changed persistence-related code, run the relevant focused test;
   see [TESTING.md](TESTING.md).
