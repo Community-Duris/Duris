@@ -3020,3 +3020,58 @@ Prior follow-up prefix exact;curator-ready;local notebook nonblocking; import/ac
 application unclaimed. Native opt-ins,shared recipes,erasure,real journeys,
 retention/custody,budgets and combined Plan5/R1-R8/release remain open. No primary
 push, activation, production, autocorrection, deploy, merge or cross-chat message.
+
+
+## 2026-10-08: published initial checkpoint source qualification
+
+Sole local/remote codex/accounting-plan5; owned worktree
+C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max.
+Base b97697abc8a31f2d904610b70056b41e588ce01d; result is this containing commit. Only this additive
+follow-up changes; all 27 implementation overlays and seven ancestral tips stay.
+Post-push receipt: D:/Dev/Tests/Duris/accounting-plan5/initial-checkpoint-source-20261008/delivery/result.json.
+Refreshed/tested primary aef2722fdb7c0a55a9ad81631cf3251029d32980; composed source 97aab6d7512e3d676485af3c3fc77ea45627dcdc; archive
+1056d3276fcfd6b76ec9292d088ea75888ee13b48864e48af5817eb2732b3c1a. Native tree 0bb22d215c0344a23e686f360038ab19da55d4f6; migration tree
+7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2, canonical head 64. Authentication preserves 6,531 regular
+source bodies/modes and four link targets before/after. The new flat shopkeeper
+.c/.h changes insert 127/11 lines without deleting old source lines; original
+DURSHOPv2 remains the format. Initial framing revision 1 is not a catalog clock.
+The two paths are outside the selected 242-pin map and are bound by the complete
+source manifest; no new pin-coverage invariant or shared repair is inferred.
+
+Actual source checks in the pinned isolated Python 3.12.3 tools image:
+/usr/bin/python3 -B scripts/validate_economy_accounting.py --root /work: exit 0,
+14 fixtures/926 routes/2,900 candidate sites, release_ready=False, 3.847721 seconds.
+Same CLI with --release: exit 1, no executable writer evidence, 0.051964 seconds.
+/usr/bin/python3 -B scripts/generate_economy_writer_coverage.py --check: exit 1,
+matrix stale, 6.740236 seconds. Original test_economy_writer_coverage_contract
+module through the observer's unittest loader: 57 methods, 56 PASS/1 provenance
+FAIL, zero errors/skips, 6.495929 seconds. Stage 31.727203 seconds; collection
+exit zero is not an all-green result. Exact Docker command, image/runtime hashes,
+source, helper bodies, method log and CLI outputs are retained under
+D:/Dev/Tests/Duris/accounting-plan5/initial-checkpoint-source-20261008.
+
+Existing metadata remains 207 raw matches/31 current CRLF pins/four older-content
+pins; the existing Smith and raw-byte handoffs remain required. Only the prior
+backup.capture [714] to [741], backup.retention [496] to [518], and
+restore.qualification [212] to [214] arrays differ in the computed matrix.
+No non-route differences or unmapped lexical sites; all 788 release blockers
+remain. No new shared interface/schema/repair request and no shared file edit.
+
+The new test_flatfile_shopkeeper_initial_checkpoint.py is manual and UNEXECUTED
+by explicit major-plan deferral; its resource values are unmeasured estimates.
+This is a deferred native suite, separate from zero skips in the 57 executed
+source methods. The unchanged synthetic invariant suite is not repeated.
+No compiler/preprocessor/native/server/database/migration/gameplay runs or prior
+binary/private combined candidate qualification. The metadata capture helper's
+initial nested-manifest KeyError is preserved; correction retains the same frozen
+archive and executes no native test. Raw regular-file seal 59b56a152a5880119075eb886b75a74c9956975a129847d9aff9fe17809a5db0; delivery
+rehashes every sealed body, committed follow-up, remote equality and ancestry.
+
+Nine original native audit selections, published missing-API P1, shared recipes,
+durable erasure, actual producer/player/fault/recovery, complete retention/remote
+custody, opening/activation and workload gates remain. Full Plan5/R1-R8/release
+is unqualified. Curator packet is this follow-up/seal/receipt; primary-local
+notebook remains nonblocking, application/import/ack unclaimed. Accounting stays
+inactive; wallet-root ITEM_MONEY exclusions and declined inactive spell path stay.
+Only HEAD:refs/heads/codex/accounting-plan5 is pushed. No activation, production,
+autocorrection, primary push, deployment, merge or cross-chat message.
