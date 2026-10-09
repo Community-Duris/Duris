@@ -56,6 +56,84 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Bounded read acceptance reviewed; fresh-root authority facts selected - 2026-10-09
+
+Quest's SHARED_FLAT_BOUNDED_READ_ACCEPTANCE_DELTA_2026-10-09.txt now PASSes root
+independent source/factual and acceptance-preparation review and is CLOSED at
+finite scope. Directory:D:/Dev/Temp/shared-flat-bounded-read-acceptance-delta-20261009/.
+Note32,817 bytes,SHA256
+e0e72dfdc274dbb20e01257920957a70dd19a501df6f37bf23a505d232909a0a.
+PINS.json126,341 bytes,SHA256
+33c0c5510c7ab48d2f6b8f5bc20ad50da3236b5fd2d6124180b56402f79f2e73.
+Root authenticates15 providers/30 ranges/58 direct reused artifacts/four payloads;
+nested architecture14 providers/49 ranges/27 artifacts/nine source comparisons/
+ten original-current identities/18 payloads and exact five-file historical paragraph
+correction. Five-file pre-reader-successor draft also authenticates separately.
+No repository module or worker verifier is executed;raw stdlib/Git metadata only.
+Root reads full delta/verifier and reviews B1-B4 against corrected actual-source
+facts. B1 preserves same-FD/reservation/capacity/output semantics;B2 preserves
+original authenticated decode and journal before any apply;B3 includes unrelated
+CURRENT keeper/global UID/equipment/full roundtrip/real scratch overlap;B4 retains
+exact ownership/charge transitions and full caller32MiB,with prospective peak versus
+final census and pre-apply versus publication/unlink-sync uncertainty distinct.
+Original/current/native/world/source/receipt/ACK/retirement joins stay required.
+No required finding;all four controls remain UNEXECUTED,not native qualification.
+
+New published0c574b4b722a07ab16a5432fcbd5bb93f0f957e1 adds39 report lines. Full
+primary report17,853 bytes,SHA256
+fd8f79a76c3ef7858a63f483ddc95f55782a7b9913005ca90d3160d2552d80ef.
+Actual src/tests/migrations/scripts remain unchanged. Private c84bb521 reports226
+paths/219 providers/16 inverses. Full custody99fed591 is selected only through
+fed582c7;v6 DTO phase maxima/native projection storage are reported,not locally
+reviewed bodies. Existing B3/B4 and full original/current packets cover those
+obligations;no duplicate custody sizing task. Root callback scope5b2ff6b8 remains
+UNSELECTED;INITIAL decoder0cd49bee is under review/not joined. No new execution.
+
+The new native season081425b3 report adds a distinct enrollment authority boundary:
+independent uint64 epoch/status and two64-byte metadata files,genesis1/active,
+only actual successful root mkdir authorizes fresh enrollment;root/parent sync,
+recovered borrowed lock,two-metadata original bundle and exact readback precede IP
+initialization. Existing generic/inactive roots are not seeded/repaired. Marker
+binds format/genesis,not path/inode/accounting lineage or stale-backup protection.
+Full ROOM season capture/worker/publication equality and stopped legacy enrollment
+remain unavailable. Plan5 coherent restore obligations are reported dependencies,
+not an assignment to duplicate its work or perform restore/enrollment operations.
+
+Prioritized queue:quest and all earlier packets CLOSED/event-dependent. ONE active
+architecture PRIVATE source-fact delivery,sole output:
+D:/Dev/Temp/flat-root-genesis-enrollment-authority-facts-20261009/
+FLAT_ROOT_GENESIS_ENROLLMENT_AUTHORITY_FACTS_2026-10-09.txt,
+plus exact provider/range/reused-artifact pins,index and metadata-only verifier.
+Benefit:implementation-ready fresh/existing-root and season-authority acceptance
+preconditions without treating validated existence or metadata checksum as authority.
+Inspect actual persistence_mode.c/.h,boot configure call,IP initialization entry,
+immutable0003 SQL genesis and sql.c season stub/active loader/accessor/reset fence;
+reuse original root-lock/journal/atomic-read facts. Trace only directly needed callers.
+Public ensure_private_directory merges mkdir success and EEXIST into validated
+success;it exposes no freshness witness. Mode/root readiness,partial provision/
+sync failure and existing-root validity are distinct from season enrollment. SQL
+immutable genesis/active/resetting and client-free epoch0 are separate public facts;
+do not infer native flat epoch or repair from a SQL stub/default. Specify exact
+missing authority/observation seams and minimal genuine future refusal obligations.
+
+Available:0c574 report/unchanged public source/reviewed closed packets. Missing:
+private native-season/enrollment/bootstrap/readback/capture/worker bodies,authentic
+fresh-root witness and legal stopped legacy enrollment/season/fault exports;
+current aggregate/caller/native/world/origin/ACK integration. Missing interfaces
+block dependent execution,not narrow preparation. Architecture owns D: note only;
+root independent factual review required before closure/future acceptance handoff.
+No maintained edits/patches/imports/private commits,epoch/database/filesystem seeding,
+compiler/preprocessor/tests/build/DB/server/native/gameplay/recovery/event/performance,
+operational enrollment/restore/deployment/activation. Preserve worktrees/jobs/proofs.
+Primary owns season/ROOM/source integration,Plan5 owns recovery/restore;no adoption
+wait,duplicate owner/new format/original packet reopening. Published readiness
+P1/F1 remain unresolved;private registrations are not verified maintained adoption.
+Actual continuing Goals BLOCKED/unfinished;preparation is not resumption. Required
+Plans1-5/applicable original R1-R8/integrated qualification/blockers/owner-completion
+finish unmet;heartbeat ACTIVE. Root proof:
+D:/Dev/Temp/coordinator-bounded-read-acceptance-review-20261009/review.py,
+authentication.json,semantic-review.json,raw successor,publication inverse/identity.
+
 ## Bounded read storage facts reviewed; quest acceptance selected - 2026-10-09
 
 Architecture's SHARED_FLAT_BOUNDED_READ_STORAGE_FACTS_2026-10-09.txt now PASSes
