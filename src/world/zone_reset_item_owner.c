@@ -5667,3 +5667,54 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 	}
 #endif
 }
+
+bool zone_reset_item_owner::restore_startup_original_bounded(
+	const critical_native_recovery_envelope &original, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// The real startup caller owns the coordinator lock and supplies its pure
+	// nonreentrant lender. This wrapper grants no factory or publication authority.
+	if (!reserve)
+		return false;
+	struct startup_restore_frame
+	{
+		warm_registry *before;
+		warm_registry *attached;
+		warm_registry **link;
+		size_t live;
+	} work{ nullptr, nullptr, nullptr, outer_live };
+	if (!warm_scratch_add(work.live, sizeof(work)) || !reserve(work.live, context))
+		return false;
+	work.before = warm_head_;
+	if (!restore_original_bounded(original, reserve, context, work.live))
+		return false;
+	// Complete original duplicate equality returned without attaching a node.
+	// Preserve that exact branch, including its lack of post-attachment charge.
+	if (warm_head_ == work.before)
+		return true;
+	work.attached = warm_head_;
+	// The provider's actual decode/clone/candidate temporaries are now dead.
+	// The same genuine lender observes current coordinator/native ownership;
+	// transferred ROOT metadata is no longer part of private caller scratch.
+	if (reserve(work.live, context))
+		return true;
+	// Restore the original new-registry rollback without removing a preexisting
+	// duplicate. Cleanup is nonallocating and never requests budget after denial.
+	work.link = &warm_head_;
+	while (*work.link && *work.link != work.attached)
+		work.link = &(*work.link)->next;
+	if (*work.link == work.attached)
+	{
+		*work.link = work.attached->next;
+		delete work.attached;
+	}
+	return false;
+}
+
+bool zone_reset_room_item_restore_startup_bounded(const critical_native_recovery_envelope &original,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	return zone_reset_item_owner::restore_startup_original_bounded(original, reserve, context,
+								       outer_live);
+}

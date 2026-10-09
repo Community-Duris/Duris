@@ -122,6 +122,11 @@ bool zone_reset_room_item_restore(const critical_native_recovery_envelope &) noe
 bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelope &,
 					  bool (*)(size_t, void *) noexcept, void *,
 					  size_t) noexcept;
+// Actual startup wrapper preserves new-node rollback after the provider's
+// temporary storage dies. Existing duplicate roots remain untouched.
+bool zone_reset_room_item_restore_startup_bounded(const critical_native_recovery_envelope &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept;
 void zone_reset_room_item_completions(const critical_completion *, size_t) noexcept;
 void zone_reset_room_item_pulse(bool prepare_original_resets) noexcept;
 void zone_reset_room_item_replay_ready(bool) noexcept;
@@ -131,6 +136,10 @@ bool zone_reset_room_item_recovery_pending() noexcept;
 
 class zone_reset_item_owner final
 {
+	friend bool
+	zone_reset_room_item_restore_startup_bounded(const critical_native_recovery_envelope &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t) noexcept;
 	friend bool zone_reset_room_item_restore_bounded(const critical_native_recovery_envelope &,
 							 bool (*)(size_t, void *) noexcept, void *,
 							 size_t) noexcept;
@@ -325,6 +334,9 @@ class zone_reset_item_owner final
 	static bool restore_original_bounded(const critical_native_recovery_envelope &,
 					     bool (*)(size_t, void *) noexcept, void *,
 					     size_t) noexcept;
+	static bool restore_startup_original_bounded(const critical_native_recovery_envelope &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t) noexcept;
 	static bool begin_submitted_flat_scratch(warm_root &) noexcept;
 	// Prospective genuine exact ACK clone; ownership transfer is nonthrowing,
 	// and every refused successor remains rooted for the real coordinator retry.
