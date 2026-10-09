@@ -155,6 +155,9 @@ class zone_reset_item_owner final
 	static bool replay_ready_;
 	static bool restore_original(const critical_native_recovery_envelope &) noexcept;
 	static void pulse_original(bool) noexcept;
+	struct flat_pulse_workspace;
+	// Private candidate; original selected pulse and default-zero callers remain unchanged.
+	static void pulse_flat_bounded(bool) noexcept;
 	static void completions_original(const critical_completion *, size_t) noexcept;
 	static bool lifecycle_original() noexcept;
 	static bool pending_original(int32_t, bool) noexcept;
@@ -210,18 +213,21 @@ class zone_reset_item_owner final
 	// ownership with all actual flat ROOT/publication/NPC private-stage censuses.
 	// The existing constructor default and six-owner selected path remain unchanged.
 	static bool flat_current_global_storage_with_literal_pools(size_t *) noexcept;
-	static bool begin_full_flat_command_scope(warm_command_scratch &) noexcept;
+	static bool begin_full_flat_command_scope(warm_command_scratch &,
+						  size_t caller_extra = 0) noexcept;
 	static bool begin_flat_command_scope(warm_command_scratch &) noexcept;
-	static bool begin_warm_command_scratch(warm_root &) noexcept;
+	static bool begin_warm_command_scratch(warm_root &, size_t caller_extra = 0) noexcept;
 	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
 	static bool rebase_warm_command_scratch(warm_command_scratch &, size_t) noexcept;
 	static bool retain_warm_command_output(warm_command_scratch &,
-		const critical_native_recovery_envelope &) noexcept;
+					       const critical_native_recovery_envelope &,
+					       size_t caller_extra = 0) noexcept;
 	// Actual closed warm-root handoff; prospective caller rows/spans/canonical
 	// comparison and current projection recheck also cover retained retries.
 	static bool prepare_warm_publication_flat(warm_root &,
 						  const critical_native_recovery_envelope &,
-						  warm_command_scratch &) noexcept;
+						  warm_command_scratch &,
+						  size_t caller_extra = 0) noexcept;
 	static void release_warm_command_scratch(warm_command_scratch &) noexcept;
 	static bool release_retired(warm_root &) noexcept;
 	static bool publish_warm(warm_root &) noexcept;
@@ -311,11 +317,13 @@ class zone_reset_item_owner final
 	// aggregate provider/caller reservations remain required before opening gates.
 	// Never predicts the next room clock for another retained root.
 	static bool prepare_warm_command(const warm_root &, critical_native_recovery_envelope *,
-					 warm_command_scratch &) noexcept;
+					 warm_command_scratch &, size_t caller_extra = 0) noexcept;
 	static bool prepare_warm_command_sql(const critical_operation_id &,
 					     critical_native_recovery_envelope *) noexcept;
 	static bool prepare_warm_command_flat(const critical_operation_id &,
-					      critical_native_recovery_envelope *, warm_command_scratch &) noexcept;
+					      critical_native_recovery_envelope *,
+					      warm_command_scratch &,
+					      size_t caller_extra = 0) noexcept;
 	static bool warm_root_current(const warm_root &) noexcept;
 	// Same complete native/factory/custody observation, with prospective
 	// capture/codec/selected-UID scratch under the real pulse's private guard.
@@ -337,7 +345,7 @@ class zone_reset_item_owner final
 	static bool restore_startup_original_bounded(const critical_native_recovery_envelope &,
 						     bool (*)(size_t, void *) noexcept, void *,
 						     size_t) noexcept;
-	static bool begin_submitted_flat_scratch(warm_root &) noexcept;
+	static bool begin_submitted_flat_scratch(warm_root &, size_t caller_extra = 0) noexcept;
 	// Prospective genuine exact ACK clone; ownership transfer is nonthrowing,
 	// and every refused successor remains rooted for the real coordinator retry.
 	static bool prepare_flat_ack_successor_bounded(warm_root &,
