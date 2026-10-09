@@ -144,4 +144,22 @@ class item_ownership_runtime_published_native_observer final
 	    size_t outer_live_scratch, size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
+// Prospective native-caller sibling preserving the original complete batch,
+// revision, duplicate, limit and atomic content rollback predicates. The caller
+// serializes cache access on the game thread. outer_live includes the CURRENT
+// cache_storage_bytes total exactly once, batch/input storage and every other
+// already-live allocation; the sibling subtracts that initial cache component
+// and joins actual current cache storage plus prospective requests at each phase.
+// The caller retains/refreshes CURRENT cache storage on EVERY return, including
+// false: successful rehash bucket growth survives later refusal or rollback,
+// exactly as in the original function. Callback admission grants no authority.
+// GCC13 libstdc++ C++11 ABI request policy; unsupported nonempty calls refuse.
+// Observer counts BOTH inline maps, actual nodes and dynamic bucket arrays.
+// It is allocation-free, strong-output, and not a source/admission proof.
+bool item_ownership_runtime_cache_storage_bytes(size_t *) noexcept;
+bool item_ownership_runtime_hydrate_many_atomic_bounded(
+	const item_ownership_runtime_entry *batch, size_t count,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+
 #endif

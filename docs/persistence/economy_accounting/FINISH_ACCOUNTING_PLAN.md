@@ -8737,3 +8737,19 @@ guarded coordinator/ROOM terminal callback; actual warm/cold publication/checkpo
 effects/ACK/aggregate qualification remains open. No plan/release completion claim.
 Accounting inactive/admission CLOSED, coverage incomplete/release BLOCKED,
 protected WIP and primary goal ACTIVE persist.
+
+
+## Native runtime atomic hydration dependency implemented - 2026-10-09
+
+[The atomic hydration source](NATIVE_RUNTIME_ATOMIC_HYDRATION_ADMISSION_2026-10-09.md)
+adds the complete bounded primitive with original batch/revision/duplicate/owner/
+limit checks and faithful reserve/content rollback. Actual arrays/hash nodes/prime
+buckets and old/new overlap are admitted before allocations; final new-node peak
+precedes all mutation. Pure serialized cache observer/caller contract requires
+initial cache exactly once and refreshed persistent census on every success/refusal.
+Independent raw/final review, original C prefix/header inverse and tokens/
+preprocessor PASS. All 931 policies/393 pins authenticate; zero new/unmapped sites.
+Native tests remain deferred. Actual factory/root/cache integration and complete
+ROOM warm/cold/coordinator/terminal qualification remain open. No plan/release
+completion claim. Accounting inactive/admission CLOSED, coverage incomplete/release
+BLOCKED, protected WIP and primary goal ACTIVE persist.
