@@ -136,6 +136,15 @@ critical_command_journal_retire_native_recovery_bounded(const critical_native_re
 // It is a census hook, not an independent concurrent admission protocol.
 size_t critical_command_journal_native_rewrite_storage_bytes() noexcept;
 
+// One allocation-free atomic projection of complete retained journal storage:
+// mutex, strings and their allocated capacities, quota/health/native flag,
+// full rewrite-attempt carrier, four vector capacities and both atomic carriers.
+// SIZE_MAX means unavailable/overflow (also the initial value). This replaces
+// the old rewrite term in the selected aggregate; never add both projections or
+// duplicate startup metadata. It neither locks nor dereferences mutable storage,
+// and grants no independent concurrent admission or journal readiness authority.
+size_t critical_command_journal_persistent_storage_bytes() noexcept;
+
 // Full original single native replacement: immutable command, exact expected
 // body, revision+1 and nonregressing phase, complete mixed scan and exact
 // uncertain postimage confirmation. Same callback/outer/current-retention
