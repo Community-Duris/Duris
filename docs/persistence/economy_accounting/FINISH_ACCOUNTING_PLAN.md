@@ -115,6 +115,80 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Combined source published; two bounded independent reviews selected - 2026-10-09
+
+Actual experimental-accounting candidate 25b863da7727b57c30901cf271a8fa555c9ee954
+is now published, parent 20552c05ca5620b023e72d85cac06ce260413050. Root verifies
+the exact remote identity and clean coordinator checkout. This meaningful source
+availability supersedes earlier private-only/unpromoted wording for this selected
+candidate. Its 234 changed paths include 188 src, 31 tests, five migrations, five
+scripts and five docs. Counts authenticate publication scope, not correctness.
+The selected private manifest remains a reported provenance input; root does not
+claim access to private progress or independently reconstruct its composition.
+
+Read the published COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md for exact
+candidate limits and the bounded primary build/smoke checkpoint. Actual source
+now includes shared native/SHOP and original ROOM producer/cursor, worker and
+repository callback, native flat participants and independent fresh-root season.
+Root authenticates 22 immutable provider bodies and six bounded source ranges.
+The historical three P1 missing-accessor calls are absent from the two published
+bodies (previously two pipeline and one authority call). This is a narrow source
+presence observation, not compiler evidence or review of all successor semantics.
+F1 required INITIAL matrix-owner source fix remains reviewed at its prior scope.
+
+SQL/client-free compile/link and isolated inactive smoke results are still PENDING
+in the published handoff. Original schema manifests terminate at 0065, bootstrap
+alone is insufficient. SQL smoke still needs genuine disposable schema-65 restore,
+private daemon/socket and the existing restore qualification owner; no fabricated
+marker or shared service. Primary retains this executable checkpoint and repairs.
+General flat ROOM admission remains excluded; callback registration is not source
+or execution authority. The larger 5b2ff6b8 cold reader remains UNSELECTED. Original
+full prospective aggregate 32MiB, current world/custody/source/origin correspondence,
+terminal publication/recovery/ACK and stopped legacy enrollment remain required.
+Coordinator 64MiB retention is not the 32MiB caller proof. No runtime qualification
+or activation follows from source publication or independent source review.
+
+Prioritized evolving queue: one bounded active preparation delivery per chat.
+Architecture owns PUBLISHED_NATIVE_SEASON_BOUNDARY_REVIEW_2026-10-09.txt in
+D:/Dev/Temp/published-native-season-boundary-review-20261009/. Review newly published
+configure/read/enroll code against CLOSED root/genesis facts and native-season
+G1-G4: actual root mkdir versus EEXIST, parent/root durability, genuine same-root
+recovered lock, original two-record outcome/readback before IP reset, strong
+outputs/refusal/uncertainty, marker genesis versus later epoch, existing generic
+boot versus distinct ROOM eligibility. Output exact correspondence, concrete
+triggered source findings/minimal owner repairs if any, and qualification gaps.
+This supports implementation review without duplicating a route-wide acceptance
+map. No new lineage format or global existing-root boot-refusal rule is selected.
+
+Quest owns PUBLISHED_ROOM_SHARED_ACCEPTANCE_READINESS_2026-10-09.txt in
+D:/Dev/Temp/published-room-shared-acceptance-readiness-20261009/. Map five actual
+cuts to CLOSED original controls: genuine O/P/S capture; retained envelope/current
+worker callback; one recovered-root native bundle and uncertain original retry;
+complete current world/terminal/ACK retirement; actual gates and genuine fixture
+access. Give exact available seams, unavailable private authority/fault hooks and
+the smallest owner prerequisite for the next native case. Reuse existing full
+CURRENT/MBR4, worker, bounded-read, retry-terminal and season controls; preserve
+missing-SHOP/INITIAL and all closed packets. This prepares real native fixture
+implementation without another broad inventory or speculative callback owner.
+
+Available inputs are exact immutable published source/handoff and reviewed packets.
+Unavailable executed results and genuine native fault/access prerequisites block
+only dependent qualification. Both deliveries require exact pins/ranges, reused
+artifact hashes, stdlib authentication and root independent source/factual review.
+Primary owns shared maintained code/contracts/migrations/registries, builds/smoke
+and repairs; Plan5 retains its owner. Workers preserve checkout HEADs/jobs and use
+git show. No helper maintained edits, private artifact commits, compiler/product
+module/native/DB execution, root seeding/enrollment/restore or activation/deployment.
+Reassess next concrete work at handoff or new published evidence; no adoption wait.
+
+Actual continuing Goals remain BLOCKED and unfinished; authorized preparation is
+not platform Goal resumption. Required Plans1-5, applicable original R1-R8, integrated
+qualification, blockers and published owner completion finish remain unmet.
+Heartbeat ACTIVE. Root private source/metadata authentication and exact raw-byte
+publication inverse: D:/Dev/Temp/coordinator-combined-candidate-review-20261009/
+review.py, review.json, changed-paths.txt, pinned raw providers/ranges, publish.py,
+publication-section.txt and inverse.json. All native acceptance remains UNEXECUTED.
+
 ## INITIAL matrix-owner omission source fix reviewed - 2026-10-09
 
 Publishedc627dbe5abe42d1f3995cca75036a468b71fba07 changes only the source report
