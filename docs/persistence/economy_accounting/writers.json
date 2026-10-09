@@ -48277,17 +48277,17 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          8029,
+          8035,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          7916,
+          7922,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          7971,
+          7977,
           "item_publication"
         ]
       ],
@@ -57476,7 +57476,7 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8029,
+      "line": 8035,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, TRUE);"
     },
@@ -57536,13 +57536,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 7916,
+      "line": 7922,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 7971,
+      "line": 7977,
       "family": "item_publication",
       "excerpt": "const auto placed = obj_to_char_checked(root, mobile);"
     },
@@ -66511,7 +66511,7 @@
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "a478e113c71cf2a5fa97bbfd3b33c8b4bd63e4a4b8609d020bb4e3acf98e40c0",
+      "src/item/item_movement_transaction.c": "24801cdbcc09f1d873022bc6a5c3bd5b133dedffc0760eed0923dba54fbb4131",
       "src/item/item_movement_transaction.h": "f4384d98288924fa34be2b46b66a2ded373a9062cf49cddee233226846f9694e",
       "src/item/item_ownership_runtime.c": "ceeaf4c2086369bf7d249408def297d673492c4032deddfb31db78d6edce261d",
       "src/item/item_ownership_runtime.h": "7c625f1dca7e066c64df5666d489cdabab3a28645836e06e44ab8a574b625650",
@@ -66527,8 +66527,8 @@
       "src/persistence/critical_command.h": "6064c1da68d806c3b9e48d715d0991346fb6a6a45692dd51838740044a381a71",
       "src/persistence/critical_command_coordinator.c": "eabc9eae0728d032b4d1fca6c2c722030ac47a38e7be9364725f695dae094258",
       "src/persistence/critical_command_coordinator.h": "7339e2b183126c888d74afd0eeae577696f80b49f4467c2cda3ae2165928f96a",
-      "src/persistence/critical_command_journal.c": "8e6fcf35549d385206755b2eddf1b564551bd882f26885932d10b0dc41bb34d2",
-      "src/persistence/critical_command_journal.h": "c3e3ff49b3ea37fce262acfa09c3c5f8185847334e3e5927573aea4510d49eb0",
+      "src/persistence/critical_command_journal.c": "07b1ca90db295c01ffb2d7d435572d6c6db68492f9505bc1e10e3f1ac669ab6f",
+      "src/persistence/critical_command_journal.h": "9bf8e548a593f4d6fafb94bf7b81b95e3a090b680bb7c7e7019cfe6d8c46857d",
       "src/persistence/critical_command_repository.c": "d6fed863a38e6254d14e8a893f5a6d7b23b7536dd39397bc37ec078c16630dc3",
       "src/persistence/critical_command_repository.h": "321ebf1e9e9299079c100fe2c921f2e0c02d06e335499990b7650e82bc1eefef",
       "src/persistence/economic_sql_shop_trade_transaction.c": "8b0511748ea8588cd1066364183dcb0531c54fd12436cb1b2c9b97566d4de639",

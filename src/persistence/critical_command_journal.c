@@ -59,8 +59,18 @@ struct native_rewrite_attempt
 };
 native_rewrite_attempt native_rewrite_uncertain;
 std::atomic<size_t> native_rewrite_storage{ 0 };
+// Unavailable until a genuine journal-mutex owner publishes the complete census.
+std::atomic<size_t> journal_persistent_storage{ SIZE_MAX };
 void publish_native_rewrite_storage() noexcept;
+void publish_journal_persistent_storage() noexcept;
 bool journal_has_native = false;
+
+// Ordinary initialization can throw during a string assignment. Publish the
+// actual surviving persistent capacities before its real mutex owner exits.
+struct journal_persistent_storage_snapshot
+{
+	~journal_persistent_storage_snapshot() noexcept { publish_journal_persistent_storage(); }
+};
 
 uint64_t now_msec()
 {
@@ -767,6 +777,7 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 	if (!directory || !*directory || !quota_bytes)
 		return false;
 	std::lock_guard<std::mutex> lock(journal_mutex);
+	journal_persistent_storage_snapshot persistent_snapshot;
 	if (health.initialized)
 		return false;
 	health = {};
@@ -774,6 +785,7 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 	publish_native_rewrite_storage();
 	journal_has_native = false;
 	journal_directory = directory;
+	publish_journal_persistent_storage();
 	if (mkdir(directory, 0700) != 0 && errno != EEXIST)
 	{
 		health.last_result = critical_command_journal_result::io_failure;
@@ -786,6 +798,7 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 		return false;
 	}
 	journal_path = journal_directory + "/" + JOURNAL_FILE;
+	publish_journal_persistent_storage();
 	journal_quota = quota_bytes;
 	const int fd = open(journal_path.c_str(),
 			    O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);
@@ -825,6 +838,7 @@ void critical_command_journal_shutdown(void)
 	journal_directory.clear();
 	journal_path.clear();
 	journal_quota = 0;
+	publish_journal_persistent_storage();
 }
 
 critical_command_journal_result critical_command_journal_append(const critical_command &command)
@@ -1243,6 +1257,7 @@ void critical_command_journal_reset_for_tests(void)
 	native_rewrite_uncertain = {};
 	publish_native_rewrite_storage();
 	journal_has_native = false;
+	publish_journal_persistent_storage();
 }
 
 #include "persistence/critical_command_coordinator.h"
@@ -1281,6 +1296,48 @@ bool journal_frame_heap(const journal_frame &frame, size_t &bytes) noexcept
 	       journal_admit_add(bytes, frame.bytes.capacity()) &&
 	       journal_admit_add(bytes, frame.native_attachment.capacity());
 }
+bool journal_persistent_storage_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+
+// Only actual journal-mutex owners call this provider. Neither readers nor the
+// shared budget dereference these mutable strings or vectors outside that lock.
+void publish_journal_persistent_storage() noexcept
+{
+	size_t bytes = SIZE_MAX;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	// Actual installed GCC13 char-string SSO capacity is 15; allocated storage
+	// is capacity+1 including the terminator. All attempt vectors use uint8_t.
+	bytes = 0;
+	if (!journal_persistent_storage_add(bytes, sizeof(journal_mutex)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(journal_directory)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(journal_path)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(journal_quota)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(health)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(journal_has_native)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(native_rewrite_uncertain)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(native_rewrite_storage)) ||
+	    !journal_persistent_storage_add(bytes, sizeof(journal_persistent_storage)) ||
+	    journal_directory.capacity() == SIZE_MAX || journal_path.capacity() == SIZE_MAX ||
+	    (journal_directory.capacity() > 15 &&
+	     !journal_persistent_storage_add(bytes, journal_directory.capacity() + 1)) ||
+	    (journal_path.capacity() > 15 &&
+	     !journal_persistent_storage_add(bytes, journal_path.capacity() + 1)) ||
+	    !journal_persistent_storage_add(bytes, native_rewrite_uncertain.expected.capacity()) ||
+	    !journal_persistent_storage_add(bytes, native_rewrite_uncertain.successor.capacity()) ||
+	    !journal_persistent_storage_add(bytes, native_rewrite_uncertain.postimage.capacity()) ||
+	    !journal_persistent_storage_add(bytes,
+					    native_rewrite_uncertain.retiring_child.capacity()))
+		bytes = SIZE_MAX;
+#endif
+	journal_persistent_storage.store(bytes, std::memory_order_release);
+}
+
 void publish_native_rewrite_storage() noexcept
 {
 	// Called only by the original journal-mutex owner. Readers observe this
@@ -1303,6 +1360,9 @@ void publish_native_rewrite_storage() noexcept
 	else
 		bytes += native_rewrite_uncertain.retiring_child.capacity();
 	native_rewrite_storage.store(bytes, std::memory_order_release);
+	// Preserve the original projection, then publish one complete persistent
+	// term from this same genuine mutex-held state.
+	publish_journal_persistent_storage();
 }
 struct journal_admission_budget
 {
@@ -1723,6 +1783,11 @@ size_t critical_command_journal_native_rewrite_storage_bytes() noexcept
 {
 	return native_rewrite_storage.load(std::memory_order_acquire);
 }
+
+size_t critical_command_journal_persistent_storage_bytes() noexcept
+{
+	return journal_persistent_storage.load(std::memory_order_acquire);
+}
 critical_command_journal_result critical_command_journal_retire_native_recovery_bounded(
 	const critical_native_recovery_envelope &expected, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer) noexcept
@@ -2054,6 +2119,7 @@ bool journal_startup_current_metadata_locked(size_t *output) noexcept
 	    !journal_startup_storage_add(bytes, sizeof(journal_quota)) ||
 	    !journal_startup_storage_add(bytes, sizeof(health)) ||
 	    !journal_startup_storage_add(bytes, sizeof(native_rewrite_storage)) ||
+	    !journal_startup_storage_add(bytes, sizeof(journal_persistent_storage)) ||
 	    !journal_startup_storage_add(bytes, sizeof(journal_has_native)) ||
 	    (!native_rewrite_uncertain.active &&
 	     !journal_startup_storage_add(bytes, sizeof(native_rewrite_uncertain))) ||
@@ -2082,6 +2148,7 @@ struct journal_startup_metadata_snapshot
 	size_t *output;
 	~journal_startup_metadata_snapshot() noexcept
 	{
+		publish_journal_persistent_storage();
 		(void)journal_startup_current_metadata_locked(output);
 	}
 };
@@ -2215,6 +2282,7 @@ bool critical_command_journal_init_bounded(const char *directory, size_t quota_b
 				return false;
 			}
 			journal_directory = directory; // Exact original assignment/request.
+			publish_journal_persistent_storage();
 			if (mkdir(directory, 0700) != 0 && errno != EEXIST)
 			{
 				health.last_result = critical_command_journal_result::io_failure;
@@ -2266,6 +2334,7 @@ bool critical_command_journal_init_bounded(const char *directory, size_t quota_b
 				return false;
 			}
 			journal_path = journal_directory + "/" + JOURNAL_FILE;
+			publish_journal_persistent_storage();
 			journal_quota = quota_bytes;
 			const int fd = open(journal_path.c_str(),
 					    O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC | O_NOFOLLOW,
