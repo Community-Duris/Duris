@@ -223,3 +223,42 @@ progressed startup, aggregate lifetime wiring and major-plan qualification remai
 Original Plan1 acceptance keeps its recorded scope; Plans2-4/combinedPlan5/R1-R8/
 release remain unfinished. Peer history, unrelated WIP and inactive/declined-spell/
 production gates are preserved. The ongoing goal remains active.
+
+## Native season and bounded CURRENT custody joined - 2026-10-09
+
+Candidate c84bb521c95303c7515afaaa9baa7a01af64547768e1e1f30fa19e84af0a6106
+at tmp/lifecycle-shared-flat-custody-season-plan5-candidate-primary-20261009 now
+joins the reviewed complete custody reader, required v6 tail DTO correction,
+genuine fresh-root season enrollment and actual build/standalone link registration.
+The join authenticates219 provider records and16 exact inverse spans:226 paths
+(186 source,31 tests,5 schema,4 other). Evidence:
+bin/tests/shared-flat-custody-season-primary-20261009/SOURCE-INTEGRATION.json.
+
+Custody99fed591 is accepted only through required successorfed582c7. The actual
+source-event/nested-ID and later transfer-result DTO phases use their maximum;
+original full catalog authentication/history/born/root/parent/native/SHOP checks
+remain. The genuine private reader takes already authenticated original references;
+root still owns carrier/plan/result preparation and aggregate/caller integration.
+
+Native season081425b3 has independent uint64 epoch and active/resetting status.
+Existing metadata files season_state and season_enrollment are each64 bytes:
+first32 canonical version1 fields/reserved bytes, final32 SHA256. Explicit fresh
+genesis is1/active, matching immutable SQL migration0003. Only actual successful
+root mkdir privately authorizes enrollment; root/parent sync, recovered borrowed
+lock, one existing two-metadata authority bundle and exact readback precede IP
+initialization. Existing generic/inactive roots are never seeded or repaired.
+Missing/partial/corrupt/resetting observations refuse with strong output. Marker
+binds format/genesis, not path/inode/accounting lineage. Plan5 restore must preserve
+both files and any pending authority journal as one coherent root; this marker
+does not detect stale backup rollback or prove accounting lineage. Registration
+e4983111 adds the actual object once and corrects only the flat standalone link.
+
+No executable qualification ran. Full ROOM season capture, same-lock worker and
+publication equality, explicit stopped legacy enrollment, complete atomic native
+participants and world source/dispatcher/publication/origin/ACK remain. Root's
+reader scope5b2ff6b8 stays UNSELECTED until earlier checkpoint/carrier and later
+CURRENT projection/output budgets are complete. The new INITIAL keeper decoder
+0cd49bee is source-prepared and under independent review, not yet joined.
+Source stays private/unpromoted, admission CLOSED, inactive/declined-spell/
+production gates intact. Original Plan1 acceptance remains scoped; fullPlans2-4/
+combinedPlan5/R1-R8/release remain unfinished. The goal remains active.
