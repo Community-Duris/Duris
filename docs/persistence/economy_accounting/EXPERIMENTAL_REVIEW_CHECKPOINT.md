@@ -2011,3 +2011,22 @@ qualification remain open. Separate flat-binding drafts and unrelated edits
 are excluded. The primary goal remains ACTIVE; accounting inactive, admission
 CLOSED, coverage incomplete and release BLOCKED. Plans 2–4, combined Plan 5
 and R1–R8 remain unfinished.
+
+
+## ROOM immutable origin and saved terminal reader — 2026-10-09
+
+[The reader milestone](ROOM_IMMUTABLE_TERMINAL_READER_2026-10-09.md) authenticates
+complete historical birth success before securely reading original terminal
+BODY bytes under the same recovered root lock. Full original decoder and
+terminal predicate, exact receipt correlation, prospective overlapping storage
+and strong output transfer are retained. No envelope, generation, delivery or
+ACK is synthesized. Independent final source review, byte inverses and changed-
+line format/token checks pass. All 931 policies and 393 authenticated pins
+retain scope; lexical mapping does not establish accounting completion.
+
+The terminal writer and actual flat publication caller remain unfinished.
+Separate factory/source/binding integration is local WIP and excluded. Native
+tests/builds remain in the major-plan batch; accepting gameplay/persistence/
+restart, full aggregate32MiB, durable transfer before retirement and ACK,
+combined Plan5 and R1–R8 gates are still open. Accounting stays inactive,
+admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.

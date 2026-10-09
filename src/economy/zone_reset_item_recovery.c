@@ -988,3 +988,48 @@ bool zone_reset_item_recovery_valid_bounded(const critical_native_recovery_envel
 	       (envelope.phase == critical_native_recovery_phase::execution_pending ||
 		body_terminal(candidate));
 }
+
+economic_accounting_error zone_reset_item_recovery_terminal_body_decode_bounded(
+	const critical_command &original, const std::span<const uint8_t> &bytes,
+	zone_reset_item_recovery_context *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_context_heap) noexcept
+{
+	if (!output || !reserve)
+		return error::corrupt_evidence;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)bytes;
+	(void)context;
+	(void)outer_live;
+	(void)retained_context_heap;
+	return error::unresolved;
+#else
+	size_t live = outer_live;
+	if (!recovery_bound_add(live, sizeof(zone_reset_item_recovery_context)) ||
+	    !recovery_bound_add(live, sizeof(std::span<const uint8_t>)) || !reserve(live, context))
+		return error::capacity;
+	try
+	{
+		zone_reset_item_recovery_context candidate;
+		size_t heap = 0;
+		// Keep the full original command/canonical context validation. The existing
+		// decoder takes a span by value, separately admitted before this call.
+		const auto decoded = zone_reset_item_recovery_decode_bounded(
+			original, bytes, &candidate, reserve, context, live, &heap);
+		if (decoded != error::ok)
+			return decoded;
+		if (!body_terminal(candidate))
+			return error::unresolved;
+		static_assert(std::is_nothrow_move_assignable_v<zone_reset_item_recovery_context>);
+		*output = std::move(candidate);
+		if (retained_context_heap)
+			*retained_context_heap = heap;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+#endif
+}
