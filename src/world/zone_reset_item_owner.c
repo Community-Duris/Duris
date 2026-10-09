@@ -5951,3 +5951,118 @@ void zone_reset_item_owner::pulse_flat_bounded(bool prepare_original_resets) noe
 		(void)quest_mobile_native_birth_owner::charge();
 	}
 }
+
+// Genuine unselected startup owner. It has no warm root, factory, preparation
+// owner, source/admission authority, native action or readiness transition.
+zone_reset_item_owner::startup_budget_guard::~startup_budget_guard() noexcept
+{
+	if (global_scope_)
+	{
+		// Cleanup only ends its actual scalar ownership. Never charge here: the
+		// caller may still hold the init mutex, and the real guard is still alive.
+		(void)item_native_quest_global_budget_scope_owner::end(this);
+		global_scope_ = false;
+	}
+}
+
+bool zone_reset_item_owner::startup_budget_guard::begin(size_t full_caller_and_coordinator) noexcept
+{
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)full_caller_and_coordinator;
+	return false;
+#else
+	struct begin_observation_frame
+	{
+		size_t live, globals;
+	} work{ full_caller_and_coordinator, 0 };
+	// A registered outside C observer would acquire the already-held init mutex.
+	// This is the actual original-reset precondition, not a new boot lease.
+	if (global_scope_ || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    item_native_quest_coordinator_budget_scope_owner::registered() ||
+	    !item_native_quest_global_budget_scope_owner::begin(
+		    this, flat_current_global_storage_with_literal_pools, true))
+		return false;
+	global_scope_ = true;
+	if (warm_scratch_add(work.live, sizeof(*this)) &&
+	    warm_scratch_add(work.live, sizeof(work)) &&
+	    warm_scratch_add(work.live, sizeof(full_caller_and_coordinator)) &&
+	    flat_current_global_storage_with_literal_pools(&work.globals) &&
+	    warm_scratch_add(work.live, work.globals) &&
+	    quest_mobile_native_birth_owner::charge(work.live))
+		return true;
+	// Only this successfully begun guard may end this scalar scope. Failed
+	// shared charge retains the existing budget cache and actual replay owners.
+	if (item_native_quest_global_budget_scope_owner::end(this))
+		global_scope_ = false;
+	return false;
+#endif
+}
+
+bool zone_reset_item_owner::startup_budget_guard::reserve(size_t full_caller_and_coordinator,
+							  void *actual_guard) noexcept
+{
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)full_caller_and_coordinator;
+	(void)actual_guard;
+	return false;
+#else
+	struct reserve_observation_frame
+	{
+		startup_budget_guard *guard;
+		size_t live, globals;
+	} work{ static_cast<startup_budget_guard *>(actual_guard), full_caller_and_coordinator, 0 };
+	if (!work.guard || !work.guard->global_scope_ || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql())
+		return false;
+	// Genuine held-mutex lender already supplied CURRENT C once in this full
+	// prefix. No observer, coor getter, journal getter or borrow subtraction runs.
+	return warm_scratch_add(work.live, sizeof(*work.guard)) &&
+	       warm_scratch_add(work.live, sizeof(work)) &&
+	       warm_scratch_add(work.live, sizeof(full_caller_and_coordinator)) &&
+	       warm_scratch_add(work.live, sizeof(actual_guard)) &&
+	       flat_current_global_storage_with_literal_pools(&work.globals) &&
+	       warm_scratch_add(work.live, work.globals) &&
+	       quest_mobile_native_birth_owner::charge(work.live);
+#endif
+}
+
+bool zone_reset_item_owner::startup_budget_guard::finish_after_unlock(
+	size_t surviving_caller) noexcept
+{
+	if (!global_scope_ || !nevent_is_game_thread())
+		return false;
+	struct finish_observation_frame
+	{
+		size_t live;
+		bool registered;
+	} work{ surviving_caller, false };
+	// Exact immutable pair for the future genuine ROOT, never this boot reserve.
+	// The real still-active boot identity authenticates registration. Caller has
+	// already released the actual init mutex; no outside C lookup occurs here.
+	work.registered = item_native_quest_coordinator_budget_scope_owner::register_observer(
+		this, zone_reset_room_publication_owner::current_coordinator_storage,
+		reserve_warm_command_scratch);
+	if (!item_native_quest_global_budget_scope_owner::end(this))
+		return false;
+	global_scope_ = false;
+	// No admission or callback between exact registration and scalar scope end.
+	// The ensuing real charge freshly observes outside G/C and the selected J;
+	// this guard and its actual finish/formal frames still genuinely coexist.
+	if (!warm_scratch_add(work.live, sizeof(*this)) ||
+	    !warm_scratch_add(work.live, sizeof(work)) ||
+	    !warm_scratch_add(work.live, sizeof(surviving_caller)))
+		return false;
+	return quest_mobile_native_birth_owner::charge(work.live) && work.registered;
+}
+
+bool zone_reset_item_owner::refresh_after_startup(size_t surviving_caller) noexcept
+{
+	// The actual future caller invokes this after its guard/descriptor block.
+	// No cached bootstrap bytes or guard lifetime is inferred from a scalar.
+	size_t live = surviving_caller;
+	return warm_scratch_add(live, sizeof(live)) &&
+	       warm_scratch_add(live, sizeof(surviving_caller)) &&
+	       quest_mobile_native_birth_owner::charge(live);
+}

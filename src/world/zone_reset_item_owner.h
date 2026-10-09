@@ -136,6 +136,39 @@ bool zone_reset_room_item_recovery_pending() noexcept;
 
 class zone_reset_item_owner final
 {
+	// Genuine stack-only startup accounting owner. Only the actual coordinator
+	// startup implementation may use this provider after original guards/reset.
+	friend class critical_room_startup_budget_owner;
+	struct startup_budget_guard final
+	{
+	    public:
+		startup_budget_guard() noexcept = default;
+		~startup_budget_guard() noexcept;
+		startup_budget_guard(const startup_budget_guard &) = delete;
+		startup_budget_guard &operator=(const startup_budget_guard &) = delete;
+		startup_budget_guard(startup_budget_guard &&) = delete;
+		startup_budget_guard &operator=(startup_budget_guard &&) = delete;
+
+		// Actual caller/provider P+C excludes this real guard, this provider's
+		// observation/formal carriers and pure seven-global storage G. Called
+		// under the genuine init mutex only after outside-observer scalar reset.
+		bool begin(size_t full_caller_and_coordinator) noexcept;
+		static bool reserve(size_t full_caller_and_coordinator,
+				    void *actual_guard) noexcept;
+
+		// Must run only after actual coordinator/journal ownership has ended.
+		// Survivor P excludes this still-live guard and this provider's frames.
+		// Registers the exact future ROOT pair, ends this scope, freshly charges.
+		bool finish_after_unlock(size_t surviving_caller) noexcept;
+
+	    private:
+		bool global_scope_ = false;
+	};
+	// Genuine caller invokes only after its actual guard/descriptor lifetimes
+	// end. Fresh outside G/C/selected complete-J owners supply survivors once.
+	// P excludes this refresh's own actual formal/local observation carriers.
+	static bool refresh_after_startup(size_t surviving_caller) noexcept;
+
 	friend bool
 	zone_reset_room_item_restore_startup_bounded(const critical_native_recovery_envelope &,
 						     bool (*)(size_t, void *) noexcept, void *,
