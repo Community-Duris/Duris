@@ -8,7 +8,23 @@ live in subsystem directories, and includes use paths qualified from `src/`
 conventions: `act*.c` files group player commands, `do_<name>` functions are
 commands, and `specs.*.c` files hold special procedures.
 
+Source scope: implementation base
+`7f3da9c3a1b2b423da85a24abab603d8cdbee149`, reviewed on October 7, 2026,
+on `codex/docs-cleanup`. Documentation edits on this branch do not integrate
+newer runtime work. See the architecture guide's
+[newer branch implementations](ARCHITECTURE.md#newer-branch-implementations)
+for separately reviewed implementations and proposals.
+
 Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATABASE.md](DATABASE.md).
+
+Quick navigation:
+
+- [Source layout](#source-layout)
+- [Persistence](#persistence)
+- [Telemetry](#telemetry)
+- [Dispatch signatures](#dispatch-signatures) and [C++ conventions](#c-conventions-the-warning-profile-enforces)
+- [Indexing invariants](#indexing-invariants)
+- [Gameplay feature references](#gameplay-feature-references)
 
 ## Source layout
 
@@ -19,19 +35,20 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATABASE.md](DATABASE.md).
 | `cmd/` | Command registration plus player, object, social, and staff handlers. |
 | `core/` | Shared structures, constants, prototypes, utilities, configuration, and legacy pfile support. |
 | `economy/`, `item/` | Shops, auctions, balances, crafting, equipment, lockers, and durable item movement. |
-| `flatfile/`, `no_mysql/` | Complete flat-file persistence backend and client-free build stubs. |
+| `flatfile/`, `no_mysql/` | Selected flat-file repositories, authority transactions, and client-free build stubs; optional-feature limits are described below. |
 | `guild/`, `kingdom/` | Guild/social ownership and the current map-territory kingdom feature. |
 | `mob/`, `specs/` | Mobile behavior, studio procs, and area/special procedures. |
 | `net/` | Telnet, TLS, WebSocket, GMCP, MCCP, prompts, and descriptor I/O. |
 | `persistence/`, `sql/`, `redis/` | Typed durability coordinators, MariaDB repositories, and Redis integrations. |
 | `ships/` | Naval simulation, dock economy, and player/NPC ship control. |
+| `telemetry/` | Optional observation capture, bounded transport, and a private SQL writer; independent of gameplay mutation authority. |
 | `world/` | Boot/loading, world lifecycle, movement, maps, events, quests, and global updates. |
 
 ## Core engine
 
 | Files | Role |
 |-------|------|
-| `src/net/comm.c` | `main()`, `game_loop()` — `select()` loop, socket I/O, pulse dispatch, signal handling. |
+| `src/net/comm.c` | `main()`, `game_loop()` — bounded `poll()` network turns, simulation phases, worker wakeup hints, and lifecycle signals; persistent mode separates transport parent and world child. |
 | `src/world/db.c` | Boot: loads world files and zone resets; core allocation helpers. |
 | `src/cmd/interp.c` | Command table (`CMD_*` rows) and command dispatch/aliasing. |
 | `src/world/handler.c` | Object/character lifecycle and generic character maintenance events. |
@@ -45,26 +62,80 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATABASE.md](DATABASE.md).
 | Files | Role |
 |-------|------|
 | `src/world/events.c`, `src/world/new_events.c` | Timed callback wheel executed inside the game loop. |
-| `src/world/timers.c` | Player-facing timers such as affect durations. |
+| `src/world/timers.c` | Persisted named timestamps and elapsed-time checks for periodic work, including ship cargo updates. |
+| `src/magic/affects.c` | Affect application and expiry callbacks scheduled through the event system. |
 | `src/mob/studioproc.c`, `src/mob/studioproc.h` | Studio-proc trigger engine for `areas/world.trg`; see [STUDIOPROC.md](../content/STUDIOPROC.md). |
 | `src/mob/studioproclib.c`, `src/mob/studioproclib.h` | Built-in proc function library callable from triggers. |
 | `src/persistence/latency_trace.c` | Per-callback latency telemetry (`NEVENT BUDGET`). |
 
+## Account services and cached reads
+
+| Files | Role |
+| --- | --- |
+| `src/account/account.c`, `src/account/nanny.c` | Account and connection flows, character selection, and player-load continuations. Account-name reads and some character-load fallbacks remain synchronous in this checkout. |
+| `src/account/password_async.c`, `src/account/password_hash.c` | Game-thread authentication continuations and the password hashing/verification worker. |
+| `src/account/account_recovery.c`, `src/account/account_recovery_nanny.c`, `src/net/mail_sender.c` | Recovery-token policy, Telnet recovery adapter, and optional best-effort SMTP worker. |
+| `src/cmd/help_cache.c`, `src/cmd/information_cache.c` | Cached help/information reads and refresh publication; backend-specific local catalogs have their own load rules. |
+| `src/economy/collector_catalog_cache.c`, `src/economy/collector_listing_pipeline.c` | Collector catalog refresh/publication and bounded listing reads; durable Collector mutations stay with their transaction owners. |
+
 ## Persistence
+
+The backend is selected once at boot and must match the executable. The
+supported modes are `mariadb-primary` and client-free `flatfile-primary`;
+mixed per-operation fallback is rejected. These are representative ownership
+entry points rather than a list of every domain repository.
 
 | Files | Role |
 |-------|------|
+| `src/persistence/persistence_mode.c` | Whole-server backend selection, build compatibility, and private flat-file state-root validation. |
 | `src/sql/sql.c`, `src/sql/sql.h` | Main MariaDB connection, target selection, boot schema checks, and retained synchronous queries. |
 | `src/sql/sql_pool.c` | Bounded connection pool used by typed persistence workers. |
+| `src/player/player_load_pipeline.c`, `src/player/player_load_repository.c`, `src/player/player_load_materialize.c` | Bounded load orchestration, consistent SQL snapshot reads, and game-thread character materialization; client-free builds select the flat-file load repository. |
+| `src/player/player_save_pipeline.c` | Revisioned checkpoint admission, journal handoff, and exact completion tracking. |
+| `src/player/player_snapshot_capture.c`, `src/player/player_snapshot_codec.c` | Game-thread snapshot capture and bounded snapshot/item encoding and decoding. |
+| `src/player/player_save_journal.c`, `src/player/player_save_worker.c` | Typed checkpoint journal and keyed save workers; journal durability and applied-revision acknowledgements are separate stages. |
+| `src/player/player_snapshot_repository.c`, `src/flatfile/flatfile_player_repository.c` | SQL snapshot application and the selected flat-file player load/save adapter. |
+| `src/persistence/critical_command_coordinator.c`, `src/persistence/critical_command_journal.c` | Immutable, non-coalescing critical operations, entity fences, journal admission, and completion tracking. |
+| `src/persistence/critical_command_repository.c`, `src/persistence/critical_outbox.c` | Typed SQL execution/reconciliation and separate outbox delivery, retry, and deduplication boundaries. |
+| `src/flatfile/flatfile_authority_transaction.c` | Recoverable, checksummed authority transactions and after-images used by flat-file domain owners. |
+| `src/persistence/economic_sql_accounting_lifecycle_transaction.c`, `src/flatfile/flatfile_accounting_lifecycle_transaction.c` | Native accounting lifecycle transaction owners for the selected backend. Domain-specific transaction modules retain their own native effects and receipts. |
+| `src/economy/economic_gameplay_authority.c` | Read-only lifecycle/admission projection installed by verified native owners; it is neither a balance store nor storage authority. |
+| `src/persistence/maintenance_scheduler.c`, `src/persistence/maintenance_snapshot.c`, `src/persistence/maintenance_repository.c` | Budgeted recurring persistence: scheduling and completion, game-thread request capture, and worker-side repository execution. |
+| `src/world/world_recovery_pipeline.c`, `src/world/world_recovery_codec.c`, `src/world/world_recovery_npc_items.c` | Bounded world-graph capture, immutable recovery encoding/publication, and boot restore with item-custody reconciliation. |
+| `src/redis/redis_world_runtime.c`, `src/redis/redis_floor_runtime.c`, `src/redis/redis_presence_runtime.c` | Separate optional world-recovery, floor-delta, and presence service lifecycles and worker integrations. |
+| `src/redis/redis.c`, `src/redis/wizredis.c` | Redis integration orchestration and staff diagnostics; the service modules own their specific work. |
 | `src/persistence/persistence_queue.c` | Retained item/scalar/large-payload compatibility queues and workers. |
 | `src/sql/sql_persistence_raw.c` | Raw SQL executor retained for large-payload compatibility producers. |
 | `src/sql/sql_player.c` | Character row mapping. |
-| `src/player/player_load_pipeline.c`, `src/player/player_save_pipeline.c` | Bounded typed player load and revisioned checkpoint orchestration. |
-| `src/persistence/critical_command_coordinator.c` | Non-coalescing critical gameplay operations and entity fencing. |
 | `src/core/files.c` | Legacy binary playerfile I/O and pfile utilities. |
-| `src/redis/redis.c`, `src/redis/wizredis.c` | Redis caches, floor deltas, immutable world recovery, and staff diagnostics. |
 
-See [DATABASE.md](DATABASE.md) for behavior and migrations.
+Backend support has feature-specific limits. Client-free builds disable the
+SQL telemetry sink. Redis world restores that require item-custody
+reconciliation depend on the SQL implementation; the client-free stub accepts
+only an empty reconciliation. See the architecture guide's
+[backend boundaries](ARCHITECTURE.md#backend-and-authority-selection) and
+[load, checkpoint, and world-recovery flow](ARCHITECTURE.md#player-loading-and-checkpoints).
+See [DATABASE.md](DATABASE.md) for behavior and migrations,
+[PLAYER_SAVE_PIPELINE.md](../persistence/PLAYER_SAVE_PIPELINE.md) and
+[PLAYER_SAVE_JOURNAL.md](../persistence/PLAYER_SAVE_JOURNAL.md) for checkpoint
+stages, [CRITICAL_COMMAND_PIPELINE.md](../persistence/CRITICAL_COMMAND_PIPELINE.md)
+for critical operations, and
+[ECONOMY_ACCOUNTING.md](../persistence/ECONOMY_ACCOUNTING.md) for route coverage
+and qualification limits.
+
+## Telemetry
+
+| Files | Role |
+| --- | --- |
+| `src/telemetry/telemetry_runtime.c` | Opt-in observation capture, configuration publication, and private writer lifecycle. |
+| `src/telemetry/telemetry_transport.c` | Fixed-capacity value-record queue, bounded admission, and worker-side batching/drain. |
+| `src/telemetry/telemetry_repository.c` | Private SQL sink connection and bounded, replay-aware record application. |
+
+Gameplay hooks capture observations without transferring mutation authority.
+Client-free builds report `flatfile_disabled` and start no telemetry writer.
+See [telemetry architecture](ARCHITECTURE.md#telemetry),
+[TRANSPORT.md](../telemetry/TRANSPORT.md), and
+[runtime configuration](../operations/CONFIGURATION.md#telemetry-runtime).
 
 ## Networking
 
@@ -76,9 +147,18 @@ See [DATABASE.md](DATABASE.md) for behavior and migrations.
 | `src/core/json_utils.c` | JSON encode/decode helpers used by network protocols. |
 | `src/net/gmcp.c` | GMCP negotiation and outbound game-data packages. |
 | `src/net/mccp.c` | MCCP (MUD Client Compression Protocol). |
-| `src/persistence/copyover.c` | Hot reboot: survives `exec()` via `copyover.dat` and restores connections and combat. |
+| `src/persistence/copyover.c` | Stateful hot reboot across `exec()` for eligible plain Telnet sessions, with connection and combat recovery. |
 | `src/net/editor.c` | In-game line editor for mail and boards. |
 | `src/cmd/mail.c` | Internal mail store and command handling. |
+
+This checkout uses the native-layout version 17 handoff defined in
+`src/persistence/copyover.h`, with readers for versions 12 through 17. The state
+file defaults to `copyover.dat` and can be selected with `COPYOVER_STATE_FILE`.
+Admission cancels the whole copyover if any live connection is outside
+`CON_PLAYING`, has no character, or uses TLS or WebSocket; the remaining
+character-state and persistence guards must also pass. See
+[copyover runtime validation](../testing/COPYOVER_RUNTIME.md) for focused checks
+and their coverage limits.
 
 ## Gameplay systems
 
@@ -120,9 +200,11 @@ map/contact helpers. The external API is `src/ships/ships.h`; ship index data is
 The current `src/kingdom/` feature is a guild map-territory system, not the
 retired siege/town-defense implementation. It is runtime-gated by
 `kingdom.enabled` in `lib/kingdom.cfg`, represents an 80-square ordered realm
-with one `highest_claim` integer, and persists it in `kingdom_realms`. Only
-`src/kingdom/kingdom.h` is public outside the subsystem. Player rules are in
-`lib/information/helpkingdoms`.
+with one `highest_claim` integer, and persists it in `kingdom_realms`.
+`src/kingdom/kingdom.h` is the main external interface;
+`src/kingdom/kingdom_store_piece.h` supplies narrow store-gear classification
+and purchase-owner checks used by command and spell/effect code. Player rules
+are in `lib/information/helpkingdoms`.
 
 Several old siege identifiers are permanent compatibility reservations and
 must not be reused:
@@ -141,8 +223,13 @@ area identities; they do not gate or describe the new kingdom module.
 
 ## Configuration and data
 
-- Compile-time: `src/core/config.h` (ports, pulses, paths), `src/sql/sql.h`
-  (credentials), Makefile defines.
+- Compile-time: `src/core/config.h` (default ports, pulses, paths) and Makefile
+  defines.
+- Runtime environment: startup loads `.env` through `src/core/env_file.c`,
+  preserving existing process environment values. Database connection settings
+  and credentials come from `DB_*` environment variables; `src/sql/sql.h`
+  provides accessors, not stored credentials. See
+  [CONFIGURATION.md](../operations/CONFIGURATION.md) for precedence and settings.
 - Runtime data: `lib/` — `duris.properties`, per-feature `*.cfg`
   (`crafting.cfg`, `mining.cfg`, `hardcore.cfg`, `frag_cap.cfg`,
   `account_rewards.cfg`, `creation_availability.cfg`, `random_equipment.cfg`,
@@ -169,15 +256,16 @@ tables. These signatures are load-bearing: a parameter may be unused by a given
 implementation, but the slot cannot be removed without breaking every table it
 is registered in.
 
-| Signature | Held in | Functions |
-|---|---|---:|
-| `(int, P_char, char *, int, P_char, P_obj)` | `skills[].spell_pointer` — spell dispatch | ~690 |
-| `(P_char, char *, int)` | command handlers (`src/cmd/interp.c` `CMD_*` table, `ACMD()`) | ~510 |
-| `(P_char, P_char, int, char *)` | mobile and room special procedures | ~455 |
-| `(P_char, P_char, P_obj, void *)` | event callbacks | ~210 |
-| `(P_obj, P_char, int, char *)` | object special procedures | ~150 |
-| `(void *, int, char *, int, int)` | `src/cmd/actset.c` `ac_*` setters, in `setBitTable::sb_func` | 18 |
-| `(descriptor_data *, cJSON *)` | WebSocket command handlers (`src/net/ws_handlers.c`) | ~10 |
+| Parameter signature | Held in |
+|---|---|
+| `(int, P_char, char *, int, P_char, P_obj)` | `skills[].spell_pointer` — spell dispatch |
+| `(P_char, char *, int)` | command handlers (`src/cmd/interp.c` `CMD_*` table, `ACMD()`) |
+| `(P_char, P_char, int, char *)` | `mob_proc_type` — mobile special procedures |
+| `(int, P_char, int, char *)` | `room_proc_type`, stored in `room_data::funct` — first argument is the room index |
+| `(P_char, P_char, P_obj, void *)` | `event_func_type` — event callbacks |
+| `(P_obj, P_char, int, char *)` | `obj_proc_type` — object special procedures |
+| `(void *, int, char *, int, int)` | `src/cmd/actset.c` `ac_*` setters, in `setBitTable::sb_func` |
+| `(descriptor_data *, cJSON *)` | WebSocket command handlers registered in `ws_handle_command` (`src/net/ws_handlers.c`) |
 
 When adding a handler to one of these families, register it in the owning table
 in the same change. A handler that compiles and is never dispatched is a silent
@@ -211,10 +299,11 @@ The build is `-Werror` with no `-Wno-*` exceptions (see
   do_say(ch, writable_arg("Fill me with your strength!"), CMD_SAY);
   ```
 
-  Do not add a `const_cast` or C-style cast instead. The one deliberate
-  exception in the tree is inside `str_free`, which takes `const char *`
-  because an owning pointer to string data is normally spelled that way;
-  the cast lives in that one function rather than at every call site.
+  Do not add a `const_cast` or C-style cast in place of a writable copy.
+  `str_free` has a separate string-ownership purpose: it takes `const char *`
+  and casts internally to release an owned allocation, keeping that cast out
+  of callers. Other compatibility casts exist in the tree; they need their
+  own local rationale and do not make a string literal writable.
 - **Immutable message and lookup tables are `const char *`.** `damage_messages`
   in particular is const-only, and its helpers take the caller's real buffer
   size — `tests/async/test_message_buffer_bounds.py` pins both. It also carries
@@ -239,11 +328,16 @@ touching the surrounding code.
 | Race indices into `stat_factor[]` / `combat_by_race[]` (`[LAST_RACE + 1]`) need `BOUNDED(0, race, LAST_RACE)`. | Equipment `affected[].modifier` values are attacker-controlled data, not a validated race. Guarded in `calculate_hitpoints2`, `apply_affs`, `affect_total`, `do_score`. |
 | `wear()` must not fall back to a weapon slot for a non-weapon `ITEM_HOLD` item. | Equipping a non-weapon into `WIELD`/`WIELD3`/`WIELD4` breaks combat-round and damage invariants. `HOLD` now rejects when occupied. |
 
-Object special procedures do **not** fire for items inside a container. They fire
-from `special()` (`src/cmd/interp.c`), which walks `ch->carrying` *before* the typed
-command runs — so the proc for an item pulled out of a portable hole fires on the
-player's *next* command, whatever that command is. `tests/async/test_wear_all_regression.py`
-and `test_relic_lab_reset_bounds.py` cover these paths.
+Command-time inventory dispatch in `special()` (`src/cmd/interp.c`) walks the
+direct `ch->carrying` list before the typed command handler and does not recurse
+into containers. An item pulled out of a portable hole becomes eligible for
+that traversal on a later command that reaches it; command gates or earlier
+special procedures may stop dispatch, and the item's proc decides whether to
+act. This is not a restriction on all object-proc execution: periodic callbacks
+in `src/world/db.c` and explicit lifecycle/combat calls also use
+`invoke_object_special()`. `tests/async/test_wear_all_regression.py` and
+`test_relic_lab_reset_bounds.py` cover the focused wear-slot and indexing guards
+described above.
 
 ## Standalone tools
 
@@ -256,7 +350,9 @@ and `test_relic_lab_reset_bounds.py` cover these paths.
 - `areas/src/` — area compiler tools that turn per-area source dirs into
   combined `world.*` files.
 
-## Bartender world-quest catalog
+## Gameplay feature references
+
+### Bartender world-quest catalog
 
 `src/world/world_quest_policy.c` builds the global catalog once at boot through
 `calc_zone_mob_level()`, after world indexes, special procedures, and map setup.
@@ -309,7 +405,7 @@ allows it. Every completed quest pays one item reward to the player who
 completed it; kill quests pay at completion instead of rolling rewards onto
 corpses. The fee is `world.quest.cost.per.level` copper per level (default 20).
 
-## Shared NPC area-target pruning
+### Shared NPC area-target pruning
 
 The shared area-selection helper in `src/core/utility.c` protects an autonomous
 NPC caster's eligible melee opponent as well as its explicit spell target from
@@ -323,7 +419,7 @@ player-controlled pruning policy.
 chain with controlled world and defense fixtures. Its group-target cases
 verify the pruning policy; they do not reproduce every reported encounter.
 
-## Epic point and epic skill levels
+### Epic point and epic skill levels
 
 `epic.gain.minLevel` (default 50) is the lowest level that earns epic points. The
 gate sits in `prepare_epic_award()`, which every `gain_epic()` caller and each epic stone
@@ -335,7 +431,7 @@ out of the award. Touch-stone level costs are unchanged. `epic.skills.minLevel` 
 gain-level requirement before quaffing, so an ineligible character keeps the potion
 and receives the required level without consuming it or incurring a wait.
 
-## Server difficulty dials
+### Server difficulty dials
 
 `src/world/difficulty.c` reads eighteen server-wide dials from the `[difficulty]`
 section of `lib/duris.properties`. Each runs from 1 to 10. Setting 5 is always an exact
@@ -369,7 +465,7 @@ epic points (not PvP) in `prepare_epic_award()`; artefact feeding in
 `sql_world_quest_can_do_another()` (never fewer than one a day) and the kill count in
 `createQuest()`.
 
-## Racial pulse
+### Racial pulse
 
 Each race's action rates live in `lib/duris.properties`. `spellcast.pulse.racial.<Race>`
 multiplies every spell's cast time; `damage.pulse.racial.<Race>` is the base melee round in

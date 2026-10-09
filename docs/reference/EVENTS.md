@@ -201,14 +201,23 @@ callback registered under another key is rejected.
 The watchdog runs after every event pass. It re-arms an enabled job that lost
 its successor, reports mismatched live handles as corruption, and tracks missed
 runs, schedule failures, callback failures, duplicate suppression, and watchdog
-rearms. The registry currently owns 11 boot jobs; Redis-dependent jobs remain
-registered but can be disabled by configuration.
+rearms. The registry currently owns 12 boot jobs, including `kingdom-upkeep`.
+That job remains registered when the kingdom subsystem is disabled; its callback
+returns immediately. Redis-dependent jobs remain registered but can be disabled
+by configuration.
 
-Maintenance callbacks use one-tick continuations to bound their work. Current
-slice caps are eight artifact-bind rows, one artifact-expiry row, four
+Several maintenance callbacks use one-tick continuations to bound their work.
+Current slice caps are eight artifact-bind rows, one artifact-expiry row, four
 artifact-war owners, eight dirty-player checkpoints, and four surname players.
-Each logical scan uses stable cursors or runtime-ID snapshots so entity removal
+These logical scans use stable cursors or runtime-ID snapshots so entity removal
 between slices cannot invalidate traversal state.
+
+`generic_char_event` traverses the full character list on every invocation and
+runs its maintenance body for one of four groups selected by character address.
+Basic NPC sanity checks precede that group filter. Its fixed-delay interval is
+nominally five seconds, so four phases form a nominal twenty-second cycle.
+Callback time, deferrals, and a slow game loop can lengthen that cycle. This
+distributes per-character work but does not bound the full-list traversal.
 
 ## Restart and copyover durability
 
@@ -229,13 +238,15 @@ durability classes:
   running process. Redis-dependent jobs remain registered but disabled until
   their dependency and recovery phase permit enablement.
 
-Persistence-critical player, ship, artifact, and world state uses its
-authoritative MySQL, journal, or Redis recovery pipeline. Those pipelines do
-not depend on a one-shot nevent record surviving a restart. There are currently
-no durable one-shot nevents. A future deadline that must survive restart must
-persist domain state plus the deadline and reconstruct a new process-local
-callback after recovery; persisting a wheel pointer, payload address, or
-`nevent_handle` is invalid.
+Persistence-critical state uses the selected native SQL or flat-file authority,
+with applicable journals and optional Redis recovery paths. Recovery support
+varies by domain and backend; see
+[backend and authority selection](ARCHITECTURE.md#backend-and-authority-selection).
+These recovery paths do not depend on a one-shot nevent record surviving a
+restart. There are currently no durable one-shot nevents. A future deadline that
+must survive restart must persist domain state plus the deadline and reconstruct
+a new process-local callback after recovery; persisting a wheel pointer, payload
+address, or `nevent_handle` is invalid.
 
 ## Game-thread ownership
 
@@ -302,4 +313,4 @@ links while inspecting them.
 - Deferral preserves absolute deadlines and debt metadata until execution or
   cancellation.
 - A registered, enabled periodic job is running or owns exactly one successor.
-- Heavy maintenance advances through bounded, resumable slices.
+- Continuation-based maintenance advances through bounded, resumable slices.
