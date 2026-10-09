@@ -306,6 +306,9 @@ struct critical_zone_reset_recovery_validators
 				  const critical_native_recovery_envelope &,
 				  bool (*)(size_t, void *) noexcept, void *,
 				  size_t) noexcept = nullptr;
+	bool (*publication_bounded)(const critical_native_recovery_envelope &,
+				    const critical_completion &, bool (*)(size_t, void *) noexcept,
+				    void *, size_t) noexcept = nullptr;
 };
 
 // Pure auction NAR checks. All callbacks must be registered by the genuine
@@ -439,6 +442,13 @@ class critical_zone_reset_item_publication_owner final
 					       bool (*)(size_t, void *) noexcept, void *,
 					       size_t outer_live,
 					       uint64_t expected_generation = 0) noexcept;
+	// Original receipt/delivery-authenticated execution->continuation ACK. Both
+	// full envelope clones and domain proofs precede the pinned durable CAS;
+	// original ROOM fences survive physical ACK until terminal retirement.
+	static bool acknowledge_bounded(const critical_native_recovery_envelope &,
+					const critical_completion &, uint64_t,
+					bool (*)(size_t, void *) noexcept, void *,
+					size_t outer_live) noexcept;
 };
 
 // These are private capabilities of the actual auction save/native owners.
