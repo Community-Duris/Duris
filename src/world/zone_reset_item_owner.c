@@ -19,6 +19,7 @@
 #include "world/object_template.h"
 #include "item/item_uid_allocator.h"
 #include "player/player_snapshot_capture.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "world/zone_reset_room_nesting.h"
@@ -581,6 +582,10 @@ struct zone_reset_item_owner::warm_checkpoint
 };
 struct zone_reset_item_owner::warm_root
 {
+	// Prospective allowance belongs to the original pulse's actual stack guard,
+	// not to a copied envelope, caller DTO or detached reservation token.
+	warm_command_scratch *preparation_owner = nullptr;
+	size_t preparation_scratch = 0;
 	zone_reset_item_root_stage stage;
 	std::vector<std::unique_ptr<warm_child>> children;
 	shop_trade_original_procedure_binding_stage whole_bindings;
@@ -624,6 +629,197 @@ struct zone_reset_item_owner::warm_registry
 };
 zone_reset_item_owner::warm_registry *zone_reset_item_owner::warm_head_ = nullptr;
 zone_reset_item_owner::warm_registry *zone_reset_item_owner::warm_current_ = nullptr;
+
+struct zone_reset_item_owner::warm_command_scratch
+{
+	warm_root *root = nullptr;
+	critical_native_recovery_envelope *output = nullptr;
+	static size_t inline_bytes() noexcept
+	{
+		return sizeof(warm_command_scratch) + sizeof(critical_native_recovery_envelope) +
+		       economic_gameplay_authority::active_regular_flat_working_bytes();
+	}
+	explicit warm_command_scratch(warm_root *original) noexcept : root(original)
+	{
+		if (root)
+			root->preparation_owner = this; // begin admitted this object before construction.
+	}
+	~warm_command_scratch() { release_warm_command_scratch(*this); }
+	warm_command_scratch(const warm_command_scratch &) = delete;
+	warm_command_scratch &operator=(const warm_command_scratch &) = delete;
+};
+
+namespace
+{
+bool warm_scratch_add(size_t &bytes, size_t amount) noexcept
+{
+	if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    amount > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool warm_scratch_array(size_t &bytes, size_t count, size_t unit) noexcept
+{
+	return (!unit || count <= PLAYER_SAVE_PIPELINE_MAX_BYTES / unit) &&
+	       warm_scratch_add(bytes, count * unit);
+}
+bool warm_scratch_envelope_heap(const critical_native_recovery_envelope &value,
+				       bool fresh_copy, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const auto count = [fresh_copy](const auto &v)
+	{ return fresh_copy ? v.size() : v.capacity(); };
+	if (!warm_scratch_array(bytes, count(value.command.keys), sizeof(critical_entity_key)) ||
+	    !warm_scratch_array(bytes, count(value.command.expected_revisions),
+				sizeof(critical_expected_revision)) ||
+	    !warm_scratch_add(bytes, count(value.command.payload)) ||
+	    !warm_scratch_add(bytes, count(value.command.accounting_intent)) ||
+	    !warm_scratch_add(bytes, count(value.attachment)))
+		return false;
+	*output = bytes;
+	return true;
+}
+bool warm_scratch_forest_heap(const std::vector<player_item_snapshot> &items,
+	const std::vector<native_mobile_birth_item_recipe> &recipes,
+	const std::vector<zone_reset_coin_output> &coins, bool fresh_copy, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const auto count = [fresh_copy](const auto &v)
+	{ return fresh_copy ? v.size() : v.capacity(); };
+	const auto text = [&](const std::string &value)
+	{
+		const size_t chars = count(value);
+		return chars <= 15 || (chars != SIZE_MAX && warm_scratch_add(bytes, chars + 1));
+	};
+	if (!warm_scratch_array(bytes, count(items), sizeof(player_item_snapshot)) ||
+	    !warm_scratch_array(bytes, count(recipes), sizeof(native_mobile_birth_item_recipe)) ||
+	    !warm_scratch_array(bytes, count(coins), sizeof(zone_reset_coin_output)))
+		return false;
+	for (const auto &item : items)
+	{
+		if (!text(item.name) || !text(item.short_description) || !text(item.description) ||
+		    !text(item.action_description) ||
+		    !warm_scratch_array(bytes, count(item.dynamic_affects),
+				    sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !warm_scratch_array(bytes, count(item.extra_descriptions),
+				    sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : item.extra_descriptions)
+			if (!text(description.keyword) || !text(description.description) ||
+			    !warm_scratch_array(bytes, count(description.spell_ids), sizeof(int32_t)))
+				return false;
+	}
+	for (const auto &recipe : recipes)
+		if (!warm_scratch_array(bytes, count(recipe.libraries),
+				    sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	*output = bytes;
+	return true;
+}
+} // namespace
+
+bool zone_reset_item_owner::begin_warm_command_scratch(warm_root &root) noexcept
+{
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	return false;
+#else
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || root.preparation_owner ||
+	    root.preparation_scratch || root.cold || root.blocked || root.retired ||
+	    !root.sealed || !root.stage.state_ ||
+	    root.stage.state_->result != zone_reset_item_root_result::captured)
+		return false;
+	// Allocation-free membership/source check. Original current-world/factory
+	// checks still run in preparation; this registration grants no execution.
+	warm_registry *actual = nullptr;
+	for (auto *registry = warm_head_; registry; registry = registry->next)
+		for (const auto &owned : registry->roots)
+			if (owned.get() == &root)
+			{
+				if (actual || !registry->closed || !registry->dispatcher_completed ||
+				    registry->blocked || registry->sealing_pending)
+					return false;
+				actual = registry;
+			}
+	const auto &source = root.forest.reset_source;
+	if (!actual || source.source.bytes != actual->invocation.source.bytes ||
+	    source.generation.bytes != actual->invocation.generation.bytes ||
+	    source.kind != actual->invocation.kind || source.sequence != actual->invocation.sequence ||
+	    source.slot != root.slot || root.slot >= actual->stop_slot ||
+	    root.forest.zone_vnum != actual->zone_vnum ||
+	    root.forest.operation_id.bytes != root.stage.state_->facts.operation_id.bytes)
+		return false;
+	root.preparation_scratch = warm_command_scratch::inline_bytes();
+	if (!quest_mobile_native_birth_owner::charge())
+	{
+		root.preparation_scratch = 0; // Failed admission never updates the budget cache.
+		return false;
+	}
+	// The original selected-projection predicate has its own named shared_ptr.
+	// The persistent base above admits it before even an inactive-state refusal.
+	if (!economic_gameplay_authority::active_regular_flat())
+	{
+		root.preparation_scratch = 0;
+		(void)quest_mobile_native_birth_owner::charge();
+		return false;
+	}
+	return true;
+#endif
+}
+
+bool zone_reset_item_owner::rebase_warm_command_scratch(warm_command_scratch &scratch,
+						       size_t bytes) noexcept
+{
+	if (!nevent_is_game_thread() || !scratch.root || !scratch.output ||
+	    scratch.root->preparation_owner != &scratch ||
+	    bytes < warm_command_scratch::inline_bytes() ||
+	    bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES)
+		return false;
+	const size_t previous = scratch.root->preparation_scratch;
+	scratch.root->preparation_scratch = bytes;
+	if (!quest_mobile_native_birth_owner::charge())
+	{
+		scratch.root->preparation_scratch = previous;
+		return false;
+	}
+	return true;
+}
+
+bool zone_reset_item_owner::reserve_warm_command_scratch(size_t bytes, void *context) noexcept
+{
+	auto *scratch = static_cast<warm_command_scratch *>(context);
+	if (!scratch || !scratch->root || persistence_mode_requires_mysql() ||
+	    !economic_gameplay_authority::active_regular_flat())
+		return false;
+	return rebase_warm_command_scratch(*scratch,
+		std::max(bytes, scratch->root->preparation_scratch));
+}
+
+bool zone_reset_item_owner::retain_warm_command_output(warm_command_scratch &scratch,
+	const critical_native_recovery_envelope &output) noexcept
+{
+	if (scratch.output != &output)
+		return false;
+	size_t bytes = warm_command_scratch::inline_bytes(), heap = 0;
+	return warm_scratch_envelope_heap(output, false, &heap) &&
+	       warm_scratch_add(bytes, heap) && rebase_warm_command_scratch(scratch, bytes);
+}
+
+void zone_reset_item_owner::release_warm_command_scratch(warm_command_scratch &scratch) noexcept
+{
+	if (!nevent_is_game_thread() || !scratch.root ||
+	    scratch.root->preparation_owner != &scratch)
+		return;
+	// Called after the pulse output and factory-vector temporaries die, before
+	// the original registry-erasure loop. Failed recensus retains the older cache.
+	scratch.root->preparation_owner = nullptr;
+	scratch.root->preparation_scratch = 0;
+	(void)quest_mobile_native_birth_owner::charge();
+	scratch.root = nullptr;
+	scratch.output = nullptr;
+}
 
 bool zone_reset_item_owner::begin_warm_capture() noexcept
 {
@@ -1650,9 +1846,12 @@ bool zone_reset_item_owner::warm_root_current(const warm_root &root) noexcept
 }
 
 bool zone_reset_item_owner::prepare_warm_command_flat(
-	const critical_operation_id &operation, critical_native_recovery_envelope *output) noexcept
+	const critical_operation_id &operation, critical_native_recovery_envelope *output,
+	warm_command_scratch &scratch) noexcept
 {
 	if (!output || !nevent_is_game_thread() || critical_operation_id_is_zero(operation) ||
+	    scratch.output != output || !scratch.root ||
+	    scratch.root->preparation_owner != &scratch ||
 	    persistence_mode_requires_mysql() ||
 	    !economic_gameplay_authority::active_regular_flat())
 		return false;
@@ -1671,7 +1870,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 					root = owned.get();
 					invocation = registry;
 				}
-		if (!root || !invocation || !warm_root_current(*root))
+		if (!root || root != scratch.root || !invocation || !warm_root_current(*root))
 			return false;
 		const auto &source = root->forest.reset_source;
 		if (source.source.bytes != invocation->invocation.source.bytes ||
@@ -1683,10 +1882,14 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			return false;
 		if (!root->original_envelope.attachment.empty())
 		{
-			size_t retained = 0;
-			if (!zone_reset_item_recovery_initial(root->original_envelope) ||
-			    !warm_retained_size(&retained) ||
-			    !quest_mobile_native_birth_owner::charge())
+			const size_t caller_live = warm_command_scratch::inline_bytes();
+			size_t clone_live = caller_live, clone_heap = 0;
+			if (!zone_reset_item_recovery_initial_bounded(root->original_envelope,
+				    reserve_warm_command_scratch, &scratch, caller_live) ||
+			    !warm_scratch_envelope_heap(root->original_envelope, true, &clone_heap) ||
+			    !warm_scratch_add(clone_live, sizeof(critical_native_recovery_envelope)) ||
+			    !warm_scratch_add(clone_live, clone_heap) ||
+			    !rebase_warm_command_scratch(scratch, clone_live))
 				return false;
 			auto observed = root->original_envelope;
 			*output = std::move(observed);
@@ -1709,6 +1912,24 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			    owned->forest.room_vnum == root->forest.room_vnum)
 				return false;
 		}
+		const char *configured = persistence_mode_flatfile_root();
+		if (!configured || !*configured)
+			return false;
+		const size_t root_chars = std::char_traits<char>::length(configured);
+		const size_t caller_live = warm_command_scratch::inline_bytes();
+		size_t frame_live = caller_live, image_heap = 0;
+		if (!warm_scratch_add(frame_live, sizeof(zone_reset_item_image)) ||
+		    !warm_scratch_add(frame_live, sizeof(zone_reset_room_placement_recipe)) ||
+		    !warm_scratch_add(frame_live, sizeof(critical_native_recovery_envelope)) ||
+		    !warm_scratch_add(frame_live, sizeof(std::vector<uint8_t>)) ||
+		    !warm_scratch_add(frame_live, sizeof(std::string)) ||
+		    !warm_scratch_forest_heap(root->forest.items, root->forest.recipes,
+			root->forest.coins, true, &image_heap) ||
+		    !warm_scratch_add(frame_live, image_heap) ||
+		    (root_chars > 15 && (root_chars == SIZE_MAX ||
+			!warm_scratch_add(frame_live, root_chars + 1))) ||
+		    !reserve_warm_command_scratch(frame_live, &scratch))
+			return false;
 		zone_reset_item_image image;
 		image.operation_id = root->forest.operation_id;
 		image.reset_source = root->forest.reset_source;
@@ -1731,26 +1952,43 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 
 		critical_native_recovery_envelope original;
 		std::vector<uint8_t> canonical;
-		const char *configured = persistence_mode_flatfile_root();
-		if (!configured || !*configured)
-			return false;
 		const std::string selected_root(configured);
 		{
 			// One actual recovered selected-root freeze. Values never grant
 			// source, constructor, execution or publication permission.
-			// Existing unbounded provider calls need genuine prospective aggregate
-			// reservations before this route is admitted; source completion alone
-			// does not satisfy the original32MiB budget or authorize activation.
-			flatfile_authority_lock lock;
-			if (!lock.acquire(selected_root, nullptr))
+			// Recovered providers and codecs below reserve their real scratch.
+			// Native recapture and publication observation/preparation still need
+			// bounded companions before the original 32 MiB gate can be qualified.
+			size_t lock_live = frame_live;
+			if (!warm_scratch_add(lock_live, sizeof(flatfile_authority_lock)) ||
+			    !reserve_warm_command_scratch(lock_live, &scratch))
 				return false;
-			const auto recovered = flatfile_authority_transaction_recover(
-				selected_root, lock, nullptr);
+			flatfile_authority_lock lock(reserve_warm_command_scratch, &scratch, frame_live);
+			size_t lock_retained = 0;
+			if (!lock.retained_bytes(&lock_retained))
+				return false;
+			lock_live = frame_live;
+			if (!warm_scratch_add(lock_live, lock_retained) ||
+			    !lock.acquire_bounded(selected_root, reserve_warm_command_scratch,
+				&scratch, lock_live) || !lock.retained_bytes(&lock_retained))
+				return false;
+			size_t storage_live = frame_live;
+			if (!warm_scratch_add(storage_live, lock_retained))
+				return false;
+			const auto recovered = flatfile_authority_transaction_recover_bounded(
+				selected_root, lock, reserve_warm_command_scratch, &scratch, storage_live);
 			if (recovered != flatfile_authority_transaction_result::ok &&
 			    recovered != flatfile_authority_transaction_result::not_found)
 				return false;
+			if (!warm_scratch_add(storage_live, sizeof(flatfile_season_state)) ||
+			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_corpse_record>)) ||
+			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_room_item_record>)) ||
+			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_saved_world_item_record>)) ||
+			    !reserve_warm_command_scratch(storage_live, &scratch))
+				return false;
 			flatfile_season_state season;
-			if (flatfile_season_state_read_locked(selected_root, lock, &season) !=
+			if (flatfile_season_state_read_locked_bounded(selected_root, lock, &season,
+				    reserve_warm_command_scratch, &scratch, storage_live) !=
 				    flatfile_season_state_result::ok ||
 			    season.status != flatfile_season_status::active || !season.epoch)
 				return false;
@@ -1758,10 +1996,14 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			std::vector<flatfile_corpse_record> corpses;
 			std::vector<flatfile_room_item_record> rooms;
 			std::vector<flatfile_saved_world_item_record> saved;
-			const auto world_read = flatfile_world_item_recovery_list_all_locked(
-				selected_root, lock, &corpses, &rooms, &saved, nullptr);
+			size_t world_heap = 0;
+			const auto world_read = flatfile_world_item_recovery_list_all_locked_bounded(
+				selected_root, lock, &corpses, &rooms, &saved,
+				reserve_warm_command_scratch, &scratch, storage_live, &world_heap);
 			if (world_read != flatfile_world_item_result::ok &&
 			    world_read != flatfile_world_item_result::not_found)
+				return false;
+			if (!warm_scratch_add(storage_live, world_heap))
 				return false;
 			image.expected_room_revision = 0; // Genuine absent selected native ROOM.
 			if (world_read == flatfile_world_item_result::ok)
@@ -1774,26 +2016,60 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			}
 			if (image.expected_room_revision == UINT64_MAX)
 				return false;
+			if (!warm_scratch_add(storage_live, sizeof(item_owner_identity)) ||
+			    !warm_scratch_add(storage_live,
+					 sizeof(std::vector<flatfile_item_ownership_record>)) ||
+			    !reserve_warm_command_scratch(storage_live, &scratch))
+				return false;
+			const item_owner_identity selected_owner{
+				item_owner_type::room, static_cast<uint64_t>(image.room_vnum), 0 };
 			uint64_t custody_revision = 0;
 			std::vector<flatfile_item_ownership_record> active;
-			const auto custody_read = flatfile_item_repository_load_owner_locked(
-				selected_root, lock,
-				{ item_owner_type::room, static_cast<uint64_t>(image.room_vnum),
-				  0 },
-				&custody_revision, &active, nullptr);
+			size_t custody_heap = 0;
+			const auto custody_read = flatfile_item_repository_load_owner_locked_bounded(
+				selected_root, lock, selected_owner, &custody_revision, &active,
+				reserve_warm_command_scratch, &scratch, storage_live, &custody_heap);
 			if (custody_read != flatfile_item_repository_result::ok &&
 			    custody_read != flatfile_item_repository_result::not_found)
+				return false;
+			if (!warm_scratch_add(storage_live, custody_heap))
 				return false;
 			if (custody_revision != image.expected_room_revision)
 				return false;
 			// The filtered owner read supplies ONLY its genuine counter. Full
 			// history/empty-context/born-UID/world topology proof follows below.
 			if (!warm_root_current(*root) ||
-			    economic_gameplay_authority::prepare_zone_reset_item_flat(
+			    economic_gameplay_authority::prepare_zone_reset_item_flat_bounded(
 				    image, root->stage.state_->facts.accepted_at_usec,
-				    &original.command) != economic_accounting_error::ok ||
-			    critical_command_encode(original.command, &canonical) !=
+				    &original.command, reserve_warm_command_scratch,
+				    &scratch, storage_live) != economic_accounting_error::ok)
+				return false;
+			size_t command_heap = 0;
+			if (!warm_scratch_envelope_heap(original, false, &command_heap) ||
+			    !warm_scratch_add(storage_live, command_heap) ||
+			    critical_command_encode_bounded(original.command, &canonical,
+				    reserve_warm_command_scratch, &scratch, storage_live) !=
 				    critical_command_codec_result::ok)
+				return false;
+			if (!warm_scratch_add(storage_live, canonical.capacity()) ||
+			    !warm_scratch_add(storage_live, sizeof(zone_reset_item_recovery_context)))
+				return false;
+			size_t initial_heap = 0;
+			if (!warm_scratch_array(initial_heap, image.items.size(),
+						sizeof(zone_reset_item_recovery_item)))
+				return false;
+			for (const auto &recipe : image.recipes)
+			{
+				if (recipe.libraries.size() > (SIZE_MAX - 3) / 2 ||
+				    !warm_scratch_array(initial_heap, 2 * recipe.libraries.size() + 3,
+						    sizeof(zone_reset_item_recovery_effect)))
+					return false;
+			}
+			size_t initial_peak = storage_live;
+			if (!warm_scratch_add(storage_live, initial_heap) ||
+			    !warm_scratch_add(initial_peak, initial_heap) ||
+			    !warm_scratch_add(initial_peak, sizeof(zone_reset_item_recovery_item)) ||
+			    !reserve_warm_command_scratch(initial_peak, &scratch))
 				return false;
 			zone_reset_item_recovery_context initial;
 			initial.items.reserve(image.items.size());
@@ -1806,10 +2082,12 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			}
 			original.revision = 1;
 			original.phase = critical_native_recovery_phase::execution_pending;
-			if (zone_reset_item_recovery_encode(original.command, initial,
-							    &original.attachment) !=
-				    economic_accounting_error::ok ||
-			    !zone_reset_item_recovery_initial(original) ||
+			if (zone_reset_item_recovery_encode_bounded(original.command, initial,
+				    &original.attachment, reserve_warm_command_scratch,
+				    &scratch, storage_live) != economic_accounting_error::ok ||
+			    !warm_scratch_add(storage_live, original.attachment.capacity()) ||
+			    !zone_reset_item_recovery_initial_bounded(original,
+				    reserve_warm_command_scratch, &scratch, storage_live) ||
 			    flatfile_zone_reset_item_publication_storage::observe_initial_locked(
 				    selected_root, lock, original) != 0 ||
 			    !warm_root_current(*root) || !lock.matches(selected_root) ||
@@ -1824,8 +2102,14 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 			return false;
 		root->original_envelope = std::move(original);
 		root->canonical_command = std::move(canonical);
-		size_t retained = 0;
-		if (!warm_retained_size(&retained) || !quest_mobile_native_birth_owner::charge())
+		// Locked provider/INITIAL temporaries have died and the two moved buffers
+		// now belong to the retained root. Rebase before the final fresh clone;
+		// count retained ownership once, plus still-live image/path/inline locals.
+		size_t clone_live = frame_live, clone_heap = 0;
+		if (!warm_scratch_envelope_heap(root->original_envelope, true, &clone_heap) ||
+		    !warm_scratch_add(clone_live, sizeof(critical_native_recovery_envelope)) ||
+		    !warm_scratch_add(clone_live, clone_heap) ||
+		    !rebase_warm_command_scratch(scratch, clone_live))
 			return false; // Retain frozen season/counter/time/forest; no reroll.
 		auto result = root->original_envelope;
 		*output = std::move(result);
@@ -1837,11 +2121,11 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 	}
 }
 bool zone_reset_item_owner::prepare_warm_command(const critical_operation_id &operation,
-						 critical_native_recovery_envelope *output) noexcept
+	critical_native_recovery_envelope *output, warm_command_scratch &scratch) noexcept
 {
 	if (persistence_mode_requires_mysql())
 		return prepare_warm_command_sql(operation, output);
-	return prepare_warm_command_flat(operation, output);
+	return prepare_warm_command_flat(operation, output, scratch);
 }
 
 bool zone_reset_item_owner::prepare_warm_command_sql(
@@ -2678,9 +2962,17 @@ void zone_reset_item_owner::pulse_original(bool prepare_original_resets) noexcep
 					    !root.sealed ||
 					    economic_gameplay_authority::active_sql_recovery())
 						continue;
+					const bool bounded_flat = !persistence_mode_requires_mysql();
+					if (bounded_flat && !begin_warm_command_scratch(root))
+						continue;
+					// Guard is declared first: it outlives this returned envelope and
+					// all publication/submission temporaries in the original pulse.
+					warm_command_scratch scratch(bounded_flat ? &root : nullptr);
 					critical_native_recovery_envelope original;
+					scratch.output = &original;
 					if (!zone_reset_item_owner::prepare_warm_command(
-						    root.forest.operation_id, &original))
+						    root.forest.operation_id, &original, scratch) ||
+					    (bounded_flat && !retain_warm_command_output(scratch, original)))
 						continue;
 					if (zone_reset_room_publication_owner::empty(
 						    root.publication))
@@ -3211,7 +3503,7 @@ bool zone_reset_item_owner::warm_retained_size(size_t *output) noexcept
 		for (const auto &owned : registry->roots)
 		{
 			const auto &root = *owned;
-			if (!add(sizeof(root)) || !binding(root.whole_bindings) ||
+			if (!add(sizeof(root)) || !add(root.preparation_scratch) || !binding(root.whole_bindings) ||
 			    !command(root.original_envelope.command) ||
 			    !array(root.original_envelope.attachment.capacity(), 1) ||
 			    !array(root.canonical_command.capacity(), 1) ||

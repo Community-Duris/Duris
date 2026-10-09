@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cctype>
 #include <climits>
 #include <cstring>
@@ -444,6 +445,297 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 	return true;
 }
 
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+    _GLIBCXX_USE_CXX11_ABI
+bool world_storage_add(size_t left, size_t right, size_t *out) noexcept
+{
+	if (!out || right > SIZE_MAX - left)
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	*out = left + right;
+	return true;
+}
+
+bool world_storage_product(size_t count, size_t width, size_t *out) noexcept
+{
+	if (!out || (width && count > SIZE_MAX / width))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	*out = count * width;
+	return true;
+}
+
+// Fresh string assign grows the empty C++11 ABI SSO capacity (15) to at
+// least twice that capacity. Copy construction instead requests length+1.
+size_t world_assigned_text_request(size_t length) noexcept
+{
+	return length <= 15 ? 0 : std::max(length, size_t{30}) + 1;
+}
+
+size_t world_copied_text_request(size_t length) noexcept
+{
+	return length <= 15 ? 0 : length + 1;
+}
+
+struct world_catalog_storage_profile
+{
+	size_t retained_payload_bytes = 0;
+	size_t decode_prefix_peak = 0;
+	size_t validation_peak = 0;
+};
+
+// These objects really coexist during the allocation-free two-pass scan.
+// Scalar/closure call frames and library-private internals use the existing
+// codec request policy; nested codec/prime-policy objects are charged separately.
+struct world_catalog_storage_scan
+{
+	decoder header{nullptr, 0}, payload{nullptr, 0};
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	player_item_snapshot_list_allocation_profile items;
+	std::__detail::_Prime_rehash_policy uid_policy;
+	std::pair<bool, size_t> uid_growth{};
+	world_catalog_storage_profile result;
+};
+
+bool world_skip(decoder &in, size_t length) noexcept
+{
+	if (in.offset > in.size || length > in.size - in.offset)
+		return false;
+	in.offset += length;
+	return true;
+}
+
+bool world_text_length(decoder &in, size_t maximum, size_t *length) noexcept
+{
+	uint32_t count = 0;
+	if (!length || !in.number(&count) || count > maximum || !world_skip(in, count))
+		return false;
+	*length = count;
+	return true;
+}
+
+bool world_reserved_string_buckets(size_t count, size_t *bytes) noexcept
+{
+	std::__detail::_Prime_rehash_policy policy;
+	const size_t buckets = policy._M_next_bkt(
+	    std::max(policy._M_bkt_for_elements(count), policy._M_bkt_for_elements(1)));
+	return world_storage_product(buckets, sizeof(std::__detail::_Hash_node_base *), bytes);
+}
+
+constexpr size_t world_string_node_bytes = sizeof(std::__detail::_Hash_node<
+    std::string, std::__cache_default<std::string, std::hash<std::string>>::value>);
+constexpr size_t world_uid_node_bytes = sizeof(std::__detail::_Hash_node<
+    uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>);
+
+bool world_catalog_storage_preflight(const std::vector<uint8_t> &bytes,
+				     world_catalog_storage_profile *output) noexcept
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!output || bytes.size() < header_size ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	world_catalog_storage_scan scan;
+	scan.header = decoder{bytes.data() + 8, bytes.size() - 8};
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!scan.header.number(&version) || !scan.header.number(&payload_size) ||
+	    !scan.header.number(&revision) || !revision ||
+	    (version != catalog_version && version != catalog_money_version &&
+	     version != catalog_legacy_version) || payload_size != bytes.size() - header_size)
+		return false;
+	SHA256(bytes.data() + header_size, payload_size, scan.digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, scan.digest.data(), scan.digest.size()))
+		return false;
+	// First pass models the decoder's actual prefix; second pass models the
+	// catalog validator while the complete decoded catalog remains live.
+	for (unsigned int pass = 0; pass != 2; ++pass)
+	{
+		scan.payload = decoder{bytes.data() + header_size, payload_size};
+		uint32_t corpse_count = 0, saved_count = 0, room_count = 0;
+		if (!scan.payload.number(&corpse_count) || !scan.payload.number(&saved_count) ||
+		    (version >= catalog_version && !scan.payload.number(&room_count)) ||
+		    corpse_count > corpse_maximum || saved_count > saved_item_maximum ||
+		    room_count > room_maximum)
+			return false;
+		size_t retained = 0, validator = 0, owner_buckets = 0, key_buckets = 0;
+		size_t uid_count = 0, uid_buckets = 1, uid_bucket_bytes = 0;
+		uint32_t previous_owner = 0;
+		if (pass &&
+		    (!world_reserved_string_buckets(corpse_count, &owner_buckets) ||
+		     !world_reserved_string_buckets(saved_count, &key_buckets) ||
+		     !world_storage_add(2 * sizeof(std::unordered_set<std::string>) +
+					sizeof(std::unordered_set<uint64_t>),
+					owner_buckets, &validator) ||
+		     !world_storage_add(validator, key_buckets, &validator)))
+			return false;
+		if (pass)
+		{
+			scan.result.validation_peak = validator;
+		}
+		for (unsigned int group = 0; group != 3; ++group)
+		{
+			const size_t count = group == 0 ? corpse_count :
+					     group == 1 ? saved_count : room_count;
+			const size_t row_width = group == 0 ? sizeof(flatfile_corpse_record) :
+						group == 1 ? sizeof(flatfile_saved_world_item_record) :
+							     sizeof(flatfile_room_item_record);
+			size_t rows = 0;
+			if (!pass && (!world_storage_product(count, row_width, &rows) ||
+				      !world_storage_add(retained, rows, &retained)))
+				return false;
+			if (!pass)
+				scan.result.decode_prefix_peak =
+				    std::max(scan.result.decode_prefix_peak, retained);
+			for (size_t index = 0; index != count; ++index)
+			{
+				size_t name_length = 0, text_length = 0, canonical_live = 0;
+				uint32_t owner = 0;
+				if (group == 0)
+				{
+					if (!scan.payload.number(&owner) ||
+					    !world_text_length(scan.payload, name_maximum, &name_length) ||
+					    !world_skip(scan.payload, sizeof(uint32_t) + sizeof(int32_t)))
+						return false;
+					if (!pass && !world_storage_add(retained,
+						world_assigned_text_request(name_length), &retained))
+						return false;
+					for (unsigned int text = 0; text != 3; ++text)
+					{
+						const size_t maximum = text == 0 ? short_description_maximum :
+							text == 1 ? description_maximum : keywords_maximum;
+						if (!world_text_length(scan.payload, maximum, &text_length) ||
+						    (!pass && !world_storage_add(retained,
+							world_assigned_text_request(text_length), &retained)))
+							return false;
+					}
+					if (!world_skip(scan.payload, 9 * sizeof(int32_t) +
+						(version >= catalog_money_version ? 4 * sizeof(int32_t) : 0) +
+						sizeof(uint64_t)))
+						return false;
+					if (pass)
+					{
+						canonical_live = sizeof(std::string) +
+							world_copied_text_request(name_length);
+						size_t comparison = 0;
+						if (!world_storage_add(validator, canonical_live, &comparison) ||
+						    !world_storage_add(comparison, sizeof(std::string), &comparison))
+							return false;
+						scan.result.validation_peak = std::max(
+							scan.result.validation_peak, comparison);
+						if ((!index || previous_owner != owner) &&
+						    (!world_storage_add(validator, world_string_node_bytes, &validator) ||
+						     !world_storage_add(validator, world_copied_text_request(name_length),
+									&validator)))
+							return false;
+					}
+					previous_owner = owner;
+				}
+				else if (group == 1)
+				{
+					if (!world_text_length(scan.payload, key_maximum, &name_length) ||
+					    !world_skip(scan.payload, sizeof(int32_t) + sizeof(uint64_t)))
+						return false;
+					if (!pass && !world_storage_add(retained,
+						world_assigned_text_request(name_length), &retained))
+						return false;
+					if (pass &&
+					    (!world_storage_add(validator, world_string_node_bytes, &validator) ||
+					     !world_storage_add(validator, world_copied_text_request(name_length),
+								&validator)))
+						return false;
+				}
+				else if (!world_skip(scan.payload, sizeof(int32_t) + sizeof(uint64_t) +
+								  4 * sizeof(int32_t)))
+					return false;
+				uint32_t wire_length = 0;
+				if (!scan.payload.number(&wire_length) || !wire_length ||
+				    wire_length > PLAYER_SNAPSHOT_MAX_BYTES ||
+				    scan.payload.offset > scan.payload.size ||
+				    wire_length > scan.payload.size - scan.payload.offset ||
+				    player_item_snapshot_list_preflight(
+					scan.payload.data + scan.payload.offset, wire_length, &scan.items) !=
+					player_snapshot_codec_result::ok ||
+				    !scan.items.fresh_decode_storage_policy_supported ||
+				    !scan.items.canonical_encoder_storage_policy_supported ||
+				    !world_skip(scan.payload, wire_length))
+					return false;
+				size_t peak = 0;
+				if (!pass)
+				{
+					if (scan.items.decoded_payload_bytes < sizeof(std::vector<player_item_snapshot>) ||
+					    !world_storage_add(retained, sizeof(std::vector<uint8_t>), &peak) ||
+					    !world_storage_add(peak, wire_length, &peak) ||
+					    !world_storage_add(peak, scan.items.item_codec_decoder_object_bytes, &peak) ||
+					    !world_storage_add(peak, scan.items.decoded_payload_bytes, &peak) ||
+					    !world_storage_add(peak, scan.items.relationship_scratch_bytes, &peak) ||
+					    !world_storage_add(retained, scan.items.decoded_payload_bytes -
+							    sizeof(std::vector<player_item_snapshot>), &retained))
+						return false;
+					scan.result.decode_prefix_peak = std::max(scan.result.decode_prefix_peak, peak);
+				}
+				else
+				{
+					size_t encoding = 0, forest_live = 0;
+					if (!player_item_snapshot_list_encoder_working_bytes(scan.items, &encoding) ||
+					    !world_storage_add(validator, canonical_live, &peak) ||
+					    !world_storage_add(peak, sizeof(std::vector<uint8_t>), &peak) ||
+					    !world_storage_add(peak, encoding, &peak) ||
+					    !world_storage_add(canonical_live, sizeof(std::vector<uint8_t>), &forest_live) ||
+					    !world_storage_add(forest_live, scan.items.canonical_encoded_capacity_bytes,
+								&forest_live))
+						return false;
+					scan.result.validation_peak = std::max(scan.result.validation_peak, peak);
+					for (size_t item = 0; item != scan.items.item_count; ++item)
+					{
+						if (!world_storage_add(validator, world_uid_node_bytes, &validator))
+							return false;
+						scan.uid_growth = scan.uid_policy._M_need_rehash(uid_buckets, uid_count, 1);
+						size_t new_buckets = 0;
+						if (scan.uid_growth.first &&
+						    !world_storage_product(scan.uid_growth.second,
+							sizeof(std::__detail::_Hash_node_base *), &new_buckets))
+							return false;
+						if (!world_storage_add(validator, forest_live, &peak) ||
+						    !world_storage_add(peak, new_buckets, &peak))
+							return false;
+						scan.result.validation_peak = std::max(scan.result.validation_peak, peak);
+						if (scan.uid_growth.first)
+						{
+							validator -= uid_bucket_bytes;
+							if (!world_storage_add(validator, new_buckets, &validator))
+								return false;
+							uid_bucket_bytes = new_buckets;
+							uid_buckets = scan.uid_growth.second;
+						}
+						++uid_count;
+					}
+				}
+			}
+		}
+		if (scan.payload.offset != scan.payload.size)
+			return false;
+		if (!pass)
+			scan.result.retained_payload_bytes = retained;
+	}
+	*output = scan.result;
+	return true;
+}
+
+struct world_bounded_read_workspace
+{
+	explicit world_bounded_read_workspace(size_t directory_size)
+	    : directory(directory_size, '\0'), filename(catalog_filename) {}
+	world_item_catalog catalog;
+	std::vector<uint8_t> bytes;
+	std::string directory, filename;
+	world_catalog_storage_profile profile;
+};
+#endif
+
 flatfile_world_item_result recover(const std::string &root, const flatfile_authority_lock &lock,
 				   std::string *error)
 {
@@ -819,6 +1111,103 @@ flatfile_world_item_result flatfile_world_item_recovery_list_all_locked(
     *rooms = std::move(catalog.rooms);
     *saved_items = std::move(catalog.saved_items);
     return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_recovery_list_all_locked_bounded(
+    const std::string &root, const flatfile_authority_lock &lock,
+    std::vector<flatfile_corpse_record> *corpses,
+    std::vector<flatfile_room_item_record> *rooms,
+    std::vector<flatfile_saved_world_item_record> *saved_items,
+    flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+    size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !lock.matches(root) || !corpses || !rooms || !saved_items ||
+	    !reserve_scratch_peak)
+		return flatfile_world_item_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+    !_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_world_item_result::io_error;
+#else
+	size_t directory_size = 0, live = 0;
+	// The workspace constructor builds fresh count-character and copied-name
+	// strings directly, avoiding an unmodeled root-copy/append growth phase.
+	if (!world_storage_add(root.size(), sizeof("/domains") - 1, &directory_size) ||
+	    directory_size == SIZE_MAX ||
+	    !world_storage_add(outer_live_scratch, sizeof(world_bounded_read_workspace), &live) ||
+	    !world_storage_add(live, directory_size <= 15 ? 0 : directory_size + 1, &live) ||
+	    !world_storage_add(live, world_copied_text_request(sizeof("world_item_catalog") - 1),
+			       &live) || !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_world_item_result::io_error;
+	}
+	try
+	{
+		world_bounded_read_workspace work(directory_size);
+		memcpy(work.directory.data(), root.data(), root.size());
+		memcpy(work.directory.data() + root.size(), "/domains", sizeof("/domains") - 1);
+		const auto loaded = flatfile_read_bounded(work.directory, work.filename,
+		    catalog_maximum_bytes, &work.bytes, reserve_scratch_peak, context, live);
+		if (loaded == flatfile_read_result::not_found)
+			return flatfile_world_item_result::not_found;
+		if (loaded == flatfile_read_result::io_error)
+			return flatfile_world_item_result::io_error;
+		if (loaded != flatfile_read_result::ok)
+			return flatfile_world_item_result::invalid;
+		size_t scan_peak = 0;
+		const size_t nested_scan = std::max(player_item_snapshot_list_preflight_object_bytes(),
+			std::max(sizeof(std::__detail::_Prime_rehash_policy), sizeof(decoder)));
+		if (!world_storage_add(live, work.bytes.capacity(), &live) ||
+		    !world_storage_add(live, sizeof(world_catalog_storage_scan), &scan_peak) ||
+		    !world_storage_add(scan_peak, nested_scan, &scan_peak) ||
+		    !reserve_scratch_peak(scan_peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_world_item_result::io_error;
+		}
+		errno = 0;
+		if (!world_catalog_storage_preflight(work.bytes, &work.profile))
+			return errno == ENOBUFS ? flatfile_world_item_result::io_error :
+						flatfile_world_item_result::invalid;
+		size_t validation = 0, peak = 0;
+		if (!world_storage_add(work.profile.retained_payload_bytes,
+			work.profile.validation_peak, &validation) ||
+		    !world_storage_add(live, sizeof(world_item_catalog) + 2 * sizeof(decoder) +
+					 sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>), &peak) ||
+		    !world_storage_add(peak, std::max(work.profile.decode_prefix_peak, validation), &peak) ||
+		    !reserve_scratch_peak(peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_world_item_result::io_error;
+		}
+		// The original semantic decoder remains authoritative for every field,
+		// ordering rule, topology, UID, money value and canonical item encoding.
+		if (!decode_catalog(work.bytes, &work.catalog))
+			return flatfile_world_item_result::invalid;
+		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_corpse_record>>);
+		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_room_item_record>>);
+		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_saved_world_item_record>>);
+		*corpses = std::move(work.catalog.corpses);
+		*rooms = std::move(work.catalog.rooms);
+		*saved_items = std::move(work.catalog.saved_items);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = work.profile.retained_payload_bytes;
+		return flatfile_world_item_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_world_item_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_world_item_result::invalid;
+	}
+#endif
 }
 
 flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,

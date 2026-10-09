@@ -334,6 +334,11 @@ bool economic_gameplay_authority::active_regular_flat()
 	       selected && selected->scope == projection_scope::regular && !selected->scope_version;
 }
 
+size_t economic_gameplay_authority::active_regular_flat_working_bytes() noexcept
+{
+	return sizeof(std::shared_ptr<const admission_projection>);
+}
+
 economic_accounting_error
 economic_gameplay_authority::prepare_zone_reset_item(const zone_reset_item_image &original,
 						     uint64_t accepted_at_usec,

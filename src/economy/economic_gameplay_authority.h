@@ -84,6 +84,9 @@ class economic_gameplay_authority
 	// Read-only selected flat projection. No writer, source or ACK authority.
 	// SQL qualification/recovery and SQL fallback scopes remain excluded.
 	static bool active_regular_flat();
+	// Actual named installed-projection observer object used by the predicate.
+	// No allocation, projection load, or admission authority is performed here.
+	static size_t active_regular_flat_working_bytes() noexcept;
 	// Selected SQL boot policy keeps legacy writers closed while genuine replay
 	// and published lifetimes recover. It is not fresh admission/readiness.
 	static bool active_sql_recovery();
