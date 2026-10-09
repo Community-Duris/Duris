@@ -2847,6 +2847,127 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## ROOM codec frontier and SQL evidence; component driver reviewed - 2026-10-09
+
+This checkpoint supersedes the queue in the two-stage blueprint section below.
+Published frontier a0c882a311f83080eecec364db86d4d9f61e8256 includes primary
+repair3abc1b69a, executable-report36b081229 and ROOM-sourcea0c882a31 after
+coordinator59eb2d9e9. Root observed21 changed paths,1412 insertions/25 deletions;
+12 production source/header paths add pure profiles and bounded ROOM codecs.
+[ROOM codec handoff](https://github.com/Community-Duris/Duris/blob/a0c882a311f83080eecec364db86d4d9f61e8256/docs/persistence/economy_accounting/ROOM_CODEC_SCRATCH_ADMISSION_2026-10-09.md) reports source
+review, no successor builds/runtime and genuine pulse/caller integration pending.
+Root inspected published API bodies and exact diffs; the primary's full codec
+semantic review remains reported, distinct from root's finite driver review.
+Writer policies931 and pins388 remain unchanged in meaning; no release promotion.
+
+### Independently reviewed optional driver
+
+Architecture's private D:/Dev/Temp/bs-r1-component-boundary-driver-20261009 packet
+is CLOSED preparation, OPTIONAL NOT IMPORTED/REGISTERED, adoption unknown without
+an adoption wait. Root read the complete469-line driver and integration note,
+real reader/lock/recovery bodies and verifier; independently authenticated six
+providers,11 ranges,17 production dependency files,three closed dependencies and
+11 indexed payloads. Exact artifacts:
+
+- BS_R1_COMPONENT_BOUNDARY_DRIVER_2026-10-09.cpp:16578 bytes,
+  SHA2564209f09dc5e69b80a5b4b61b227c8ba8bc4b5fdc520875668b1eaade961e8f1e.
+- BS_R1_COMPONENT_BOUNDARY_DRIVER_INTEGRATION_2026-10-09.txt:7721 bytes,
+  SHA256ab301774ae7a8322179757e3f49b09aa99c2ece10e56e589861402dd2a152363.
+- PINS.json:78719 bytes,
+  SHA256c7e4814d050a1b16ba13851add1a4c9b9580a82947a5b28bd0da1edd34e391c3.
+
+Seven reader controls cover early denial, real missing file, invalid mode,
+directory IO, vector denial, success with prior capacity and arithmetic overflow.
+Five acquisition controls cover overflow, denial, genuine nonempty-lockfile
+refusal, same-object retry and reacquisition after owning-thread destruction.
+Two bounded missing-journal comparisons follow ordinary public recovery under
+the same real physical component lock. No accepting journal is manufactured.
+The nonallocating fixed observer and strong failure output/errno assertions
+agree with the pinned primitives. Fresh exclusive caller-selected D:/mnt/d scratch
+refuses reuse, checks nofollow descriptors/metadata and retains the invalid file;
+there is no deletion routine. Unsupported ABI returns77 before fixture creation.
+These are future component controls: no compiler/preprocessor/formatting/native
+execution, actual fixture, aggregate owner32MiB, genuine reservation restoration,
+allocator/syscall trace, source/world/terminal ACK or qualified integration.
+
+The recipe remains pinned to4f45070807ac9bc86501bf81613b7b4b643bc2b9. All four
+direct source/header bodies remain exact at a0c882a31. TWO transitive headers,
+src/persistence/critical_command.h and src/economy/economic_source_event.h,
+add public profiles/footprints; do not silently extend whole-closure qualification.
+Primary must select exact source/private-overlap-safe maintained integration,
+supported ABI/OpenSSL/POSIX/D mount semantics, build/run limits and native evidence.
+No new primary or Plan5 test target is imposed.
+
+### Actual retained executable evidence and still-failing SQL cases
+
+[Primary candidate report](https://github.com/Community-Duris/Duris/blob/a0c882a311f83080eecec364db86d4d9f61e8256/docs/persistence/economy_accounting/LOCAL_COMBINED_CANDIDATE_TEST_REVIEW_2026-10-09.md)
+retains older server source8e5be494224192709faaa04d59ea2602e3972e26 and a distinct
+repaired execution input0472360c2dc6903115c2c1898ef5e8635f00f97e. Root authenticated
+16 specifically named evidence files and four actual native binaries against
+review-evidence-hashes.json at D:/Dev/Temp/accounting-candidate-smoke-8e5be4942-20261009;
+baseline src/migration/test/script tree pins and the exact two public repair
+file hashes match. Root did not execute those binaries or rerun builds/DB/services;
+the private execution candidate/archive and environment are not independently
+authenticated as a whole. Published receipts record785 production objects/backend,
+SQL419.513s and flat400.194s builds exit0, inactive flat preflight3.893s exit0,
+zero skips. SQL server SHA25631a1d4330657730ffd26b6b27d97d7f8d467e8871cc5951258022eded2be1d76;
+flat SHA256c0013bc68ade92ff0fae805111696e368116344af24161e1539a2fba7422ab16.
+These retained results do not qualify4f/a0 ROOM or full native/release requirements.
+
+Two maintained SQL cases record2 errors,0 skips,280.027s, both BEFORE serviceboot.
+MariaDB10.11.14 fresh migration0065 has the actual five columns/two checks but
+terminal_publication_context default is metadata VALUE:NULL, while the verifier
+requires SQL NULL; ERROR1644 rejects the just-created schema. MySQL8.0.46 records
+65/65 applied history and runtime compatibility exit1 against sealed head0064/
+sequence64. Primary/Plan5 own engine-aware strict metadata correction preserving
+immutable migration/history/checksum controls, coherent measured schema65 runtime
+manifest/header/table/history contracts, and fresh original two-case reruns.
+Merely accepting a sequence increment or weakening shape/history is insufficient.
+The published helper adds11 existing providers;0065 shell changes mode100644 to
+100755 only, content/checksum exact. No root repair or native execution was done.
+Windows Docker executable evidence supersedes a blanket Docker-unavailable claim;
+the separately reported WSL prerequisite gap remains distinct. This is concrete
+failed qualification, not service/copy/journal/value/negative-control acceptance.
+
+### Prioritized continuing queue and exact ownership
+
+1. Quest has ONE active source-grounded delivery:
+   D:/Dev/Temp/published-room-codec-profile-acceptance-delta-20261009/
+   PUBLISHED_ROOM_CODEC_PROFILE_ACCEPTANCE_DELTA_2026-10-09.txt with raw pins/proof.
+   Use actual six API families in player_snapshot_codec, native_mobile_birth_recipe,
+   zone_reset_item_command, economic_gameplay_authority, economic_source_event and
+   critical_command, both .c/.h, from immutablea0c882a31. Reuse CLOSED ROOM readiness,
+   INITIAL freeze and full stock/recipe/binding/budget controls. Output maps real
+   allocation-free profiles, bounded build/decode/canonical stages, support bits,
+   checked overflow/strong outputs and returned-ownership lifetimes onto future
+   original ROOM acceptance/fixture assertions. Public passive codecs versus
+   private genuine installed-authority forwarding remain distinct. Root review
+   is required before publication; no primary implementation duplication.
+2. Architecture driver is CLOSED preparation; no further independent delivery
+   is selected pending genuine maintained integration/private overlap, supported
+   build/native fixture and original recovery/caller aggregate lifetime ownership.
+   Do not reopen sealed packets or duplicate quest codecs/current primary work.
+3. Primary owns the unimplemented pulse allowance through real envelope lifetime:
+   clones, root/path/lock, simultaneous recovered world/custody arrays, canonical
+   bytes, INITIAL rows/effects/recovery scratch and returned-copy transfer before
+   charge reduction. Legal accepting original ROOM producer/worker/world/terminal
+   ACK fixture and current executed32MiB qualification remain unavailable to prep.
+   Pure interfaces unblock correspondence preparation only; native cuts UNEXECUTED.
+4. Primary/Plan5 retain the two concrete SQL repairs/qualification. Integrated
+   Plans1-5, original R1-R8/backends/gameplay/persistence/recovery, required blockers
+   and published owner completion disposition still define the finish line.
+
+Root proof: D:/Dev/Temp/coordinator-room-codec-driver-frontier-20261009,
+authentication.json,semantic-review.json and exact three-document raw inverses.
+The initial finite dependency expectation omitted economic_source_event.h; it
+failed before evidence reading, is preserved, and the corrected two-header
+authentication PASS is used here. No compiler/native/DB/fixture-root action,
+maintained source/test/schema edits, private artifact commit or other-chat message.
+Preserve worktrees/jobs/prior bundles. Actual Goals remain BLOCKED unchanged;
+authorized preparation does not resume them. Heartbeat remains ACTIVE and quiet
+on unchanged state. This delivery and empty architecture queue cannot complete
+the continuing project or pause its broader monitor.
+
 ## Two-stage admission blueprint reviewed; bounded component driver preparation - 2026-10-09
 
 Architecture BS_R1_PUBLISHED_TWO_STAGE_ADMISSION_ACCEPTANCE_DELTA_2026-10-09.txt
