@@ -1253,3 +1253,85 @@ bool quest_mobile_native_zombie_stage::publish_bounded(P_obj object,
 	return publish(object);
 #endif
 }
+
+bool quest_mobile_native_zombie_stage::restore_bounded(P_obj object,
+						       quest_mobile_native_zombie_stage &output,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)object;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	extern int top_of_mobt;
+	if (!reserve || !nevent_is_game_thread() || !object || !object->obj_uid || output.game_ ||
+	    !mob_index || object->value[ZOMBIES_ID] <= 0 || object->value[ZOMBIES_ID] == INT_MAX ||
+	    object->value[ZOMBIES_STATUS] != FALSE || ZombieGame::next_id <= 0 ||
+	    retained_birth_zombie_reservations == std::numeric_limits<size_t>::max() ||
+	    zgames.size() >= zgames.max_size() ||
+	    retained_birth_zombie_reservations >= zgames.max_size() - zgames.size())
+		return false;
+	const int number = real_mobile0(87);
+	if (number < 0 || number > top_of_mobt || mob_index[number].virtual_number != 87)
+		return false;
+	for (const auto *game : zgames)
+		if (!game || game->id == object->value[ZOMBIES_ID] || game->generator == object)
+			return false;
+	// Caller owns current global registry exactly once; output is empty.
+	struct frame
+	{
+		size_t live, registry, requested, replacement;
+	};
+	constexpr size_t locals = sizeof(frame) + sizeof(std::unique_ptr<ZombieGame>) + sizeof(int);
+	if (locals > SIZE_MAX - outer_live || !reserve(outer_live + locals, context))
+		return false;
+	frame work{ outer_live + locals, 0, 0, 0 };
+	if (!quest_mobile_native_zombie_registry_storage_bytes(&work.registry) ||
+	    work.registry > outer_live || sizeof(ZombieGame) > SIZE_MAX - work.live)
+		return false;
+	work.live += sizeof(ZombieGame);
+	if (!reserve(work.live, context))
+		return false;
+	try
+	{
+		std::unique_ptr<ZombieGame> game(new ZombieGame());
+		game->generator = object;
+		game->id = object->value[ZOMBIES_ID];
+		// Off-state birth has no spawned zombies or current round. Periodic code
+		// never reads this counter until its original start command sets it.
+		game->zombies_to_load = 0;
+		work.requested = zgames.size() + retained_birth_zombie_reservations + 1;
+		if (work.requested > zgames.capacity())
+		{
+			if (work.requested > SIZE_MAX / sizeof(ZombieGame *))
+				return false;
+			work.replacement = work.requested * sizeof(ZombieGame *);
+			// Actual reserve keeps old current vector and this private game live.
+			if (work.replacement > SIZE_MAX - work.live ||
+			    !reserve(work.live + work.replacement, context))
+				return false;
+		}
+		zgames.reserve(work.requested);
+		output.mob_rnum_ = number;
+		output.original_mob_index_ = mob_index;
+		output.original_mob_proc_ = mob_index[number].func.mob;
+		output.item_uid_ = object->obj_uid;
+		output.game_ = game.release();
+		++retained_birth_zombie_reservations;
+		// Reserve the already retained ephemeral ID; do not allocate a new ID or
+		// publish a generator. Subsequent original construction must not collide.
+		if (ZombieGame::next_id <= object->value[ZOMBIES_ID])
+			ZombieGame::next_id = object->value[ZOMBIES_ID] + 1;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
