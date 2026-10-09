@@ -47,6 +47,11 @@ class quest_mobile_native_zombie_stage
 	uint64_t item_uid_ = 0;
 	static bool prepare(P_obj, quest_mobile_native_zombie_stage &) noexcept;
 	static bool restore(P_obj, quest_mobile_native_zombie_stage &) noexcept;
+	// Complete original frozen off-state restoration, without new ID issuance.
+	// Outer retains actual CURRENT registry once; recount registry/private stage
+	// on every return, including reserve failure or successful ownership transfer.
+	static bool restore_bounded(P_obj, quest_mobile_native_zombie_stage &,
+				    bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	bool publish(P_obj) noexcept;
 	// Caller includes current registry observation and the private retained game
 	// exactly once in outer, retains admitted peak through return, and recounts
