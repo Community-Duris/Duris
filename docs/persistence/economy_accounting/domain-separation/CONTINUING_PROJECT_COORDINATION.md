@@ -452,6 +452,64 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Flat proposal and worker ownership preparation selected - 2026-10-09
+
+New published123af716fe997ad2f482aeff39ccd0760d21fed9 reports private shared flat
+execution source. Root reads the full92-line SHARED_FLAT_EXECUTION_OWNER_SOURCE_
+2026-10-08.md and all changed finish/remaining/checkpoint dispositions. Actual
+src/tests/migrations/scripts trees are unchanged from reviewed7b94cd25c. Candidate
+0238370773930da6c7b46f1db60835553d041b2e02d84439f08fb73389dad6d6 has reported212
+paths/1297 provider records/37 inverses;private code and runtime proof unavailable.
+Coupled atomic1e26c6b0 now reportedly supplies CURRENT whole-catalog custody/exact
+retained MBR4-core receipt binding;original69484205 alone remains unaccepted.
+Cleanup1ef2176e reportedly preserves outside-function raw bytes;newline-changing
+afdd remains unselected. Prior open repair records are historical to this report,
+not independently verified code adoption or passing qualification.
+
+Prioritized queue:ONE active architecture private source-fact delivery;quest and
+all earlier reviewed packets stay CLOSED. Sole output:
+D:/Dev/Temp/shared-flat-proposal-thread-ownership-facts-20261009/
+SHARED_FLAT_PROPOSAL_THREAD_OWNERSHIP_FACTS_2026-10-09.txt,
+plus exact provider/range/reused-artifact pins,index and read-only verifier proof.
+Benefit:ground later integration/acceptance in actual lock/thread/proposal lifetime
+and shutdown cleanup ownership,without treating private reports as native proof.
+Reuse closed Smith same-root image/ACK/save/retention and terminal-origin facts;
+no repeated general flat map or private implementation duplicate.
+
+Inspect actual public coordinator operation_state,workers/retries/executing pins,
+generation/attempt/fences,native CAS/retirement/shutdown and genuine flat transaction/
+configured root-lock/recovery/callback/cleanup precedents. Derive exact public facts
+and missing seams for callback-local same-worker acquire/recover/release versus
+heap proposal retained without a held lock;sole commit before possible publication;
+fresh recovered same-root read-only reconciliation;full nested retained-capacity
+census/overflow-output invariants;reservation before commit retained through CAS/
+pure refusal/uncertainty;and same still-executing thread/state/attempt/body cleanup
+when shutdown changes stop/generation. Cleanup-only ownership is not relaxed current
+execution authority. No old after-image resubmission,ID reset or invented rollback.
+Minimal future legal observation obligations accompany facts;all UNEXECUTED.
+
+Available:123af report,unchanged public source and exact closed artifacts. Missing:
+private selected candidate/CURRENT/atomic/lifetime/retention/cleanup/producer/callback
+bodies;actual legal worker/proposal/shutdown fault hooks;original shared producer/
+caller/native fixture/full-world/origin/ACK exports. Missing inputs block dependent
+execution,not this narrow preparation. Private producer byte-equivalence after a
+backend gate does not prove caller reachability. Reported two undeclared sql_enabled
+callsites and missing transaction Makefile registration are queued readiness tasks,
+not verified repairs or compiler failures. Existing missing-API P1 and optional
+guidance stay intact;F1 integration-startup also remains unresolved.
+
+Architecture owns private D: note/evidence only;root independent factual/source
+review required before closure. Preserve isolated worktrees/jobs/all closed bundles.
+No maintained source/tests/coverage/manifest/contracts/Makefile changes,imports,
+patches or private artifact commits;no compiler/preprocessor/tests/build/DB/server/
+native/gameplay/recovery/event/performance runs. Primary retains shared fixes,
+budgets and integrated qualification;Plan5 retains ownership,no adoption wait.
+Actual root/native Goals remain BLOCKED/unfinished;source preparation is not Goal
+resumption. Producer admission and original release gates remain CLOSED. Broader
+Plans1-5/applicable original R1-R8/integrated qualification,required blockers and
+published owner completion disposition remain unfinished;heartbeat ACTIVE.
+Root source-tree/dispatch proof:D:/Dev/Temp/coordinator-flat-proposal-dispatch-20261009/.
+
 ## Cold prefix and adoption acceptance preparation reviewed - 2026-10-09
 
 Quest's selected private cold-prefix delta now PASSes independent root source/
