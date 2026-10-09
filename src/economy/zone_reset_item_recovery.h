@@ -96,6 +96,11 @@ bool zone_reset_item_recovery_valid_bounded(const critical_native_recovery_envel
 bool zone_reset_item_recovery_publication(const critical_native_recovery_envelope &,
 					  const critical_completion &) noexcept;
 bool zone_reset_item_recovery_terminal(const critical_native_recovery_envelope &) noexcept;
+// Complete original terminal envelope predicate with owning prospective decode.
+// Caller owns original input/prior live state in outer; no ACK authority.
+bool zone_reset_item_recovery_terminal_bounded(const critical_native_recovery_envelope &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t outer_live) noexcept;
 
 // Complete saved terminal BODY against a separately authenticated immutable
 // original command. This returns observations only: no envelope, revision,
