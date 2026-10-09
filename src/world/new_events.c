@@ -3659,3 +3659,174 @@ bool nevent_schedule_object_bounded(event_func_type func, int delay, P_obj objec
 	}
 #endif
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool native_reschedule_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - value)
+		return false;
+	value += amount;
+	return true;
+}
+template <class Map> bool native_reschedule_map_heap(const Map &value, size_t &bytes) noexcept
+{
+	const size_t width = sizeof(std::_Rb_tree_node<typename Map::value_type>);
+	return value.size() <= SIZE_MAX / width &&
+	       native_reschedule_add(bytes, value.size() * width);
+}
+struct native_reschedule_flush_scan
+{
+	std::array<size_t, PULSES_IN_TICK> counts;
+	std::array<size_t, PULSES_IN_TICK> capacities;
+	size_t heap;
+	size_t peak;
+};
+bool native_reschedule_flush_working_bytes(size_t *output) noexcept
+{
+	native_reschedule_flush_scan scan{};
+	scan.peak = sizeof(nevent_pending_reschedule); // Original individual fallback DTO.
+	if (nevent_pending_reschedules.size() > 1)
+	{
+		const size_t frame = sizeof(std::array<std::vector<P_nevent>, PULSES_IN_TICK>);
+		scan.peak = std::max(scan.peak, frame);
+		for (const auto &[event, request] : nevent_pending_reschedules)
+			if (event->sequence == request.sequence &&
+			    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+			{
+				const size_t bucket = nevent_bucket_for_tick(request.due_tick);
+				if (scan.counts[bucket] == scan.capacities[bucket])
+				{
+					const size_t count = scan.counts[bucket];
+					if (count > SIZE_MAX - std::max(count, size_t{ 1 }))
+						return false;
+					const size_t capacity =
+						count + std::max(count, size_t{ 1 });
+					if (capacity > SIZE_MAX / sizeof(P_nevent))
+						return false;
+					const size_t fresh = capacity * sizeof(P_nevent);
+					if (scan.heap > SIZE_MAX - frame ||
+					    fresh > SIZE_MAX - frame - scan.heap)
+						return false;
+					scan.peak = std::max(scan.peak, frame + scan.heap + fresh);
+					scan.heap +=
+						fresh - scan.capacities[bucket] * sizeof(P_nevent);
+					scan.capacities[bucket] = capacity;
+				}
+				++scan.counts[bucket];
+			}
+	}
+	*output = scan.peak;
+	return true;
+}
+#endif
+}
+
+bool nevent_native_reschedule_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t bytes = sizeof(nevent_pending_reschedules) + sizeof(nevent_deferred_due_counts) +
+		       sizeof(nevent_reschedule_batch_depth);
+	if (!native_reschedule_map_heap(nevent_pending_reschedules, bytes) ||
+	    !native_reschedule_map_heap(nevent_deferred_due_counts, bytes))
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+nevent_native_reschedule_batch::~nevent_native_reschedule_batch()
+{
+	// Never conceal a fallible allocating flush in a destructor. On refusal the
+	// genuine pending map remains owned/observable, and the actual native action
+	// markers prohibit repeating already-returned advances.
+	if (active_)
+		--nevent_reschedule_batch_depth;
+}
+bool nevent_native_reschedule_batch::begin_bounded(bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer_live) noexcept
+{
+	if (active_ || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// Caller owns this inline batch and initial persistent observer in outer once.
+	if (!reserve(outer_live, context))
+		return false;
+	++nevent_reschedule_batch_depth;
+	active_ = true;
+	return true;
+#endif
+}
+bool nevent_native_reschedule_batch::finish_bounded(bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept
+{
+	if (!active_ || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (nevent_reschedule_batch_depth == 1 && !current_nevent)
+	{
+		if (sizeof(native_reschedule_flush_scan) > SIZE_MAX - outer_live ||
+		    !reserve(outer_live + sizeof(native_reschedule_flush_scan), context))
+			return false;
+		size_t working;
+		if (!native_reschedule_flush_working_bytes(&working) ||
+		    working > SIZE_MAX - outer_live || !reserve(outer_live + working, context))
+			return false;
+	}
+	--nevent_reschedule_batch_depth;
+	active_ = false;
+	if (!nevent_reschedule_batch_depth && !current_nevent)
+		nevent_process_pending_reschedules(); // Full unchanged algorithm/catch fallback.
+	return true;
+#endif
+}
+
+bool nevent_advance_by_bounded(const nevent_handle &handle, unsigned long long ticks,
+			       bool *advanced, bool (*reserve)(size_t, void *) noexcept,
+			       void *context, size_t outer_live) noexcept
+{
+	if (!advanced || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)handle;
+	(void)ticks;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// Original advance/reschedule by-value handles and assignment DTO coexist
+	// with a missing-key map node request. Existing map/deferred storage is outer.
+	size_t working = 2 * sizeof(nevent_handle) + sizeof(nevent_pending_reschedule);
+	P_nevent event = handle.event;
+	if (event && handle.sequence && event->sequence == handle.sequence &&
+	    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE &&
+	    (current_nevent || nevent_reschedule_batch_depth) && event != current_nevent &&
+	    nevent_pending_reschedules.find(event) == nevent_pending_reschedules.end())
+		if (!native_reschedule_add(
+			    working, sizeof(std::_Rb_tree_node<
+					     decltype(nevent_pending_reschedules)::value_type>)))
+			return false;
+	if (working > SIZE_MAX - outer_live || !reserve(outer_live + working, context))
+		return false;
+	*advanced = nevent_advance_by(handle, ticks); // Original insertion/ENOMEM fallback.
+	return true; // Caller records actual returned before further fallible work.
+#endif
+}
