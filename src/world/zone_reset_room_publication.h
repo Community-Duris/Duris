@@ -166,6 +166,9 @@ class zone_reset_room_publication_owner final
 	// private census. SQL and the existing six-owner policy retain their observer.
 	static bool retained_size_registered_literal_pool(const zone_reset_room_publication_stage &,
 							  size_t *) noexcept;
+	// Genuine passive outside observer for the private registered full ROOT
+	// policy. Actual locked callbacks must use the paired coordinator lender.
+	static bool current_coordinator_storage(size_t *) noexcept;
 	static critical_submit_result submit_warm(critical_native_recovery_envelope);
 	static bool copy_warm(const critical_command &,
 			      critical_native_recovery_envelope *) noexcept;
