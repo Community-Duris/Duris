@@ -1141,8 +1141,18 @@ bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcep
 						return false;
 					if (item.stage)
 					{
-						const size_t retained =
-							item.stage->retained_bytes();
+						size_t retained = 0;
+						if (item_native_quest_global_budget_scope_owner::
+							    literal_pool_owned() &&
+						    item.stage->is_flat_factory())
+						{
+							if (!item.stage
+								     ->retained_bytes_excluding_literal_pools(
+									     &retained))
+								return false;
+						}
+						else
+							retained = item.stage->retained_bytes();
 						if (!retained || !add_bytes(bytes, retained))
 							return false;
 					}
