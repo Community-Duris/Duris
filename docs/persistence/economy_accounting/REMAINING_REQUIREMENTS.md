@@ -3234,3 +3234,8 @@ accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
 ## Genuine bounded initial ROOM boot callback implemented - 2026-10-09
 
 [Initial proof registration](ROOM_INITIAL_BOUNDED_BOOT_REGISTRATION_2026-10-09.md) pairs an optional bounded callback with the actual full initial revision/phase/context/no-receipt/no-progress provider. Ordinary initial/readiness behavior remains unchanged and flat ROOM is not selected. Full RAW/final source review, exact recipe reanchor, tokens/logical preprocessing and inverses passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. Full submit, bounded restoration registration and shared aggregate joining remain open. Native checks stay batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.
+
+
+## Registered literal-pool ownership paired - 2026-10-09
+
+[Pool ownership contract](REGISTERED_LITERAL_POOL_OWNERSHIP_2026-10-09.md) records the actual observer/ownership pair, preserving defaultfalse, same-pair registration, persistent end and reset. NPC uses the real pool-excluding private census only with actual pool ownership and a genuine flat factory; otherwise original SQL/native census remains. Seventh observer and full policy are not selected. Full RAW/final source review, tokens/logical preprocessing and inverses passed; 931 unchanged policies/400 authenticated pins, zero new/unmapped sites. ROOT/publication pairing, coherent full-policy selection, shared coordinator/journal and full pulse remain open. Native checks batched; accounting inactive/CLOSED, coverage incomplete, release BLOCKED, primary goal ACTIVE.

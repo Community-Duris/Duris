@@ -4840,6 +4840,7 @@ size_t native_quest_birth_retained_bytes = 0;
 // It conveys bytes only, never source/delivery/activation/ACK authority.
 bool (*native_quest_flat_global_observer)(size_t *) noexcept = nullptr;
 const void *native_quest_flat_global_scope = nullptr;
+bool native_quest_flat_literal_pool_owned = false;
 
 size_t native_quest_pending_count()
 {
@@ -4863,6 +4864,7 @@ void native_quest_reset_for_tests()
 	native_quest_birth_retained_bytes = 0;
 	native_quest_flat_global_observer = nullptr;
 	native_quest_flat_global_scope = nullptr;
+	native_quest_flat_literal_pool_owned = false;
 }
 bool native_quest_preparation_capacity(size_t incoming, bool include_driver = true,
 				       bool include_birth = true)
@@ -8941,15 +8943,18 @@ bool item_movement_transaction_restore_held_retirement_recovery(
 
 // Scalar-only guard transitions. Actual ROOT clears scratch before ending,
 // then its existing charge(0) observes persistent globals outside the scope.
-bool item_native_quest_global_budget_scope_owner::begin(
-	const void *actual_guard, bool (*current_storage)(size_t *) noexcept) noexcept
+bool item_native_quest_global_budget_scope_owner::begin(const void *actual_guard,
+							bool (*current_storage)(size_t *) noexcept,
+							bool includes_literal_pool) noexcept
 {
 	if (!actual_guard || !current_storage || !nevent_is_game_thread() ||
 	    native_quest_flat_global_scope ||
 	    (native_quest_flat_global_observer &&
-	     native_quest_flat_global_observer != current_storage))
+	     (native_quest_flat_global_observer != current_storage ||
+	      native_quest_flat_literal_pool_owned != includes_literal_pool)))
 		return false;
 	native_quest_flat_global_observer = current_storage;
+	native_quest_flat_literal_pool_owned = includes_literal_pool;
 	native_quest_flat_global_scope = actual_guard;
 	return true;
 }
@@ -8960,4 +8965,11 @@ bool item_native_quest_global_budget_scope_owner::end(const void *actual_guard) 
 		return false;
 	native_quest_flat_global_scope = nullptr;
 	return true;
+}
+
+// Pure ownership observation. No observer callback or native capability follows.
+bool item_native_quest_global_budget_scope_owner::literal_pool_owned() noexcept
+{
+	return nevent_is_game_thread() && native_quest_flat_global_observer &&
+	       native_quest_flat_literal_pool_owned;
 }
