@@ -250,4 +250,14 @@ void send_to_room(const char *message, int room);
  * "say $O" and act() casts the vict_obj character pointer to P_obj. */
 void escape_act_dollars(char *dst, size_t dst_size, const char *src);
 
+// Diagnostic-only default Preserve/trusted/Public delivery. Observer includes
+// ALL actual registered descriptor output queues and global pager once.
+// No eligibility change can drop queued bytes; drain/disconnect recensus under
+// original game-thread serialization. Caller outer includes initial observer
+// EXACTLY ONCE plus all live inputs;
+// retain admitted peak through return and refresh CURRENT observer EVERY return,
+// including false after original allocation failure. No source/native authority.
+bool diagnostic_output_storage_bytes(size_t *) noexcept;
+bool diagnostic_send_to_char_bounded(const char *, P_char, bool (*)(size_t, void *) noexcept,
+				     void *, size_t outer_live) noexcept;
 #endif /* _SOJ_COMM_H_ */

@@ -6435,3 +6435,300 @@ void format_to_snoopers(char *from_string, char *to_string)
 	}
 	*index2 = '\0';
 }
+
+namespace
+{
+constexpr size_t diagnostic_allocation_header_bytes() noexcept
+{
+#ifdef MEMCHK
+	return sizeof(ALLOCATION_HEADER);
+#else
+	return 0;
+#endif
+}
+bool diagnostic_string_heap(const std::string &value, size_t *bytes) noexcept
+{
+	const uintptr_t data = reinterpret_cast<uintptr_t>(value.data());
+	const uintptr_t object = reinterpret_cast<uintptr_t>(&value);
+	if (data >= object && data - object < sizeof(value))
+	{
+		*bytes = 0;
+		return true;
+	}
+	if (value.capacity() == SIZE_MAX)
+		return false;
+	*bytes = value.capacity() + 1;
+	return true;
+}
+bool diagnostic_queue_storage(const txt_q &queue, size_t *bytes) noexcept
+{
+	size_t value = sizeof(queue), count = 0, text = 0;
+	const txt_block *last = nullptr;
+	for (const auto *node = queue.head; node; node = node->next)
+	{
+		if (count >= queue.entries)
+			return false; // Actual recorded count bounds corrupt cycles.
+		const size_t node_request =
+			sizeof(*node) + 2 * diagnostic_allocation_header_bytes();
+		if (!node->text || node_request > SIZE_MAX - value)
+			return false;
+		value += node_request;
+		const size_t length = strlen(node->text);
+		if (length == SIZE_MAX || length + 1 > SIZE_MAX - value ||
+		    length + 1 > SIZE_MAX - text)
+			return false;
+		value += length + 1;
+		text += length + 1;
+		++count;
+		last = node;
+	}
+	if (count != queue.entries || text != queue.bytes || last != queue.tail)
+		return false;
+	*bytes = value;
+	return true;
+}
+bool diagnostic_recipient(P_desc d) noexcept
+{
+	return d && !d->connected && d->character && IS_TRUSTED(d->character) &&
+	       IS_SET(d->character->specials.act, PLR_DEBUG) && d->character->desc;
+}
+struct diagnostic_queue_phase
+{
+	size_t bytes, entries, tail_length;
+	bool tail, overflowed;
+};
+bool diagnostic_queue_request(diagnostic_queue_phase &queue, const char *text, size_t &live,
+			      size_t &peak) noexcept
+{
+	if (queue.overflowed)
+		return true;
+	const size_t length = strnlen(text, MAX_STRING_LENGTH);
+	if (length == MAX_STRING_LENGTH)
+	{
+		queue.overflowed = true;
+		return true;
+	}
+	const bool merge = queue.tail && queue.tail_length < MAX_INPUT_LENGTH &&
+			   length < MAX_INPUT_LENGTH - queue.tail_length;
+	const size_t growth = length + (merge ? 0 : 1);
+	if (queue.bytes > SESSION_OUTPUT_MAX_BYTES ||
+	    growth > SESSION_OUTPUT_MAX_BYTES - queue.bytes ||
+	    queue.entries > SESSION_OUTPUT_MAX_ENTRIES ||
+	    (!merge && queue.entries == SESSION_OUTPUT_MAX_ENTRIES))
+	{
+		queue.overflowed = true;
+		return true;
+	}
+	size_t request;
+	if (merge)
+	{
+		const size_t header = diagnostic_allocation_header_bytes();
+		if (length >= SIZE_MAX - header || queue.tail_length >= SIZE_MAX - header - length)
+			return false;
+		request = queue.tail_length + length + 1 + header;
+	}
+	else
+	{
+		const size_t overhead =
+			sizeof(txt_block) + 2 * diagnostic_allocation_header_bytes();
+		if (length >= SIZE_MAX - overhead)
+			return false;
+		request = overhead + length + 1;
+	}
+	if (request > SIZE_MAX - live)
+		return false;
+	peak = std::max(peak, live + request); // realloc old/new coexist; old already live.
+	const size_t retained_growth = merge ? growth : request;
+	if (retained_growth > SIZE_MAX - live)
+		return false;
+	live += retained_growth;
+	queue.bytes += growth;
+	if (!merge)
+		++queue.entries;
+	queue.tail_length = merge ? queue.tail_length + length : length;
+	queue.tail = true;
+	return true;
+}
+struct diagnostic_pager_phase
+{
+	size_t size, capacity, heap, maximum;
+};
+bool diagnostic_pager_append(diagnostic_pager_phase &pager, size_t length, size_t &live,
+			     size_t &peak) noexcept
+{
+	if (length > pager.maximum - pager.size)
+		return false;
+	const size_t next = pager.size + length;
+	if (next > pager.capacity)
+	{
+		size_t capacity = next;
+		// Owning libstdc++13 basic_string::_M_create's exact geometric request.
+		if (next < 2 * pager.capacity)
+			capacity = std::min(2 * pager.capacity, pager.maximum);
+		if (capacity == SIZE_MAX || capacity + 1 > SIZE_MAX - live)
+			return false;
+		peak = std::max(peak, live + capacity + 1);
+		live -= pager.heap;
+		live += capacity + 1;
+		pager.heap = capacity + 1;
+		pager.capacity = capacity;
+	}
+	pager.size = next;
+	return true;
+}
+} // private original diagnostic output request accounting
+
+bool diagnostic_output_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t bytes = sizeof(pager_original) + sizeof(command_output) + sizeof(output_length) +
+		       sizeof(pager_style_fallback);
+	size_t heap;
+	if (!diagnostic_string_heap(pager_original, &heap) || heap > SIZE_MAX - bytes)
+		return false;
+	bytes += heap;
+	// Repeated registered descriptor nodes imply a cycle; refuse rather than
+	// count one live queue twice or hang an allocation-free observation.
+	P_desc slow = descriptor_list, fast = descriptor_list;
+	while (fast && fast->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		// Queue ownership survives PLR_DEBUG/trust/connection changes until drain
+		// or descriptor destruction. Count ALL current registered outputs once.
+		if (!diagnostic_queue_storage(d->output, &heap) || heap > SIZE_MAX - bytes)
+			return false;
+		bytes += heap;
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool diagnostic_send_to_char_bounded(const char *message, P_char ch,
+				     bool (*reserve)(size_t, void *) noexcept, void *context,
+				     size_t outer_live) noexcept
+{
+	if (!reserve || !message || !ch || !ch->desc || !nevent_is_game_thread() ||
+	    !IS_TRUSTED(ch) || !IS_SET(ch->specials.act, PLR_DEBUG))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		size_t storage, live, peak, without_prefix_live, without_prefix_peak, pager_heap;
+		diagnostic_queue_phase queue, without_prefix;
+		diagnostic_pager_phase pager;
+		char prefix[30];
+	};
+	// Actual default context temporary + recipient copy + empty rendered string.
+	// Preserve returns before every owning renderer allocation; trusted/Public
+	// skips PC logging, default chat/resolve flags skip their callbacks entirely.
+	const size_t frame = sizeof(workspace) + 2 * sizeof(OutputContext) + sizeof(std::string) +
+			     sizeof(((workspace *)nullptr)->prefix);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	workspace work{};
+	if (!diagnostic_output_storage_bytes(&work.storage) || outer_live < work.storage)
+		return false;
+	bool registered = false;
+	for (P_desc d = descriptor_list; d; d = d->next)
+		if (d == ch->desc)
+		{
+			registered = true;
+			break;
+		}
+	if (!registered)
+		return false;
+	bool selected = false;
+	for (P_desc d = descriptor_list; d; d = d->next)
+		if (diagnostic_recipient(d) && d->character == ch)
+		{
+			selected = true;
+			break;
+		}
+	if (!selected)
+		return false;
+	work.live = outer_live + frame;
+	work.peak = work.live;
+	const bool paging = executing_ch == ch && IS_SET(ch->specials.act, PLR_PAGING_ON);
+	if (!paging)
+	{
+		const auto &queue = ch->desc->output;
+		work.queue = { queue.bytes, queue.entries,
+			       queue.tail ? strlen(queue.tail->text) : 0, queue.tail != nullptr,
+			       queue.overflowed };
+		work.without_prefix = work.queue;
+		work.without_prefix_live = work.live;
+		work.without_prefix_peak = work.peak;
+		if (!diagnostic_queue_request(work.without_prefix, message,
+					      work.without_prefix_live, work.without_prefix_peak))
+			return false;
+		if (SWITCHED(ch))
+		{
+			snprintf(work.prefix, sizeof(work.prefix), "&+M@&+W%s&n: ", J_NAME(ch));
+			// Original private recursion guard may skip this prefix. Admit BOTH exact
+			// alternatives; neither can invoke an unadmitted allocator afterward.
+			if (!diagnostic_queue_request(work.queue, work.prefix, work.live,
+						      work.peak))
+				return false;
+		}
+		if (!diagnostic_queue_request(work.queue, message, work.live, work.peak))
+			return false;
+		work.peak = std::max(work.peak, work.without_prefix_peak);
+	}
+	else
+	{
+		if (!diagnostic_string_heap(pager_original, &work.pager_heap))
+			return false;
+		work.pager = { output_length ? pager_original.size() : 0, pager_original.capacity(),
+			       work.pager_heap, pager_original.max_size() };
+		const size_t length = strlen(message);
+		// bWarningAdded is intentionally left in the original function. Its true
+		// branch requests nothing; admit the complete false branch before calling it.
+		if (work.pager.size && length < MAX_COMMAND_OUTPUT - work.pager.size)
+		{
+			if (!diagnostic_pager_append(work.pager, length, work.live, work.peak))
+				return false;
+			// If original visible capacity was exhausted, fallback resets output_length
+			// to the PRE-append original size; this successful-fit branch cannot then
+			// append the warning. Those allocation phases are alternatives.
+		}
+		else if (length >= MAX_COMMAND_OUTPUT - output_length && work.pager.size)
+		{
+			static constexpr char warning[] =
+				"\r\n\r\n&+W *** ...and the list goes on... ***&n\r\n";
+			if (!diagnostic_pager_append(work.pager, sizeof(warning) - 1, work.live,
+						     work.peak))
+				return false;
+		}
+	}
+	if (!reserve(work.peak, context))
+		return false;
+	try
+	{
+		// Exact original default/Public function keeps all original static flags,
+		// limits, merges, paging/fallback, counters and recipient behavior unchanged.
+		send_to_char(message, ch);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

@@ -2978,3 +2978,17 @@ zero new/unmapped sites. Native tests stay batched. Queue header correction is s
 worker WIP; full scheduler/debug/service/root/warm-cold/checkpoint/ACK/budget/recovery
 qualification remains open. Protected WIP, inactive/CLOSED accounting, incomplete
 coverage/BLOCKED release and primary ACTIVE goal persist; no added gate.
+
+
+## Original diagnostic queue/pager delivery admitted - 2026-10-09
+
+[Owning implementation](NATIVE_DIAGNOSTIC_OUTPUT_ADMISSION_2026-10-09.md) counts
+ALL current descriptor queues/pager once and admits original CREATE/MEMCHK/realloc,
+merge/overflow/switched/paging/warning allocation phases before unchanged actual
+send_to_char. Strong count/bytes/tail/cycle observation and current retention on
+every return preserve original behavior. Corrected RAW/final prefix/headerinverse/
+tokens/preprocessor PASS;931policies/398pins authenticate, zero new/unmapped sites.
+Native tests stay batched. Full fanout/logging/scheduler/service/root and original
+warm/cold/checkpoint/ACK/recovery qualification remain unfinished. Protected WIP,
+inactive/CLOSED accounting, incomplete coverage/BLOCKED release and ACTIVE goal
+persist; no new gate or complete nativebudget claim.
