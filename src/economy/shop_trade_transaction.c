@@ -6213,8 +6213,8 @@ bool shop_trade_native_publication_owner::cold_flat_original_forests(
 		std::vector<player_item_snapshot> source;
 		if (!shop_trade_command_decode_payload(command, &payload) ||
 		    !payload.recovery_manifest_recorded ||
-		    current.player.pid != payload.player_pid ||
-		    current.player_domains.pid != payload.player_pid ||
+		    current.player.pid != static_cast<int64_t>(payload.player_pid) ||
+		    current.player_domains.pid != static_cast<int64_t>(payload.player_pid) ||
 		    current.player_domains.account_name != payload.account_name.data() ||
 		    current.player_domains.racewar != payload.racewar ||
 		    current.keeper.shop_id != payload.shop_id ||
@@ -6540,7 +6540,7 @@ bool shop_trade_native_publication_owner::cold_prepare_selected_flat(void *opaqu
 		std::sort(counts.begin(), counts.end(),
 			  [](const auto &a, const auto &b) { return a.first < b.first; });
 		size_t compacted = 0;
-		for (const auto count : counts)
+		for (const auto &count : counts)
 		{
 			if (compacted && counts[compacted - 1].first == count.first)
 				++counts[compacted - 1].second;
