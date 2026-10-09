@@ -6761,6 +6761,11 @@ struct quest_mobile_native_item_stage::implementation
 	bool metadata_borrowed_world = false;
 	bool flat_factory = false;
 	std::shared_ptr<const quest_mobile_native_flat_factory_scope> flat_scope;
+
+	// Exact private raw allocation retention from genuine bounded cold hydration.
+	// These observations grant no factory/source/UID/publication authority.
+	bool bounded_cold_literal = false;
+	size_t bounded_literal_raw_heap = 0;
 	bool restored_bridge_request = false;
 	bool rebuilding_enrollment = false, enrollment_rebuilt = false;
 	uint32_t rebuilding_prefix = 0;
@@ -11794,4 +11799,832 @@ bool shop_trade_original_procedure_binding_stage::prepare_native_birth_cold_flat
 	errno = ENOTSUP;
 	return false;
 #endif
+}
+#include <optional>
+// Genuine owning cold literal-copy/canonical equality storage.
+namespace
+{
+bool cold_birth_add(size_t &bytes, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool cold_birth_rows(size_t &bytes, size_t count, size_t width) noexcept
+{
+	return (!width || count <= SIZE_MAX / width) && cold_birth_add(bytes, count * width);
+}
+bool cold_birth_text_fresh(const std::string &text, size_t &bytes) noexcept
+{
+	return text.size() <= 15 ||
+	       (text.size() != SIZE_MAX && cold_birth_add(bytes, text.size() + 1));
+}
+bool cold_birth_text_live(const std::string &text, size_t &bytes) noexcept
+{
+	return text.capacity() <= 15 ||
+	       (text.capacity() != SIZE_MAX && cold_birth_add(bytes, text.capacity() + 1));
+}
+// sizeof(actual array<4 string pointers>) preadmitted by the caller before scan.
+bool cold_birth_row_fresh_heap(const player_item_snapshot &row, size_t *output) noexcept
+{
+	size_t bytes = 0;
+	const std::array<const std::string *, 4> texts{ &row.name, &row.short_description,
+							&row.description, &row.action_description };
+	for (const auto *text : texts)
+		if (!cold_birth_text_fresh(*text, bytes))
+			return false;
+	if (!cold_birth_rows(bytes, row.dynamic_affects.size(),
+			     sizeof(decltype(row.dynamic_affects)::value_type)) ||
+	    !cold_birth_rows(bytes, row.extra_descriptions.size(),
+			     sizeof(decltype(row.extra_descriptions)::value_type)))
+		return false;
+	for (const auto &description : row.extra_descriptions)
+		if (!cold_birth_text_fresh(description.keyword, bytes) ||
+		    !cold_birth_text_fresh(description.description, bytes) ||
+		    !cold_birth_rows(bytes, description.spell_ids.size(), sizeof(int32_t)))
+			return false;
+	*output = bytes;
+	return true;
+}
+bool cold_birth_row_live_heap(const player_item_snapshot &row, size_t &bytes) noexcept
+{
+	const std::array<const std::string *, 4> texts{ &row.name, &row.short_description,
+							&row.description, &row.action_description };
+	for (const auto *text : texts)
+		if (!cold_birth_text_live(*text, bytes))
+			return false;
+	if (!cold_birth_rows(bytes, row.dynamic_affects.capacity(),
+			     sizeof(decltype(row.dynamic_affects)::value_type)) ||
+	    !cold_birth_rows(bytes, row.extra_descriptions.capacity(),
+			     sizeof(decltype(row.extra_descriptions)::value_type)))
+		return false;
+	for (const auto &description : row.extra_descriptions)
+		if (!cold_birth_text_live(description.keyword, bytes) ||
+		    !cold_birth_text_live(description.description, bytes) ||
+		    !cold_birth_rows(bytes, description.spell_ids.capacity(), sizeof(int32_t)))
+			return false;
+	return true;
+}
+struct cold_birth_literal_compare_workspace
+{
+	std::vector<player_item_snapshot> actual;
+	std::optional<player_item_snapshot> expected;
+	std::vector<player_item_snapshot> singleton;
+	std::vector<uint8_t> a, b;
+	size_t clone_heap, actual_heap;
+};
+struct cold_birth_literal_compare_live
+{
+	cold_birth_literal_compare_workspace &work;
+	size_t fixed;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	bool bytes(size_t &value) const noexcept
+	{
+		value = fixed;
+		if (!cold_birth_rows(value, work.actual.capacity(), sizeof(player_item_snapshot)) ||
+		    !cold_birth_rows(value, work.singleton.capacity(),
+				     sizeof(player_item_snapshot)) ||
+		    !cold_birth_add(value, work.a.capacity()) ||
+		    !cold_birth_add(value, work.b.capacity()) ||
+		    (work.expected && !cold_birth_row_live_heap(*work.expected, value)))
+			return false;
+		for (const auto &row : work.actual)
+			if (!cold_birth_row_live_heap(row, value))
+				return false;
+		for (const auto &row : work.singleton)
+			if (!cold_birth_row_live_heap(row, value))
+				return false;
+		return true;
+	}
+	bool admit(size_t extra) const noexcept
+	{
+		size_t value;
+		return bytes(value) && cold_birth_add(value, extra) && reserve(value, context);
+	}
+};
+bool original_birth_literal_matches_bounded(P_obj object, const player_item_snapshot &literal,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)object;
+	(void)literal;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	const size_t frame = sizeof(cold_birth_literal_compare_workspace) +
+			     sizeof(cold_birth_literal_compare_live) +
+			     sizeof(std::array<const std::string *, 4>);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	cold_birth_literal_compare_workspace work{};
+	cold_birth_literal_compare_live live{ work, outer_live + frame, reserve, context };
+	try
+	{
+		if (player_item_snapshot_tree_capture_literal_bounded(
+			    object, &work.actual, nullptr, reserve, context, live.fixed,
+			    &work.actual_heap) != player_snapshot_capture_result::ok ||
+		    work.actual.empty())
+			return false;
+		if (!cold_birth_row_fresh_heap(literal, &work.clone_heap) ||
+		    !live.admit(work.clone_heap))
+			return false;
+		work.expected.emplace(literal);
+		work.expected->parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		work.expected->equipment_slot = 0;
+		work.actual.resize(1); // Original rows die but allocated outer row capacity stays.
+		size_t current;
+		if (!live.bytes(current) || player_item_snapshot_list_encode_bounded(
+						    work.actual, &work.a, reserve, context,
+						    current) != player_snapshot_codec_result::ok)
+			return false;
+		// Same original {expected} two copies (backing row and fresh vector row), admitted
+		// before either allocation; initializer-list temporary dies after construction.
+		size_t copies = sizeof(std::initializer_list<player_item_snapshot>) +
+				2 * sizeof(player_item_snapshot);
+		if (!cold_birth_add(copies, work.clone_heap) ||
+		    !cold_birth_add(copies, work.clone_heap) || !live.admit(copies))
+			return false;
+		work.singleton = { *work.expected };
+		if (!live.bytes(current) || player_item_snapshot_list_encode_bounded(
+						    work.singleton, &work.b, reserve, context,
+						    current) != player_snapshot_codec_result::ok)
+			return false;
+		return work.a == work.b;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+}
+namespace
+{
+bool cold_birth_current_globals(size_t *output) noexcept
+{
+	size_t pools = 0, zombies = 0;
+	if (!native_mobile_birth_literal_pool_storage_bytes(&pools) ||
+	    !quest_mobile_native_zombie_registry_storage_bytes(&zombies) ||
+	    !cold_birth_add(pools, zombies))
+		return false;
+	*output = pools;
+	return true;
+}
+struct cold_birth_stage_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	size_t heap = 0;
+	size_t live() const noexcept
+	{
+		size_t bytes = 0;
+		if (!cold_birth_current_globals(&bytes) || !cold_birth_add(bytes, base) ||
+		    !cold_birth_add(bytes, heap))
+			return SIZE_MAX;
+		return bytes;
+	}
+	bool admit(size_t extra) const noexcept
+	{
+		size_t bytes = live();
+		return bytes != SIZE_MAX && cold_birth_add(bytes, extra) && reserve(bytes, context);
+	}
+};
+bool cold_birth_recipe_valid_bounded(const player_item_snapshot &literal,
+				     const native_mobile_birth_item_recipe &recipe,
+				     const cold_birth_stage_budget &budget) noexcept
+{
+	const size_t spans = 2 * sizeof(std::span<const player_item_snapshot>) +
+			     2 * sizeof(std::span<const native_mobile_birth_item_recipe>);
+	size_t frame = sizeof(native_mobile_birth_recipe_allocation_profile);
+	if (!cold_birth_add(frame, native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+	    !cold_birth_add(frame, spans) || !budget.admit(frame))
+		return false;
+	native_mobile_birth_recipe_allocation_profile profile;
+	if (native_mobile_birth_recipe_encode_profile({ &literal, 1 }, { &recipe, 1 }, &profile) !=
+		    economic_accounting_error::ok ||
+	    !profile.fresh_encode_storage_policy_supported)
+		return false;
+	return native_mobile_birth_recipe_valid({ &literal, 1 }, { &recipe, 1 });
+}
+bool cold_birth_stage_array_bytes(size_t count, size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)count;
+	(void)output;
+	return false;
+#else
+	size_t bytes = 0;
+	const size_t bits = CHAR_BIT * sizeof(std::_Bit_type);
+	const size_t words = count / bits + bool(count % bits);
+	if (!cold_birth_rows(bytes, count, sizeof(size_t)) ||
+	    !cold_birth_rows(bytes, count, sizeof(extra_descr_data *)) ||
+	    !cold_birth_rows(bytes, count, sizeof(int)) ||
+	    !cold_birth_rows(bytes, words, sizeof(std::_Bit_type)))
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+bool cold_birth_flat_templates_ready() noexcept
+{
+	return recovery_template_sealed &&
+	       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY && obj_index &&
+	       obj_index == recovery_template_index && obj_f == recovery_template_file &&
+	       top_of_objt == recovery_template_top && top_of_objt >= 0 &&
+	       recovery_object_templates.size() == static_cast<size_t>(top_of_objt) + 1;
+}
+
+const object_template *cold_birth_flat_template_find(int vnum) noexcept
+{
+	if (!cold_birth_flat_templates_ready())
+		return nullptr;
+	const auto found = std::lower_bound(recovery_object_templates.begin(),
+					    recovery_object_templates.end(), vnum,
+					    [](const auto &entry, int value)
+					    { return entry.vnum < value; });
+	if (found == recovery_object_templates.end() || found->vnum != vnum)
+		return nullptr;
+	const int number = found->prototype.R_num;
+	if (number < 0 || number > top_of_objt || obj_index[number].virtual_number != vnum ||
+	    obj_index[number].pos != found->position ||
+	    obj_index[number].func.obj != found->special)
+		return nullptr;
+	return &found->prototype;
+}
+
+// Strict actual sealed flat catalog lookup preserves original rnum/position/proc
+// equality; this private leaf does not supply command/source/custody permission.
+const object_template *cold_birth_strict_flat_template(int vnum) noexcept
+{
+	if (mysql_enabled || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return nullptr;
+	return cold_birth_flat_template_find(vnum);
+}
+const object_template *
+cold_birth_bound_flat_template(const player_item_snapshot &literal,
+			       const native_mobile_birth_item_recipe &recipe) noexcept
+{
+	if (mysql_enabled || !cold_birth_flat_templates_ready())
+		return nullptr;
+	const auto found = std::lower_bound(recovery_object_templates.begin(),
+					    recovery_object_templates.end(), literal.vnum,
+					    [](const auto &entry, int vnum)
+					    { return entry.vnum < vnum; });
+	if (found == recovery_object_templates.end() || found->vnum != literal.vnum)
+		return nullptr;
+	const int nr = found->prototype.R_num;
+	obj_proc_type effective;
+	if (nr < 0 || nr > top_of_objt || !original_birth_procedure(recipe.procedure, &effective) ||
+	    obj_index[nr].virtual_number != literal.vnum || obj_index[nr].pos != found->position)
+		return nullptr;
+	const auto expected_before = recipe.binding_form ==
+						     native_mobile_birth_binding_form::bridge ?
+					     proclib_obj_cmd_bridge :
+					     effective;
+	const auto current = obj_index[nr].func.obj;
+	if (found->special != expected_before && found->special != current)
+		return nullptr;
+	if (recipe.binding_form == native_mobile_birth_binding_form::bridge ||
+	    !recipe.libraries.empty())
+	{
+		if (current != proclib_obj_cmd_bridge ||
+		    !proclib_recovery_chain_stage::predecessor_matches(nr, effective))
+			return nullptr;
+	}
+	else if (literal.type == ITEM_SWITCH && !effective)
+	{
+		if (current != item_switch)
+			return nullptr;
+	}
+	else if (current != effective)
+		return nullptr;
+	return &found->prototype;
+}
+}
+bool quest_mobile_native_item_stage::restore_bounded(const player_item_snapshot &literal,
+						     const native_mobile_birth_item_recipe &recipe,
+						     quest_mobile_native_item_stage *output,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)literal;
+	(void)recipe;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	size_t globals = 0, fixed = outer_live;
+	if (!cold_birth_current_globals(&globals) || outer_live < globals ||
+	    !cold_birth_add(fixed, sizeof(cold_birth_stage_budget)) ||
+	    !cold_birth_add(fixed, sizeof(quest_mobile_native_item_stage)) ||
+	    !cold_birth_add(fixed, sizeof(std::unique_ptr<implementation>)) ||
+	    !cold_birth_add(fixed, sizeof(native_mobile_birth_literal_stage)) ||
+	    !reserve(fixed, context))
+		return false;
+	cold_birth_stage_budget budget{ reserve, context, fixed - globals };
+
+	if (!output || output->state_ || !nevent_is_game_thread() ||
+	    !cold_birth_recipe_valid_bounded(literal, recipe, budget) || !obj_index)
+		return false;
+	quest_mobile_native_item_stage candidate;
+	try
+	{
+		const auto *prototype = cold_birth_strict_flat_template(literal.vnum);
+		if (!prototype || prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    obj_index[prototype->R_num].virtual_number != literal.vnum)
+			return false;
+		const int nr = prototype->R_num;
+		obj_proc_type effective;
+		if (!original_birth_procedure(recipe.procedure, &effective))
+			return false;
+		const auto original = obj_index[nr].func.obj;
+		if (recipe.binding_form == native_mobile_birth_binding_form::bridge)
+		{
+			if (original != proclib_obj_cmd_bridge ||
+			    !proclib_recovery_chain_stage::predecessor_matches(nr, effective))
+				return false;
+		}
+		else if (original != effective)
+			return false;
+
+		size_t arrays = 0;
+		if (!cold_birth_stage_array_bytes(recipe.libraries.size(), &arrays) ||
+		    !cold_birth_add(arrays, sizeof(implementation)) || !budget.admit(arrays))
+			return false;
+		auto state = std::make_unique<implementation>();
+		state->bounded_cold_literal = true;
+		budget.heap = arrays;
+		state->index = obj_index;
+		state->rnum = nr;
+		state->vnum = literal.vnum;
+		state->position = obj_index[nr].pos;
+		state->uid = literal.object_uid;
+		state->original_proc = original;
+		state->effective_proc = effective;
+		state->general_periodic = recipe.general_periodic;
+		state->general_delay = recipe.general_delay;
+		state->random_exit_requested = recipe.random_exit_requested;
+		state->general_initialized = true;
+		state->libraries.reserve(recipe.libraries.size());
+		state->parsed_descriptions.reserve(recipe.libraries.size());
+		state->requested.reserve(recipe.libraries.size());
+		state->library_delays.reserve(recipe.libraries.size());
+		native_mobile_birth_literal_stage literal_stage;
+		if (!native_mobile_birth_literal_stage::prepare_bounded(
+			    *prototype, literal, literal_stage, reserve, context, budget.live(),
+			    &state->bounded_literal_raw_heap))
+			return false;
+		if (!cold_birth_add(budget.heap, state->bounded_literal_raw_heap))
+			return false;
+		state->object = std::exchange(literal_stage.object_, nullptr);
+		state->pool = std::exchange(literal_stage.pool_, nullptr);
+		state->affect_pool = std::exchange(literal_stage.affect_pool_, nullptr);
+		candidate.state_ = state.release();
+		auto &s = *candidate.state_;
+		P_obj object = s.object;
+		object->trap_eff = recipe.trap_eff;
+		object->trap_dam = recipe.trap_dam;
+		object->trap_charge = recipe.trap_charge;
+		object->trap_level = recipe.trap_level;
+		SET_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		size_t description_index = 0;
+		for (auto *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (description_index >= literal.extra_descriptions.size())
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			if (literal.extra_descriptions[description_index].spellbook)
+				s.allocated_spell_description = description;
+			++description_index;
+		}
+		if (description_index != literal.extra_descriptions.size())
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		for (const auto &saved : recipe.libraries)
+		{
+			size_t index;
+			if (!quest_mobile_native_original_proclib::retained_index(saved.library,
+										  &index))
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			auto *description = object->ex_description;
+			for (uint32_t i = 0; description && i < saved.extra_description_index; ++i)
+				description = description->next;
+			if (!description)
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			s.libraries.push_back(index);
+			s.parsed_descriptions.push_back(description);
+			s.requested.push_back(saved.periodic_requested);
+			s.library_delays.push_back(saved.delay);
+			s.library_event_requested = s.library_event_requested ||
+						    saved.periodic_requested;
+		}
+		s.parsed_proclib = !s.libraries.empty();
+		if (!original_birth_literal_matches_bounded(object, literal, reserve, context,
+							    budget.live()) ||
+		    obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
+		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		if (effective == zombies_game &&
+		    !quest_mobile_native_zombie_stage::restore_bounded(object, s.zombie, reserve,
+								       context, budget.live()))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		// No allocating/callback work follows the last original retained owner.
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (...)
+	{
+		candidate.discard_unadmitted();
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::restore_bound_bounded(
+	const player_item_snapshot &literal, const native_mobile_birth_item_recipe &recipe,
+	quest_mobile_native_item_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)literal;
+	(void)recipe;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	size_t globals = 0, fixed = outer_live;
+	if (!cold_birth_current_globals(&globals) || outer_live < globals ||
+	    !cold_birth_add(fixed, sizeof(cold_birth_stage_budget)) ||
+	    !cold_birth_add(fixed, sizeof(quest_mobile_native_item_stage)) ||
+	    !cold_birth_add(fixed, sizeof(std::unique_ptr<implementation>)) ||
+	    !cold_birth_add(fixed, sizeof(native_mobile_birth_literal_stage)) ||
+	    !reserve(fixed, context))
+		return false;
+	cold_birth_stage_budget budget{ reserve, context, fixed - globals };
+
+	if (!output || output->state_ || !nevent_is_game_thread() ||
+	    !cold_birth_recipe_valid_bounded(literal, recipe, budget) || !obj_index)
+		return false;
+	// Cold process may still have the authentic original prototype binding.
+	// The original literal restore has the same strong output guarantee.
+	if (restore_bounded(literal, recipe, output, reserve, context, budget.live()))
+		return true;
+	quest_mobile_native_item_stage candidate;
+	try
+	{
+		const auto *prototype = cold_birth_bound_flat_template(literal, recipe);
+		if (!prototype || prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    obj_index[prototype->R_num].virtual_number != literal.vnum)
+			return false;
+		const int nr = prototype->R_num;
+		obj_proc_type effective;
+		if (!original_birth_procedure(recipe.procedure, &effective))
+			return false;
+		const auto original = obj_index[nr].func.obj;
+		// The sealed catalog helper already proved the actual committed binding.
+
+		size_t arrays = 0;
+		if (!cold_birth_stage_array_bytes(recipe.libraries.size(), &arrays) ||
+		    !cold_birth_add(arrays, sizeof(implementation)) || !budget.admit(arrays))
+			return false;
+		auto state = std::make_unique<implementation>();
+		state->bounded_cold_literal = true;
+		budget.heap = arrays;
+		state->index = obj_index;
+		state->rnum = nr;
+		state->vnum = literal.vnum;
+		state->position = obj_index[nr].pos;
+		state->uid = literal.object_uid;
+		state->original_proc = original;
+		state->effective_proc = effective;
+		state->general_periodic = recipe.general_periodic;
+		state->general_delay = recipe.general_delay;
+		state->random_exit_requested = recipe.random_exit_requested;
+		state->general_initialized = true;
+		state->libraries.reserve(recipe.libraries.size());
+		state->parsed_descriptions.reserve(recipe.libraries.size());
+		state->requested.reserve(recipe.libraries.size());
+		state->library_delays.reserve(recipe.libraries.size());
+		native_mobile_birth_literal_stage literal_stage;
+		if (!native_mobile_birth_literal_stage::prepare_bounded(
+			    *prototype, literal, literal_stage, reserve, context, budget.live(),
+			    &state->bounded_literal_raw_heap))
+			return false;
+		if (!cold_birth_add(budget.heap, state->bounded_literal_raw_heap))
+			return false;
+		state->object = std::exchange(literal_stage.object_, nullptr);
+		state->pool = std::exchange(literal_stage.pool_, nullptr);
+		state->affect_pool = std::exchange(literal_stage.affect_pool_, nullptr);
+		candidate.state_ = state.release();
+		auto &s = *candidate.state_;
+		P_obj object = s.object;
+		object->trap_eff = recipe.trap_eff;
+		object->trap_dam = recipe.trap_dam;
+		object->trap_charge = recipe.trap_charge;
+		object->trap_level = recipe.trap_level;
+		SET_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		size_t description_index = 0;
+		for (auto *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (description_index >= literal.extra_descriptions.size())
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			if (literal.extra_descriptions[description_index].spellbook)
+				s.allocated_spell_description = description;
+			++description_index;
+		}
+		if (description_index != literal.extra_descriptions.size())
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		for (const auto &saved : recipe.libraries)
+		{
+			size_t index;
+			if (!quest_mobile_native_original_proclib::retained_index(saved.library,
+										  &index))
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			auto *description = object->ex_description;
+			for (uint32_t i = 0; description && i < saved.extra_description_index; ++i)
+				description = description->next;
+			if (!description)
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			s.libraries.push_back(index);
+			s.parsed_descriptions.push_back(description);
+			s.requested.push_back(saved.periodic_requested);
+			s.library_delays.push_back(saved.delay);
+			s.library_event_requested = s.library_event_requested ||
+						    saved.periodic_requested;
+		}
+		s.parsed_proclib = !s.libraries.empty();
+		if (!original_birth_literal_matches_bounded(object, literal, reserve, context,
+							    budget.live()) ||
+		    obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
+		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		if (effective == zombies_game &&
+		    !quest_mobile_native_zombie_stage::restore_bounded(object, s.zombie, reserve,
+								       context, budget.live()))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		// No allocating/callback work follows the last original retained owner.
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (...)
+	{
+		candidate.discard_unadmitted();
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::restore_rebind_bounded(
+	const player_item_snapshot &literal, const native_mobile_birth_item_recipe &recipe,
+	quest_mobile_native_item_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)literal;
+	(void)recipe;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	size_t globals = 0, fixed = outer_live;
+	if (!cold_birth_current_globals(&globals) || outer_live < globals ||
+	    !cold_birth_add(fixed, sizeof(cold_birth_stage_budget)) ||
+	    !cold_birth_add(fixed, sizeof(quest_mobile_native_item_stage)) ||
+	    !cold_birth_add(fixed, sizeof(std::unique_ptr<implementation>)) ||
+	    !cold_birth_add(fixed, sizeof(native_mobile_birth_literal_stage)) ||
+	    !reserve(fixed, context))
+		return false;
+	cold_birth_stage_budget budget{ reserve, context, fixed - globals };
+
+	if (recipe.binding_form != native_mobile_birth_binding_form::bridge || !output ||
+	    output->state_ || !nevent_is_game_thread() ||
+	    !cold_birth_recipe_valid_bounded(literal, recipe, budget) || !obj_index)
+		return false;
+	quest_mobile_native_item_stage candidate;
+	try
+	{
+		const auto *prototype = cold_birth_strict_flat_template(literal.vnum);
+		if (!prototype || prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    obj_index[prototype->R_num].virtual_number != literal.vnum)
+			return false;
+		const int nr = prototype->R_num;
+		obj_proc_type effective;
+		if (!original_birth_procedure(recipe.procedure, &effective))
+			return false;
+		const auto original = obj_index[nr].func.obj;
+		// Strict catalog lookup already proved sealed/current equality. The
+		// retained explicit bridge must name its exact actual bare predecessor.
+		if (original == proclib_obj_cmd_bridge || original != effective)
+			return false;
+
+		size_t arrays = 0;
+		if (!cold_birth_stage_array_bytes(recipe.libraries.size(), &arrays) ||
+		    !cold_birth_add(arrays, sizeof(implementation)) || !budget.admit(arrays))
+			return false;
+		auto state = std::make_unique<implementation>();
+		state->bounded_cold_literal = true;
+		budget.heap = arrays;
+		state->index = obj_index;
+		state->rnum = nr;
+		state->vnum = literal.vnum;
+		state->position = obj_index[nr].pos;
+		state->uid = literal.object_uid;
+		state->original_proc = original;
+		state->effective_proc = effective;
+		state->restored_bridge_request = true;
+		state->general_periodic = recipe.general_periodic;
+		state->general_delay = recipe.general_delay;
+		state->random_exit_requested = recipe.random_exit_requested;
+		state->general_initialized = true;
+		state->libraries.reserve(recipe.libraries.size());
+		state->parsed_descriptions.reserve(recipe.libraries.size());
+		state->requested.reserve(recipe.libraries.size());
+		state->library_delays.reserve(recipe.libraries.size());
+		native_mobile_birth_literal_stage literal_stage;
+		if (!native_mobile_birth_literal_stage::prepare_bounded(
+			    *prototype, literal, literal_stage, reserve, context, budget.live(),
+			    &state->bounded_literal_raw_heap))
+			return false;
+		if (!cold_birth_add(budget.heap, state->bounded_literal_raw_heap))
+			return false;
+		state->object = std::exchange(literal_stage.object_, nullptr);
+		state->pool = std::exchange(literal_stage.pool_, nullptr);
+		state->affect_pool = std::exchange(literal_stage.affect_pool_, nullptr);
+		candidate.state_ = state.release();
+		auto &s = *candidate.state_;
+		P_obj object = s.object;
+		object->trap_eff = recipe.trap_eff;
+		object->trap_dam = recipe.trap_dam;
+		object->trap_charge = recipe.trap_charge;
+		object->trap_level = recipe.trap_level;
+		SET_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		size_t description_index = 0;
+		for (auto *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (description_index >= literal.extra_descriptions.size())
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			if (literal.extra_descriptions[description_index].spellbook)
+				s.allocated_spell_description = description;
+			++description_index;
+		}
+		if (description_index != literal.extra_descriptions.size())
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		for (const auto &saved : recipe.libraries)
+		{
+			size_t index;
+			if (!quest_mobile_native_original_proclib::retained_index(saved.library,
+										  &index))
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			auto *description = object->ex_description;
+			for (uint32_t i = 0; description && i < saved.extra_description_index; ++i)
+				description = description->next;
+			if (!description)
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			s.libraries.push_back(index);
+			s.parsed_descriptions.push_back(description);
+			s.requested.push_back(saved.periodic_requested);
+			s.library_delays.push_back(saved.delay);
+			s.library_event_requested = s.library_event_requested ||
+						    saved.periodic_requested;
+		}
+		s.parsed_proclib = !s.libraries.empty();
+		if (!original_birth_literal_matches_bounded(object, literal, reserve, context,
+							    budget.live()) ||
+		    obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
+		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		if (effective == zombies_game &&
+		    !quest_mobile_native_zombie_stage::restore_bounded(object, s.zombie, reserve,
+								       context, budget.live()))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		// No allocating/callback work follows the last original retained owner.
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (...)
+	{
+		candidate.discard_unadmitted();
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
+	size_t *output) const noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	if (!state_)
+	{
+		*output = 0;
+		return true;
+	}
+	const auto &s = *state_;
+	if (!s.bounded_cold_literal || s.flat_factory || s.flat_scope ||
+	    (s.object && s.published) || (!s.object && !s.published))
+		return false;
+	size_t bytes = sizeof(*this) + sizeof(implementation);
+	if (!cold_birth_rows(bytes, s.parsed_descriptions.capacity(), sizeof(extra_descr_data *)) ||
+	    !cold_birth_rows(bytes, s.libraries.capacity(), sizeof(size_t)) ||
+	    !cold_birth_rows(bytes, s.library_delays.capacity(), sizeof(int)) ||
+	    !cold_birth_add(bytes, s.requested.capacity() / CHAR_BIT +
+					   bool(s.requested.capacity() % CHAR_BIT)))
+		return false;
+	if (s.zombie.game_ &&
+	    (!cold_birth_add(bytes, sizeof(ZombieGame)) ||
+	     !cold_birth_rows(bytes, s.zombie.game_->zombies.capacity(), sizeof(P_char))))
+		return false;
+	// Only the genuine successful original publication transfer consumes the
+	// private literal body. Raw strings/exdesc MEMCHK are still private before it;
+	// pooled slots/pages are always owned by the separately retained global pools.
+	if (s.object && !cold_birth_add(bytes, s.bounded_literal_raw_heap))
+		return false;
+	*output = bytes;
+	return true;
 }

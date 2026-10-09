@@ -10001,3 +10001,8 @@ shared aggregate selection. RAW/final review/prefix/headerinverse/tokens/preproc
 passed; 931 policies/399 pins authenticate, zero new/unmapped sites. Cold DB/four-route/
 pulse/recovery integration remains open; native tests stay batched. Inactive/CLOSED
 accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.
+
+
+## Complete cold native restoration admission implemented - 2026-10-09
+
+[Owning restoration providers](COLD_NATIVE_STAGE_RESTORATION_ADMISSION_2026-10-09.md) retain full original strict/bound/rebind semantics and admit actual implementation/vector/literal/Zombie requests before allocation. Private current heap excludes globally owned pools and retains bodies until original successful world transfer. RAW/formatted reviews and exact private-field/append/header inverses, tokens and preprocessing passed; 931 policies/399 pins authenticate with zero new/unmapped sites. Adoption/enrollment, paired whole-pool joining and complete room/coordinator/recovery integration remain open. Native tests stay batched, accounting inactive/CLOSED, coverage incomplete, release BLOCKED and primary goal ACTIVE.
