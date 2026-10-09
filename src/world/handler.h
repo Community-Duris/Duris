@@ -2,6 +2,7 @@
 #define DURIS_WORLD_HANDLER_H
 
 #include "core/structs.h"
+#include "economy/economic_accounting_intent.h"
 
 enum class obj_to_char_result
 {
@@ -82,6 +83,48 @@ class quest_mobile_native_room_restore_owner final
 {
 	friend class quest_mobile_native_stage;
 	static bool restore(P_char, int room_rnum, size_t *retained_step) noexcept;
+};
+
+class zone_reset_item_owner;
+class zone_reset_room_publication_owner;
+struct economic_source_event;
+struct zone_reset_room_placement_recipe;
+struct quest_mobile_native_item_effect;
+// Fixed-size original game-thread witness. Only the reset owners can capture,
+// restore or consume it. The caller separately proves source/UID/receipt/world
+// authority. Replay restores the canonical recipe without drawing again.
+class zone_reset_original_room_placement_stage final
+{
+    public:
+	zone_reset_original_room_placement_stage() noexcept = default;
+	zone_reset_original_room_placement_stage(const zone_reset_original_room_placement_stage &) =
+		delete;
+	zone_reset_original_room_placement_stage &
+	operator=(const zone_reset_original_room_placement_stage &) = delete;
+	zone_reset_original_room_placement_stage(
+		zone_reset_original_room_placement_stage &&) noexcept;
+	zone_reset_original_room_placement_stage &
+	operator=(zone_reset_original_room_placement_stage &&) noexcept;
+
+    private:
+	friend class zone_reset_item_owner;
+	friend class zone_reset_room_publication_owner;
+	static bool capture(P_obj, int, const economic_source_event &,
+			    zone_reset_original_room_placement_stage *) noexcept;
+	static bool restore(const zone_reset_room_placement_recipe &, P_obj,
+			    const economic_source_event &,
+			    zone_reset_original_room_placement_stage *) noexcept;
+	bool recipe(zone_reset_room_placement_recipe *) const noexcept;
+	bool matches_source(const economic_source_event &) const noexcept;
+	bool place(quest_mobile_native_item_effect &) noexcept;
+	size_t retained_bytes() const noexcept { return sizeof(*this); }
+	economic_source_event source_ = {};
+	P_obj object_ = nullptr;
+	uint64_t uid_ = 0;
+	int room_ = -1, rnum_ = -1;
+	int32_t room_vnum_ = 0, sector_ = 0, chance_ = 0, z_ = 0;
+	uint32_t roll_ = 0;
+	bool levitates_ = false, drawn_ = false, falls_ = false, valid_ = false;
 };
 
 #endif

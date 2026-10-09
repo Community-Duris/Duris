@@ -146,4 +146,12 @@ flatfile_player_domain_result flatfile_player_domain_prepare_account_remove(
 	const std::string &account_name, std::vector<flatfile_authority_operation> *operations,
 	std::string *error);
 
+// Borrowed CURRENT player-wallet/shared-bank read. Caller owns original journal
+// recovery before this cut. Never recovers, acquires locks, stages or publishes.
+// Original bounded codecs/canonical account policy apply; output stays unchanged.
+flatfile_player_domain_result flatfile_player_domain_read_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,
+	const std::string &account_name, int8_t racewar, flatfile_player_domain_record *record,
+	std::string *error);
+
 #endif

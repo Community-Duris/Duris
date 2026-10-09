@@ -1,4 +1,5 @@
 #include "world/quest_mobile_published_world_owner.h"
+#include "world/db.h"
 #include "world/quest_mobile_native_birth.h"
 #include "world/native_mobile_birth_artifact.h"
 #include "world/native_mobile_birth_procedure.h"
@@ -9,6 +10,7 @@
 #include "core/utils.h"
 #include "item/encumbrance_policy.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
 #endif
@@ -16,6 +18,11 @@
 #include <climits>
 #include <cstdio>
 #include <utility>
+#include <cerrno>
+#include <unordered_map>
+#include <unordered_set>
+#include <type_traits>
+#include "persistence/economic_sql_lifecycle_guard.h"
 
 extern P_char character_list;
 extern P_obj object_list;
@@ -23,9 +30,53 @@ extern index_data *obj_index;
 extern int top_of_objt;
 extern P_room world;
 extern int top_of_world;
+extern P_index mob_index;
+extern int top_of_mobt;
 
 namespace
 {
+bool ordinary_wallet_origin(const critical_native_recovery_envelope &original) noexcept
+{
+	return original.command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION;
+}
+bool published_origin_terminal(const critical_native_recovery_envelope &original) noexcept
+{
+	return ordinary_wallet_origin(original) ?
+		       native_mobile_birth_cash_role_recovery_terminal(original) :
+		       native_mobile_birth_recovery_terminal(original);
+}
+bool ordinary_role_selector_current(const quest_mobile_native_constructor_recipe &constructor,
+				    const native_mobile_birth_cash_role_recipe &role) noexcept
+{
+	if (role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return false;
+	native_mobile_birth_cash_role_recipe observed;
+	native_mobile_birth_cash_role_recipe_bytes expected{}, current{};
+	return native_mobile_birth_cash_role_recipe_capture(constructor, &observed) &&
+	       native_mobile_birth_cash_role_recipe_encode(role, &expected) &&
+	       native_mobile_birth_cash_role_recipe_encode(observed, &current) &&
+	       expected == current;
+}
+bool ordinary_origin_selector_current(const critical_native_recovery_envelope &original) noexcept
+{
+	if (!ordinary_wallet_origin(original))
+		return true;
+	try
+	{
+		quest_mobile_native_image born;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		return native_mobile_birth_cash_role_command_decode(original.command, &born,
+								    &recipes, &role) ==
+			       economic_accounting_error::ok &&
+		       ordinary_role_selector_current(role.original, role);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 void report_world_refusal(unsigned int stage) noexcept
 {
 	static bool reported = false;
@@ -81,6 +132,600 @@ bool lists_valid()
 	}
 	return true;
 }
+}
+
+unsigned int quest_mobile_published_world_owner::observe_maintenance(
+	const economic_sql_lifecycle_guard &authority, maintenance_world_report *output) noexcept
+{
+	return observe_maintenance_impl(&authority, nullptr, output);
+}
+
+unsigned int quest_mobile_published_world_owner::observe_maintenance(
+	economic_sql_cutover_transaction_owner &owner, maintenance_world_report *output) noexcept
+{
+	return observe_maintenance_impl(nullptr, &owner, output);
+}
+
+unsigned int quest_mobile_published_world_owner::observe_maintenance_impl(
+	const economic_sql_lifecycle_guard *authority,
+	economic_sql_cutover_transaction_owner *owner, maintenance_world_report *output) noexcept
+{
+	if (!output || (authority == nullptr) == (owner == nullptr))
+		return EINVAL;
+	const auto held = [&]() noexcept
+	{
+		return authority ? authority->is_maintenance_authority() :
+				   owner->maintenance_ && owner->writer_lock_ && owner->is_valid();
+	};
+	if (!nevent_is_game_thread() || !held())
+		return EINVAL;
+	try
+	{
+		constexpr size_t maximum_rows = 262144;
+		maintenance_world_report candidate;
+		std::vector<P_char> actors;
+		std::vector<P_obj> objects;
+		std::unordered_map<P_char, size_t> actor_index;
+		std::unordered_map<P_obj, size_t> object_index;
+		const auto charge = [&](size_t count, size_t width = 1)
+		{
+			if (!add(candidate.retained_bytes, count, width) ||
+			    candidate.retained_bytes > CRITICAL_COORDINATOR_MAX_BYTES)
+				throw E2BIG;
+		};
+		const auto charge_items = [&](const std::vector<player_item_snapshot> &items)
+		{
+			charge(items.capacity(), sizeof(player_item_snapshot));
+			for (const auto &item : items)
+			{
+				for (const auto *text :
+				     { &item.name, &item.short_description, &item.description,
+				       &item.action_description })
+				{
+					charge(text->capacity());
+					charge(1);
+				}
+				charge(item.dynamic_affects.capacity(),
+				       sizeof(item.dynamic_affects[0]));
+				charge(item.extra_descriptions.capacity(),
+				       sizeof(item.extra_descriptions[0]));
+				for (const auto &description : item.extra_descriptions)
+				{
+					charge(description.keyword.capacity());
+					charge(description.description.capacity());
+					charge(2);
+					charge(description.spell_ids.capacity(),
+					       sizeof(description.spell_ids[0]));
+				}
+			}
+		};
+		charge(1, sizeof(candidate));
+		for (P_char actor = character_list; actor; actor = actor->next)
+		{
+			if (actor_index.count(actor))
+			{
+				candidate.character_list_complete = false;
+				candidate.issues |= list_cycle;
+				break;
+			}
+			if (actors.size() == maximum_rows)
+				return E2BIG;
+			actor_index.emplace(actor, actors.size());
+			actors.push_back(actor);
+		}
+		charge(actors.size(), sizeof(maintenance_character));
+		candidate.characters.reserve(actors.size());
+		P_obj previous = nullptr;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (object_index.count(object))
+			{
+				candidate.object_list_complete = false;
+				candidate.issues |= list_cycle;
+				break;
+			}
+			if (objects.size() == maximum_rows)
+				return E2BIG;
+			object_index.emplace(object, objects.size());
+			objects.push_back(object);
+			maintenance_object value;
+			value.uid = object->obj_uid;
+			value.location = object->loc_p;
+			if (object->prev != previous)
+				value.issues |= invalid_placement;
+			charge(1, sizeof(maintenance_object));
+			candidate.objects.push_back(value);
+			previous = object;
+		}
+		charge(candidate.objects.capacity() - candidate.objects.size(),
+		       sizeof(maintenance_object));
+		candidate.world_tables_present = world && top_of_world >= 0 && obj_index &&
+						 top_of_objt >= 0;
+		if (world && top_of_world >= 0 && static_cast<size_t>(top_of_world) >= maximum_rows)
+			return E2BIG;
+		std::unordered_map<uint64_t, size_t> runtimes, natives, uids;
+		std::vector<std::pair<critical_operation_id, size_t>> births;
+		for (P_char actor : actors)
+		{
+			maintenance_character value;
+			value.runtime = actor->runtime_id;
+			value.npc = IS_NPC(actor);
+			value.alive = IS_ALIVE(actor);
+			value.room = actor->in_room;
+			value.denominations = { GET_COPPER(actor), GET_SILVER(actor),
+						GET_GOLD(actor), GET_PLATINUM(actor) };
+			if (!value.npc && IS_PC(actor) && actor->only.pc && GET_PID(actor) > 0)
+				value.observed_owner =
+					item_owner_identity{ item_owner_type::player,
+							     static_cast<uint64_t>(GET_PID(actor)),
+							     0 };
+			if (world && actor->in_room >= 0 && actor->in_room <= top_of_world)
+				value.room_vnum = world[actor->in_room].number;
+			else
+				value.issues |= invalid_placement;
+			if (value.npc && actor->only.npc && mob_index && GET_RNUM(actor) >= 0 &&
+			    GET_RNUM(actor) <= top_of_mobt)
+				value.mobile_vnum = mob_index[GET_RNUM(actor)].virtual_number;
+			else if (value.npc)
+				value.issues |= invalid_identity;
+			bool present = false;
+			quest_mobile_native_reference reference;
+			if (!quest_mobile_native_birth_owner::observe_current_published_identity(
+				    actor, value.runtime, &present, &reference))
+			{
+				value.identity = maintenance_identity::malformed;
+				value.issues |= malformed_binding;
+			}
+			else if (present)
+			{
+				value.identity = maintenance_identity::published;
+				value.reference = reference;
+				quest_mobile_native_cash_reference cash;
+				if (quest_mobile_native_cash_reference_copy(actor, value.runtime,
+									    &cash))
+					value.cash_binding = cash;
+				else
+					value.issues |= unknown_cash_binding;
+				uint64_t revision = 0;
+				const item_owner_identity owner{ item_owner_type::native_mobile,
+								 reference.mobile_instance_id, 0 };
+				value.observed_owner = owner;
+				if (item_ownership_runtime_peek_owner_revision(owner, &revision))
+					value.owner_revision = revision;
+				else
+					value.issues |= missing_cache;
+				if (!value.owner_revision || !*value.owner_revision ||
+				    *value.owner_revision != reference.stock_revision)
+					value.issues |= conflicting_cache;
+				const auto [found, unique] = natives.emplace(
+					reference.mobile_instance_id, candidate.characters.size());
+				if (!unique)
+				{
+					value.issues |= duplicate_identity;
+					candidate.characters[found->second].issues |=
+						duplicate_identity;
+				}
+				births.emplace_back(reference.birth_operation,
+						    candidate.characters.size());
+			}
+			if (!value.runtime || find_character_by_runtime_id(value.runtime) != actor)
+				value.issues |= invalid_identity;
+			const auto [found, unique] =
+				runtimes.emplace(value.runtime, candidate.characters.size());
+			if (!unique)
+			{
+				value.issues |= duplicate_identity;
+				candidate.characters[found->second].issues |= duplicate_identity;
+			}
+			candidate.characters.push_back(std::move(value));
+		}
+		charge(candidate.characters.capacity() - candidate.characters.size(),
+		       sizeof(maintenance_character));
+		std::sort(births.begin(), births.end(), [](const auto &a, const auto &b)
+			  { return a.first.bytes < b.first.bytes; });
+		for (size_t i = 1; i < births.size(); ++i)
+			if (critical_operation_id_equal(births[i - 1].first, births[i].first))
+			{
+				candidate.characters[births[i - 1].second].issues |=
+					duplicate_identity;
+				candidate.characters[births[i].second].issues |= duplicate_identity;
+			}
+		// Enumerate every actual physical list, including links to objects absent
+		// from object_list. Never dereference a referenced pointer before membership.
+		const auto retain_link = [&](maintenance_link link)
+		{
+			if (candidate.links.size() == maximum_rows)
+				throw E2BIG;
+			charge(1, sizeof(maintenance_link));
+			candidate.links.push_back(std::move(link));
+		};
+		const auto list = [&](P_obj head, uint8_t location, size_t owner, int room)
+		{
+			std::unordered_set<P_obj> seen;
+			for (P_obj member = head; member; member = member->next_content)
+			{
+				maintenance_link link;
+				link.location = location;
+				if (location == LOC_CARRIED)
+					link.character = owner;
+				else if (location == LOC_INSIDE)
+					link.parent = owner;
+				else
+					link.room = room;
+				const auto found = object_index.find(member);
+				if (found == object_index.end())
+				{
+					candidate.issues |= foreign_link;
+					candidate.physical_lists_complete = false;
+					link.issues = foreign_link;
+					retain_link(std::move(link));
+					break;
+				}
+				auto &value = candidate.objects[found->second];
+				link.object = found->second;
+				if (!seen.insert(member).second)
+				{
+					value.issues |= list_cycle;
+					candidate.physical_lists_complete = false;
+					link.issues = list_cycle;
+					retain_link(std::move(link));
+					if (location == LOC_INSIDE)
+						candidate.objects[owner].issues |= list_cycle;
+					else if (location == LOC_CARRIED)
+						candidate.characters[owner].issues |= list_cycle;
+					break;
+				}
+				++value.physical_links;
+				if (member->loc_p != location ||
+				    (location == LOC_CARRIED &&
+				     member->loc.carrying != actors[owner]) ||
+				    (location == LOC_INSIDE &&
+				     member->loc.inside != objects[owner]) ||
+				    (location == LOC_ROOM && member->loc.room != room))
+				{
+					value.issues |= foreign_link;
+					link.issues = foreign_link;
+					if (location == LOC_INSIDE)
+						candidate.objects[owner].issues |= foreign_link;
+					else if (location == LOC_CARRIED)
+						candidate.characters[owner].issues |= foreign_link;
+				}
+				retain_link(std::move(link));
+			}
+		};
+		for (size_t i = 0; i < actors.size(); ++i)
+		{
+			list(actors[i]->carrying, LOC_CARRIED, i, -1);
+			for (int slot = 0; slot < MAX_WEAR; ++slot)
+				if (P_obj member = actors[i]->equipment[slot])
+				{
+					maintenance_link link;
+					link.location = LOC_WORN;
+					link.character = i;
+					link.equipment_slot = static_cast<uint16_t>(slot + 1);
+					const auto found = object_index.find(member);
+					if (found == object_index.end())
+					{
+						candidate.characters[i].issues |= foreign_link;
+						candidate.physical_lists_complete = false;
+						link.issues = foreign_link;
+						retain_link(std::move(link));
+						continue;
+					}
+					auto &value = candidate.objects[found->second];
+					link.object = found->second;
+					++value.physical_links;
+					value.equipment_slot = static_cast<uint16_t>(slot + 1);
+					if (member->loc_p != LOC_WORN ||
+					    member->loc.wearing != actors[i] ||
+					    member->next_content)
+					{
+						value.issues |= foreign_link;
+						candidate.characters[i].issues |= foreign_link;
+						link.issues = foreign_link;
+					}
+					retain_link(std::move(link));
+				}
+		}
+		size_t character_links = 0;
+		if (world && top_of_world >= 0)
+			for (int room = 0; room <= top_of_world; ++room)
+			{
+				list(world[room].contents, LOC_ROOM, 0, room);
+				std::unordered_set<P_char> seen;
+				for (P_char actor = world[room].people; actor;
+				     actor = actor->next_in_room)
+				{
+					if (++character_links > maximum_rows)
+						return E2BIG;
+					const auto found = actor_index.find(actor);
+					if (found == actor_index.end())
+					{
+						candidate.issues |= foreign_link;
+						candidate.physical_lists_complete = false;
+						break;
+					}
+					if (!seen.insert(actor).second)
+					{
+						candidate.characters[found->second].issues |=
+							list_cycle;
+						candidate.physical_lists_complete = false;
+						break;
+					}
+					if (actor->in_room != room)
+						candidate.characters[found->second].issues |=
+							foreign_link;
+					++candidate.characters[found->second].room_links;
+				}
+			}
+		for (size_t i = 0; i < objects.size(); ++i)
+			list(objects[i]->contains, LOC_INSIDE, i, -1);
+		charge(candidate.links.capacity() - candidate.links.size(),
+		       sizeof(maintenance_link));
+		for (auto &actor : candidate.characters)
+		{
+			if (!actor.room_links)
+				actor.issues |= missing_link;
+			else if (actor.room_links != 1)
+				actor.issues |= multiple_links;
+		}
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			P_obj object = objects[i];
+			auto &value = candidate.objects[i];
+			if (!value.uid || value.uid == UINT64_MAX)
+				value.issues |= invalid_identity;
+			const auto [duplicate, unique] = uids.emplace(value.uid, i);
+			if (!unique)
+			{
+				value.issues |= duplicate_identity;
+				candidate.objects[duplicate->second].issues |= duplicate_identity;
+			}
+			if (obj_index && object->R_num >= 0 && object->R_num <= top_of_objt)
+				value.vnum = obj_index[object->R_num].virtual_number;
+			else
+				value.issues |= invalid_identity;
+			if (!value.physical_links)
+				value.issues |= missing_link;
+			else if (value.physical_links != 1)
+				value.issues |= multiple_links;
+			if (object->loc_p == LOC_INSIDE)
+			{
+				const auto parent = object_index.find(object->loc.inside);
+				if (parent != object_index.end())
+					value.parent = parent->second;
+				else
+					value.issues |= invalid_topology;
+			}
+			else if (object->loc_p == LOC_CARRIED || object->loc_p == LOC_WORN)
+			{
+				const auto owner = actor_index.find(object->loc_p == LOC_WORN ?
+									    object->loc.wearing :
+									    object->loc.carrying);
+				if (owner != actor_index.end())
+					value.character = owner->second;
+				else
+					value.issues |= invalid_placement;
+			}
+			else if (object->loc_p == LOC_ROOM && world && object->loc.room >= 0 &&
+				 object->loc.room <= top_of_world)
+				value.room_vnum = world[object->loc.room].number;
+			else
+				value.issues |= invalid_placement;
+		}
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			auto &value = candidate.objects[i];
+			size_t root = i, depth = 1;
+			while (candidate.objects[root].parent)
+			{
+				root = *candidate.objects[root].parent;
+				if (++depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+				{
+					value.issues |= invalid_topology;
+					break;
+				}
+			}
+			if (candidate.objects[root].issues & invalid_topology)
+				value.issues |= invalid_topology;
+			if (!(value.issues & invalid_topology))
+				value.root = root;
+		}
+		const auto cache_error = item_ownership_runtime_snapshot_all_active(
+			maximum_rows, &candidate.active_cache);
+		if (cache_error)
+			return cache_error;
+		charge(candidate.active_cache.capacity(), sizeof(item_ownership_runtime_entry));
+		candidate.cache_objects.resize(candidate.active_cache.size());
+		candidate.cache_issues.resize(candidate.active_cache.size());
+		candidate.cache_owner_revisions.resize(candidate.active_cache.size());
+		charge(candidate.cache_objects.capacity(), sizeof(candidate.cache_objects[0]));
+		charge(candidate.cache_issues.capacity(), sizeof(uint32_t));
+		charge(candidate.cache_owner_revisions.capacity(),
+		       sizeof(candidate.cache_owner_revisions[0]));
+		for (size_t i = 0; i < candidate.objects.size(); ++i)
+		{
+			auto &value = candidate.objects[i];
+			const auto found = std::lower_bound(candidate.active_cache.begin(),
+							    candidate.active_cache.end(), value.uid,
+							    [](const auto &row, uint64_t uid)
+							    { return row.item_uid < uid; });
+			if (found == candidate.active_cache.end() || found->item_uid != value.uid)
+			{
+				value.issues |= missing_cache;
+				continue;
+			}
+			const size_t row =
+				static_cast<size_t>(found - candidate.active_cache.begin());
+			value.cache_row = row;
+			candidate.cache_objects[row].push_back(i);
+			const uint64_t parent_uid =
+				value.parent ? candidate.objects[*value.parent].uid : 0;
+			if (!value.root ||
+			    found->root_item_uid != candidate.objects[*value.root].uid ||
+			    found->parent_item_uid != parent_uid || !value.vnum ||
+			    found->vnum != *value.vnum || !item_owner_identity_valid(found->owner))
+				value.issues |= conflicting_cache;
+			if (value.root)
+			{
+				const auto &root = candidate.objects[*value.root];
+				if (root.character)
+				{
+					const auto &actor = candidate.characters[*root.character];
+					if (actor.observed_owner &&
+					    !item_owner_identity_equal(found->owner,
+								       *actor.observed_owner))
+						value.issues |= conflicting_cache;
+					if (actor.reference &&
+					    (!actor.owner_revision ||
+					     found->owner_revision > *actor.owner_revision))
+						value.issues |= conflicting_cache;
+				}
+				else if (root.room_vnum &&
+					 !item_owner_identity_equal(
+						 found->owner,
+						 { item_owner_type::room,
+						   static_cast<uint64_t>(*root.room_vnum), 0 }))
+					value.issues |= conflicting_cache;
+			}
+		}
+		for (size_t row = 0; row < candidate.active_cache.size(); ++row)
+		{
+			charge(candidate.cache_objects[row].capacity(), sizeof(size_t));
+			const auto &entry = candidate.active_cache[row];
+			if (candidate.cache_objects[row].empty())
+				candidate.cache_issues[row] |= missing_link;
+			else if (candidate.cache_objects[row].size() != 1)
+				candidate.cache_issues[row] |= multiple_links;
+			if (!entry.item_uid || entry.item_uid == UINT64_MAX ||
+			    !entry.root_item_uid || entry.root_item_uid == UINT64_MAX ||
+			    !item_owner_identity_valid(entry.owner))
+				candidate.cache_issues[row] |= conflicting_cache;
+			uint64_t revision = 0;
+			if (item_ownership_runtime_peek_owner_revision(entry.owner, &revision))
+			{
+				candidate.cache_owner_revisions[row] = revision;
+				// Entry clocks record the last touched item; unrelated items may
+				// legitimately precede the current owner clock, including zero.
+				if (entry.owner_revision > revision)
+					candidate.cache_issues[row] |= conflicting_cache;
+			}
+			else
+				candidate.cache_issues[row] |= missing_cache;
+			for (const size_t object : candidate.cache_objects[row])
+				candidate.cache_issues[row] |= candidate.objects[object].issues;
+		}
+		std::vector<std::vector<size_t>> members(objects.size());
+		for (size_t i = 0; i < candidate.objects.size(); ++i)
+			if (candidate.objects[i].root)
+				members[*candidate.objects[i].root].push_back(i);
+		// Unsafe reciprocal lists are retained above and never passed to a codec
+		// which assumes pointers refer to the current allocated native world.
+		for (size_t root = 0; root < objects.size(); ++root)
+		{
+			if (!candidate.objects[root].root || *candidate.objects[root].root != root)
+				continue;
+			maintenance_forest forest;
+			forest.root_object = root;
+			bool safe = candidate.object_list_complete &&
+				    !(candidate.issues & foreign_link);
+			for (const size_t member : members[root])
+				if (candidate.objects[member].issues &
+				    (invalid_identity | duplicate_identity | invalid_placement |
+				     missing_link | multiple_links | foreign_link |
+				     invalid_topology | list_cycle))
+					safe = false;
+			size_t estimated = 0;
+			if (safe)
+				forest.result = player_item_snapshot_tree_capture_literal(
+					objects[root], &forest.items, &estimated);
+			else
+				forest.result = player_snapshot_capture_result::malformed_source;
+			if (forest.result ==
+			    player_snapshot_capture_result::retryable_allocation_failure)
+				return ENOMEM;
+			if (forest.result == player_snapshot_capture_result::ok)
+			{
+				charge_items(forest.items);
+			}
+			const size_t index = candidate.forests.size();
+			for (const size_t member : members[root])
+			{
+				auto &value = candidate.objects[member];
+				value.forest = index;
+				if (forest.result != player_snapshot_capture_result::ok)
+					value.issues |= literal_refused;
+			}
+			candidate.forests.push_back(std::move(forest));
+		}
+		charge(candidate.forests.capacity(), sizeof(maintenance_forest));
+		std::vector<bool> actor_safe(actors.size(),
+					     candidate.object_list_complete &&
+						     candidate.physical_lists_complete &&
+						     !(candidate.issues & foreign_link));
+		for (const auto &value : candidate.objects)
+			if (value.root && candidate.objects[*value.root].character &&
+			    (!value.forest || candidate.forests[*value.forest].result !=
+						      player_snapshot_capture_result::ok))
+				actor_safe[*candidate.objects[*value.root].character] = false;
+		for (size_t character = 0; character < actors.size(); ++character)
+		{
+			auto &actor = candidate.characters[character];
+			if (!actor.reference)
+				continue; // Legacy literal trees above need no invented reference.
+			const bool safe = actor_safe[character] &&
+					  !(actor.issues & (foreign_link | list_cycle));
+			if (safe)
+				actor.native_items_result = quest_mobile_native_items_observe(
+					actors[character], *actor.reference, &actor.native_items);
+			else
+				actor.native_items_result =
+					player_snapshot_capture_result::malformed_source;
+			if (*actor.native_items_result ==
+			    player_snapshot_capture_result::retryable_allocation_failure)
+				return ENOMEM;
+			if (*actor.native_items_result != player_snapshot_capture_result::ok)
+				actor.issues |= literal_refused;
+			else
+			{
+				std::vector<uint8_t> canonical;
+				const auto encoded = player_item_snapshot_list_encode(
+					actor.native_items, &canonical);
+				if (encoded == player_snapshot_codec_result::allocation_failure)
+					return ENOMEM;
+				if (encoded != player_snapshot_codec_result::ok)
+					return EILSEQ;
+				charge_items(actor.native_items);
+			}
+		}
+		for (const auto &value : candidate.characters)
+			candidate.issues |= value.issues;
+		for (const auto &value : candidate.objects)
+			candidate.issues |= value.issues;
+		for (size_t row = 0; row < candidate.cache_issues.size(); ++row)
+		{
+			for (const size_t object : candidate.cache_objects[row])
+				candidate.cache_issues[row] |= candidate.objects[object].issues;
+			candidate.issues |= candidate.cache_issues[row];
+		}
+		if (!held() || !nevent_is_game_thread())
+			return EINVAL;
+		static_assert(std::is_nothrow_move_assignable_v<maintenance_world_report>);
+		*output = std::move(candidate);
+		return 0;
+	}
+	catch (int error)
+	{
+		return static_cast<unsigned int>(error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
 }
 
 bool quest_mobile_published_world_owner::observe_union(std::vector<held_native> *output) noexcept
@@ -152,6 +797,7 @@ bool quest_mobile_published_world_owner::verify_held(const locked_native &locked
 		    !locked.owner_revision ||
 		    locked.owner_revision != source.reference.stock_revision ||
 		    !locked.origin.present ||
+		    !ordinary_origin_selector_current(locked.origin.original) ||
 		    !quest_mobile_native_birth_owner::validate_progressed_origin(
 			    locked.origin.original, source, locked.wallet) ||
 		    quest_mobile_native_reference_encode(held.reference, &a) !=
@@ -394,6 +1040,8 @@ struct quest_mobile_published_world_owner::entry
 	locked_native locked;
 	native_mobile_birth_recovery_context recovery;
 	quest_mobile_native_constructor_recipe constructor;
+	native_mobile_birth_cash_role_recipe cash_role;
+	bool ordinary_wallet = false;
 	quest_mobile_native_stage mobile;
 	quest_mobile_published_saved_forest forest;
 	std::vector<P_obj> objects, fresh;
@@ -448,7 +1096,7 @@ bool quest_mobile_published_world_owner::prepare(std::vector<locked_native> &&in
 		for (auto &value : input)
 		{
 			if (!value.origin.present ||
-			    !native_mobile_birth_recovery_terminal(value.origin.original) ||
+			    !published_origin_terminal(value.origin.original) ||
 			    value.current.state != quest_mobile_lifetime_state::live ||
 			    !value.current.cash ||
 			    value.current.reference.mobile_instance_id <= previous ||
@@ -466,17 +1114,40 @@ bool quest_mobile_published_world_owner::prepare(std::vector<locked_native> &&in
 			auto item = std::make_unique<entry>();
 			quest_mobile_native_image born;
 			std::vector<native_mobile_birth_item_recipe> original_recipes;
-			if (native_mobile_birth_command_decode(
-				    value.origin.original.command, &born, &original_recipes,
-				    &item->constructor) != economic_accounting_error::ok ||
-			    native_mobile_birth_recovery_decode(
-				    value.origin.original.command, value.origin.original.attachment,
-				    &item->recovery) != economic_accounting_error::ok ||
-			    (item->constructor.wire_version !=
-				     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
-			     item->constructor.wire_version !=
-				     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
-				return false;
+			item->ordinary_wallet = ordinary_wallet_origin(value.origin.original);
+			if (item->ordinary_wallet)
+			{
+				// The authentic original attachment supplies the complete NMB4
+				// command/constructor; CURRENT never supplies creating metadata.
+				if (native_mobile_birth_cash_role_command_decode(
+					    value.origin.original.command, &born, &original_recipes,
+					    &item->cash_role) != economic_accounting_error::ok ||
+				    item->cash_role.role !=
+					    native_mobile_birth_cash_role::ordinary_wallet ||
+				    native_mobile_birth_cash_role_recovery_decode(
+					    value.origin.original.command,
+					    value.origin.original.attachment,
+					    &item->recovery) != economic_accounting_error::ok ||
+				    !ordinary_role_selector_current(item->cash_role.original,
+								    item->cash_role))
+					return false;
+				item->constructor = item->cash_role.original;
+			}
+			else
+			{
+				if (native_mobile_birth_command_decode(
+					    value.origin.original.command, &born, &original_recipes,
+					    &item->constructor) != economic_accounting_error::ok ||
+				    native_mobile_birth_recovery_decode(
+					    value.origin.original.command,
+					    value.origin.original.attachment,
+					    &item->recovery) != economic_accounting_error::ok ||
+				    (item->constructor.wire_version !=
+					     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
+				     item->constructor.wire_version !=
+					     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
+					return false;
+			}
 			for (const auto &effect : item->recovery.mobile_effects)
 				if (!effect.started || !effect.returned || !effect.succeeded)
 					return false;
@@ -589,6 +1260,11 @@ bool quest_mobile_published_world_owner::census(entry &item, bool require_regist
 	try
 	{
 		if (!lists_valid())
+			return false;
+		// Re-census the actual configured selector before every original cold
+		// constructor/policy, materialization, enrollment, reload and cache cut.
+		if (item.ordinary_wallet &&
+		    !ordinary_role_selector_current(item.constructor, item.cash_role))
 			return false;
 		if (item.constructed)
 		{
@@ -809,6 +1485,11 @@ bool quest_mobile_published_world_owner::construct(entry &item) noexcept
 	}
 	if (!item.policy_started)
 	{
+		// Refuse before recording the original effect intent, rather than
+		// turning a changed keeper selector into a failed attempted policy.
+		if (item.ordinary_wallet &&
+		    !ordinary_role_selector_current(item.constructor, item.cash_role))
+			return false;
 		item.policy_started = true;
 		item.policy_succeeded =
 			quest_mobile_native_birth_owner::restore_current_published_constructor_policy(
@@ -908,6 +1589,11 @@ bool quest_mobile_published_world_owner::materialize(entry &item) noexcept
 		report_world_refusal(8106);
 		return false;
 	}
+	if (!quest_mobile_native_item_cold_prepend_cut_ready(item.forest.objects().size()))
+		return false;
+	for (P_obj object : item.forest.objects())
+		if (!quest_mobile_native_item_cold_prepend_body_ready(object))
+			return false;
 	// All allocations/refusers precede the no-fail binding/ownership consumption.
 	if (!item.forest.consume(item.objects))
 	{
@@ -942,6 +1628,7 @@ bool quest_mobile_published_world_owner::materialize(entry &item) noexcept
 			item.character->carrying = object;
 		}
 		++obj_index[object->R_num].number;
+		quest_mobile_native_item_observe_native_prepend(object);
 		if (object_list)
 			object_list->prev = object;
 		object->next = object_list;

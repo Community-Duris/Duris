@@ -62,10 +62,16 @@ struct flatfile_accounting_lifecycle_receipt
 	economic_digest boundary_digest = {};
 	uint64_t baseline_revision = 0;
 	std::vector<flatfile_economic_mapping> mappings;
+	// Native UID-keyed room piles authenticated by a V2 lifecycle EAB. V1
+	// receipts keep this empty; these are not economic mapping authority IDs.
+	std::vector<uint64_t> pile_uids;
 };
 
 // Private flatfile accounting lifecycle owner.
-// Coordinates complete native capture of wallets and shared banks, enforces
+// New installations capture wallets/shared banks and the independently complete
+// native room-pile census. Selected player/pet money and unsupported locations
+// refuse. Original V1 wallet/bank-only receipts remain canonical historical proof.
+// Coordinates native capture under the original identity/authority freeze, enforces
 // one-to-one mapping and lifetime reconciliation, stages the baseline witness
 // and reservations, verifies virgin_state (never_activated) proof, and commits
 // immutable lifecycle receipt and epoch selection in one authority bundle.
@@ -97,6 +103,8 @@ class flatfile_accounting_lifecycle_transaction
 						   bool *active_out, std::string *error) noexcept;
 
     public:
+	// Existing wallet/bank value capture only; full V2 pile coverage is verified
+	// inside install after original-ID retry. It cannot authorize activation.
 	static unsigned int capture_native_sources_locked(
 		const std::string &root, const flatfile_identity_lock &identity_lock,
 		const flatfile_authority_lock &authority_lock,

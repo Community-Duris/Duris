@@ -2,6 +2,43 @@
 #define DURIS_COIN_PHYSICAL_RECOVERY_H
 
 #include "persistence/critical_command_completion.h"
+#include "player/inert_item_stage.h"
+#include "item/item_ownership_runtime.h"
+#include "player/player_snapshot.h"
+#include <string>
+
+class flatfile_authority_lock;
+enum class flatfile_corpse_restore_result;
+
+// Only the original shared boot function may prepare, publish, or release this
+// holder. It owns an inert unpublished literal and, until the whole boot succeeds,
+// any enrolled object. Destruction rolls that enrollment back; no independent
+// per-UID publisher can escape the shared all-detached staging/cleanup boundary.
+class flatfile_coin_boot_stage final
+{
+    public:
+	flatfile_coin_boot_stage() noexcept = default;
+	~flatfile_coin_boot_stage() noexcept;
+	flatfile_coin_boot_stage(flatfile_coin_boot_stage &&) noexcept;
+	flatfile_coin_boot_stage &operator=(flatfile_coin_boot_stage &&) noexcept;
+	flatfile_coin_boot_stage(const flatfile_coin_boot_stage &) = delete;
+	flatfile_coin_boot_stage &operator=(const flatfile_coin_boot_stage &) = delete;
+
+    private:
+	friend flatfile_corpse_restore_result flatfile_corpse_restore_catalog(
+		const std::string &, std::string *);
+	static bool prepare(const std::string &, const flatfile_authority_lock &,
+		uint64_t uid, flatfile_coin_boot_stage &) noexcept;
+	bool publish() noexcept;
+	void finish() noexcept;
+	void reset() noexcept;
+	inert_item_stage prepared_;
+	item_ownership_runtime_entry identity_ = {};
+	player_item_snapshot literal_;
+	std::string root_;
+	const flatfile_authority_lock *cut_ = nullptr;
+	P_obj published_ = nullptr;
+};
 
 // Classification only. Failure preserves supplied outputs; success grants no
 // SQL authority, save reservation, physical publication or ACK permission.

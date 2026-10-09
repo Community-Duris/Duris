@@ -2523,3 +2523,37 @@ critical_apply_result flatfile_player_domain_apply(const std::string &root,
 		return apply_combat_outcome_command(root, command);
 	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
 }
+
+// Current values only. Original owning caller resolves journals before this cut.
+flatfile_player_domain_result flatfile_player_domain_read_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,
+	const std::string &account_name, int8_t racewar, flatfile_player_domain_record *record,
+	std::string *error)
+{
+	if (root.empty() || !record || pid <= 0 || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		std::string account;
+		if (!canonical_account(account_name, &account))
+			return flatfile_player_domain_result::invalid;
+		flatfile_player_domain_record loaded;
+		const auto player_loaded = load_player(root, pid, &loaded, error);
+		if (player_loaded != flatfile_player_domain_result::ok)
+			return player_loaded;
+		if (loaded.account_name != account || loaded.racewar != racewar)
+			return flatfile_player_domain_result::conflict;
+		bank_record bank;
+		const auto bank_loaded = load_bank(root, account, racewar, &bank, error);
+		if (bank_loaded != flatfile_player_domain_result::ok)
+			return bank_loaded;
+		loaded.domains.bank = bank.balances;
+		loaded.domains.bank_revision = bank.revision;
+		*record = std::move(loaded);
+		return flatfile_player_domain_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+}

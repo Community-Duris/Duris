@@ -163,3 +163,77 @@ flatfile_corpse_ownership_result flatfile_room_load_item_ownership(
 		*owner_revision = loaded_revision;
 	return reconciled;
 }
+
+flatfile_corpse_ownership_result flatfile_corpse_load_item_ownership_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_corpse_record &record, uint64_t *owner_revision,
+	std::vector<player_load_item_identity> *identities, std::string *error)
+{
+	if (!lock.matches(root) || !owner_revision || !identities)
+		return flatfile_corpse_ownership_result::invalid;
+	uint64_t loaded_revision = 0;
+	std::vector<flatfile_item_ownership_record> custody;
+	const auto loaded = flatfile_item_repository_load_owner_locked(
+		root, lock, flatfile_corpse_item_owner(record.owner_pid, record.save_id),
+		&loaded_revision, &custody, error);
+	if (loaded == flatfile_item_repository_result::not_found && record.items.empty())
+	{
+		*owner_revision = 0;
+		identities->clear();
+		return flatfile_corpse_ownership_result::ok;
+	}
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded == flatfile_item_repository_result::not_found ?
+			       flatfile_corpse_ownership_result::not_found :
+		       loaded == flatfile_item_repository_result::io_error ?
+			       flatfile_corpse_ownership_result::io_error :
+			       flatfile_corpse_ownership_result::invalid;
+	if (record.items.empty())
+	{
+		if (!custody.empty() || !loaded_revision)
+			return flatfile_corpse_ownership_result::invalid;
+		*owner_revision = loaded_revision;
+		identities->clear();
+		return flatfile_corpse_ownership_result::ok;
+	}
+	const auto reconciled = flatfile_corpse_reconcile_item_ownership(record, loaded_revision,
+									 custody, identities);
+	if (reconciled == flatfile_corpse_ownership_result::ok)
+		*owner_revision = loaded_revision;
+	return reconciled;
+}
+
+
+flatfile_corpse_ownership_result flatfile_room_load_item_ownership_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_room_item_record &record, uint64_t *owner_revision,
+	std::vector<player_load_item_identity> *identities, std::string *error)
+{
+	if (!lock.matches(root) || !owner_revision || !identities || record.room_vnum <= 0 || !record.revision)
+		return flatfile_corpse_ownership_result::invalid;
+	const item_owner_identity owner = { item_owner_type::room,
+					    static_cast<uint64_t>(record.room_vnum), 0 };
+	uint64_t loaded_revision = 0;
+	std::vector<flatfile_item_ownership_record> custody;
+	const auto loaded =
+		flatfile_item_repository_load_owner_locked(root, lock, owner, &loaded_revision, &custody, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded == flatfile_item_repository_result::not_found ?
+			       flatfile_corpse_ownership_result::not_found :
+		       loaded == flatfile_item_repository_result::io_error ?
+			       flatfile_corpse_ownership_result::io_error :
+			       flatfile_corpse_ownership_result::invalid;
+	if (record.items.empty())
+	{
+		if (!custody.empty() || !loaded_revision)
+			return flatfile_corpse_ownership_result::invalid;
+		*owner_revision = loaded_revision;
+		identities->clear();
+		return flatfile_corpse_ownership_result::ok;
+	}
+	const auto reconciled = flatfile_world_reconcile_item_ownership(
+		record.items, owner, loaded_revision, custody, identities);
+	if (reconciled == flatfile_corpse_ownership_result::ok)
+		*owner_revision = loaded_revision;
+	return reconciled;
+}

@@ -32,12 +32,18 @@ class inert_item_stage
     private:
 	friend class ordinary_drop_enrollment_owner;
 	friend class coin_physical_recovery_owner;
+	friend class flatfile_coin_boot_stage;
 	friend class shop_trade_native_publication_owner;
 	friend class shop_trade_original_item_stage;
 	friend class native_mobile_birth_literal_stage;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
+	// Existing flat boot owner only; exact original money eligibility and
+	// private allocator, with the separately proved flat immutable catalog.
+	static inert_item_stage_result prepare_money_for_flat_boot(
+		const player_item_snapshot &, uint64_t, const std::array<int32_t, 4> &,
+		inert_item_stage &) noexcept;
 	static inert_item_stage_result allocate_literal(const object_template &,
 							const player_item_snapshot &,
 							inert_item_stage &) noexcept;
@@ -99,6 +105,14 @@ class shop_trade_original_item_stage
 				shop_trade_original_reload_effect &) noexcept;
 	static bool proclib_probe(P_obj, const object_template &, size_t,
 				  shop_trade_original_reload_effect &) noexcept;
+	static bool reload_step_flat(P_obj, const object_template &, unsigned int,
+				     shop_trade_original_reload_effect &) noexcept;
+	static bool proclib_probe_flat(P_obj, const object_template &, size_t,
+				       shop_trade_original_reload_effect &) noexcept;
+	// Exact unpublished allocations only; root separately charges the stage vector
+	// and all literal/forest holders. Values grant no enrollment or budget permit.
+	bool retained_bytes(const player_item_snapshot &original_literal,
+			    size_t *bytes_out) const noexcept;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;

@@ -6,6 +6,9 @@
 #include "core/mm.h"
 #include <cstring>
 #include <utility>
+#include "player/player_load_items.h"
+#include <limits>
+#include <unordered_set>
 
 extern P_index obj_index;
 extern int top_of_objt;
@@ -225,6 +228,39 @@ prepare_inert_money_stage(const player_item_snapshot &literal, uint64_t original
 	return inert_item_stage::allocate_literal(*prototype, literal, output);
 }
 
+inert_item_stage_result
+inert_item_stage::prepare_money_for_flat_boot(const player_item_snapshot &literal, uint64_t original_uid,
+			  const std::array<int32_t, 4> &verified_denominations,
+			  inert_item_stage &output) noexcept
+{
+	if (!original_uid || original_uid != literal.object_uid || literal.type != ITEM_MONEY ||
+	    literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT || literal.equipment_slot != -1 ||
+	    literal.extra_descriptions.size() > 1)
+		return inert_item_stage_result::invalid;
+	bool nonempty = false;
+	for (size_t index = 0; index < verified_denominations.size(); ++index)
+	{
+		if (verified_denominations[index] < 0 ||
+		    literal.values[index] != verified_denominations[index])
+			return inert_item_stage_result::invalid;
+		nonempty = nonempty || verified_denominations[index] != 0;
+	}
+	if (!nonempty)
+		return inert_item_stage_result::invalid;
+	if (!flatfile_coin_boot_templates::ready())
+		return inert_item_stage_result::allocation_unavailable;
+	const object_template *prototype = flatfile_coin_boot_templates::find(literal.vnum);
+	if (!prototype)
+		return inert_item_stage_result::unsupported;
+	const auto eligibility = literal_stage_eligibility(*prototype, literal, true);
+	if (eligibility != inert_item_stage_result::ok)
+		return eligibility;
+	// The persisted literal already contains the exact rendered descriptions and
+	// native weight. Copy it unchanged; never rerender, reinterpret its unstrung
+	// fields or replace the original denominations with prototype starting cash.
+	return inert_item_stage::allocate_literal(*prototype, literal, output);
+}
+
 inert_item_stage_result inert_item_stage::allocate_literal(const object_template &prototype,
 							   const player_item_snapshot &literal,
 							   inert_item_stage &output) noexcept
@@ -343,4 +379,198 @@ void shop_trade_original_item_stage::reset() noexcept
 	literal.object_ = std::exchange(object_, nullptr);
 	literal.pool_ = std::exchange(pool_, nullptr);
 	affect_pool_ = nullptr;
+}
+
+namespace
+{
+// Exact original saved spellbook decoding; no strlen is used on binary bytes.
+bool retained_parse_spellbook(const std::string &json, char *spell_bits = nullptr)
+{
+	std::array<bool, MAX_SKILLS> seen = {};
+	size_t position = 0;
+	auto skip_space = [&]()
+	{
+		while (position < json.size() && (json[position] == ' ' || json[position] == '\t' ||
+						  json[position] == '\r' || json[position] == '\n'))
+			++position;
+	};
+	skip_space();
+	if (position >= json.size() || json[position++] != '[')
+		return false;
+	skip_space();
+	if (position < json.size() && json[position] == ']')
+	{
+		++position;
+		skip_space();
+		return position == json.size();
+	}
+	for (;;)
+	{
+		skip_space();
+		if (position >= json.size() || json[position] < '0' || json[position] > '9')
+			return false;
+		const size_t number_start = position;
+		uint64_t value = 0;
+		while (position < json.size() && json[position] >= '0' && json[position] <= '9')
+		{
+			const uint64_t digit = static_cast<unsigned int>(json[position++] - '0');
+			if (value > (static_cast<uint64_t>(MAX_SKILLS) - 1 - digit) / 10)
+				return false;
+			value = value * 10 + digit;
+		}
+		if (json[number_start] == '0' && position != number_start + 1)
+			return false;
+		if (seen[value])
+			return false;
+		seen[value] = true;
+		if (spell_bits)
+			spell_bits[value / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[value / 8]) |
+				static_cast<unsigned char>(1U << (value % 8)));
+		skip_space();
+		if (position >= json.size())
+			return false;
+		if (json[position] == ']')
+		{
+			++position;
+			break;
+		}
+		if (json[position++] != ',')
+			return false;
+	}
+	skip_space();
+	return position == json.size();
+}
+
+// Captured/flatfile snapshots store typed spell IDs; SQL rows store JSON.
+// Both representations feed the same validation and materialization path.
+// When spell_bits is non-null, callers must provide a zero-initialized buffer
+// of (MAX_SKILLS + 1) / 8 + 1 bytes because this helper ORs the selected bits
+// into it rather than clearing it first.
+bool retained_decode_saved_spellbook(const player_item_extra_description_snapshot &description,
+				     char *spell_bits = nullptr)
+{
+	if (!description.description.empty())
+		return description.spell_ids.empty() &&
+		       retained_parse_spellbook(description.description, spell_bits);
+	std::array<bool, MAX_SKILLS> seen = {};
+	for (int32_t spell : description.spell_ids)
+	{
+		if (spell < 0 || spell >= MAX_SKILLS || seen[spell])
+			return false;
+		seen[spell] = true;
+		if (spell_bits)
+			spell_bits[spell / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[spell / 8]) |
+				static_cast<unsigned char>(1U << (spell % 8)));
+	}
+	return true;
+}
+
+}
+
+bool shop_trade_original_item_stage::retained_bytes(const player_item_snapshot &original_literal,
+						    size_t *bytes_out) const noexcept
+{
+	if (!bytes_out)
+		return false;
+	if (!object_)
+	{
+		if (pool_ || affect_pool_)
+			return false;
+		*bytes_out = 0;
+		return true;
+	}
+	try
+	{
+		if (!pool_ || pool_->size != sizeof(obj_data) ||
+		    pool_->next_off != offsetof(obj_data, next) || !original_literal.object_uid ||
+		    object_->obj_uid != original_literal.object_uid ||
+		    object_->type != original_literal.type ||
+		    object_->str_mask != original_literal.string_mask ||
+		    original_literal.string_mask !=
+			    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+		    original_literal.extra_descriptions.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
+		    original_literal.dynamic_affects.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
+		    !player_load_item_snapshot_metadata_valid(original_literal))
+			return false;
+		size_t bytes = pool_->size;
+		std::unordered_set<const void *> owned;
+		if (!owned.insert(object_).second)
+			return false;
+		const auto add = [&](size_t amount)
+		{
+			if (amount > std::numeric_limits<size_t>::max() - bytes)
+				return false;
+			bytes += amount;
+			return true;
+		};
+		const auto allocation = [&](const void *pointer, size_t amount)
+		{ return pointer && owned.insert(pointer).second && add(amount); };
+		const auto literal_text = [&](const char *actual, const std::string &expected)
+		{
+			if (expected.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+			    expected.find('\0') != std::string::npos)
+				return false;
+			const size_t size = expected.size() + 1;
+			return allocation(actual, size) &&
+			       std::memcmp(actual, expected.c_str(), size) == 0;
+		};
+		if (!literal_text(object_->name, original_literal.name) ||
+		    !literal_text(object_->short_description, original_literal.short_description) ||
+		    !literal_text(object_->description, original_literal.description) ||
+		    !literal_text(object_->action_description, original_literal.action_description))
+			return false;
+		const extra_descr_data *description = object_->ex_description;
+		for (const auto &expected : original_literal.extra_descriptions)
+		{
+			if (!allocation(description, sizeof(extra_descr_data)))
+				return false;
+			if (expected.spellbook)
+			{
+				constexpr char marker[] = { 3, 1, 3, 0 };
+				// prepare makes a binary std::string of the exact original bitset,
+				// then allocate_text copies its extra trailing NUL too.
+				std::array<char, (MAX_SKILLS + 1) / 8 + 2> bits{};
+				if (!retained_decode_saved_spellbook(expected, bits.data()) ||
+				    !allocation(description->keyword, sizeof(marker)) ||
+				    std::memcmp(description->keyword, marker, sizeof(marker)) !=
+					    0 ||
+				    !allocation(description->description, bits.size()) ||
+				    std::memcmp(description->description, bits.data(),
+						bits.size()) != 0)
+					return false;
+			}
+			else if (!literal_text(description->keyword, expected.keyword) ||
+				 !literal_text(description->description, expected.description))
+				return false;
+			description = description->next;
+		}
+		// Bounded exact consumption also refuses cycles or extra linked nodes.
+		if (description)
+			return false;
+		if (!original_literal.dynamic_affects.empty() &&
+		    (!affect_pool_ || affect_pool_->size != sizeof(obj_affect) ||
+		     affect_pool_->next_off != offsetof(obj_affect, next)))
+			return false;
+		if (original_literal.dynamic_affects.empty() && affect_pool_)
+			return false;
+		const obj_affect *affect = object_->affects;
+		for (const auto &expected : original_literal.dynamic_affects)
+		{
+			if (!allocation(affect, affect_pool_->size) ||
+			    affect->type != expected.type || affect->data != expected.data ||
+			    affect->extra2 != expected.extra2)
+				return false;
+			affect = affect->next;
+		}
+		if (affect)
+			return false;
+		*bytes_out = bytes;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

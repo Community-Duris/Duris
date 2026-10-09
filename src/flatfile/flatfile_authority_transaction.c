@@ -3,6 +3,7 @@
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_accounting_store.h"
 
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <cstdlib>
@@ -324,6 +325,114 @@ flatfile_authority_lock::flatfile_authority_lock() noexcept
 }
 flatfile_authority_lock::~flatfile_authority_lock() = default;
 
+flatfile_authority_lock::flatfile_authority_lock(flatfile_scratch_reserve_fn reserve_scratch_peak,
+						 void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	errno = ENOTSUP;
+#else
+	constexpr size_t own_bytes = sizeof(flatfile_authority_lock) + sizeof(state);
+	if (!reserve_scratch_peak || outer_live_scratch > SIZE_MAX - own_bytes ||
+	    !reserve_scratch_peak(outer_live_scratch + own_bytes, context))
+	{
+		errno = ENOBUFS;
+		return;
+	}
+	state_.reset(new (std::nothrow) state);
+	if (!state_)
+		errno = ENOMEM;
+#endif
+}
+
+bool flatfile_authority_lock::retained_bytes(size_t *output) const noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	if (!output || !state_)
+		return false;
+	size_t bytes = sizeof(*this) + sizeof(state);
+	// SSO storage is inline in state and must not be counted a second time.
+	if (state_->root.capacity() > 15)
+	{
+		if (state_->root.capacity() == SIZE_MAX ||
+		    state_->root.capacity() + 1 > SIZE_MAX - bytes)
+			return false;
+		bytes += state_->root.capacity() + 1;
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool flatfile_authority_lock::acquire_bounded(const std::string &root,
+					      flatfile_scratch_reserve_fn reserve_scratch_peak,
+					      void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!state_ || state_->process_lock.owns_lock() || root.empty() || !reserve_scratch_peak)
+	{
+		errno = !state_ ? ENOMEM : EINVAL;
+		return false;
+	}
+	const auto add = [](size_t &bytes, size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - bytes)
+			return false;
+		bytes += amount;
+		return true;
+	};
+	size_t directory_size = root.size();
+	size_t live = outer_live_scratch;
+	if (!add(directory_size, sizeof("/domains") - 1) || !add(live, 3 * sizeof(std::string)) ||
+	    (root.size() > 15 && (root.size() == SIZE_MAX || !add(live, root.size() + 1))) ||
+	    (directory_size > 15 &&
+	     (directory_size == SIZE_MAX || !add(live, directory_size + 1))) ||
+	    !add(live, sizeof(".critical-authority.lock")) || !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	try
+	{
+		std::string owned_root(root);
+		// Fresh length construction avoids the old root-copy/append growth.
+		std::string directory(directory_size, '\0');
+		std::copy(root.begin(), root.end(), directory.begin());
+		std::copy_n("/domains", sizeof("/domains") - 1, directory.begin() + root.size());
+		const std::string filename(lock_filename);
+		state_->process_lock.lock();
+		if (flatfile_lock_acquire(directory, filename, &state_->fd, nullptr))
+		{
+			state_->root.swap(owned_root);
+			return true;
+		}
+		state_->process_lock.unlock();
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (state_->process_lock.owns_lock())
+			state_->process_lock.unlock();
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		if (state_->process_lock.owns_lock())
+			state_->process_lock.unlock();
+		errno = EIO;
+		return false;
+	}
+#endif
+}
+
 bool flatfile_authority_lock::acquire(const std::string &root, std::string *error)
 try
 {
@@ -527,4 +636,278 @@ flatfile_authority_transaction_result flatfile_authority_transaction_commit_oper
 			return flatfile_authority_transaction_result::invalid;
 	return flatfile_accounting_storage::commit_with_outcome(root, lock, operations, error,
 								outcome);
+}
+
+namespace
+{
+bool bounded_add(size_t &bytes, size_t added) noexcept
+{
+	if (added > SIZE_MAX - bytes)
+		return false;
+	bytes += added;
+	return true;
+}
+
+const char *bounded_store_suffix(flatfile_authority_store store) noexcept
+{
+	switch (store)
+	{
+	case flatfile_authority_store::domains:
+		return "/domains";
+	case flatfile_authority_store::players:
+		return "/players";
+	case flatfile_authority_store::identities:
+		return "/identities/names";
+	case flatfile_authority_store::accounts:
+		return "/identities/accounts";
+	case flatfile_authority_store::metadata:
+		return "/metadata";
+	case flatfile_authority_store::player_deaths:
+		return "/player-deaths";
+	case flatfile_authority_store::economic_evidence:
+		return "/economic-evidence";
+	case flatfile_authority_store::item_accounting_references:
+		return "/accounting/item_references";
+	}
+	return nullptr;
+}
+
+// Fresh C++11-ABI libstdc++13 string reserve/assign grows from actual SSO
+// capacity using _M_create's checked exponential policy. Count the terminator;
+// SSO capacity is conservative alongside sizeof(string), as in original budgets.
+bool bounded_string_capacity(size_t length, size_t *output) noexcept
+{
+	const std::string empty;
+	size_t capacity = empty.capacity();
+	if (length > capacity)
+	{
+		if (capacity > SIZE_MAX / 2)
+			return false;
+		capacity = length < capacity * 2 ? capacity * 2 : length;
+	}
+	if (capacity == SIZE_MAX)
+		return false;
+	*output = capacity + 1;
+	return true;
+}
+
+struct bounded_wire_operation
+{
+	flatfile_authority_store store = flatfile_authority_store::domains;
+	flatfile_authority_operation_kind kind = flatfile_authority_operation_kind::write;
+	const uint8_t *name = nullptr;
+	size_t name_size = 0, image_size = 0;
+};
+
+bool bounded_name_equal(const bounded_wire_operation &a, const bounded_wire_operation &b) noexcept
+{
+	return a.name_size == b.name_size && !memcmp(a.name, b.name, a.name_size);
+}
+
+bool bounded_wire_read(decoder &payload, uint32_t version, bounded_wire_operation *out) noexcept
+{
+	bounded_wire_operation candidate;
+	uint16_t name_size = 0;
+	uint32_t image_size = 0;
+	if (version == transaction_version &&
+	    (!payload.number(&candidate.store) || !payload.number(&candidate.kind)))
+		return false;
+	const char *suffix = bounded_store_suffix(candidate.store);
+	if (!suffix || !payload.number(&name_size) || !name_size ||
+	    name_size > transaction_maximum_filename || payload.offset > payload.size ||
+	    name_size > payload.size - payload.offset)
+		return false;
+	candidate.name = payload.data + payload.offset;
+	candidate.name_size = name_size;
+	for (size_t i = 0; i < name_size; ++i)
+	{
+		const unsigned char ch = candidate.name[i];
+		if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+		      (ch >= '0' && ch <= '9') || ch == '.' || ch == '_' || ch == '-'))
+			return false;
+	}
+	const auto reserved = [&](const char *name) noexcept
+	{ return strlen(name) == name_size && !memcmp(candidate.name, name, name_size); };
+	if (reserved(".") || reserved("..") || reserved(transaction_filename) ||
+	    reserved(lock_filename))
+		return false;
+	payload.offset += name_size;
+	if (!payload.number(&image_size) || image_size > transaction_maximum_bytes ||
+	    payload.offset > payload.size || image_size > payload.size - payload.offset ||
+	    (candidate.kind == flatfile_authority_operation_kind::write	 ? !image_size :
+	     candidate.kind == flatfile_authority_operation_kind::remove ? image_size != 0 :
+									   true))
+		return false;
+	candidate.image_size = image_size;
+	payload.offset += image_size;
+	*out = candidate;
+	return true;
+}
+
+struct bounded_recovery_workspace
+{
+	std::vector<uint8_t> journal;
+	std::vector<flatfile_authority_operation> operations;
+	std::string directory, apply_directory, journal_name;
+	uint16_t count = 0;
+	size_t decoded_bytes = 0, apply_path_bytes = 0, validation_path_bytes = 0;
+};
+
+bool bounded_recovery_scan(bounded_recovery_workspace &work, const std::string &root) noexcept
+{
+	constexpr size_t header_size =
+		transaction_magic.size() + sizeof(uint32_t) * 2 + SHA256_DIGEST_LENGTH;
+	const auto &bytes = work.journal;
+	if (bytes.size() < header_size || bytes.size() > transaction_maximum_bytes ||
+	    memcmp(bytes.data(), transaction_magic.data(), transaction_magic.size()))
+		return false;
+	decoder header{ bytes.data() + transaction_magic.size(),
+			bytes.size() - transaction_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    (version != transaction_version && version != transaction_legacy_version) ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	decoder payload{ bytes.data() + header_size, payload_size };
+	if (!payload.number(&work.count) || !work.count ||
+	    work.count > transaction_maximum_images ||
+	    work.count > SIZE_MAX / sizeof(flatfile_authority_operation))
+		return false;
+	work.decoded_bytes = work.count * sizeof(flatfile_authority_operation);
+	const size_t first = payload.offset;
+	for (size_t index = 0; index < work.count; ++index)
+	{
+		bounded_wire_operation current;
+		if (!bounded_wire_read(payload, version, &current))
+			return false;
+		decoder previous{ bytes.data() + header_size, payload_size, first };
+		for (size_t prior = 0; prior < index; ++prior)
+		{
+			bounded_wire_operation earlier;
+			if (!bounded_wire_read(previous, version, &earlier) ||
+			    (current.store == earlier.store &&
+			     bounded_name_equal(current, earlier)))
+				return false;
+		}
+		size_t name_bytes = 0;
+		if (!bounded_string_capacity(current.name_size, &name_bytes) ||
+		    !bounded_add(work.decoded_bytes, name_bytes) ||
+		    !bounded_add(work.decoded_bytes, current.image_size))
+			return false;
+		const size_t suffix_size = strlen(bounded_store_suffix(current.store));
+		size_t path_size = root.size(), path_bytes = 0, validation_bytes = 0;
+		if (!bounded_add(path_size, suffix_size) ||
+		    !bounded_string_capacity(path_size, &path_bytes) ||
+		    !bounded_string_capacity(4 + suffix_size, &validation_bytes))
+			return false;
+		work.apply_path_bytes = std::max(work.apply_path_bytes, path_bytes);
+		work.validation_path_bytes = std::max(work.validation_path_bytes, validation_bytes);
+	}
+	return payload.offset == payload.size;
+}
+} // namespace
+
+flatfile_authority_transaction_result
+flatfile_authority_transaction_recover_bounded(const std::string &root,
+					       const flatfile_authority_lock &lock,
+					       flatfile_scratch_reserve_fn reserve_scratch_peak,
+					       void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	errno = ENOTSUP;
+	return flatfile_authority_transaction_result::io_error;
+#else
+	if (!reserve_scratch_peak || !lock.matches(root))
+	{
+		errno = EINVAL;
+		return flatfile_authority_transaction_result::invalid;
+	}
+	try
+	{
+		size_t base = outer_live_scratch, path_size = root.size(), directory_bytes = 0,
+		       name_bytes = 0;
+		if (!bounded_add(path_size, strlen("/domains")) ||
+		    !bounded_string_capacity(path_size, &directory_bytes) ||
+		    !bounded_string_capacity(strlen(transaction_filename), &name_bytes) ||
+		    !bounded_add(base, sizeof(bounded_recovery_workspace)) ||
+		    !bounded_add(base, directory_bytes) || !bounded_add(base, name_bytes) ||
+		    !bounded_add(base, 3 * sizeof(decoder)) ||
+		    !bounded_add(base, 2 * sizeof(bounded_wire_operation)) ||
+		    !bounded_add(base, sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>)) ||
+		    !bounded_add(base, sizeof(std::string)) || !reserve_scratch_peak(base, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_authority_transaction_result::io_error;
+		}
+		bounded_recovery_workspace work;
+		work.directory.reserve(path_size);
+		work.directory.assign(root);
+		work.directory.append("/domains");
+		work.journal_name.reserve(strlen(transaction_filename));
+		work.journal_name.assign(transaction_filename);
+		const auto read = flatfile_read_bounded(work.directory, work.journal_name,
+							transaction_maximum_bytes, &work.journal,
+							reserve_scratch_peak, context, base);
+		if (read == flatfile_read_result::not_found)
+			return flatfile_authority_transaction_result::ok;
+		if (read == flatfile_read_result::invalid)
+			return flatfile_authority_transaction_result::invalid;
+		if (read != flatfile_read_result::ok)
+			return flatfile_authority_transaction_result::io_error;
+		if (!bounded_recovery_scan(work, root))
+		{
+			errno = EBADMSG;
+			return flatfile_authority_transaction_result::invalid;
+		}
+		size_t peak = base;
+		// All original journal bytes and ALL decoded operations coexist. The
+		// reusable real apply path is reserved before decode and before any IO.
+		// Validation uses the unchanged original valid_operation path temporary.
+		if (!bounded_add(peak, work.journal.capacity()) ||
+		    !bounded_add(peak, work.decoded_bytes) ||
+		    !bounded_add(peak, work.apply_path_bytes) ||
+		    !bounded_add(peak, 2 * sizeof(std::string)) ||
+		    !bounded_add(peak, work.validation_path_bytes) ||
+		    !reserve_scratch_peak(peak, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_authority_transaction_result::io_error;
+		}
+		work.operations.reserve(work.count);
+		// Reserve a real reusable same-root directory for the largest actual
+		// store suffix. Capacity stays live through every apply/removal.
+		work.apply_directory.reserve(work.apply_path_bytes - 1);
+		const auto decoded = decode_transaction(work.journal, &work.operations);
+		if (decoded != flatfile_authority_transaction_result::ok)
+			return decoded;
+		for (const auto &operation : work.operations)
+		{
+			work.apply_directory.assign(root);
+			work.apply_directory.append(bounded_store_suffix(operation.store));
+			const bool applied =
+				operation.kind == flatfile_authority_operation_kind::write ?
+					flatfile_atomic_write(work.apply_directory,
+							      operation.filename, operation.bytes,
+							      nullptr) :
+					flatfile_atomic_remove(work.apply_directory,
+							       operation.filename, true, nullptr);
+			if (!applied)
+				return flatfile_authority_transaction_result::io_error;
+		}
+		return flatfile_atomic_remove(work.directory, work.journal_name, false, nullptr) ?
+			       flatfile_authority_transaction_result::ok :
+			       flatfile_authority_transaction_result::io_error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_authority_transaction_result::io_error;
+	}
+	catch (...)
+	{
+		errno = EOVERFLOW;
+		return flatfile_authority_transaction_result::io_error;
+	}
+#endif
 }

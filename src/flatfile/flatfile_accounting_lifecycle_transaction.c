@@ -3,6 +3,12 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_accounting_staging_view.h"
+#include "flatfile/flatfile_accounting_pile_baseline.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include "core/defines.h"
+#include "world/vnum.obj.h"
+#include <iterator>
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
 #include "economy/economic_accounting_plan.h"
@@ -72,6 +78,7 @@ static_assert(lifecycle_receipt_maximum_bytes < flatfile_authority_transaction_m
 
 struct retained_lifecycle
 {
+	uint32_t frame_version = 1;
 	flatfile_accounting_lifecycle_request request;
 	economic_account_key opening;
 	flatfile_accounting_lifecycle_receipt receipt;
@@ -200,10 +207,220 @@ std::string lifecycle_receipt_name(const critical_operation_id &id)
 	return std::string("lifecycle-") + value + ".elr";
 }
 
+std::vector<flatfile_accounting_pile_baseline_source>
+retained_pile_sources(const economic_baseline_batch &witness,
+		      const flatfile_accounting_lifecycle_receipt &receipt)
+{
+	need(receipt.pile_uids.size() <= ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES &&
+	     std::is_sorted(receipt.pile_uids.begin(), receipt.pile_uids.end()) &&
+	     std::adjacent_find(receipt.pile_uids.begin(), receipt.pile_uids.end()) ==
+		     receipt.pile_uids.end() &&
+	     witness.items.size() == receipt.pile_uids.size());
+	std::vector<flatfile_accounting_pile_baseline_source> sources;
+	sources.reserve(receipt.pile_uids.size());
+	for (uint64_t uid : receipt.pile_uids)
+	{
+		const auto holding = std::find_if(
+			witness.holdings.begin(), witness.holdings.end(),
+			[&](const auto &entry) {
+				return entry.account.kind == economic_account_kind::pile &&
+				       entry.account.authority_id == uid;
+			});
+		const auto item = std::find_if(witness.items.begin(), witness.items.end(),
+					       [&](const auto &entry)
+					       { return entry.snapshot.uid == uid; });
+		need(uid && holding != witness.holdings.end() && item != witness.items.end());
+		const auto &position = item->snapshot.position;
+		need(holding->account.lineage.bytes == receipt.lineage.bytes &&
+		     !holding->account.context_id && holding->native_revision &&
+		     position.root_uid == uid && !position.parent_uid &&
+		     position.owner.type == item_owner_type::room && position.owner.id &&
+		     position.owner.id <= INT_MAX && !position.owner.context_id &&
+		     position.state == item_custody_state::active && !position.equipment_slot &&
+		     position.revision == holding->native_revision &&
+		     holding->source_digest != economic_digest{} &&
+		     item->source_digest == holding->source_digest);
+		for (int64_t amount : holding->balance)
+			need(amount >= 0 && amount <= INT32_MAX);
+		flatfile_accounting_pile_baseline_source source;
+		source.holding = *holding;
+		source.item = *item;
+		source.head = { holding->account,
+				receipt.epoch,
+				receipt.baseline_operation_id,
+				holding->balance,
+				holding->native_revision,
+				false };
+		sources.push_back(std::move(source));
+	}
+	return sources;
+}
+
+economic_digest
+compute_pile_coverage_digest(const flatfile_accounting_lifecycle_native_sources &sources,
+			     const std::vector<flatfile_accounting_pile_baseline_source> &piles)
+{
+	// Keep the original wallet/bank V1 digest untouched. V2 adds the complete
+	// ordered native room-pile cut; its EAB descriptors are retained history.
+	std::vector<uint8_t> data{ 'D', 'U', 'R', 'I', 'S', '-', 'F', 'L', 'A', 'T', 'F', 'I', 'L',
+				   'E', '-', 'C', 'O', 'V', 'E', 'R', 'A', 'G', 'E', '-', 'V', '2' };
+	append_raw(data, compute_coverage_digest(sources.wallets, sources.banks));
+	append_u64(&data, piles.size());
+	uint64_t prior_uid = 0;
+	for (const auto &source : piles)
+	{
+		const auto &position = source.item.snapshot.position;
+		need(source.item.snapshot.uid > prior_uid);
+		prior_uid = source.item.snapshot.uid;
+		append_u64(&data, prior_uid);
+		append_u64(&data, position.owner.id);
+		append_u64(&data, source.holding.native_revision);
+		for (int64_t amount : source.holding.balance)
+			append_u64(&data, static_cast<uint64_t>(amount));
+		append_raw(data, source.holding.source_digest);
+	}
+	return hash(data);
+}
+
+void reject_selected_player_money(const std::string &root,
+				  const flatfile_identity_lock &identity_lock,
+				  const flatfile_authority_lock &lock,
+				  const flatfile_accounting_lifecycle_native_sources &sources,
+				  std::string *error)
+{
+	// Existing atomic file reader takes no player lock: preserve identity then
+	// authority order. A missing/partial selected snapshot is not an empty forest.
+	for (const auto &wallet : sources.wallets)
+	{
+		flatfile_identity_record identity;
+		const auto identity_status = flatfile_identity_lookup_pid_locked(
+			root, identity_lock, lock, wallet.pid, &identity, error);
+		need(identity_status == flatfile_identity_result::ok,
+		     identity_status == flatfile_identity_result::io_error ? EIO : EILSEQ);
+		need(identity.pid == static_cast<int32_t>(wallet.pid) &&
+		     canonical_identity_account(identity.account) == wallet.account_name &&
+		     identity.racewar == wallet.racewar);
+		flatfile_player_domain_record domain;
+		const auto domain_status = flatfile_player_domain_load_locked(
+			root, lock, wallet.pid, wallet.account_name, wallet.racewar, &domain,
+			error);
+		need(domain_status == flatfile_player_domain_result::ok,
+		     domain_status == flatfile_player_domain_result::io_error ? EIO : EILSEQ);
+		need(domain.pid == identity.pid && domain.account_name == wallet.account_name &&
+		     domain.racewar == wallet.racewar &&
+		     domain.domains.wallet_revision == wallet.native_revision);
+		for (size_t index = 0; index < 4; ++index)
+			need(domain.domains.wallet[index] <= INT64_MAX &&
+			     static_cast<int64_t>(domain.domains.wallet[index]) ==
+				     wallet.balance[index]);
+		player_snapshot snapshot;
+		const auto status =
+			flatfile_player_snapshot_read(root, wallet.pid, &snapshot, error);
+		need(status == flatfile_player_load_result::ok,
+		     status == flatfile_player_load_result::not_found ? ENODATA :
+		     status == flatfile_player_load_result::io_error  ? EIO :
+									EILSEQ);
+		need(snapshot.pid == identity.pid && snapshot.revision &&
+		     snapshot.components == PLAYER_CHECKPOINT_COMPONENT_ALL);
+		const std::string *name = nullptr;
+		for (const auto &entry : snapshot.status_strings)
+			if (entry.field == player_status_string_field::name)
+			{
+				need(!name);
+				name = &entry.value;
+			}
+		need(name && canonical_identity_account(*name) ==
+				     canonical_identity_account(identity.name));
+		bool racewar_found = false;
+		for (const auto &entry : snapshot.status_integers)
+			if (entry.field == player_status_field::racewar)
+			{
+				need(!racewar_found &&
+				     (entry.is_unsigned ? entry.unsigned_value == wallet.racewar :
+							  entry.signed_value == wallet.racewar));
+				racewar_found = true;
+			}
+		need(racewar_found);
+		// Checkpoint revision and domain wallet revision have distinct lifetimes.
+		// Bind each through its original reader; never compare them as one counter.
+		const auto inspect = [](const std::vector<player_item_snapshot> &items)
+		{
+			for (const auto &item : items)
+				need(item.type != ITEM_MONEY && item.vnum != VOBJ_COINS,
+				     EOPNOTSUPP);
+		};
+		inspect(snapshot.items);
+		for (const auto &pet : snapshot.pets)
+			inspect(pet.items);
+	}
+}
+
+void validate_pile_capacity(size_t wallets, size_t banks, size_t piles)
+{
+	need(wallets <= ECONOMIC_BASELINE_MAX_HOLDINGS &&
+		     banks <= ECONOMIC_BASELINE_MAX_HOLDINGS - wallets &&
+		     piles <= ECONOMIC_BASELINE_MAX_HOLDINGS - wallets - banks &&
+		     piles <= ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES,
+	     ENOSPC);
+}
+
+std::vector<flatfile_accounting_pile_baseline_source> capture_room_pile_sources(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &lock, const flatfile_accounting_lifecycle_request &request,
+	const critical_operation_id &baseline_operation,
+	const flatfile_accounting_lifecycle_native_sources &sources, std::string *error)
+{
+	validate_pile_capacity(sources.wallets.size(), sources.banks.size(), 0);
+	reject_selected_player_money(root, identity_lock, lock, sources, error);
+	std::vector<flatfile_coin_pile_source> native;
+	const auto code =
+		flatfile_item_repository_capture_room_coin_piles_locked(root, lock, &native, error);
+	need(!code, code);
+	validate_pile_capacity(sources.wallets.size(), sources.banks.size(), native.size());
+	std::vector<flatfile_accounting_pile_baseline_source> captured;
+	captured.reserve(native.size());
+	uint64_t prior_uid = 0;
+	for (const auto &pile : native)
+	{
+		const auto &owner = pile.ownership;
+		const uint64_t uid = owner.item_uid;
+		// The current cold boot owner requires a positive native money literal.
+		// Refuse empty genesis here; do not manufacture retirement or native effects.
+		need(std::any_of(pile.item.values.begin(), pile.item.values.begin() + 4,
+				 [](int32_t amount) { return amount > 0; }),
+		     EILSEQ);
+		need(uid > prior_uid && owner.root_item_uid == uid && !owner.parent_item_uid &&
+		     owner.owner.type == item_owner_type::room && owner.owner.id &&
+		     owner.owner.id <= INT_MAX && !owner.owner.context_id && owner.item_revision &&
+		     owner.state == item_custody_state::active && !owner.equipment_slot &&
+		     pile.item.type == ITEM_MONEY && pile.item.object_uid == uid &&
+		     pile.item.vnum == owner.vnum &&
+		     pile.item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+		     pile.item.equipment_slot == -1);
+		prior_uid = uid;
+		flatfile_accounting_pile_baseline_source source;
+		const auto capture = flatfile_accounting_pile_baseline_capture(
+			root, lock, request.lineage, request.epoch, baseline_operation, uid,
+			&source, error);
+		need(!capture, capture);
+		need(source.holding.native_revision == owner.item_revision &&
+		     source.item.snapshot.position.root_uid == owner.root_item_uid &&
+		     source.item.snapshot.position.parent_uid == owner.parent_item_uid &&
+		     item_owner_identity_equal(source.item.snapshot.position.owner, owner.owner));
+		for (size_t index = 0; index < 4; ++index)
+			need(source.holding.balance[index] == pile.item.values[index]);
+		captured.push_back(std::move(source));
+	}
+	return captured;
+}
+
 void validate_retained_lifecycle(const retained_lifecycle &value)
 {
 	const auto &request = value.request;
 	const auto &receipt = value.receipt;
+	need(value.frame_version == 1 || value.frame_version == 2);
+	need(receipt.mappings.size() <= ECONOMIC_BASELINE_MAX_HOLDINGS &&
+	     receipt.pile_uids.size() <= ECONOMIC_BASELINE_MAX_HOLDINGS - receipt.mappings.size());
 	need(nonzero(request.operation_id) && nonzero(request.lineage) && nonzero(request.epoch) &&
 	     request.actor_id && request.accepted_at_usec && request.frozen_boundary_proven &&
 	     request.virgin_state_proven && request.boundary_digest != economic_digest{});
@@ -242,7 +459,8 @@ void validate_retained_lifecycle(const retained_lifecycle &value)
 	     witness.coverage_digest == receipt.coverage_digest &&
 	     witness.boundary_digest == request.boundary_digest &&
 	     economic_account_key_equal(witness.opening_account, value.opening) &&
-	     witness.items.empty() && witness.holdings.size() == receipt.mappings.size());
+	     (value.frame_version == 2 || (witness.items.empty() && receipt.pile_uids.empty())) &&
+	     witness.holdings.size() == receipt.mappings.size() + receipt.pile_uids.size());
 	critical_command command;
 	checked(critical_command_decode(value.baseline_command.data(),
 					value.baseline_command.size(), &command));
@@ -289,6 +507,11 @@ void validate_retained_lifecycle(const retained_lifecycle &value)
 	}
 	for (const auto &holding : witness.holdings)
 	{
+		if (holding.account.kind == economic_account_kind::pile)
+		{
+			need(value.frame_version == 2);
+			continue;
+		}
 		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> account = {};
 		checked(economic_account_key_encode(holding.account, &account));
 		need(accounts.erase(account) == 1);
@@ -351,7 +574,14 @@ void validate_retained_lifecycle(const retained_lifecycle &value)
 		bind_source(sources.wallets.size() + index, source.balance, source.native_revision,
 			    digest);
 	}
-	need(compute_coverage_digest(sources.wallets, sources.banks) == receipt.coverage_digest);
+	if (value.frame_version == 1)
+		need(compute_coverage_digest(sources.wallets, sources.banks) ==
+		     receipt.coverage_digest);
+	else
+	{
+		const auto piles = retained_pile_sources(witness, receipt);
+		need(compute_pile_coverage_digest(sources, piles) == receipt.coverage_digest);
+	}
 }
 
 std::vector<uint8_t> encode_lifecycle_receipt(const retained_lifecycle &value)
@@ -430,7 +660,7 @@ std::vector<uint8_t> encode_lifecycle_receipt(const retained_lifecycle &value)
 	}
 	need(body.size() <= lifecycle_receipt_maximum_bytes - 48, ENOSPC);
 	std::vector<uint8_t> result(lifecycle_receipt_magic.begin(), lifecycle_receipt_magic.end());
-	append_u32(&result, 1);
+	append_u32(&result, value.frame_version);
 	append_u32(&result, static_cast<uint32_t>(body.size()));
 	append_raw(result, hash(body));
 	append_raw(result, body);
@@ -441,7 +671,9 @@ retained_lifecycle decode_lifecycle_receipt(std::span<const uint8_t> encoded)
 {
 	need(encoded.size() >= 48 && encoded.size() <= lifecycle_receipt_maximum_bytes);
 	lifecycle_reader envelope{ encoded };
-	need(envelope.fixed<8>() == lifecycle_receipt_magic && envelope.number(4) == 1 &&
+	need(envelope.fixed<8>() == lifecycle_receipt_magic);
+	const auto frame_version = envelope.number(4);
+	need((frame_version == 1 || frame_version == 2) &&
 	     envelope.number(4) == encoded.size() - 48);
 	const auto digest = envelope.fixed<32>();
 	const auto body = envelope.take(encoded.size() - 48);
@@ -449,6 +681,7 @@ retained_lifecycle decode_lifecycle_receipt(std::span<const uint8_t> encoded)
 	envelope.done();
 	lifecycle_reader in{ body };
 	retained_lifecycle value;
+	value.frame_version = static_cast<uint32_t>(frame_version);
 	auto &request = value.request;
 	auto &receipt = value.receipt;
 	request.operation_id = in.id();
@@ -545,6 +778,14 @@ retained_lifecycle decode_lifecycle_receipt(std::span<const uint8_t> encoded)
 	value.baseline_witness = in.blob(ECONOMIC_BASELINE_MAX_BYTES);
 	value.baseline_plan = in.blob(ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES);
 	in.done();
+	if (value.frame_version == 2)
+	{
+		std::optional<economic_prepared_baseline> prepared;
+		checked(economic_baseline_decode(value.baseline_witness, &prepared));
+		need(prepared.has_value());
+		for (const auto &item : prepared->witness().items)
+			value.receipt.pile_uids.push_back(item.snapshot.uid);
+	}
 	validate_retained_lifecycle(value);
 	const auto canonical = encode_lifecycle_receipt(value);
 	need(canonical.size() == encoded.size() &&
@@ -914,8 +1155,21 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			const auto capture_code = capture_native_sources_locked(
 				root, identity_lock, lock, &sources, error);
 			need(!capture_code, capture_code);
+			// Complete physical room/saved-item census comes from the original
+			// borrowed native provider, never from catalog membership alone.
+			const auto piles = capture_room_pile_sources(root, identity_lock, lock,
+								     request, baseline_operation,
+								     sources, error);
+			std::vector<flatfile_authority_operation> pile_operations;
+			for (const auto &pile : piles)
+			{
+				const auto staged = flatfile_accounting_pile_state_stage_baseline(
+					root, lock, pile.head, &pile_operations, error);
+				need(staged == flatfile_accounting_status::ok,
+				     staged == flatfile_accounting_status::io_error ? EIO : EILSEQ);
+			}
 
-			// Complete native capture covers wallets and shared banks.
+			// Complete native wallet/shared-bank selection remains unchanged.
 			std::set<uint32_t> seen_wallets;
 			for (const auto &w : sources.wallets)
 			{
@@ -931,8 +1185,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			}
 
 			// Bind coverage digest.
-			economic_digest coverage =
-				compute_coverage_digest(sources.wallets, sources.banks);
+			economic_digest coverage = compute_pile_coverage_digest(sources, piles);
 			if (request.coverage_digest != economic_digest{})
 			{
 				need(coverage == request.coverage_digest, EINVAL);
@@ -1105,6 +1358,11 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 				batch.holdings.push_back(holding);
 			}
 
+			for (const auto &pile : piles)
+			{
+				batch.holdings.push_back(pile.holding);
+				batch.items.push_back(pile.item);
+			}
 			std::optional<economic_prepared_baseline> prepared;
 			economic_accounting_error prep_err =
 				economic_baseline_prepare(batch, &prepared);
@@ -1115,6 +1373,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			economic_accounting_error cmd_err = economic_baseline_command_build(
 				*prepared, request.accepted_at_usec, &baseline_cmd);
 			need(cmd_err == economic_accounting_error::ok, EINVAL);
+			need(baseline_cmd.operation_id.bytes == baseline_operation.bytes);
 
 			// Stage baseline reservations and witness.
 			uint64_t verified_baseline_revision = 0;
@@ -1137,6 +1396,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 					&ops, error, &view);
 			need(!select_code, select_code);
 			retained_lifecycle retained;
+			retained.frame_version = 2;
 			retained.request = request;
 			retained.opening = opening_account;
 			retained.lineage_creating_operation = control.creating_operation;
@@ -1158,6 +1418,8 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			candidate_receipt.boundary_digest = request.boundary_digest;
 			candidate_receipt.baseline_revision = verified_baseline_revision;
 			candidate_receipt.mappings = std::move(mappings);
+			for (const auto &pile : piles)
+				candidate_receipt.pile_uids.push_back(pile.item.snapshot.uid);
 			retained.sources = std::move(sources);
 			checked(critical_command_encode(baseline_cmd, &retained.baseline_command));
 			checked(economic_baseline_encode(*prepared, &retained.baseline_witness));
@@ -1175,6 +1437,16 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 						       std::move(encoded_receipt) });
 			const auto receipt_merge = view.merge(receipt_operations, &ops);
 			need(!receipt_merge, receipt_merge);
+			// Native .eph heads use their original codec, not the accounting
+			// staging-view wrapper. Join them only after the final view merge;
+			// the original single root commit publishes every image together.
+			need(ops.size() <= flatfile_authority_transaction_maximum_operations &&
+				     pile_operations.size() <=
+					     flatfile_authority_transaction_maximum_operations -
+						     ops.size(),
+			     ENOSPC);
+			ops.insert(ops.end(), std::make_move_iterator(pile_operations.begin()),
+				   std::make_move_iterator(pile_operations.end()));
 			static_assert(std::is_nothrow_move_assignable_v<
 				      flatfile_accounting_lifecycle_receipt>);
 

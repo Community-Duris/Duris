@@ -261,6 +261,17 @@ def item_ledger_state(row: dict) -> str:
     return "live"
 
 
+def item_ledger_previous_owner(row: dict) -> dict:
+    owner = [row.get(field) for field in
+             ("from_owner_type", "from_owner_id", "from_owner_context_id")]
+    if owner == [None, None, None]:
+        return {}  # Historical omission remains unknown, not an unowned item.
+    if (type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+            any(type(value) is not int or not 0 <= value < 2**64 for value in owner[1:])):
+        raise ExportError("invalid native item previous owner")
+    return {"from_owner": owner}
+
+
 def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool) -> dict:
     result = {name: [] for name in TABLES}
     result["operations"], _ = operation_rows(cursor, lineage, epoch, has_realized_price)
@@ -403,7 +414,7 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "revision": row["item_revision"], "root": row["root_item_uid"],
             "parent": row["parent_item_uid"],
             "owner": [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]],
-            "from_owner": [row["from_owner_type"], row["from_owner_id"], row["from_owner_context_id"]],
+            **item_ledger_previous_owner(row),
             "from_equipment_slot": row["from_equipment_slot"], "to_equipment_slot": row["to_equipment_slot"],
             "state": item_ledger_state(row),
             "action": item_ledger_action(row)})
@@ -603,7 +614,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.from_equipment_slot,l.to_equipment_slot,"
-            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_owner_type,l.from_owner_id,l.from_owner_context_id,"
+            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
             "FROM item_ownership_ledger l "
@@ -627,6 +639,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
+                **item_ledger_previous_owner(row),
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
                 "state": item_ledger_state(row),
@@ -646,7 +659,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.from_equipment_slot,l.to_equipment_slot,"
-            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_owner_type,l.from_owner_id,l.from_owner_context_id,"
+            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
             "WHERE o.operation_id IS NULL "
@@ -665,6 +679,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
+                **item_ledger_previous_owner(row),
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
                 "state": item_ledger_state(row),

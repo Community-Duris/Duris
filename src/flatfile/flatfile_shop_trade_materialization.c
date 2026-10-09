@@ -6,6 +6,7 @@
 #include "item/craft_pouch_mutation.h"
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_codec.h"
+#include "economy/shop_trade_item_payload.h"
 #include "player/pet_restore_state.h"
 #include "player/player_load_repository.h"
 #include "core/structs.h"
@@ -970,18 +971,16 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		       flatfile_shop_trade_materialization_result::io_error;
 }
 
-flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_reconcile(
-	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
-	const std::vector<flatfile_item_ownership_record> &owned, player_snapshot *snapshot,
-	std::string *error)
+namespace
 {
-	if (root.empty() || !lock.matches(root) || !player_pid || !snapshot ||
-	    snapshot->pid != static_cast<int32_t>(player_pid))
-		return flatfile_shop_trade_materialization_result::invalid;
-	materialization_catalog catalog;
-	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_shop_trade_materialization_result::ok)
-		return loaded;
+// Both callers retain the original normalization below. The accounted caller
+// supplies only the catalog produced by its own native prepare invocation.
+flatfile_shop_trade_materialization_result
+reconcile_catalog(const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
+		  const std::vector<flatfile_item_ownership_record> &owned,
+		  player_snapshot *snapshot, const materialization_catalog &catalog,
+		  std::string *error)
+{
 	std::unordered_map<uint64_t, flatfile_item_ownership_record> owner_records;
 	std::unordered_set<uint64_t> mentioned;
 	std::unordered_map<uint64_t, player_item_snapshot> latest_inbound;
@@ -1270,6 +1269,191 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	}
 	*snapshot = std::move(reconciled);
 	return flatfile_shop_trade_materialization_result::ok;
+}
+
+bool player_forest_matches(const player_snapshot &snapshot,
+			   const std::vector<flatfile_item_ownership_record> &owned,
+			   uint32_t player_pid)
+{
+	const item_owner_identity owner{ item_owner_type::player, player_pid, 0 };
+	std::unordered_map<uint64_t, const flatfile_item_ownership_record *> records;
+	for (const auto &record : owned)
+		if (!record.item_uid || !record.item_revision ||
+		    record.item_revision == UINT64_MAX ||
+		    record.state != item_custody_state::active ||
+		    !item_owner_identity_equal(record.owner, owner) ||
+		    !records.emplace(record.item_uid, &record).second)
+			return false;
+	auto match = [&](const std::vector<player_item_snapshot> &items)
+	{
+		std::vector<uint8_t> canonical;
+		if (player_item_snapshot_list_encode(items, &canonical) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		std::vector<uint64_t> roots(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const auto &item = items[index];
+			const auto found = records.find(item.object_uid);
+			if (found == records.end() ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index))
+				return false;
+			const uint64_t parent =
+				item.parent_index < 0 ? 0 : items[item.parent_index].object_uid;
+			roots[index] = item.parent_index < 0 ? item.object_uid :
+							       roots[item.parent_index];
+			const auto &record = *found->second;
+			if (record.root_item_uid != roots[index] ||
+			    record.parent_item_uid != parent || record.vnum != item.vnum ||
+			    record.equipment_slot != item.equipment_slot)
+				return false;
+			records.erase(found);
+		}
+		return true;
+	};
+	if (!match(snapshot.items))
+		return false;
+	// The original player repository groups UID-zero legacy pet forests with
+	// player custody. Modern pet UID forests retain their separate owners.
+	for (const auto &pet : snapshot.pets)
+		if (!pet.pet_uid && !match(pet.items))
+			return false;
+	return records.empty();
+}
+
+bool player_forest_binding_matches(const std::vector<player_item_snapshot> &items,
+				   shop_trade_recovery_forest_role role,
+				   const shop_trade_recovery_forest_binding &binding)
+{
+	std::vector<uint8_t> canonical;
+	return player_item_snapshot_list_encode(items, &canonical) ==
+		       player_snapshot_codec_result::ok &&
+	       shop_trade_recovery_forest_verify(canonical, role, binding);
+}
+} // namespace
+
+flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_reconcile(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
+	const std::vector<flatfile_item_ownership_record> &owned, player_snapshot *snapshot,
+	std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !player_pid || !snapshot ||
+	    snapshot->pid != static_cast<int32_t>(player_pid))
+		return flatfile_shop_trade_materialization_result::invalid;
+	materialization_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
+		return loaded;
+	return reconcile_catalog(root, lock, player_pid, owned, snapshot, catalog, error);
+}
+
+flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_prepare_accounted(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, const shop_trade_payload &payload,
+	const std::vector<flatfile_item_ownership_record> &current_owned,
+	const std::vector<flatfile_item_ownership_record> &projected_owned,
+	const player_snapshot &current, flatfile_shop_trade_materialization_mutation *mutation,
+	player_snapshot *after, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !after ||
+	    critical_operation_id_is_zero(operation_id) || !payload.player_pid ||
+	    current.pid != static_cast<int32_t>(payload.player_pid) ||
+	    current.revision != payload.expected_player_save_revision ||
+	    !valid_action(payload.action))
+		return flatfile_shop_trade_materialization_result::invalid;
+	try
+	{
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_shop_trade_materialization_mutation>);
+		static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+		std::vector<player_item_snapshot> selected;
+		if (!shop_trade_accounted_after_items(payload, &selected) ||
+		    !player_forest_matches(current, current_owned, payload.player_pid) ||
+		    (payload.recovery_manifest_recorded &&
+		     !player_forest_binding_matches(current.items,
+						    shop_trade_recovery_forest_role::player_before,
+						    payload.recovery_manifest.player_before)))
+			return flatfile_shop_trade_materialization_result::invalid;
+		// These are the shared compiler's exact original placement transforms,
+		// including STOREITEM and the frozen-level generated-key rule.
+		std::vector<uint8_t> selected_bytes;
+		if (player_item_snapshot_list_encode(selected, &selected_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    selected_bytes.empty() || selected_bytes.size() > payload.item_blob.size())
+			return flatfile_shop_trade_materialization_result::invalid;
+		auto staged_payload = payload;
+		staged_payload.item_blob_size = selected_bytes.size();
+		std::fill(staged_payload.item_blob.begin(), staged_payload.item_blob.end(), 0);
+		std::copy(selected_bytes.begin(), selected_bytes.end(),
+			  staged_payload.item_blob.begin());
+		flatfile_shop_trade_materialization_mutation staged;
+		const auto prepared = flatfile_shop_trade_materialization_prepare(
+			root, lock, operation_id, staged_payload, &staged, error);
+		if (prepared != flatfile_shop_trade_materialization_result::ok)
+			return prepared;
+		materialization_catalog catalog;
+		if (staged.after_image.filename != catalog_filename ||
+		    !decode_catalog(staged.after_image.bytes, &catalog))
+			return flatfile_shop_trade_materialization_result::invalid;
+		// The staging owner, rather than an imported DTO, produced these bytes.
+		size_t matches = 0;
+		for (const auto &event : catalog.events)
+			if (critical_operation_id_equal(event.operation_id, operation_id))
+			{
+				if (event.action != payload.action ||
+				    event.player_pid != payload.player_pid ||
+				    event.item_blob != selected_bytes)
+					return flatfile_shop_trade_materialization_result::invalid;
+				++matches;
+			}
+		if (matches != 1)
+			return flatfile_shop_trade_materialization_result::invalid;
+		auto candidate = current;
+		if (payload.target_parent_item_uid)
+		{
+			const auto original = std::find_if(
+				current.items.begin(), current.items.end(), [&](const auto &item)
+				{ return item.object_uid == payload.target_parent_item_uid; });
+			const auto custody = std::find_if(
+				current_owned.begin(), current_owned.end(), [&](const auto &record)
+				{ return record.item_uid == payload.target_parent_item_uid; });
+			if (original == current.items.end() || custody == current_owned.end() ||
+			    custody->item_revision != payload.expected_target_parent_revision ||
+			    custody->root_item_uid != payload.target_root_item_uid ||
+			    (payload.native_destination_weight_recorded &&
+			     !shop_trade_destination_weight_verify(*original,
+								   selected.front().weight,
+								   payload.destination_weight)))
+				return flatfile_shop_trade_materialization_result::invalid;
+			if (payload.native_destination_weight_recorded)
+				candidate.items[original - current.items.begin()].weight =
+					payload.destination_weight.after;
+			// v6 has no native weight tail; preserve the actual original SQL
+			// storage behavior and leave its existing persisted weight alone.
+			// This authentic preview is not persisted by a selected-only event.
+			// The backend must retain its target gate until the native player
+			// owner stages this exact full body with original hold/revision CAS.
+		}
+		const auto reconciled = reconcile_catalog(root, lock, payload.player_pid,
+							  projected_owned, &candidate, catalog,
+							  error);
+		if (reconciled != flatfile_shop_trade_materialization_result::ok)
+			return reconciled;
+		if (!player_forest_matches(candidate, projected_owned, payload.player_pid) ||
+		    (payload.recovery_manifest_recorded &&
+		     !player_forest_binding_matches(candidate.items,
+						    shop_trade_recovery_forest_role::player_after,
+						    payload.recovery_manifest.player_after)))
+			return flatfile_shop_trade_materialization_result::invalid;
+		*mutation = std::move(staged);
+		*after = std::move(candidate);
+		return flatfile_shop_trade_materialization_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
 }
 
 flatfile_shop_trade_materialization_result

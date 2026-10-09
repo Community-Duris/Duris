@@ -9,6 +9,7 @@
 #include <thread>
 
 class economic_sql_lifecycle_guard;
+class economic_sql_runtime_world_writer_guard;
 class economic_sql_cutover_transaction_owner;
 struct critical_operation_id;
 struct economic_sql_activation_receipt;
@@ -74,6 +75,15 @@ class economic_sql_lifecycle_guard
 	bool release() noexcept;
 
     private:
+	friend class sql_economic_runtime_boot_owner;
+	// Private runtime boot handoff: same authority ID/session/boot lock, same
+	// writer named lock and local gate. No release/reacquire or public assertion.
+	bool promote_runtime_to_maintenance(economic_sql_runtime_world_writer_guard &,
+					    economic_sql_cutover_capability *) noexcept;
+	// Actual boot return only, after fresh selected-projection proof and known
+	// terminal transfer. Preserve boot lock and move writer/local exclusion back
+	// to its empty original owner; admission stays genuinely reserved/closed.
+	bool restore_runtime_writer(economic_sql_runtime_world_writer_guard *) noexcept;
 	friend class economic_sql_cutover_capability;
 	friend class economic_sql_cutover_transaction_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
@@ -99,6 +109,8 @@ class economic_sql_lifecycle_guard
 	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
+	// Issued only by the authentic private runtime handoff; restricts cleanup.
+	bool runtime_handoff_ = false;
 	// Bound privately by the composed owner. Ordinary SQL guard consumers do
 	// not acquire a coordinator dependency merely by releasing a SQL fence.
 	bool (*coordinator_release_)(uint64_t, uint64_t) = nullptr;
@@ -173,7 +185,17 @@ class economic_sql_cutover_transaction_owner final
 	bool terminal() const noexcept { return terminal_; }
 
     private:
+	// Read-only world census checks the actual transferred maintenance owner.
+	friend class quest_mobile_published_world_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
+	friend class sql_economic_runtime_boot_owner;
+	// Abort may establish a known rollback but must retain the original runtime
+	// SQL/local/coordinator exclusion for projection verification and return.
+	bool rollback_and_retain_runtime() noexcept;
+	bool is_valid_for_retained_terminal(economic_sql_cutover_terminal_outcome) noexcept;
+	bool finish_aborted_runtime(economic_sql_lifecycle_guard *) noexcept;
+	bool return_retained_terminal(economic_sql_lifecycle_guard *,
+				      economic_sql_cutover_terminal_outcome) noexcept;
 	bool release_after_terminal() noexcept;
 	MYSQL *connection_ = nullptr;
 	unsigned long session_ = 0;
@@ -188,10 +210,15 @@ class economic_sql_cutover_transaction_owner final
 	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
+	// Issued only by the authentic private runtime handoff; restricts cleanup.
+	bool runtime_handoff_ = false;
 	bool active_ = false;
 	bool started_ = false;
 	bool outcome_uncertain_ = false;
 	bool publication_pending_ = false;
+	// A later ROLLBACK cannot disprove an attempted, uncertain COMMIT.
+	// Only adopted-runtime retained publication uses this restrictive marker.
+	bool runtime_commit_attempted_ = false;
 	economic_sql_cutover_terminal_outcome terminal_outcome_ =
 		economic_sql_cutover_terminal_outcome::unresolved;
 	bool sql_resources_released_ = false;
@@ -244,6 +271,7 @@ class economic_sql_currency_writer_guard
 class economic_sql_runtime_world_writer_guard final
 {
 	friend class sql_economic_runtime_boot_owner;
+	friend class economic_sql_lifecycle_guard;
 	economic_sql_runtime_world_writer_guard() noexcept = default;
 	~economic_sql_runtime_world_writer_guard() noexcept;
 	economic_sql_runtime_world_writer_guard(const economic_sql_runtime_world_writer_guard &) =

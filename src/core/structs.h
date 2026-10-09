@@ -547,6 +547,11 @@ struct obj_data
 	P_obj contains; /* Contains objects                 */
 	P_obj next_content; /* For 'contains' lists             */
 	P_obj prev, next; /* For the object list              */
+	// Runtime-only genuine constructor observation; never serialized or authority.
+	uint64_t reset_order_epoch, reset_order_sequence, reset_order_uid;
+	int reset_order_rnum;
+	unsigned char reset_order_state;
+	P_obj reset_order_prev, reset_order_next;
 };
 
 /* ======================================================================= */

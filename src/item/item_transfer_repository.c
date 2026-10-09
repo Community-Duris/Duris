@@ -7,6 +7,8 @@
 #include "item/held_retirement_transport.h"
 #include "item/craft_pouch_mutation.h"
 #include "item/craft_recipe_continuation.h"
+#include "item/smith_native_compound_images.h"
+#include "economy/smith_native_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
@@ -2010,10 +2012,32 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		return true;
 	}
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	craft_recipe_continuation refine;
+	const bool refining = craft_refine_from_payload(payload, &refine);
 	if (!update_craft_pouch_metadata(connection, payload, pouch, result_code))
 		return false;
 	if (*result_code)
 		return true;
+	if (refining && refine.refine_ore_count != 1)
+	{
+		if (!item_transfer_repository_refine_wallet_lock(connection, command, false))
+			return false;
+		const auto &cost = refine.refine_cost;
+		std::string update = "UPDATE player_data SET ";
+		constexpr const char *columns[] = { "copper", "silver", "gold", "platinum" };
+		for (size_t i = 0; i < 4; ++i)
+			update += (i ? "," : "") + std::string(columns[i]) + "=" +
+				  std::to_string(cost.after[i]);
+		update += ",wallet_revision=" + std::to_string(cost.after_revision) +
+			  " WHERE pid=" + std::to_string(refine.player_pid) +
+			  " AND wallet_revision=" + std::to_string(cost.before_revision);
+		for (size_t i = 0; i < 4; ++i)
+			update += " AND " + std::string(columns[i]) + "=" +
+				  std::to_string(cost.before[i]);
+		if (!run_sql(connection, update) || mysql_affected_rows(connection) != 1 ||
+		    !item_transfer_repository_refine_wallet_lock(connection, command, true))
+			return false;
+	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const current_item &stored = selected[index];
@@ -2073,7 +2097,7 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 					 static_cast<int>(payload.to_owner.id))) ||
 	    !update_owner_revision(connection, payload.from_owner, owner_revision))
 		return false;
-	if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+	if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe && !refining)
 	{
 		craft_recipe_continuation terms;
 		if (!craft_recipe_continuation_decode(payload.continuation.data, &terms) ||
@@ -2372,6 +2396,67 @@ bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_
 	return update_owner_revision(connection, owner, prior_revision);
 }
 
+bool item_transfer_repository_refine_wallet_lock(MYSQL *connection, const critical_command &command,
+						 bool original_after)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_after;
+	errno = ENOTSUP;
+	return false;
+#else
+	try
+	{
+		item_transfer_payload payload{};
+		craft_recipe_continuation terms;
+		if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !item_transfer_accounting_command_supported(command) ||
+		    !item_transfer_command_decode_payload(command, &payload))
+		{
+			errno = EINVAL;
+			return false;
+		}
+		if (!craft_refine_from_payload(payload, &terms) || terms.refine_ore_count == 1)
+			return true;
+		using client_flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		client_flag reconnect = false;
+		if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+		{
+			errno = EPERM;
+			return false;
+		}
+		const auto &cost = terms.refine_cost;
+		std::vector<uint64_t> native;
+		if (!one_row(
+			    connection,
+			    "SELECT copper,silver,gold,platinum,wallet_revision FROM player_data WHERE pid=" +
+				    std::to_string(terms.player_pid) + " FOR UPDATE",
+			    &native))
+			return false;
+		const auto &expected = original_after ? cost.after : cost.before;
+		if (native.size() != 5 ||
+		    native[4] != (original_after ? cost.after_revision : cost.before_revision))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		for (size_t i = 0; i < 4; ++i)
+			if (native[i] != static_cast<uint64_t>(expected[i]))
+			{
+				errno = ESTALE;
+				return false;
+			}
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+#endif
+}
+
 bool item_transfer_repository_execute_at_offset(
 	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
@@ -2393,6 +2478,13 @@ bool item_transfer_repository_execute_at_offset(
 	    !item_transfer_command_decode_payload(command, &payload))
 	{
 		errno = EINVAL;
+		return false;
+	}
+	craft_recipe_continuation refine;
+	if (craft_refine_from_payload(payload, &refine) &&
+	    (!admitted_accounting_item || accounting_context || event_index_base))
+	{
+		errno = ENOTSUP;
 		return false;
 	}
 	const bool held_retirement = held_retirement_transport_command(command);
@@ -4645,6 +4737,735 @@ bool item_transfer_repository_execute_native_mobile_fee(
 		*result = applied;
 		*result_code = 0;
 		*mutation_applied = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+#endif
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool smith_same_native_image(const quest_mobile_native_image &a, const quest_mobile_native_image &b)
+{
+	std::vector<uint8_t> left, right;
+	const auto first = quest_mobile_native_image_encode(a, &left);
+	const auto second = quest_mobile_native_image_encode(b, &right);
+	if (first != player_snapshot_codec_result::ok || second != player_snapshot_codec_result::ok)
+	{
+		errno = first == player_snapshot_codec_result::allocation_failure ||
+					second == player_snapshot_codec_result::allocation_failure ?
+				ENOMEM :
+				EILSEQ;
+		return false;
+	}
+	if (left != right)
+	{
+		errno = ESTALE;
+		return false;
+	}
+	return true;
+}
+
+bool smith_same_player_image(const std::vector<player_item_snapshot> &a,
+			     const std::vector<player_item_snapshot> &b)
+{
+	std::vector<uint8_t> left, right;
+	const auto first = player_item_snapshot_list_encode(a, &left);
+	const auto second = player_item_snapshot_list_encode(b, &right);
+	if (first != player_snapshot_codec_result::ok || second != player_snapshot_codec_result::ok)
+	{
+		errno = first == player_snapshot_codec_result::allocation_failure ||
+					second == player_snapshot_codec_result::allocation_failure ?
+				ENOMEM :
+				EILSEQ;
+		return false;
+	}
+	if (left != right)
+	{
+		errno = ESTALE;
+		return false;
+	}
+	return true;
+}
+
+bool smith_custody_forest_matches(const item_owner_identity &owner,
+				  std::span<const player_item_snapshot> forest,
+				  const std::vector<current_item> &custody)
+{
+	if (forest.size() != custody.size())
+		return false;
+	std::vector<uint64_t> roots(forest.size());
+	for (size_t i = 0; i < forest.size(); ++i)
+	{
+		const auto &item = forest[i];
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		if (!root && (item.parent_index < 0 || size_t(item.parent_index) >= i))
+			return false;
+		roots[i] = root ? item.object_uid : roots[item.parent_index];
+		const auto row = std::lower_bound(custody.begin(), custody.end(), item.object_uid,
+						  [](const auto &entry, uint64_t uid)
+						  { return entry.item_uid < uid; });
+		if (row == custody.end() || row->item_uid != item.object_uid ||
+		    row->root_item_uid != roots[i] ||
+		    row->parent_item_uid != (root ? 0 : forest[item.parent_index].object_uid) ||
+		    !item_owner_identity_equal(accounting_position(*row).owner, owner) ||
+		    !row->item_revision || row->vnum != item.vnum ||
+		    row->state != uint8_t(item_custody_state::active) ||
+		    row->equipment_slot != item.equipment_slot)
+			return false;
+	}
+	return true;
+}
+
+// Existing physical-copy namespaces only. Native catalog bodies and historical
+// room payload/ledger rows are not physical copies. All UIDs are already in the
+// locked full global custody cut; this adds no custody/adoption authority.
+bool smith_lock_physical_absence(MYSQL *connection,
+				 std::span<const player_item_snapshot> native_items,
+				 std::span<const player_item_snapshot> detached_outputs)
+{
+	std::set<uint64_t> uids;
+	for (const auto forest : { native_items, detached_outputs })
+		for (const auto &item : forest)
+			uids.insert(item.object_uid);
+	if (uids.empty())
+		return true;
+	std::string selected;
+	for (uint64_t uid : uids)
+		selected += (selected.empty() ? "" : ",") + std::to_string(uid);
+	for (const char *table :
+	     { "player_items", "shopkeeper_items", "player_pet_items", "locker_items",
+	       "account_locker_items", "corpse_items", "saved_items", "siege_items" })
+	{
+		if (!run_sql(connection, "SELECT obj_uid FROM " + std::string(table) +
+						 " WHERE obj_uid IN(" + selected +
+						 ") ORDER BY obj_uid LIMIT 1 FOR UPDATE"))
+			return false;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows || mysql_num_fields(rows.get()) != 1)
+		{
+			errno = mysql_errno(connection) ? int(mysql_errno(connection)) : EILSEQ;
+			return false;
+		}
+		if (mysql_num_rows(rows.get()) || mysql_errno(connection))
+		{
+			errno = mysql_errno(connection) ? int(mysql_errno(connection)) : ESTALE;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool smith_ledger_readback(MYSQL *connection, const critical_command &command,
+			   const smith_native_compound_terms &terms,
+			   const economic_accounting_plan &effects,
+			   const std::string &operation_hex)
+{
+	std::vector<uint64_t> observed;
+	if (!one_row(connection,
+		     "SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+			     operation_hex + "') FOR UPDATE",
+		     &observed) ||
+	    observed.size() != 1 || observed[0] != effects.item_events.size())
+	{
+		errno = errno ? errno : EILSEQ;
+		return false;
+	}
+	for (const auto &event : effects.item_events)
+	{
+		const bool created = event.before.state == item_custody_state::absent;
+		const auto from = created ? item_owner_identity{ item_owner_type::system, 0, 0 } :
+					    event.before.owner;
+		// Existing craft bookkeeping does not create a system/destruction clock.
+		const uint64_t owner_revision =
+			created ? terms.expected_player_item_revision + 1 :
+				  terms.native_before.reference.stock_revision + 1;
+		const std::vector<uint64_t> expected{ event.uid,
+						      event.after.root_uid,
+						      event.after.parent_uid,
+						      uint64_t(from.type),
+						      from.id,
+						      from.context_id,
+						      uint64_t(event.after.owner.type),
+						      event.after.owner.id,
+						      event.after.owner.context_id,
+						      event.after.revision,
+						      owner_revision,
+						      owner_revision,
+						      uint64_t(item_transfer_reason::craft),
+						      terms.forge_catalog_index,
+						      uint64_t(command.source_site),
+						      event.before.equipment_slot,
+						      event.after.equipment_slot };
+		if (!one_row(
+			    connection,
+			    "SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),from_owner_type,from_owner_id,"
+			    "from_owner_context_id,to_owner_type,to_owner_id,to_owner_context_id,item_revision,"
+			    "from_owner_revision,to_owner_revision,reason_type,reason_id,source_site,from_equipment_slot,to_equipment_slot "
+			    "FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+				    operation_hex + "') AND event_index=" +
+				    std::to_string(event.event_index) + " FOR UPDATE",
+			    &observed))
+			return false;
+		if (observed != expected)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+	}
+	return true;
+}
+} // namespace
+#endif
+
+bool item_transfer_repository_execute_smith_native(
+	MYSQL *connection, const critical_command &command,
+	const smith_native_compound_images &original_images,
+	const smith_native_player_grant_projection &original_grant,
+	uint64_t original_acknowledged_save_revision,
+	const economic_account_key &original_player_wallet, item_transfer_result *result,
+	unsigned int *result_code, bool *mutation_attempted, item_transfer_custody_delta *delta,
+	economic_accounting_plan *expected_effects) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_images;
+	(void)original_grant;
+	(void)original_acknowledged_save_revision;
+	(void)original_player_wallet;
+	(void)result;
+	(void)result_code;
+	(void)mutation_attempted;
+	(void)delta;
+	(void)expected_effects;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!connection || !result || !result_code || !mutation_attempted || !delta ||
+	    !expected_effects || !original_acknowledged_save_revision ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	try
+	{
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		const unsigned long session = mysql_thread_id(connection);
+		const auto same_session = [&]()
+		{
+			flag reconnect = true;
+			return session && mysql_thread_id(connection) == session &&
+			       (connection->server_status & SERVER_STATUS_IN_TRANS) &&
+			       (connection->server_status & SERVER_STATUS_AUTOCOMMIT) &&
+			       !mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+			       !reconnect;
+		};
+		if (!same_session())
+		{
+			errno = ENOTCONN;
+			return false;
+		}
+		smith_native_compound_terms terms;
+		economic_frozen_intent intent;
+		economic_accounting_plan effects;
+		if (smith_native_command_validate(command, &terms) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_decode(command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_plan_metadata(command, intent, &effects.metadata) !=
+			    economic_accounting_error::ok)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		// Authenticate the exact supplied value transform, never replace original
+		// history with a current read or derive actual grant facts from VNUM/PID.
+		smith_native_compound_images projected;
+		const auto projection = smith_native_compound_prepare_images(
+			terms, original_images.native_before, original_images.player_before,
+			original_grant, &projected);
+		if (projection != player_snapshot_codec_result::ok)
+		{
+			errno = projection == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					EILSEQ;
+			return false;
+		}
+		if (!smith_same_native_image(projected.native_after,
+					     original_images.native_after) ||
+		    !smith_same_player_image(projected.player_after, original_images.player_after))
+			return false;
+		std::vector<player_item_snapshot> granted_outputs, unchanged_player;
+		const auto extraction = player_item_snapshot_extract_subtree(
+			original_images.player_after, terms.frozen_outputs.front().object_uid,
+			&granted_outputs, &unchanged_player);
+		if (extraction != player_snapshot_codec_result::ok ||
+		    granted_outputs.size() != terms.frozen_outputs.size())
+		{
+			errno = extraction == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					EILSEQ;
+			return false;
+		}
+		for (const auto &output : granted_outputs)
+		{
+			// Existing literal physical profile must represent the complete
+			// output before the first write, including property/description data.
+			std::string properties;
+			const auto property = player_item_properties_encode(
+				output.extra2_flags, output.dynamic_affects, &properties);
+			if (output.vnum <= 0 || property != player_snapshot_codec_result::ok)
+			{
+				errno = property == player_snapshot_codec_result::allocation_failure ?
+						ENOMEM :
+						EILSEQ;
+				return false;
+			}
+			std::set<std::pair<std::string, std::string>> descriptions;
+			for (const auto &description : output.extra_descriptions)
+			{
+				std::string keyword, text;
+				if (description.keyword.empty() ||
+				    !canonicalize_extra_description(description, &keyword, &text) ||
+				    !descriptions.emplace(keyword, text).second)
+				{
+					errno = EILSEQ;
+					return false;
+				}
+			}
+		}
+		const item_owner_identity native_owner{
+			item_owner_type::native_mobile,
+			terms.native_before.reference.mobile_instance_id, 0
+		};
+		const item_owner_identity player_owner{ item_owner_type::player, terms.player_pid,
+							0 };
+		// Original lock order: native image, actual PC save/wallet row, canonical
+		// owner revisions, complete global UID cut, then physical/literal rows.
+		quest_mobile_native_sql_row native;
+		int code = quest_mobile_native_sql_lock(connection, native_owner.id, &native);
+		if (code || !native.present)
+		{
+			errno = code ? code : ESTALE;
+			return false;
+		}
+		if (!smith_same_native_image(native.image, original_images.native_before))
+			return false;
+		const std::string player_id = std::to_string(terms.player_pid);
+		const std::string wallet_read =
+			"SELECT save_revision,copper,silver,gold,platinum,wallet_revision FROM player_data WHERE pid=" +
+			player_id + " FOR UPDATE";
+		const auto wallet_matches = [&](const std::vector<uint64_t> &wallet, bool after)
+		{
+			if (wallet.size() != 6 ||
+			    wallet[0] != original_acknowledged_save_revision ||
+			    wallet[5] != (after ? terms.player_wallet.after_revision :
+						  terms.player_wallet.before_revision))
+				return false;
+			for (size_t i = 0; i < 4; ++i)
+				if (wallet[i + 1] !=
+				    uint64_t(after ? terms.player_wallet.after[i] :
+						     terms.player_wallet.before[i]))
+					return false;
+			return true;
+		};
+		std::vector<uint64_t> wallet;
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (!wallet_matches(wallet, false))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		uint64_t native_revision = 0, player_revision = 0;
+		if (owner_identity_less(native_owner, player_owner))
+		{
+			if (!lock_owner(connection, native_owner, &native_revision) ||
+			    !lock_owner(connection, player_owner, &player_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, player_owner, &player_revision) ||
+			 !lock_owner(connection, native_owner, &native_revision))
+			return false;
+		if (native_revision != terms.native_before.reference.stock_revision ||
+		    native_revision != native.image.reference.stock_revision ||
+		    player_revision != terms.expected_player_item_revision)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		// Query-only empty selected-history descriptor: the complete original
+		// images already contain every selected and output UID. No v12/NQF
+		// command or generic execution/proof is synthesized from this value.
+		const item_transfer_payload unused_selected_history{};
+		std::vector<item_native_quest_publication_custody> cut;
+		if (!lock_publication_custody_cut(
+			    connection, unused_selected_history, native_owner.id, terms.player_pid,
+			    original_images.native_before.items, original_images.player_before,
+			    original_images.player_after, &cut))
+			return false;
+		std::vector<current_item> native_custody, player_custody;
+		for (const auto &row : cut)
+		{
+			const auto &p = row.snapshot.position;
+			current_item current{ row.snapshot.uid, p.root_uid,
+					      p.parent_uid,	uint8_t(p.owner.type),
+					      p.owner.id,	p.owner.context_id,
+					      p.revision,	row.vnum,
+					      uint8_t(p.state), p.equipment_slot };
+			if (item_owner_identity_equal(p.owner, native_owner))
+				native_custody.push_back(current);
+			else if (item_owner_identity_equal(p.owner, player_owner))
+				player_custody.push_back(current);
+			else
+			{
+				errno = ESTALE;
+				return false; // Includes foreign/malformed/old tombstone claims.
+			}
+		}
+		if (!native_custody_matches(native.image, native_custody) ||
+		    !smith_custody_forest_matches(player_owner, original_images.player_before,
+						  player_custody))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		shop_item_runtime_image physical_before;
+		if (!shop_item_runtime_lock_player_image(connection, terms.player_pid,
+							 original_images.player_before,
+							 &physical_before) ||
+		    !smith_lock_physical_absence(connection, original_images.native_before.items,
+						 terms.frozen_outputs))
+			return false;
+		std::vector<economic_item_snapshot> witnesses;
+		witnesses.reserve(terms.selected_custody.size() + terms.frozen_outputs.size());
+		for (const auto &entry : terms.selected_custody)
+		{
+			const auto found = std::lower_bound(cut.begin(), cut.end(), entry.item_uid,
+							    [](const auto &row, uint64_t uid)
+							    { return row.snapshot.uid < uid; });
+			if (found == cut.end() || found->snapshot.uid != entry.item_uid ||
+			    found->vnum != entry.vnum)
+			{
+				errno = ESTALE;
+				return false;
+			}
+			witnesses.push_back(found->snapshot);
+		}
+		for (const auto &output : terms.frozen_outputs)
+		{
+			const auto found = std::lower_bound(cut.begin(), cut.end(),
+							    output.object_uid,
+							    [](const auto &row, uint64_t uid)
+							    { return row.snapshot.uid < uid; });
+			if (found != cut.end() && found->snapshot.uid == output.object_uid)
+			{
+				errno = EEXIST;
+				return false;
+			}
+			// Genuine missing row in the locked global current cut, additionally
+			// checked absent from all physical-copy namespaces above.
+			witnesses.push_back({ output.object_uid, {} });
+		}
+		const auto compiled = smith_native_accounting_effects(
+			command, original_player_wallet, witnesses, &effects);
+		if (compiled != economic_accounting_error::ok)
+		{
+			errno = compiled == economic_accounting_error::capacity ? ENOMEM : EILSEQ;
+			return false;
+		}
+		char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		if (!critical_operation_id_to_hex(command.operation_id, operation,
+						  sizeof operation))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const std::string operation_hex(operation);
+		if (!run_sql(
+			    connection,
+			    "SELECT event_index FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+				    operation_hex + "') ORDER BY event_index LIMIT 1 FOR UPDATE"))
+			return false;
+		{
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			if (!rows || mysql_num_rows(rows.get()) || mysql_errno(connection))
+			{
+				errno = mysql_errno(connection) ? int(mysql_errno(connection)) :
+								  ESTALE;
+				return false;
+			}
+		}
+		if (!same_session())
+		{
+			errno = ENOTCONN;
+			return false;
+		}
+		// All preflight reads are complete. From here every false requires the
+		// original root rollback. This flag is never cleared, including catches.
+		quest_mobile_native_sql_row verified;
+		*mutation_attempted = true;
+		code = quest_mobile_native_sql_apply_locked(connection, command.operation_id,
+							    native, original_images.native_after,
+							    &verified);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		std::string update = "UPDATE player_data SET ";
+		constexpr const char *columns[] = { "copper", "silver", "gold", "platinum" };
+		for (size_t i = 0; i < 4; ++i)
+			update += (i ? "," : "") + std::string(columns[i]) + "=" +
+				  std::to_string(terms.player_wallet.after[i]);
+		update += ",wallet_revision=" + std::to_string(terms.player_wallet.after_revision) +
+			  " WHERE pid=" + player_id + " AND save_revision=" +
+			  std::to_string(original_acknowledged_save_revision) +
+			  " AND wallet_revision=" +
+			  std::to_string(terms.player_wallet.before_revision);
+		for (size_t i = 0; i < 4; ++i)
+			update += " AND " + std::string(columns[i]) + "=" +
+				  std::to_string(terms.player_wallet.before[i]);
+		*mutation_attempted = true;
+		if (!run_sql(connection, update) || mysql_affected_rows(connection) != 1)
+		{
+			errno = errno ? errno : ESTALE;
+			return false;
+		}
+		item_transfer_result applied{ terms.frozen_outputs.front().object_uid,
+					      uint16_t(terms.selected_custody.size()),
+					      native_revision + 1,
+					      player_revision + 1,
+					      0,
+					      0 };
+		for (const auto &event : effects.item_events)
+		{
+			const bool created = event.before.state == item_custody_state::absent;
+			item_transfer_payload ledger{};
+			ledger.reason = item_transfer_reason::craft;
+			ledger.reason_id = int64_t(terms.forge_catalog_index);
+			ledger.multi_root = true;
+			ledger.item_count = 1;
+			int32_t vnum = 0;
+			if (created)
+			{
+				const auto output =
+					std::find_if(granted_outputs.begin(), granted_outputs.end(),
+						     [&](const auto &row)
+						     { return row.object_uid == event.uid; });
+				if (output == granted_outputs.end())
+				{
+					errno = EILSEQ;
+					return false;
+				}
+				vnum = output->vnum;
+				*mutation_attempted = true;
+				if (!insert_craft_output_item(connection, *output,
+							      event.after.root_uid,
+							      event.after.parent_uid, player_owner))
+					return false;
+			}
+			else
+			{
+				const auto input =
+					std::lower_bound(terms.selected_custody.begin(),
+							 terms.selected_custody.end(), event.uid,
+							 [](const auto &row, uint64_t uid)
+							 { return row.item_uid < uid; });
+				if (input == terms.selected_custody.end() ||
+				    input->item_uid != event.uid)
+				{
+					errno = EILSEQ;
+					return false;
+				}
+				vnum = input->vnum;
+				*mutation_attempted = true;
+				if (!update_item(connection, *input, event.after.root_uid,
+						 event.after.parent_uid, event.after.owner,
+						 event.before.revision, event.after.state,
+						 event.after.equipment_slot))
+					return false;
+			}
+			ledger.items[0] = { event.uid,
+					    event.after.root_uid,
+					    event.after.parent_uid,
+					    created ? ITEM_TRANSFER_ABSENT_REVISION :
+						      event.before.revision,
+					    vnum,
+					    event.before.state };
+			const auto from =
+				created ? item_owner_identity{ item_owner_type::system, 0, 0 } :
+					  event.before.owner;
+			const uint64_t owner_revision = created ? player_revision + 1 :
+								  native_revision + 1;
+			*mutation_attempted = true;
+			if (!insert_craft_ledger(
+				    connection, command, ledger, 0, uint16_t(event.event_index),
+				    event.after.revision, owner_revision, owner_revision, from,
+				    event.after.owner, event.after.root_uid, event.after.parent_uid,
+				    event.before.equipment_slot, event.after.equipment_slot))
+				return false;
+			applied.max_item_revision =
+				std::max(applied.max_item_revision, event.after.revision);
+		}
+		*mutation_attempted = true;
+		if (!insert_craft_snapshot_rows(connection, granted_outputs, int(terms.player_pid)))
+			return false;
+		for (const auto &output : granted_outputs)
+		{
+			std::vector<uint64_t> row;
+			if (!one_row(connection,
+				     "SELECT id,pid,vnum FROM player_items WHERE obj_uid=" +
+					     std::to_string(output.object_uid) + " FOR UPDATE",
+				     &row) ||
+			    row.size() != 3 || !row[0] || row[1] != terms.player_pid ||
+			    row[2] != uint64_t(output.vnum))
+			{
+				errno = errno ? errno : EILSEQ;
+				return false;
+			}
+			*mutation_attempted = true;
+			if (!shop_item_runtime_write(connection, false, row[0], output))
+				return false;
+		}
+		// Exactly the two original item owners advance once. No system or
+		// destruction owner row is ensured, locked or advanced.
+		if (owner_identity_less(native_owner, player_owner))
+		{
+			*mutation_attempted = true;
+			if (!update_owner_revision(connection, native_owner, native_revision))
+				return false;
+			*mutation_attempted = true;
+			if (!update_owner_revision(connection, player_owner, player_revision))
+				return false;
+		}
+		else
+		{
+			*mutation_attempted = true;
+			if (!update_owner_revision(connection, player_owner, player_revision))
+				return false;
+			*mutation_attempted = true;
+			if (!update_owner_revision(connection, native_owner, native_revision))
+				return false;
+		}
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (!wallet_matches(wallet, true))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		uint64_t native_after_revision = 0, player_after_revision = 0;
+		if (owner_identity_less(native_owner, player_owner))
+		{
+			if (!lock_owner(connection, native_owner, &native_after_revision) ||
+			    !lock_owner(connection, player_owner, &player_after_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, player_owner, &player_after_revision) ||
+			 !lock_owner(connection, native_owner, &native_after_revision))
+			return false;
+		if (native_after_revision != native_revision + 1 ||
+		    player_after_revision != player_revision + 1)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		quest_mobile_native_sql_row actual_native_after;
+		code = quest_mobile_native_sql_lock(connection, native_owner.id,
+						    &actual_native_after);
+		if (code || !actual_native_after.present)
+		{
+			errno = code ? code : EILSEQ;
+			return false;
+		}
+		if (!smith_same_native_image(verified.image, original_images.native_after) ||
+		    !smith_same_native_image(actual_native_after.image,
+					     original_images.native_after))
+			return false;
+		std::vector<item_native_quest_publication_custody> cut_after;
+		if (!lock_publication_custody_cut(
+			    connection, unused_selected_history, native_owner.id, terms.player_pid,
+			    original_images.native_before.items, original_images.player_before,
+			    original_images.player_after, &cut_after))
+			return false;
+		std::map<uint64_t, item_native_quest_publication_custody> expected_cut;
+		for (const auto &row : cut)
+			expected_cut.emplace(row.snapshot.uid, row);
+		for (const auto &row : effects.items_after)
+		{
+			const auto output = std::find_if(terms.frozen_outputs.begin(),
+							 terms.frozen_outputs.end(),
+							 [&](const auto &item)
+							 { return item.object_uid == row.uid; });
+			const int32_t vnum = output == terms.frozen_outputs.end() ?
+						     expected_cut.at(row.uid).vnum :
+						     output->vnum;
+			expected_cut[row.uid] = { row, vnum };
+		}
+		if (expected_cut.size() != cut_after.size())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		for (const auto &row : cut_after)
+		{
+			const auto expected = expected_cut.find(row.snapshot.uid);
+			if (expected == expected_cut.end() || expected->second.vnum != row.vnum ||
+			    !economic_item_position_equal(expected->second.snapshot.position,
+							  row.snapshot.position))
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		}
+		shop_item_runtime_image physical_after;
+		if (!shop_item_runtime_lock_player_image(connection, terms.player_pid,
+							 original_images.player_after,
+							 &physical_after) ||
+		    !smith_lock_physical_absence(connection, original_images.native_before.items,
+						 {}) ||
+		    !smith_ledger_readback(connection, command, terms, effects, operation_hex))
+			return false;
+		for (const auto &[uid, before] : physical_before)
+		{
+			const auto after = physical_after.find(uid);
+			if (after == physical_after.end() || before.id != after->second.id ||
+			    before.parent_id != after->second.parent_id ||
+			    before.root_uid != after->second.root_uid ||
+			    before.revision != after->second.revision ||
+			    before.slot != after->second.slot ||
+			    before.payload_present != after->second.payload_present)
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		}
+		if (!same_session())
+		{
+			errno = ENOTCONN;
+			return false;
+		}
+		item_transfer_custody_delta proven{ effects.items_before, effects.items_after,
+						    effects.item_events };
+		*expected_effects = std::move(effects);
+		*delta = std::move(proven);
+		*result = applied;
+		*result_code = 0;
 		return true;
 	}
 	catch (const std::bad_alloc &)

@@ -82,6 +82,23 @@ constexpr source item_sources[] = {
 constexpr source item_equipment_sources[] = {
 	{ "item_current_owner", "item_uid,equipment_slot", "item_uid" },
 };
+// Extra persisted source projections. Reuse source2's raw pet/shop/siege
+// item rows and shopkeepers mapping instead of recapturing those cells.
+constexpr source physical_sources[] = {
+	{ "player_items", "id,pid,container_id,obj_uid,vnum,equip_slot", "id" },
+	{ "corpse_items", "id,corpse_id,container_id,obj_uid,vnum", "id" },
+	{ "saved_items", "id,item_key,room_vnum,container_id,obj_uid,vnum", "id" },
+	{ "locker_items", "id,locker_id,chest_id,container_id,obj_uid,vnum", "id" },
+	{ "account_locker_items", "id,chest_id,container_id,obj_uid,vnum", "id" },
+	{ "player_pets", "id,pet_uid,owner_pid", "id" },
+	{ "corpses", "id,save_id,value3,corpse_revision,room_vnum", "id" },
+	{ "private_chests", "id,locker_id,is_public", "id" },
+	{ "lockers", "id", "id" },
+	{ "locker_chests", "id,locker_id", "id" },
+	{ "account_lockers", "id", "id" },
+	{ "player_pet_items", "id,equip_slot", "id" },
+	{ "shopkeeper_items", "id,equip_slot", "id" },
+};
 struct failure
 {
 	unsigned int code;
@@ -146,6 +163,55 @@ std::vector<std::string> columns(std::string_view names)
 	}
 	return output;
 }
+void validate_registry(const auto &tables, const auto &registry,
+		       const economic_sql_source_limits &limits, uint64_t &row_count,
+		       uint64_t &cell_count, uint64_t &byte_count, digest &registry_digest)
+{
+	require(tables.size() == std::size(registry));
+	registry_digest.number(tables.size());
+	for (size_t index = 0; index < tables.size(); ++index)
+	{
+		const auto &table = tables[index];
+		const auto &spec = registry[index];
+		require(table.name == spec.table && table.columns == columns(spec.columns));
+		add(row_count, table.rows.size(), limits.maximum_rows);
+		digest definition;
+		definition.text("ESD1");
+		definition.text(spec.table);
+		definition.text(spec.order);
+		definition.number(table.columns.size());
+		for (const auto &column : table.columns)
+			definition.text(column);
+		require(definition.finish() == table.definition_digest);
+		digest content;
+		content.text("EST1");
+		content.bytes(table.definition_digest);
+		content.number(table.rows.size());
+		for (const auto &row : table.rows)
+		{
+			require(row.cells.size() == table.columns.size());
+			add(cell_count, row.cells.size(), limits.maximum_cells);
+			digest row_hash;
+			row_hash.text("ESR1");
+			row_hash.bytes(table.definition_digest);
+			for (const auto &cell : row.cells)
+			{
+				row_hash.number(cell ? 1 : 0);
+				if (cell)
+				{
+					require(cell->size() <= limits.maximum_single_cell_bytes,
+						E2BIG);
+					add(byte_count, cell->size(), limits.maximum_cell_bytes);
+					row_hash.text(*cell);
+				}
+			}
+			require(row_hash.finish() == row.digest);
+			content.bytes(row.digest);
+		}
+		require(content.finish() == table.content_digest);
+		registry_digest.bytes(table.content_digest);
+	}
+}
 void validate_equipment_binding(const economic_sql_source_snapshot &input)
 {
 	require(input.item_equipment_sources.size() == std::size(item_equipment_sources));
@@ -171,6 +237,16 @@ economic_sql_source_digest custody_digest(const economic_sql_source_snapshot &in
 	result.bytes(input.digest);
 	result.bytes(input.item_sources_digest);
 	result.bytes(input.item_equipment_sources_digest);
+	return result.finish();
+}
+economic_sql_source_digest physical_digest(const economic_sql_physical_source_snapshot &input)
+{
+	digest result;
+	result.text("EPH1");
+	result.bytes(input.source2.custody_digest);
+	result.number(input.physical_sources.size());
+	for (const auto &table : input.physical_sources)
+		result.bytes(table.content_digest);
 	return result.finish();
 }
 #ifndef __NO_MYSQL__
@@ -238,9 +314,12 @@ void capture(MYSQL *connection, unsigned long session, const source &input,
 	}
 	table.definition_digest = definition.finish();
 	const auto from = " FROM `" + table.name + "`";
+	// MySQL/MariaDB GREATEST requires at least two arguments. Keep the old
+	// multi-column SQL unchanged; a singleton projection needs only its length.
+	const auto maximum = table.columns.size() == 1 ? largest : "GREATEST(" + largest + ")";
 	auto size = counts(connection,
-			   "SELECT COUNT(*),COALESCE(SUM(" + total + "),0),COALESCE(MAX(GREATEST(" +
-				   largest + ")),0)" + from,
+			   "SELECT COUNT(*),COALESCE(SUM(" + total + "),0),COALESCE(MAX(" +
+				   maximum + "),0)" + from,
 			   3);
 	active(connection, session);
 	add(output.rows, size[0], limits.maximum_rows);
@@ -306,16 +385,25 @@ unsigned int economic_sql_capture_sources_in_transaction(MYSQL *,
 {
 	return ENOTSUP;
 }
+unsigned int economic_sql_capture_physical_sources_in_transaction(
+	MYSQL *, const economic_sql_source_limits &,
+	economic_sql_physical_source_snapshot *) noexcept
+{
+	return ENOTSUP;
+}
 #else
 namespace
 {
-unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits &limits,
-			     economic_sql_source_snapshot *output, bool caller_transaction) noexcept
+unsigned int
+capture_sources(MYSQL *connection, const economic_sql_source_limits &limits,
+		economic_sql_source_snapshot *output, bool caller_transaction,
+		economic_sql_physical_source_snapshot *physical_output = nullptr) noexcept
 {
 	bool transaction = false;
 	try
 	{
-		require(connection && output, EINVAL);
+		require(connection && (output || physical_output), EINVAL);
+		require(!physical_output || caller_transaction, EINVAL);
 		require(bool(connection->server_status & SERVER_STATUS_IN_TRANS) ==
 					caller_transaction &&
 				(connection->server_status & SERVER_STATUS_AUTOCOMMIT),
@@ -356,10 +444,14 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 		}
 		active(connection, session);
 		std::string names;
+		std::vector<std::string_view> locked_tables;
 		auto verify_sources = [&](const auto &registry)
 		{
 			for (const auto &s : registry)
 			{
+				if (std::find(locked_tables.begin(), locked_tables.end(),
+					      s.table) != locked_tables.end())
+					continue;
 				execute(connection,
 					std::string("SELECT 1 FROM `") + s.table + "` LIMIT 0");
 				result_ptr result(mysql_store_result(connection),
@@ -367,6 +459,7 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 				require(bool(result),
 					mysql_errno(connection) ? mysql_errno(connection) : EIO);
 				active(connection, session);
+				locked_tables.emplace_back(s.table);
 				if (!names.empty())
 					names += ',';
 				names += "'" + std::string(s.table) + "'";
@@ -374,12 +467,14 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 		};
 		verify_sources(sources);
 		verify_sources(item_sources);
+		if (physical_output)
+			verify_sources(physical_sources);
 		auto metadata = counts(
 			connection,
 			"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND engine='InnoDB' AND table_name IN (" +
 				names + ")",
 			1);
-		require(metadata[0] == std::size(sources) + std::size(item_sources), ENOTSUP);
+		require(metadata[0] == locked_tables.size(), ENOTSUP);
 		economic_sql_source_snapshot captured;
 		captured.tables.reserve(std::size(sources));
 		captured.item_sources.reserve(std::size(item_sources));
@@ -413,6 +508,23 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 		captured.item_equipment_sources_digest = equipment_manifest.finish();
 		validate_equipment_binding(captured);
 		captured.custody_digest = custody_digest(captured);
+		economic_sql_physical_source_snapshot physical;
+		if (physical_output)
+		{
+			// The existing capture routine charges the original and new cells
+			// to one running budget. This scratch DTO holds counters only.
+			economic_sql_source_snapshot aggregate;
+			aggregate.rows = captured.rows;
+			aggregate.cells = captured.cells;
+			aggregate.cell_bytes = captured.cell_bytes;
+			physical.physical_sources.reserve(std::size(physical_sources));
+			for (const auto &s : physical_sources)
+				capture(connection, session, s, limits, aggregate,
+					physical.physical_sources);
+			physical.rows = aggregate.rows;
+			physical.cells = aggregate.cells;
+			physical.cell_bytes = aggregate.cell_bytes;
+		}
 		active(connection, session);
 		if (!caller_transaction)
 		{
@@ -422,7 +534,14 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 				ENOTCONN);
 			transaction = false;
 		}
-		*output = std::move(captured);
+		if (physical_output)
+		{
+			physical.source2 = std::move(captured);
+			physical.digest = physical_digest(physical);
+			*physical_output = std::move(physical);
+		}
+		else
+			*output = std::move(captured);
 		return 0;
 	}
 	catch (const failure &e)
@@ -458,6 +577,14 @@ economic_sql_capture_sources_in_transaction(MYSQL *connection,
 {
 	return capture_sources(connection, limits, output, true);
 }
+unsigned int economic_sql_capture_physical_sources_in_transaction(
+	MYSQL *connection, const economic_sql_source_limits &limits,
+	economic_sql_physical_source_snapshot *output) noexcept
+{
+	if (!output)
+		return EINVAL;
+	return capture_sources(connection, limits, nullptr, true, output);
+}
 #endif
 
 unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &input,
@@ -485,66 +612,19 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 		uint64_t row_count = 0, cell_count = 0, byte_count = 0;
 		digest manifest;
 		manifest.text("ESM1");
-		auto validate_registry =
-			[&](const auto &tables, const auto &registry, digest &registry_digest)
-		{
-			require(tables.size() == std::size(registry));
-			registry_digest.number(tables.size());
-			for (size_t index = 0; index < tables.size(); ++index)
-			{
-				const auto &table = tables[index];
-				const auto &spec = registry[index];
-				require(table.name == spec.table &&
-					table.columns == columns(spec.columns));
-				add(row_count, table.rows.size(), limits.maximum_rows);
-				digest definition;
-				definition.text("ESD1");
-				definition.text(spec.table);
-				definition.text(spec.order);
-				definition.number(table.columns.size());
-				for (const auto &column : table.columns)
-					definition.text(column);
-				require(definition.finish() == table.definition_digest);
-				digest content;
-				content.text("EST1");
-				content.bytes(table.definition_digest);
-				content.number(table.rows.size());
-				for (const auto &row : table.rows)
-				{
-					require(row.cells.size() == table.columns.size());
-					add(cell_count, row.cells.size(), limits.maximum_cells);
-					digest row_hash;
-					row_hash.text("ESR1");
-					row_hash.bytes(table.definition_digest);
-					for (const auto &cell : row.cells)
-					{
-						row_hash.number(cell ? 1 : 0);
-						if (cell)
-						{
-							require(cell->size() <=
-									limits.maximum_single_cell_bytes,
-								E2BIG);
-							add(byte_count, cell->size(),
-							    limits.maximum_cell_bytes);
-							row_hash.text(*cell);
-						}
-					}
-					require(row_hash.finish() == row.digest);
-					content.bytes(row.digest);
-				}
-				require(content.finish() == table.content_digest);
-				registry_digest.bytes(table.content_digest);
-			}
-		};
+
 		digest item_manifest;
 		item_manifest.text("EIM1");
-		validate_registry(input.tables, sources, manifest);
-		validate_registry(input.item_sources, item_sources, item_manifest);
+		validate_registry(input.tables, sources, limits, row_count, cell_count, byte_count,
+				  manifest);
+		validate_registry(input.item_sources, item_sources, limits, row_count, cell_count,
+				  byte_count, item_manifest);
 		if (input.version == 2)
 		{
 			digest equipment_manifest;
 			equipment_manifest.text("EIE2");
 			validate_registry(input.item_equipment_sources, item_equipment_sources,
+					  limits, row_count, cell_count, byte_count,
 					  equipment_manifest);
 			require(equipment_manifest.finish() ==
 					input.item_equipment_sources_digest &&
@@ -560,6 +640,49 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 	catch (const failure &error)
 	{
 		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int
+economic_sql_validate_physical_sources(const economic_sql_physical_source_snapshot &input,
+				       const economic_sql_source_limits &limits) noexcept
+{
+	try
+	{
+		require(input.version == 1 && input.source2.version == 2);
+		const auto original = economic_sql_validate_sources(input.source2, limits);
+		require(!original, original);
+		uint64_t rows = input.source2.rows, cells = input.source2.cells;
+		uint64_t bytes = input.source2.cell_bytes;
+		digest manifest;
+		manifest.text("EPH1");
+		manifest.bytes(input.source2.custody_digest);
+		validate_registry(input.physical_sources, physical_sources, limits, rows, cells,
+				  bytes, manifest);
+		require(manifest.finish() == input.digest &&
+			input.digest == physical_digest(input));
+		require(input.rows == rows && input.cells == cells && input.cell_bytes == bytes);
+		for (size_t source_index = 0; source_index < 2; ++source_index)
+		{
+			const auto &native = input.source2.item_sources[source_index].rows;
+			const auto &equipment = input.physical_sources[11 + source_index].rows;
+			require(native.size() == equipment.size());
+			for (size_t row = 0; row < native.size(); ++row)
+				require(native[row].cells[0] == equipment[row].cells[0]);
+		}
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
 	}
 	catch (const std::bad_alloc &)
 	{

@@ -1,5 +1,7 @@
 #include "persistence/quest_mobile_native_origin_sql.h"
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
 
 #include <cerrno>
 #include <cstring>
@@ -7,6 +9,17 @@
 #include <new>
 #include <type_traits>
 #include <utility>
+
+namespace
+{
+// Original entrypoints explicitly retain their historical evidence policy.
+enum class origin_policy
+{
+	historical,
+	ordinary_wallet,
+	shared_shopkeeper
+};
+}
 
 #ifndef __NO_MYSQL__
 namespace
@@ -84,7 +97,8 @@ bool lifetime_equal(quest_mobile_native_reference original,
 }
 int read_locked(MYSQL *connection, unsigned long session,
 		const quest_mobile_native_reference &reference,
-		quest_mobile_native_published_origin *output, bool lock_origin = true)
+		quest_mobile_native_published_origin *output, bool lock_origin = true,
+		origin_policy policy = origin_policy::historical)
 {
 	int error = session_error(connection, session);
 	if (error)
@@ -146,19 +160,48 @@ int read_locked(MYSQL *connection, unsigned long session,
 		if (body_null || body_truncated ||
 		    body_length != candidate.original.attachment.size())
 			return EBADMSG;
-		error = codec_error(native_mobile_birth_recovery_original_command_decode(
-			candidate.original.attachment, &candidate.original.command));
+		const auto extract =
+			policy == origin_policy::shared_shopkeeper ?
+				native_mobile_birth_shared_shop_recovery_original_command_decode :
+			policy == origin_policy::ordinary_wallet ?
+				native_mobile_birth_cash_role_recovery_original_command_decode :
+				native_mobile_birth_recovery_original_command_decode;
+		error = codec_error(
+			extract(candidate.original.attachment, &candidate.original.command));
 		if (error)
 			return error;
 		candidate.original.phase = critical_native_recovery_phase::continuation_pending;
 		candidate.original.revision = revision;
 		if (candidate.original.command.operation_id.bytes != operation.bytes ||
 		    operation.bytes != reference.birth_operation.bytes ||
-		    !native_mobile_birth_recovery_terminal(candidate.original))
+		    !(policy == origin_policy::shared_shopkeeper ?
+			      native_mobile_birth_shared_shop_recovery_terminal(candidate.original) :
+		      policy == origin_policy::ordinary_wallet ?
+			      native_mobile_birth_cash_role_recovery_terminal(candidate.original) :
+			      native_mobile_birth_recovery_terminal(candidate.original)))
 			return EILSEQ;
 		quest_mobile_native_image original_image;
-		error = codec_error(native_mobile_birth_command_decode(candidate.original.command,
-								       &original_image));
+		if (policy == origin_policy::shared_shopkeeper)
+		{
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			error = codec_error(native_mobile_birth_cash_role_command_decode(
+				candidate.original.command, &original_image, &recipes, &role));
+			if (!error && role.role != native_mobile_birth_cash_role::shared_shopkeeper)
+				return EBADMSG;
+		}
+		else if (policy == origin_policy::ordinary_wallet)
+		{
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			error = codec_error(native_mobile_birth_cash_role_command_decode(
+				candidate.original.command, &original_image, &recipes, &role));
+			if (!error && role.role != native_mobile_birth_cash_role::ordinary_wallet)
+				return EBADMSG;
+		}
+		else
+			error = codec_error(native_mobile_birth_command_decode(
+				candidate.original.command, &original_image));
 		if (error)
 			return error;
 		if (!lifetime_equal(original_image.reference, reference) ||
@@ -181,14 +224,15 @@ int read_locked(MYSQL *connection, unsigned long session,
 }
 #endif
 
-int quest_mobile_native_origin_sql_lock(MYSQL *connection,
-					const quest_mobile_native_reference &reference,
-					quest_mobile_native_published_origin *output) noexcept
+static int origin_sql_lock(MYSQL *connection, const quest_mobile_native_reference &reference,
+			   quest_mobile_native_published_origin *output,
+			   origin_policy policy) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)reference;
 	(void)output;
+	(void)policy;
 	return ENOTSUP;
 #else
 	if (!connection || !output || !quest_mobile_native_reference_valid(reference))
@@ -197,7 +241,7 @@ int quest_mobile_native_origin_sql_lock(MYSQL *connection,
 	{
 		const auto session = mysql_thread_id(connection);
 		quest_mobile_native_published_origin observed;
-		int error = read_locked(connection, session, reference, &observed, false);
+		int error = read_locked(connection, session, reference, &observed, false, policy);
 		if (error)
 			return error;
 		if (!observed.present)
@@ -207,14 +251,43 @@ int quest_mobile_native_origin_sql_lock(MYSQL *connection,
 			return 0;
 		}
 		native_mobile_birth_recovery_context recovery;
-		error = codec_error(native_mobile_birth_recovery_decode(
-			observed.original.command, observed.original.attachment, &recovery));
+		const auto decode = policy == origin_policy::ordinary_wallet ?
+					    native_mobile_birth_cash_role_recovery_decode :
+					    native_mobile_birth_recovery_decode;
+		flatfile_shopkeeper_record original_checkpoint;
+		if (policy == origin_policy::shared_shopkeeper)
+		{
+			native_mobile_birth_shared_shop_recovery_context shared;
+			error = codec_error(native_mobile_birth_shared_shop_recovery_decode(
+				observed.original.command, observed.original.attachment, &shared));
+			if (!error && !flatfile_shopkeeper_initial_checkpoint_decode(
+					      shared.original_checkpoint, &original_checkpoint))
+				error = EBADMSG;
+			if (!error)
+				recovery = std::move(shared.progress);
+		}
+		else
+		{
+			error = codec_error(decode(observed.original.command,
+						   observed.original.attachment, &recovery));
+		}
 		if (error)
 			return error;
-		error = static_cast<int>(economic_sql_native_mobile_birth_verify_retained(
-			connection, observed.original.command, recovery.receipt.error_code,
-			std::span<const uint8_t>(recovery.receipt.result_payload.data(),
-						 recovery.receipt.result_size)));
+		const auto verify =
+			policy == origin_policy::ordinary_wallet ?
+				economic_sql_native_mobile_birth_ordinary_wallet_verify_retained :
+				economic_sql_native_mobile_birth_verify_retained;
+		const auto retained_payload = std::span<const uint8_t>(
+			recovery.receipt.result_payload.data(), recovery.receipt.result_size);
+		error = policy == origin_policy::shared_shopkeeper ?
+				static_cast<int>(
+					economic_sql_native_mobile_birth_shared_shop_verify_retained(
+						connection, observed.original.command,
+						original_checkpoint, recovery.receipt.error_code,
+						retained_payload)) :
+				static_cast<int>(verify(connection, observed.original.command,
+							recovery.receipt.error_code,
+							retained_payload));
 		if (error)
 			return error;
 		quest_mobile_native_sql_row current;
@@ -227,7 +300,7 @@ int quest_mobile_native_origin_sql_lock(MYSQL *connection,
 		    current.image.reference.stock_revision != reference.stock_revision)
 			return ESTALE;
 		quest_mobile_native_published_origin locked;
-		error = read_locked(connection, session, reference, &locked);
+		error = read_locked(connection, session, reference, &locked, true, policy);
 		if (error)
 			return error;
 		if (!locked.present || locked.original.revision != observed.original.revision ||
@@ -252,17 +325,26 @@ int quest_mobile_native_origin_sql_lock(MYSQL *connection,
 #endif
 }
 
-int quest_mobile_native_origin_sql_retain_locked(
-	MYSQL *connection, const critical_native_recovery_envelope &original) noexcept
+static int origin_sql_retain_locked(MYSQL *connection,
+				    const critical_native_recovery_envelope &original,
+				    origin_policy policy) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)original;
+	(void)policy;
 	return ENOTSUP;
 #else
 	if (!connection ||
-	    original.command.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION ||
-	    !native_mobile_birth_recovery_terminal(original))
+	    original.command.payload_version !=
+		    (policy != origin_policy::historical ?
+			     NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION :
+			     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION) ||
+	    !(policy == origin_policy::shared_shopkeeper ?
+		      native_mobile_birth_shared_shop_recovery_terminal(original) :
+	      policy == origin_policy::ordinary_wallet ?
+		      native_mobile_birth_cash_role_recovery_terminal(original) :
+		      native_mobile_birth_recovery_terminal(original)))
 		return EINVAL;
 	try
 	{
@@ -271,18 +353,43 @@ int quest_mobile_native_origin_sql_retain_locked(
 		if (error)
 			return error;
 		native_mobile_birth_recovery_context recovery;
-		error = codec_error(native_mobile_birth_recovery_decode(
-			original.command, original.attachment, &recovery));
+		const auto decode = policy == origin_policy::ordinary_wallet ?
+					    native_mobile_birth_cash_role_recovery_decode :
+					    native_mobile_birth_recovery_decode;
+		flatfile_shopkeeper_record original_checkpoint;
+		if (policy == origin_policy::shared_shopkeeper)
+		{
+			native_mobile_birth_shared_shop_recovery_context shared;
+			error = codec_error(native_mobile_birth_shared_shop_recovery_decode(
+				original.command, original.attachment, &shared));
+			if (!error && !flatfile_shopkeeper_initial_checkpoint_decode(
+					      shared.original_checkpoint, &original_checkpoint))
+				error = EBADMSG;
+			if (!error)
+				recovery = std::move(shared.progress);
+		}
+		else
+			error = codec_error(
+				decode(original.command, original.attachment, &recovery));
 		if (error)
 			return error;
 		quest_mobile_native_image image;
 		std::vector<item_ownership_runtime_entry> custody;
-		error = static_cast<int>(economic_sql_native_mobile_birth_lock_publication(
-			connection, original.command, recovery.receipt, &image, &custody));
+		const auto publication =
+			policy == origin_policy::ordinary_wallet ?
+				economic_sql_native_mobile_birth_ordinary_wallet_lock_publication :
+				economic_sql_native_mobile_birth_lock_publication;
+		error = policy == origin_policy::shared_shopkeeper ?
+				static_cast<int>(
+					economic_sql_native_mobile_birth_shared_shop_lock_publication(
+						connection, original.command, original_checkpoint,
+						recovery.receipt, &image, &custody)) :
+				static_cast<int>(publication(connection, original.command,
+							     recovery.receipt, &image, &custody));
 		if (error)
 			return error;
 		quest_mobile_native_published_origin retained;
-		error = read_locked(connection, session, image.reference, &retained);
+		error = read_locked(connection, session, image.reference, &retained, true, policy);
 		if (error)
 			return error;
 		const auto exact = [&](const quest_mobile_native_published_origin &value)
@@ -314,7 +421,7 @@ int quest_mobile_native_origin_sql_retain_locked(
 		if (mysql_stmt_affected_rows(statement.get()) != 1)
 			return EIO;
 		statement.reset();
-		error = read_locked(connection, session, image.reference, &retained);
+		error = read_locked(connection, session, image.reference, &retained, true, policy);
 		if (error)
 			return error;
 		return exact(retained) ? session_error(connection, session) : EILSEQ;
@@ -328,4 +435,39 @@ int quest_mobile_native_origin_sql_retain_locked(
 		return EIO;
 	}
 #endif
+}
+
+int quest_mobile_native_origin_sql_lock(MYSQL *connection,
+					const quest_mobile_native_reference &reference,
+					quest_mobile_native_published_origin *output) noexcept
+{
+	return origin_sql_lock(connection, reference, output, origin_policy::historical);
+}
+int quest_mobile_native_origin_sql_retain_locked(
+	MYSQL *connection, const critical_native_recovery_envelope &original) noexcept
+{
+	return origin_sql_retain_locked(connection, original, origin_policy::historical);
+}
+int quest_mobile_native_origin_sql_lock_ordinary_wallet(
+	MYSQL *connection, const quest_mobile_native_reference &reference,
+	quest_mobile_native_published_origin *output) noexcept
+{
+	return origin_sql_lock(connection, reference, output, origin_policy::ordinary_wallet);
+}
+int quest_mobile_native_origin_sql_retain_ordinary_wallet_locked(
+	MYSQL *connection, const critical_native_recovery_envelope &original) noexcept
+{
+	return origin_sql_retain_locked(connection, original, origin_policy::ordinary_wallet);
+}
+
+int quest_mobile_native_origin_sql_lock_shared_shop(
+	MYSQL *connection, const quest_mobile_native_reference &reference,
+	quest_mobile_native_published_origin *output) noexcept
+{
+	return origin_sql_lock(connection, reference, output, origin_policy::shared_shopkeeper);
+}
+int quest_mobile_native_origin_sql_retain_shared_shop_locked(
+	MYSQL *connection, const critical_native_recovery_envelope &original) noexcept
+{
+	return origin_sql_retain_locked(connection, original, origin_policy::shared_shopkeeper);
 }

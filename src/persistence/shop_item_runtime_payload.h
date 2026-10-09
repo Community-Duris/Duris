@@ -66,6 +66,17 @@ bool shop_item_runtime_lock_player_image(MYSQL *, uint32_t pid,
 					 shop_item_runtime_image *output) noexcept;
 bool shop_item_runtime_keeper_image(MYSQL *, uint64_t keeper_id, uint32_t shop_id,
 				    int32_t keeper_vnum, shop_item_runtime_image *) noexcept;
+// Cold native loader counterpart. Borrow the caller's original reconnect-disabled
+// transaction after its keeper serialization lock. Retain the unchanged full
+// keeper-image proof and lock the actual owner counter/current custody. These
+// values grant no transaction/session cleanup, native placement/enrollment,
+// registry adoption/mutation or ACK. Wholly legacy image stays empty. Failure
+// preserves both outputs. Caller hydrates only its successfully restored native
+// stage atomically after original transaction finish, before keeper publication.
+struct item_ownership_runtime_entry;
+bool shop_item_runtime_keeper_image(MYSQL *, uint64_t keeper_id, uint32_t shop_id,
+				    int32_t keeper_vnum, shop_item_runtime_image *,
+				    std::vector<item_ownership_runtime_entry> *) noexcept;
 bool shop_item_runtime_refresh_image(
 	MYSQL *, uint64_t keeper_id, uint32_t shop_id, int32_t keeper_vnum, char_data *,
 	shop_item_runtime_image *, bool *complete_out = nullptr,

@@ -65,8 +65,14 @@ void put_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
 }
 }
 
+#include "collector_physical_fixture_support.inc"
+#include "collector_physical_component_cases.inc"
+#include "collector_explicit_item_boundary_cases.inc"
+
 int main()
 {
+	collector_physical_component_cases();
+	collector_explicit_item_boundary_cases();
 	auto base = candidate(1, 101);
 	assert(valid_record(base));
 	std::array<uint8_t, encoded_record_bytes> encoded = {};

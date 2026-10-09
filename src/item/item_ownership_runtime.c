@@ -6,6 +6,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <limits>
 #include <new>
 #include <unordered_map>
@@ -60,6 +61,43 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 	catch (const std::bad_alloc &)
 	{
 		return false;
+	}
+}
+
+unsigned int item_ownership_runtime_snapshot_all_active(
+	size_t limit, std::vector<item_ownership_runtime_entry> *output) noexcept
+{
+	if (!output || !limit || limit > ITEM_OWNERSHIP_RUNTIME_MAX || !nevent_is_game_thread())
+		return EINVAL;
+	try
+	{
+		size_t count = 0;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.state == item_custody_state::active && ++count > limit)
+				return E2BIG;
+		}
+		std::vector<item_ownership_runtime_entry> candidate;
+		candidate.reserve(count);
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.state == item_custody_state::active)
+				candidate.push_back(entry);
+		}
+		std::sort(candidate.begin(), candidate.end(),
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		output->swap(candidate);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
 	}
 }
 

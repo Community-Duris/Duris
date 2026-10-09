@@ -738,9 +738,28 @@ bool craft_output_roots(const item_transfer_payload &payload,
 	return !roots->empty();
 }
 
+bool refine_wallet_matches(P_char actor, const craft_recipe_continuation &terms, bool after)
+{
+	if (!actor || !IS_PC(actor) || GET_PID(actor) != static_cast<int>(terms.player_pid))
+		return false;
+	if (terms.refine_ore_count == 1)
+		return true;
+	const auto &cost = terms.refine_cost;
+	const std::array<int32_t, 4> actual = { GET_COPPER(actor), GET_SILVER(actor),
+						GET_GOLD(actor), GET_PLATINUM(actor) };
+	return actor->only.pc->wallet_revision ==
+		       (after ? cost.after_revision : cost.before_revision) &&
+	       actual == (after ? cost.after : cost.before);
+}
+
 bool craft_live_ready(P_char actor, const pending_movement &entry)
 {
 	if (!actor)
+		return false;
+	craft_recipe_continuation refine;
+	if (craft_refine_from_payload(entry.payload, &refine) &&
+	    !refine_wallet_matches(actor, refine, false) &&
+	    !refine_wallet_matches(actor, refine, true))
 		return false;
 	craft_pouch_mutation pouch;
 	if (!craft_pouch_mutation_from_payload(entry.payload, &pouch))
@@ -881,6 +900,21 @@ bool publish_craft(const pending_movement &entry, P_char actor)
 	catch (const std::bad_alloc &)
 	{
 		return false;
+	}
+	craft_recipe_continuation refine;
+	if (craft_refine_from_payload(entry.payload, &refine) && refine.refine_ore_count != 1)
+	{
+		// Only this original committed root can publish its frozen wallet after-image.
+		// A later or unrelated live wallet never authorizes skipping this obligation.
+		if (!refine_wallet_matches(actor, refine, false) &&
+		    !refine_wallet_matches(actor, refine, true))
+			return false;
+		currency_vector wallet = {};
+		std::copy(refine.refine_cost.after.begin(), refine.refine_cost.after.end(),
+			  wallet.amount.begin());
+		if (!currency_transaction_publish_wallet(actor, wallet,
+							 refine.refine_cost.after_revision))
+			return false;
 	}
 	if (pouch.before.object_uid &&
 	    !chaos_pouch_publish_committed(find_item(pouch.before.object_uid), pouch))
@@ -1839,7 +1873,8 @@ void finalize_craft(std::unordered_map<std::string, pending_movement>::iterator 
 		++health.rejected;
 	account_health();
 
-	if (recipe && !never_admitted && hooks.acknowledged)
+	if (recipe && terms.discipline != craft_recipe_discipline::refine && !never_admitted &&
+	    hooks.acknowledged)
 	{
 		try
 		{
@@ -2181,16 +2216,22 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 				retain_publication_failure(entry, "recipe progression");
 				return;
 			}
-			const auto progression = craft_progression_hooks.publish(
-				entry.completed.operation_id, actor, terms);
-			if (progression != craft_progression_publication_result::ready)
+			if (terms.discipline != craft_recipe_discipline::refine)
 			{
-				if (progression == craft_progression_publication_result::waiting)
-					entry.publication_status = publication_state::owner_waiting;
-				else
-					retain_publication_failure(entry, "recipe progression");
-				account_health();
-				return;
+				const auto progression = craft_progression_hooks.publish(
+					entry.completed.operation_id, actor, terms);
+				if (progression != craft_progression_publication_result::ready)
+				{
+					if (progression ==
+					    craft_progression_publication_result::waiting)
+						entry.publication_status =
+							publication_state::owner_waiting;
+					else
+						retain_publication_failure(entry,
+									   "recipe progression");
+					account_health();
+					return;
+				}
 			}
 		}
 		if (!committed)
@@ -3543,12 +3584,25 @@ bool item_movement_transaction_submit_craft(
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (recipe && (!craft_progression_hooks.publish ||
-		       (craft_recipe_is_alchemy(recipe->discipline) ?
+		       (craft_recipe_is_alchemy(recipe->discipline) ||
+					recipe->discipline == craft_recipe_discipline::refine ?
 				recipe->output_count != output_count :
 				output_count != 1 || !outputs[0] ||
 					recipe->output_uid != outputs[0]->obj_uid) ||
 		       recipe->player_pid != static_cast<uint32_t>(GET_PID(actor)) ||
 		       recipe->recipe_vnum != recipe_id || !recipe->pouch_mutation.empty()))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (recipe && recipe->frozen_progression &&
+	    ((recipe->discipline != craft_recipe_discipline::craft &&
+	      recipe->discipline != craft_recipe_discipline::forge) ||
+	     actor->only.pc->skills[recipe->discipline == craft_recipe_discipline::craft ?
+					    SKILL_CRAFT :
+					    SKILL_FORGE]
+			     .learned != static_cast<int>(recipe->progression_skill_before)))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (recipe && recipe->discipline == craft_recipe_discipline::refine &&
+	    (!craft_refine_terms_valid(*recipe) || retained_pouch ||
+	     !refine_wallet_matches(actor, *recipe, false)))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() + native_quest_pending_count() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
@@ -3695,7 +3749,8 @@ bool item_movement_transaction_submit_craft(
 		try
 		{
 			craft_recipe_continuation terms = *recipe;
-			if (craft_recipe_is_alchemy(terms.discipline))
+			if (craft_recipe_is_alchemy(terms.discipline) ||
+			    terms.discipline == craft_recipe_discipline::refine)
 				terms.output_uid = output_count ? outputs[0]->obj_uid :
 								  consumed_selected_uid;
 			terms.pouch_mutation = std::move(pouch_continuation.data);

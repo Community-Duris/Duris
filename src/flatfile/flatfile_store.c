@@ -374,3 +374,100 @@ void flatfile_lock_release(int lock_fd)
 		;
 	close(lock_fd);
 }
+
+flatfile_read_result flatfile_read_bounded(const std::string &directory, const std::string &name,
+					   size_t maximum_size, std::vector<uint8_t> *bytes,
+					   flatfile_scratch_reserve_fn reserve_scratch_peak,
+					   void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	errno = ENOTSUP;
+	return flatfile_read_result::io_error;
+#else
+	if (!bytes || !reserve_scratch_peak || !valid_name(name))
+	{
+		errno = EINVAL;
+		return flatfile_read_result::invalid;
+	}
+	const int directory_fd =
+		open(directory.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	if (directory_fd < 0)
+		return flatfile_read_result::io_error;
+	if (!private_directory(directory_fd))
+	{
+		close(directory_fd);
+		errno = EBADMSG;
+		return flatfile_read_result::invalid;
+	}
+	const int file_fd =
+		openat(directory_fd, name.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW);
+	const int open_error = errno;
+	close(directory_fd);
+	if (file_fd < 0)
+	{
+		errno = open_error;
+		return open_error == ENOENT ? flatfile_read_result::not_found :
+		       open_error == ELOOP  ? flatfile_read_result::invalid :
+					      flatfile_read_result::io_error;
+	}
+	struct stat info;
+	if (fstat(file_fd, &info) < 0)
+	{
+		const int saved_error = errno;
+		close(file_fd);
+		errno = saved_error;
+		return flatfile_read_result::io_error;
+	}
+	if (!S_ISREG(info.st_mode) || info.st_nlink != 1 || info.st_uid != geteuid() ||
+	    (info.st_mode & 0077) || info.st_size < 0 ||
+	    static_cast<uintmax_t>(info.st_size) > maximum_size ||
+	    static_cast<uintmax_t>(info.st_size) > SIZE_MAX)
+	{
+		close(file_fd);
+		errno = EBADMSG;
+		return flatfile_read_result::invalid;
+	}
+	const size_t size = static_cast<size_t>(info.st_size);
+	// The original output and caller-owned paths are included in outer_live_scratch.
+	// A fresh vector reserve is exactly the requested allocation under pinned
+	// libstdc++13. This is an explicit implementation contract, not portable C++.
+	if (outer_live_scratch > SIZE_MAX - sizeof(std::vector<uint8_t>) ||
+	    size > SIZE_MAX - outer_live_scratch - sizeof(std::vector<uint8_t>) ||
+	    !reserve_scratch_peak(outer_live_scratch + sizeof(std::vector<uint8_t>) + size,
+				  context))
+	{
+		close(file_fd);
+		errno = ENOBUFS;
+		return flatfile_read_result::io_error;
+	}
+	try
+	{
+		std::vector<uint8_t> candidate;
+		candidate.reserve(size);
+		candidate.resize(size);
+		if (!read_all(file_fd, candidate.data(), candidate.size()))
+		{
+			const int saved_error = errno;
+			close(file_fd);
+			errno = saved_error;
+			return flatfile_read_result::io_error;
+		}
+		close(file_fd);
+		bytes->swap(candidate);
+		return flatfile_read_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		close(file_fd);
+		errno = ENOMEM;
+		return flatfile_read_result::io_error;
+	}
+	catch (...)
+	{
+		close(file_fd);
+		errno = EOVERFLOW;
+		return flatfile_read_result::io_error;
+	}
+#endif
+}

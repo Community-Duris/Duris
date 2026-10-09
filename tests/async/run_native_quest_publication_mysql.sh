@@ -36,6 +36,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/account/session_audit_command.c src/account/session_audit_repository.c \
     src/item/item_uid_allocator.c src/flatfile/flatfile_item_uid_allocator.c src/flatfile/flatfile_store.c \
     src/persistence/persistence_mode.c \
+    src/persistence/economic_sql_source_snapshot.c \
     src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \

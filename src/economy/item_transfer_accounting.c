@@ -2,6 +2,7 @@
 #include "economy/native_mobile_birth_accounting.h"
 #include "economy/native_quest_cost_policy.h"
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
@@ -288,12 +289,10 @@ economic_source_event item_lifecycle_source(const item_transfer_payload &payload
 }
 } // namespace
 
-economic_accounting_error item_transfer_accounting_intent(const critical_command &command,
-							  const critical_operation_id &lineage,
-							  const critical_operation_id &epoch,
-							  uint32_t actor_pid,
-							  std::vector<uint8_t> *encoded,
-							  economic_source_kind lifecycle_source)
+economic_accounting_error item_transfer_accounting_intent(
+	const critical_command &command, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, uint32_t actor_pid, std::vector<uint8_t> *encoded,
+	economic_source_kind lifecycle_source, const economic_account_key *fresh_player_wallet)
 {
 	using error = economic_accounting_error;
 	if (!encoded || command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
@@ -338,6 +337,16 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 			std::vector<player_item_snapshot> outputs;
 			if (lifecycle_source != economic_source_kind::crafting ||
 			    !craft_outputs(payload, actor_pid, &outputs))
+				return error::unauthorized;
+			craft_recipe_continuation refine;
+			if (craft_refine_from_payload(payload, &refine) &&
+			    refine.refine_ore_count != 1 && fresh_player_wallet &&
+			    (!economic_account_key_valid(*fresh_player_wallet) ||
+			     fresh_player_wallet->kind != economic_account_kind::wallet ||
+			     fresh_player_wallet->context_id ||
+			     fresh_player_wallet->lineage.bytes != lineage.bytes ||
+			     fresh_player_wallet->authority_id !=
+				     refine.refine_cost.wallet_mapping_id))
 				return error::unauthorized;
 			facts.metadata.reason = economic_reason::crafting_cost;
 			// Input UID lifetimes identify the consumed recipe even if a retry
@@ -756,4 +765,57 @@ try
 catch (const std::bad_alloc &)
 {
 	return economic_accounting_error::capacity;
+}
+
+economic_accounting_error
+item_transfer_refine_wallet_accounting_effects(const item_transfer_payload &payload,
+					       economic_accounting_plan *plan) noexcept
+{
+	using error = economic_accounting_error;
+	try
+	{
+		craft_recipe_continuation terms;
+		if (!craft_refine_from_payload(payload, &terms))
+			return error::ok;
+		if (!plan || !plan->accounts.empty() || !plan->postings.empty() ||
+		    plan->metadata.reason != economic_reason::crafting_cost ||
+		    plan->metadata.writer_id != ECONOMIC_WRITER_ITEM_TRANSFER ||
+		    plan->metadata.actor_id != terms.player_pid || !plan->metadata.source_event ||
+		    plan->metadata.source_event->kind != economic_source_kind::crafting)
+			return error::unauthorized;
+		if (terms.refine_ore_count == 1)
+			return error::ok;
+		const auto &cost = terms.refine_cost;
+		economic_accounting_plan candidate = *plan;
+		const economic_account_key wallet{ candidate.metadata.lineage,
+						   economic_account_kind::wallet,
+						   cost.wallet_mapping_id, 0 };
+		// Existing reason-scoped expense namespace, like the other shared sinks.
+		const economic_account_key sink{
+			candidate.metadata.lineage, economic_account_kind::sink,
+			static_cast<uint64_t>(economic_reason::crafting_cost), 0
+		};
+		economic_coin_vector before{}, after{}, debit{}, credit{};
+		for (size_t i = 0; i < 4; ++i)
+		{
+			before[i] = cost.before[i];
+			after[i] = cost.after[i];
+			debit[i] = after[i] - before[i];
+			credit[i] = -debit[i];
+		}
+		candidate.accounts = { { wallet, before, after, cost.before_revision,
+					 cost.after_revision },
+				       { sink, {}, {}, 0, 0 } };
+		candidate.postings = { { 0, 0, 0, debit, -50000 }, { 1, 1, 0, credit, 50000 } };
+		const auto valid = economic_coin_effects_validate(
+			candidate.accounts, candidate.postings, candidate.children.size());
+		if (valid != error::ok)
+			return valid;
+		*plan = std::move(candidate);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
 }
