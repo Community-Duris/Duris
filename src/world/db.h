@@ -504,6 +504,17 @@ class quest_mobile_native_item_stage
 					 const std::span<const item_ownership_runtime_entry> &,
 					 bool (*)(size_t, void *) noexcept, void *,
 					 size_t outer_live) noexcept;
+
+	// Complete genuine original item service step with actual pool/output/Zombie
+	// providers. Caller outer owns their initial global observers and private
+	// stage/input retention ONCE; refresh CURRENT globals + stage EVERY return.
+	// Actual returned/succeeded markers precede fallible scheduling diagnostics;
+	// false after an effected action leaves started held and next_step unchanged.
+	// No re-probe/RNG, lifecycle bypass, source or publication authority.
+	bool publication_step_bounded(size_t, struct obj_data *expected,
+				      quest_mobile_native_item_effect &,
+				      bool (*)(size_t, void *) noexcept, void *,
+				      size_t outer_live) noexcept;
 	size_t publication_step_count() const noexcept;
 	bool publication_step(size_t, struct obj_data *expected,
 			      quest_mobile_native_item_effect &) noexcept;
