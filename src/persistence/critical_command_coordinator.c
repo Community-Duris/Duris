@@ -171,6 +171,7 @@ struct replay_observer_context
 	critical_replay_observer_fn observer;
 	void *context;
 	critical_native_recovery_observer_fn native_observer;
+	critical_native_recovery_observer_bounded_fn native_bounded_observer = nullptr;
 };
 
 std::mutex coordinator_mutex;
@@ -447,6 +448,7 @@ critical_zone_reset_item_apply_fn zone_reset_apply_callback = nullptr;
 critical_extension_validator_fn extension_validator_callback = nullptr;
 critical_extension_validator_bounded_fn extension_validator_bounded_callback = nullptr;
 critical_native_recovery_observer_fn native_replay_observer_callback = nullptr;
+critical_native_recovery_observer_bounded_fn native_replay_observer_bounded_callback = nullptr;
 critical_native_recovery_publication_validator_fn native_publication_validator_callback = nullptr;
 critical_native_birth_recovery_validators native_birth_validators;
 critical_native_recovery_pair_validator_fn native_quest_pair_validator = nullptr;
@@ -2327,7 +2329,8 @@ bool critical_command_coordinator_init(
 	critical_zone_reset_recovery_validators reset_validators,
 	critical_shared_native_apply_fn shared_native_apply,
 	critical_zone_reset_item_apply_fn zone_reset_apply,
-	critical_extension_validator_bounded_fn extension_validator_bounded)
+	critical_extension_validator_bounded_fn extension_validator_bounded,
+	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -2362,6 +2365,7 @@ bool critical_command_coordinator_init(
 	extension_validator_callback = extension_validator;
 	extension_validator_bounded_callback = extension_validator_bounded;
 	native_replay_observer_callback = native_replay_observer;
+	native_replay_observer_bounded_callback = native_replay_observer_bounded;
 	native_publication_validator_callback = native_publication_validator;
 	native_birth_validators = birth_validators;
 	native_quest_pair_validator = quest_pair_validator;
@@ -2372,8 +2376,8 @@ bool critical_command_coordinator_init(
 	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
-	replay_observer_context replay = { replay_observer, replay_context,
-					   native_replay_observer };
+	replay_observer_context replay = { replay_observer, replay_context, native_replay_observer,
+					   native_replay_observer_bounded };
 	// Missing native observer uses legacy replay's complete preflight refusal,
 	// before any passive legacy registration callback can see a native journal.
 	const auto replayed =
@@ -2390,6 +2394,7 @@ bool critical_command_coordinator_init(
 		extension_validator_callback = nullptr;
 		extension_validator_bounded_callback = nullptr;
 		native_replay_observer_callback = nullptr;
+		native_replay_observer_bounded_callback = nullptr;
 		native_publication_validator_callback = nullptr;
 		native_birth_validators = {};
 		native_quest_pair_validator = nullptr;
@@ -2523,6 +2528,7 @@ bool critical_command_coordinator_shutdown(void)
 	extension_validator_callback = nullptr;
 	extension_validator_bounded_callback = nullptr;
 	native_replay_observer_callback = nullptr;
+	native_replay_observer_bounded_callback = nullptr;
 	native_publication_validator_callback = nullptr;
 	native_birth_validators = {};
 	native_quest_pair_validator = nullptr;
@@ -7099,6 +7105,7 @@ bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
 		sizeof(extension_validator_callback) +
 		sizeof(extension_validator_bounded_callback) +
 		sizeof(native_replay_observer_callback) +
+		sizeof(native_replay_observer_bounded_callback) +
 		sizeof(native_publication_validator_callback) + sizeof(native_birth_validators) +
 		sizeof(native_quest_pair_validator) + sizeof(native_auction_validators) +
 		sizeof(zone_reset_validators) + sizeof(apply_context) + sizeof(drain_observer) +

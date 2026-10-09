@@ -260,6 +260,15 @@ using critical_replay_observer_fn = bool (*)(const critical_command &command, vo
 // submission, SQL or native effects. The context is the existing replay_context.
 using critical_native_recovery_observer_fn = bool (*)(const critical_native_recovery_envelope &,
 						      void *context);
+// Optional complete ROOM-only passive restoration companion. It receives the
+// original replay context separately from the actual budget context and full
+// live prefix. Caller owns all real journal/envelope/coordinator/ROOT lifetimes;
+// reserve must not acquire coordinator/journal locks. Other native families are
+// outside this companion's scope. Registration does not select bounded replay.
+using critical_native_recovery_observer_bounded_fn = bool (*)(
+	const critical_native_recovery_envelope &, void *replay_context,
+	bool (*)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept;
+
 // Pure structural check of the retained original publication body and exact
 // retained receipt. No reentry/effects; this is never a caller ACK permit.
 using critical_native_recovery_publication_validator_fn =
@@ -356,7 +365,8 @@ bool critical_command_coordinator_init(
 	critical_zone_reset_recovery_validators reset_validators = {},
 	critical_shared_native_apply_fn shared_native_apply = nullptr,
 	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr,
-	critical_extension_validator_bounded_fn extension_validator_bounded = nullptr);
+	critical_extension_validator_bounded_fn extension_validator_bounded = nullptr,
+	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded = nullptr);
 // Separate original owner capabilities: continuation owners cannot submit or
 // cross physical ACK. Opaque context carries no source/SQL/publication authority.
 // Only the original birth owner can cross this physical publication boundary.
