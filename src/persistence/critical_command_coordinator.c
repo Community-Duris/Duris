@@ -180,9 +180,135 @@ std::condition_variable admission_available;
 std::condition_variable publication_checkpoint_finished;
 size_t publication_checkpoints_inflight = 0;
 size_t guarded_publications_inflight = 0;
+// Actual queue objects retain the original std::deque algorithms and allocator.
+// The data-free owner can inspect the protected grandparent on the pinned ABI;
+// no existing deque is cast to a different object or interpreted by guessed layout.
+class native_identity_queue final : public std::deque<std::string>
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using storage_base = std::_Deque_base<std::string, std::allocator<std::string>>;
+#endif
+    public:
+	using std::deque<std::string>::deque;
+	using std::deque<std::string>::operator=;
+	native_identity_queue() = default;
+	native_identity_queue(const native_identity_queue &) = default;
+	native_identity_queue(native_identity_queue &&) = default;
+	native_identity_queue &operator=(const native_identity_queue &) = default;
+	native_identity_queue &operator=(native_identity_queue &&) = default;
+	bool current_heap_bytes(size_t *output) const noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (!output)
+			return false;
+		const auto &actual = storage_base::_M_impl;
+		if (!actual._M_map || !actual._M_map_size ||
+		    actual._M_map_size > SIZE_MAX / sizeof(std::string *))
+			return false;
+		size_t bytes = actual._M_map_size * sizeof(std::string *);
+		const size_t blocks =
+			static_cast<size_t>(actual._M_finish._M_node - actual._M_start._M_node) + 1;
+		const size_t block_bytes =
+			std::__deque_buf_size(sizeof(std::string)) * sizeof(std::string);
+		if (blocks > (SIZE_MAX - bytes) / block_bytes)
+			return false;
+		bytes += blocks * block_bytes;
+		for (const auto &identity : *this)
+			if (identity.capacity() > 15)
+			{
+				if (identity.capacity() == SIZE_MAX ||
+				    identity.capacity() + 1 > SIZE_MAX - bytes)
+					return false;
+				bytes += identity.capacity() + 1;
+			}
+		*output = bytes;
+		return true;
+#else
+		(void)output;
+		return false;
+#endif
+	}
+	static bool initial_heap_bytes(size_t *output) noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (!output)
+			return false;
+		// The actual original default constructor initializes zero elements.
+		*output = storage_base::_S_initial_map_size * sizeof(std::string *) +
+			  std::__deque_buf_size(sizeof(std::string)) * sizeof(std::string);
+		return true;
+#else
+		(void)output;
+		return false;
+#endif
+	}
+	bool push_back_extra_peak(const std::string &identity, size_t *output) const noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (!output || size() == max_size() || identity.size() == SIZE_MAX)
+			return false;
+		const auto &actual = storage_base::_M_impl;
+		if (!actual._M_map || !actual._M_map_size)
+			return false;
+		const size_t text = identity.size() > 15 ? identity.size() + 1 : 0;
+		if (actual._M_finish._M_cur != actual._M_finish._M_last - 1)
+		{
+			*output = text;
+			return true;
+		}
+		const size_t block =
+			std::__deque_buf_size(sizeof(std::string)) * sizeof(std::string);
+		if (text > SIZE_MAX - block)
+			return false;
+		size_t peak = block + text;
+		const size_t finish_index =
+			static_cast<size_t>(actual._M_finish._M_node - actual._M_map);
+		if (finish_index >= actual._M_map_size)
+			return false;
+		if (actual._M_map_size - finish_index < 2)
+		{
+			const size_t nodes = static_cast<size_t>(actual._M_finish._M_node -
+								 actual._M_start._M_node) +
+					     1;
+			if (nodes == SIZE_MAX || nodes + 1 > SIZE_MAX / 2)
+				return false;
+			// Original _M_reallocate_map first repositions when the actual map suffices.
+			if (actual._M_map_size <= 2 * (nodes + 1))
+			{
+				if (actual._M_map_size > (SIZE_MAX - 2) / 2)
+					return false;
+				const size_t new_map = 2 * actual._M_map_size + 2;
+				if (new_map > SIZE_MAX / sizeof(std::string *))
+					return false;
+				const size_t request = new_map * sizeof(std::string *);
+				const size_t old_map = actual._M_map_size * sizeof(std::string *);
+				if (request - old_map > SIZE_MAX - peak)
+					return false;
+				// New map allocation coexists with the old one. Old map dies before the
+				// new block and copied string are allocated; retain the larger real peak.
+				peak = std::max(request, request - old_map + peak);
+			}
+		}
+		*output = peak;
+		return true;
+#else
+		(void)identity;
+		(void)output;
+		return false;
+#endif
+	}
+};
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && !defined(_GLIBCXX_DEBUG)
+static_assert(sizeof(native_identity_queue) == sizeof(std::deque<std::string>));
+#endif
+
 std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
-std::deque<std::string> pending_admission;
+native_identity_queue pending_admission;
 critical_completion_delivery completion_delivery;
 struct entity_key_hash
 {
@@ -193,7 +319,7 @@ struct entity_key_hash
 	}
 };
 std::unordered_map<std::string, std::string, entity_key_hash, std::equal_to<>> active_keys;
-std::unordered_map<std::string, std::deque<std::string>, entity_key_hash, std::equal_to<>> fences;
+std::unordered_map<std::string, native_identity_queue, entity_key_hash, std::equal_to<>> fences;
 std::unordered_map<std::string, completed_state> completed_cache;
 std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
