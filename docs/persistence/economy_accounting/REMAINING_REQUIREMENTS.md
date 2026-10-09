@@ -2584,3 +2584,25 @@ tests/builds remain in the major-plan batch; accepting gameplay/persistence/
 restart, full aggregate32MiB, durable transfer before retirement and ACK,
 combined Plan5 and R1–R8 gates are still open. Accounting stays inactive,
 admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
+
+
+## ROOM genuine flat source/factory and bounded binding joined — 2026-10-09
+
+[The eleven-file integration](ROOM_NATIVE_FLAT_FACTORY_BINDING_2026-10-09.md)
+retains genuine cursor/source/root/backend and installed projection identity
+through actual root/child factories and complete forest binding. All three
+callers join prospective binding and procedure-chain leaves with their real
+live inputs; retries retain original UID/factory/source and never retag or
+reroll. Independent final formatted source review, token/preprocessor checks
+and exact inverses pass. The original public cursor and SQL preparation leaf
+are byte-exact. All 931 policies and 393 pins retain scope; zero new/unmapped
+writer sites does not establish accounting completion.
+
+The private flat cursor entry remains uncalled; original public active-flat
+refusal and dispatcher O/P premutation guard remain. Actual warm/cold
+publication, dispatcher ownership, once-only checkpoints, prospective commit,
+terminal retention before retirement/ACK, complete capture/factory aggregate
+and native gameplay/persistence/recovery qualification remain unfinished.
+Tests/builds stay in the major-plan batch. Independent Plan5 and R1–R8 gates
+remain open; unrelated WIP is preserved. Accounting stays inactive, admission
+CLOSED, coverage incomplete, release BLOCKED and the primary goal ACTIVE.

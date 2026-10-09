@@ -5759,6 +5759,9 @@ bool shop_trade_original_procedure_binding_stage::prepare_native_birth(
 	std::span<const quest_mobile_native_item_binding> originals,
 	shop_trade_original_procedure_binding_stage &output) noexcept
 {
+	for (const auto &original : originals)
+		if (original.flat_factory_ || original.flat_scope_)
+			return false;
 	if (output.prepared_ && output.flat_)
 		return false;
 	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
@@ -5829,6 +5832,382 @@ bool shop_trade_original_procedure_binding_stage::prepare_native_birth(
 		return false;
 	}
 }
+bool shop_trade_original_procedure_binding_stage::prepare_native_birth_flat(
+	std::span<const quest_mobile_native_item_binding> originals,
+	shop_trade_original_procedure_binding_stage &output) noexcept
+{
+	if (output.prepared_ && !output.flat_)
+		return false;
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    originals.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+	try
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		std::map<int, size_t> by_number;
+		std::unordered_set<uint64_t> uids;
+		for (const auto &original : originals)
+		{
+			if (!original.flat_factory_ || !original.flat_scope_ ||
+			    !original.flat_scope_->current())
+				return false;
+			if (!candidate.flat_scopes_.empty())
+			{
+				const auto &first = *candidate.flat_scopes_.front();
+				const auto &scope = *original.flat_scope_;
+				// Distinct genuine O/P slots share root/invocation, not slot IDs.
+				if (scope.root_ != first.root_ ||
+				    scope.source_.kind != first.source_.kind ||
+				    scope.source_.source.bytes != first.source_.source.bytes ||
+				    scope.source_.generation.bytes !=
+					    first.source_.generation.bytes ||
+				    scope.source_.sequence != first.source_.sequence)
+					return false;
+			}
+			// The binding batch owns its own immutable root/source copy, so
+			// its heap remains accounted after any factory/token releases.
+			candidate.flat_scopes_.push_back(
+				std::shared_ptr<const quest_mobile_native_flat_factory_scope>(
+					new quest_mobile_native_flat_factory_scope(
+						*original.flat_scope_)));
+			const auto *prototype = flatfile_coin_boot_templates::find(original.vnum_);
+			P_obj object = original.object_;
+			if (!object || !prototype || !original.uid_ ||
+			    !uids.insert(original.uid_).second ||
+			    object->obj_uid != original.uid_ || object->R_num != original.rnum_ ||
+			    prototype->R_num != original.rnum_ ||
+			    obj_index[original.rnum_].pos != original.position_ ||
+			    obj_index[original.rnum_].func.obj != original.before_ ||
+			    (original.parsed_proclib_ &&
+			     !IS_SET(object->extra_flags, ITEM_PROCLIB)))
+				return false;
+			auto found = std::lower_bound(recovery_object_templates.begin(),
+						      recovery_object_templates.end(),
+						      original.vnum_,
+						      [](const auto &entry, int value)
+						      { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != original.vnum_ || &found->prototype != prototype ||
+			    found->special != original.before_)
+				return false;
+			const size_t position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			auto [located, added] =
+				by_number.emplace(original.rnum_, candidate.bindings_.size());
+			if (added)
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			auto &binding = candidate.bindings_[located->second];
+			// Same original constructor traversal and actual parse decision as the
+			// SQL companion. No saved-descriptor parser or eligibility inference.
+			if ((original.parsed_proclib_ || original.restored_bridge_request_) &&
+			    binding.after != proclib_obj_cmd_bridge)
+			{
+				binding.predecessor = binding.after;
+				binding.chain_needed = true;
+				binding.after = proclib_obj_cmd_bridge;
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		std::vector<proclib_recovery_chain_stage::request> requests;
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+				requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+		if (!proclib_recovery_chain_stage::prepare(requests, candidate.chain_))
+			return false;
+		candidate.flat_ = true; // Backend identity travels with this exact retained proof.
+		candidate.native_flat_ = true;
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_original_procedure_binding_stage::prepare_native_birth_flat_bounded(
+	const std::span<const quest_mobile_native_item_binding> &originals,
+	shop_trade_original_procedure_binding_stage &output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (output.prepared_ && !output.flat_)
+		return false;
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    originals.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	using scope_ptr = std::shared_ptr<const quest_mobile_native_flat_factory_scope>;
+	using number_map = std::map<int, size_t>;
+	using uid_set = std::unordered_set<uint64_t>;
+	using chain_request = proclib_recovery_chain_stage::request;
+	constexpr size_t map_node_bytes = sizeof(std::_Rb_tree_node<number_map::value_type>);
+	constexpr size_t uid_node_bytes =
+		sizeof(std::__detail::_Hash_node<
+			uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>);
+	struct workspace
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		number_map by_number;
+		uid_set uids;
+		std::vector<chain_request> requests;
+		std::__detail::_Prime_rehash_policy uid_policy;
+		std::pair<bool, size_t> uid_growth{};
+	};
+	struct live_state
+	{
+		workspace &work;
+		size_t fixed;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		bool bytes(size_t &total) const noexcept
+		{
+			total = fixed;
+			const size_t retained = work.candidate.retained_bytes();
+			if (!retained || retained < sizeof(work.candidate) ||
+			    retained - sizeof(work.candidate) > SIZE_MAX - total)
+				return false;
+			total += retained - sizeof(work.candidate);
+			if (work.by_number.size() > (SIZE_MAX - total) / map_node_bytes)
+				return false;
+			total += work.by_number.size() * map_node_bytes;
+			if (work.uids.size() > (SIZE_MAX - total) / uid_node_bytes)
+				return false;
+			total += work.uids.size() * uid_node_bytes;
+			if (work.uids.bucket_count() > 1)
+			{
+				if (work.uids.bucket_count() >
+				    (SIZE_MAX - total) / sizeof(std::__detail::_Hash_node_base *))
+					return false;
+				total += work.uids.bucket_count() *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (work.requests.capacity() > (SIZE_MAX - total) / sizeof(chain_request))
+				return false;
+			total += work.requests.capacity() * sizeof(chain_request);
+			return true;
+		}
+		bool admit(size_t extra) const noexcept
+		{
+			size_t total = 0;
+			if (!bytes(total) || extra > SIZE_MAX - total || !reserve ||
+			    !reserve(total + extra, context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			return true;
+		}
+		// GCC 13 vector's actual single-element push request. Its old backing
+		// storage is already live in bytes(); replacement storage coexists.
+		bool push(size_t size, size_t capacity, size_t width, size_t temporary,
+			  size_t &extra) const noexcept
+		{
+			if (temporary > SIZE_MAX - extra)
+				return false;
+			extra += temporary;
+			if (size != capacity)
+				return true;
+			const size_t growth = std::max(size, size_t{ 1 });
+			if (growth > SIZE_MAX - size || size + growth > (SIZE_MAX - extra) / width)
+				return false;
+			extra += (size + growth) * width;
+			return true;
+		}
+	};
+	constexpr size_t inline_bytes = sizeof(workspace) + sizeof(live_state);
+	if (inline_bytes > SIZE_MAX - outer_live_scratch || !reserve_scratch_peak ||
+	    !reserve_scratch_peak(outer_live_scratch + inline_bytes, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	try
+	{
+		workspace work;
+		live_state live{ work, outer_live_scratch + inline_bytes, reserve_scratch_peak,
+				 context };
+		auto &candidate = work.candidate;
+		for (const auto &original : originals)
+		{
+			if (!original.flat_factory_ || !original.flat_scope_ ||
+			    !original.flat_scope_->current())
+				return false;
+			if (!candidate.flat_scopes_.empty())
+			{
+				const auto &first = *candidate.flat_scopes_.front();
+				const auto &scope = *original.flat_scope_;
+				if (scope.root_ != first.root_ ||
+				    scope.source_.kind != first.source_.kind ||
+				    scope.source_.source.bytes != first.source_.source.bytes ||
+				    scope.source_.generation.bytes !=
+					    first.source_.generation.bytes ||
+				    scope.source_.sequence != first.source_.sequence)
+					return false;
+			}
+			// An independent copy, not an alias of the token's scope. Copying a
+			// libstdc++ C++11 string requests length+1 only beyond its inline 15.
+			size_t extra =
+				sizeof(quest_mobile_native_flat_factory_scope) +
+				sizeof(std::_Sp_counted_ptr<quest_mobile_native_flat_factory_scope *,
+							    __gnu_cxx::_S_atomic>);
+			const size_t root_size = original.flat_scope_->root_.size();
+			if (root_size > 15)
+			{
+				if (root_size == SIZE_MAX || root_size + 1 > SIZE_MAX - extra)
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				extra += root_size + 1;
+			}
+			if (!live.push(candidate.flat_scopes_.size(),
+				       candidate.flat_scopes_.capacity(), sizeof(scope_ptr),
+				       sizeof(scope_ptr), extra))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			if (!live.admit(extra))
+				return false;
+			candidate.flat_scopes_.push_back(scope_ptr(
+				new quest_mobile_native_flat_factory_scope(*original.flat_scope_)));
+			const auto *prototype = flatfile_coin_boot_templates::find(original.vnum_);
+			P_obj object = original.object_;
+			if (!object || !prototype || !original.uid_ ||
+			    work.uids.find(original.uid_) != work.uids.end())
+				return false;
+			work.uid_growth = work.uid_policy._M_need_rehash(work.uids.bucket_count(),
+									 work.uids.size(), 1);
+			extra = uid_node_bytes + sizeof(decltype(work.uids.insert(original.uid_)));
+			if (work.uid_growth.first)
+			{
+				if (work.uid_growth.second >
+				    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				extra += work.uid_growth.second *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (!live.admit(extra))
+				return false;
+			if (!work.uids.insert(original.uid_).second ||
+			    object->obj_uid != original.uid_ || object->R_num != original.rnum_ ||
+			    prototype->R_num != original.rnum_ ||
+			    obj_index[original.rnum_].pos != original.position_ ||
+			    obj_index[original.rnum_].func.obj != original.before_ ||
+			    (original.parsed_proclib_ &&
+			     !IS_SET(object->extra_flags, ITEM_PROCLIB)))
+				return false;
+			auto found = std::lower_bound(recovery_object_templates.begin(),
+						      recovery_object_templates.end(),
+						      original.vnum_,
+						      [](const auto &entry, int value)
+						      { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != original.vnum_ || &found->prototype != prototype ||
+			    found->special != original.before_)
+				return false;
+			const size_t position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			// Duplicate R_num lookup does not allocate a speculative map node.
+			// Distinct entries preserve the original first-occurrence ordering.
+			auto located = work.by_number.find(original.rnum_);
+			if (located == work.by_number.end())
+			{
+				if (!live.admit(
+					    map_node_bytes +
+					    sizeof(decltype(work.by_number.emplace(
+						    original.rnum_, candidate.bindings_.size())))))
+					return false;
+				work.by_number.emplace(original.rnum_, candidate.bindings_.size());
+				located = work.by_number.find(original.rnum_);
+				extra = 0;
+				if (!live.push(candidate.bindings_.size(),
+					       candidate.bindings_.capacity(), sizeof(binding),
+					       sizeof(binding), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			}
+			auto &binding = candidate.bindings_[located->second];
+			if ((original.parsed_proclib_ || original.restored_bridge_request_) &&
+			    binding.after != proclib_obj_cmd_bridge)
+			{
+				binding.predecessor = binding.after;
+				binding.chain_needed = true;
+				binding.after = proclib_obj_cmd_bridge;
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+			{
+				size_t extra = 0;
+				if (!live.push(work.requests.size(), work.requests.capacity(),
+					       sizeof(chain_request), sizeof(chain_request), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				work.requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+			}
+		if (!live.admit(sizeof(std::span<const chain_request>)))
+			return false;
+		const std::span<const chain_request> requests(work.requests);
+		size_t chain_outer = 0;
+		if (!live.bytes(chain_outer) || sizeof(requests) > SIZE_MAX - chain_outer)
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		chain_outer += sizeof(requests);
+		if (!proclib_recovery_chain_stage::prepare_bounded(
+			    requests, candidate.chain_, reserve_scratch_peak, context, chain_outer))
+			return false;
+		candidate.flat_ = true;
+		candidate.native_flat_ = true;
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+#else
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
 size_t shop_trade_original_procedure_binding_stage::retained_bytes() const noexcept
 {
 	const size_t chain = chain_.retained_bytes();
@@ -5836,7 +6215,23 @@ size_t shop_trade_original_procedure_binding_stage::retained_bytes() const noexc
 	    bindings_.capacity() > (SIZE_MAX - sizeof(*this)) / sizeof(binding))
 		return 0;
 	const size_t bytes = sizeof(*this) + bindings_.capacity() * sizeof(binding);
-	return chain - sizeof(chain_) > SIZE_MAX - bytes ? 0 : bytes + chain - sizeof(chain_);
+	size_t total = bytes;
+	if (chain - sizeof(chain_) > SIZE_MAX - total)
+		return 0;
+	total += chain - sizeof(chain_);
+	if (flat_scopes_.capacity() >
+	    (SIZE_MAX - total) / sizeof(decltype(flat_scopes_)::value_type))
+		return 0;
+	total += flat_scopes_.capacity() * sizeof(decltype(flat_scopes_)::value_type);
+	for (const auto &scope : flat_scopes_)
+		if (scope)
+		{
+			const size_t retained = scope->retained_heap_bytes();
+			if (!retained || retained > SIZE_MAX - total)
+				return 0;
+			total += retained;
+		}
+	return total;
 }
 bool shop_trade_original_procedure_binding_stage::valid() const noexcept
 {
@@ -5866,6 +6261,11 @@ bool shop_trade_original_procedure_binding_stage::valid_flat() const noexcept
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
 	    !flatfile_coin_boot_templates::ready() || !chain_.valid())
 		return false;
+	if (native_flat_ && flat_scopes_.empty())
+		return false;
+	for (const auto &scope : flat_scopes_)
+		if (!scope || !scope->current())
+			return false;
 	for (const auto &binding : bindings_)
 	{
 		if (binding.catalog_index >= recovery_object_templates.size())
@@ -6359,6 +6759,8 @@ struct quest_mobile_native_item_stage::implementation
 	bool current_step_started = false;
 	bool random_exit_requested = false;
 	bool metadata_borrowed_world = false;
+	bool flat_factory = false;
+	std::shared_ptr<const quest_mobile_native_flat_factory_scope> flat_scope;
 	bool restored_bridge_request = false;
 	bool rebuilding_enrollment = false, enrollment_rebuilt = false;
 	uint32_t rebuilding_prefix = 0;
@@ -6420,6 +6822,8 @@ quest_mobile_native_item_binding quest_mobile_native_item_stage::binding_input()
 						state_->vnum, state_->position,
 						state_->original_proc, state_->parsed_proclib);
 	result.restored_bridge_request_ = state_->restored_bridge_request;
+	result.flat_factory_ = state_->flat_factory;
+	result.flat_scope_ = state_->flat_scope;
 	return result;
 }
 size_t quest_mobile_native_item_stage::retained_bytes() const noexcept
@@ -6437,6 +6841,12 @@ size_t quest_mobile_native_item_stage::retained_bytes() const noexcept
 	};
 	const auto multiply = [&add](size_t count, size_t size)
 	{ return (!size || count <= SIZE_MAX / size) && add(count * size); };
+	if (s.flat_scope)
+	{
+		const size_t scope_bytes = s.flat_scope->retained_heap_bytes();
+		if (!scope_bytes || !add(scope_bytes))
+			return 0;
+	}
 	if (!multiply(s.parsed_descriptions.capacity(), sizeof(extra_descr_data *)) ||
 	    !multiply(s.libraries.capacity(), sizeof(size_t)) ||
 	    !multiply(s.library_delays.capacity(), sizeof(int)) ||
@@ -6581,6 +6991,79 @@ bool quest_mobile_native_item_stage::prepare_retaining(
 	return prepare_impl(nr, type, supplied_reserved_uid, output, true);
 }
 
+bool quest_mobile_native_flat_factory_scope::current() const noexcept
+{
+	const char *configured = persistence_mode_flatfile_root();
+	return nevent_is_game_thread() && !persistence_mode_requires_mysql() &&
+	       persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	       flatfile_coin_boot_templates::ready() && configured && *configured &&
+	       !root_.empty() && root_ == configured &&
+	       source_.kind == economic_source_kind::world_generation &&
+	       !critical_operation_id_is_zero(source_.source) &&
+	       !critical_operation_id_is_zero(source_.generation);
+}
+size_t quest_mobile_native_flat_factory_scope::retained_heap_bytes() const noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	// shared_ptr(raw pointer) uses this actual owning libstdc++ control block.
+	size_t bytes = sizeof(*this) +
+		       sizeof(std::_Sp_counted_ptr<quest_mobile_native_flat_factory_scope *,
+						   __gnu_cxx::_S_atomic>);
+	if (root_.capacity() > 15)
+	{
+		if (root_.capacity() == SIZE_MAX || root_.capacity() + 1 > SIZE_MAX - bytes)
+			return 0;
+		bytes += root_.capacity() + 1;
+	}
+	return bytes;
+#else
+	return 0;
+#endif
+}
+bool quest_mobile_native_item_stage::prepare_retaining_flat(
+	int nr, int type, uint64_t reserved_uid,
+	const quest_mobile_native_flat_factory_scope &scope,
+	quest_mobile_native_item_stage *output) noexcept
+{
+	if (!output || output->state_ || !scope.current() || !scope.retained_heap_bytes())
+		return false;
+	// Keep the same real constructor and exact unresolved-candidate retention.
+	// Caller retains its original attempted phase before constructing the scope.
+	const bool prepared = prepare_impl(nr, type, reserved_uid, output, true);
+	if (!output->state_)
+		return false;
+	// Mark provenance before its fallible copy: a surviving attempted factory
+	// can never become an SQL token merely because allocation refused.
+	output->state_->flat_factory = true;
+	try
+	{
+		output->state_->flat_scope =
+			std::shared_ptr<const quest_mobile_native_flat_factory_scope>(
+				new quest_mobile_native_flat_factory_scope(scope));
+	}
+	catch (...)
+	{
+		return false;
+	}
+	return prepared && output->flat_factory_matches(scope.root_, scope.source_);
+}
+bool quest_mobile_native_item_stage::is_flat_factory() const noexcept
+{
+	return state_ && state_->flat_factory;
+}
+bool quest_mobile_native_item_stage::flat_factory_matches(
+	const std::string &root, const economic_source_event &source) const noexcept
+{
+	if (!state_ || !state_->flat_factory || !state_->flat_scope ||
+	    !state_->flat_scope->current())
+		return false;
+	const auto &retained = *state_->flat_scope;
+	return retained.root_ == root && retained.source_.kind == source.kind &&
+	       retained.source_.source.bytes == source.source.bytes &&
+	       retained.source_.generation.bytes == source.generation.bytes &&
+	       retained.source_.sequence == source.sequence && retained.source_.slot == source.slot;
+}
 bool quest_mobile_native_item_stage::empty() const noexcept
 {
 	return state_ == nullptr;

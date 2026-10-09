@@ -11,6 +11,7 @@
 #include <vector>
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "economy/native_mobile_birth_constructor_recipe.h"
+#include "economy/economic_source_event.h"
 
 #include <cstdint>
 #include <cstddef>
@@ -321,6 +322,30 @@ class quest_mobile_native_container_shell;
 struct native_mobile_birth_item_recipe;
 struct player_item_snapshot;
 struct object_template;
+// Retained selected-root/source provenance supplied only by the genuine ROOM
+// source owner. It supplies no source, UID, admission or publication permission.
+class quest_mobile_native_flat_factory_scope final
+{
+    public:
+	~quest_mobile_native_flat_factory_scope() = default;
+
+    private:
+	friend class zone_reset_item_owner;
+	friend class quest_mobile_native_item_stage;
+	friend class shop_trade_original_procedure_binding_stage;
+	quest_mobile_native_flat_factory_scope(const std::string &selected_root,
+					       const economic_source_event &source)
+		: root_(selected_root)
+		, source_(source)
+	{
+	}
+	quest_mobile_native_flat_factory_scope(const quest_mobile_native_flat_factory_scope &) =
+		default;
+	bool current() const noexcept;
+	size_t retained_heap_bytes() const noexcept;
+	std::string root_;
+	economic_source_event source_{};
+};
 // Read-only original constructor facts for the existing checked binding batch.
 // No public construction, source/SQL/publication/ACK permission.
 class quest_mobile_native_item_binding
@@ -341,6 +366,9 @@ class quest_mobile_native_item_binding
 	// Only the actual cold factory can prove a retained bridge over a bare
 	// original predecessor. This is not a parser result or transport field.
 	bool restored_bridge_request_ = false;
+	// Pending flat provenance cannot fall back to the original SQL token path.
+	bool flat_factory_ = false;
+	std::shared_ptr<const quest_mobile_native_flat_factory_scope> flat_scope_;
 	quest_mobile_native_item_binding(struct obj_data *object, uint64_t uid, int rnum, int vnum,
 					 long position, procedure before,
 					 bool parsed_proclib) noexcept
@@ -393,6 +421,14 @@ class quest_mobile_native_item_stage
 	static bool prepare_impl(int nr, int type, uint64_t supplied_reserved_uid,
 				 quest_mobile_native_item_stage *,
 				 bool retain_failed_candidate) noexcept;
+	// Only the genuine retained flat source owner can construct this scope.
+	// A failed scope copy still leaves the actual attempted factory retained.
+	static bool prepare_retaining_flat(int nr, int type, uint64_t reserved_uid,
+					   const quest_mobile_native_flat_factory_scope &,
+					   quest_mobile_native_item_stage *) noexcept;
+	bool is_flat_factory() const noexcept;
+	bool flat_factory_matches(const std::string &selected_root,
+				  const economic_source_event &original_source) const noexcept;
 	bool empty() const noexcept;
 	// Pure original constructor-owned graph changes, never a P/source permit.
 	// The span is the complete selected room tree plus the new detached child.

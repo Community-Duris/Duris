@@ -4,6 +4,7 @@
 #include "core/structs.h"
 #include "mob/studioproclib.h"
 #include <span>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -84,6 +85,7 @@ const object_template *find_recovery_object_template(int vnum) noexcept;
 struct player_item_snapshot;
 class shop_trade_native_publication_owner;
 class quest_mobile_native_item_binding;
+class quest_mobile_native_flat_factory_scope;
 class shop_trade_original_procedure_binding_stage
 {
     public:
@@ -117,6 +119,20 @@ class shop_trade_original_procedure_binding_stage
 				 shop_trade_original_procedure_binding_stage &) noexcept;
 	static bool prepare_native_birth(std::span<const quest_mobile_native_item_binding>,
 					 shop_trade_original_procedure_binding_stage &) noexcept;
+	// Genuine flat constructor tokens retain their actual parse outcome and
+	// original binding predecessor. Saved-object eligibility is not consulted.
+	static bool
+	prepare_native_birth_flat(std::span<const quest_mobile_native_item_binding>,
+				  shop_trade_original_procedure_binding_stage &) noexcept;
+	// Prospective storage admission for the same private genuine factory proof.
+	// Caller retains input span/tokens/scopes and prior output storage in outer,
+	// and holds the maximum through return; success grants no new authority.
+	// ENOBUFS refusal/overflow, ENOMEM allocation failure, ENOTSUP request ABI.
+	static bool
+	prepare_native_birth_flat_bounded(const std::span<const quest_mobile_native_item_binding> &,
+					  shop_trade_original_procedure_binding_stage &,
+					  bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+					  void *, size_t outer_live_scratch) noexcept;
 	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
 	bool valid_flat() const noexcept;
@@ -131,6 +147,11 @@ class shop_trade_original_procedure_binding_stage
 	bool prepared_ = false;
 	// Backend identity remains with the original retained stage, not caller values.
 	bool flat_ = false;
+	bool native_flat_ = false; // Native scope checks do not alter existing flat SHOP stages.
+	// The binding batch owns immutable scope copies independently of factory
+	// tokens. Every actual scope/root/control-block request is charged here,
+	// including after the original factory releases its own metadata.
+	std::vector<std::shared_ptr<const quest_mobile_native_flat_factory_scope>> flat_scopes_;
 };
 
 P_obj instantiate_object_template(const object_template &prototype);

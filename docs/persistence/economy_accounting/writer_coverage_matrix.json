@@ -214,8 +214,8 @@
       "src/economy/economic_accounting_types.h": "7ece1fcd2bfe0022dea37abc2329f71f6ae1ef635e0b37ee88c2c7c881c10a67",
       "src/economy/economic_command_admission.c": "ec5af597e067eaa235e906a8ac34aa84a6e4e1d93e84c73dd99ce8e9452850f8",
       "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
-      "src/economy/economic_gameplay_authority.c": "d64c9fb79b5f40a71012c8966f19c5fa4b04d31a3c7b909b70185ece55a5df02",
-      "src/economy/economic_gameplay_authority.h": "e7a7d6acac03b737287d63dd2ce082125ade508dbc14cd95dc5286020fb8d9dc",
+      "src/economy/economic_gameplay_authority.c": "0be3618afd3b52a83cd457fa35b4b2669089e5a74dbdba9b890208d92e345131",
+      "src/economy/economic_gameplay_authority.h": "449fdd4eea1dceea15fa92e28077e8f4ed1e36e7745dc3200a927b741f4539a2",
       "src/economy/economic_initialized_world_money_correspondence.c": "4160031165956890992f3cb98f76eb8bdce3d811466806dab3e2e87bffcd0bbb",
       "src/economy/economic_initialized_world_money_correspondence.h": "cd87eb2c3cb0caf3b885829cf977015c556bd03c7724aa5659a1dbfebe55ad4c",
       "src/economy/economic_source_event.c": "df911d6dce247bbe779e99c2e7948bbab5e6184451c9306e40f4f083e5838458",
@@ -366,8 +366,8 @@
       "src/item/smith_native_compound_codec.h": "a64a8ef47776f5e148e6b8f370491bc39a230e25c64b4579f296bb4767803e9c",
       "src/item/smith_native_compound_images.h": "0507bf104c325a2f5850ab6e31b26103a1701da0a0a33746ed7a6ca3d0455510",
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
-      "src/mob/studioproclib.c": "299f91e89032d32ae01c492550010bf28d7f84077f4f62e6a5cf417f75bf1d4b",
-      "src/mob/studioproclib.h": "515a80db161b60b3d22bb3dc89d66aaa3349709ad4247c825a68639a4f4bb184",
+      "src/mob/studioproclib.c": "d5dfd98fd415e77b916252249a5f596bdd9272ee88bb2f31e27c8e5abf7e5d61",
+      "src/mob/studioproclib.h": "7e262e289aec7658cddc97f018814249c38b23a2d917bf5ade9a592fb9eba961",
       "src/net/comm.c": "e53ed8a4247c37f1c4fb2298d50a5cccaf7b5973fe8bee26467a9996823d1931",
       "src/persistence/critical_command.c": "b4a19933b97a04913d644ae7e05aab2dd9880bc8874f4f3e703f1bfd62a78eef",
       "src/persistence/critical_command.h": "6064c1da68d806c3b9e48d715d0991346fb6a6a45692dd51838740044a381a71",
@@ -454,8 +454,8 @@
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "8ee1f03332abca5faa773fdc6f7195232c4b8876c7216ebb621a05f4d0f238b9",
-      "src/world/db.h": "997fd7e954b917c3747fb28584f317c5966aa47885bf8abee09345708c66e183",
+      "src/world/db.c": "96554375055784d81d85e75f4719769a0112a1270d10bffe66d3f080fbe78a3c",
+      "src/world/db.h": "942f907460a4ec6089ea91d1fbcf761cf74305a094d6276386c701c1fd05b8c8",
       "src/world/economic_initialized_world_owner.c": "b9cc81141a03ba8f7b407c27c972404e948bf302e588658005e986ba0de96c97",
       "src/world/economic_initialized_world_owner.h": "73d17bb19b6ee5198448c69ade7829f35811e72d55f5f5f568d61e9b2450384d",
       "src/world/economic_initialized_world_snapshot.c": "8bc6c570684d1a7c1e8040e8051cb0ae73e1b89b5ff5d9c5feecb28207e30d66",
@@ -471,14 +471,14 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/object_template.h": "25333e47f039d5605a2348e9c77de8d2d9d2404e3272216346be1be4ed671fe5",
+      "src/world/object_template.h": "4197820f70a17e81ab36c1039780b0f0d150961b23210eff9f5374c9100c63a7",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
       "src/world/quest_mobile_native.c": "58a03ebfbec6e25ec4194a85fe76d2a68d889d6edcd538988742f611e7972ad9",
       "src/world/quest_mobile_native.h": "6aeacec28b272151ad80252bd700d0c25100a4d4ab844c2db3c440d1548805f9",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
       "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
-      "src/world/quest_mobile_native_birth.c": "bd9017cff053ea3fc0fc173177e00d0a1fcd05feb51730afe33f69bd64af3593",
-      "src/world/quest_mobile_native_birth.h": "8a5aba0bad2246aed0fe34e4b3c15ef0189a4bee2c3129710ad3767ca9d5571b",
+      "src/world/quest_mobile_native_birth.c": "8ea0fbdee5db7ae839da9e9bfc8166c8c164e5291557b089e3856890044919e3",
+      "src/world/quest_mobile_native_birth.h": "e09b8167a3bb497c3502df0d779b5ad956ae39435ee45bf56984f34f3da49fd5",
       "src/world/quest_mobile_native_reference.c": "d5273cdee11447dc307c0e14114785d332ccd130bfb59982a811e0f1d68b6d01",
       "src/world/quest_mobile_native_reference.h": "7014af84ee72518d7e8052a6c72b491ab391688b3ca1e0c11f313b2060710426",
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
@@ -488,8 +488,8 @@
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
-      "src/world/zone_reset_item_owner.c": "983aa551c98aa6e6b7fcd8b67ee7b91f1c3b2ccad777aa2f36a16dff429f3950",
-      "src/world/zone_reset_item_owner.h": "8f88b2ff91901ee6e01c0730d0b0d99760aa4d92dfbcb49eb0d1e7fd19ce53ff",
+      "src/world/zone_reset_item_owner.c": "00b017fcbdad1e1aa48808f41b1a72d640a501af5b1d07524f3b51a97522d179",
+      "src/world/zone_reset_item_owner.h": "017fb633f7e968f834eabbfd3bb7e725c86dc52ce54251e048afd3b13cc6bd45",
       "src/world/zone_reset_room_nesting.h": "d078e8fbf8ff0938796b47bc3d34a72b8aa57f17e43cbb510c2037e408dfa418",
       "src/world/zone_reset_room_publication.c": "c7316638f93e56db0509e43b4502dace1fd2e6029bf179c0c019d57799793389",
       "src/world/zone_reset_room_publication.h": "4c5bd0f2ffe5d40e0f7a4a14775e4766aeb994cf6deb59055b5ee5cacc580cba",
@@ -51482,7 +51482,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6200
+          6600
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -52531,7 +52531,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8218
+          8701
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -52591,7 +52591,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53066,7 +53066,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53127,7 +53127,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53187,7 +53187,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53247,7 +53247,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53307,7 +53307,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53354,7 +53354,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8333
+          8816
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -53755,7 +53755,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1529
+          1562
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::prepare_mobile",
@@ -53802,7 +53802,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1841
+          1874
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::seal_mobile",
@@ -53859,7 +53859,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4110
+          4143
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::pulse",
@@ -54057,7 +54057,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1612
+          1645
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::capture_alchemist_spawn",
@@ -54117,7 +54117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2760
+          2793
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::recover_cold",
@@ -54177,7 +54177,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2447
+          2480
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::resume_cold_projection",
@@ -54237,7 +54237,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3257
+          3290
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::publish",
@@ -54404,7 +54404,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6571
+          6981
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::prepare",
@@ -54464,7 +54464,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7547
+          8030
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publish",
@@ -54524,7 +54524,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7761
+          8244
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::publication_step",
@@ -54584,7 +54584,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8058
+          8541
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::rebuild_enrollment",
@@ -54751,7 +54751,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6524
+          6934
         ],
         "file": "src/world/db.c",
         "function": "quest_mobile_native_item_stage::capture_container_shell",

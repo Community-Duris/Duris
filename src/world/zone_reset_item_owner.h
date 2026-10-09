@@ -7,6 +7,8 @@ struct obj_data;
 class critical_zone_reset_item_publication_owner;
 class zone_reset_item_owner;
 class quest_mobile_native_item_stage;
+class quest_mobile_native_flat_factory_scope;
+class shop_trade_original_procedure_binding_stage;
 struct critical_native_recovery_envelope;
 struct critical_completion;
 struct critical_command;
@@ -165,10 +167,23 @@ class zone_reset_item_owner final
 				  zone_reset_item_child_facts *) noexcept;
 	static bool discard_child(zone_reset_item_child_stage *) noexcept;
 	static bool empty(const zone_reset_item_child_stage &) noexcept;
+	// Authenticate every genuine retained token against its original backend,
+	// configured flat root and exact O/P source; a mode flag cannot retag it.
+	static bool factory_backend_current(const quest_mobile_native_item_stage &,
+					    const quest_mobile_native_flat_factory_scope *,
+					    const economic_source_event &) noexcept;
+	static bool reserve_flat_binding_scratch(size_t, void *) noexcept;
+	struct flat_binding_scratch_guard;
+	static bool prepare_single_flat_bindings(const quest_mobile_native_item_stage &,
+						 const std::vector<player_item_snapshot> &,
+						 const native_mobile_birth_item_recipe &,
+						 shop_trade_original_procedure_binding_stage &,
+						 size_t additional_inline) noexcept;
 	// Real reset invocation/cursor establishes scope, including P-before-O.
 	// Factories stay gated; values never grant source or target-owner admission.
 	struct warm_checkpoint;
 	struct warm_root;
+	static bool warm_bindings_current(const warm_root &) noexcept;
 	struct warm_command_scratch;
 	static bool begin_warm_command_scratch(warm_root &) noexcept;
 	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
@@ -223,8 +238,8 @@ class zone_reset_item_owner final
 	// recovered configured-root lock. No submission or publication; prospective
 	// aggregate provider/caller reservations remain required before opening gates.
 	// Never predicts the next room clock for another retained root.
-	static bool prepare_warm_command(const critical_operation_id &,
-					 critical_native_recovery_envelope *, warm_command_scratch &) noexcept;
+	static bool prepare_warm_command(const warm_root &, critical_native_recovery_envelope *,
+					 warm_command_scratch &) noexcept;
 	static bool prepare_warm_command_sql(const critical_operation_id &,
 					     critical_native_recovery_envelope *) noexcept;
 	static bool prepare_warm_command_flat(const critical_operation_id &,
