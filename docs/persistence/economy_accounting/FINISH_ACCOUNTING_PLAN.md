@@ -9830,3 +9830,15 @@ RAW/final source review/Cprefix/headerinverse/tokens/preprocessing passed;
 enrollment/four-route pulse and native recovery qualification remain open. Tests
 stay batched; inactive/CLOSED accounting, incomplete coverage/BLOCKED release and
 ACTIVE primary goal remain. No additional acceptance gate.
+
+
+## Actual room preparation global retention joined - 2026-10-09
+
+[Real guard](ROOM_ROOT_GLOBAL_RETENTION_2026-10-09.md) registers actual scope and
+counts CURRENT event pool/pending maps/output/Zombie/cache/activity once in six
+caller baselines; clear/end/charge(0) preserves persistent outside retention.
+Missing pending-map observer finding closed. Corrected RAW/final source review,
+precise modification inverses/tokens/preprocessing passed; 931 policies/399 pins
+authenticate, zero new/unmapped sites. Full cold/pulse plus literal object/affect
+pool integration and native qualification stay open. Tests batched; inactive/CLOSED
+accounting, incomplete coverage/BLOCKED release and ACTIVE primary goal remain.

@@ -10,6 +10,7 @@
 #include "persistence/sql_room_item_payload.h"
 #include "item/item_transfer_repository.h"
 #include "item/item_ownership_runtime.h"
+#include "item/item_movement_transaction.h"
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
 #endif
@@ -792,6 +793,8 @@ struct zone_reset_item_owner::warm_command_scratch
 {
 	warm_root *root = nullptr;
 	critical_native_recovery_envelope *output = nullptr;
+	bool global_scope = false;
+	size_t current_bytes() const noexcept;
 	static size_t inline_bytes() noexcept
 	{
 		return sizeof(warm_command_scratch) + sizeof(critical_native_recovery_envelope) +
@@ -800,7 +803,11 @@ struct zone_reset_item_owner::warm_command_scratch
 	explicit warm_command_scratch(warm_root *original) noexcept : root(original)
 	{
 		if (root)
+		{
 			root->preparation_owner = this; // begin admitted this object before construction.
+			if (!begin_flat_command_scope(*this))
+				root = nullptr;
+		}
 	}
 	~warm_command_scratch() { release_warm_command_scratch(*this); }
 	warm_command_scratch(const warm_command_scratch &) = delete;
@@ -1026,7 +1033,7 @@ bool zone_reset_item_owner::retain_warm_command_output(warm_command_scratch &scr
 {
 	if (scratch.output != &output)
 		return false;
-	size_t bytes = warm_command_scratch::inline_bytes(), heap = 0;
+	size_t bytes = scratch.current_bytes(), heap = 0;
 	return warm_scratch_envelope_heap(output, false, &heap) &&
 	       warm_scratch_add(bytes, heap) && rebase_warm_command_scratch(scratch, bytes);
 }
@@ -1040,6 +1047,12 @@ void zone_reset_item_owner::release_warm_command_scratch(warm_command_scratch &s
 	// the original registry-erasure loop. Failed recensus retains the older cache.
 	scratch.root->preparation_owner = nullptr;
 	scratch.root->preparation_scratch = 0;
+	if (scratch.global_scope)
+	{
+		// No callback/allocation between scalar root removal and exact scope end.
+		(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+		scratch.global_scope = false;
+	}
 	(void)quest_mobile_native_birth_owner::charge();
 	scratch.root = nullptr;
 	scratch.output = nullptr;
@@ -2285,7 +2298,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 					invocation = registry;
 				}
 		if (!root || root != scratch.root || !invocation ||
-		    !warm_root_current_bounded(*root, scratch, warm_command_scratch::inline_bytes()))
+		    !warm_root_current_bounded(*root, scratch, scratch.current_bytes()))
 			return false;
 		const auto &source = root->forest.reset_source;
 		if (source.source.bytes != invocation->invocation.source.bytes ||
@@ -2300,7 +2313,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		{
 			// The two actual projection IDs die before the preparation frame.
 			// Admit them alongside the observer already in inline_bytes().
-			size_t projection_live = warm_command_scratch::inline_bytes();
+			size_t projection_live = scratch.current_bytes();
 			if (!warm_scratch_array(projection_live, 2,
 						sizeof(critical_operation_id)) ||
 			    !reserve_warm_command_scratch(projection_live, &scratch))
@@ -2316,7 +2329,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		}
 		if (!root->original_envelope.attachment.empty())
 		{
-			const size_t caller_live = warm_command_scratch::inline_bytes();
+			const size_t caller_live = scratch.current_bytes();
 			size_t clone_live = caller_live, clone_heap = 0;
 			if (!zone_reset_item_recovery_initial_bounded(root->original_envelope,
 				    reserve_warm_command_scratch, &scratch, caller_live) ||
@@ -2350,7 +2363,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(
 		// configuration merely corroborates it; it cannot supply new provenance.
 		configured = birth.flat_scope->root_.c_str();
 		const size_t root_chars = std::char_traits<char>::length(configured);
-		const size_t caller_live = warm_command_scratch::inline_bytes();
+		const size_t caller_live = scratch.current_bytes();
 		size_t frame_live = caller_live, image_heap = 0;
 		if (!warm_scratch_add(frame_live, sizeof(zone_reset_item_image)) ||
 		    !warm_scratch_add(frame_live, sizeof(zone_reset_room_placement_recipe)) ||
@@ -4137,7 +4150,7 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 		    original.attachment != root.original_envelope.attachment ||
 		    root.canonical_command.empty())
 			return false;
-		size_t base = warm_command_scratch::inline_bytes(), envelope_heap = 0;
+		size_t base = scratch.current_bytes(), envelope_heap = 0;
 		if (!warm_scratch_envelope_heap(original, false, &envelope_heap) ||
 		    !warm_scratch_add(base, envelope_heap))
 			return false;
@@ -4514,4 +4527,71 @@ bool zone_reset_item_owner::finish_warm_action_bounded(
 	// current recensus, codec, callback or I/O, including after service refusal.
 	return settle_warm_checkpoint_bounded(root, reserve, context, outer_live) &&
 	       actual.succeeded;
+}
+
+#include "net/comm.h"
+#include "specs/specs.venthix.h"
+#include "world/world_activity.h"
+
+bool zone_reset_item_owner::flat_current_global_storage(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	size_t bytes = 0, current = 0;
+	if (!nevent_object_schedule_pool_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !nevent_native_reschedule_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) || !diagnostic_output_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !quest_mobile_native_zombie_registry_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !item_ownership_runtime_cache_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) || !world_activity_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+size_t zone_reset_item_owner::warm_command_scratch::current_bytes() const noexcept
+{
+	size_t current = 0, bytes = inline_bytes();
+	return root && global_scope && root->preparation_owner == this &&
+			       flat_current_global_storage(&current) &&
+			       warm_scratch_add(bytes, current) ?
+		       bytes :
+		       SIZE_MAX;
+}
+
+bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scratch) noexcept
+{
+	if (!scratch.root || scratch.root->preparation_owner != &scratch)
+		return false;
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || scratch.global_scope ||
+	    !item_native_quest_global_budget_scope_owner::begin(&scratch,
+								flat_current_global_storage))
+	{
+		scratch.root->preparation_owner = nullptr;
+		scratch.root->preparation_scratch = 0;
+		(void)quest_mobile_native_birth_owner::charge();
+		return false;
+	}
+	scratch.global_scope = true;
+	size_t current = 0, live = warm_command_scratch::inline_bytes();
+	if (flat_current_global_storage(&current) && warm_scratch_add(live, current))
+	{
+		scratch.root->preparation_scratch = live;
+		if (quest_mobile_native_birth_owner::charge())
+			return true;
+	}
+	// Fixed guard was admitted before construction. Failed first current-global
+	// admission cannot proceed to any provider allocation or native callback.
+	// Remove root scalar scratch before ending exactly this scope, then recensus
+	// CURRENT persistent globals outside it. No fallible callback between changes.
+	scratch.root->preparation_owner = nullptr;
+	scratch.root->preparation_scratch = 0;
+	(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+	scratch.global_scope = false;
+	(void)quest_mobile_native_birth_owner::charge();
+	return false;
 }
