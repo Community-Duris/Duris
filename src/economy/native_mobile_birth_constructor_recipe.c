@@ -333,3 +333,86 @@ bool native_mobile_birth_constructor_recipe_decode(
 	*output = value;
 	return true;
 }
+
+#include <cerrno>
+
+namespace
+{
+bool constructor_codec_admit(size_t outer, size_t working, bool (*reserve)(size_t, void *) noexcept,
+			     void *context) noexcept
+{
+	if (working > SIZE_MAX - outer || !reserve || !reserve(outer + working, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	return true;
+}
+}
+
+bool native_mobile_birth_constructor_recipe_encode_blob_bounded(
+	const quest_mobile_native_constructor_recipe &value, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!output || !native_mobile_birth_constructor_recipe_valid(value))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	size_t working = 0;
+	if (value.wire_version == NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_VERSION)
+	{
+		// The fixed bytes survive the nested encoder's writer, and then the
+		// fresh range-constructed vector. Those two phases are sequential.
+		working = sizeof(native_mobile_birth_constructor_recipe_bytes) +
+			  std::max(sizeof(writer<>),
+				   sizeof(std::vector<uint8_t>) +
+					   NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_BYTES);
+	}
+	else if (value.wire_version == NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION)
+		working = sizeof(writer<NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES>) +
+			  sizeof(std::vector<uint8_t>) +
+			  NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES;
+	else
+		working = sizeof(writer<NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_BYTES>) +
+			  sizeof(std::vector<uint8_t>) +
+			  NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_BYTES;
+	if (!constructor_codec_admit(outer_live, working, reserve, context))
+		return false;
+	// The original range constructor requests precisely the selected wire
+	// length on the pinned policy; its complete validation/wire is unchanged.
+	return native_mobile_birth_constructor_recipe_encode_blob(value, output);
+#endif
+}
+
+bool native_mobile_birth_constructor_recipe_decode_bounded(
+	const std::span<const uint8_t> &bytes, quest_mobile_native_constructor_recipe *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!output || (bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_BYTES &&
+			bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_BYTES &&
+			bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	// The actual original by-value span, reader, magic and candidate coexist.
+	// Decode allocates no heap; admission also protects its named inline DTOs.
+	constexpr size_t working = sizeof(std::span<const uint8_t>) + sizeof(reader) +
+				   sizeof(std::array<uint8_t, 4>) +
+				   sizeof(quest_mobile_native_constructor_recipe);
+	if (!constructor_codec_admit(outer_live, working, reserve, context))
+		return false;
+	return native_mobile_birth_constructor_recipe_decode(bytes, output);
+#endif
+}

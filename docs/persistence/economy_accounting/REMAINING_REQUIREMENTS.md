@@ -2649,3 +2649,18 @@ guarded terminal transfer/retirement, complete aggregate/journal budgeting,
 combined Plan5 and R1-R8 gates remain open. Unrelated WIP is preserved;
 accounting stays inactive, admission CLOSED, coverage incomplete, release
 BLOCKED and the primary goal ACTIVE.
+
+
+## Native constructor codec dependency implemented - 2026-10-09
+
+[The constructor codec slice](NATIVE_CONSTRUCTOR_CODEC_ADMISSION_2026-10-09.md)
+adds owning prospective NBC1/NBC2/NBC3 encode/decode companions while preserving
+the complete original codecs. It closes this concrete missing dependency for
+native cash-role command/recovery budgeting. Independent raw and formatted
+source reviews, whole-C prefix/header inverse and token/preprocessor checks
+pass. All 931 policies/393 pins are authenticated, with zero new/unmapped sites.
+Native tests/builds remain deferred to the major-plan batch. Native-image/intent
+and complete command/compiler/journal joins, genuine warm/cold publication and
+guarded terminal transfer/retirement remain open. This source-only slice does
+not establish plan or release completion. Accounting inactive/admission CLOSED,
+coverage incomplete/release BLOCKED and primary goal ACTIVE persist.
