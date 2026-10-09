@@ -1,18 +1,19 @@
 # Finish accounting implementation plan
 
-## Shared initial SQL participant source integrated - 2026-10-08
+## Shared initial checkpoint code and worker/replay source integrated - 2026-10-08
 
-[Source integration](SHARED_INITIAL_SQL_SOURCE_INTEGRATION_2026-10-08.md) records
-private combined candidate `3b6555b6346977f644a92cf21d4006b1e96017a688a20a8867796b5fc0e5c30f`.
-Initial missing-SHOP SQL persistence and the required origin/capacity corrections
-passed independent source review; all209 selected bodies,543 provider records
-and9 reversible spans authenticate. Existing-row warm/cold paths stay closed.
-Original detached checkpoint capture and restart-durable room/time/roaming/affects,
-root transaction/recovery/publication/ACK and the flat counterpart remain open.
-Maintained Smith code0411528f0 retains its separate scope. No runtime checks ran;
-major-plan qualification remains deferred. The broader source is unpromoted.
-Plans2-4/combinedPlan5/R1-R8/release remain unfinished; original Plan1 acceptance
-keeps its recorded scope. Inactive behavior and activation gates are preserved.
+[Code milestone](SHARED_INITIAL_CHECKPOINT_CODE_MILESTONE_2026-10-08.md) records maintained passive DURSHOPv2 initial
+checkpoint encode/decode, preserving original catalog/read/write/trade behavior.
+Port source review passed:46 actual provider pins,four insertion-only inverses;
+changed-line format/token checks passed. Compiler/runtime qualification is deferred.
+Private combined candidate `e59b317e13073554c3ff650f986a013ad98849778cd540e0d1c6f259ae6b1bb7`
+joins actual detached capture, immutable carrier, worker lifetime/shutdown correction
+and root's historical shared SQL replay proof. Independent source reviews passed.
+All209 selected bodies authenticate; inventory is not completion. Producer invocation,
+complete budgets,root SQL dispatch/reconciliation,current proof/publication/ACK/origin
+and flat counterpart remain open. The broader source is unpromoted. Plans2-4/
+combinedPlan5/R1-R8/release remain unfinished;original Plan1 scope is preserved.
+Inactive behavior,declined spell path and activation/production gates stay intact.
 
 ## Smith flat readiness and original room-P source joined - 2026-10-08
 

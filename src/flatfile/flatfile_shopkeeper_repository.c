@@ -26,6 +26,17 @@ constexpr size_t affect_maximum = 4096;
 constexpr int16_t equipment_slot_maximum = 255;
 constexpr const char *catalog_filename = "shopkeeper_catalog";
 
+// Exact existing v2 serialized framing/field widths, never sizeof(record/padding).
+constexpr size_t initial_checkpoint_header_bytes = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+constexpr size_t initial_checkpoint_record_bytes = 4 + 4 + 4 + 8 + 8 + 8 + 1 + 4;
+constexpr size_t initial_checkpoint_affect_bytes = 4 + 4 + 4 + 4 + 5 * 8;
+constexpr size_t initial_checkpoint_overhead_bytes =
+	initial_checkpoint_header_bytes + 4 + initial_checkpoint_record_bytes + 4;
+constexpr size_t initial_checkpoint_maximum_bytes =
+	initial_checkpoint_overhead_bytes + affect_maximum * initial_checkpoint_affect_bytes +
+	PLAYER_SNAPSHOT_MAX_BYTES;
+static_assert(initial_checkpoint_maximum_bytes <= catalog_maximum_bytes);
+
 struct shopkeeper_catalog
 {
 	uint64_t revision = 1;
@@ -319,6 +330,45 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, shopkeeper_catalog *catal
 	return true;
 }
 
+// Preflight before decode_catalog can resize records/affects/item byte vectors.
+// The original decoder still verifies checksum, all values and forest framing.
+bool initial_checkpoint_framing(const std::vector<uint8_t> &bytes) noexcept
+{
+	if (bytes.size() < initial_checkpoint_overhead_bytes ||
+	    bytes.size() > initial_checkpoint_maximum_bytes ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	decoder header{ bytes.data() + catalog_magic.size(), bytes.size() - catalog_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t framing_revision = 0;
+	if (!header.number(&version) || version != catalog_version ||
+	    !header.number(&payload_size) ||
+	    payload_size != bytes.size() - initial_checkpoint_header_bytes ||
+	    !header.number(&framing_revision) || framing_revision != 1)
+		return false;
+	decoder payload{ bytes.data() + initial_checkpoint_header_bytes, payload_size };
+	uint32_t count = 0, shop = 0, affects = 0;
+	int32_t mobile = 0, room = 0;
+	int64_t saved_at = 0, cash = 0;
+	uint64_t record_revision = 0;
+	uint8_t roaming = 0;
+	if (!payload.number(&count) || count != 1 || !payload.number(&shop) ||
+	    !payload.number(&mobile) || mobile <= 0 || !payload.number(&room) || room <= 0 ||
+	    !payload.number(&saved_at) || saved_at < 0 || !payload.number(&record_revision) ||
+	    record_revision != 1 || !payload.number(&cash) || cash < 0 ||
+	    cash > std::numeric_limits<int>::max() || !payload.number(&roaming) || roaming > 1 ||
+	    !payload.number(&affects) || affects > affect_maximum)
+		return false;
+	const size_t affect_bytes = static_cast<size_t>(affects) * initial_checkpoint_affect_bytes;
+	if (payload.offset > payload.size || affect_bytes > payload.size - payload.offset)
+		return false;
+	payload.offset += affect_bytes;
+	uint32_t item_bytes = 0;
+	return payload.number(&item_bytes) && item_bytes &&
+	       item_bytes <= PLAYER_SNAPSHOT_MAX_BYTES && payload.offset <= payload.size &&
+	       item_bytes == payload.size - payload.offset;
+}
+
 flatfile_shopkeeper_result recover(const std::string &root, const flatfile_authority_lock &lock,
 				   std::string *error)
 {
@@ -488,6 +538,83 @@ bool append_trade_items(std::vector<player_item_snapshot> *items,
 	return true;
 }
 } // namespace
+
+bool flatfile_shopkeeper_initial_checkpoint_encode(const flatfile_shopkeeper_record &record,
+						   std::vector<uint8_t> *output) noexcept
+{
+	if (!output || record.revision != 1 || record.cash < 0 ||
+	    record.cash > std::numeric_limits<int>::max() ||
+	    record.affects.size() > affect_maximum ||
+	    record.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	try
+	{
+		// Use the original item codec's real limit before copying the record.
+		std::vector<uint8_t> bounded_items;
+		if (player_item_snapshot_list_encode(record.items, &bounded_items) !=
+			    player_snapshot_codec_result::ok ||
+		    bounded_items.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+			return false;
+		shopkeeper_catalog framing;
+		framing.revision = 1; // Canonical framing only, never actual whole-catalog state.
+		framing.records.emplace_back();
+		auto &original = framing.records.front();
+		original.shop_id = record.shop_id;
+		original.mob_vnum = record.mob_vnum;
+		original.room_vnum = record.room_vnum;
+		original.saved_at = record.saved_at;
+		original.revision = record.revision;
+		original.cash = record.cash;
+		original.roaming = record.roaming;
+		original.affects = record.affects;
+		// Decode only the bounded existing wire representation, preserving every
+		// encoded item value without copying strings excluded by its original mask.
+		if (player_item_snapshot_list_decode(bounded_items.data(), bounded_items.size(),
+						     &original.items) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		std::vector<uint8_t> canonical_items;
+		if (player_item_snapshot_list_encode(original.items, &canonical_items) !=
+			    player_snapshot_codec_result::ok ||
+		    canonical_items != bounded_items)
+			return false;
+		std::sort(original.affects.begin(), original.affects.end(), affect_less);
+		std::vector<uint8_t> encoded;
+		if (!encode_catalog(framing, &encoded) || !initial_checkpoint_framing(encoded))
+			return false;
+		output->swap(encoded);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool flatfile_shopkeeper_initial_checkpoint_decode(const std::vector<uint8_t> &bytes,
+						   flatfile_shopkeeper_record *output) noexcept
+{
+	if (!output || !initial_checkpoint_framing(bytes))
+		return false;
+	try
+	{
+		shopkeeper_catalog framing;
+		if (!decode_catalog(bytes, &framing) || framing.revision != 1 ||
+		    framing.records.size() != 1 || framing.records.front().revision != 1 ||
+		    framing.records.front().cash < 0)
+			return false;
+		std::vector<uint8_t> canonical;
+		if (!encode_catalog(framing, &canonical) || canonical != bytes)
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_shopkeeper_record>);
+		*output = std::move(framing.records.front());
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 flatfile_shopkeeper_result
 flatfile_shopkeeper_establish(const std::string &root,

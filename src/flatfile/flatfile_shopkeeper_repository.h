@@ -33,6 +33,17 @@ struct flatfile_shopkeeper_record
 	std::vector<player_item_snapshot> items;
 };
 
+// Pure passive one-record INITIAL checkpoint, using the existing DURSHOPv2 bytes.
+// Catalog revision1 is canonical framing only: it is neither the actual catalog
+// clock nor proof of a file AFTER/write. Contained record revision must equal1
+// and cash must be observed (not historical -1). Encode applies only the original
+// affect ordering; decode requires exact canonical bytes. Strong outputs; no I/O,
+// source/admission/publication/ACK capability follows from these values.
+bool flatfile_shopkeeper_initial_checkpoint_encode(const flatfile_shopkeeper_record &,
+						   std::vector<uint8_t> *output) noexcept;
+bool flatfile_shopkeeper_initial_checkpoint_decode(const std::vector<uint8_t> &,
+						   flatfile_shopkeeper_record *output) noexcept;
+
 enum class flatfile_shopkeeper_result
 {
 	ok,
