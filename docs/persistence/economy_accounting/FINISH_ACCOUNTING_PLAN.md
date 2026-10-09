@@ -196,6 +196,96 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Warm preparation and image successors queued; provenance correction - 2026-10-09
+
+Three concrete published successors add useful available source. Genuine flat ROOM
+warm preparation4a168a0f566ce1dd468098dbe13669011a15a6c6 has actual parent
+c15363eb0080bbfd148ed8371a5a0a6d87d198e1. Native image codec admission
+8d3a207f37843a81cae44b3e16102327de4d8621 has actual parent4a168a0f5.
+Intent freeze/encode4b4ba60862a7b3da3108240d80f7f828e34eb8c4 has actual parent8d3a207f3.
+Root reads complete handoffs,all new definitions and changed original bodies,
+original image algorithms and actual pulse/submission/refusal context. Read-only
+metadata PASS authenticates eight whole provider/preimage inverses,two byte-identical
+original SQL definitions,original image/intent C prefixes/header inverses and six unchanged
+constructor-context providers. Evidence: D:/Dev/Temp/coordinator-warm-image-successors-20261009.
+No root product/native/compiler/DB execution or private artifact import/commit.
+
+ROOM source now joins a private bounded preparation to the actual pulse. It retains
+borrowed genuine O/P factory handles,complete forest order,distinct actual source
+slots without invented slot sorting,selected-root comparisons and full literal
+capture/canonical equality/placement witnesses. Retained-command lineage/epoch
+checks now precede the original-envelope retry return. Existing populated-stage
+retry still reenters command preparation. Candidate transfer and later root recensus
+are distinct: a recensus refusal may retain completed root-owned metadata,not roll
+it back. Original SQL preparation/command preparation are byte-identical. This is
+preparation only: private flat front door remains uncalled,public active-flat refusal
+remains,actual native effects/warm-cold refresh/checkpoint/physical release/ACK/
+guarded same-lock terminal transfer are unfinished and unqualified.
+
+Native image owning encode/decode companions admit actual original full reference,
+native DFS/UID/slot/literal forest,item/checksum/canonical wire operations. Fresh
+candidate and item/reference/hash workspace,old/new bucket requests,preflight and
+transferred decode heap/canonical re-encode coexistence are explicit. Optional
+retained heap scalar excludes caller inline output and changes only on success.
+Shape/framing/preflight is not native birth/financial/source authority; image leaf
+does not bound whole ordinary or SHOP command/compiler/journal/coordinator
+or capture lifetime. Supported ABI/allocator aggregate qualification remains open.
+Intent freeze/encode companions are now available: original complete binding
+projection,digests/domain/facts/wire algorithms remain authoritative after admission.
+Original projection dies before facts copy; facts and moved vectors/digest phases
+have actual simultaneous lifetimes. Encode admission can precede semantic validation;
+freeze keeps its original pre-profile guards. Unsupported policy/budget errors are
+capacity,not authority. Full command/compiler/recovery integration remains unpublished.
+Published handoffs report source authentication; native major-batch tests deferred.
+
+Prioritized evolving queue,without a second active worker delivery:
+1. Preserve architecture's live constructor caller-boundary delivery at original3890/
+   c591. Resolve quest's execution-instruction provenance below,then its selected
+   constructor acceptance delta. Independent delivery reviews remain pending.
+2. At current delivery handoff,reassess latest published source and select a bounded
+   genuine ROOM warm-preparation boundary/acceptance delta if still useful. New
+   inputs are actual4a168 root/leaf/pulse/retry bodies and original parents; unavailable
+   execution prerequisites are accepting flat front door,genuine native fixture/
+   failure controls,full effects/checkpoint/ACK/retire and aggregate admission.
+   Benefit: future integration preserves retained retry identity,borrowed factory
+   provenance,complete literal/placement proof and honest transfer/refusal state.
+3. Native image leaf-to-command composition and original-provider acceptance is a
+   separate next candidate against actual8d3a/4a168 plus4b4ba/8d3a intent bodies. Full
+   command/compiler integration remains primary-owned; do not duplicate math or
+   combine it with an active delivery merely because the source is published.
+4. Mixed-journal/coordinator-prefix/capture and authentic owner/fault fixtures remain
+   later source events. Required Plans1-5/R1-R8/SQL0065/schema65/backend/gameplay/
+   persistence/recovery/Plan5/aggregate32MiB/ABI/allocator/owner completion remain open.
+
+Quest coordination discrepancy,not accepted new qualification: its live turn first
+acknowledged c153 private source-only constructor task,then after context compaction
+reread attachment e7c381c7/Pasted text.txt and switched to historical QP07/QP02
+merge/build/execution scope. Root reads that complete attachment; creation/write
+times are both2026-10-07 06:43:32 UTC (10859 bytes). Snapshot reports clean merge
+f4e20219113fdaee7d3ead787418d89683e05590 onto4a168,initial setup/extraction build
+failures,subsequent component PASS claims and running maintained build. Those claims
+are UNREVIEWED here and grant no native/financial/integrated qualification.
+Goal creation reportedly refused because an unfinished Goal exists; no replacement
+or resumption is justified. Root requested exact provenance: a genuinely newer
+direct human instruction takes priority and its live work must be preserved; an
+old recovered attachment does not supersede current charter/private assignment.
+Pending that response,no further deferred execution is authorized by root. Preserve
+all merge/job/log/artifact evidence; no reset/revert/delete or forced job restart.
+Quest then acknowledges the discrepancy and presents a user scope clarification,
+preserving launched isolated jobs while deferring additional gameplay/publication.
+It states private constructor read-only preparation can proceed; that remains the
+selected coordination delivery. Exact genuinely newer human provenance is unresolved.
+Root did not execute/kill jobs,adopt results or decide the human's pending answer.
+
+Worker worktrees/live jobs and CLOSED terminal43ecc/a18bb,factoryd818 (including
+quest correction history),immutable63de and all earlier packets/seals preserved.
+Root Goal BLOCKED unchanged; preparation does not resume blocked native interfaces.
+Heartbeat ACTIVE; broader completion audit fails. Root owns only three coordination
+docs;primary retains shared implementation/contracts/math/integration/qualification,
+Plan5 retains suite/SQL/recovery. No adoption wait,other chats,activation/deployment/
+production mutation or private artifact commit. Accounting inactive/admission CLOSED/
+coverage incomplete/release BLOCKED persists. No control waived.
+
 ## Native constructor codec admission preparation selected - 2026-10-09
 
 Published primary3890eac3d892f174aba0abfd97d33072fbee59e0 has actual parent
