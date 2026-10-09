@@ -7739,3 +7739,24 @@ generation/fence ownership cannot be bypassed. Tests/builds remain in the
 major-plan batch; combined Plan5 and R1–R8 gates remain unfinished. Unrelated
 WIP is preserved. Accounting stays inactive, admission CLOSED, coverage
 incomplete, release BLOCKED and the primary goal ACTIVE.
+
+
+## ROOM placement journal transport corrected - 2026-10-09
+
+[The source correction](ROOM_PLACEMENT_JOURNAL_TRANSPORT_2026-10-09.md)
+aligns native journal append/replacement/decode with the genuine existing
+ROOM placement builder and coordinator versions 1 and 2. Previously the
+shared journal predicate accepted only version 1, preventing valid placement
+carriers from durable admission/recovery. Unknown versions, other command
+families, schema/publication/envelope guards and full typed validators remain
+unchanged. Independent exact-source review and complete narrow byte inverse
+pass; formatting preserves tokens. All 931 policies and 393 pins retain scope,
+with zero new/unmapped lexical sites.
+
+Real native append/reopen/checkpoint/restart and unknown-version controls
+remain in the major-plan test batch. This transport fix grants no source,
+execution, publication or ACK entitlement. Actual warm/cold publication,
+guarded terminal transfer/retirement, complete aggregate/journal budgeting,
+combined Plan5 and R1-R8 gates remain open. Unrelated WIP is preserved;
+accounting stays inactive, admission CLOSED, coverage incomplete, release
+BLOCKED and the primary goal ACTIVE.

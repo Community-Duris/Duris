@@ -373,7 +373,7 @@
       "src/persistence/critical_command.h": "6064c1da68d806c3b9e48d715d0991346fb6a6a45692dd51838740044a381a71",
       "src/persistence/critical_command_coordinator.c": "e9d4de885a58ec1e14a9fc75077b01410b9e8646eca8c72415692e61a0b75e9a",
       "src/persistence/critical_command_coordinator.h": "3af2527f6dbbc04c6c982bd0f23a77214756a6c9424f593af9a499f89c688308",
-      "src/persistence/critical_command_journal.c": "53c60552b998dca42640a297f23e8ffe7bc4c297f16905ad7d79ced57864971f",
+      "src/persistence/critical_command_journal.c": "ba99b23afc72f7a4e29a91827ecfdea1cca0763eee78e703c3d725e62d964977",
       "src/persistence/critical_command_journal.h": "a905b7a89a680dfeb521a7d8ce1444b5bc9e54bf400d605a17aa30430db6c33e",
       "src/persistence/critical_command_repository.c": "d6fed863a38e6254d14e8a893f5a6d7b23b7536dd39397bc37ec078c16630dc3",
       "src/persistence/critical_command_repository.h": "321ebf1e9e9299079c100fe2c921f2e0c02d06e335499990b7650e82bc1eefef",
