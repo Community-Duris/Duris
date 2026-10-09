@@ -2847,6 +2847,186 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## SAME-lock terminal join reviewed CLOSED; checkpoint and ACK preparation selected - 2026-10-09
+
+Root independently reviews the original SAME-lock terminal join packets selected
+by 0b2bda448fe2f195b954179e799d43613c7e60ab. Disposition SOURCE/DESIGN/METADATA
+PASS; finite independent review CLOSED. Original source pins remain:
+joining bbbf872a1ded439f87e375309eb3f90f8f7c420e / actual parent
+e0540e52a258c1a417ae41137af2c1b9578faec7; guarded coordinator relay
+9fe4d77fbab9658c3df7e2456a11f48a41e12fa9 / actual parent
+ac99b021ec2e10f46ded47ea3b74b317e12b380e; full mixed journal
+dcb138e172f64001a40889279b86d4e908bf2730 / actual parent
+c57906c0cd49303b2565ca78a667e3d32b011abe; applicable corrected decoder
+365ba5e2445a1e40ee0ac00658494e35cdbed13c / actual parent
+c000d73ed645b2e2cd7b0ffac748e61d5f01f4b8; fixed continuity 712a255 and
+original CLOSED terminal43ecc/179045, transporta18bb/4a8. No repin occurs.
+
+Evidence D:/Dev/Temp/coordinator-terminal-join-review-20261009 authenticates
+raw Git providers, complete signature/body/catch and structure cuts, exact
+original controls, whole forward/inverse reconstructions, raw diffs, actual
+source censuses, minimal CLOSED seals and strict inventories. Fully read/audited
+stdlib read-only verifiers reproduce sealed receipts byte-for-byte. Root reads
+the full joining/guarded checkpoint and mixed scanner/build/retire/rewrite/known
+postimage confirmation controls and actual terminal reader/writer, retaining
+original secure-origin/authority/codec controls from CLOSED source pins.
+No product/component/native/compiler/preprocessor/server/DB/fixture execution,
+private artifact commit/import, ABI/allocator or request-math certification occurs.
+
+Architecture current packet
+D:/Dev/Temp/published-same-lock-terminal-join-authority-boundary-20261009
+authenticates 34 whole providers,178 exact cuts,38 whole original equalities,
+18 new complete definitions,15 full scopes,11 complete reconstructions and 22
+raw diffs,five observer-call-only original modifications,18 applicable decoder
+and 18 CLOSED dependency controls,seven whole frontier continuities and12 minimal
+CLOSED references. Root required one narrow prose correction: the full mixed
+scanner retains its original unchecked close(fd) return. Its rewrite and known
+postimage confirmation have their own checked-close controls; those are distinct.
+TJ3's rewrite close-fault oracle remains unchanged. Every original packet payload
+is preserved in a distinct history sibling; exact sentence inversion restores the
+original note. PINS/verifier/raw cuts/diffs/context remain unchanged; only note,
+its derived receipt note metadata and INDEX change. Exact history and receipt
+field delta are authenticated independently. Original review seals remain fixed.
+Architecture corrected principal seals (bytes/SHA256):
+- PUBLISHED_SAME_LOCK_TERMINAL_JOIN_AUTHORITY_BOUNDARY_2026-10-09.txt: 44816/6678aeafd90d9a84e11d6385237f89213ec29fe907bcec757eda008c833d4396
+- PINS.json: 246033/0f5016cac2bdb4e796640d62ddf2935107e8e1c0dcfa64e3e495018b79ae2659
+- INDEX.json: 39383/a43bb318990f22641dcde2f92bcd6051543c3b42010f2e5f784d6ef1241a096c
+- verify.py: 33716/5f5f162c32677adc1744356ef2b1dadd80b25b596b7897ed44637fc388036364
+- VERIFICATION.json: 2619/965ca20534a80edd7d137b703a85f9511fd21d15dd5466304bdb547329a6e308
+
+Original architecture history: D:\Dev\Temp\published-same-lock-terminal-join-authority-boundary-20261009-original-seal-before-scan-close-correction
+- Original PUBLISHED_SAME_LOCK_TERMINAL_JOIN_AUTHORITY_BOUNDARY_2026-10-09.txt: 44778/bd41428dffc4eb8ae256cbd0e7fc55a09f8c38e1d49ec4627c1ee405e9842830
+- Original PINS.json: 246033/0f5016cac2bdb4e796640d62ddf2935107e8e1c0dcfa64e3e495018b79ae2659
+- Original INDEX.json: 39383/a9e6c8d25b1b3ff9ac1d3eaf10737fff052c5c79ad0b0a64993a4bb3c9cb8acc
+- Original verify.py: 33716/5f5f162c32677adc1744356ef2b1dadd80b25b596b7897ed44637fc388036364
+- Original VERIFICATION.json: 2619/08558d16aa15d588734cd3c5f2db91a3e3caad4733decb28add04e735cc6d99f
+
+Quest original packet
+D:/Dev/Temp/published-same-lock-terminal-join-acceptance-delta-20261009
+authenticates 47 complete providers,118 full functions,15 actual scopes,25 whole
+equalities,13 complete inverses/13 raw diffs,three entire C prefixes,nine original
+or corrected-frontier continuities,four source censuses and15 unchanged references
+to three minimal CLOSED contexts. Complete guarded cleanup tail1204 bytes is pinned.
+Four disclosed pre-seal metadata lookup/selector errors are resolved. No correction
+or reseal is required. Quest original principal seals (bytes/SHA256):
+- PUBLISHED_SAME_LOCK_TERMINAL_JOIN_ACCEPTANCE_DELTA_2026-10-09.txt: 32807/a3f75fe7d4cd5642e51eee2382cc1b74101344ee367b3a1e65cc213e5146313e
+- PINS.json: 8334958/eb78d2a78766ca4f6a1e22a0446a774ae5355f0c170366d03894c129609b999f
+- INDEX.json: 669/6a859377f082cb7bbb3a5e8c8987dc58efec3526e2c7e3ee7cb141d522947649
+- verify.py: 14260/6789018cd38852ad526ad621b204cc8f37c97807e08515866166366347dd07a0
+- VERIFICATION.json: 2209/c5f1e39da6eb3995cf781a41b3d232c41037dea8d579a78fae7c820a89c28dec
+
+Both reviewed notes preserve the SAME borrowed configured-root lock, original
+origin/receipt/full BODY proof and EVERY-retry authority recovery, complete apply/
+unlink and exact secure readback. Durable authority journal publication alone
+does not authorize successful terminal transfer. Actual operation/generation/
+BODY/counters pin under coordinator mutex; owner writer/journal work follows
+outside it with the full simultaneous prefix. Budget callbacks acquire neither
+coordinator nor journal mutex. Full mixed scan authenticates all records and
+legacy/native duplicate laws. Bare selected-frame absence is not confirmation;
+known original expected/transition/full-postimage proof and directory sync are.
+Persistent attempt storage remains separately once outside outer; call scratch
+dies before aggregate recensus. Prior uncertainty and original fences/carrier
+survive refusal. Only confirmed journal result plus exact late recheck retires
+the original carrier/fences. Physical/service/metadata release remain separate.
+The corrected nested preflight has its own by-value span; no stale profile is used.
+All TJ1-TJ4 component/native cuts remain UNEXECUTED; genuine commands UNAVAILABLE.
+
+Published successor reassessment is separate from these fixed sealed reviews:
+f996a53f8355fbb96c66e835ec8ba69183ab71c3 / actual parent
+1ebfc32eaf35846d032d0a93291aeb6987b891dd supplies full bounded mixed-journal
+native replacement;81d238767dc54a2e9baed842b8f8db0b306faf7b / actual parentf996
+supplies actual ROOM same-phase successor checkpoint; b7ab3dcdd9dd3810d711cbf6cf00b813c703cc24
+/ actual parent81d supplies receipt/delivery-authenticated physical ACK. Root reads
+all 180/222/134 appended C lines, headers, exact registrations and full handoffs,
+plus the original full ACK/receipt equality/publication-state guards. Eight whole
+source/header/registration forward/inverses and actual parents authenticate.
+Full expected/successor canonical identity, monotonic revision/phase, original
+mixed scan and persistent complete attempted postimage remain. Same-phase
+checkpoint is distinct from execution-to-continuation ACK. ACK authenticates
+original full receipt/delivery/result and both complete clones; genuine physical
+release follows confirmed durable CAS. Original ROOM fences remain for terminal
+retirement. Both counters and original pointer/generation/revision/phase/BODY
+late rechecks precede nonallocating successful updates. Primary private review,
+policy/token/preprocessor reports remain reported; no native/math qualification
+follows. These companions still lack accepting full pulse/root caller journeys.
+
+Late handoff context e9d6a746c82cabbc6f92cfd18695bfb678ea2a6f / actual parent
+b7ab3dcdd9dd3810d711cbf6cf00b813c703cc24 adds full current carrier-copy and genuine
+generation-observation companions. Root reads all 111 appended C lines, header and
+full handoff; two whole inverses authenticate, bringing current source metadata to
+ten complete transitions. Original b7 checkpoint/ACK C prefix is preserved. These
+new leaves reduce acquisition dependencies but remain separately queued for next
+handoff; they do not expand the fixed checkpoint/ACK delivery or qualify a root.
+
+Prioritized evolving queue; exactly one bounded active delivery per chat:
+1. Architecture owns private
+   PUBLISHED_ROOM_CHECKPOINT_ACK_AUTHORITY_BOUNDARY_2026-10-09.txt under
+   D:/Dev/Temp/published-room-checkpoint-ack-authority-boundary-20261009.
+   Quest owns PUBLISHED_ROOM_CHECKPOINT_ACK_ACCEPTANCE_DELTA_2026-10-09.txt under
+   D:/Dev/Temp/published-room-checkpoint-ack-acceptance-delta-20261009.
+2. Available fixed inputs: checkpoint81d/f996, ACKb7ab/81d and mixed replacement
+   f996/1eb above; complete applicable successor/publication domain validators
+   at365/c000, original coordinator context_checkpoint/ACK/delivery/receipt/
+   registration and full original single-successor journal transition controls.
+   Reuse minimal CLOSED SAME-lock seals for original lock/origin/refusal/lifetime
+   law without reopening their source pins or transitive inventories. Authenticate
+   actual complete originals, narrow registration additions and whole inverses.
+3. Concrete output/benefit: implementation-ready real-caller authority/state and
+   request/lifetime map for original context/effect-cursor persistence and physical
+   ACK sequence. Map caller full expected/successor/receipt/delivery/generation/
+   native owners, actual prepared/frozen/successor clones/string return temporary,
+   sequential canonical scopes, registered full predicates, exact original operation
+   pin/counters, complete mixed replacement and actual retained/uncertain owners.
+   Same-phase optional expected_generation0 preserves original semantics; physical
+   ACK requires genuine nonzero generation/receipt/delivery. Do not invent new flags,
+   erase fences at ACK or equate a successful DTO with genuine physical ownership.
+4. Quest supplies four legal implementation-ready CK cuts: CK1 full pre-copy/
+   pre-pin canonical/clone/request/refusal; CK2 same-phase full successor/domain/
+   retained-charge and genuine delivery/generation guards; CK3 original full
+   receipt/result-authenticated physical ACK and fence retention; CK4 complete
+   mixed replacement/pre-post rename uncertainty/known postimage retry/late recheck/
+   successful nonallocating commit and scratch-to-retained recensus. Each records
+   authentic setup, complete original byte/state oracle, legal negative/fault
+   transitions and actual unavailable execution command. Component/native remain
+   UNEXECUTED; genuine commands UNAVAILABLE. No fake phase/ACK/generation, accepting
+   validator stub, fixture copy, command-only surrogate or duplicate math/admission.
+5. Ownership: primary retains maintained implementation/math/contracts/coverage/
+   admission/qualification; Plan5 retains original suite/SQL/recovery/audit/backup/
+   restore/release. Workers own only these separate private packets. Root only
+   three coordination docs/read-only source/metadata. No maintained source/test/
+   schema/policy change or product/native/server/DB/fixture run is authorized here.
+6. Unavailable dependent steps: accepting complete flat ROOM pulse/root with
+   real caller use of published copy/generation plus warm-cold/selected-root/SAME lock/context/service/
+   placement/effects and original UID/physical/lifetime controls; genuine native/
+   capture/legal failure/restart fixtures; complete caller/capture/aggregate
+   retention and qualification. Missing those blocks execution, not this bounded
+   preparation from newly available real providers. No blocked actual Goal resumption.
+7. Queue separately at next handoff: current carrier-copy/generation-to-root integration;
+   financial command/compiler/result/recovery;
+   real Zombie/event-pool/MEMCHK/scheduler/service and diagnostic format/queue/pager/
+   debug fanout/logit effects boundaries where concrete source supports useful work.
+   Those adjacent original semantic/native qualifications remain open. No second
+   active task, broad inventory, manufactured document or adoption wait.
+
+Preserve CLOSED SAME-lock originalJ/G/M/D/F sources and scanner-close history;
+lifecyclec404/9fe with publisher/hydrationac99/0ca/eb9 and allocation clarification;
+CURRENTb55/d47,warm4a168/c153,constructor3890/c591 declaration-order correction and
+original141-file history,terminal43ecc/a18bb,factoryd818 CURRENT/RETAINED two-segment
+correction/history,immutable63de and all earlier seals. All earlier TJ/LC/CR/WP/
+CC/TR cuts remain UNEXECUTED. Keep isolated worktrees/live jobs and quest clean
+unpublished mergef4e20219113fdaee7d3ead787418d89683e05590 unchanged. Historical
+October7 e7c381c7 human scope/provenance answer remains PENDING as observed; truly
+newer human instructions take priority. Reported component PASS/QP04 FAIL/SQL-flat
+private-ready build failures remain UNREVIEWED root, no genuine current ELF/gameplay/
+SQL capture proof. No reset/revert/kill/delete/restart/deferred execution.
+
+Actual Goal BLOCKED unchanged1791410483; no replacement/resumption/completion.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/SQL0065/schema65/Plan5/
+aggregate32MiB/ABI/allocator/owner completion audit remains open. Sidework review
+cannot meet it. Heartbeat ACTIVE; accounting inactive, admission CLOSED, coverage
+incomplete, release BLOCKED. No other-chat messaging/private artifact commit/import/
+production mutation/activation/deployment. Quiet unchanged-state intent persists.
+
 ## Warm-flat lifecycle reviewed CLOSED; SAME-lock terminal join selected - 2026-10-09
 
 Root independently reviews both original warm-flat lifecycle preparation packets,
