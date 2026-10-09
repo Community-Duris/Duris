@@ -3,6 +3,7 @@
 #include "flatfile/flatfile_accounting_shop_transaction.h"
 #include "flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.h"
 #include "economy/shop_trade_accounting.h"
+#include "economy/native_mobile_birth_cash_role_result.h"
 #include <map>
 #include <tuple>
 
