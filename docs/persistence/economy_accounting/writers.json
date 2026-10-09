@@ -512,7 +512,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1722,
+          1731,
           "money_helper"
         ]
       ],
@@ -3707,12 +3707,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          1696,
+          1699,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          1696,
+          1699,
           "item_publication"
         ]
       ],
@@ -3749,12 +3749,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          836,
+          839,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          850,
+          853,
           "item_publication"
         ]
       ],
@@ -3831,12 +3831,12 @@
         ],
         [
           "src/classes/drannak.c",
-          446,
+          449,
           "economic_submit"
         ],
         [
           "src/classes/drannak.c",
-          451,
+          454,
           "item_lifecycle"
         ]
       ],
@@ -3891,12 +3891,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          906,
+          909,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          910,
+          913,
           "item_lifecycle"
         ]
       ],
@@ -3933,12 +3933,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          920,
+          923,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          924,
+          927,
           "item_lifecycle"
         ]
       ],
@@ -15624,7 +15624,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1794,
+          1803,
           "item_lifecycle"
         ]
       ],
@@ -15771,32 +15771,32 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          975,
+          978,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1012,
+          1018,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          1027,
+          1033,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1032,
+          1038,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1102,
+          1111,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          1107,
+          1116,
           "item_lifecycle"
         ]
       ],
@@ -15850,42 +15850,42 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          928,
+          931,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          952,
+          955,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          959,
+          962,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          966,
+          969,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          988,
+          991,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          998,
+          1001,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1023,
+          1029,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1114,
+          1123,
           "item_lifecycle"
         ]
       ],
@@ -16590,12 +16590,12 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1288,
+          1297,
           "item_publication"
         ],
         [
           "src/classes/salchemist.c",
-          1289,
+          1298,
           "item_lifecycle"
         ]
       ],
@@ -16639,17 +16639,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1242,
+          1251,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1249,
+          1258,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1252,
+          1261,
           "item_lifecycle"
         ]
       ],
@@ -19264,12 +19264,12 @@
         ],
         [
           "src/classes/salchemist.c",
-          617,
+          620,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          623,
+          626,
           "item_lifecycle"
         ]
       ],
@@ -20500,21 +20500,6 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1372,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1375,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1378,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
           1381,
           "item_lifecycle"
         ],
@@ -20580,32 +20565,47 @@
         ],
         [
           "src/classes/salchemist.c",
+          1420,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1423,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
           1426,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1430,
+          1435,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1441,
+          1439,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1445,
+          1450,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1446,
+          1454,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1447,
+          1455,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1456,
           "item_publication"
         ]
       ],
@@ -20649,17 +20649,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1343,
+          1352,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1347,
+          1356,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1348,
+          1357,
           "item_publication"
         ]
       ],
@@ -21090,7 +21090,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1517,
+          1526,
           "item_lifecycle"
         ]
       ],
@@ -49250,7 +49250,7 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 446,
+      "line": 449,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
@@ -49280,43 +49280,43 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 451,
+      "line": 454,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(orb);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 836,
+      "line": 839,
       "family": "item_lifecycle",
       "excerpt": "objrecipe = read_object(400210, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 906,
+      "line": 909,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 910,
+      "line": 913,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 920,
+      "line": 923,
       "family": "item_lifecycle",
       "excerpt": "reward = read_object(real_object(getItemFromZone(GET_ZONE(ch))), REAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 924,
+      "line": 927,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1696,
+      "line": 1699,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -49328,13 +49328,13 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 850,
+      "line": 853,
       "family": "item_publication",
       "excerpt": "obj_to_char(objrecipe, ch);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1696,
+      "line": 1699,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -49874,25 +49874,25 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1722,
+      "line": 1731,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, circle * 10000, 0) != 0)"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 617,
+      "line": 620,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1012,
+      "line": 1018,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1102,
+      "line": 1111,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
@@ -49928,271 +49928,271 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 623,
+      "line": 626,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(output);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 928,
+      "line": 931,
       "family": "item_lifecycle",
       "excerpt": "jewel = read_object(static_cast<int>(jewel_vnum), VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 952,
+      "line": 955,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 959,
+      "line": 962,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 966,
+      "line": 969,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 975,
+      "line": 978,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 988,
+      "line": 991,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 998,
+      "line": 1001,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1023,
+      "line": 1029,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1027,
+      "line": 1033,
       "family": "item_lifecycle",
       "excerpt": "P_obj new_item = read_object(1251, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1032,
+      "line": 1038,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1107,
+      "line": 1116,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(new_item);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1114,
+      "line": 1123,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1242,
+      "line": 1251,
       "family": "item_lifecycle",
       "excerpt": "P_obj needed = read_object(imat, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1249,
+      "line": 1258,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1252,
+      "line": 1261,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1289,
+      "line": 1298,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1343,
+      "line": 1352,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1347,
+      "line": 1356,
       "family": "item_lifecycle",
       "excerpt": "ash = read_object(2670, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1372,
+      "line": 1381,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400261, VIRTUAL); // medium iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1375,
+      "line": 1384,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400262, VIRTUAL); // large iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1378,
+      "line": 1387,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400264, VIRTUAL); // medium steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1381,
+      "line": 1390,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400265, VIRTUAL); // large steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1384,
+      "line": 1393,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400267, VIRTUAL); // medium copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1387,
+      "line": 1396,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400268, VIRTUAL); // large copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1390,
+      "line": 1399,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400270, VIRTUAL); // medium silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1393,
+      "line": 1402,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400271, VIRTUAL); // large silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1396,
+      "line": 1405,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400273, VIRTUAL); // medium gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1399,
+      "line": 1408,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400274, VIRTUAL); // large gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1402,
+      "line": 1411,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400276, VIRTUAL); // medium platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1405,
+      "line": 1414,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400277, VIRTUAL); // large platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1408,
+      "line": 1417,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400279, VIRTUAL); // medium mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1411,
+      "line": 1420,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400280, VIRTUAL); // large mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1414,
+      "line": 1423,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400282, VIRTUAL); // medium adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1417,
+      "line": 1426,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400283, VIRTUAL); // large adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1426,
+      "line": 1435,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1430,
+      "line": 1439,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(2670, VIRTUAL); // Ash"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1441,
+      "line": 1450,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1445,
+      "line": 1454,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1446,
+      "line": 1455,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(second_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1517,
+      "line": 1526,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // A random eq arti?"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1794,
+      "line": 1803,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Not an arti, but ok."
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1288,
+      "line": 1297,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1348,
+      "line": 1357,
       "family": "item_publication",
       "excerpt": "obj_to_obj(ash, furnace);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1447,
+      "line": 1456,
       "family": "item_publication",
       "excerpt": "obj_to_obj(new_obj, furnace);"
     },
@@ -66815,7 +66815,9 @@
       "src/world/zone_reset_item_owner.h": "3bd60b74b6f2c8254febc98afa863bbb55d2ff2fb03178a376f3855a8541d075",
       "src/flatfile/flatfile_accounting_shop_transaction.h": "984ce532f3ccefe922ed304515c9f3954ea8d3a2b38cd8e96b858045ed42f2af",
       "src/persistence/economic_sql_zone_reset_item_transaction.c": "c3ad5ca77cb863ec554b4452e1c9f5397ffaa210ac0c5549d565de891beccdf8",
-      "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804"
+      "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804",
+      "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
+      "src/classes/salchemist.c": "b4230b88b2b638d1a6dcf083742a5fa168856974b019f7fb410138c77e1a81df"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

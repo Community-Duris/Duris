@@ -161,8 +161,10 @@
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
       "src/Makefile": "f215c0db03f0f3e923ac061e97e9e6c9e192a1de8f6d7cbcee36d06f7286d7d7",
+      "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
+      "src/classes/salchemist.c": "b4230b88b2b638d1a6dcf083742a5fa168856974b019f7fb410138c77e1a81df",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
       "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
@@ -1109,7 +1111,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1597
+          1606
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -4737,7 +4739,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1677
+          1680
         ],
         "file": "src/classes/drannak.c",
         "function": "christmas_proc",
@@ -4794,7 +4796,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          800
+          803
         ],
         "file": "src/classes/drannak.c",
         "function": "create_recipe",
@@ -4975,7 +4977,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          875
+          878
         ],
         "file": "src/classes/drannak.c",
         "function": "random_recipe",
@@ -5032,7 +5034,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          916
+          919
         ],
         "file": "src/classes/drannak.c",
         "function": "random_zone_item",
@@ -18731,7 +18733,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1746
+          1755
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -18858,7 +18860,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          846
+          849
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -18985,7 +18987,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          846
+          849
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -19032,7 +19034,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          846
+          849
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -19732,7 +19734,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1182
+          1191
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -19779,7 +19781,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1182
+          1191
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -23646,7 +23648,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1311
+          1320
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -23707,7 +23709,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1311
+          1320
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -24249,7 +24251,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1486
+          1495
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
