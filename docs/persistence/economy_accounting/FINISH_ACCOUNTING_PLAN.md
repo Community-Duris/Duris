@@ -1,5 +1,19 @@
 # Finish accounting implementation plan
 
+## Executable checkpoint passed - 2026-10-09
+
+[Exact candidate results](COMBINED_EXECUTABLE_CANDIDATE_CHECKPOINT_2026-10-09.md)
+record published source ec632155c: both fresh strict production profiles compile
+and link, and the existing disposable inactive flatfile boot/health/shutdown and
+UID-refusal preflight passes. Binaries and exact hashes are retained. Corrected
+private linker-script aliases use genuine installed libraries; system files and
+production flags are unchanged. SQL smoke is unavailable because its disposable
+Docker prerequisite is unavailable. This supersedes earlier pending link/smoke
+status only for this candidate. Full accepting journeys, prospective32MiB,
+publication/terminal/ACK, dual-engine recovery and release gates remain open.
+Admission stays closed; the ongoing goal remains active.
+
+
 ## Guarded combined-source handoff in progress - 2026-10-09
 
 [Current candidate handoff](COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md)
