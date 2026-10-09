@@ -6823,3 +6823,49 @@ bool critical_zone_reset_item_publication_owner::cancel_refusal_bounded(
 	return true;
 #endif
 }
+
+bool critical_zone_reset_item_publication_owner::completion_bounded(
+	const critical_operation_id &operation_id, critical_completion *completion,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!reserve || !completion || critical_operation_id_is_zero(operation_id))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t live = outer;
+	// The actual original key is directly initialized under the original mutex:
+	// its 16-byte binary identity requests 17 chars on the supported string ABI.
+	// Caller-owned fixed receipt output and its other retained state belong to
+	// outer; this lookup constructs no completion clone or command codec.
+	if (!room_retire_add(live, sizeof(std::lock_guard<std::mutex>)) ||
+	    !room_retire_add(live, sizeof(std::string)) ||
+	    !room_retire_add(live, operation_id.bytes.size() + 1) ||
+	    !room_retire_add(live, sizeof(decltype(operations)::iterator)) ||
+	    !room_retire_add(live, sizeof(decltype(completed_cache)::iterator)) ||
+	    !reserve(live, context))
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const std::string identity = operation_key(operation_id);
+		auto operation = operations.find(identity);
+		if (operation != operations.end() &&
+		    operation_is_publication_pending(*operation->second))
+		{
+			*completion = operation->second->publication_completion;
+			return true;
+		}
+		const auto found = completed_cache.find(identity);
+		if (found == completed_cache.end())
+			return false;
+		*completion = found->second.completion;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

@@ -459,6 +459,13 @@ class critical_zone_reset_item_publication_owner final
 	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
 					       uint64_t *, bool (*)(size_t, void *) noexcept,
 					       void *, size_t outer_live) noexcept;
+	// Original same-lock pending-publication/completed-cache receipt lookup.
+	// Actual binary-key string/lock storage is admitted before construction;
+	// fixed caller-owned output belongs to outer and remains unchanged on false.
+	// No extra health/generation/type/receipt gate or delivery/ACK authority.
+	static bool completion_bounded(const critical_operation_id &, critical_completion *,
+				       bool (*)(size_t, void *) noexcept, void *,
+				       size_t outer_live) noexcept;
 	// Complete original delivered never-admitted cleanup and fence removal.
 	// Cleanup runs outside the coordinator mutex with its operation pinned and
 	// the complete live prefix; reserve may run under the original mutex and
