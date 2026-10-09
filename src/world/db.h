@@ -546,6 +546,24 @@ class quest_mobile_native_item_stage
 	bool rebuild_enrollment(struct obj_data *expected, const native_mobile_birth_item_recipe &,
 				const quest_mobile_native_item_progress &,
 				std::span<const quest_mobile_native_item_effect>) noexcept;
+
+	// Complete frozen flat present-object adoption; full recorded prefix/current
+	// event/proc/UID/literal proof. Metadata only, no native reenrollment or RNG.
+	static bool
+	adopt_published_bounded(const player_item_snapshot &,
+				const native_mobile_birth_item_recipe &, struct obj_data *,
+				const quest_mobile_native_item_progress &,
+				const std::span<const quest_mobile_native_item_effect> &,
+				quest_mobile_native_item_stage *, bool (*)(size_t, void *) noexcept,
+				void *, size_t) noexcept;
+	// Genuine completed enrollment-prefix reconstruction. Outer includes initial
+	// own stage + CURRENT object/affect/Zombie/event/output storage ONCE. Refresh
+	// all current storage on EVERY return. Actual successful scheduling is retained
+	// before later diagnostics can refuse, and must never be replayed.
+	bool rebuild_enrollment_bounded(struct obj_data *, const native_mobile_birth_item_recipe &,
+					const quest_mobile_native_item_progress &,
+					const std::span<const quest_mobile_native_item_effect> &,
+					bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	bool release_published() noexcept;
 	// Exact original metadata-release guard, for nonfailing whole-batch cleanup.
 	bool can_release_published() const noexcept;
