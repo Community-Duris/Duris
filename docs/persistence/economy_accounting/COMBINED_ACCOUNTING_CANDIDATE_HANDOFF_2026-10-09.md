@@ -53,6 +53,23 @@ a shared service or fabricated restore marker. If that prerequisite is unavailab
 record SQL smoke as unavailable while publishing available build/flat results.
 The broader backup suite remains with Plan 5 and the major qualification batch.
 
+## Native integration repair checkpoint
+
+Full fresh SQL and flatfile scans of `73195295e1384d7c3aae31107e644a9a8c612b99`
+collected the remaining compiler blockers. Their repairs preserve strict warnings,
+inactive behavior and closed admission: direct existing declarations, an unsigned
+errno result, optional unused diagnostic parameters, redundant signed-byte tests,
+exact widened SHOP PID comparisons, reference-only counter compaction and a
+cleanup parameter rename. Original actor observations now execute inside their
+existing private birth owner. The ROOM source owner gets narrow private observer
+friendship and sorts only its copied observation UID list; original tree order and
+duplicate/foreign-link refusal remain intact. All eleven affected translation
+units compile in both fresh production profiles. Independent source reviews
+passed for the private owner and SHOP changes. No new lexical writer sites or
+writer policies are introduced. Evidence: `build-successor-73195295e/{native,build-fixes,build-fixes-extra,build-fix-publication}/`
+under the candidate evidence directory below. Full rebuilt binary link and smoke
+remain pending; these object checks grant no gameplay or release qualification.
+
 Published source `25b863da7727b57c30901cf271a8fa555c9ee954` reached both fresh
 production compilers. Both stopped at the same missing-field initializer error
 in the Harvester caller. The complete repair explicitly initializes refinement
