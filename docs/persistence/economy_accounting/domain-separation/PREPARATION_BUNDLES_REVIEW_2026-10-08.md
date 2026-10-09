@@ -2411,3 +2411,120 @@ first-checkpoint and history DB dependencies remain queued. Actual root/native
 Goals remain BLOCKED and unfinished;finite source preparation does not resume
 them. Heartbeat remains ACTIVE. Required Plans1-5/R1-R8 integrated qualification,
 required blockers and published owner completion disposition remain unresolved.
+
+## Backend repair guidance and initial SHOP SQL acceptance reviewed - 2026-10-08
+
+Both bounded preparations PASS root independent review at their exact source-only
+scopes. No maintained implementation is applied. Published041 source still has
+one unresolved P1:three uses of absent persistence_mode_sql_enabled(). Primary
+owns application and later qualification;private candidate/adoption is unknown.
+
+Architecture SMITH_BACKEND_GUARD_REPAIR_FEASIBILITY_2026-10-08.txt is18,704 bytes,
+SHA256343e7d5097c25adc11bc2241e7a1c966f37d11eff44e049a55c1fc4a6ebdc638.
+PINS.json21,608 bytes,SHA2567653c3a509e00866b23813c3a3db4cbc40cdc1898551a94309357320a8492548;
+INDEX.json786 bytes,SHA2566f5b462ca0c7001f89a605546842994fce3afd0b63b38834f9c2204ad0f20081.
+Root authenticates13 raw providers,24 ranges,eight exact textual hunk preimages/
+replacement hashes and14 preserved closed artifacts. Actual configure/root state,
+selector/source-cut callers and boot exit independently corroborate the proposal.
+Finite build/mode formula review is arithmetic,not executed product qualification.
+
+Optional smallest Choice A,preimage0411528f076f219a81ed2dc028460c0f4d166713:
+
+- player_save_pipeline.c2305-2310:remove only
+  `!persistence_mode_sql_enabled() &&` from the return expression. Keep exact flat
+  mode,root nonempty,actor/PID and installed regular-wallet observation.
+- player_save_pipeline.c2321-2325:remove only the condition line
+  `persistence_mode_sql_enabled() ||`. Keep genuine
+  `selected_snapshot_apply() != flatfile_player_snapshot_apply_selected` refusal
+  and all other actor/context/epoch/readiness checks.
+- economic_gameplay_authority.c406-410:replace the initial missing-API guard with:
+
+```cpp
+if (!output || !pid || pid > INT32_MAX)
+    return false;
+#ifndef __NO_MYSQL__
+if (!persistence_mode_requires_mysql())
+    return false;
+#endif
+```
+
+Retain the complete observer body after this guard. No new header/public API,
+backend admission rule or success latch is required. These are optional textual
+instructions,not applied source. Choice B in the exact private packet retains
+explicit build predicates with two anonymous-namespace constexpr constants;it is
+a larger supported alternative if primary wants early helper checks visible.
+Root publishes A's actionable recipe,not private packet bodies or a source patch.
+
+The interpretation is explicit:__NO_MYSQL__ identifies linked-build capability;
+requires_mysql means mode != FLATFILE_PRIMARY. No implementation of the missing
+API exists to establish additional runtime-pool/configuration-epoch semantics.
+Under actual providers,client-linked flat configuration refuses before assigning
+root;the source cut also requires the real flat callback. Client-free selection
+uses flat callback even before configure,so exact mode/root checks remain needed.
+In client-linked flat mode,observer refusal is retained;ordinary SQL wallet-only
+observation keeps all installed mapping guards and gains no bank/native-money
+requirement. Client-free SQL/default/fallback passive mapping behavior remains
+inherited;configuration refuses those unsupported cases. Replacing all missing
+calls with requires_mysql would wrongly permit client-linked flat observation.
+Failed client-free flat configuration may expose a nonempty root;real boot exits
+on failure. This repair neither invents nor proves a configuration-success latch.
+After major-plan deferral lifts,compile both changed units in both maintained
+modes,then genuine configuration/observer/selector checks. Full native Smith owner,
+legal phase exports and integrated qualification remain separate requirements.
+
+Quest SHARED_INITIAL_SHOP_SQL_ACCEPTANCE_DELTA_2026-10-08.txt is34,205 bytes,
+SHA25636e8f89a4192ed1a868b01bdc8898ce117cb366b91b0cf54ddb76d149eb81a9d.
+Root authenticates36 raw-Git pins (34 at2644da52c,two owned prep pins) and7 closed
+artifact sizes/hashes. Public source/tests/migrations remain exact041. The entire
+packet is reviewed;actual SQL owner/save/affect,origin read/retain,ordinary birth
+attempt/type12 and full physical capture cuts are independently corroborated.
+One future genuinely missing-SHOP birth case has empty/nonempty stock variants
+only for actual owner presence/clock. New participant behavior stays explicitly
+reported PRIVATE contract;no private DTO/source/decoder/native pass is inferred.
+
+Concrete acceptance boundaries now prepared:
+
+- Observe BOTH native-ID and original-birth-operation immutable-origin absences
+  before DML;ID-only read plus UNIQUE insert failure cannot prove this. A collision
+  after insert attempt is attempted-write evidence. Genuine legal routes remain
+  required;do not poison immutable origins or edit original identity to reach them.
+- Preserve explicit SHOP item-owner presence AND clock. Public owner_revision
+  collapses absent and present revision0 to numeric0. Empty must preserve its real
+  presence class;nonempty exact transitions await the actual participant contract.
+  Existing ordinary native birth creates wallet/type12 revision1 and is a different
+  profile. No financial zero leg or NPC-wallet creation belongs to reported shared
+  initializer. Initial SHOP row revision is not inferred from legacy defaults.
+- Compare complete original BEFORE,recheck,monotonic attempted-write history and
+  exact physical stock/slots/sidecars/saved affects. Public saved-affect policy
+  excludes NOSAVE. Counts/VNUMs/prototype-only restore do not prove these literals.
+- Restart must recover the SAME original operation/native/source/attempt and extra
+  checkpoint room/save-time/roaming/affects through genuine durable owner history,
+  rather than reconstructing from current room/time/force/cold/build. Ordinary
+  NBC2/3 and constructor clocks cannot stand in for the unavailable new carrier.
+  Root transaction/uncertainty,typed result/inbox/outbox,publication and ACK are
+  separate pending observations.
+- Existing SQL SHOP harness is synthetic already-saved revision9;actual-reset full
+  engine provider is flat/M-only with immutable old-source guard. Neither supplies
+  genuine shared initial SQL dispatch/restart. No runner or oracle edit is reserved
+  before real candidate/caller/export;legal phase/fault controls stay unavailable.
+
+Root proof:D:/Dev/Temp/coordinator-smith-backend-guard-repair-review-20261008/review.json,
+review.py and quest-review.py. Both original clean worktrees and sealed artifacts
+remain intact. No compiler/preprocessing/product/native/server/DB execution,source
+patch/private import/commit,deployment or activation. Only coordinator-owned docs.
+
+Current independent deliveries are CLOSED;the broader project is not complete.
+Architecture next trigger:published backend repair/changed guard-selector contract,
+actual shared initial participant/producer/restart source,or genuine Smith/native
+owner and legal phase exports. Quest next trigger:actual initial participant/DTO,
+original detached factory/capture,extra-observation restart carrier,typed root
+finish/distinct dispatch,legal origin/lock/attempt/restart/fault exports or an
+authenticated integrated provider at major-plan readiness. A changed Smith contract
+may instead trigger a bounded delta to accepted flat acceptance. Root reassesses
+new source/requirements at those events;no duplicate inventory,adoption wait or
+new filler packet. Required original O/P/special-placement,SHOP held refusal/late
+consumption,keeper first-checkpoint,history DB and remaining native journeys stay
+queued with prior exact dependencies. Actual root/native Goals remain BLOCKED;
+this preparation does not resume them. Heartbeat remains ACTIVE until published
+Plans1-5/R1-R8 implementation/integrated qualification,required blocker resolution,
+owner completion disposition and selected handoffs satisfy the broader audit.

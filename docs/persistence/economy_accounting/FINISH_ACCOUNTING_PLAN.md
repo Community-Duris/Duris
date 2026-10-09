@@ -54,6 +54,26 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator publishes backend repair guidance and initial SQL acceptance - 2026-10-08
+
+Optional source-only repair guidance PASSes independent review:13 providers,
+24 ranges,eight textual proposals,14 preserved artifacts. Smallest Choice A
+removes two redundant undefined pipeline guards while preserving actual flat
+callback/mode/root checks,and gates passive flat wallet observation with existing
+__NO_MYSQL__ build plus requires_mysql mode contracts. Exact instructions and
+failure/default limits are in the continuing charter. No patch is applied;
+published041 missing-API P1 remains unresolved and primary owns implementation.
+Quest initial missing-SHOP SQL acceptance delta PASSes independent preparation
+review:36 exact pins,seven closed artifacts. The future genuine empty/nonempty
+case distinguishes owner absence/present0,dual origin-key exclusion,attempted DML,
+complete physical/saved-affect image and restart-original extra observations.
+Private participant/DTO/producer/carrier/root result/dispatch and legal exports
+remain unavailable;old ordinary type12/SQL saved-row/flat fixtures cannot substitute.
+Both finite deliveries CLOSED;next exact source/native-export/provider events
+remain queued. Root/native GoalsBLOCKED unchanged,heartbeatACTIVE. No compiler/
+product/native/DB/server execution under major-plan deferral. Broader required
+Plans1-5/R1-R8 qualification,required blockers and owner completion remain open.
+
 ## Coordinator confirms flat Smith source blocker and closes acceptance prep - 2026-10-08
 
 Independent review of actual0411528f0 confirms one P1:three new calls to absent
