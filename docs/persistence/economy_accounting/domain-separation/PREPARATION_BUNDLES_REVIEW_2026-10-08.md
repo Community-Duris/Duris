@@ -2847,6 +2847,137 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## ROOM codec acceptance reviewed; provider INITIAL frontier and two next deliveries - 2026-10-09
+
+This checkpoint supersedes the immediate queue in the ROOM frontier section below.
+Codec review remains pinned to a0c882a311f83080eecec364db86d4d9f61e8256;
+coordinator6ba85bcef4bd7ff36e18882a101ed7c49e691cf5 published the prior disposition.
+During publication primary f2c2c31b96b05a6daa56e8d43782805308f793be arrived:
+19 changed paths,1468 insertions/64 deletions,12 additional production .c/.h paths.
+Its actual private pulse guard and public bounded provider/INITIAL source contracts
+are now observable. Private primary progress/adoption remains unobserved.
+The finish line remains required Plans1-5, applicable original R1-R8 and integrated
+backend/gameplay/persistence/recovery proof, resolved blockers and owner completion.
+
+Quest's packet D:/Dev/Temp/published-room-codec-profile-acceptance-delta-20261009
+now passes independent finite source/design review, CLOSED preparation only.
+Root read the complete acceptance note/verifier and actual relevant source and
+private/public declarations; independently authenticated26 full raw providers,
+24 exact ranges,12 additions-only diffs,11 original function-body equalities,
+19 reused artifacts,two closed indexes/eight sealed payloads and four new payloads.
+All original codec/authority function bodies remain exact from parent36b081229 to
+a0c882a31; original canonical encoder fresh reserve predates this source delta.
+Exact corrected artifacts:
+
+- PUBLISHED_ROOM_CODEC_PROFILE_ACCEPTANCE_DELTA_2026-10-09.txt:30860 bytes,
+  SHA2563e3432fa418e4d413fed8a24e1427171079de44eefcc6edfb32c67d62f5f037b.
+- PINS.json:1928091 bytes,
+  SHA256c831c70373d2339491706fd8a030ba537ef96b511347d66e73c308c74735a0c0.
+- INDEX.json:739 bytes,
+  SHA2564a4e24d3b28cebc1e140c345f0d68130070d2f6c4e6ea705022ee7dc76f8b2ad.
+
+Root identified one overstatement in passive source-event validation. Its actual
+48-byte codec checks complete size/version, kind range and nonzero source and
+generation; it has no independent reserved-byte fields or sequence/slot limits.
+ROOM image_preflight separately enforces world_generation, source==generation,
+different operation and sequence0. Quest corrected exactly one contiguous note
+segment. All five pre-correction files remain exact in the sibling
+published-room-codec-profile-acceptance-delta-20261009-history-before-source-event-correction
+directory. Root verifies the single inverse restores30638 bytes/SHA256
+3fc4f9928d08dac66c5c4eb0d7dbd97b72321be5cae017c6f7cd57ad0507fc78,
+with original PINS fields, verifier and saved receipt unchanged.
+
+The five concrete future acceptance cuts are A:full literal/AF/descriptor-bound
+forest and recipe profiles; B:bounded original ROOM build and metadata/source/
+coin/placement binding; C:staged complete decode, actual descriptors, full intent
+verification, bounded reconstruction and both canonical buffers; D:encoding
+policy/overflow/strong outputs and retained ownership transfer; E:private genuine
+installed-authority forwarding and original full producer/pulse lifetime.
+These preserve distinct error classes, actual current retained capacities,
+absolute high-water requests and complete canonical equality. Late denial can
+follow earlier admitted allocations; callback success does not supply source,
+publication or actual retained-owner transfer. ALL A-E component/native cuts
+remain UNEXECUTED. This is correspondence preparation, not a passing runtime,
+full32MiB proof, new accepting hook or original native journey.
+
+### Prioritized continuing queue and exact ownership
+
+The published [joined ROOM provider/INITIAL handoff](https://github.com/Community-Duris/Duris/blob/f2c2c31b96b05a6daa56e8d43782805308f793be/docs/persistence/economy_accounting/ROOM_PROVIDER_INITIAL_CALLER_ADMISSION_2026-10-09.md)
+reports independent source review of a real pulse-owned retained-root guard,
+prospective image clones/lock/recovery/full world and selected-owner arrays,
+command/canonical/INITIAL/recovery/output phases, failed-growth allowance restore
+and retained ownership rebases. Root inspected exact changed path/API/owner
+declarations and handoff; full provider/caller semantic review remains reported
+and the following independent acceptance overlay is newly selected. Bounded
+world/custody/passive two-record season readers and INITIAL encode/decode/initial
+predicate plus named installed-projection observer footprint are actual published
+source. Original leaf readers and SQL preparation are reported preserved.
+No source successor builds/native tests ran. All931 policies/388 pins remain
+without qualification promotion; source review does not open admission.
+Current-world recapture, genuine INITIAL storage observation and publication/
+submission INTERNAL prospective bounds remain required, although the guard's
+reported lifetime spans them. Separate literal-capture WIP is excluded from f2.
+Actual joined source resolves prior absent-provider/INITIAL-preparation seams;
+it does not certify those remaining requests or the full32MiB/native lifetime.
+
+1. Architecture now has ONE bounded future-only code delivery:
+   D:/Dev/Temp/room-item-recipe-profile-component-driver-20261009/
+   ROOM_ITEM_RECIPE_PROFILE_COMPONENT_DRIVER_2026-10-09.cpp, concise linkage/limits
+   note and exact raw dependency/payload proof. Use actual a0 item/recipe profiles,
+   bounded item encoder and original item/recipe codecs. Explicit passive component
+   values cover parent/child forest, all literals/AF/descriptors/recipe fields,
+   supported policy and15/16/29/30 string boundaries, original/bounded byte equality,
+   two item reservations, strong output/profile sentinels and invalid/overflow
+   controls. A fixed observer allocates/logs/mutates no filesystem inside callback.
+   Future benefit is direct usable component code independent of the unavailable
+   original accepting producer. Read the original minimal item linkage in
+   tests/async/player_item_payload_repair_mysql.py and finite actual dependencies;
+   do not import/run it, invent stubs or presume the proposed link succeeds.
+   Exclude ROOM build/decode, critical command/private authority, native root/DB/
+   journal fixtures, full caller budget and primary/Plan5 maintained edits.
+   Source/profile/link/private-overlap-safe maintained integration and major-batch
+   execution remain primary prerequisites. Root code/source/proof review required
+   before optional publication; no compiler/preprocessor/product execution now.
+2. Quest's codec acceptance packet is CLOSED preparation with history preserved.
+   ONE new f2 source/design delivery is selected:
+   D:/Dev/Temp/published-room-provider-initial-lifetime-acceptance-delta-20261009/
+   PUBLISHED_ROOM_PROVIDER_INITIAL_LIFETIME_ACCEPTANCE_DELTA_2026-10-09.txt,
+   with exact source/diff/original-body/reuse proof. Scope six changed .c/.h
+   families: zone_reset_item_owner, world/item/season flat repositories,
+   zone_reset_item_recovery and economic_gameplay_authority observer footprint.
+   Reuse CLOSED codec/ROOM/INITIAL/worker/full-catalog controls; map new real
+   guard membership/source/thread/scope, failed-growth rollback/rebases,
+   simultaneous provider arrays, complete catalog before owner filtering,
+   strong outputs/retained-heap scalars, two season buffers, full INITIAL
+   context/command/receipt/progress and envelope/pulse lifetime to concrete
+   future fixture assertions. Benefit is acceptance preparation for newly
+   published joined boundaries, not duplicate owner implementation arithmetic.
+   Original accepting producer/factory/worker/world/terminalACK fixture and
+   execution, native recapture, genuine INITIAL observation, publication/submit
+   internal bounds and full aggregate qualification remain unavailable.
+   Private excluded capture WIP is not an input. Root review precedes publication;
+   no compiler/native/product execution, shared edits or architecture overlap.
+3. The independently reviewed BS-R1 driver remains OPTIONAL NOT IMPORTED/REGISTERED
+   with exact4f source recipe and two transitive-header successor differences;
+   qualification stays UNEXECUTED. No adoption wait or sealed-packet reopen.
+4. Prior concrete MariaDB0065/MySQLschema65 qualification failures and primary
+   owner repairs remain required. Their authenticated older8e5 build/preflight
+   receipts cannot qualify this source successor, accepting routes or release.
+
+Root proof: D:/Dev/Temp/coordinator-room-codec-acceptance-review-20261009,
+authentication.json,correction-review.json,semantic-review.json and exact raw
+three-document publication inverses. The pending6ba documentation section was
+preserved on D:, inverted exactly, then the checkout fast-forwarded to f2; new
+raw inverses preserve ALL primary additions before insertion. Four ITEM/RECIPE
+source/header bodies remain byte-exact a0->f2; architecture keeps its pinned
+source and active task without restart. Only three coordinator-owned docs change;
+no maintained source/test/schema, private artifact commit, compiler/native/DB/
+fixture-root action or other-chat message. Preserve isolated checkouts/jobs and
+all closed bundles. Actual Goals remain BLOCKED unchanged; this authorized code
+preparation does not resume them. Heartbeat remains ACTIVE, with quiet monitoring
+on unchanged/non-actionable state. Finite completion and an empty quest queue do
+not complete the broader project or justify pausing its monitor.
+
 ## ROOM codec frontier and SQL evidence; component driver reviewed - 2026-10-09
 
 This checkpoint supersedes the queue in the two-stage blueprint section below.
