@@ -93,4 +93,14 @@ economic_accounting_error native_mobile_birth_command_decode_bounded(
 	size_t *retained_image_heap_bytes = nullptr,
 	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
 
+// Genuine historical v2/v3 recipe decode. V1 has no retained recipes and refuses.
+// Preserves full original metadata, keys/revisions, intent/image/recipe binding
+// and byte-for-byte canonical reconstruction; outputs are strong on refusal.
+// Uses the same bounded storage policy and caller-owned outer contract above.
+economic_accounting_error native_mobile_birth_command_decode_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live, size_t *retained_image_heap_bytes = nullptr,
+	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
+
 #endif

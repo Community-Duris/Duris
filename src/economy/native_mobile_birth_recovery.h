@@ -260,4 +260,15 @@ bool native_mobile_birth_shared_shop_recovery_execution_valid_bounded(
 	const critical_command &, const std::span<const uint8_t> &, uint64_t revision,
 	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
 
+// Historical INITIAL-only bounded validator for genuine v2/v3 commands.
+// Requires revision1/execution_pending, complete canonical attachment and
+// original recipe/UID/effect correlation, absent receipt and no progress.
+// Every receipt refuses before canonical/image allocation. This does not add a
+// general historical bounded decoder or successful-receipt result support.
+// Caller outer owns the original envelope/command/attachment and prior heaps;
+// the same prospective supported-policy contract above applies.
+bool native_mobile_birth_recovery_initial_bounded(const critical_native_recovery_envelope &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t outer_live) noexcept;
+
 #endif
