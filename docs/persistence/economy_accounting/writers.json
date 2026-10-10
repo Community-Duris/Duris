@@ -23949,17 +23949,17 @@
       "sites": [
         [
           "src/core/prototypes.h",
-          2448,
+          2455,
           "money_helper"
         ],
         [
           "src/core/prototypes.h",
-          3033,
+          3040,
           "money_helper"
         ],
         [
           "src/core/prototypes.h",
-          3062,
+          3069,
           "money_helper"
         ],
         [
@@ -53534,19 +53534,19 @@
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 2448,
+      "line": 2455,
       "family": "money_helper",
       "excerpt": "bool transact(P_char, P_obj, P_char, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 3033,
+      "line": 3040,
       "family": "money_helper",
       "excerpt": "int SUB_MONEY(P_char, int, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 3062,
+      "line": 3069,
       "family": "money_helper",
       "excerpt": "void ADD_MONEY(P_char, int, const char *committed_message = nullptr);"
     },
@@ -66550,8 +66550,8 @@
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
       "src/specs/specs.library.c": "554a8e95186cb3be1aab3b796ee7761781d4fcf18cdb6dba6e65d749c001fa39",
       "src/specs/specs.vecna.c": "5b1075a75fc61ac5f67d3e3f51731dfe22bd6928d8ee149e58769e3697b24f3e",
-      "src/specs/specs.venthix.c": "f4b888002e7649be677441a2b8d3730140603d496ebd2101b02d6c8f8213fb16",
-      "src/specs/specs.venthix.h": "935b00228abc68f7f719cc3923eb3bb40beac8259c1ad09530cac3468eaa2efe",
+      "src/specs/specs.venthix.c": "5017737bcc312a3c9fbd9b3b7c99f93360deeb44b785f63b2a74f2077b24ae6d",
+      "src/specs/specs.venthix.h": "2a960061d7ee14032378e0308527b9b64436ed510636e26786f4e9b107860517",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
       "src/world/db.c": "48640e1b6e0c3e45eca4feb718fde70e18a7115125bad1ac0cf7aeb57d24159e",
       "src/world/db.h": "acd6722bba3706ea4516ee668a7f2093f7f72a403db3823f678c4edb61dbc907",
@@ -66887,7 +66887,9 @@
       "src/world/character_maintenance.h": "038c7a2e9537586e25db99136e9b1e9f3bccdc27eea16a14dae193addd91891b",
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "src/mob/studioproc.c": "0bf886302eab9f8ac57b0eac9d03dfd9d2d7d2daf8fd60e08324d57b2286ac25",
-      "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c"
+      "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c",
+      "src/classes/memorize.c": "6b05f31332d935276e3421598ee0cb5d8b9e41e4089f1985360c1dd99ef9105b",
+      "src/core/prototypes.h": "da19a5a690ff9f038c748493bbff73171589349ff1d2a38f15679e65501794f8"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -16136,3 +16136,18 @@ pass. Genuine private-budget diagnostic reachability is a source deduction only.
 Actual caller/item/factory/publication/startup/libc/emitted/global32MiB/native/
 recovery/R1-R8 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED,
 coverage incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
+
+
+## Original spellbook and zombie constructor admission implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_SPELLBOOK_ZOMBIE_CONSTRUCTOR_ADMISSION_2026-10-10.md)
+adds real original master-book/bitmap and zombie constructor admission against
+fresh globals. Actual allocation/registry replacement coexistence, cleanup,
+original ID/status ordering and strong output laws survive. All original default/
+player/inactive spell code remains byte-exact. Independent RAW/installed source
+review authenticates51+40members/four inverses/12deps/11fresh installed headers/
+newline aliases/formatting. 460pins/two additions/two updates/931unchangedpolicies/
+source-proven coordinates/2853mapped sites/protected Plan5 WIP pass. Complete
+caller/item/factory/publication/adoption/startup/transitive/emitted/native32MiB/
+recovery/R1-R8 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED,
+coverage incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
