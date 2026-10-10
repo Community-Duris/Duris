@@ -5254,7 +5254,7 @@ bool native_artifact_list_member(P_obj list, P_obj selected) noexcept
 			++count;
 	return count == 1;
 }
-bool native_artifact_owner(P_obj artifact, P_char expected) noexcept
+[[maybe_unused]] bool native_artifact_owner(P_obj artifact, P_char expected) noexcept
 {
 	if (!artifact || !expected || !IS_NPC(expected) || GET_VNUM(expected) <= 0)
 		return false;

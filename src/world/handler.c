@@ -7768,12 +7768,31 @@ struct native_reset_light_budget
 	void *context;
 	size_t base;
 	size_t initial;
-	template <class... A> bool debug(const char *format, A... args) noexcept
+	// Each genuine call below has one fixed original format. Retain its
+	// pointer carrier while exposing the actual literal to format checking.
+	bool debug_character([[maybe_unused]] const char *format, const char *name,
+			     int room) noexcept
 	{
 		// Global queue/pager capacity can grow between successive real diagnostics.
 		size_t current;
 		return diagnostic_output_storage_bytes(&current) && current <= SIZE_MAX - base &&
-		       diagnostic_debug_bounded(reserve, context, base + current, format, args...);
+		       diagnostic_debug_bounded(reserve, context, base + current,
+						"Buggy char '%s' in room list twice, room %d.",
+						name, room);
+	}
+	bool debug_lit([[maybe_unused]] const char *format, const char *description) noexcept
+	{
+		size_t current;
+		return diagnostic_output_storage_bytes(&current) && current <= SIZE_MAX - base &&
+		       diagnostic_debug_bounded(reserve, context, base + current, "t_obj: %s, lit",
+						description);
+	}
+	bool debug_light([[maybe_unused]] const char *format, const char *description) noexcept
+	{
+		size_t current;
+		return diagnostic_output_storage_bytes(&current) && current <= SIZE_MAX - base &&
+		       diagnostic_debug_bounded(reserve, context, base + current,
+						"t_obj: %s, light", description);
 	}
 };
 bool native_reset_room_light_bounded(int room_nr, int flag, int *output,
@@ -7881,8 +7900,8 @@ bool native_reset_room_light_bounded(int room_nr, int flag, int *output,
 		}
 		if (t_ch == t_ch->next_in_room)
 		{
-			if (!budget.debug("Buggy char '%s' in room list twice, room %d.",
-					  J_NAME(t_ch), rroom))
+			if (!budget.debug_character("Buggy char '%s' in room list twice, room %d.",
+						    J_NAME(t_ch), rroom))
 				return false;
 			break;
 		}
@@ -7896,14 +7915,15 @@ bool native_reset_room_light_bounded(int room_nr, int flag, int *output,
 		if (IS_SET(t_obj->extra_flags, ITEM_LIT))
 		{
 			if (rroom == 59)
-				if (!budget.debug("t_obj: %s, lit", t_obj->short_description))
+				if (!budget.debug_lit("t_obj: %s, lit", t_obj->short_description))
 					return false;
 			amt++;
 		}
 		else if ((t_obj->type == ITEM_LIGHT) && (t_obj->value[2] == -1))
 		{
 			if (rroom == 59)
-				if (!budget.debug("t_obj: %s, light", t_obj->short_description))
+				if (!budget.debug_light("t_obj: %s, light",
+							t_obj->short_description))
 					return false;
 			amt++;
 		}
@@ -8262,9 +8282,10 @@ bool char_to_room_native_birth_bounded(P_char ch, int room, bool *returned, bool
 		P_char t_ch, k, who;
 		P_desc d;
 		char exit1 = -1, exit2 = -1, exit3 = -1;
-		char Gbuf1[MAX_STRING_LENGTH];
+		[[maybe_unused]] char Gbuf1[MAX_STRING_LENGTH];
 		char temp_buffer[MAX_STRING_LENGTH];
-		int j, was_in, current, total_coins, x, worked = FALSE;
+		int j, was_in;
+		[[maybe_unused]] int current, total_coins, x, worked = FALSE;
 		bool was_in_arena;
 		struct zone_data *zone = 0;
 		P_room rm = 0;
@@ -8799,7 +8820,7 @@ bool quest_mobile_native_local_stock::restore_enrollment_bounded(
 		return budget.finish(false);
 	size_t live;
 	int light;
-	bool lower_returned = false, lower_succeeded = false;
+	[[maybe_unused]] bool lower_returned = false, lower_succeeded = false;
 	if (!nevent_is_game_thread() || !object || !ch || !IS_NPC(ch) || !ch->only.npc ||
 	    !IS_ALIVE(ch) || ch->in_room < 0 || ch->in_room > top_of_world ||
 	    find_character_by_runtime_id(ch->runtime_id) != ch || !object->obj_uid)
@@ -8860,7 +8881,7 @@ extern std::list<Ferry *> ferry_list;
 
 namespace
 {
-size_t native_birth_shell_ferry_iteration_source_frame_bytes() noexcept
+[[maybe_unused]] size_t native_birth_shell_ferry_iteration_source_frame_bytes() noexcept
 {
 	using iterator = std::list<Ferry *>::iterator;
 	static_assert(std::is_same_v<iterator, std::_List_iterator<Ferry *>>);
@@ -8931,7 +8952,7 @@ struct native_birth_shell_extraction_budget
 		return owner.reserve(requested + global + private_heap, owner.context);
 	}
 };
-bool native_birth_shell_list_proof(P_obj expected, uint64_t uid) noexcept
+[[maybe_unused]] bool native_birth_shell_list_proof(P_obj expected, uint64_t uid) noexcept
 {
 	P_obj slow = object_list, fast = object_list;
 	while (fast && fast->next)
@@ -8959,7 +8980,7 @@ bool native_birth_shell_list_proof(P_obj expected, uint64_t uid) noexcept
 	}
 	return found;
 }
-bool native_birth_shell_absent(P_obj old_pointer, uint64_t uid) noexcept
+[[maybe_unused]] bool native_birth_shell_absent(P_obj old_pointer, uint64_t uid) noexcept
 {
 	// Pointer/UID comparisons only; never dereference the released object.
 	P_obj slow = object_list, fast = object_list;
