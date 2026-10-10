@@ -23,10 +23,29 @@ struct flatfile_native_mobile_birth_ordinary_reference_quarantine_absence
 	size_t born_uids = 0, unique_operation_lines = 0, unique_legacy_events = 0;
 };
 
+// Passive CURRENT reference correspondence, not creation-ledger uniqueness.
+// Full immutable command/EAP1 and source/terminal proof belong to the closed
+// receipt/transaction join. Counts remain informational, never writer authority.
+struct flatfile_native_mobile_birth_ordinary_reference_current
+{
+	uint16_t buckets_verified = 0, missing_buckets = 0;
+	uint64_t retained_records = 0;
+	size_t root_records = 0, legacy_records = 0;
+};
+
 class flatfile_native_mobile_birth_ordinary_reference_history_storage final
 {
     private:
 	friend class flatfile_accounting_native_mobile_birth_ordinary_transaction;
+	friend class flatfile_ordinary_native_birth_receipt_storage;
+	// All 256 canonical shards, both original operation fields, exact complete
+	// expected rows including empty forest. Original SQL unique keys apply;
+	// UID/revision is intentionally not unique in the reference table.
+	// Same recovered lock; no recovery, repair, writes or publication.
+	static flatfile_item_accounting_status verify_current_operation_locked(
+		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+		std::span<const economic_accounting_item_reference>,
+		flatfile_native_mobile_birth_ordinary_reference_current *, std::string *) noexcept;
 	// Complete canonical ordinary INITIAL and ALL 256 original reference files.
 	// All histories participate regardless retirement, identity or current state.
 	// Caller owns original recovery/namespace establishment before this passive
