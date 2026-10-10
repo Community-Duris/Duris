@@ -1633,3 +1633,912 @@ economic_command_binding_digest_bounded(const critical_command &command, economi
 	return economic_accounting_error::capacity;
 #endif
 }
+
+#include <cerrno>
+#include <limits>
+#include <tuple>
+#include <stdexcept>
+
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	__cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                          \
+	!defined(__SANITIZE_THREAD__) &&                                                          \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+#define DURIS_PLAN_BOUNDED_SOURCE_TARGET 1
+namespace
+{
+struct plan_bounded_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, source, working = 0;
+	bool denied = false;
+	// The whole actual prospective peak is computed from this original input,
+	// not a cached CURRENT census. It includes both clone lifetimes where needed.
+	// Root callback separately refreshes authentic foreign physical owners once.
+	bool peak(size_t child_extra = 0) noexcept
+	{
+		size_t total = outer;
+		if (!plan_storage_add(total, sizeof(*this)) ||
+		    !plan_storage_add(total, sizeof(economic_accounting_plan_allocation_profile)) ||
+		    !plan_storage_add(total, source) || !plan_storage_add(total, working) ||
+		    !plan_storage_add(total, child_extra) || !reserve || !reserve(total, context))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	static bool child(size_t extra, void *opaque) noexcept
+	{
+		return static_cast<plan_bounded_budget *>(opaque)->peak(extra);
+	}
+};
+// Input/prior output stay caller-owned; these are only the real early objects.
+constexpr size_t plan_bound_entry_inline =
+	sizeof(plan_bounded_budget) + sizeof(economic_accounting_plan_allocation_profile);
+constexpr size_t plan_bound_digest_entry_inline =
+	plan_bound_entry_inline + sizeof(std::vector<uint8_t>);
+
+// Real selected comparator types, matching the original lambda predicates.
+// Named types let the source proof use actual GNU iterator/value adapters.
+struct plan_bound_account_compare
+{
+	const economic_accounting_plan *plan;
+	bool operator()(size_t left, size_t right) const
+	{
+		return economic_account_key_less(plan->accounts[left].key,
+						 plan->accounts[right].key);
+	}
+};
+struct plan_bound_event_compare
+{
+	template <class T> bool operator()(const T &left, const T &right) const
+	{
+		return left.event_index < right.event_index;
+	}
+};
+struct plan_bound_uid_compare
+{
+	bool operator()(const economic_item_snapshot &left,
+			const economic_item_snapshot &right) const
+	{
+		return left.uid < right.uid;
+	}
+};
+
+// SOURCE inventory below is a conservative sum of genuine named call families,
+// not emitted stack, retained heap, allocator metadata or a CURRENT baseline.
+// The corresponding immutable headers/current source are pinned in SOURCE-PINS.
+constexpr size_t plan_bound_P = sizeof(void *), plan_bound_N = sizeof(size_t),
+		 plan_bound_B = sizeof(bool), plan_bound_E = sizeof(economic_accounting_error);
+constexpr size_t plan_bound_log(size_t n) noexcept
+{
+	size_t value = 0;
+	while (n > 1)
+	{
+		n >>= 1;
+		++value;
+	}
+	return value;
+}
+template <class T, class C, size_t Maximum> constexpr size_t plan_bound_sort_frames() noexcept
+{
+	using I = typename std::vector<T>::iterator;
+	using D = typename std::vector<T>::difference_type;
+	using IC = __gnu_cxx::__ops::_Iter_comp_iter<C>;
+	using VC = __gnu_cxx::__ops::_Val_comp_iter<C>;
+	using IV = __gnu_cxx::__ops::_Iter_comp_val<C>;
+	// Full actual GNU13 sort/partition/insertion/heap inventory, lifted from the
+	// settled UID provider with the real selected row/iterator/adapter types.
+	constexpr size_t setup = 4 * sizeof(I) + 2 * sizeof(IC) + 2 * plan_bound_P + 3 * sizeof(D) +
+				 sizeof(int) + 8 * (plan_bound_P + sizeof(I)) + 4 * plan_bound_B;
+	constexpr size_t recursive = 3 * sizeof(I) + sizeof(D) + sizeof(IC);
+	constexpr size_t partition =
+		12 * sizeof(I) + 3 * sizeof(IC) + 2 * plan_bound_B + 7 * plan_bound_P + sizeof(T);
+	constexpr size_t insertion = 10 * sizeof(I) + 2 * sizeof(IC) + 2 * sizeof(VC) + sizeof(IV) +
+				     3 * sizeof(T) + 2 * sizeof(D) + 12 * plan_bound_P +
+				     3 * plan_bound_B;
+	constexpr size_t heap = 12 * sizeof(I) + 14 * sizeof(D) + 5 * sizeof(IC) + 2 * sizeof(VC) +
+				2 * sizeof(IV) + 4 * sizeof(T) + 18 * plan_bound_P +
+				3 * plan_bound_B;
+	// Iter-comp and value-comp adapters own selected comparator constructor,
+	// moved comparator and call operator, not the UID default comparison type.
+	constexpr size_t adapter = 2 * sizeof(I) + 2 * plan_bound_P + 3 * plan_bound_B +
+				   3 * (2 * plan_bound_P + sizeof(C)) +
+				   3 * (3 * plan_bound_P + plan_bound_B);
+	return setup + (2 * plan_bound_log(Maximum) + 1) * recursive +
+	       (partition > insertion ? (partition > heap ? partition : heap) :
+					(insertion > heap ? insertion : heap)) +
+	       adapter;
+}
+constexpr size_t plan_bound_account_sort =
+	plan_bound_sort_frames<size_t, plan_bound_account_compare,
+			       ECONOMIC_ACCOUNTING_MAX_ACCOUNTS>();
+constexpr size_t plan_bound_posting_sort =
+	plan_bound_sort_frames<economic_coin_posting, plan_bound_event_compare,
+			       ECONOMIC_ACCOUNTING_MAX_POSTINGS>();
+constexpr size_t plan_bound_event_sort =
+	plan_bound_sort_frames<economic_item_event, plan_bound_event_compare,
+			       ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS>();
+constexpr size_t plan_bound_item_sort =
+	plan_bound_sort_frames<economic_item_snapshot, plan_bound_uid_compare,
+			       ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES>();
+constexpr size_t plan_bound_sort_max_a = plan_bound_account_sort > plan_bound_posting_sort ?
+						 plan_bound_account_sort :
+						 plan_bound_posting_sort;
+constexpr size_t plan_bound_sort_max_b =
+	plan_bound_event_sort > plan_bound_item_sort ? plan_bound_event_sort : plan_bound_item_sort;
+constexpr size_t plan_bound_sort_max = plan_bound_sort_max_a > plan_bound_sort_max_b ?
+					       plan_bound_sort_max_a :
+					       plan_bound_sort_max_b;
+
+// vector<bool>(n,false), _Bvector_base/impl/impl_data, _M_initialize,
+// _M_allocate/_S_nword, real bit iterator arithmetic, fill, index/proxy,
+// base cleanup/deallocation/_M_reset. Runtime consteval branches do not execute.
+constexpr size_t plan_bound_bit_constructor =
+	2 * plan_bound_P + plan_bound_N + plan_bound_B + sizeof(std::allocator<bool>) +
+	2 * plan_bound_P + 2 * plan_bound_P + sizeof(std::allocator<std::_Bit_type>) +
+	plan_bound_P + 2 * sizeof(std::_Bit_iterator) + plan_bound_P +
+	// initialize(this,n,q,__start), allocate(this,n,p,result), S_nword(n,result).
+	plan_bound_P + plan_bound_N + plan_bound_P + sizeof(std::_Bit_iterator) + 3 * plan_bound_P +
+	plan_bound_N + 2 * plan_bound_N +
+	// Bit_iterator/base constructors this/pointer/offset; operator+/+=/_M_incr
+	// genuine iterator return and __n local, base offset integer carriers.
+	2 * (2 * plan_bound_P + sizeof(unsigned int)) + sizeof(std::_Bit_iterator) +
+	2 * plan_bound_P + 2 * sizeof(std::ptrdiff_t) + sizeof(std::_Bit_iterator) + plan_bound_P +
+	2 * sizeof(std::ptrdiff_t) +
+	// initialize_value(this,x,p), end_addr/addressof, fill_n and memset boundary.
+	2 * plan_bound_P + plan_bound_B + 4 * plan_bound_P + plan_bound_P + plan_bound_N +
+	plan_bound_B + 2 * plan_bound_P + plan_bound_N + sizeof(int) +
+	// Actual default allocator/new/deallocate call family already authenticated.
+	binding_digest_allocator_frames;
+constexpr size_t plan_bound_bit_access =
+	// vector[index] this/n/result, begin this/returned real iterator,
+	// iterator[index]/operator+/+=, dereference/proxy ctor/bool/assignment.
+	plan_bound_P + plan_bound_N + sizeof(std::_Bit_reference) + plan_bound_P +
+	sizeof(std::_Bit_iterator) + 2 * plan_bound_P + 2 * sizeof(std::ptrdiff_t) +
+	2 * sizeof(std::_Bit_iterator) + plan_bound_P + 2 * sizeof(std::ptrdiff_t) + plan_bound_P +
+	sizeof(std::_Bit_reference) + 2 * plan_bound_P + sizeof(std::_Bit_type) + plan_bound_P +
+	plan_bound_B + 2 * plan_bound_P + plan_bound_B;
+constexpr size_t plan_bound_bit_cleanup =
+	// vector/base dtors, deallocate this/n, end_addr/addressof, reset actual
+	// impl-data temporary (its genuine two iterator + pointer fields), generated
+	// assignment/ctor/destruction and word allocator deallocation path.
+	4 * plan_bound_P + plan_bound_N + 4 * plan_bound_P + 2 * sizeof(std::_Bit_iterator) +
+	plan_bound_P + 4 * plan_bound_P + binding_digest_allocator_frames;
+
+using plan_bound_key_tuple =
+	decltype(std::tie(std::declval<const std::array<uint8_t, 16> &>(),
+			  std::declval<const economic_account_kind &>(),
+			  std::declval<const uint64_t &>(), std::declval<const uint64_t &>()));
+constexpr size_t plan_bound_key_comparison =
+	// key_less two refs/result, two actual returned four-reference tuple objects,
+	// tie/tuple/_Tuple_impl recursive constructors/forward/head-base families.
+	2 * plan_bound_P + plan_bound_B + 2 * sizeof(plan_bound_key_tuple) +
+	2 * (4 * plan_bound_P + 5 * plan_bound_P +
+	     4 * (3 * plan_bound_P + 2 * plan_bound_P + 2 * plan_bound_P)) +
+	// tuple <=> and four nested __tuple_cmp scopes plus terminal equivalent:
+	// tuple refs, true index_sequence tag, actual __c/result ordering objects;
+	// get -> __get_helper -> _M_head per argument and synth3way receiver/ref args.
+	2 * plan_bound_P + sizeof(std::strong_ordering) + sizeof(std::index_sequence<0, 1, 2, 3>) +
+	4 * (2 * plan_bound_P + sizeof(std::index_sequence<0>) + 2 * sizeof(std::strong_ordering) +
+	     2 * (6 * plan_bound_P) + 3 * plan_bound_P + sizeof(std::strong_ordering)) +
+	2 * plan_bound_P +
+	// ordering comparisons with actual unspecified nullptr tag/bool; byte-array
+	// <=> runtime memcmp source and data, size/index/constant-eval result carriers.
+	3 * (plan_bound_P + sizeof(std::strong_ordering) + plan_bound_B) + 2 * plan_bound_P +
+	plan_bound_N + sizeof(int) + sizeof(std::strong_ordering) + 4 * plan_bound_P + plan_bound_B;
+constexpr size_t plan_bound_array_equal =
+	// array== -> equal -> __equal_aux/aux1/equal<true> -> memcmp, array begin/end;
+	// widest integer array comparator also carries the same actual three pointers.
+	2 * plan_bound_P + plan_bound_B + 4 * (3 * plan_bound_P + plan_bound_B) + 2 * plan_bound_P +
+	plan_bound_N + sizeof(int) + 8 * plan_bound_P;
+constexpr size_t plan_bound_all_of =
+	// all_of -> find_if_not -> __find_if_not -> __find_if RA unrolled loop,
+	// predicate adapters/lambda and iterator operations. No count-depth term.
+	4 * (3 * plan_bound_P + sizeof(char) + plan_bound_B) + 3 * plan_bound_P + 2 * sizeof(char) +
+	sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag) + 3 * plan_bound_P +
+	sizeof(int64_t) + plan_bound_B;
+constexpr size_t plan_bound_optional =
+	// metadata/source-event optional bool -> has_value -> _M_is_engaged;
+	// deref -> _M_get -> _M_get(payload) and copy construction/destruction.
+	3 * (plan_bound_P + plan_bound_B) + 4 * (2 * plan_bound_P) + 4 * plan_bound_P +
+	2 * sizeof(std::in_place_t);
+constexpr size_t plan_bound_lower_bound =
+	// item_index span by value,uid,found; lower_bound/__lower_bound distance,
+	// len/half/middle and genuine iter_comp_val adapter/actual item comparator.
+	sizeof(std::span<const economic_item_snapshot>) + sizeof(uint64_t) + plan_bound_P +
+	2 * (3 * plan_bound_P + sizeof(char)) + 2 * sizeof(std::ptrdiff_t) + plan_bound_P +
+	2 * (2 * plan_bound_P + sizeof(std::ptrdiff_t)) + plan_bound_P + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * plan_bound_P + sizeof(std::ptrdiff_t) +
+	3 * plan_bound_P + sizeof(uint64_t) + plan_bound_B;
+
+// Original lexical source inventories. Workspaces/clones/vectors are separately
+// in the genuine prospective allocation profile; only references/indices/status
+// and scalar-method/range/query carriers are inventoried here.
+constexpr size_t plan_bound_metadata_source =
+	// validate meta/rule/status, fixed RULES range hidden-ref/begin/end/current,
+	// source_kind_allowed formals, ID zero/equal array endpoints/value/result.
+	6 * plan_bound_P + 2 * plan_bound_E + sizeof(economic_reason) +
+	sizeof(economic_source_kind) + 3 * plan_bound_B + 4 * plan_bound_P +
+	sizeof(economic_reason) +
+	3 * (plan_bound_P + 2 * plan_bound_P + sizeof(uint8_t) + plan_bound_B) +
+	plan_bound_array_equal + plan_bound_optional;
+constexpr size_t plan_bound_coin_source =
+	// coin effects spans/child_count/status, four lexical loop indices and refs,
+	// balance/value/narrow wider integer, ordinary delta ignored/result arrays
+	// owned by storage profile; delta/value nonnegative/zero scan and numeric limits.
+	sizeof(std::span<const economic_account_effect>) +
+	sizeof(std::span<const economic_coin_posting>) + plan_bound_N + plan_bound_E +
+	4 * plan_bound_N + 3 * plan_bound_P + sizeof(__int128_t) + sizeof(int64_t) +
+	2 * plan_bound_E + 3 * plan_bound_P + 2 * plan_bound_N + sizeof(__int128_t) +
+	sizeof(int64_t) + plan_bound_B +
+	// ordinary/kind/key valid/equal helpers, caller key and before/after equality.
+	5 * plan_bound_P + 3 * sizeof(economic_account_kind) + 5 * plan_bound_B +
+	plan_bound_key_comparison + plan_bound_array_equal + plan_bound_all_of +
+	plan_bound_bit_constructor + plan_bound_bit_access + plan_bound_bit_cleanup +
+	binding_digest_vector_constructor_frames + binding_digest_default_frames +
+	binding_digest_allocator_frames;
+constexpr size_t plan_bound_item_source =
+	// item_effects three input spans/count/status/index/event/target/current refs;
+	// item_forest input span/index/start/current/position/parent/path-range state;
+	// live_custody, position_valid, owner validity/equality, position equality.
+	2 * sizeof(std::span<const economic_item_snapshot>) +
+	sizeof(std::span<const economic_item_event>) + plan_bound_N + 2 * plan_bound_E +
+	2 * plan_bound_N + 3 * plan_bound_P + sizeof(std::span<const economic_item_snapshot>) +
+	5 * plan_bound_N + 4 * plan_bound_P + 2 * plan_bound_N + 2 * plan_bound_P +
+	sizeof(item_custody_state) + 4 * plan_bound_B + sizeof(uint64_t) + 5 * plan_bound_P +
+	3 * plan_bound_B + plan_bound_lower_bound + binding_digest_vector_constructor_frames +
+	binding_digest_vector_frames + binding_digest_copy_frames;
+constexpr size_t plan_bound_gambling_source =
+	// reason/opening/shape/held, wallets/sinks/issuances/stakes/denomination,
+	// real stake/ref, account/posting/index and issuance_postings loops.
+	plan_bound_P + sizeof(economic_reason) + 2 * plan_bound_B + 2 * plan_bound_P +
+	7 * plan_bound_N + 6 * plan_bound_P + plan_bound_array_equal + plan_bound_optional;
+constexpr size_t plan_bound_preflight_source =
+	// Public profile/scan plus validation_storage locals and three range loops.
+	// These actual scanner objects coexist before any owned clone exists.
+	sizeof(economic_plan_storage_scan) + sizeof(economic_accounting_plan_allocation_profile) +
+	4 * plan_bound_P + 2 * plan_bound_E + 6 * plan_bound_N + 3 * plan_bound_B +
+	3 * 3 * plan_bound_P + plan_bound_B +
+	// storage add/rows and effects working profile actual arguments/locals/forest
+	// lambda capture/args, max(initializer_list3) true backing and descriptor.
+	2 * plan_bound_P + 3 * plan_bound_N + 2 * plan_bound_B + 2 * plan_bound_P +
+	4 * plan_bound_N + 3 * plan_bound_B + 9 * plan_bound_N +
+	sizeof(std::initializer_list<size_t>) + 3 * sizeof(size_t) + 3 * plan_bound_P +
+	3 * plan_bound_N + 3 * plan_bound_B + 4 * plan_bound_P + 2 * plan_bound_N + plan_bound_B +
+	6 * (plan_bound_P + plan_bound_N);
+constexpr size_t plan_bound_derive_copy_array_frames =
+	// copy first/last/result/return; __miter_base three calls and return;
+	// __copy_move_a/a1/a2 pointer arguments/results; __niter_base/wrap.
+	4 * sizeof(void *) + 3 * (2 * sizeof(void *)) + 3 * (4 * sizeof(void *)) +
+	3 * (2 * sizeof(void *)) + 3 * sizeof(void *) +
+	// Trivial __copy_m first/last/result/_Num/result and real memmove.
+	4 * sizeof(void *) + sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) +
+	// copy_n first/n/result/__n2/return, size-to-integer param/result,
+	// __copy_n first/n/result/tag/return and category reference/tag.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(size_t) + 3 * sizeof(void *) +
+	sizeof(size_t) + sizeof(std::random_access_iterator_tag) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) +
+	// Genuine array begin/end/data this/result plus size and subscripting.
+	8 * (2 * sizeof(void *)) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	2 * (2 * sizeof(void *) + sizeof(size_t));
+constexpr size_t plan_bound_derive_source =
+	// Exact existing bounded-ID derive parameter/loop/predicate/add/reserve
+	// declarations, plus its authenticated raw-pointer array-copy and SHA graph.
+	4 * sizeof(void *) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+	sizeof(size_t) + 2 * sizeof(size_t) +
+	2 * (sizeof(void *) + 2 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool)) +
+	2 * sizeof(size_t) + sizeof(void *) + sizeof(bool) + sizeof(size_t) + sizeof(void *) +
+	sizeof(bool) + plan_bound_derive_copy_array_frames + binding_digest_sha_frames;
+constexpr size_t plan_bound_normalize_lexical =
+	// public, owned, budget peak/child/add frames and source query; original
+	// iota value is int, iterator endpoints and true returned/vector methods.
+	10 * plan_bound_P + 8 * plan_bound_N + 4 * plan_bound_E + 4 * plan_bound_B +
+	3 * plan_bound_P + sizeof(int) + 6 * (plan_bound_P + plan_bound_N) +
+	// Account copy/remap index/posting range; child selected/target/index/parent,
+	// posting/event loops, two-pointer item-vector list descriptor/backing/endpoints.
+	3 * plan_bound_N + 4 * plan_bound_P + 4 * plan_bound_N + 4 * plan_bound_P +
+	sizeof(std::initializer_list<std::vector<economic_item_snapshot> *>) + 5 * plan_bound_P +
+	// child validation root/span/link/parent/expected/indices and derive fixed
+	// entry formals before its own first complete fixed SOURCE/CTX admission.
+	sizeof(std::span<const economic_child_link>) + 4 * plan_bound_P + 2 * plan_bound_N +
+	sizeof(critical_operation_id) + 4 * plan_bound_P + sizeof(uint32_t) + sizeof(uint64_t) +
+	2 * plan_bound_N + plan_bound_B +
+	// Full structure validator status/meta/rule and all authentic range loops.
+	4 * plan_bound_P + 2 * plan_bound_E + 9 * plan_bound_P + plan_bound_metadata_source +
+	plan_bound_coin_source + plan_bound_item_source + plan_bound_gambling_source +
+	plan_bound_preflight_source +
+	// Six genuine plan vector COPY/move/generated metadata/optional methods;
+	// child vector original/range/index constructors and complete bool cleanup.
+	6 * (binding_digest_vector_constructor_frames + binding_digest_copy_frames +
+	     binding_digest_move_frames) +
+	6 * plan_bound_P + plan_bound_optional + plan_bound_bit_constructor +
+	plan_bound_bit_access + plan_bound_bit_cleanup + plan_bound_key_comparison +
+	plan_bound_array_equal + plan_bound_sort_max + plan_bound_derive_source;
+constexpr size_t plan_bound_encode_lexical =
+	// encode public/owned parameters/status, writer/meta/row refs and integer
+	// this/value/index loops, block span and zeros/id/coins/position call scopes.
+	9 * plan_bound_P + 5 * plan_bound_N + 3 * plan_bound_E + 2 * plan_bound_P +
+	sizeof(uint64_t) + plan_bound_N + sizeof(std::span<const uint8_t>) + plan_bound_P +
+	plan_bound_N + 2 * plan_bound_P + 3 * plan_bound_P + sizeof(int64_t) + 2 * plan_bound_P +
+	6 * plan_bound_P +
+	// Six-count initializer-list's actual stored values/container/begin/end/count.
+	sizeof(std::initializer_list<size_t>) + 6 * plan_bound_N + 2 * plan_bound_P + plan_bound_N +
+	// Full original source/key encoder local fixed result arrays, typed scalar
+	// loops/copy accessors. They coexist with the output temporary arrays already
+	// in encode working bytes, so only original callee array scratch is added here.
+	sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) +
+	sizeof(std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES>) + 4 * plan_bound_P +
+	sizeof(uint16_t) + 3 * plan_bound_N + 2 * plan_bound_E + 2 * plan_bound_P + plan_bound_N +
+	sizeof(uint64_t) + plan_bound_N + binding_digest_copy_frames + plan_bound_metadata_source +
+	// First encode clone/default/final move and all exact writer vector operations.
+	6 * (binding_digest_vector_constructor_frames + binding_digest_copy_frames +
+	     binding_digest_move_frames) +
+	binding_digest_vector_frames + plan_bound_normalize_lexical;
+constexpr size_t plan_bound_normalize_source = plan_bound_normalize_lexical;
+constexpr size_t plan_bound_encode_source = plan_bound_encode_lexical;
+constexpr size_t plan_bound_digest_source =
+	plan_bound_encode_lexical +
+	// Real digest wrapper/formals/source/profile/status/encoded_status, cap/data
+	// scalar queries, fixed array assignment. SHA context/result are heap-profile
+	// private inline in peak, not an allocator request or a versioned hash tag.
+	5 * plan_bound_P + 3 * plan_bound_N + 3 * plan_bound_E + plan_bound_B +
+	3 * (plan_bound_P + plan_bound_N) + binding_digest_sha_frames;
+
+// Original binding child retains its original admission. The supplement below
+// supplies only source families for which its old local subtotal was incomplete.
+// In particular codec and CURRENT use their authentic complete owning exports;
+// the old family subtotal is credited rather than retained twice.
+using plan_bound_binding_revision_compare =
+	decltype([](const critical_expected_revision &a, const critical_expected_revision &b)
+		 { return critical_entity_key_less(a.key, b.key); });
+constexpr size_t plan_bound_binding_key_sort =
+	plan_bound_sort_frames<critical_entity_key, decltype(&critical_entity_key_less),
+			       CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS>();
+constexpr size_t plan_bound_binding_revision_sort =
+	plan_bound_sort_frames<critical_expected_revision, plan_bound_binding_revision_compare,
+			       CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS>();
+constexpr size_t plan_bound_binding_old_key_sort =
+	binding_digest_sort_leaf_frames<critical_entity_key, decltype(&critical_entity_key_less)>() +
+	(2 * plan_bound_log(CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS) + 1) *
+		(3 * plan_bound_P + sizeof(std::ptrdiff_t) +
+		 sizeof(decltype(&critical_entity_key_less)));
+constexpr size_t plan_bound_binding_old_revision_sort =
+	binding_digest_sort_leaf_frames<critical_expected_revision, char>() +
+	(2 * plan_bound_log(CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS) + 1) *
+		(3 * plan_bound_P + sizeof(std::ptrdiff_t) + sizeof(char));
+static_assert(sizeof(plan_bound_binding_revision_compare) == sizeof(char));
+// Recursion scopes have the same width at every actual count, so subtracting the
+// equal maximum-depth terms leaves a count-independent typed adapter/setup gap.
+static_assert(sizeof(std::vector<critical_entity_key>::iterator) == plan_bound_P);
+static_assert(sizeof(std::vector<critical_expected_revision>::iterator) == plan_bound_P);
+constexpr size_t plan_bound_binding_sort_gap_a =
+	plan_bound_binding_key_sort > plan_bound_binding_old_key_sort ?
+		plan_bound_binding_key_sort - plan_bound_binding_old_key_sort :
+		0;
+constexpr size_t plan_bound_binding_sort_gap_b =
+	plan_bound_binding_revision_sort > plan_bound_binding_old_revision_sort ?
+		plan_bound_binding_revision_sort - plan_bound_binding_old_revision_sort :
+		0;
+constexpr size_t plan_bound_binding_sort_gap = plan_bound_binding_sort_gap_a >
+							       plan_bound_binding_sort_gap_b ?
+						       plan_bound_binding_sort_gap_a :
+						       plan_bound_binding_sort_gap_b;
+constexpr size_t plan_bound_binding_old_frames =
+	7 * plan_bound_P + plan_bound_N + 2 * plan_bound_E + 3 * plan_bound_N +
+	sizeof(critical_command_codec_result) + plan_bound_P;
+constexpr size_t plan_bound_binding_old_observation =
+	10 * plan_bound_P + 8 * plan_bound_N + 6 * plan_bound_B + 4 * (plan_bound_P + plan_bound_N);
+constexpr size_t plan_bound_binding_supplement_lexical =
+	// Fresh request public command/output/total/result; four size queries, and
+	// checked-add formals/results; copy frame query result and actual add return.
+	2 * plan_bound_P + plan_bound_N + plan_bound_B + 4 * (plan_bound_P + plan_bound_N) +
+	plan_bound_P + plan_bound_N + plan_bound_B + plan_bound_N +
+	// Native auction predicate command/result and vector.empty this/result.
+	plan_bound_P + plan_bound_B + plan_bound_P + plan_bound_B +
+	// Actual budget prefix/peak/growth/sort methods: this/output/extra/total/heap,
+	// returned status; growth count/request/next, actual max params/result;
+	// sort levels/remaining/request and its true caller count/this/result.
+	4 * plan_bound_P + 4 * plan_bound_N + 2 * plan_bound_B + 2 * plan_bound_P +
+	3 * plan_bound_N + plan_bound_B + 2 * plan_bound_P + plan_bound_N + plan_bound_P +
+	4 * plan_bound_N + plan_bound_B +
+	// Actual key less scalar field comparison formals/result; revision lambda
+	// this/left/right/result and pointer comparator return/call source carriers.
+	2 * plan_bound_P + plan_bound_B + 3 * plan_bound_P + plan_bound_B +
+	// Generated projection construction/destruction and original final digest
+	// array assignment/data/size accessors, caught bad_alloc reference.
+	2 * plan_bound_P + 4 * plan_bound_P + 2 * (plan_bound_P + plan_bound_N) + plan_bound_P +
+	plan_bound_binding_sort_gap;
+bool plan_bound_binding_profiles(size_t &full, size_t &supplement) noexcept
+{
+	size_t codec = 0, current = 0;
+	if (!critical_command_startup_codec_source_frame_bytes(&codec) ||
+	    !critical_command_current_heap_observer_frame_bytes(&current))
+		return false;
+	size_t value = plan_bound_binding_supplement_lexical;
+	if (codec > binding_digest_critical_codec_frames &&
+	    !plan_storage_add(value, codec - binding_digest_critical_codec_frames))
+		return false;
+	if (current > plan_bound_binding_old_observation &&
+	    !plan_storage_add(value, current - plan_bound_binding_old_observation))
+		return false;
+	supplement = value;
+	// Sequential original admission subtotals are summed conservatively for the
+	// whole preentry closure, but only supplement survives in caller outer_live.
+	if (!plan_storage_add(value, plan_bound_binding_old_frames) ||
+	    !plan_storage_add(value, plan_bound_binding_old_observation) ||
+	    !plan_storage_add(value, critical_command_copy_frame_bytes()) ||
+	    !plan_storage_add(value, critical_command_valid_frame_bytes()) ||
+	    !plan_storage_add(value, binding_digest_command_default_frames) ||
+	    !plan_storage_add(value, binding_digest_vector_frames) ||
+	    !plan_storage_add(value, plan_bound_binding_old_key_sort) ||
+	    !plan_storage_add(value, plan_bound_binding_old_revision_sort) ||
+	    !plan_storage_add(value, binding_digest_critical_codec_frames) ||
+	    !plan_storage_add(value, binding_digest_sha_frames))
+		return false;
+	full = value;
+	return true;
+}
+economic_accounting_error plan_bound_normalize_children(economic_accounting_plan &plan)
+{
+	const auto original = plan.children;
+	std::vector<size_t> remap(original.size() + 1, 0);
+	std::vector<bool> used(original.size(), false);
+	for (size_t target = 0; target < original.size(); ++target)
+	{
+		size_t chosen = original.size();
+		for (size_t index = 0; index < original.size(); ++index)
+		{
+			const size_t parent = original[index].parent_index;
+			if (parent > original.size())
+				return economic_accounting_error::invalid_identity;
+			if (used[index] || (parent && !remap[parent]))
+				continue;
+			if (chosen == original.size() ||
+			    original[index].operation_id.bytes <
+				    original[chosen].operation_id.bytes)
+				chosen = index;
+		}
+		if (chosen == original.size())
+			return economic_accounting_error::topology;
+		used[chosen] = true;
+		remap[chosen + 1] = target + 1;
+		plan.children[target] = original[chosen];
+		plan.children[target].parent_index =
+			static_cast<uint16_t>(remap[original[chosen].parent_index]);
+	}
+	for (auto &posting : plan.postings)
+	{
+		if (posting.child_index >= remap.size())
+			return economic_accounting_error::invalid_identity;
+		posting.child_index = static_cast<uint16_t>(remap[posting.child_index]);
+	}
+	for (auto &event : plan.item_events)
+	{
+		if (event.child_index >= remap.size())
+			return economic_accounting_error::invalid_identity;
+		event.child_index = static_cast<uint16_t>(remap[event.child_index]);
+	}
+	return economic_accounting_error::ok;
+}
+
+economic_accounting_error
+plan_bound_child_links_validate(const critical_operation_id &root,
+				std::span<const economic_child_link> links,
+				plan_bounded_budget &budget)
+{
+	if (critical_operation_id_is_zero(root))
+		return economic_accounting_error::invalid_identity;
+	if (links.size() > ECONOMIC_ACCOUNTING_MAX_CHILDREN)
+		return economic_accounting_error::capacity;
+	for (size_t index = 0; index < links.size(); ++index)
+	{
+		const auto &link = links[index];
+		if (link.parent_index > index || link.relationship != 1 || !link.domain ||
+		    critical_operation_id_is_zero(link.operation_id) ||
+		    critical_operation_id_equal(root, link.operation_id))
+			return economic_accounting_error::invalid_identity;
+		const auto &parent = link.parent_index ? links[link.parent_index - 1].operation_id :
+							 root;
+		critical_operation_id expected = {};
+		if (!critical_operation_id_derive_bounded(parent, link.domain, link.discriminator,
+							  &expected, plan_bounded_budget::child,
+							  &budget, 0) ||
+		    !critical_operation_id_equal(expected, link.operation_id))
+			return budget.denied ? economic_accounting_error::capacity :
+					       economic_accounting_error::payload_conflict;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (critical_operation_id_equal(links[prior].operation_id,
+							link.operation_id))
+				return economic_accounting_error::duplicate_event;
+	}
+	return economic_accounting_error::ok;
+}
+
+economic_accounting_error plan_bound_validate_structure(const economic_accounting_plan &plan,
+							plan_bounded_budget &budget)
+{
+	if (!sizes_valid(plan))
+		return economic_accounting_error::capacity;
+	const auto &meta = plan.metadata;
+	const auto metadata_status = economic_operation_metadata_validate(meta);
+	if (metadata_status != economic_accounting_error::ok)
+		return metadata_status;
+	if (zero(meta.intent_digest) || zero(meta.domain_digest))
+		return economic_accounting_error::invalid_identity;
+	const auto *rule = rule_for(meta.reason);
+	auto status = plan_bound_child_links_validate(meta.operation_id, plan.children, budget);
+	if (status != economic_accounting_error::ok)
+		return status;
+	status = economic_coin_effects_validate(plan.accounts, plan.postings, plan.children.size());
+	if (status != economic_accounting_error::ok)
+		return status;
+	for (const auto &account : plan.accounts)
+		if (account.key.lineage.bytes != meta.lineage.bytes ||
+		    !(rule->accounts & (1U << static_cast<unsigned>(account.key.kind))))
+			return economic_accounting_error::unauthorized;
+	for (const auto &posting : plan.postings)
+	{
+		const auto kind = plan.accounts[posting.account_index].key.kind;
+		if ((kind == economic_account_kind::issuance ||
+		     kind == economic_account_kind::restitution) &&
+		    posting.copper >= 0)
+			return economic_accounting_error::unauthorized;
+		if (kind == economic_account_kind::sink &&
+		    (rule->reverse_sink ? posting.copper >= 0 : posting.copper <= 0))
+			return economic_accounting_error::unauthorized;
+		if (!economic_account_is_ordinary(kind) && posting.copper == 0)
+			return economic_accounting_error::corrupt_evidence;
+	}
+	status = gambling_round_structure(plan);
+	if (status != economic_accounting_error::ok)
+		return status;
+	return economic_item_effects_validate(plan.items_before, plan.items_after, plan.item_events,
+					      plan.children.size());
+}
+
+economic_accounting_error plan_bound_normalize_owned(economic_accounting_plan *plan,
+						     plan_bounded_budget &budget)
+{
+	if (!plan)
+		return economic_accounting_error::corrupt_evidence;
+	if (!sizes_valid(*plan))
+		return economic_accounting_error::capacity;
+	try
+	{
+		auto normalized = *plan;
+		std::vector<size_t> order(plan->accounts.size()), remap(plan->accounts.size());
+		std::iota(order.begin(), order.end(), 0);
+		std::sort(order.begin(), order.end(), plan_bound_account_compare{ plan });
+		for (size_t index = 0; index < order.size(); ++index)
+		{
+			normalized.accounts[index] = plan->accounts[order[index]];
+			remap[order[index]] = index;
+		}
+		for (auto &posting : normalized.postings)
+		{
+			if (posting.account_index >= remap.size())
+				return economic_accounting_error::invalid_identity;
+			posting.account_index = static_cast<uint16_t>(remap[posting.account_index]);
+		}
+		auto status = plan_bound_normalize_children(normalized);
+		if (status != economic_accounting_error::ok)
+			return status;
+		std::sort(normalized.postings.begin(), normalized.postings.end(),
+			  plan_bound_event_compare{});
+		std::sort(normalized.item_events.begin(), normalized.item_events.end(),
+			  plan_bound_event_compare{});
+		for (auto *items : { &normalized.items_before, &normalized.items_after })
+			std::sort(items->begin(), items->end(), plan_bound_uid_compare{});
+		status = plan_bound_validate_structure(normalized, budget);
+		if (status != economic_accounting_error::ok)
+			return status;
+		*plan = std::move(normalized);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+	return economic_accounting_error::ok;
+}
+
+economic_accounting_error plan_bound_encode_owned(const economic_accounting_plan &plan,
+						  std::vector<uint8_t> *encoded,
+						  plan_bounded_budget &budget)
+{
+	if (!encoded)
+		return economic_accounting_error::corrupt_evidence;
+	if (!sizes_valid(plan))
+		return economic_accounting_error::capacity;
+	try
+	{
+		auto normalized = plan;
+		const auto status = plan_bound_normalize_owned(&normalized, budget);
+		if (status != economic_accounting_error::ok)
+			return status;
+		writer output;
+		encode_valid(normalized, output);
+		if (output.bytes.size() != encoded_size(normalized))
+			return economic_accounting_error::corrupt_evidence;
+		*encoded = std::move(output.bytes);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+	return economic_accounting_error::ok;
+}
+
+} // namespace
+#endif
+
+// Fixed source getters evaluate no lower observer/query or storage operation.
+bool economic_plan_normalize_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_normalize_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_plan_encode_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_encode_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_plan_digest_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_digest_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+
+bool economic_plan_normalize_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_entry_inline;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_plan_encode_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_entry_inline;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_plan_digest_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_digest_entry_inline;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+
+economic_accounting_error economic_plan_normalize_bounded(economic_accounting_plan *plan,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept
+{
+	if (!plan)
+		return economic_accounting_error::corrupt_evidence;
+	if (!sizes_valid(*plan))
+		return economic_accounting_error::capacity;
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!reserve || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	size_t source = 0;
+	if (!economic_plan_normalize_source_frame_bytes(&source))
+		return economic_accounting_error::capacity;
+	economic_accounting_plan_allocation_profile profile;
+	plan_bounded_budget budget{ reserve, context, outer, source };
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	const auto status = economic_plan_allocation_preflight(*plan, &profile);
+	if (status != economic_accounting_error::ok)
+		return status;
+	if (!profile.storage_policy_supported)
+		return economic_accounting_error::capacity;
+	budget.working = profile.normalize_working_bytes;
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	return plan_bound_normalize_owned(plan, budget);
+#else
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return economic_accounting_error::capacity;
+#endif
+}
+
+economic_accounting_error economic_plan_encode_bounded(const economic_accounting_plan &plan,
+						       std::vector<uint8_t> *encoded,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer) noexcept
+{
+	if (!encoded)
+		return economic_accounting_error::corrupt_evidence;
+	if (!sizes_valid(plan))
+		return economic_accounting_error::capacity;
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!reserve || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	size_t source = 0;
+	if (!economic_plan_encode_source_frame_bytes(&source))
+		return economic_accounting_error::capacity;
+	economic_accounting_plan_allocation_profile profile;
+	plan_bounded_budget budget{ reserve, context, outer, source };
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	const auto status = economic_plan_allocation_preflight(plan, &profile);
+	if (status != economic_accounting_error::ok)
+		return status;
+	if (!profile.storage_policy_supported)
+		return economic_accounting_error::capacity;
+	budget.working = profile.encode_working_bytes;
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	return plan_bound_encode_owned(plan, encoded, budget);
+#else
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return economic_accounting_error::capacity;
+#endif
+}
+
+economic_accounting_error economic_plan_digest_bounded(const economic_accounting_plan &plan,
+						       economic_digest *digest,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer) noexcept
+{
+	if (!digest)
+		return economic_accounting_error::corrupt_evidence;
+	if (!sizes_valid(plan))
+		return economic_accounting_error::capacity;
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!reserve || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	size_t source = 0;
+	if (!economic_plan_digest_source_frame_bytes(&source))
+		return economic_accounting_error::capacity;
+	economic_accounting_plan_allocation_profile profile;
+	plan_bounded_budget budget{ reserve, context, outer, source };
+	// Caller preadmits this actual empty vector inline before entry. It is not
+	// part of the encoding workspace and survives the entire encoding child.
+	std::vector<uint8_t> encoded;
+	budget.working = sizeof(encoded);
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	const auto status = economic_plan_allocation_preflight(plan, &profile);
+	if (status != economic_accounting_error::ok)
+		return status;
+	if (!profile.storage_policy_supported ||
+	    !plan_storage_add(budget.working, profile.encode_working_bytes) || !budget.peak())
+		return economic_accounting_error::capacity;
+	const auto encoded_status = plan_bound_encode_owned(plan, &encoded, budget);
+	if (encoded_status != economic_accounting_error::ok)
+		return encoded_status;
+	// Both normalization clones and writer are now dead; observe the real
+	// surviving encoded capacity instead of retaining a prospective baseline.
+	budget.working = sizeof(encoded);
+	if (!plan_storage_add(budget.working, encoded.capacity()) ||
+	    !budget.peak(sizeof(economic_digest) + sizeof(SHA256_CTX)))
+		return economic_accounting_error::capacity;
+	economic_digest result = {};
+	SHA256_CTX digest_context;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	if (SHA256_Init(&digest_context) != 1 ||
+	    SHA256_Update(&digest_context, encoded.data(), encoded.size()) != 1 ||
+	    SHA256_Final(result.data(), &digest_context) != 1)
+		return economic_accounting_error::corrupt_evidence;
+#pragma GCC diagnostic pop
+	*digest = result;
+	return economic_accounting_error::ok;
+#else
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return economic_accounting_error::capacity;
+#endif
+}
+
+bool economic_command_binding_digest_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	size_t full = 0, supplement = 0;
+	if (!plan_bound_binding_profiles(full, supplement))
+		return false;
+	*out = full;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_command_binding_digest_source_supplement_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	size_t full = 0, supplement = 0;
+	if (!plan_bound_binding_profiles(full, supplement))
+		return false;
+	*out = supplement;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool economic_command_binding_digest_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = sizeof(binding_digest_budget);
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+
+bool economic_operation_metadata_validate_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(DURIS_PLAN_BOUNDED_SOURCE_TARGET)
+	if (!out)
+		return false;
+	*out = plan_bound_metadata_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+#undef DURIS_PLAN_BOUNDED_SOURCE_TARGET
