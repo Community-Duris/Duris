@@ -2094,3 +2094,77 @@ bool item_ownership_runtime_hydrate_many_atomic_bounded(const item_ownership_run
 	return true;
 #endif
 }
+
+bool item_ownership_runtime_hydrate_owner_bounded(const item_owner_identity &owner,
+						  uint64_t revision,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	if (!item_owner_identity_valid(owner))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)revision;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	// Match the original owner's monotonic revision law, including a valid zero.
+	// A zero-item batch does not establish this real owner cache entry.
+	const auto found = owner_revisions.find(owner);
+	if (found != owner_revisions.end() && found->second > revision)
+		return false;
+	struct workspace
+	{
+		size_t initial_cache = 0, fixed = 0, current = 0, target = 0, request = 0;
+		std::__detail::_Prime_rehash_policy policy;
+	};
+	size_t initial_cache = 0, initial = outer_live;
+	if (!hydrate_cache_bytes(initial_cache) || outer_live < initial_cache ||
+	    !hydrate_storage_add(initial, sizeof(workspace)) || !reserve ||
+	    !reserve(initial, context))
+		return false;
+	workspace work;
+	work.initial_cache = initial_cache;
+	work.fixed = outer_live - initial_cache;
+	if (!hydrate_storage_add(work.fixed, sizeof(workspace)))
+		return false;
+	if (found != owner_revisions.end())
+	{
+		// Admission precedes the only content change; no allocation or callback
+		// follows the assignment. This preserves the original existing-owner path.
+		found->second = revision;
+		return true;
+	}
+	try
+	{
+		work.target = owner_revisions.size();
+		if (!hydrate_storage_add(work.target, 1) ||
+		    !hydrate_reserve_bucket_request(owner_revisions, work.target, work.policy,
+						    work.request))
+			return false;
+		work.current = work.fixed;
+		if (!hydrate_storage_add(work.current, work.initial_cache) ||
+		    !hydrate_storage_add(work.current, work.request) ||
+		    !reserve(work.current, context))
+			return false;
+		// Charge the actual fresh GCC13 bucket request before reserve. Old buckets
+		// remain counted until reserve completes; growth survives a later refusal.
+		owner_revisions.reserve(work.target);
+		if (!hydrate_cache_bytes(work.current) ||
+		    !hydrate_storage_add(work.current, work.fixed) ||
+		    !hydrate_storage_add(work.current,
+					 hydrate_node_bytes<decltype(owner_revisions)>()) ||
+		    !reserve(work.current, context))
+			return false;
+		// The complete reserve prevents insertion rehash. A failed node allocation
+		// leaves map contents unchanged; no synthetic item or owner is introduced.
+		return owner_revisions.emplace(owner, revision).second;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
