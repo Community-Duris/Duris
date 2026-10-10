@@ -66493,7 +66493,7 @@
       "src/economy/shop_trade_transaction.h": "38b1f15d83a6342fbfc27fdfa9c8731791f1a1a9e101c556070a657113861020",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
-      "src/flatfile/flatfile_accounting_authority.c": "0dc9d8fdaf5b760c4ab1c4a33bbdd4565a663592080059dd6989c7a2e4ce079d",
+      "src/flatfile/flatfile_accounting_authority.c": "cde3ddd68a7ea3ba1795e75d7175b99a3853e3b96c1065d81bd9a2806cc19fce",
       "src/flatfile/flatfile_accounting_authority.h": "fbc4a15e02f592da91e48edbf71bf7b2328fbfba81f5cf9b1c1ed41f7682f572",
       "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
       "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
@@ -66841,7 +66841,8 @@
       "src/flatfile/flatfile_native_mobile_wallet.h": "2465dab1e202bf4ab2b2480cd1b61d633fa08fa556ead1b7610fad086487f15c",
       "src/player/player_death_restitution_runtime.c": "39b492876e8183878c37419134eb248493a8d7501c921ff7e71793e5c44328d6",
       "src/player/player_death_restitution_runtime.h": "9413afb082f7980bc2917c30e41524388bfd31bbe4f9c20703b585265097d671",
-      "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "34957c7921762e57b9119606a4b5e2871cdbada6f16175ffecaaac7c6dad3a58"
+      "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "34957c7921762e57b9119606a4b5e2871cdbada6f16175ffecaaac7c6dad3a58",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

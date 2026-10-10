@@ -1,4 +1,6 @@
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_initial.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
 #include "flatfile/flatfile_ordinary_native_birth_receipt.h"
 #include "flatfile/flatfile_native_mobile_wallet.h"
 #include "flatfile/quest_mobile_native_flatfile.h"
@@ -2175,4 +2177,135 @@ unsigned int flatfile_ordinary_native_birth_history_storage::verify_locked(
 			need(lock.matches(root), EINVAL);
 		},
 		error);
+}
+
+// CLOSED ordinary INITIAL mapping participant. Original generic mapping creation
+// deliberately permits retired locator reuse; ordinary native birth never does.
+unsigned int flatfile_native_mobile_birth_ordinary_initial_storage::prepare_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, uint64_t expected_control_revision,
+	flatfile_native_mobile_birth_ordinary_initial_stage *output, std::string *error) noexcept
+{
+	try
+	{
+		return guarded(
+			[&]
+			{
+				need(output && !root.empty() && lock.matches(root), EINVAL);
+				need(native_mobile_birth_cash_role_recovery_initial(original),
+				     EINVAL);
+				const auto checked = [](economic_accounting_error code)
+				{
+					need(code == economic_accounting_error::ok,
+					     code == economic_accounting_error::capacity ? ENOMEM :
+											   EINVAL);
+				};
+				quest_mobile_native_image image;
+				std::vector<native_mobile_birth_item_recipe> recipes;
+				native_mobile_birth_cash_role_recipe role;
+				checked(native_mobile_birth_cash_role_command_decode(
+					original.command, &image, &recipes, &role));
+				need(role.role == native_mobile_birth_cash_role::ordinary_wallet,
+				     ENOTSUP);
+				economic_frozen_intent intent;
+				checked(economic_intent_decode(original.command.accounting_intent,
+							       &intent));
+				checked(economic_intent_verify_binding(original.command, intent));
+				const auto &metadata = intent.admission.metadata;
+				need(metadata.source_event.has_value() && image.cash &&
+					     image.cash->revision == 1,
+				     EINVAL);
+
+				// Caller recovered before entering this SAME root lock. None of the
+				// original no-recovery internal readers below rewrite authority.
+				auto control = load_control(root);
+				need(control.lineage.bytes == metadata.lineage.bytes, ESTALE);
+				need(nonzero(control.active_epoch), ENODATA);
+				need(control.active_epoch.bytes == metadata.epoch.bytes &&
+					     control.revision == expected_control_revision,
+				     ESTALE);
+				const size_t evidence_bucket =
+					original.command.operation_id.bytes[0];
+				need(control.evidence_initialized[evidence_bucket / 8] &
+					     (1U << (evidence_bucket % 8)),
+				     ENODATA);
+				// load_control authenticated the complete retained epoch catalog,
+				// its digest/count/last epoch; active_epoch is that actual last epoch.
+				need(control.next_mapping_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS,
+				     ENOSPC);
+				flatfile_economic_locator locator;
+				locator.kind = FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR;
+				locator.native_id = image.reference.mobile_instance_id;
+				locator_valid(economic_account_kind::wallet,
+					      ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT, locator, true);
+				auto key = native_key(economic_account_kind::wallet,
+						      ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT,
+						      locator);
+
+				// SQL original_absence excludes every old locator/native lifetime
+				// and every mapping created by the root, including retired rows.
+				// Authenticate ALL real buckets: missing required storage fails;
+				// a truly empty bucket must have no unexpected retained file.
+				for (size_t bucket = 0; bucket < FLATFILE_ECONOMIC_METADATA_BUCKETS;
+				     ++bucket)
+				{
+					const auto values = load_mappings(root, control, bucket);
+					for (const auto &value : values)
+						need(!(value.locator.kind ==
+							       FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR &&
+						       value.locator.native_id ==
+							       locator.native_id) &&
+							     value.creating_operation.bytes !=
+								     original.command.operation_id
+									     .bytes,
+						     EEXIST);
+				}
+				const size_t native_bucket = hash(key)[0];
+				auto index = load_native(root, control, native_bucket);
+				// Even a structurally valid retired selected-key tombstone cannot
+				// supply a second lifetime for this genuinely first native birth.
+				need(find_native(index, key) == index.size(), EEXIST);
+				need(index.size() < FLATFILE_ECONOMIC_BUCKET_MAPPINGS, ENOSPC);
+				const uint64_t mapping_id = control.next_mapping_id;
+				const size_t mapping_bucket =
+					mapping_id % FLATFILE_ECONOMIC_METADATA_BUCKETS;
+				auto values = load_mappings(root, control, mapping_bucket);
+				need(values.size() < FLATFILE_ECONOMIC_BUCKET_MAPPINGS, ENOSPC);
+
+				flatfile_native_mobile_birth_ordinary_initial_stage stage;
+				stage.lineage_revision_before = control.revision;
+				changing(control, expected_control_revision,
+					 original.command.operation_id);
+				stage.lineage_revision_after = control.revision;
+				auto &mapping = stage.mapping;
+				mapping.account = { control.lineage, economic_account_kind::wallet,
+						    mapping_id,
+						    ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+				mapping.locator = locator;
+				mapping.creating_operation = mapping.last_operation =
+					original.command.operation_id;
+				// Mapping revision0, empty retirement and native index active=last
+				// match original freshly created lifetime semantics. This ID comes
+				// from real next_mapping_id, NEVER from native UID or a current DTO.
+				values.push_back(mapping);
+				++control.next_mapping_id;
+				index.push_back({ std::move(key), mapping_id, mapping_id });
+				std::sort(index.begin(), index.end(),
+					  [](const auto &a, const auto &b)
+					  { return a.key < b.key; });
+				updates files;
+				put_mapping(control, mapping_bucket, values, files);
+				put_native(control, native_bucket, index, files);
+				finish(control, std::move(files), &stage.operations);
+				need(lock.matches(root), EINVAL);
+				static_assert(std::is_nothrow_move_assignable_v<
+					      flatfile_native_mobile_birth_ordinary_initial_stage>);
+				*output = std::move(stage);
+			},
+			error);
+	}
+	catch (...)
+	{
+		return EFAULT;
+	}
 }
