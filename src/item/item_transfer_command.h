@@ -573,4 +573,18 @@ bool item_transfer_payload_decode_generic_bounded(
 	const critical_command &, item_transfer_payload *, bool (*)(size_t, void *) noexcept,
 	void *context, size_t outer_live, size_t *retained_payload_heap_bytes = nullptr) noexcept;
 
+// Complete original native cost value and fee/money shape prerequisites.
+// Same original acknowledged/unacknowledged laws; authentic payload/caller
+// heaps outer-owned. Pure companions, no source/native/admission authority.
+bool item_transfer_native_cost_value_valid_bounded(const item_transfer_payload &,
+						   bool (*)(size_t, void *) noexcept, void *context,
+						   size_t outer_live) noexcept;
+bool item_transfer_native_fee_shape_valid_bounded(const item_transfer_payload &, bool acknowledged,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+bool item_transfer_native_money_shape_valid_bounded(const item_transfer_payload &,
+						    bool acknowledged,
+						    bool (*)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept;
+
 #endif
