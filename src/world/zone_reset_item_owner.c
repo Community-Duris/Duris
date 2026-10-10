@@ -792,6 +792,7 @@ bool zone_reset_item_owner::warm_bindings_current(const warm_root &root) noexcep
 
 struct zone_reset_item_owner::warm_command_scratch
 {
+	flat_common_budget_guard budget;
 	warm_root *root = nullptr;
 	critical_native_recovery_envelope *output = nullptr;
 	bool global_scope = false;
@@ -807,6 +808,7 @@ struct zone_reset_item_owner::warm_command_scratch
 		: root(original)
 		, literal_pool_scope(includes_literal_pool)
 	{
+		budget.warm = this;
 		if (root)
 		{
 			root->preparation_owner = this; // begin admitted this object before construction.
@@ -1031,21 +1033,89 @@ bool zone_reset_item_owner::rebase_warm_command_scratch(warm_command_scratch &sc
 	return true;
 }
 
-bool zone_reset_item_owner::reserve_warm_command_scratch(size_t bytes, void *context) noexcept
+bool zone_reset_item_owner::reserve_flat_common_budget(size_t bytes, void *context) noexcept
 {
-	auto *scratch = static_cast<warm_command_scratch *>(context);
-	if (!scratch || !scratch->root || persistence_mode_requires_mysql() ||
+	struct dispatch_observation_frame
+	{
+		flat_common_budget_guard *guard;
+		size_t exclusive, live, globals;
+		bool accepted;
+	} work{ static_cast<flat_common_budget_guard *>(context), 0, 0, 0, false };
+	if (!work.guard || !work.guard->active || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql() ||
 	    !economic_gameplay_authority::active_regular_flat())
 		return false;
-	size_t exclusive = 0;
-	// Only the genuine same-lock lender can authenticate borrowed coordinator
-	// bytes. Keep those CURRENT bytes out of retained ROOT high-water scratch.
-	// Without an actual borrow the complete original prefix is unchanged.
+	// Exact original registered callback and actual common scope address.
+	// Only the genuine same-lock lender can remove its CURRENT-C observation.
 	if (!item_native_quest_coordinator_budget_scope_owner::exclusive_prefix(
-		    scratch, reserve_warm_command_scratch, bytes, &exclusive))
+		    work.guard, reserve_flat_common_budget, bytes, &work.exclusive))
 		return false;
-	return rebase_warm_command_scratch(*scratch,
-					   std::max(exclusive, scratch->root->preparation_scratch));
+	work.live = work.exclusive;
+	if (!warm_scratch_add(work.live, sizeof(work)) ||
+	    !warm_scratch_add(work.live, sizeof(bytes)) ||
+	    !warm_scratch_add(work.live, sizeof(context)) ||
+	    !warm_scratch_add(work.live, sizeof(bool)) ||
+	    !warm_scratch_add(work.live, sizeof(size_t *) + sizeof(size_t) + sizeof(bool)))
+		return false;
+	if (work.guard->warm)
+	{
+		auto *scratch = work.guard->warm;
+		if (work.guard != &scratch->budget || !scratch->root ||
+		    scratch->root->preparation_owner != scratch || !scratch->global_scope ||
+		    !warm_scratch_add(work.live, sizeof(scratch)))
+			return false;
+		// Preserve genuine warm retained max/rebase, without retaining borrowed C.
+		return rebase_warm_command_scratch(
+			*scratch, std::max(work.live, scratch->root->preparation_scratch));
+	}
+	// NPC has no ROOM root. Its genuine birth callback receives a complete
+	// exclusive prefix, including fresh seven-global storage once, and owns its
+	// own source reauthentication and callback carriers before the actual charge.
+	if (!work.guard->complete_prefix || !work.guard->original_context ||
+	    !item_native_quest_global_budget_scope_owner::literal_pool_owned() ||
+	    !flat_current_global_storage_with_literal_pools(&work.globals) ||
+	    !warm_scratch_add(work.live, work.globals))
+		return false;
+	work.accepted = work.guard->complete_prefix(work.live, work.guard->original_context);
+	return work.accepted;
+}
+
+zone_reset_item_owner::ordinary_flat_submission_guard::~ordinary_flat_submission_guard() noexcept
+{
+	if (budget_.active)
+	{
+		// No charge: caller first releases the complete submit/lender, then lets
+		// this real guard die before freshly observing outside ownership.
+		(void)item_native_quest_global_budget_scope_owner::end(&budget_);
+		budget_.active = false;
+	}
+}
+
+bool zone_reset_item_owner::ordinary_flat_submission_guard::begin(size_t full_prefix) noexcept
+{
+	size_t live = full_prefix;
+	if (!warm_scratch_add(live, sizeof(this)) || !warm_scratch_add(live, sizeof(full_prefix)) ||
+	    !warm_scratch_add(live, sizeof(live)) || !warm_scratch_add(live, sizeof(bool)) ||
+	    !warm_scratch_add(live, sizeof(size_t *) + sizeof(size_t) + sizeof(bool)))
+		return false;
+	if (budget_.active || budget_.warm || !budget_.complete_prefix ||
+	    !budget_.original_context || !nevent_is_game_thread() ||
+	    persistence_mode_requires_mysql() ||
+	    !economic_gameplay_authority::active_regular_flat() ||
+	    !item_native_quest_global_budget_scope_owner::begin(
+		    &budget_, flat_current_global_storage_with_literal_pools, true))
+		return false;
+	budget_.active = true;
+	// Scalar registration invokes no observer. Installed startup/warm pair must
+	// agree exactly; an existing six-global policy remains a hard refusal.
+	if (item_native_quest_coordinator_budget_scope_owner::register_observer(
+		    &budget_, zone_reset_room_publication_owner::current_coordinator_storage,
+		    reserve_flat_common_budget) &&
+	    reserve_flat_common_budget(live, &budget_))
+		return true;
+	(void)item_native_quest_global_budget_scope_owner::end(&budget_);
+	budget_.active = false;
+	return false;
 }
 
 bool zone_reset_item_owner::retain_warm_command_output(
@@ -1071,8 +1141,9 @@ void zone_reset_item_owner::release_warm_command_scratch(warm_command_scratch &s
 	if (scratch.global_scope)
 	{
 		// No callback/allocation between scalar root removal and exact scope end.
-		(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+		(void)item_native_quest_global_budget_scope_owner::end(&scratch.budget);
 		scratch.global_scope = false;
+		scratch.budget.active = false;
 	}
 	(void)quest_mobile_native_birth_owner::charge();
 	scratch.root = nullptr;
@@ -2182,8 +2253,8 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 		// third canonical array. They die before the native capture vectors.
 		size_t placement_live = outer_live_scratch;
 		if (!warm_scratch_array(placement_live, 3,
-			    sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
-		    !reserve_warm_command_scratch(placement_live, &scratch))
+					sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
+		    !reserve_flat_common_budget(placement_live, &scratch.budget))
 			return false;
 		const auto &held = *root.stage.state_;
 		if (!root.placement_captured ||
@@ -2205,27 +2276,28 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 		    !warm_scratch_add(live, sizeof(std::vector<uint64_t>)) ||
 		    !warm_scratch_add(live, sizeof(std::vector<item_ownership_runtime_entry>)) ||
 		    !warm_scratch_array(live, 2, sizeof(quest_mobile_native_item_progress)) ||
-		    !reserve_warm_command_scratch(live, &scratch))
+		    !reserve_flat_common_budget(live, &scratch.budget))
 			return false;
 		std::vector<player_item_snapshot> actual;
 		std::vector<uint8_t> before, current;
 		size_t actual_heap = 0;
-		if (player_item_snapshot_tree_capture_literal_bounded(held.object, &actual, nullptr,
-			    reserve_warm_command_scratch, &scratch, live, &actual_heap) !=
-			    player_snapshot_capture_result::ok ||
+		if (player_item_snapshot_tree_capture_literal_bounded(
+			    held.object, &actual, nullptr, reserve_flat_common_budget,
+			    &scratch.budget, live,
+			    &actual_heap) != player_snapshot_capture_result::ok ||
 		    !warm_scratch_add(live, actual_heap) ||
-		    player_item_snapshot_list_encode_bounded(root.forest.items, &before,
-			    reserve_warm_command_scratch, &scratch, live) !=
-			    player_snapshot_codec_result::ok ||
+		    player_item_snapshot_list_encode_bounded(
+			    root.forest.items, &before, reserve_flat_common_budget, &scratch.budget,
+			    live) != player_snapshot_codec_result::ok ||
 		    !warm_scratch_add(live, before.capacity()) ||
-		    player_item_snapshot_list_encode_bounded(actual, &current,
-			    reserve_warm_command_scratch, &scratch, live) !=
+		    player_item_snapshot_list_encode_bounded(
+			    actual, &current, reserve_flat_common_budget, &scratch.budget, live) !=
 			    player_snapshot_codec_result::ok ||
 		    !warm_scratch_add(live, current.capacity()) || current != before)
 			return false;
 		std::vector<uint64_t> selected;
 		if (!warm_scratch_array(live, actual.size(), sizeof(uint64_t)) ||
-		    !reserve_warm_command_scratch(live, &scratch))
+		    !reserve_flat_common_budget(live, &scratch.budget))
 			return false;
 		selected.reserve(actual.size());
 		for (const auto &item : actual)
@@ -2267,8 +2339,9 @@ bool zone_reset_item_owner::warm_root_current_bounded(
 		std::vector<item_ownership_runtime_entry> cached;
 		// Preserve the full foreign-root/parent union, not just selected owners.
 		if (!item_ownership_runtime_published_native_observer::snapshot_links_bounded(
-			    selected, ITEM_TRANSFER_MAX_ITEMS, &cached,
-			    reserve_warm_command_scratch, &scratch, live) || !cached.empty())
+			    selected, ITEM_TRANSFER_MAX_ITEMS, &cached, reserve_flat_common_budget,
+			    &scratch.budget, live) ||
+		    !cached.empty())
 			return false;
 		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
 		{
@@ -2338,7 +2411,7 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			size_t projection_live = scratch.current_bytes(caller_extra);
 			if (!warm_scratch_array(projection_live, 2,
 						sizeof(critical_operation_id)) ||
-			    !reserve_warm_command_scratch(projection_live, &scratch))
+			    !reserve_flat_common_budget(projection_live, &scratch.budget))
 				return false;
 			critical_operation_id current_lineage{}, current_epoch{};
 			if (!birth.flat_backend || !birth.flat_scope || !configured ||
@@ -2353,10 +2426,13 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 		{
 			const size_t caller_live = scratch.current_bytes(caller_extra);
 			size_t clone_live = caller_live, clone_heap = 0;
-			if (!zone_reset_item_recovery_initial_bounded(root->original_envelope,
-				    reserve_warm_command_scratch, &scratch, caller_live) ||
-			    !warm_scratch_envelope_heap(root->original_envelope, true, &clone_heap) ||
-			    !warm_scratch_add(clone_live, sizeof(critical_native_recovery_envelope)) ||
+			if (!zone_reset_item_recovery_initial_bounded(
+				    root->original_envelope, reserve_flat_common_budget,
+				    &scratch.budget, caller_live) ||
+			    !warm_scratch_envelope_heap(root->original_envelope, true,
+							&clone_heap) ||
+			    !warm_scratch_add(clone_live,
+					      sizeof(critical_native_recovery_envelope)) ||
 			    !warm_scratch_add(clone_live, clone_heap) ||
 			    !rebase_warm_command_scratch(scratch, clone_live))
 				return false;
@@ -2393,11 +2469,11 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 		    !warm_scratch_add(frame_live, sizeof(std::vector<uint8_t>)) ||
 		    !warm_scratch_add(frame_live, sizeof(std::string)) ||
 		    !warm_scratch_forest_heap(root->forest.items, root->forest.recipes,
-			root->forest.coins, true, &image_heap) ||
+					      root->forest.coins, true, &image_heap) ||
 		    !warm_scratch_add(frame_live, image_heap) ||
-		    (root_chars > 15 && (root_chars == SIZE_MAX ||
-			!warm_scratch_add(frame_live, root_chars + 1))) ||
-		    !reserve_warm_command_scratch(frame_live, &scratch))
+		    (root_chars > 15 &&
+		     (root_chars == SIZE_MAX || !warm_scratch_add(frame_live, root_chars + 1))) ||
+		    !reserve_flat_common_budget(frame_live, &scratch.budget))
 			return false;
 		zone_reset_item_image image;
 		image.operation_id = root->forest.operation_id;
@@ -2411,10 +2487,11 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 		// Comparison arrays die before recipe() constructs its candidate DTO;
 		// both phases overlap the already-cloned image and caller-owned locals.
 		size_t placement_live = frame_live;
-		if (!warm_scratch_add(placement_live, std::max(
-			    3 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
-			    sizeof(zone_reset_room_placement_recipe))) ||
-		    !reserve_warm_command_scratch(placement_live, &scratch) ||
+		if (!warm_scratch_add(
+			    placement_live,
+			    std::max(3 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+				     sizeof(zone_reset_room_placement_recipe))) ||
+		    !reserve_flat_common_budget(placement_live, &scratch.budget) ||
 		    !root->placement_captured ||
 		    !root->placement.matches_source(image.reset_source) ||
 		    !root->placement.recipe(&placement))
@@ -2437,35 +2514,43 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			// Publication preparation still needs its own transitive bounds.
 			size_t lock_live = frame_live;
 			if (!warm_scratch_add(lock_live, sizeof(flatfile_authority_lock)) ||
-			    !reserve_warm_command_scratch(lock_live, &scratch))
+			    !reserve_flat_common_budget(lock_live, &scratch.budget))
 				return false;
-			flatfile_authority_lock lock(reserve_warm_command_scratch, &scratch, frame_live);
+			flatfile_authority_lock lock(reserve_flat_common_budget, &scratch.budget,
+						     frame_live);
 			size_t lock_retained = 0;
 			if (!lock.retained_bytes(&lock_retained))
 				return false;
 			lock_live = frame_live;
 			if (!warm_scratch_add(lock_live, lock_retained) ||
-			    !lock.acquire_bounded(selected_root, reserve_warm_command_scratch,
-				&scratch, lock_live) || !lock.retained_bytes(&lock_retained))
+			    !lock.acquire_bounded(selected_root, reserve_flat_common_budget,
+						  &scratch.budget, lock_live) ||
+			    !lock.retained_bytes(&lock_retained))
 				return false;
 			size_t storage_live = frame_live;
 			if (!warm_scratch_add(storage_live, lock_retained))
 				return false;
 			const auto recovered = flatfile_authority_transaction_recover_bounded(
-				selected_root, lock, reserve_warm_command_scratch, &scratch, storage_live);
+				selected_root, lock, reserve_flat_common_budget, &scratch.budget,
+				storage_live);
 			if (recovered != flatfile_authority_transaction_result::ok &&
 			    recovered != flatfile_authority_transaction_result::not_found)
 				return false;
 			if (!warm_scratch_add(storage_live, sizeof(flatfile_season_state)) ||
-			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_corpse_record>)) ||
-			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_room_item_record>)) ||
-			    !warm_scratch_add(storage_live, sizeof(std::vector<flatfile_saved_world_item_record>)) ||
-			    !reserve_warm_command_scratch(storage_live, &scratch))
+			    !warm_scratch_add(storage_live,
+					      sizeof(std::vector<flatfile_corpse_record>)) ||
+			    !warm_scratch_add(storage_live,
+					      sizeof(std::vector<flatfile_room_item_record>)) ||
+			    !warm_scratch_add(
+				    storage_live,
+				    sizeof(std::vector<flatfile_saved_world_item_record>)) ||
+			    !reserve_flat_common_budget(storage_live, &scratch.budget))
 				return false;
 			flatfile_season_state season;
-			if (flatfile_season_state_read_locked_bounded(selected_root, lock, &season,
-				    reserve_warm_command_scratch, &scratch, storage_live) !=
-				    flatfile_season_state_result::ok ||
+			if (flatfile_season_state_read_locked_bounded(
+				    selected_root, lock, &season, reserve_flat_common_budget,
+				    &scratch.budget,
+				    storage_live) != flatfile_season_state_result::ok ||
 			    season.status != flatfile_season_status::active || !season.epoch)
 				return false;
 			image.season_epoch = season.epoch;
@@ -2473,9 +2558,11 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			std::vector<flatfile_room_item_record> rooms;
 			std::vector<flatfile_saved_world_item_record> saved;
 			size_t world_heap = 0;
-			const auto world_read = flatfile_world_item_recovery_list_all_locked_bounded(
-				selected_root, lock, &corpses, &rooms, &saved,
-				reserve_warm_command_scratch, &scratch, storage_live, &world_heap);
+			const auto world_read =
+				flatfile_world_item_recovery_list_all_locked_bounded(
+					selected_root, lock, &corpses, &rooms, &saved,
+					reserve_flat_common_budget, &scratch.budget, storage_live,
+					&world_heap);
 			if (world_read != flatfile_world_item_result::ok &&
 			    world_read != flatfile_world_item_result::not_found)
 				return false;
@@ -2494,17 +2581,19 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 				return false;
 			if (!warm_scratch_add(storage_live, sizeof(item_owner_identity)) ||
 			    !warm_scratch_add(storage_live,
-					 sizeof(std::vector<flatfile_item_ownership_record>)) ||
-			    !reserve_warm_command_scratch(storage_live, &scratch))
+					      sizeof(std::vector<flatfile_item_ownership_record>)) ||
+			    !reserve_flat_common_budget(storage_live, &scratch.budget))
 				return false;
 			const item_owner_identity selected_owner{
 				item_owner_type::room, static_cast<uint64_t>(image.room_vnum), 0 };
 			uint64_t custody_revision = 0;
 			std::vector<flatfile_item_ownership_record> active;
 			size_t custody_heap = 0;
-			const auto custody_read = flatfile_item_repository_load_owner_locked_bounded(
-				selected_root, lock, selected_owner, &custody_revision, &active,
-				reserve_warm_command_scratch, &scratch, storage_live, &custody_heap);
+			const auto custody_read =
+				flatfile_item_repository_load_owner_locked_bounded(
+					selected_root, lock, selected_owner, &custody_revision,
+					&active, reserve_flat_common_budget, &scratch.budget,
+					storage_live, &custody_heap);
 			if (custody_read != flatfile_item_repository_result::ok &&
 			    custody_read != flatfile_item_repository_result::not_found)
 				return false;
@@ -2517,14 +2606,15 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			if (!warm_root_current_bounded(*root, scratch, storage_live) ||
 			    economic_gameplay_authority::prepare_zone_reset_item_flat_bounded(
 				    image, root->stage.state_->facts.accepted_at_usec,
-				    &original.command, reserve_warm_command_scratch,
-				    &scratch, storage_live) != economic_accounting_error::ok)
+				    &original.command, reserve_flat_common_budget, &scratch.budget,
+				    storage_live) != economic_accounting_error::ok)
 				return false;
 			size_t command_heap = 0;
 			if (!warm_scratch_envelope_heap(original, false, &command_heap) ||
 			    !warm_scratch_add(storage_live, command_heap) ||
 			    critical_command_encode_bounded(original.command, &canonical,
-				    reserve_warm_command_scratch, &scratch, storage_live) !=
+							    reserve_flat_common_budget,
+							    &scratch.budget, storage_live) !=
 				    critical_command_codec_result::ok)
 				return false;
 			if (!warm_scratch_add(storage_live, canonical.capacity()) ||
@@ -2544,8 +2634,9 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			size_t initial_peak = storage_live;
 			if (!warm_scratch_add(storage_live, initial_heap) ||
 			    !warm_scratch_add(initial_peak, initial_heap) ||
-			    !warm_scratch_add(initial_peak, sizeof(zone_reset_item_recovery_item)) ||
-			    !reserve_warm_command_scratch(initial_peak, &scratch))
+			    !warm_scratch_add(initial_peak,
+					      sizeof(zone_reset_item_recovery_item)) ||
+			    !reserve_flat_common_budget(initial_peak, &scratch.budget))
 				return false;
 			zone_reset_item_recovery_context initial;
 			initial.items.reserve(image.items.size());
@@ -2560,16 +2651,16 @@ bool zone_reset_item_owner::prepare_warm_command_flat(const critical_operation_i
 			original.phase = critical_native_recovery_phase::execution_pending;
 			if (zone_reset_item_recovery_encode_bounded(
 				    original.command, initial, &original.attachment,
-				    reserve_warm_command_scratch, &scratch,
+				    reserve_flat_common_budget, &scratch.budget,
 				    storage_live) != economic_accounting_error::ok ||
 			    !warm_scratch_add(storage_live, original.attachment.capacity()) ||
-			    !zone_reset_item_recovery_initial_bounded(original,
-								      reserve_warm_command_scratch,
-								      &scratch, storage_live) ||
+			    !zone_reset_item_recovery_initial_bounded(
+				    original, reserve_flat_common_budget, &scratch.budget,
+				    storage_live) ||
 			    flatfile_zone_reset_item_publication_storage::
 					    observe_initial_locked_bounded(
 						    selected_root, lock, original,
-						    reserve_warm_command_scratch, &scratch,
+						    reserve_flat_common_budget, &scratch.budget,
 						    storage_live) != 0 ||
 			    !warm_root_current_bounded(*root, scratch, storage_live) ||
 			    !lock.matches(selected_root) || persistence_mode_requires_mysql() ||
@@ -4190,7 +4281,7 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 			size_t projection_live = base;
 			if (!warm_scratch_array(projection_live, 2,
 						sizeof(critical_operation_id)) ||
-			    !reserve_warm_command_scratch(projection_live, &scratch))
+			    !reserve_flat_common_budget(projection_live, &scratch.budget))
 				return false;
 			critical_operation_id lineage{}, epoch{};
 			if (!economic_gameplay_authority::capture_flat_reset_projection(&lineage,
@@ -4208,15 +4299,16 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 				      sizeof(std::span<quest_mobile_native_item_stage *>)) ||
 		    !warm_scratch_add(caller_live,
 				      sizeof(std::span<const economic_source_event>)) ||
-		    !reserve_warm_command_scratch(caller_live, &scratch))
+		    !reserve_flat_common_budget(caller_live, &scratch.budget))
 			return false;
 		{
 			std::vector<quest_mobile_native_item_stage *> factories;
 			std::vector<economic_source_event> sources;
 			std::vector<uint8_t> canonical;
-			if (critical_command_encode_bounded(
-				    original.command, &canonical, reserve_warm_command_scratch,
-				    &scratch, caller_live) != critical_command_codec_result::ok)
+			if (critical_command_encode_bounded(original.command, &canonical,
+							    reserve_flat_common_budget,
+							    &scratch.budget, caller_live) !=
+			    critical_command_codec_result::ok)
 				return false;
 			if (canonical != root.canonical_command ||
 			    !warm_scratch_add(caller_live, canonical.capacity()) ||
@@ -4225,7 +4317,7 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 						sizeof(quest_mobile_native_item_stage *)) ||
 			    !warm_scratch_array(caller_live, root.forest.items.size(),
 						sizeof(economic_source_event)) ||
-			    !reserve_warm_command_scratch(caller_live, &scratch))
+			    !reserve_flat_common_budget(caller_live, &scratch.budget))
 				return false;
 			factories.reserve(root.forest.items.size());
 			sources.reserve(root.forest.items.size());
@@ -4268,7 +4360,7 @@ bool zone_reset_item_owner::prepare_warm_publication_flat(
 			if (!zone_reset_room_publication_owner::prepare_warm_flat_bounded(
 				    original.command, held.flat_scope->root_, factory_rows,
 				    source_rows, &root.placement, &root.publication,
-				    reserve_warm_command_scratch, &scratch, caller_live))
+				    reserve_flat_common_budget, &scratch.budget, caller_live))
 				return false;
 		}
 		// The candidate and all local vector/span storage have died; publication
@@ -4605,7 +4697,7 @@ bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scrat
 	if (!scratch.root || scratch.root->preparation_owner != &scratch)
 		return false;
 	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || scratch.global_scope ||
-	    !item_native_quest_global_budget_scope_owner::begin(&scratch,
+	    !item_native_quest_global_budget_scope_owner::begin(&scratch.budget,
 								flat_current_global_storage))
 	{
 		scratch.root->preparation_owner = nullptr;
@@ -4614,6 +4706,7 @@ bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scrat
 		return false;
 	}
 	scratch.global_scope = true;
+	scratch.budget.active = true;
 	size_t current = 0, live = warm_command_scratch::inline_bytes();
 	if (flat_current_global_storage(&current) && warm_scratch_add(live, current))
 	{
@@ -4627,8 +4720,9 @@ bool zone_reset_item_owner::begin_flat_command_scope(warm_command_scratch &scrat
 	// CURRENT persistent globals outside it. No fallible callback between changes.
 	scratch.root->preparation_owner = nullptr;
 	scratch.root->preparation_scratch = 0;
-	(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+	(void)item_native_quest_global_budget_scope_owner::end(&scratch.budget);
 	scratch.global_scope = false;
+	scratch.budget.active = false;
 	(void)quest_mobile_native_birth_owner::charge();
 	return false;
 }
@@ -4656,7 +4750,7 @@ bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &
 	// Native private stages use their paired census only after actual registration.
 	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() || scratch.global_scope ||
 	    !item_native_quest_global_budget_scope_owner::begin(
-		    &scratch, flat_current_global_storage_with_literal_pools, true))
+		    &scratch.budget, flat_current_global_storage_with_literal_pools, true))
 	{
 		scratch.root->preparation_owner = nullptr;
 		scratch.root->preparation_scratch = 0;
@@ -4664,13 +4758,14 @@ bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &
 		return false;
 	}
 	scratch.global_scope = true;
+	scratch.budget.active = true;
 	size_t current = 0, live = warm_command_scratch::inline_bytes();
 	// This private candidate runs only after startup. Genuine scope identity
 	// selects its outside observer BEFORE the first shared charge; no selected
 	// six-owner caller or replay callback registers the locking observer.
 	if (item_native_quest_coordinator_budget_scope_owner::register_observer(
-		    &scratch, zone_reset_room_publication_owner::current_coordinator_storage,
-		    reserve_warm_command_scratch) &&
+		    &scratch.budget, zone_reset_room_publication_owner::current_coordinator_storage,
+		    reserve_flat_common_budget) &&
 	    warm_scratch_add(live, caller_extra) &&
 	    flat_current_global_storage_with_literal_pools(&current) &&
 	    warm_scratch_add(live, current))
@@ -4683,8 +4778,9 @@ bool zone_reset_item_owner::begin_full_flat_command_scope(warm_command_scratch &
 	// this scope. Its registered observer remains CURRENT outside the guard.
 	scratch.root->preparation_owner = nullptr;
 	scratch.root->preparation_scratch = 0;
-	(void)item_native_quest_global_budget_scope_owner::end(&scratch);
+	(void)item_native_quest_global_budget_scope_owner::end(&scratch.budget);
 	scratch.global_scope = false;
+	scratch.budget.active = false;
 	(void)quest_mobile_native_birth_owner::charge();
 	return false;
 }
@@ -5009,18 +5105,18 @@ bool zone_reset_item_owner::observe_completed_flat_bounded(warm_root &root,
 	if (!root.coordinator_generation &&
 	    !zone_reset_room_publication_owner::generation_warm_bounded(
 		    root.original_envelope, &root.coordinator_generation,
-		    reserve_warm_command_scratch, &scratch, outer_live))
+		    reserve_flat_common_budget, &scratch.budget, outer_live))
 		return false;
 	if (root.completed)
 		return true;
 	size_t live = outer_live;
 	if (!warm_scratch_add(live, sizeof(critical_completion)) ||
-	    !reserve_warm_command_scratch(live, &scratch))
+	    !reserve_flat_common_budget(live, &scratch.budget))
 		return false;
 	critical_completion receipt{};
 	const bool available = zone_reset_room_publication_owner::completion_warm_bounded(
-		root.original_envelope.command.operation_id, &receipt, reserve_warm_command_scratch,
-		&scratch, live);
+		root.original_envelope.command.operation_id, &receipt, reserve_flat_common_budget,
+		&scratch.budget, live);
 	if (available)
 	{
 		if (!critical_completion_disposition_valid(receipt))
@@ -5048,9 +5144,12 @@ bool zone_reset_item_owner::cleanup_refusal_bounded(
 	    persistence_mode_requires_mysql())
 		return false;
 	auto &root = *static_cast<warm_root *>(original_context);
-	auto *scratch = static_cast<warm_command_scratch *>(budget_context);
-	if (!scratch || scratch->root != &root || root.preparation_owner != scratch ||
-	    !scratch->global_scope)
+	auto *guard = static_cast<flat_common_budget_guard *>(budget_context);
+	if (!guard || reserve != reserve_flat_common_budget || !guard->active || !guard->warm)
+		return false;
+	auto *scratch = guard->warm;
+	if (guard != &scratch->budget || scratch->root != &root ||
+	    root.preparation_owner != scratch || !scratch->global_scope)
 		return false;
 	try
 	{
@@ -5153,8 +5252,8 @@ bool zone_reset_item_owner::cleanup_refusal_flat_relay(const critical_command &c
 {
 	auto *work = static_cast<flat_refusal_workspace *>(opaque);
 	return work &&
-	       cleanup_refusal_bounded(command, receipt, &work->root, reserve_warm_command_scratch,
-				       &work->scratch, coordinator_live);
+	       cleanup_refusal_bounded(command, receipt, &work->root, reserve_flat_common_budget,
+				       &work->scratch.budget, coordinator_live);
 }
 
 bool zone_reset_item_owner::cancel_refused_flat_bounded(warm_root &root,
@@ -5173,13 +5272,13 @@ bool zone_reset_item_owner::cancel_refused_flat_bounded(warm_root &root,
 	const size_t caller_extra = outer_live - entry;
 	size_t live = outer_live;
 	if (!warm_scratch_add(live, sizeof(flat_refusal_workspace)) ||
-	    !reserve_warm_command_scratch(live, &scratch))
+	    !reserve_flat_common_budget(live, &scratch.budget))
 		return false;
 	flat_refusal_workspace work{ root, scratch };
 	const bool removed = zone_reset_room_publication_owner::cancel_warm_bounded(
 		root.original_envelope, root.completion, root.coordinator_generation,
-		cleanup_refusal_flat_relay, &work, reserve_warm_command_scratch, &scratch, live,
-		&work.cleanup_called, &work.cleanup_succeeded);
+		cleanup_refusal_flat_relay, &work, reserve_flat_common_budget, &scratch.budget,
+		live, &work.cleanup_called, &work.cleanup_succeeded);
 	// Actual disposal and actual coordinator removal are distinct returned facts.
 	// Removal refusal cannot repeat a cleanup whose native effect already returned.
 	if (work.cleanup_called && work.cleanup_succeeded)
@@ -5260,7 +5359,7 @@ bool zone_reset_item_owner::copy_flat_next_context(warm_root &root,
 	if (!work.current_live(scratch, lock, &live) ||
 	    !warm_scratch_add(live, sizeof(zone_reset_item_recovery_context)) ||
 	    !warm_scratch_context_heap(root.context, true, &heap) ||
-	    !warm_scratch_add(live, heap) || !reserve_warm_command_scratch(live, &scratch))
+	    !warm_scratch_add(live, heap) || !reserve_flat_common_budget(live, &scratch.budget))
 		return false;
 	try
 	{
@@ -5304,7 +5403,8 @@ bool zone_reset_item_owner::finish_flat_publication_action(
 	// budget/proof, codec or I/O. A later refusal cannot repeat this native effect.
 	size_t live = 0;
 	return refresh_flat_publication_scratch(scratch, work, &lock, &live) &&
-	       settle_warm_checkpoint_bounded(root, reserve_warm_command_scratch, &scratch, live) &&
+	       settle_warm_checkpoint_bounded(root, reserve_flat_common_budget, &scratch.budget,
+					      live) &&
 	       actual.succeeded;
 }
 
@@ -5329,22 +5429,22 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 	const size_t caller_extra = outer_live - live;
 	live = outer_live;
 	if (!warm_scratch_add(live, sizeof(flat_publication_workspace)) ||
-	    !reserve_warm_command_scratch(live, &scratch))
+	    !reserve_flat_common_budget(live, &scratch.budget))
 		return false;
 	// Preserve ALL other caller frames/capacities on every CURRENT rebase. This
 	// does not claim ownership of the root-owned coordinator/journal handoff.
 	flat_publication_workspace work(*scratch.output, caller_extra);
 	try
 	{
-		if (!settle_warm_checkpoint_bounded(root, reserve_warm_command_scratch, &scratch,
-						    live) ||
+		if (!settle_warm_checkpoint_bounded(root, reserve_flat_common_budget,
+						    &scratch.budget, live) ||
 		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
 		    !zone_reset_room_publication_owner::copy_warm_bounded(
 			    root.original_envelope.command, &work.current,
-			    reserve_warm_command_scratch, &scratch, live) ||
+			    reserve_flat_common_budget, &scratch.budget, live) ||
 		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
 		    critical_command_encode_bounded(work.current.command, &work.canonical,
-						    reserve_warm_command_scratch, &scratch,
+						    reserve_flat_common_budget, &scratch.budget,
 						    live) != critical_command_codec_result::ok ||
 		    work.canonical != root.canonical_command ||
 		    work.current.revision != root.original_envelope.revision ||
@@ -5352,8 +5452,8 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		    work.current.attachment != root.original_envelope.attachment ||
 		    !refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
 		    !zone_reset_room_publication_owner::generation_warm_bounded(
-			    work.current, &work.generation, reserve_warm_command_scratch, &scratch,
-			    live) ||
+			    work.current, &work.generation, reserve_flat_common_budget,
+			    &scratch.budget, live) ||
 		    work.generation != root.coordinator_generation)
 			return false;
 		if (root.context.items.empty())
@@ -5362,7 +5462,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 			if (!refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
 			    zone_reset_item_recovery_decode_bounded(
 				    work.current.command, work.attachment, &root.context,
-				    reserve_warm_command_scratch, &scratch,
+				    reserve_flat_common_budget, &scratch.budget,
 				    live) != economic_accounting_error::ok ||
 			    !refresh_flat_publication_scratch(scratch, work, nullptr, &live))
 				return false;
@@ -5381,7 +5481,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 								      &live) ||
 				    !zone_reset_item_recovery_publication_bounded(
 					    work.current, root.completion,
-					    reserve_warm_command_scratch, &scratch, live))
+					    reserve_flat_common_budget, &scratch.budget, live))
 					return false;
 			}
 			else
@@ -5396,8 +5496,8 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 				if (!refresh_flat_publication_scratch(scratch, work, nullptr,
 								      &live) ||
 				    !checkpoint_warm_context_bounded(root, work.next,
-								     reserve_warm_command_scratch,
-								     &scratch, live))
+								     reserve_flat_common_budget,
+								     &scratch.budget, live))
 					return false;
 			}
 		}
@@ -5417,7 +5517,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		const size_t chars = std::char_traits<char>::length(configured);
 		if (!warm_scratch_add(live, sizeof(std::string)) ||
 		    (chars > 15 && (chars == SIZE_MAX || !warm_scratch_add(live, chars + 1))) ||
-		    !reserve_warm_command_scratch(live, &scratch))
+		    !reserve_flat_common_budget(live, &scratch.budget))
 			return false;
 		{
 			std::string selected(configured);
@@ -5425,17 +5525,18 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		}
 		if (!refresh_flat_publication_scratch(scratch, work, nullptr, &live) ||
 		    !warm_scratch_add(live, sizeof(flatfile_authority_lock)) ||
-		    !reserve_warm_command_scratch(live, &scratch))
+		    !reserve_flat_common_budget(live, &scratch.budget))
 			return false;
-		flatfile_authority_lock lock(reserve_warm_command_scratch, &scratch,
+		flatfile_authority_lock lock(reserve_flat_common_budget, &scratch.budget,
 					     live - sizeof(flatfile_authority_lock));
 		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
-		    !lock.acquire_bounded(work.selected_root, reserve_warm_command_scratch,
-					  &scratch, live) ||
+		    !lock.acquire_bounded(work.selected_root, reserve_flat_common_budget,
+					  &scratch.budget, live) ||
 		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
 			return false;
 		const auto recovered = flatfile_authority_transaction_recover_bounded(
-			work.selected_root, lock, reserve_warm_command_scratch, &scratch, live);
+			work.selected_root, lock, reserve_flat_common_budget, &scratch.budget,
+			live);
 		if ((recovered != flatfile_authority_transaction_result::ok &&
 		     recovered != flatfile_authority_transaction_result::not_found) ||
 		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
@@ -5448,7 +5549,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 				prepare_original_completed_flat_locked_bounded(
 					work.selected_root, lock, root.original_envelope,
 					root.completion, root.publication,
-					reserve_warm_command_scratch, &scratch, live);
+					reserve_flat_common_budget, &scratch.budget, live);
 			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
 				return false;
 			if (!ready)
@@ -5458,7 +5559,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 						work.selected_root, lock, root.original_envelope,
 						root.completion, root.publication, root.published,
 						restore_cold_flat_bindings, &root,
-						reserve_warm_command_scratch, &scratch, live);
+						reserve_flat_common_budget, &scratch.budget, live);
 				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
 					return false;
 			}
@@ -5468,7 +5569,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 					prepare_original_present_prefix_flat_locked_bounded(
 						work.selected_root, lock, root.original_envelope,
 						root.completion, root.publication, &root.placement,
-						reserve_warm_command_scratch, &scratch, live);
+						reserve_flat_common_budget, &scratch.budget, live);
 				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
 					return false;
 			}
@@ -5479,7 +5580,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 						work.selected_root, lock, root.original_envelope,
 						root.completion, root.publication, &root.placement,
 						root.published, restore_cold_flat_bindings, &root,
-						reserve_warm_command_scratch, &scratch, live);
+						reserve_flat_common_budget, &scratch.budget, live);
 				if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
 					return false;
 			}
@@ -5489,12 +5590,12 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		if (!(root.cold ?
 			      zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
 				      work.selected_root, lock, root.original_envelope,
-				      root.completion, root.publication,
-				      reserve_warm_command_scratch, &scratch, live) :
+				      root.completion, root.publication, reserve_flat_common_budget,
+				      &scratch.budget, live) :
 			      zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
 				      work.selected_root, lock, root.original_envelope,
-				      root.completion, root.publication,
-				      reserve_warm_command_scratch, &scratch, live)) ||
+				      root.completion, root.publication, reserve_flat_common_budget,
+				      &scratch.budget, live)) ||
 		    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
 			return false;
 		if (!root.context.batch_publication.succeeded)
@@ -5508,8 +5609,8 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 					 [](const auto &item) { return item.admitted; }) &&
 			    (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 			     !checkpoint_warm_context_bounded(root, work.next,
-							      reserve_warm_command_scratch,
-							      &scratch, live)))
+							      reserve_flat_common_budget,
+							      &scratch.budget, live)))
 				return false;
 		}
 		if (!root.context.whole_binding.succeeded)
@@ -5518,8 +5619,8 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 			    !refresh_flat_publication_scratch(scratch, work, &lock, &live))
 				return false;
 			const int run = prepare_warm_action_bounded(root, WARM_BINDING, 0, 0,
-								    reserve_warm_command_scratch,
-								    &scratch, live);
+								    reserve_flat_common_budget,
+								    &scratch.budget, live);
 			if (run < 0)
 				return false;
 			if (run)
@@ -5543,14 +5644,14 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 			const bool reserved = zone_reset_room_publication_owner::
 				reserve_rooted_flat_consume_bounded(root.publication,
 								    root.published,
-								    reserve_warm_command_scratch,
-								    &scratch, live);
+								    reserve_flat_common_budget,
+								    &scratch.budget, live);
 			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 			    !reserved)
 				return false;
 			const int run = prepare_warm_action_bounded(root, WARM_BATCH, 0, 0,
-								    reserve_warm_command_scratch,
-								    &scratch, live);
+								    reserve_flat_common_budget,
+								    &scratch.budget, live);
 			if (run < 0)
 				return false;
 			if (run)
@@ -5559,7 +5660,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 				// not-attempted latch; unknown native effects cannot earn this branch.
 				if (!zone_reset_room_publication_owner::consume_bounded(
 					    root.publication, &root.published,
-					    reserve_warm_command_scratch, &scratch, live))
+					    reserve_flat_common_budget, &scratch.budget, live))
 					return false;
 				work.actual = { true, true, true, false };
 				const bool finished =
@@ -5572,7 +5673,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		}
 		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 		    !zone_reset_room_publication_owner::verify_warm_flat_current_bounded(
-			    root.publication, reserve_warm_command_scratch, &scratch, live))
+			    root.publication, reserve_flat_common_budget, &scratch.budget, live))
 			return false;
 		for (size_t row = 0; row < root.context.items.size(); ++row)
 			for (size_t step = root.context.items[row].next_step;
@@ -5583,12 +5684,12 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 								      &live) ||
 				    !zone_reset_room_publication_owner::
 					    verify_warm_flat_current_bounded(
-						    root.publication, reserve_warm_command_scratch,
-						    &scratch, live))
+						    root.publication, reserve_flat_common_budget,
+						    &scratch.budget, live))
 					return false;
 				const int run = prepare_warm_action_bounded(
 					root, WARM_ITEM_EFFECT, row, step,
-					reserve_warm_command_scratch, &scratch, live);
+					reserve_flat_common_budget, &scratch.budget, live);
 				if (run < 0)
 					return false;
 				if (!run)
@@ -5596,7 +5697,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 				work.actual = {};
 				(void)zone_reset_room_publication_owner::service_step_bounded(
 					root.publication, row, step, work.actual,
-					reserve_warm_command_scratch, &scratch, live);
+					reserve_flat_common_budget, &scratch.budget, live);
 				const bool finished =
 					finish_flat_publication_action(root, work, scratch, lock);
 				if (!refresh_flat_publication_scratch(scratch, work, &lock,
@@ -5609,16 +5710,16 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live))
 				return false;
 			const int run = prepare_warm_action_bounded(root, WARM_PLACE, 0, 0,
-								    reserve_warm_command_scratch,
-								    &scratch, live);
+								    reserve_flat_common_budget,
+								    &scratch.budget, live);
 			if (run < 0)
 				return false;
 			if (run)
 			{
 				work.actual = {};
 				(void)zone_reset_room_publication_owner::place_warm_bounded(
-					root.publication, work.actual, reserve_warm_command_scratch,
-					&scratch, live);
+					root.publication, work.actual, reserve_flat_common_budget,
+					&scratch.budget, live);
 				const bool finished =
 					finish_flat_publication_action(root, work, scratch, lock);
 				if (!refresh_flat_publication_scratch(scratch, work, &lock,
@@ -5629,20 +5730,20 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		}
 		if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 		    !zone_reset_room_publication_owner::verify_warm_flat_current_bounded(
-			    root.publication, reserve_warm_command_scratch, &scratch, live) ||
+			    root.publication, reserve_flat_common_budget, &scratch.budget, live) ||
 		    !zone_reset_room_publication_owner::mark_published_bounded(
-			    root.publication, &root.published, reserve_warm_command_scratch,
-			    &scratch, live) ||
+			    root.publication, &root.published, reserve_flat_common_budget,
+			    &scratch.budget, live) ||
 		    !refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 		    !(root.cold ?
 			      zone_reset_room_publication_owner::refresh_cold_flat_locked_bounded(
 				      work.selected_root, lock, root.original_envelope,
-				      root.completion, root.publication,
-				      reserve_warm_command_scratch, &scratch, live) :
+				      root.completion, root.publication, reserve_flat_common_budget,
+				      &scratch.budget, live) :
 			      zone_reset_room_publication_owner::refresh_warm_flat_locked_bounded(
 				      work.selected_root, lock, root.original_envelope,
-				      root.completion, root.publication,
-				      reserve_warm_command_scratch, &scratch, live)) ||
+				      root.completion, root.publication, reserve_flat_common_budget,
+				      &scratch.budget, live)) ||
 		    !lock.matches(work.selected_root))
 			return false;
 		if (root.context.stage != zone_reset_item_recovery_stage::physically_proven)
@@ -5652,21 +5753,22 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 			work.next.runtime_applied = true;
 			work.next.stage = zone_reset_item_recovery_stage::physically_proven;
 			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
-			    !checkpoint_warm_context_bounded(
-				    root, work.next, reserve_warm_command_scratch, &scratch, live))
+			    !checkpoint_warm_context_bounded(root, work.next,
+							     reserve_flat_common_budget,
+							     &scratch.budget, live))
 				return false;
 		}
 		if (root.original_envelope.phase ==
 		    critical_native_recovery_phase::execution_pending)
 		{
 			if (!refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
-			    !prepare_flat_ack_successor_bounded(root, reserve_warm_command_scratch,
-								&scratch, live) ||
+			    !prepare_flat_ack_successor_bounded(root, reserve_flat_common_budget,
+								&scratch.budget, live) ||
 			    !refresh_flat_publication_scratch(scratch, work, &lock, &live) ||
 			    !zone_reset_room_publication_owner::acknowledge_warm_bounded(
 				    root.original_envelope, root.completion,
-				    root.coordinator_generation, reserve_warm_command_scratch,
-				    &scratch, live))
+				    root.coordinator_generation, reserve_flat_common_budget,
+				    &scratch.budget, live))
 				return false;
 			root.original_envelope = std::move(*root.ack_successor);
 			root.ack_successor.reset();
@@ -5675,7 +5777,7 @@ bool zone_reset_item_owner::publish_flat_bounded(warm_root &root, warm_command_s
 		    !zone_reset_room_publication_owner::retire_warm_flat_locked_bounded(
 			    work.selected_root, lock, root.forest.items[0].object_uid,
 			    root.original_envelope, root.coordinator_generation,
-			    reserve_warm_command_scratch, &scratch, live))
+			    reserve_flat_common_budget, &scratch.budget, live))
 			return false;
 		root.retired = true;
 		return release_retired(
@@ -5843,8 +5945,8 @@ void zone_reset_item_owner::pulse_flat_bounded(bool prepare_original_resets) noe
 						continue;
 					work.submission = zone_reset_room_publication_owner::
 						submit_warm_bounded(
-							original, reserve_warm_command_scratch,
-							&scratch, work.live,
+							original, reserve_flat_common_budget,
+							&scratch.budget, work.live,
 							&work.current_coordinator_snapshot);
 					// Actual returned operation state precedes every later fallible census.
 					if (critical_submit_result_keeps_operation(work.submission))
@@ -5866,7 +5968,7 @@ void zone_reset_item_owner::pulse_flat_bounded(bool prepare_original_resets) noe
 						generation_warm_bounded(
 							root.original_envelope,
 							&root.coordinator_generation,
-							reserve_warm_command_scratch, &scratch,
+							reserve_flat_common_budget, &scratch.budget,
 							work.live);
 					if (!work.refresh(scratch))
 						continue;
@@ -5878,8 +5980,8 @@ void zone_reset_item_owner::pulse_flat_bounded(bool prepare_original_resets) noe
 					work.receipt_available = zone_reset_room_publication_owner::
 						completion_warm_bounded(
 							root.original_envelope.command.operation_id,
-							&work.receipt, reserve_warm_command_scratch,
-							&scratch, work.live);
+							&work.receipt, reserve_flat_common_budget,
+							&scratch.budget, work.live);
 					if (work.receipt_available)
 					{
 						if (!critical_completion_disposition_valid(
@@ -5960,7 +6062,7 @@ zone_reset_item_owner::startup_budget_guard::~startup_budget_guard() noexcept
 	{
 		// Cleanup only ends its actual scalar ownership. Never charge here: the
 		// caller may still hold the init mutex, and the real guard is still alive.
-		(void)item_native_quest_global_budget_scope_owner::end(this);
+		(void)item_native_quest_global_budget_scope_owner::end(&budget_);
 		global_scope_ = false;
 	}
 }
@@ -5981,7 +6083,7 @@ bool zone_reset_item_owner::startup_budget_guard::begin(size_t full_caller_and_c
 	if (global_scope_ || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
 	    item_native_quest_coordinator_budget_scope_owner::registered() ||
 	    !item_native_quest_global_budget_scope_owner::begin(
-		    this, flat_current_global_storage_with_literal_pools, true))
+		    &budget_, flat_current_global_storage_with_literal_pools, true))
 		return false;
 	global_scope_ = true;
 	if (warm_scratch_add(work.live, sizeof(*this)) &&
@@ -5993,7 +6095,7 @@ bool zone_reset_item_owner::startup_budget_guard::begin(size_t full_caller_and_c
 		return true;
 	// Only this successfully begun guard may end this scalar scope. Failed
 	// shared charge retains the existing budget cache and actual replay owners.
-	if (item_native_quest_global_budget_scope_owner::end(this))
+	if (item_native_quest_global_budget_scope_owner::end(&budget_))
 		global_scope_ = false;
 	return false;
 #endif
@@ -6042,9 +6144,9 @@ bool zone_reset_item_owner::startup_budget_guard::finish_after_unlock(
 	// The real still-active boot identity authenticates registration. Caller has
 	// already released the actual init mutex; no outside C lookup occurs here.
 	work.registered = item_native_quest_coordinator_budget_scope_owner::register_observer(
-		this, zone_reset_room_publication_owner::current_coordinator_storage,
-		reserve_warm_command_scratch);
-	if (!item_native_quest_global_budget_scope_owner::end(this))
+		&budget_, zone_reset_room_publication_owner::current_coordinator_storage,
+		reserve_flat_common_budget);
+	if (!item_native_quest_global_budget_scope_owner::end(&budget_))
 		return false;
 	global_scope_ = false;
 	// No admission or callback between exact registration and scalar scope end.
@@ -6078,11 +6180,11 @@ bool zone_reset_item_owner::startup_budget_guard::handoff_preallowed_while_locke
 	// Registration authenticates this actual live seven-global guard and stores
 	// only the exact future ROOT observer/reserve pair. It invokes neither.
 	const bool registered = item_native_quest_coordinator_budget_scope_owner::register_observer(
-		this, zone_reset_room_publication_owner::current_coordinator_storage,
-		reserve_warm_command_scratch);
+		&budget_, zone_reset_room_publication_owner::current_coordinator_storage,
+		reserve_flat_common_budget);
 	// No callback, census, allocation, lock or admission between these scalar
 	// transitions. Failure follows the original finish's actual scope cleanup.
-	if (!item_native_quest_global_budget_scope_owner::end(this))
+	if (!item_native_quest_global_budget_scope_owner::end(&budget_))
 		return false;
 	global_scope_ = false;
 	// Never reserve again through this boot guard after outside registration.

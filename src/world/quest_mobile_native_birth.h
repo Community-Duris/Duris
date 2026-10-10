@@ -256,6 +256,8 @@ class quest_mobile_native_birth_owner final
 	static bool reserve_ordinary_flat_submission(size_t, void *) noexcept;
 	static bool prepare_ordinary_flat_envelope(size_t, size_t);
 	static bool ordinary_flat_submission_role_current(size_t, size_t) noexcept;
+	static critical_submit_result submit_ordinary_flat_envelope(size_t, size_t,
+								    bool *) noexcept;
 
 	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
 	static bool ordinary_flat_execution_source_current(

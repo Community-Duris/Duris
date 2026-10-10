@@ -4466,15 +4466,27 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 									sizeof(i) + sizeof(&b)) :
 						     !ordinary_cash_role_current(b)))
 						continue;
+					bool submission_current = true;
 					const auto result =
-						critical_native_mobile_birth_publication_owner::
-							submit(b.envelope);
+						b.npc_flat_factory_scope ?
+							submit_ordinary_flat_envelope(
+								i,
+								sizeof(prepare_original_resets) +
+									sizeof(recovery_only) +
+									sizeof(i) + sizeof(&b) +
+									sizeof(submission_current) +
+									sizeof(critical_submit_result),
+								&submission_current) :
+							critical_native_mobile_birth_publication_owner::
+								submit(b.envelope);
 					if (critical_submit_result_keeps_operation(result))
 						b.submitted = true;
 					else if (result == critical_submit_result::invalid ||
 						 result ==
 							 critical_submit_result::identity_conflict)
 						b.blocked = true;
+					if (b.npc_flat_factory_scope && !submission_current)
+						continue;
 				}
 				if (b.submitted && !b.coordinator_generation)
 					critical_native_mobile_birth_publication_owner::
@@ -7160,4 +7172,84 @@ bool quest_mobile_native_birth_owner::reserve_ordinary_flat_submission(size_t fu
 				  sizeof(bool) + sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
 	return birth_passive_add(live, frames) &&
 	       birth_passive_add(live, ordinary_flat_envelope_source_frames()) && charge(live);
+}
+
+critical_submit_result
+quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, size_t outer_live,
+							       bool *current_after_submit) noexcept
+{
+	if (!current_after_submit)
+		return critical_submit_result::invalid;
+	*current_after_submit = false;
+	if (index >= births.size() || !births[index])
+		return critical_submit_result::invalid;
+	auto &b = *births[index];
+	size_t surviving = outer_live;
+	critical_submit_result result = critical_submit_result::overloaded;
+	constexpr size_t surviving_frames = sizeof(index) + sizeof(outer_live) +
+					    sizeof(current_after_submit) + sizeof(&b) +
+					    sizeof(surviving) + sizeof(result) + sizeof(bool);
+	if (!birth_passive_add(surviving, surviving_frames))
+		return result;
+	{
+		using submission_guard = zone_reset_item_owner::ordinary_flat_submission_guard;
+		size_t scope_live = surviving;
+		size_t current_coordinator_bytes = SIZE_MAX;
+		constexpr size_t scope_frames = sizeof(scope_live) +
+						sizeof(current_coordinator_bytes) +
+						sizeof(ordinary_flat_envelope_budget);
+		// Actual guard storage is admitted once BEFORE construction. Registry,
+		// canonical/envelope, journal and genuine outside C/G belong to charge,
+		// not to this provider outer. No unavailable-current value becomes zero.
+		if (!birth_passive_add(scope_live, scope_frames) ||
+		    !birth_passive_add(scope_live, submission_guard::inline_bytes()))
+			return result;
+		constexpr size_t accessor_frames = sizeof(bool (*)(size_t, void *) noexcept) +
+						   sizeof(submission_guard *) + sizeof(void *);
+		// Actual accessor expression and scalar guard cleanup are prospectively
+		// admitted before guard.begin, not first charged after call evaluation.
+		constexpr size_t cleanup_frames = sizeof(submission_guard *) + sizeof(void *) +
+						  sizeof(bool) + sizeof(critical_submit_result) +
+						  sizeof(bool);
+		size_t call_live = scope_live;
+		if (!birth_passive_add(call_live, sizeof(call_live)) ||
+		    !birth_passive_add(call_live, accessor_frames) ||
+		    !birth_passive_add(call_live, cleanup_frames))
+			return result;
+		{
+			size_t initial = call_live;
+			constexpr size_t lifecycle_frames =
+				sizeof(submission_guard *) +
+				sizeof(bool (*)(size_t, void *) noexcept) + sizeof(void *) +
+				sizeof(submission_guard *) + sizeof(void *) + sizeof(bool) +
+				sizeof(size_t) + sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
+			if (!birth_passive_add(initial, sizeof(initial)) ||
+			    !birth_passive_add(initial, lifecycle_frames) ||
+			    !birth_passive_add(initial, ordinary_flat_envelope_source_frames()) ||
+			    !charge(initial) || !ordinary_flat_freeze_source_current(index))
+				return result;
+		}
+		ordinary_flat_envelope_budget budget{ index,   scope_live, &b,
+						      nullptr, nullptr,	   nullptr };
+		{
+			submission_guard guard(&reserve_ordinary_flat_submission, &budget);
+			if (guard.begin(call_live))
+				result = critical_native_mobile_birth_publication_owner::
+					submit_bounded(b.envelope, guard.callback(),
+						       guard.context(), call_live,
+						       &current_coordinator_bytes);
+			// Preserve the actual returned disposition BEFORE any fallible
+			// outside census. These are the original scalar result transitions.
+			if (critical_submit_result_keeps_operation(result))
+				b.submitted = true;
+			else if (result == critical_submit_result::invalid ||
+				 result == critical_submit_result::identity_conflict)
+				b.blocked = true;
+		} // Real submit mutex/lender already released; guard scalar scope ends.
+	} // Callback context/output/query scalars died; no stale G/scratch retained.
+	// No callback between real scope death and fresh outside observation.
+	// Failure preserves actual result/state and asks pulse to stop this attempt
+	// before any generation/completion/publication work.
+	*current_after_submit = charge(surviving);
+	return result;
 }
