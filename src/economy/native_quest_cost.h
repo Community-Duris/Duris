@@ -68,4 +68,16 @@ native_quest_cost_projection_result
 native_quest_cost_projection_decode(std::span<const uint8_t>,
 				    native_quest_cost_projection *) noexcept;
 
+// Unselected complete pure projection/codec companions. Outer owns authentic
+// input, prior output and caller storage; these own every private allocation.
+native_quest_cost_projection_result native_quest_cost_project_bounded(
+	const std::array<int64_t, 4> &, uint64_t, std::span<const native_quest_cost_requirement>,
+	native_quest_cost_projection *, bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+native_quest_cost_projection_result native_quest_cost_projection_encode_bounded(
+	const native_quest_cost_projection &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+native_quest_cost_projection_result native_quest_cost_projection_decode_bounded(
+	std::span<const uint8_t>, native_quest_cost_projection *, bool (*)(size_t, void *) noexcept,
+	void *, size_t) noexcept;
+
 #endif
