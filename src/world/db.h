@@ -249,6 +249,8 @@ class quest_mobile_native_stage
 	bool restore_shared_shopkeeper_affects_before_room(struct char_data *) noexcept;
 	bool finish_shared_shopkeeper_affects_after_room(struct char_data *, int) noexcept;
 	bool shared_shopkeeper_affect_charge(size_t *) const noexcept;
+	// Actual private AF checkpoint/rows/installed-vector heap under paired ROOT.
+	bool shared_shopkeeper_affect_retained_bytes(size_t *) const noexcept;
 	bool shared_shopkeeper_affect_rows_current(struct char_data *) const noexcept;
 	bool observe_shared_shopkeeper_balance(struct char_data *) noexcept;
 	bool park_shared_shopkeeper_balance(struct char_data *) noexcept;

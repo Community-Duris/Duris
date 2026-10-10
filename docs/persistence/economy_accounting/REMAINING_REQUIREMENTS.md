@@ -4389,3 +4389,19 @@ and actual formatted reviews authenticate 30+59+13 members, complete inverses,
 excluded. Original accepting caller, emitted/native32MiB, measured workload,
 gameplay/persistence/recovery/R1-R8 remain OPEN; tests deferred to major-plan
 batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Pure retained Birth and affect observers implemented - 2026-10-10
+
+[Source checkpoint](PURE_BIRTH_RETAINED_OBSERVERS_2026-10-10.md) adds actual
+allocation-free Birth CURRENT and paired private affect-state observation.
+Original charge/default/native bodies remain intact; strong outputs, actual
+registry/deferred/reset/factory/body/command/recipe/stock/stage capacities and
+returned-writer ownership are covered. Existing ROOM warm allowance is counted
+once, with its conservative SSO convention explicit; native AF/events stay in G.
+Independent RAW/installed reviews authenticate 71+14 members, four inverses,
+17 current dependencies with explicit scheduler advance and library lineage.
+463 pins/931 original policies/protected Plan5 WIP persist. Actual first caller
+frame/foreign ownership, full host/accepting publication/native32MiB/running
+drain/gameplay/persistence/recovery/R1-R8 remain OPEN. Tests deferred major-plan
+batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
