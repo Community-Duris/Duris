@@ -4621,3 +4621,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Complete historical native birth bounded accounting compilers implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_BIRTH_GENERAL_CASH_ROLE_BOUNDED_COMPILERS_2026-10-10.md) complete historical general and cash-role bounded compilers integrated with independent actual formatted review; native and combined-host qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
