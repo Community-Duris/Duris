@@ -16,6 +16,7 @@
 #include "economy/native_mobile_birth_command.h"
 #include "economy/native_mobile_birth_result.h"
 #include "economy/native_mobile_birth_cash_role_result.h"
+#include "economy/shop.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_shopkeeper_capture.h"
 #include "economy/shop_trade_runtime.h"
@@ -4360,31 +4361,49 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 						continue;
 					if (b.canonical.empty())
 					{
-						if (!b.constructor_present ||
-						    !ordinary_cash_role_current(b))
+						if (b.npc_flat_factory_scope)
 						{
-							b.blocked = true;
-							continue;
+							const size_t freeze_outer =
+								sizeof(prepare_original_resets) +
+								sizeof(recovery_only) + sizeof(i) +
+								sizeof(&b) + sizeof(size_t);
+							if (!freeze_ordinary_flat_command(
+								    i, freeze_outer))
+								continue;
 						}
-						critical_command original;
-						if (economic_gameplay_authority::
-							    prepare_native_mobile_birth_ordinary_wallet(
-								    b.image, b.recipes, b.cash_role,
-								    critical_source_site::zone_event,
-								    b.accepted_usec, &original) !=
-						    economic_accounting_error::ok)
-							continue;
-						std::vector<uint8_t> canonical;
-						if (critical_command_encode(original, &canonical) !=
-						    critical_command_codec_result::ok)
-							continue;
-						b.command = std::move(original);
-						b.canonical = std::move(canonical);
-						if (!quest_mobile_native_birth_owner::charge())
+						else
 						{
-							b.blocked = true;
-							discard(i);
-							continue;
+							if (!b.constructor_present ||
+							    !ordinary_cash_role_current(b))
+							{
+								b.blocked = true;
+								continue;
+							}
+							critical_command original;
+							if (economic_gameplay_authority::
+								    prepare_native_mobile_birth_ordinary_wallet(
+									    b.image, b.recipes,
+									    b.cash_role,
+									    critical_source_site::
+										    zone_event,
+									    b.accepted_usec,
+									    &original) !=
+							    economic_accounting_error::ok)
+								continue;
+							std::vector<uint8_t> canonical;
+							if (critical_command_encode(original,
+										    &canonical) !=
+							    critical_command_codec_result::ok)
+								continue;
+							b.command = std::move(original);
+							b.canonical = std::move(canonical);
+							if (!quest_mobile_native_birth_owner::
+								    charge())
+							{
+								b.blocked = true;
+								discard(i);
+								continue;
+							}
 						}
 					}
 
@@ -6543,4 +6562,299 @@ void quest_mobile_native_birth_owner::finish_reset_flat() noexcept
 	reset_invocation = {};
 	reset_dispatch = {};
 	charge();
+}
+
+namespace
+{
+bool birth_ordinary_flat_role_encode_bounded(const native_mobile_birth_cash_role_recipe &value,
+					     native_mobile_birth_cash_role_recipe_bytes *output,
+					     bool (*reserve)(size_t, void *) noexcept,
+					     void *context, size_t outer) noexcept
+{
+	if (!output || !native_mobile_birth_cash_role_recipe_valid(value))
+		return false;
+	size_t base = outer;
+	constexpr size_t frames =
+		sizeof(&value) + sizeof(output) + sizeof(reserve) + sizeof(context) +
+		sizeof(outer) + sizeof(base) + sizeof(bool) + sizeof(std::vector<uint8_t>) +
+		sizeof(native_mobile_birth_cash_role_recipe_bytes) + sizeof(size_t);
+	if (!birth_passive_add(base, frames) || !reserve || !reserve(base, context))
+		return false;
+	try
+	{
+		std::vector<uint8_t> original;
+		if (!native_mobile_birth_constructor_recipe_encode_blob_bounded(
+			    value.original, &original, reserve, context, base) ||
+		    original.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES)
+			return false;
+		native_mobile_birth_cash_role_recipe_bytes candidate{};
+		candidate[0] = 'N';
+		candidate[1] = 'B';
+		candidate[2] = 'C';
+		candidate[3] = '4';
+		candidate[4] = NATIVE_MOBILE_BIRTH_CASH_ROLE_RECIPE_VERSION;
+		size_t copy_live = base;
+		using input_iterator = decltype(original.begin());
+		using output_iterator = decltype(candidate.begin());
+		// Actual installed copy / __copy_move_a / __copy_move_a1 /
+		// __copy_move_a2 / bulk __copy_m parameters and return carriers.
+		// Normal-iterator begin/end, miter/niter base and final wrap are real.
+		constexpr size_t copy_frames =
+			sizeof(copy_live) + sizeof(std::vector<uint8_t> *) +
+			sizeof(input_iterator) + sizeof(std::vector<uint8_t> *) +
+			sizeof(input_iterator) +
+			sizeof(native_mobile_birth_cash_role_recipe_bytes *) +
+			sizeof(output_iterator) + sizeof(output_iterator) + sizeof(std::ptrdiff_t) +
+			sizeof(output_iterator) + sizeof(input_iterator) + sizeof(input_iterator) +
+			sizeof(output_iterator) + sizeof(output_iterator) + sizeof(input_iterator) +
+			sizeof(input_iterator) + sizeof(output_iterator) + sizeof(output_iterator) +
+			sizeof(input_iterator) + sizeof(input_iterator) + sizeof(input_iterator) +
+			sizeof(input_iterator) + sizeof(const input_iterator *) +
+			sizeof(uint8_t *) + sizeof(const input_iterator *) + sizeof(uint8_t *) +
+			sizeof(output_iterator) + sizeof(output_iterator) + sizeof(uint8_t *) +
+			sizeof(uint8_t *) + sizeof(output_iterator) + sizeof(output_iterator) +
+			sizeof(uint8_t *) + sizeof(uint8_t *) + sizeof(output_iterator) +
+			sizeof(output_iterator) + sizeof(uint8_t *) + sizeof(uint8_t *) +
+			sizeof(output_iterator) + sizeof(std::ptrdiff_t) + sizeof(output_iterator) +
+			sizeof(void *) + sizeof(const void *) + sizeof(size_t) + sizeof(void *) +
+			sizeof(bool);
+		if (!birth_passive_add(copy_live, original.capacity()) ||
+		    !birth_passive_add(copy_live, copy_frames) || !reserve(copy_live, context))
+			return false;
+		std::copy(original.begin(), original.end(), candidate.begin() + 8);
+		constexpr size_t role_offset =
+			8 + NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES;
+		candidate[role_offset] = static_cast<uint8_t>(value.role);
+		for (size_t i = 0; i < 4; ++i)
+			candidate[role_offset + 1 + i] =
+				static_cast<uint8_t>(value.configured_shop_matches >> (8 * i));
+		*output = candidate;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool birth_ordinary_flat_cash_role_current_bounded(const original_birth &birth,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer) noexcept
+{
+	if (!birth.cash_role_present ||
+	    birth.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return false;
+	size_t base = outer;
+	constexpr size_t capture_frames =
+		sizeof(const quest_mobile_native_constructor_recipe *) +
+		sizeof(native_mobile_birth_cash_role_recipe *) + sizeof(int) + sizeof(int) +
+		sizeof(uint32_t) + sizeof(int) + sizeof(int) +
+		sizeof(shop_native_mobile_birth_reset_selection) +
+		sizeof(native_mobile_birth_cash_role_recipe) + sizeof(bool) +
+		// Actual nested original shop selector: args/output, mobile/room/selected/shop/candidate.
+		sizeof(int32_t) + sizeof(int32_t) + sizeof(int) +
+		sizeof(shop_native_mobile_birth_reset_selection *) + sizeof(int) + sizeof(int) +
+		sizeof(int) + sizeof(int) + sizeof(shop_native_mobile_birth_reset_selection) +
+		sizeof(bool) +
+		// Actual original binary RNUM lookup: virt/bot/top/mid/return.
+		sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int);
+	constexpr size_t frames =
+		sizeof(&birth) + sizeof(reserve) + sizeof(context) + sizeof(outer) + sizeof(base) +
+		sizeof(bool) + sizeof(native_mobile_birth_cash_role_recipe) +
+		sizeof(native_mobile_birth_cash_role_recipe_bytes) +
+		sizeof(native_mobile_birth_cash_role_recipe_bytes) + capture_frames;
+	// Actual array== -> equal -> __equal_aux -> __equal_aux1 ->
+	// __equal<true>::equal/__memcmp source carriers on installed GCC13.
+	constexpr size_t equality_frames =
+		sizeof(const native_mobile_birth_cash_role_recipe_bytes *) +
+		sizeof(const native_mobile_birth_cash_role_recipe_bytes *) + sizeof(bool) +
+		sizeof(const native_mobile_birth_cash_role_recipe_bytes *) +
+		sizeof(const uint8_t *) + sizeof(const uint8_t *) + sizeof(const uint8_t *) +
+		sizeof(bool) + sizeof(const uint8_t *) + sizeof(const uint8_t *) +
+		sizeof(const uint8_t *) + sizeof(bool) + sizeof(const uint8_t *) +
+		sizeof(const uint8_t *) + sizeof(const uint8_t *) + sizeof(bool) +
+		sizeof(const uint8_t *) + sizeof(const uint8_t *) + sizeof(const uint8_t *) +
+		sizeof(size_t) + sizeof(bool) + sizeof(const uint8_t *) + sizeof(const uint8_t *) +
+		sizeof(size_t) + sizeof(int);
+	if (!birth_passive_add(base, equality_frames))
+		return false;
+	if (!birth_passive_add(base, frames) || !reserve || !reserve(base, context))
+		return false;
+	native_mobile_birth_cash_role_recipe observed;
+	native_mobile_birth_cash_role_recipe_bytes expected{}, actual{};
+	return native_mobile_birth_cash_role_recipe_capture(birth.constructor, &observed) &&
+	       birth_ordinary_flat_role_encode_bounded(birth.cash_role, &expected, reserve, context,
+						       base) &&
+	       birth_ordinary_flat_role_encode_bounded(observed, &actual, reserve, context, base) &&
+	       expected == actual;
+}
+
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_freeze_source_current(size_t index) noexcept
+{
+	if (!nevent_is_game_thread() || index >= births.size() || !births[index])
+		return false;
+	const auto &b = *births[index];
+	if (!b.npc_flat_factory_scope || !b.ordinary_flat_source ||
+	    !b.ordinary_flat_source->state_ || !b.constructor_present || !b.sealed || b.cold ||
+	    b.blocked || b.submitted || b.completed || b.retired || b.mobile_started ||
+	    b.mobile_consumed || b.runtime_applied || b.physically_proven || !b.cash_role_present ||
+	    b.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+	    !b.npc_flat_factory_scope->current() || !b.bindings.valid_flat())
+		return false;
+	const auto &pin = *b.ordinary_flat_source->state_;
+	const auto &scope = *b.npc_flat_factory_scope;
+	const auto &source = b.reference.birth_source;
+	const auto &image = b.image.reference;
+	// Both capabilities were privately installed by this very original M owner.
+	// An equal operation/native ID or a caller-built value cannot mint either.
+	return pin.producer == &b && pin.selected_root == scope.root_ &&
+	       pin.runtime == scope.runtime_id_ && pin.instance == scope.native_id_ &&
+	       pin.birth.bytes == scope.operation_.bytes && pin.slot == scope.source_.slot &&
+	       pin.zone == scope.zone_ && pin.room == scope.room_ && pin.rnum == scope.rnum_ &&
+	       pin.original_m_args[0] == scope.original_m_args_[0] &&
+	       pin.original_m_args[1] == scope.original_m_args_[1] &&
+	       pin.original_m_args[2] == scope.original_m_args_[2] &&
+	       pin.original_m_args[3] == scope.original_m_args_[3] &&
+	       pin.lineage.bytes == scope.lineage_.bytes && pin.epoch.bytes == scope.epoch_.bytes &&
+	       source.kind == economic_source_kind::npc_generation && !source.sequence &&
+	       source.source.bytes == pin.invocation.bytes &&
+	       source.generation.bytes == pin.invocation.bytes &&
+	       pin.birth.bytes == b.reference.birth_operation.bytes &&
+	       pin.instance == b.reference.mobile_instance_id && pin.runtime == b.runtime_id &&
+	       pin.slot == source.slot && pin.zone == b.zone && pin.room == b.room &&
+	       pin.rnum == b.rnum && image.mobile_instance_id == b.reference.mobile_instance_id &&
+	       image.birth_operation.bytes == b.reference.birth_operation.bytes &&
+	       image.birth_source.kind == source.kind &&
+	       image.birth_source.source.bytes == source.source.bytes &&
+	       image.birth_source.generation.bytes == source.generation.bytes &&
+	       image.birth_source.sequence == source.sequence &&
+	       image.birth_source.slot == source.slot &&
+	       image.mobile_vnum == b.reference.mobile_vnum &&
+	       image.birthplace_vnum == b.reference.birthplace_vnum &&
+	       image.reset_zone_vnum == b.reference.reset_zone_vnum &&
+	       image.provenance == b.reference.provenance &&
+	       image.mobile_revision == b.reference.mobile_revision &&
+	       image.stock_revision == b.reference.stock_revision;
+}
+
+bool quest_mobile_native_birth_owner::freeze_ordinary_flat_command(size_t index, size_t outer_live)
+{
+	if (index >= births.size() || !births[index] || !births[index]->canonical.empty())
+		return false;
+	auto &b = *births[index];
+	// Preserve the original role guard's scalar short-circuit and blocking law.
+	if (!b.constructor_present || !b.cash_role_present ||
+	    b.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet)
+	{
+		b.blocked = true;
+		return false;
+	}
+	struct freeze_budget
+	{
+		const critical_command *command;
+		const std::vector<uint8_t> *canonical;
+		size_t fixed;
+		size_t index;
+		const original_birth *owner;
+	};
+	const auto reserve = [](size_t extra, void *opaque) noexcept
+	{
+		const auto &state = *static_cast<const freeze_budget *>(opaque);
+		if (state.index >= births.size() || births[state.index].get() != state.owner ||
+		    !ordinary_flat_freeze_source_current(state.index))
+			return false;
+		size_t live = state.fixed;
+		// Actual command capacities and canonical capacity coexist at every
+		// prospective cut; no encoded-size estimate or remembered peak.
+		return birth_passive_command_heap(live, *state.command) &&
+		       birth_passive_add(live, state.canonical->capacity()) &&
+		       birth_passive_add(live, extra) && birth_passive_add(live, sizeof(extra)) &&
+		       birth_passive_add(live, sizeof(opaque)) &&
+		       birth_passive_add(live, sizeof(&state)) &&
+		       birth_passive_add(live, sizeof(live)) &&
+		       birth_passive_add(live, sizeof(bool)) &&
+		       // Actual heap census/checked-add scalar helper source carriers.
+		       birth_passive_add(live, sizeof(size_t *) + sizeof(const critical_command *) +
+						       sizeof(bool) + sizeof(size_t *) +
+						       sizeof(size_t) + sizeof(size_t) +
+						       sizeof(bool) + sizeof(size_t *) +
+						       sizeof(size_t) + sizeof(bool)) &&
+		       charge(live);
+	};
+
+	// The actual local candidate/carriers live together through build+encode.
+	// Registry/native stage/input heaps remain in fresh charge(), not here.
+	constexpr size_t source_frames =
+		sizeof(size_t) + sizeof(const original_birth *) +
+		sizeof(const quest_mobile_native_birth_ordinary_source_pin::implementation *) +
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+		sizeof(const economic_source_event *) +
+		sizeof(const quest_mobile_native_reference *) + sizeof(bool) +
+		sizeof(const shop_trade_original_procedure_binding_stage *) + sizeof(const void *) +
+		sizeof(const void *) + sizeof(int) +
+		sizeof(bool) + // valid_flat binding/entry/number/return
+		sizeof(const proclib_recovery_chain_stage *) + sizeof(const void *) + sizeof(int) +
+		sizeof(const void *) + sizeof(void *) + sizeof(bool) + // chain current
+		// Exact normal_iterator carriers for the two real binding vectors.
+		sizeof(decltype(b.bindings.flat_scopes_.cbegin())) +
+		sizeof(decltype(b.bindings.flat_scopes_.cend())) + sizeof(const void *) +
+		sizeof(decltype(b.bindings.bindings_.cbegin())) +
+		sizeof(decltype(b.bindings.bindings_.cend())) + sizeof(const void *) +
+		// Private chain requests use the same one-pointer normal_iterator ABI;
+		// previous-function pointer, proclib_chain_prev argument and scalar loop.
+		sizeof(const void *) + sizeof(const void *) + sizeof(void *) + sizeof(int) +
+		sizeof(int);
+	size_t fixed = outer_live;
+	if (!birth_passive_add(fixed, sizeof(index)) ||
+	    !birth_passive_add(fixed, sizeof(outer_live)) ||
+	    !birth_passive_add(fixed, sizeof(&b)) || !birth_passive_add(fixed, sizeof(fixed)) ||
+	    !birth_passive_add(fixed, sizeof(critical_command)) ||
+	    !birth_passive_add(fixed, sizeof(std::vector<uint8_t>)) ||
+	    !birth_passive_add(fixed, sizeof(freeze_budget)) ||
+	    !birth_passive_add(fixed, sizeof(std::span<const native_mobile_birth_item_recipe>)) ||
+	    !birth_passive_add(fixed, sizeof(bool)) || !birth_passive_add(fixed, sizeof(reserve)) ||
+	    !birth_passive_add(fixed, source_frames) ||
+	    !birth_passive_add(fixed, npc_flat_factory_scope_current_frames()) || !charge(fixed))
+		return false;
+	{
+		critical_command original;
+		std::vector<uint8_t> canonical;
+		freeze_budget budget{ &original, &canonical, fixed, index, &b };
+		const std::span<const native_mobile_birth_item_recipe> recipes(b.recipes);
+		if (!reserve(0, &budget))
+			return false;
+		if (!b.constructor_present ||
+		    !birth_ordinary_flat_cash_role_current_bounded(b, reserve, &budget, 0))
+		{
+			b.blocked = true;
+			return false;
+		}
+		if (economic_gameplay_authority::
+			    prepare_native_mobile_birth_ordinary_wallet_flat_bounded(
+				    b.image, recipes, b.cash_role, critical_source_site::zone_event,
+				    b.accepted_usec, &original, b.npc_flat_factory_scope->lineage_,
+				    b.npc_flat_factory_scope->epoch_, reserve, &budget, 0) !=
+		    economic_accounting_error::ok)
+			return false;
+		if (!reserve(0, &budget) ||
+		    critical_command_encode_bounded(original, &canonical, reserve, &budget, 0) !=
+			    critical_command_codec_result::ok)
+			return false;
+		// Both destinations were included as real CURRENT registry storage at
+		// every callback. After the two noexcept moves their heaps transfer once.
+		b.command = std::move(original);
+		b.canonical = std::move(canonical);
+		if (!charge(fixed))
+		{
+			b.blocked = true;
+			discard(index);
+			return false;
+		}
+		return true;
+	}
 }
