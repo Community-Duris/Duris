@@ -1363,3 +1363,102 @@ bool critical_command_startup_codec_source_frame_bytes(size_t *output) noexcept
 	return false;
 #endif
 }
+
+// Pure contracts for the unchanged fixed-context derivation above. Captured
+// ordinary GNU13 LP64/C++20/OpenSSL3.0.13 source carriers only; emitted stack,
+// allocator/libc implementation internals and whole-host qualification are separate.
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+[[maybe_unused]] constexpr size_t critical_derive_existing_local_source =
+	4 * sizeof(void *) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+	sizeof(size_t) + 2 * sizeof(size_t) +
+	2 * (sizeof(void *) + 2 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool)) +
+	2 * sizeof(size_t) + sizeof(void *) + sizeof(bool) + sizeof(size_t) + sizeof(void *) +
+	sizeof(bool);
+// Both zero predicates have lexical range references. The first occurs before
+// the existing array/copy admission, so its active begin/end -> data closure
+// also needs retained coverage. The phases below do not overlap.
+[[maybe_unused]] constexpr size_t critical_derive_zero_supplement =
+	2 * sizeof(void *) + 4 * sizeof(void *);
+[[maybe_unused]] constexpr size_t critical_derive_memory_supplement =
+	std::max(std::max(3 * sizeof(void *) + sizeof(size_t),
+			  2 * sizeof(void *) + sizeof(size_t) + sizeof(int)),
+		 std::max((sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+				  (2 * sizeof(void *) + sizeof(size_t) + sizeof(int)),
+			  sizeof(void *) + sizeof(size_t) + sizeof(uint64_t)));
+[[maybe_unused]] constexpr size_t critical_derive_retained_supplement =
+	std::max(critical_derive_zero_supplement, critical_derive_memory_supplement);
+[[maybe_unused]] constexpr size_t critical_derive_complete_source =
+	critical_derive_existing_local_source + critical_derive_copy_array_frames +
+	critical_derive_sha_frames + critical_derive_retained_supplement;
+[[maybe_unused]] constexpr size_t critical_derive_initial_inline =
+	sizeof(std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(uint32_t) + sizeof(uint64_t)>) +
+	sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) + sizeof(SHA256_CTX);
+#endif
+}
+
+bool critical_operation_id_derive_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*bytes = critical_derive_complete_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_operation_id_derive_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*bytes = critical_derive_initial_inline;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_operation_id_derive_source_supplement_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*bytes = critical_derive_retained_supplement;
+	return true;
+#else
+	return false;
+#endif
+}
