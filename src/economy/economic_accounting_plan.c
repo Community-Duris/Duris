@@ -1247,3 +1247,389 @@ economic_accounting_error economic_plan_decode_bounded(const std::span<const uin
 #endif
 	return economic_accounting_error::ok;
 }
+
+namespace
+{
+bool binding_digest_add(size_t &total, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - total)
+		return false;
+	total += extra;
+	return true;
+}
+constexpr size_t binding_digest_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t binding_digest_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t binding_digest_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t binding_digest_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t binding_digest_vector_frames =
+	binding_digest_allocator_frames + binding_digest_copy_frames +
+	binding_digest_relocate_frames + binding_digest_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t binding_digest_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + binding_digest_allocator_frames;
+constexpr size_t binding_digest_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + binding_digest_vector_frames;
+template <typename T, typename Comparator> constexpr size_t binding_digest_sort_leaf_frames()
+{
+	// Same real GCC13 sort/partition/insertion/heap/copy/adjacent call scopes
+	// as UID sorting. Values and comparator carriers use their genuine types.
+	// Original key less/equal this-free argument/result scopes and revision
+	// lambda this/left/right/result plus its nested key less call.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+constexpr size_t binding_digest_command_default_frames =
+	// Real command generated default/destructor and four vector default
+	// constructor/_Vector_base/_Vector_impl/_Vector_impl_data/allocator
+	// carriers; current object inline is separately owned by its lifetime.
+	2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	4 * (sizeof(void *) + binding_digest_allocator_frames);
+constexpr size_t binding_digest_critical_codec_frames =
+	// Original encoder, working-bytes and bounded-encode parameter/return/
+	// wire_bytes/status scopes, loop key+revision refs/endpoints/pad locals.
+	10 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(critical_command_codec_result) +
+	6 * sizeof(void *) + 2 * sizeof(unsigned int) +
+	// append_le genuine widest uint64_t value plus byte loop and vector
+	// reference; array begin/end and data query sources.
+	sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	// Actual original decoder/bounded counterpart fixed scalar locals:
+	// encoded/size/destination/reserve/context/outer/heap output, live,
+	// offset/type/source/3 counts/auction flag/limit/required/intent locals.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(critical_command_codec_result) +
+	2 * sizeof(size_t) + 2 * sizeof(uint16_t) + 3 * sizeof(uint32_t) + sizeof(bool) +
+	sizeof(size_t) + sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(uint32_t) +
+	// Key/revision loop indices and padding, prospective request/extra,
+	// retained scalar and original bad_alloc reference. Object carriers
+	// decoded/key/revision are admitted by existing real decoder itself.
+	2 * sizeof(uint32_t) + 2 * sizeof(size_t) + 4 * sizeof(size_t) + sizeof(size_t) +
+	sizeof(void *) +
+	// Genuine widest read_le input/size/offset/value/decoded/index/return;
+	// decode_add/admit/heap actual parameters/locals/query scopes.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+	10 * sizeof(void *) + 9 * sizeof(size_t) + 3 * sizeof(bool) +
+	// vector constructions/destruction/calls, allocator and all fitting
+	// insert/assign/append profiles, original command nonthrow final move.
+	binding_digest_command_default_frames + binding_digest_vector_frames +
+	4 * binding_digest_move_frames;
+constexpr size_t binding_digest_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t binding_digest_sha_c_small_frames =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(const uint8_t *);
+constexpr size_t binding_digest_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+						      11 * sizeof(unsigned int) + 2 * sizeof(int) +
+						      2 * sizeof(void *);
+constexpr size_t binding_digest_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t binding_digest_sha_update_frames = 2 * sizeof(void *) + sizeof(size_t) +
+						    2 * sizeof(void *) + sizeof(unsigned int) +
+						    sizeof(size_t) + sizeof(int);
+constexpr size_t binding_digest_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+						   sizeof(unsigned long) + sizeof(unsigned int) +
+						   sizeof(int);
+[[maybe_unused]] constexpr size_t binding_digest_sha_frames =
+	std::max(binding_digest_sha_assembly_frames,
+		 std::max(binding_digest_sha_c_small_frames, binding_digest_sha_c_normal_frames)) +
+	std::max(binding_digest_sha_init_frames,
+		 std::max(binding_digest_sha_update_frames, binding_digest_sha_final_frames));
+
+struct binding_digest_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *projection = nullptr;
+	const std::vector<uint8_t> *encoded = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 10 * sizeof(void *) + 8 * sizeof(size_t) +
+					       6 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!binding_digest_add(total, sizeof(*this)) ||
+		    !binding_digest_add(total, frames) || !binding_digest_add(total, observation) ||
+		    !binding_digest_add(total, critical_command_copy_frame_bytes()) ||
+		    !binding_digest_add(total, critical_command_valid_frame_bytes()))
+			return false;
+		if (projection && (!binding_digest_add(total, sizeof(*projection)) ||
+				   !critical_command_current_heap_bytes(*projection, &heap) ||
+				   !binding_digest_add(total, heap)))
+			return false;
+		if (encoded && (!binding_digest_add(total, sizeof(*encoded)) ||
+				!binding_digest_add(total, encoded->capacity())))
+			return false;
+		if (!binding_digest_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count) const noexcept
+	{
+		size_t request = binding_digest_vector_frames;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!binding_digest_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !binding_digest_add(request, next * sizeof(T)))
+				return false;
+		}
+		return binding_digest_add(request,
+					  2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		size_t levels = 0, remaining = count,
+		       request = binding_digest_sort_leaf_frames<T, Comparator>();
+		while (remaining > 1)
+		{
+			remaining >>= 1;
+			++levels;
+		}
+		constexpr size_t recursive =
+			3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator);
+		return 2 * levels + 1 <= SIZE_MAX / recursive &&
+		       binding_digest_add(request, (2 * levels + 1) * recursive) &&
+		       binding_digest_add(request,
+					  sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+};
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+economic_accounting_error binding_digest_owned(const critical_command &command,
+					       economic_digest *digest,
+					       binding_digest_budget &budget)
+{
+	if (!digest)
+		return economic_accounting_error::corrupt_evidence;
+	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		return economic_accounting_error::invalid_version;
+	if (command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES)
+		return economic_accounting_error::capacity;
+	if ((command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     !command.accounting_intent.empty()) ||
+	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	     command.accounting_intent.empty()))
+		return economic_accounting_error::invalid_identity;
+	// Only the native auction envelope/preparation projection needs all4096
+	// original UID fences. This keeps the existing binding tag and schema1
+	// preimage; its legacy execution predicate remains closed to auctionv2.
+	const size_t max_keys = critical_command_native_auction_envelope(command) ?
+					CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+					CRITICAL_COMMAND_MAX_KEYS;
+	if (command.keys.size() > max_keys || command.expected_revisions.size() > max_keys ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return economic_accounting_error::capacity;
+	try
+	{
+		size_t admission_prefix = 0, admission_request = 0;
+		if (!critical_command_fresh_copy_request_bytes(command, &admission_request) ||
+		    !binding_digest_add(admission_request,
+					sizeof(critical_command) +
+						critical_command_copy_frame_bytes()) ||
+		    !budget.peak(admission_request))
+			return economic_accounting_error::capacity;
+		auto projection = command;
+		budget.projection = &projection;
+		projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		projection.accounting_intent.clear();
+		projection.publication_required = false;
+		// Only this binding projection uses a sentinel. Actual admission,
+		// journal bytes, exact-ID equality and durable receipts keep real time.
+		projection.accepted_at_usec = 1;
+		// Structural projections also cover accounting-only command types.
+		// Do not pass them through the legacy execution predicate.
+		if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+			    projection.keys.size()))
+			return economic_accounting_error::capacity;
+		std::sort(projection.keys.begin(), projection.keys.end(), critical_entity_key_less);
+		if (!budget.sort_frame<critical_expected_revision, char>(
+			    projection.expected_revisions.size()))
+			return economic_accounting_error::capacity;
+		std::sort(projection.expected_revisions.begin(),
+			  projection.expected_revisions.end(), [](const auto &a, const auto &b)
+			  { return critical_entity_key_less(a.key, b.key); });
+		if (!budget.peak(critical_command_valid_frame_bytes()))
+			return economic_accounting_error::capacity;
+		if (!critical_command_envelope_valid(projection))
+			return economic_accounting_error::invalid_identity;
+		if (!budget.peak(sizeof(std::vector<uint8_t>) +
+				 binding_digest_command_default_frames))
+			return economic_accounting_error::capacity;
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		const auto result =
+			(!budget.prefix(admission_prefix, binding_digest_critical_codec_frames) ?
+				 critical_command_codec_result::overflow :
+				 critical_command_encode_bounded(projection, &encoded,
+								 budget.reserve, budget.context,
+								 admission_prefix));
+		if (result != critical_command_codec_result::ok)
+			return result == critical_command_codec_result::overflow ?
+				       economic_accounting_error::capacity :
+				       economic_accounting_error::corrupt_evidence;
+		static constexpr char tag[] = "DURIS-ECONOMIC-COMMAND-V1";
+		// Include the NUL delimiter. This tag and schema-1 projection are the
+		// versioned preimage contract, not an arbitrary display string.
+		if (!budget.growth(encoded, sizeof(tag)))
+			return economic_accounting_error::capacity;
+		encoded.insert(encoded.begin(), tag, tag + sizeof(tag));
+		if (!budget.peak(sizeof(economic_digest) + sizeof(SHA256_CTX) +
+				 binding_digest_sha_frames + 4 * (sizeof(void *) + sizeof(size_t)) +
+				 sizeof(void *)))
+			return economic_accounting_error::capacity;
+		economic_digest result_digest = {};
+		SHA256_CTX digest_context;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+		if (SHA256_Init(&digest_context) != 1 ||
+		    SHA256_Update(&digest_context, encoded.data(), encoded.size()) != 1 ||
+		    SHA256_Final(result_digest.data(), &digest_context) != 1)
+			return economic_accounting_error::corrupt_evidence;
+#pragma GCC diagnostic pop
+		*digest = result_digest;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+	return economic_accounting_error::ok;
+}
+#endif
+} // namespace
+economic_accounting_error
+economic_command_binding_digest_bounded(const critical_command &command, economic_digest *digest,
+					bool (*reserve)(size_t, void *) noexcept, void *context,
+					size_t outer_live) noexcept
+{
+	if (!digest)
+		return economic_accounting_error::corrupt_evidence;
+	if (!reserve)
+		return economic_accounting_error::capacity;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	constexpr size_t frames =
+		// Public/owned command/digest/budget/reserve/context/outer/return,
+		// original max_keys, real admission_prefix/request, original result
+		// and catch bad_alloc reference. Private tag is static storage.
+		7 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(economic_accounting_error) +
+		3 * sizeof(size_t) + sizeof(critical_command_codec_result) + sizeof(void *);
+	binding_digest_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	return binding_digest_owned(command, digest, budget);
+#else
+	(void)command;
+	(void)context;
+	(void)outer_live;
+	return economic_accounting_error::capacity;
+#endif
+}
