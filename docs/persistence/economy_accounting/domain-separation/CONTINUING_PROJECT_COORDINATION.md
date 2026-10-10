@@ -598,10 +598,24 @@ expressions are not emitted stack/ABI/allocator/native/32MiB/full aggregate qual
 All CV1-CV4 component/native UNEXECUTED; genuine commands UNAVAILABLE. Private D:
 strict INDEX/deterministic audited stdlib/read-only Git verifier/exact saved receipt/
 root independent review. Missing genuine selecting/executing coin owner/full source/
-live-world/physical/cold-start/full canonical coin build/decode/compiler/compound atomic
+live-world/physical/cold-start/full canonical coin integration/compiler/compound atomic
 receiver/save/terminal/native publication/ACK/legal fault-restart-capture/current ELF/
 schema/SQL parity/crypto/ABI/allocator/full caller aggregate inputs block dependent
 execution only. Do not expand or repin at later primary events.
+
+Separate concurrent publication: complete bounded coin wire/builders
+6d9f52d7ebb8aacd19c3cd74a4bbadff9f35dcba / actual parent Ddc1 EXISTS,
+private/unselected. Root full handoff/new15 public header lines/two whole insertion-only
+source forward/inverses and ten whole adjacent providers authenticate in
+late-coin-wire-authentication.json. Original full C/H bytes and fixed CV predicates
+survive by insertion only. Full581 new C semantic review NOT PERFORMED; full original
+codec/financial/SQL/crypto/math/ABI/allocator/native/full aggregate qualification NOT
+PERFORMED; private RAW/correction/review/profile/preprocessor/policy/pins REPORTED ONLY.
+Genuine bounded build/decode/current-heap leaves reduce source dependencies; no
+missing-current-build-leaf claim or full caller/receiver/compiler/native qualification
+follows. Queue at fixed CV handoff only; no selected D/N expansion/reassignment/repin.
+Original65fc insertion history and normal merged primary6d9 remain preserved; whole
+current inserted-section inverse restores actual primary6d9, with no source delta.
 
 Evolving queue:
 1. Selected CV exact two-endpoint map/four blueprints only; reassess genuine successors
