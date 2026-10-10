@@ -452,6 +452,189 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Prepared save/replay pair reviewed CLOSED; ordinary NPC factory/binding/seal pair selected - 2026-10-10
+
+Both original PUBLISHED_PREPARED_SAVE_STORAGE_BORROWED_CURRENCY_REPLAY_AUTHORITY_BOUNDARY_2026-10-10.txt
+and PUBLISHED_PREPARED_SAVE_STORAGE_BORROWED_CURRENCY_REPLAY_ACCEPTANCE_DELTA_2026-10-10.txt
+independently SOURCE/DESIGN/METADATA PASS; PS reviews CLOSED without correction at
+P932067efb8a0395a88d8d7c11e66652a4d8f4999 / actual parent C
+3439d2df9d39bfb83cd525969e24640453842d51. Original selecting F
+fae55dd98775f9634140377840fc255e23106bff / actual parent
+cc44b3205199ccf788ad4a6afbc3b0ceba81a4fe remains immutable. Both original default
+stdout receipts independently reproduced exactly at unchanged clean F BEFORE root
+source advance: architecture4412/quest4863 bytes. No original note/PINS/INDEX/verifier/
+receipt/history rewrite, repin or CLOSED verifier rerun.
+
+Root D:/Dev/Temp/coordinator-prepared-save-borrowed-currency-review-20261010 authenticates
+strict891 architecture/four quest indexed payloads plus their INDEX files, complete
+raw Git identities/providers/cuts/full definitions/signatures/catches/scopes/inline
+methods/source constants/original equalities/changed owning joins/general whole source
+forward-inverses/raw diffs/actual lexical deaths/field routes/strong scalar barriers.
+Architecture:49 providers,789 cuts,115 original equalities,16 new complete definitions,
+54 scope equalities,one changed original prefix,two changed scopes,three changed deque
+declarations,55 inline methods,22 defaulted/deleted methods,84 member declarations,
+120 constants,58 field records,six whole source transforms/twelve raw diffs,two orders,
+27 installed headers,two minimal CLOSED CS principals/one map/four blueprints/assessment.
+Quest:51 providers,135 full functions,27 scopes,93 equalities,48 constants,15 genuine
+lexical lifetimes,four scalar barriers,56 field routes,six whole inverses/six raw diffs,
+11 source controls with111 required-expression deletion refusals/whitespace positives,
+27 installed headers/two minimal CS principals/four legal cuts. Sensitivity is source
+authentication only. Both whole original notes/maps/four cuts and complete executable
+verifiers were read/audited as stdlib/read-only Git before original default execution.
+Actual27 installed GCC13 headers independently reauthenticated read-only against existing
+container1172e0cf7e2b7e37abf42a9077b3935c27eb19135e62ae0f0c27c6ab5250f898,
+image74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b,
+package13.3.0-6ubuntu2~24.04.1 and actual package MD5; no compiler/preprocessor/ELF run.
+Root's initial inline-member name selector was corrected to authentic current_heap_bytes;
+root review setup only, no packet/product finding. Original unsealed draft/checker
+diagnostics remain historical construction evidence outside unchanged packet seals.
+Original seals:
+- Architecture INDEX.json: 150420/e59b9f7b1526e1d7057ee358de2664efe58cca21dd0caca1fbf4782e004428eb
+- Architecture PINS.json: 987773/cb72c55a875be6e3985a4d74d8e470480f9cd38c6ee362a2242deff2607db431
+- Architecture PUBLISHED_PREPARED_SAVE_STORAGE_BORROWED_CURRENCY_REPLAY_AUTHORITY_BOUNDARY_2026-10-10.txt: 27311/f5aecd90546d3aeb2c51b9e840a9b3caea8fc4166c3f2094e75e7aa40a692a43
+- Architecture VERIFICATION.json: 4412/53b5bbe53dc53c4fbd1d65ae69dac0dd594e7187049585b08c2cb376055ca7ef
+- Architecture verify.py: 68089/367cd2693a663ff56b0590444557c64daac7a54b3a4b5a120c49ca1b7657681f
+- Quest INDEX.json: 759/90d534c34455df5d5a16a492ad311bce58bf2f138168af5511697ace7f3a2767
+- Quest PINS.json: 14743601/991719db9d7b7f0101ccfbeb3d48bd3e9321c2bc790c83f6a57828d3ef5d602b
+- Quest PUBLISHED_PREPARED_SAVE_STORAGE_BORROWED_CURRENCY_REPLAY_ACCEPTANCE_DELTA_2026-10-10.txt: 75567/162f02321d766214df1ec785ecf823d77d76f81736069504826fcce5934e46c8
+- Quest VERIFICATION.json: 4863/c969ea40b0a21e31a1ea9299ddefb0511e60db6231f757e8fd5993e3be12b45d
+- Quest verify.py: 18297/5a02d00df499191c7e31b85cb5a7540e43050fd1fa9dd322faed92f8ac0d3530
+
+PS preserves genuine derived deque/protected-base allocation ownership: full retained map,
+inclusive blocks/unused slots/live nested heaps counted once; consistent-null success is
+conditional. Ordinary GCC13 deque move initializes an empty map then swaps; not every
+moved-from deque is null. Exact prepared flags require uninterrupted external lifecycle
+exclusion; thread construction/join happen outside worker_mutex. Full active/pending
+pointees/full snapshots/every completion entry's five receipt capacities participate.
+Worker leaf lock dies BEFORE strong output/callback. Genuine private currency owner
+borrows one actual scope; fresh bootstrap/prefix refresh full pool/other pipeline/worker.
+ROOT must admit prospective real frames BEFORE first observation. Complete original
+mixed replay/budget/standalone wrapper/save-obligation authority remains intact; no new
+scope/reacquire/accepting callback/financial or C++ model. Actual lexical scratch deaths
+precede fresh surviving full caller/sibling/host census. Original catch/error/receipt/
+revision/save-hold/uncertainty laws remain. Source carriers and node requests are not
+emitted ABI/allocator metadata/transient/native32MiB/full aggregate qualification.
+PS1-PS4/component/native UNEXECUTED; genuine commands UNAVAILABLE. Full original financial/
+compiler/crypto/math/SQL/native/ABI/allocator/full host qualification NOT PERFORMED.
+
+Published successors are separate, queued source capabilities, not original PS repins:
+674a82f4e5989c878e658a1827edd37ba7e80482 / actual parent fae55 schema65 variant/profile;
+f51619fb5866dbb96d0066e27df23fe5350b2727 / actual parent674a lifecycle/init owner;
+2c085a122bfac14355dff4743c468b015e14ff1d / actual parentf516 NPC source-bound freeze.
+Prior root heartbeat-0747 proof authenticates twenty whole source forward-inverses,
+fourteen adjacent controls and original selected PS sections. Genuine lifecycle mutex/
+actual init stack owner/held-lock lender and command freeze leaves EXIST; full first
+admission/owning startup/other-family/native closure remains required. Schema65 source
+profile qualified=false/empty fingerprints; Plan5 retains measurement/migration/history/
+backup/restore work. Private RAW/correction/format/profile/compiler/preprocessor/policy/
+registry claims REPORTED ONLY; complete backend semantic/native audit NOT PERFORMED.
+New23339c2d83a935b584456abea043d813799c5b42 / actual parent2c085 provides genuine
+const-reference bounded birth submission and four nullable full validator companions.
+New417a5ec8a8b3a610f1f907edcc022b9b5a928d71 / actual parent23339 provides bounded
+ordinary NPC NMB4 envelope/current-role preparation and prospective submission callback.
+Root full handoffs/new declarations/entire two C diffs read; four whole source forward-
+inverses,fourteen whole PS/CS/coin controls and all three original selected PS sections
+authenticate in successor-authentication.json. Original five validator readiness fields
+and original pulse submit expression remain. New submit stays unselected; missing nullable
+companions refuse it and an ordinary worker alone cannot bypass unsupported-flat dispatch.
+Envelope/role leaves EXIST; actual ROOT bridge/registration/selection/first-entry/full
+primitive/global/caller/admission/native/terminal/ACK qualification remains open. Full new
+C/financial/SQL/crypto/math/ABI/allocator/native/transient32MiB/full aggregate qualification
+NOT PERFORMED; private RAW/review/profile/preprocessor/policy/registry claims REPORTED ONLY.
+
+One bounded FC delivery per existing chat now selected at fixed
+Fcc44b3205199ccf788ad4a6afbc3b0ceba81a4fe / actual parent P
+932067efb8a0395a88d8d7c11e66652a4d8f4999:
+- Architecture: PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_AUTHORITY_BOUNDARY_2026-10-10.txt
+- Quest: PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_ACCEPTANCE_DELTA_2026-10-10.txt
+Concrete output: one exact private ownership/authority map, exactly FC1-FC4 legal future
+acceptance blueprints and one finite source assessment; strict INDEX/deterministic fully
+audited stdlib/read-only Git verifier/exact original saved default receipt/root review.
+Future benefit: implementation-ready original M constructor-to-retained NPC scope/item/
+binding/seal custody, legal refusal and simultaneous ownership cuts for actual flat birth.
+Available inputs: all five changed F providers db.c/H,object_template.h,birth.c/H,
+full genuine original SQL/WORLD/NPC constructor/reset/source/image/stock/binding/cash-role
+controls at F/P and allocating flat wallet preparer0740 inherited at P. Read whole new
+definitions/declarations/scopes/friends/inline methods/catches/true lifetimes and required
+whole original helpers. Authenticate five whole source transforms, changed original joins
+and unchanged required SQL/WORLD definitions; no five insertion-only claim. Reuse minimal
+CLOSED OW note+INDEX for original producer/source limits and necessary prior profile
+context only. No old verifier/PINS/receipt/history rerun or unrelated SQL/Smith/full startup/
+coin/compiler inventory; no copied allocator/financial/hash/C++ model.
+Primary owns maintained implementation/authority/contracts/admission/math/qualification.
+Workers own private D: packets only, one bounded delivery each; no source/test/docs edits,
+private imports/commits/build/compiler/preprocessor/ELF/native/product/DB/activation/Goal
+resumption. Later freezes/submission/envelope/lifecycle are separately queued at FC handoff;
+no active scope expansion/reassignment/repin at later events.
+
+Four FC legal cuts only:
+FC1 Actual original entered M capture/reset/constructor and returned detached character,
+retained birth registry owner and genuine private NPC factory scope mint/current/borrow.
+Preserve real root/runtime/native/operation/source/lineage/epoch/zone/room/rnum/shop/reset
+commands/all four original M args/if/build/procedure/reset-tail fields and actual current
+predicate coverage. A copied value/pointer/ID/phase cannot mint source permission; pure
+identity CURRENT differs from bounded current scratch admission. NPC scope is distinct
+from WORLD/ROOM and grants no selected producer, live publication, cold origin or ACK.
+FC2 Authentic prepare_item_flat/prepare_retaining_npc_flat/real retained constructor/item
+binding and borrow/match/current paths. Preserve original UID/prototype/procedure/image/
+stock/owner/custody and source reset checks; actual native objects/globals/registry owners
+remain real. Admission precedes actual nested scope/root/shared_ptr/control-block/copy and
+constructor requests. Preserve genuine refusal/catch/cleanup/original global side effects;
+no fake object/prototype/allocator/owner/counter or invented constructor rollback.
+FC3 Full prepare_native_birth_npc_flat_bounded and seal_mobile_flat plus authentic original
+SQL/WORLD prepare/valid/valid_flat/seal controls. Require genuine NPC factory scope even
+for empty forest; preserve full binding family/current/root/source/owner checks, retained
+scope copies and actual stage ownership. Read full original flat wallet preparer/image/
+cash-role delegates needed by seal; no maintained financial/math duplication. Success
+grants neither original source-current execution compatibility nor gameplay selection.
+Changing one old SQL-only method name cannot qualify the full factory/publication join.
+FC4 Authentic caller input/old output/character/stock/native recipes/constructor/source
+capsule/binding/stage/scope copies/root strings/shared control blocks/registry retention
+and local scratch coexist at their actual lexical intervals. Preserve real charge/census
+callbacks/checked arithmetic/source frames and post-transfer ownership boundaries; count
+registry-owned storage once, not as a duplicate private prefix. Scratch dies before fresh
+surviving full caller/sibling/global census. No constant observer/accepting callback,
+synthetic thread/pointer/phase/receipt/source/fixture/C++/financial/hash model or callback
+into held coordinator/journal locks. Literal carriers are not emitted stack/ABI/allocator/
+native32MiB/full aggregate proof. Genuine selecting DB/M caller prefix/global constructor/
+full source/native/legal capture/fault/restart/cold reconstruction/warm publication/
+terminal/outbox/guarded ACK/current ELF/schema/SQL parity/crypto/math/allocator/ABI/host
+inputs remain unavailable qualification dependencies; only dependent execution is blocked.
+FC1-FC4/component/native UNEXECUTED; genuine execution commands UNAVAILABLE.
+
+Evolving prioritized queue:
+1. Selected fixed FC factory/item/binding/seal pair only; reassess at handoff without
+   repin/CLOSED reopen/adoption wait/busywork. F leaves are real available source work.
+2. Genuine lifecycle/init owner f516 and source-freeze2c085/constref23339/envelope417a leaves
+   for future exact owning joins/acceptance preparation; all EXIST, not qualified runtime.
+   Original selecting/executing producer/source-current/world/cold origin/lost-history/
+   SQL parity/warm publication/terminal/outbox/guarded ACK/pause latency/full transient
+   remain. Full coin compiler/compound receiver/host/save and Smith BEFORE/history/season/
+   capture/source/participant/ACK remain separate. No missing-current-leaf claim.
+3. Full mixed startup/host ROOM/shared/legacy/currency/applicable restitution/fresh siblings,
+   H locked handoff/SG/N402/7f uncertainty/full selector/admission/legal failure/restart/
+   capture; paired ROOT/publication/NPC pool/four cold routes/detach/adopt/enroll/light/
+   service/diagnostics/scheduler/placement/activity/full native/crypto/ABI/allocator proof.
+   Plan5 owns backend/SQL0065/schema65/measurement/history/backup/restore/32MiB/recovery/
+   release. Siege runtime retired with applicable SQL baseline witnesses; unsupported flat
+   restitution/mixed-clientful selection refuses. Original applicable requirements stay.
+
+Root publishes only three owned coordination docs; whole inserted-section inverse restores
+actual primary in publication-verified.json. No maintained source/private artifact delta.
+Preserve every CLOSED PS/CS/OW/CV/OA/EH/PQ/OC/OR/RR/BR/SS/SG/PC/PD/SC/RK/RF/GG/CG/CK/
+SAME-lock seal/receipt/history/correction/known-zero cash/unchecked-close/hydration allocation/
+CURRENT-warm/constructor declaration-order/TR UNEXECUTED/factory CURRENT-RETAINED and earlier
+originals. Preserve clean architecture5c53/unsealed probe,quest acb1/630b/f4e ancestry/three
+owned local edits,all isolated checkouts/jobs/services/build/failure evidence. Historical
+Oct7 attachment2026-10-07T06:43:36.393Z and ae70 provenance correction stand; genuinely
+newer human instructions take priority. Private native/build/SQL reports root UNREVIEWED.
+Actual root Goal BLOCKED unchanged1791410483; worker BLOCKED1791446642/1791411827 distinct;
+no replacement/resumption/pause/completion. Broad Plans1-5/R1-R8/applicable backend/gameplay/
+persistence/recovery/owner completion audit open. Accounting inactive/admission CLOSED/
+coverage incomplete/release BLOCKED. Heartbeat ACTIVE until broad audit/user pause; quiet
+unchanged/non-actionable, notify meaningful progress/failure/completion/required user action.
+All Git fetch/merge/commit/push gc.auto=0; no reset/revert/kill/delete/restart/pruning/housekeeping.
+
 ## Snapshot/save-guard pair reviewed CLOSED; prepared save storage and borrowed replay pair selected - 2026-10-10
 
 Both original PUBLISHED_PLAYER_SNAPSHOT_SAVE_GUARD_CURRENT_STORAGE_AUTHORITY_BOUNDARY_2026-10-10.txt
