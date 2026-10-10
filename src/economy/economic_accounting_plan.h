@@ -164,4 +164,48 @@ economic_accounting_error economic_command_binding_digest_bounded(const critical
 								  void *context,
 								  size_t outer_live) noexcept;
 
+// Pure source/early-entry contracts. No scan, storage, readiness or authority.
+// Caller preadmits each direct scalar query, then SOURCE+prospective entry;
+// NEW children own these values after entry, so do not retain them in outer.
+constexpr size_t economic_plan_bounded_profile_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool economic_plan_normalize_source_frame_bytes(size_t *) noexcept;
+bool economic_plan_encode_source_frame_bytes(size_t *) noexcept;
+bool economic_plan_digest_source_frame_bytes(size_t *) noexcept;
+bool economic_plan_normalize_initial_inline_bytes(size_t *) noexcept;
+bool economic_plan_encode_initial_inline_bytes(size_t *) noexcept;
+bool economic_plan_digest_initial_inline_bytes(size_t *) noexcept;
+economic_accounting_error economic_plan_normalize_bounded(economic_accounting_plan *,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t) noexcept;
+economic_accounting_error economic_plan_encode_bounded(const economic_accounting_plan &,
+						       std::vector<uint8_t> *,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
+economic_accounting_error economic_plan_digest_bounded(const economic_accounting_plan &,
+						       economic_digest *,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
+
+// Actual full-profile query (public output/full/supplement, private two reference
+// outputs/codec/current/value; two pure lower profile queries, two scalar-return
+// lower exports, and checked add). It performs no storage query or admission.
+constexpr size_t economic_command_binding_digest_source_profile_query_frame_bytes() noexcept
+{
+	return 8 * sizeof(void *) + 8 * sizeof(size_t) + 5 * sizeof(bool);
+}
+bool economic_command_binding_digest_source_frame_bytes(size_t *) noexcept;
+bool economic_command_binding_digest_source_supplement_frame_bytes(size_t *) noexcept;
+bool economic_command_binding_digest_initial_inline_bytes(size_t *) noexcept;
+
+// Actual metadata validator leaf only; no plan/intent/restore envelope.
+// Direct pure query owns output pointer and bool; accessor return is separate.
+constexpr size_t economic_operation_metadata_validate_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool economic_operation_metadata_validate_source_frame_bytes(size_t *) noexcept;
+
 #endif
