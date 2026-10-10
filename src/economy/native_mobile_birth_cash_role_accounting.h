@@ -56,4 +56,25 @@ economic_accounting_error native_mobile_birth_cash_role_accounting_compile_bound
 	economic_accounting_plan *, bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
 	size_t *retained_plan_heap_bytes = nullptr) noexcept;
 
+// Pure compiler source-query closure. The caller admits the accessor's
+// size_t return before querying this fixed law, then the complete named query.
+constexpr size_t
+native_mobile_birth_cash_role_accounting_compile_profile_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 4 * sizeof(size_t) + sizeof(bool) +
+	       quest_mobile_native_image_lifetime_source_query_frame_bytes() +
+	       quest_mobile_native_image_current_heap_source_query_frame_bytes() +
+	       2 * sizeof(size_t) + 3 * (sizeof(size_t *) + sizeof(size_t) + sizeof(bool)) +
+	       sizeof(size_t) + sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_cash_role_accounting_compile_own_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_accounting_compile_initial_inline_bytes(size_t *) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_accounting_compile_fixed_bounded(
+	const critical_command &, const economic_account_key &, economic_accounting_plan *,
+	bool (*)(size_t, void *) noexcept, void *, size_t,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_accounting_compile_fixed_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	economic_accounting_plan *, bool (*)(size_t, void *) noexcept, void *, size_t,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
 #endif

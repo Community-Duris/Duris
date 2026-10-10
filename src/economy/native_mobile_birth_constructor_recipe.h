@@ -107,4 +107,24 @@ economic_accounting_error native_mobile_birth_constructor_recipe_decode_status_b
 	const std::span<const uint8_t> &, quest_mobile_native_constructor_recipe *,
 	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
 
+// Additive fixed-source companions. Inputs, old outputs and inline output
+// objects remain outer. Callee owns genuine source and private entry objects;
+// its decoded/encoded output remains caller-owned after successful transfer.
+bool native_mobile_birth_constructor_recipe_encode_blob_fixed_bounded(
+	const quest_mobile_native_constructor_recipe &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool native_mobile_birth_constructor_recipe_decode_fixed_bounded(
+	const std::span<const uint8_t> &, quest_mobile_native_constructor_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error native_mobile_birth_constructor_recipe_decode_status_fixed_bounded(
+	const std::span<const uint8_t> &, quest_mobile_native_constructor_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool native_mobile_birth_constructor_recipe_own_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_constructor_recipe_valid_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_constructor_recipe_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_constructor_recipe_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif

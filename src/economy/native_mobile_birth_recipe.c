@@ -450,3 +450,434 @@ economic_accounting_error native_mobile_birth_recipe_decode_profile(
 	*output = profile;
 	return economic_accounting_error::ok;
 }
+
+#include <iterator>
+#include <type_traits>
+
+namespace
+{
+// These are source objects/carriers, not an emitted-stack estimate. All original
+// recipe DTOs, input/seen spans, four descriptor views and capacity requests stay
+// in their established caller/profile ownership. Internal STL temporaries below
+// are distinct source objects actually created by the selected GNU13 overloads.
+constexpr size_t stock_P = sizeof(void *);
+constexpr size_t stock_N = sizeof(size_t);
+
+template <class T> constexpr size_t result_vector_cleanup_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	constexpr size_t destruction = sizeof(V *) + sizeof(V *) + sizeof(A *) + 2 * sizeof(T *) +
+				       sizeof(A *) + 2 * sizeof(T *) + 2 * sizeof(T *) +
+				       sizeof(bool);
+	constexpr size_t element = std::is_trivially_destructible_v<T> ? 0 : 4 * sizeof(T *);
+	constexpr size_t deallocation =
+		sizeof(void *) + sizeof(V *) + sizeof(T *) + sizeof(size_t) + sizeof(A *) +
+		sizeof(T *) + sizeof(size_t) + sizeof(A *) + sizeof(T *) + sizeof(size_t) +
+		sizeof(A *) + sizeof(T *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+		sizeof(bool) + sizeof(A *);
+	// _Vector_base's member/base cleanup really reaches implicit ~_Vector_impl,
+	// ~_Vector_impl_data and ~__new_allocator, each with its own this carrier.
+	return destruction + element + deallocation + 3 * stock_P;
+}
+
+template <class T> constexpr size_t stock_vector_default_source() noexcept
+{
+	// vector, _Vector_base, _Vector_impl, allocator, __new_allocator and
+	// _Vector_impl_data default constructors: six genuine this carriers.
+	return 6 * stock_P;
+}
+template <class T> constexpr size_t stock_vector_get_allocator_source() noexcept
+{
+	// _Vector_base::get_allocator(this); _M_get_Tp_allocator(this,returned-ref);
+	// allocator(const&) and __new_allocator(const&): this/source for each.
+	// The returned allocator value is not a member of the caller vector.
+	return 7 * stock_P + sizeof(std::allocator<T>);
+}
+template <class T> constexpr size_t stock_vector_const_allocator_ctor_source() noexcept
+{
+	// vector(alloc), _Vector_base(alloc), _Vector_impl(alloc), allocator copy,
+	// new_allocator copy each this/source; _Vector_impl_data default this.
+	return 11 * stock_P;
+}
+template <class T> constexpr size_t stock_vector_data_swap_source() noexcept
+{
+	// _M_swap_data(this,source), its real three-pointer __tmp, data default
+	// ctor(this), three _M_copy_data(this,source) calls, implicit tmp dtor(this).
+	return 2 * stock_P + 3 * sizeof(T *) + stock_P + 3 * (2 * stock_P) + stock_P;
+}
+template <class T> constexpr size_t stock_vector_move_constructor_source() noexcept
+{
+	// Defaulted vector/base moves, impl move, allocator/new_allocator const
+	// copies, data move: six this/source pairs. Impl makes two std::move calls
+	// (reference/result each); data move's pointer() null-reset result is real.
+	return 6 * (2 * stock_P) + 2 * (2 * stock_P) + sizeof(T *);
+}
+template <class T> constexpr size_t stock_vector_move_assignment_source() noexcept
+{
+	// operator=(this,source,returned-ref), named constexpr __move_storage,
+	// _S_propagate_on_move_assign bool result (true short-circuits _S_always_equal),
+	// std::move(ref,result), _M_move_assign(this,source,actual true_type value),
+	// generated true_type ctor/dtor this. The actual __tmp vector is separate
+	// from input/output vectors. get_allocator's value dies via allocator and
+	// new_allocator dtors after __tmp's const-allocator construction.
+	constexpr size_t entry = 3 * stock_P + 2 * sizeof(bool) + 2 * stock_P + 2 * stock_P +
+				 sizeof(std::true_type) + 2 * stock_P;
+	// C++20 __alloc_on_move(one,two), std::move(ref,result), generated allocator
+	// assignment(this,source,returned-ref), generated new_allocator assignment
+	// (this,source,returned-ref):10P, plus both _M_get_Tp_allocator(this,ref):4P.
+	constexpr size_t allocator_move = 10 * stock_P + 2 * (2 * stock_P);
+	return entry + sizeof(std::vector<T>) + stock_vector_get_allocator_source<T>() +
+	       2 * stock_P + stock_vector_const_allocator_ctor_source<T>() +
+	       2 * stock_vector_data_swap_source<T>() + allocator_move +
+	       result_vector_cleanup_frames<T>();
+}
+
+constexpr size_t stock_library_default_source = stock_P;
+constexpr size_t stock_library_copy_source = 2 * stock_P;
+constexpr size_t stock_library_move_source = 2 * stock_P;
+constexpr size_t stock_library_destructor_source = stock_P;
+constexpr size_t stock_item_default_source =
+	stock_P + stock_vector_default_source<native_mobile_birth_library_recipe>();
+constexpr size_t stock_item_move_source =
+	2 * stock_P + stock_vector_move_constructor_source<native_mobile_birth_library_recipe>();
+constexpr size_t stock_item_destructor_source =
+	stock_P + result_vector_cleanup_frames<native_mobile_birth_library_recipe>();
+
+// Dynamic extent spans: generated span const-copy(this,source) and extent
+// const-copy(this,source); span dtor(this) and extent dtor(this). The actual
+// span values are already caller/profile objects, not new SOURCE objects here.
+constexpr size_t stock_span_copy_lifetime_source = 4 * stock_P + 2 * stock_P;
+constexpr size_t stock_span_size_source =
+	(stock_P + stock_N) + (stock_P + stock_N); // size -> extent::_M_extent
+constexpr size_t stock_span_pointer_ctor_source =
+	(2 * stock_P + stock_N) + // span(this,first,count)
+	2 * (2 * stock_P) + // std::to_address -> raw __to_address
+	(stock_P + stock_N); // extent(this,count)
+constexpr size_t stock_span_begin_source =
+	2 * stock_P + 2 * stock_P + stock_P; // this/iterator, normal ctor, iterator dtor
+// end constructs the iterator from pointer addition, so its const-reference
+// argument binds a genuine extra pointer temporary; begin binds a stored lvalue.
+constexpr size_t stock_span_end_source = stock_span_begin_source + stock_span_size_source + stock_P;
+
+// The library value returned by read_library has a real default-member ctor,
+// optional non-NRVO generated implicit return-move and local/returned DTO destructors.
+constexpr size_t stock_read_library_value_source = stock_library_default_source +
+						   stock_library_move_source +
+						   2 * stock_library_destructor_source;
+
+template <class T> constexpr size_t stock_reserved_push_source() noexcept
+{
+	// push_back(this,rvalue-ref) -> std::move(ref,result); emplace_back(this,
+	// arg-ref,returned-ref) -> forward(ref,result); allocator_traits::construct
+	// (allocator-ref,location,arg-ref) -> forward; construct_at(location,arg-ref,
+	// returned-pointer) -> forward; actual placement-new(size,where,result).
+	constexpr size_t construction = 2 * stock_P + 2 * stock_P + 3 * stock_P + 2 * stock_P +
+					3 * stock_P + 2 * stock_P + 3 * stock_P + 2 * stock_P +
+					stock_N + 2 * stock_P;
+	// C++20 emplace return -> back(this,returned-ref) -> end(this,iterator)
+	// + normal ctor(this,pointer-ref), iterator::operator-(this,difference,
+	// returned-iterator) + normal ctor; dereference(this,returned-ref). Both
+	// actual iterator temporaries have generated destructors(this). Capacity
+	// was genuinely reserved for all rows, so _M_realloc_insert is not selected.
+	constexpr size_t back =
+		2 * stock_P + 2 * stock_P + 2 * stock_P + 2 * stock_P + sizeof(std::ptrdiff_t) +
+		2 * stock_P + 2 * stock_P + 2 * stock_P +
+		// operator-(n) constructs the returned iterator from pointer subtraction:
+		// a distinct pointer temporary binds its const-reference ctor argument.
+		stock_P;
+	return construction + back;
+}
+
+constexpr size_t stock_byte_fill_source =
+	// allocator-specialized __uninitialized_fill_n_a(first,n,value-ref,alloc-ref,
+	// returned-first), genuine is_constant_evaluated result; public
+	// uninitialized_fill_n(first,n,value-ref,returned-first,__can_fill).
+	(4 * stock_P + stock_N + sizeof(bool)) + (3 * stock_P + stock_N + sizeof(bool)) +
+	// __uninitialized_fill_n<true>::__uninit_fill_n and fill_n each
+	// first/n/value-ref/result. fill_n owns both returned size integer and tag.
+	2 * (3 * stock_P + stock_N) +
+	2 * stock_N + // __size_to_integer(unsigned long input,returned size)
+	stock_P + sizeof(std::random_access_iterator_tag) + // category input/result
+	// random_access -> bidirectional -> forward -> input tag ctor/dtor chains.
+	8 * stock_P +
+	// __fill_n_a(first,n,value-ref,random tag,returned-first), then
+	// __fill_a(first,last,value-ref), then byte __fill_a1(first,last,value-ref,
+	// __tmp,__len,is_constant_evaluated result), actual memset arguments/result.
+	3 * stock_P + stock_N + sizeof(std::random_access_iterator_tag) + 3 * stock_P +
+	3 * stock_P + sizeof(uint8_t) + stock_N + sizeof(bool) + 2 * stock_P + sizeof(int) +
+	stock_N;
+
+template <class T> constexpr size_t stock_count_value_vector_ctor_source() noexcept
+{
+	// Real default allocator argument: allocator/new_allocator ctor and dtor.
+	// vector(this,count,value-ref,allocator-ref); _Vector_base(this,n,alloc-ref)
+	// plus its full impl/allocator/data const-copy chain; _M_create_storage(this,n).
+	// _S_check_init_len(n,alloc-ref,returned-n) owns actual temporary allocator
+	// copy (allocator/new_allocator this/source), value, and both destructors;
+	// _S_max_size's exact descendant scalar graph stays stock_allocation_source.
+	return sizeof(std::allocator<T>) + 4 * stock_P + 3 * stock_P + stock_N + 2 * stock_P +
+	       stock_N + (2 * stock_P + 2 * stock_P + 2 * stock_P + stock_P) + stock_P + stock_N +
+	       stock_P + 2 * stock_N + 4 * stock_P + sizeof(std::allocator<T>) + 2 * stock_P +
+	       // _M_fill_initialize(this,n,value-ref) and _M_get_Tp_allocator(this,ref).
+	       2 * stock_P + stock_N + 2 * stock_P;
+}
+
+bool stock_source_profile_supported() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GNUC__) && __GNUC__ == 13 && \
+	!defined(__clang__) && __cplusplus == 202002L && defined(_GLIBCXX_RELEASE) &&   \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                    \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) &&                      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                 \
+	!(_GLIBCXX_SANITIZE_STD_ALLOCATOR && _GLIBCXX_SANITIZE_VECTOR)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(unsigned int) == 4 && sizeof(unsigned long) == 8;
+#else
+	return false;
+#endif
+}
+
+constexpr size_t stock_span_access_source =
+	// Full dynamic size/extent, data, index, begin/end normal iterators and
+	// pointer/count/to_address/extent constructor paths. Array::data delegates
+	// to array_traits::_S_ptr, each this/reference and returned pointer:4P.
+	stock_span_size_source + 2 * stock_P + (2 * stock_P + stock_N) + stock_span_begin_source +
+	stock_span_end_source + stock_span_pointer_ctor_source + 4 * stock_P +
+	// Public validation/preflight two by-value spans and items_valid's copied
+	// items span: three actual copy/extent-copy and destructor/extent-dtor paths.
+	3 * stock_span_copy_lifetime_source +
+	// library_valid's pointer/count seen span has its own span/extent cleanup;
+	// its physical value is still recipe_validation_objects-owned.
+	2 * stock_P;
+
+constexpr size_t stock_descriptor_source =
+	// descriptor_valid(description&,library), library_name(enum)/return. Four
+	// named name/keyword/prefix/suffix views belong to recipe_validation_objects.
+	sizeof(void *) + sizeof(native_mobile_birth_library) + sizeof(bool) +
+	sizeof(native_mobile_birth_library) + sizeof(uint32_t) + sizeof(char) +
+	// suffix range-for hidden range/begin/end, begin/end receivers/results;
+	// front/size/empty member receivers/results and actual per-digit value.
+	3 * sizeof(void *) + 4 * sizeof(void *) + 3 * (sizeof(void *) + sizeof(size_t)) +
+	sizeof(void *) + sizeof(char) +
+	// literal view constructor/traits length/runtime builtin strlen; std::string
+	// conversion -> data + length + pointer/length view constructor.
+	2 * sizeof(void *) + sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	sizeof(size_t) + 8 * sizeof(void *) + 2 * sizeof(size_t) +
+	// starts_with(view) -> substr -> __sv_check + size + min + view ctor.
+	// Passed/returned view values here are additional call values, distinct
+	// from the four original named descriptor views charged above.
+	sizeof(void *) + sizeof(std::string_view) + sizeof(bool) + sizeof(void *) +
+	3 * sizeof(size_t) + sizeof(std::string_view) + 2 * sizeof(size_t) + sizeof(void *) +
+	sizeof(size_t) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(bool) +
+	sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	// view operator==/compare both actual by-value operands/argument; retained
+	// substr return and min return remain live across traits::compare.
+	3 * sizeof(std::string_view) + sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(int) + 2 * sizeof(void *) + sizeof(bool) + sizeof(size_t) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(int) + sizeof(bool) +
+	// compare's actual _S_compare difference branch; builtin memcmp arguments.
+	2 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(int) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(int) +
+	// basic_string::find(char,pos): this/c/pos, size, data and found pointer;
+	// traits::find input/count/char-ref, constant evaluation and memchr result.
+	// find this/c/pos plus __ret/__size/__n and returned size:5N; actual
+	// __data/__p:2P. Its size(this,result) and _M_data(this,pointer) are real.
+	sizeof(void *) + sizeof(char) + 5 * sizeof(size_t) + 2 * sizeof(void *) +
+	(sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(void *) + sizeof(int) +
+	sizeof(size_t) + sizeof(void *) +
+	// library_name's default-view return ctor; actual four named view dtors.
+	stock_P + 4 * stock_P +
+	// Five genuine lvalue const-copy calls: starts_with(prefix), its equality
+	// RHS, its compare argument, direct suffix-name equality RHS and compare
+	// argument. Each defaulted view const-copy has this/source:2P. Starts_with,
+	// two equality pairs and both compare args have seven by-value dtors:7P.
+	5 * (2 * stock_P) + 7 * stock_P +
+	// front() returns a char reference, separate from the digit read value.
+	stock_P;
+
+constexpr size_t stock_validation_source =
+	// items_valid: span already charged, rows/i/previous and return boolean.
+	3 * sizeof(size_t) + sizeof(bool) +
+	// item_fields_valid(item&,recipe&,count) and delay_valid(requested,delay).
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(bool) + sizeof(int32_t) +
+	sizeof(bool) +
+	// library_valid(item&,library&,seen,event*): seen already charged; actual
+	// periodic boolean and returned boolean. Nested descriptor carries above.
+	3 * sizeof(void *) + 2 * sizeof(bool) +
+	// recipe_valid: input spans already charged, bytes/library_rows/i, recipe&,
+	// requested plus hidden library range/begin/end and actual library reference.
+	3 * sizeof(size_t) + sizeof(void *) + 2 * sizeof(bool) + 4 * sizeof(void *) +
+	// vector size/index/range/normal-iterator dereference/comparison/increment.
+	4 * (sizeof(void *) + sizeof(size_t)) + 4 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + stock_span_access_source + stock_descriptor_source;
+
+constexpr size_t stock_wire_source =
+	// put(output,value,bytes,i), get(input,bytes,value,i), i16/i32 input and
+	// actual unsigned/signed returns plus bit_cast const-reference/return.
+	sizeof(void *) + sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(uint64_t) + 2 * sizeof(void *) + sizeof(int32_t) +
+	sizeof(int16_t) + 2 * sizeof(void *) + sizeof(uint32_t) + sizeof(uint16_t) +
+	// read_item input/item receivers. read_library's DTO/local+return are in the
+	// old profile, while its actual input pointer and primitive calls are here.
+	3 * sizeof(void *) + stock_read_library_value_source;
+
+constexpr size_t stock_preflight_source =
+	// preflight's two spans/seen/current recipe/two library values already
+	// charged. Named offset/library_rows/i/count/remaining_items/l, input and
+	// library_input pointers, requested and typed returned status remain here.
+	6 * sizeof(size_t) + 2 * sizeof(void *) + sizeof(bool) + sizeof(economic_accounting_error) +
+	stock_wire_source + stock_validation_source +
+	// preflight really constructs and destroys its empty recipe/library vector.
+	stock_item_default_source + stock_item_destructor_source;
+
+constexpr size_t stock_profile_source =
+	// add(ref,amount,bool), array(count,unit,out,bool), finish(receiver,bool),
+	// encode/decode profile output pointer, typed status, scalar scans and range.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(size_t) + sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + 5 * sizeof(size_t) +
+	4 * sizeof(void *) + 2 * sizeof(economic_accounting_error) +
+	// Actual profile default-member ctor(this), generated assignment
+	// (this,source,returned-reference). Physical DTO stays old inline-owned.
+	4 * sizeof(void *);
+
+constexpr size_t stock_max_size_source =
+	// _S_max_size(allocator-ref,__diffmax,__allocmax,returned size), allocator
+	// traits max_size(allocator-ref,returned size), min(two refs,returned ref,bool).
+	(stock_P + 3 * stock_N) + (stock_P + stock_N) + 3 * stock_P + sizeof(bool);
+constexpr size_t stock_allocation_source =
+	// _M_allocate(this,n,returned pointer); allocator_traits::allocate(alloc-ref,
+	// n,returned pointer); allocator::allocate(this,n,returned pointer,actual
+	// constant-evaluation result); new_allocator::allocate(this,n,hint,result),
+	// its _M_max_size(this,result), then ordinary operator new(n,result).
+	3 * (2 * stock_P + stock_N) + sizeof(bool) + (3 * stock_P + stock_N) + (stock_P + stock_N) +
+	(stock_N + stock_P);
+
+constexpr size_t stock_value_lifecycle_source =
+	// Public value-lifecycle query owns the real vector<recipe> empty default,
+	// allocator-stealing move assignment and populated cleanup. Stealing does
+	// not default-construct/move any rows; those genuine row operations are
+	// separate decoder/preflight controllers below. Nested destructor body is
+	// reached from populated outer-vector cleanup, with no library allocation.
+	stock_vector_default_source<native_mobile_birth_item_recipe>() +
+	stock_vector_move_assignment_source<native_mobile_birth_item_recipe>() +
+	result_vector_cleanup_frames<native_mobile_birth_item_recipe>() +
+	stock_item_destructor_source;
+
+constexpr size_t stock_encode_vector_source =
+	// Genuine count/value overload only: no unrelated empty-vector constructor.
+	// The zero value and allocator argument/actual count/base/fill controllers
+	// are not the old inline candidate vector. Full max-size and allocation
+	// leaves are separate typed controllers; candidate cleanup and actual output
+	// move-assign temporary each own their own real destructor paths.
+	sizeof(uint8_t) + stock_count_value_vector_ctor_source<uint8_t>() + stock_max_size_source +
+	stock_allocation_source + stock_byte_fill_source + result_vector_cleanup_frames<uint8_t>() +
+	stock_vector_move_assignment_source<uint8_t>();
+
+// Both fresh reserve calls have genuinely empty old ranges. These actual
+// non-bitwise relocation controllers are reused sequentially for item/library
+// DTOs (default member initializers prevent the library DTO being trivial).
+// No element relocation body executes in this accepted fresh-reserve domain.
+constexpr size_t stock_fresh_empty_relocation_source =
+	5 * stock_P + // _S_relocate(first,last,result,allocator-ref,returned-pointer)
+	5 * stock_P + // __relocate_a: same four arguments and returned pointer
+	3 * (2 * stock_P) + // raw __niter_base(input,returned-pointer), three calls
+	6 * stock_P + // non-bitwise __relocate_a_1: four args, __cur and return
+	2 * stock_P; // reserve's actual _M_get_Tp_allocator(this,returned-ref)
+
+constexpr size_t stock_decode_vector_source =
+	// Genuine fresh reserve calls for recipe and library vectors: this/n/
+	// old_size/tmp; size/capacity/max_size, _S_relocate and empty range relocate
+	// inputs. No element relocate body or realloc-insert executes in this route.
+	2 * (stock_P + 2 * stock_N + stock_P) + 4 * (stock_P + stock_N) +
+	stock_fresh_empty_relocation_source +
+	// Both reserve max_size wrappers -> _M_get_Tp_allocator -> _S_max_size.
+	2 * ((stock_P + stock_N) + 2 * stock_P + stock_max_size_source) + stock_allocation_source +
+	// Real pre-reserved library/item push -> emplace -> traits::construct ->
+	// construct_at -> placement new and actual back/iterator return descendants.
+	stock_reserved_push_source<native_mobile_birth_library_recipe>() +
+	stock_reserved_push_source<native_mobile_birth_item_recipe>() + stock_library_move_source +
+	stock_item_default_source + stock_item_move_source +
+	// Current row is a separate stack object, including its moved-from cleanup.
+	stock_item_destructor_source + stock_value_lifecycle_source;
+
+constexpr size_t stock_encode_source =
+	stock_validation_source + stock_profile_source + stock_encode_vector_source +
+	stock_wire_source +
+	// Original encoder spans/vector already charged; output, size/offset, two
+	// desugared recipe ranges, library range and true encoded/item pointers.
+	sizeof(void *) + 2 * sizeof(size_t) + 12 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(economic_accounting_error) +
+	// Actual encoder/profile input-copy lifetimes beyond called validation.
+	4 * stock_span_copy_lifetime_source;
+constexpr size_t stock_decode_source =
+	stock_preflight_source + stock_profile_source + stock_decode_vector_source +
+	// Original decoder named output/check/offset/i/count/l, wire data accessor;
+	// candidate, recipe and two library DTOs are already in original profile.
+	sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(economic_accounting_error) +
+	stock_span_access_source +
+	// Actual decoder/profile input-copy lifetimes beyond called preflight.
+	4 * stock_span_copy_lifetime_source;
+}
+
+bool native_mobile_birth_recipe_encode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_encode_source;
+	return true;
+}
+bool native_mobile_birth_recipe_decode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_decode_source;
+	return true;
+}
+bool native_mobile_birth_recipe_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_encode_source;
+	return true;
+}
+bool native_mobile_birth_recipe_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_decode_source;
+	return true;
+}
+bool native_mobile_birth_recipe_encode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = 2 * sizeof(native_mobile_birth_recipe_allocation_profile) +
+		  recipe_preflight_objects + 2 * sizeof(std::span<const player_item_snapshot>) +
+		  2 * sizeof(std::span<const native_mobile_birth_item_recipe>);
+	return true;
+}
+bool native_mobile_birth_recipe_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = 2 * sizeof(native_mobile_birth_recipe_allocation_profile) +
+		  recipe_preflight_objects + 2 * sizeof(std::span<const uint8_t>) +
+		  2 * sizeof(std::span<const player_item_snapshot>);
+	return true;
+}
+bool native_mobile_birth_recipe_value_lifecycle_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_value_lifecycle_source;
+	return true;
+}
+bool native_mobile_birth_recipe_valid_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !stock_source_profile_supported())
+		return false;
+	*output = stock_validation_source;
+	return true;
+}
