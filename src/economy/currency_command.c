@@ -354,3 +354,281 @@ unsigned int currency_prepare_mutation(const currency_command_payload &payload,
 	*prepared = currency_prepared_mutation(payload, before, after);
 	return 0;
 }
+
+namespace
+{
+bool currency_codec_admit(size_t outer, size_t fixed, size_t extra,
+			  bool (*reserve)(size_t, void *) noexcept, void *context) noexcept
+{
+	return reserve && outer <= SIZE_MAX - fixed && extra <= SIZE_MAX - outer - fixed &&
+	       reserve(outer + fixed + extra, context);
+}
+}
+
+// Exact original account identity algorithm with prospective canonical-string
+// requests. Caller counts its actual output and frames in outer_live; this leaf
+// retains no owner and exposes no account/source/admission capability.
+bool currency_account_key_bounded(const char *account_name, uint8_t racewar,
+				  critical_entity_key *key,
+				  bool (*reserve)(size_t, void *) noexcept, void *context,
+				  size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||  \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || !defined(__linux__) ||             \
+	!defined(__x86_64__) || !defined(OPENSSL_VERSION_MAJOR) || OPENSSL_VERSION_MAJOR != 3 || \
+	!defined(OPENSSL_VERSION_MINOR) || OPENSSL_VERSION_MINOR != 0 ||                         \
+	!defined(OPENSSL_VERSION_PATCH) || OPENSSL_VERSION_PATCH != 13 ||                        \
+	defined(OPENSSL_NO_DEPRECATED_3_0)
+	(void)account_name;
+	(void)racewar;
+	(void)key;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!key || !reserve)
+		return false;
+	if (sizeof(void *) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	const size_t candidate_frame = sizeof(critical_entity_key);
+	if (!currency_codec_admit(outer_live, candidate_frame, 0, reserve, context))
+		return false;
+	critical_entity_key candidate{};
+	bool completed = false;
+	try
+	{
+		{
+			size_t length = 0;
+			if (valid_name(account_name, &length))
+			{
+				const size_t fixed =
+					sizeof(std::string) +
+					sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) +
+					sizeof(SHA256_CTX);
+				const size_t constructor_heap = length > 15 ? length + 1 : 0;
+				if (currency_codec_admit(outer_live, candidate_frame,
+							 fixed + constructor_heap + sizeof(void *),
+							 reserve, context))
+				{
+					std::string canonical(account_name, length);
+					std::transform(
+						canonical.begin(), canonical.end(),
+						canonical.begin(), [](unsigned char ch)
+						{ return static_cast<char>(std::tolower(ch)); });
+					bool appended = true;
+					for (unsigned step = 0; step < 2; ++step)
+					{
+						const size_t current =
+							canonical.capacity() > 15 ?
+								canonical.capacity() + 1 :
+								0;
+						size_t request = 0;
+						if (canonical.size() == canonical.capacity())
+						{
+							// Genuine libstdc++13 _M_create growth, including the
+							// old string heap while its replacement is allocated.
+							const size_t capacity =
+								canonical.capacity();
+							if (capacity > (SIZE_MAX - 1) / 2)
+							{
+								appended = false;
+								break;
+							}
+							request = 2 * capacity + 1;
+						}
+						if (request > SIZE_MAX - fixed - current ||
+						    !currency_codec_admit(outer_live,
+									  candidate_frame,
+									  fixed + current + request,
+									  reserve, context))
+						{
+							appended = false;
+							break;
+						}
+						canonical.push_back(
+							step ? static_cast<char>(racewar) : '\0');
+					}
+					if (appended)
+					{
+						std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+						SHA256_CTX digest_context;
+						const size_t current =
+							canonical.capacity() > 15 ?
+								canonical.capacity() + 1 :
+								0;
+						// Pinned OpenSSL3.0.13 combined x86-64 SHA generator:
+						// SHA256 SZ=4/rounds=64; real Linux AVX2 schedule,
+						// metadata, six GPR saves, alignment, saved return and
+						// red-zone pointer. Other dispatch paths are smaller.
+						const size_t assembly_frames =
+							2 * 4 * 64 + 4 * sizeof(void *) +
+							6 * sizeof(uint64_t) + (256 * 4 - 1) +
+							2 * sizeof(void *);
+						const size_t c_small_frames =
+							16 * sizeof(SHA_LONG) +
+							12 * sizeof(unsigned int) +
+							sizeof(SHA_LONG) + sizeof(int) +
+							sizeof(void *);
+						const size_t c_normal_frames =
+							16 * sizeof(SHA_LONG) +
+							11 * sizeof(unsigned int) +
+							2 * sizeof(int) + 2 * sizeof(void *);
+						const size_t c_block_frames =
+							std::max(c_small_frames, c_normal_frames);
+						const size_t block_frames =
+							std::max(assembly_frames, c_block_frames);
+						// md32_common Update/Final and SHA256 HASH_MAKE_STRING
+						// own these fixed scalar locals; the digest block frame
+						// can coexist with Final's p/n. No EVP/provider heap.
+						const size_t init_frames =
+							sizeof(void *) + sizeof(int);
+						const size_t update_frames =
+							(2 * sizeof(void *) + sizeof(size_t)) +
+							(2 * sizeof(void *) + sizeof(SHA_LONG) +
+							 sizeof(size_t)) +
+							sizeof(int);
+						const size_t final_frames =
+							2 * sizeof(void *) + sizeof(void *) +
+							sizeof(size_t) + sizeof(unsigned long) +
+							sizeof(unsigned int) + sizeof(int);
+						const size_t digest_frames =
+							block_frames +
+							std::max(init_frames,
+								 std::max(update_frames,
+									  final_frames));
+						if (currency_codec_admit(
+							    outer_live, candidate_frame,
+							    fixed + current + digest_frames,
+							    reserve, context))
+						{
+							// Preserve the original SHA256 value and
+							// exact canonical lower-name/NUL/racewar byte stream.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+							const bool hashed =
+								SHA256_Init(&digest_context) == 1 &&
+								SHA256_Update(&digest_context,
+									      canonical.data(),
+									      canonical.size()) ==
+									1 &&
+								SHA256_Final(digest.data(),
+									     &digest_context) == 1;
+#pragma GCC diagnostic pop
+							if (hashed)
+							{
+								uint64_t identity =
+									get_u64(digest.data());
+								if (!identity)
+									identity = 1;
+								candidate = {
+									critical_entity_type::account,
+									identity
+								};
+								completed = true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	catch (...)
+	{
+		completed = false;
+	}
+	// Canonical string/digest have died. Candidate remains an
+	// honest current frames; caller drops them in its post-return rebase.
+	const bool refreshed =
+		currency_codec_admit(outer_live, candidate_frame, 0, reserve, context);
+	if (!completed || !refreshed)
+		return false;
+	*key = candidate;
+	return true;
+#endif
+}
+
+bool currency_command_decode_payload_bounded(const critical_command &command,
+					     currency_command_payload *payload,
+					     bool (*reserve)(size_t, void *) noexcept,
+					     void *context, size_t outer_live) noexcept
+{
+	if (!payload || !reserve)
+		return false;
+	const size_t fixed = sizeof(currency_command_payload) + 2 * sizeof(critical_entity_key);
+	if (!currency_codec_admit(outer_live, fixed, 0, reserve, context))
+		return false;
+	currency_command_payload decoded{};
+	critical_entity_key account_key{};
+	critical_entity_key player_key{ critical_entity_type::player, 0 };
+	bool completed = false;
+	try
+	{
+		do
+		{
+			if (command.type != critical_command_type::account_bank ||
+			    command.payload_version != CURRENCY_COMMAND_PAYLOAD_VERSION ||
+			    command.payload.size() != CURRENCY_COMMAND_PAYLOAD_BYTES ||
+			    !currency_codec_admit(outer_live, fixed, 2 * sizeof(currency_vector),
+						  reserve, context))
+				break;
+			const size_t name_length = command.payload[NAME_LENGTH_OFFSET];
+			if (!name_length || name_length > CURRENCY_ACCOUNT_NAME_MAX_BYTES)
+				break;
+			bool padding = true;
+			for (size_t index = NAME_OFFSET + name_length; index < WALLET_OFFSET;
+			     ++index)
+				if (command.payload[index])
+					padding = false;
+			for (size_t index = BANK_OFFSET + 32; index < command.payload.size();
+			     ++index)
+				if (command.payload[index])
+					padding = false;
+			if (!padding)
+				break;
+			decoded.pid = get_u32(command.payload.data() + PID_OFFSET);
+			decoded.racewar = command.payload[RACEWAR_OFFSET];
+			decoded.reason = static_cast<currency_reason_type>(
+				get_u16(command.payload.data() + REASON_OFFSET));
+			decoded.reason_id = static_cast<int64_t>(
+				get_u64(command.payload.data() + REASON_ID_OFFSET));
+			memcpy(decoded.account_name.data(), command.payload.data() + NAME_OFFSET,
+			       name_length);
+			decoded.wallet_delta =
+				decode_vector(command.payload.data() + WALLET_OFFSET);
+			decoded.bank_delta = decode_vector(command.payload.data() + BANK_OFFSET);
+			size_t checked_length = 0;
+			if (!decoded.pid || !valid_reason(decoded.reason) ||
+			    !valid_name(decoded.account_name.data(), &checked_length) ||
+			    checked_length != name_length || !vector_valid(decoded.wallet_delta) ||
+			    !vector_valid(decoded.bank_delta) ||
+			    (!any_delta(decoded) &&
+			     decoded.reason != currency_reason_type::corpse_lifecycle) ||
+			    outer_live > SIZE_MAX - fixed ||
+			    !currency_account_key_bounded(decoded.account_name.data(),
+							  decoded.racewar, &account_key, reserve,
+							  context, outer_live + fixed))
+				break;
+			player_key.id = decoded.pid;
+			if (!currency_codec_admit(outer_live, fixed, 0, reserve, context))
+				break;
+			completed = command.keys.size() == 2 &&
+				    command.expected_revisions.size() == 2 &&
+				    critical_entity_key_equal(command.keys[0], player_key) &&
+				    critical_entity_key_equal(command.keys[1], account_key) &&
+				    critical_entity_key_equal(command.expected_revisions[0].key,
+							      player_key) &&
+				    critical_entity_key_equal(command.expected_revisions[1].key,
+							      account_key);
+		} while (false);
+	}
+	catch (...)
+	{
+		completed = false;
+	}
+	const bool refreshed = currency_codec_admit(outer_live, fixed, 0, reserve, context);
+	if (!completed || !refreshed)
+		return false;
+	*payload = decoded;
+	return true;
+}

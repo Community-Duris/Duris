@@ -124,4 +124,14 @@ bool currency_command_build(critical_command *command, critical_operation_id ope
 			    critical_source_site source_site,
 			    critical_deadline_class deadline_class);
 
+// Genuine original canonical account hash and complete typed payload decoding.
+// Caller carries authentic input/output and all enclosing frames in outer_live;
+// it refreshes CURRENT after return. Strong output; no mapping/source authority.
+bool currency_account_key_bounded(const char *, uint8_t, critical_entity_key *,
+				  bool (*reserve)(size_t, void *) noexcept, void *context,
+				  size_t outer_live) noexcept;
+bool currency_command_decode_payload_bounded(const critical_command &, currency_command_payload *,
+					     bool (*reserve)(size_t, void *) noexcept,
+					     void *context, size_t outer_live) noexcept;
+
 #endif

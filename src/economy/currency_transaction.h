@@ -155,4 +155,16 @@ void currency_transaction_player_ready(P_char character);
 currency_transaction_health currency_transaction_health_copy(void);
 void currency_transaction_reset_for_tests(void);
 
+// Explicit original bank ATM passive replay owner only, never selected here.
+// Schema/publication skips remain original; a publication-required non-bank
+// refuses this capability. Caller outer excludes CURRENT currency owner once,
+// and includes authentic coordinator/journal/input/output/dispatcher frames.
+// Reserve must not reenter locked coordinator/journal or mutate this table.
+bool currency_transaction_restore_bank_replayed_command_bounded(
+	const critical_command &, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+// Passive complete CURRENT table/health/buckets/nodes/keys and coin-command heaps.
+// Value observation only; strong output. Genuine caller refreshes every return.
+bool currency_transaction_current_storage_bytes(size_t *output) noexcept;
+
 #endif

@@ -5606,17 +5606,17 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1247,
+          1331,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1274,
+          1358,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1286,
+          1370,
           "economic_submit"
         ]
       ],
@@ -8296,22 +8296,22 @@
         ],
         [
           "src/economy/currency_transaction.c",
-          150,
+          234,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          151,
+          235,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          152,
+          236,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          153,
+          237,
           "coin_assignment"
         ]
       ],
@@ -8354,12 +8354,12 @@
         ],
         [
           "src/economy/currency_transaction.c",
-          1634,
+          1718,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1644,
+          1728,
           "economic_submit"
         ]
       ],
@@ -8396,12 +8396,12 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1544,
+          1628,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1553,
+          1637,
           "economic_submit"
         ]
       ],
@@ -8792,7 +8792,7 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1619,
+          1703,
           "economic_submit"
         ]
       ],
@@ -9069,32 +9069,32 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1353,
+          1437,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1362,
+          1446,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1368,
+          1452,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1408,
+          1492,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1416,
+          1500,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1420,
+          1504,
           "economic_submit"
         ]
       ],
@@ -9293,22 +9293,22 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1101,
+          1185,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          1102,
+          1186,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          1103,
+          1187,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          1104,
+          1188,
           "coin_assignment"
         ]
       ],
@@ -9402,22 +9402,22 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          1515,
+          1599,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1525,
+          1609,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1530,
+          1614,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1538,
+          1622,
           "economic_submit"
         ],
         [
@@ -54968,157 +54968,157 @@
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1247,
+      "line": 1331,
       "family": "economic_submit",
       "excerpt": "!currency_command_build("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1274,
+      "line": 1358,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1286,
+      "line": 1370,
       "family": "economic_submit",
       "excerpt": "if (!coin_transfer_command_build(&command, id, payload, critical_source_site::command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1353,
+      "line": 1437,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit(P_char character, const currency_vector &wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1362,
+      "line": 1446,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_identified(character, operation_id, wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1368,
+      "line": 1452,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1408,
+      "line": 1492,
       "family": "economic_submit",
       "excerpt": "if (!currency_command_build(&command, operation_id, payload, expected_wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1416,
+      "line": 1500,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_prepared(character, command, completion, context,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1420,
+      "line": 1504,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_prepared(P_char character, const critical_command &command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1515,
+      "line": 1599,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value(P_char character, int64_t value_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1525,
+      "line": 1609,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, {}, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1530,
+      "line": 1614,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1538,
+      "line": 1622,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_identified(character, operation_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1544,
+      "line": 1628,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_reward(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1553,
+      "line": 1637,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, {}, canonical_value(value), reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1619,
+      "line": 1703,
       "family": "economic_submit",
       "excerpt": "!currency_command_build(command, id, payload, character->only.pc->wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1634,
+      "line": 1718,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_payment(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1644,
+      "line": 1728,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, bank_delta, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 150,
+      "line": 234,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(character) = balances.copper;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 151,
+      "line": 235,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(character) = balances.silver;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 152,
+      "line": 236,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(character) = balances.gold;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 153,
+      "line": 237,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(character) = balances.platinum;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1101,
+      "line": 1185,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(character) = static_cast<int>(wallet.amount[0]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1102,
+      "line": 1186,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(character) = static_cast<int>(wallet.amount[1]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1103,
+      "line": 1187,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(character) = static_cast<int>(wallet.amount[2]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1104,
+      "line": 1188,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);"
     },
@@ -66449,8 +66449,8 @@
       "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
       "src/economy/collector_transaction.c": "7071d61afa5741368ebd4c890b2fab4cca820e773eb5d17bbffc1cf177e034ed",
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
-      "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
-      "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
+      "src/economy/currency_transaction.c": "929dbde18e3e4a6e1a9f4cab41ac755b9f5661482a375d17e19009d274c635a0",
+      "src/economy/currency_transaction.h": "e9a4b99231c2ff749dd8e84a48c477fa6fa524b91ab9f4a270e66a340494bb48",
       "src/economy/economic_accounting_plan.c": "6d24ee64c68567cebcb6de97ee43baeafb3a85e230adbc423a27d7da519e720c",
       "src/economy/economic_accounting_plan.h": "f307addf79a1615bfd3bbcf1a79125ee664defc86107a619df7d3db730574c26",
       "src/economy/economic_accounting_types.c": "c4d0eba179cf599c1e8f70912d6fa7740a974f8826beb843cfc4c469095277f3",
@@ -66833,7 +66833,9 @@
       "src/persistence/player_death_restitution_command.c": "3e72ed565b81f86b8e4d4ee9d5957607ed23835d7ffe25e7368e68c4eaebde0b",
       "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d",
       "src/item/smith_native_compound_owner.c": "f13474af8470ed96f92e5980722b4f6201fec89fa54d87c94acfae7b344964f5",
-      "src/item/smith_native_compound_owner.h": "58cfd00d0c80d667dd80c61710a5671a4cf48c94ac15bbf86a390937f4733fd0"
+      "src/item/smith_native_compound_owner.h": "58cfd00d0c80d667dd80c61710a5671a4cf48c94ac15bbf86a390937f4733fd0",
+      "src/economy/currency_command.c": "6a17b573574ae842c5df655382b484aad4a0344f69cf75db0fcff0954f344b7c",
+      "src/economy/currency_command.h": "5e3cb5657e0fdbfb0e0c10f68b05f8eb3a23be4a8b9a93968a21d13ec50846b7"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

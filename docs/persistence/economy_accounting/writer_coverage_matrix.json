@@ -206,8 +206,10 @@
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
       "src/economy/craft_progression.c": "0139473706341e12d46fbc1c7c4c9b3a1c79cb7ce115ae454373a5a41b88ec15",
       "src/economy/crafting.c": "5979d2d68e5ce0f90502521f8506b3b909650792854a0da752da01d0ccaa225e",
-      "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
-      "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
+      "src/economy/currency_command.c": "6a17b573574ae842c5df655382b484aad4a0344f69cf75db0fcff0954f344b7c",
+      "src/economy/currency_command.h": "5e3cb5657e0fdbfb0e0c10f68b05f8eb3a23be4a8b9a93968a21d13ec50846b7",
+      "src/economy/currency_transaction.c": "929dbde18e3e4a6e1a9f4cab41ac755b9f5661482a375d17e19009d274c635a0",
+      "src/economy/currency_transaction.h": "e9a4b99231c2ff749dd8e84a48c477fa6fa524b91ab9f4a270e66a340494bb48",
       "src/economy/economic_accounting_intent.c": "df3e8b8ebf6621b4db61df5affe759d50d428a9613c5c6284bbdae348b5a3919",
       "src/economy/economic_accounting_intent.h": "382f4b3cebb51b9b8b9fd5b63f5f032d7abd313badd9fd838f24071450704513",
       "src/economy/economic_accounting_plan.c": "6d24ee64c68567cebcb6de97ee43baeafb3a85e230adbc423a27d7da519e720c",
@@ -7207,7 +7209,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1274
+          1358
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -10128,7 +10130,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1634
+          1718
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -10192,7 +10194,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1544
+          1628
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -10750,7 +10752,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1595
+          1679
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -11123,7 +11125,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1420
+          1504
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -11315,7 +11317,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1089
+          1173
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
@@ -11440,7 +11442,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1515
+          1599
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
