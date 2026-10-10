@@ -43,6 +43,23 @@ class flatfile_identity_lock
 {
     public:
 	flatfile_identity_lock() noexcept;
+	// Distinct internally admitted state constructor; no lock is acquired here.
+	// Caller retains the nonallocating callback peak through destruction and
+	// includes its already-live storage in outer. Unsupported/refused construction
+	// leaves empty state. Original default constructor and methods are preserved.
+	flatfile_identity_lock(flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			       size_t outer_live_scratch) noexcept;
+	// Actual lock+opaque state+retained root heap, strong scalar output. This
+	// observes storage only; emitted/library/native qualification stays separate.
+	bool retained_bytes(size_t *output) const noexcept;
+	// Caller outer includes full retained lock and input root storage. Original
+	// private-directory/file checks and identity process/flock exclusion apply.
+	// All path/root storage is admitted before allocation or lock acquisition;
+	// failure preserves prior root/state and releases newly acquired resources.
+	// Acquire identity BEFORE authority; this companion does not recover or write.
+	bool acquire_bounded(const std::string &root,
+			     flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+			     size_t outer_live_scratch) noexcept;
 	~flatfile_identity_lock();
 	flatfile_identity_lock(const flatfile_identity_lock &) = delete;
 	flatfile_identity_lock &operator=(const flatfile_identity_lock &) = delete;

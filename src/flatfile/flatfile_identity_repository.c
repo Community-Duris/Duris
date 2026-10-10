@@ -1199,3 +1199,159 @@ flatfile_native_mobile_birth_ordinary_identity_storage::read_locked_bounded(
 	}
 #endif
 }
+
+#include <sys/stat.h>
+
+namespace
+{
+bool identity_lock_admission_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - value)
+		return false;
+	value += amount;
+	return true;
+}
+}
+
+flatfile_identity_lock::flatfile_identity_lock(flatfile_scratch_reserve_fn reserve_scratch_peak,
+					       void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+#else
+	// Admit the actual opaque state internally; its deferred process lock and
+	// fresh root string are members, not a guessed public ABI allocation.
+	constexpr size_t own = sizeof(flatfile_identity_lock) + sizeof(state);
+	constexpr size_t carriers = sizeof(void *) * 3 + sizeof(flatfile_scratch_reserve_fn) +
+				    sizeof(size_t) * 3 + sizeof(bool);
+	size_t live = outer_live_scratch;
+	if (!reserve_scratch_peak || !identity_lock_admission_add(live, own) ||
+	    !identity_lock_admission_add(live, carriers) || !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return;
+	}
+	try
+	{
+		state_.reset(new (std::nothrow) state);
+		if (!state_)
+			errno = ENOMEM;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+	}
+	catch (...)
+	{
+		errno = EIO;
+	}
+#endif
+}
+
+bool flatfile_identity_lock::retained_bytes(size_t *output) const noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)output;
+	return false;
+#else
+	if (!output || !state_)
+		return false;
+	size_t bytes = sizeof(*this) + sizeof(state);
+	// libstdc++13 C++11 ABI has 15 inline characters already included in state.
+	if (state_->root.capacity() > 15 &&
+	    (state_->root.capacity() == SIZE_MAX ||
+	     !identity_lock_admission_add(bytes, state_->root.capacity() + 1)))
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool flatfile_identity_lock::acquire_bounded(const std::string &root,
+					     flatfile_scratch_reserve_fn reserve_scratch_peak,
+					     void *context, size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!state_ || state_->process_lock.owns_lock() || root.empty() || !reserve_scratch_peak)
+	{
+		errno = !state_ ? ENOMEM : EINVAL;
+		return false;
+	}
+	size_t directory_size = root.size();
+	size_t live = outer_live_scratch;
+	// Caller outer retains this lock/state/prior root and all caller input.
+	// The three fresh strings and both real lock-helper stat objects coexist.
+	// Named helper FD/status/errno, checked-add and caller scalar/reference
+	// scopes are source carriers; emitted/library/kernel profiles stay separate.
+	constexpr size_t carriers = sizeof(void *) * 10 + sizeof(flatfile_scratch_reserve_fn) +
+				    sizeof(size_t) * 5 + sizeof(int) * 10 + sizeof(bool) * 3;
+	if (!identity_lock_admission_add(directory_size, sizeof("/identities/names") - 1) ||
+	    !identity_lock_admission_add(live, sizeof(std::string) * 3) ||
+	    !identity_lock_admission_add(live, sizeof(struct stat) * 2) ||
+	    !identity_lock_admission_add(live, carriers) ||
+	    (root.size() > 15 &&
+	     (root.size() == SIZE_MAX || !identity_lock_admission_add(live, root.size() + 1))) ||
+	    (directory_size > 15 && (directory_size == SIZE_MAX ||
+				     !identity_lock_admission_add(live, directory_size + 1))) ||
+	    !reserve_scratch_peak(live, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	int acquired_fd = -1;
+	try
+	{
+		// Pinned fresh copy/count constructors request exact length+1 beyond
+		// SSO. No concatenation-growth or post-flock root allocation is used.
+		std::string owned_root(root);
+		std::string directory(directory_size, '\0');
+		std::copy(root.begin(), root.end(), directory.begin());
+		std::copy_n("/identities/names", sizeof("/identities/names") - 1,
+			    directory.begin() + root.size());
+		const std::string filename(identity_lock_filename);
+		static_assert(sizeof(".identity.lock") - 1 <= 15);
+		state_->process_lock.lock();
+		if (!flatfile_lock_acquire(directory, filename, &acquired_fd, nullptr))
+		{
+			const int saved = errno;
+			state_->process_lock.unlock();
+			errno = saved;
+			return false;
+		}
+		// Entirely nonthrowing publication after real process and file exclusion.
+		state_->root.swap(owned_root);
+		state_->fd = acquired_fd;
+		acquired_fd = -1;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		flatfile_lock_release(acquired_fd);
+		if (state_->process_lock.owns_lock())
+			state_->process_lock.unlock();
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		flatfile_lock_release(acquired_fd);
+		if (state_->process_lock.owns_lock())
+			state_->process_lock.unlock();
+		errno = EIO;
+		return false;
+	}
+#endif
+}
