@@ -2202,3 +2202,372 @@ player_snapshot_codec_result quest_mobile_native_items_transition_bounded(
 	}
 #endif
 }
+
+namespace
+{
+// These are the identical actual GCC13 uint8_t vector instantiations reached
+// by image candidate.assign and final move, not row-vector/whole codec proxies.
+constexpr size_t image_source_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t image_source_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t image_source_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t image_source_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t image_source_vector_frames =
+	image_source_allocator_frames + image_source_copy_frames + image_source_relocate_frames +
+	image_source_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t image_source_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + image_source_allocator_frames;
+constexpr size_t image_source_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<uint8_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + image_source_vector_frames;
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1
+constexpr size_t image_source_prime_frames =
+	// _M_next_bkt this/n/result; n_primes,last_prime,next_bkt lexical locals.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(size_t) + 2 * sizeof(const unsigned long *) +
+	// lower_bound first/last/value reference/result, __iter_less_val adapter,
+	// __lower_bound first/last/value/comp/len/half/middle/result. Actual unsigned
+	// long pointer iterators: no recursion, allocation or iterator proxy state.
+	4 * sizeof(void *) + sizeof(__gnu_cxx::__ops::_Iter_less_val) + 5 * sizeof(void *) +
+	2 * sizeof(std::ptrdiff_t) + sizeof(__gnu_cxx::__ops::_Iter_less_val) +
+	// distance/__distance and advance/__advance/category constructors.
+	4 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + 4 * sizeof(void *) +
+	3 * sizeof(std::ptrdiff_t) + 3 * sizeof(std::random_access_iterator_tag) +
+	// _Iter_less_val::operator() this/iterator/value-reference/result;
+	// both max<size_t> operand refs/result, each two argument temporaries.
+	3 * sizeof(void *) + sizeof(bool) + 2 * (3 * sizeof(void *) + 2 * sizeof(size_t)) +
+	// _M_need_rehash this/three n parameters/min_bkts/returned pair; both pair
+	// brace construction instantiations: this/two forwarded scalar refs and
+	// forward receivers/results. floor conversions input/output double.
+	sizeof(void *) + 3 * sizeof(size_t) + sizeof(double) + sizeof(std::pair<bool, size_t>) +
+	2 * (3 * sizeof(void *) + sizeof(bool) + sizeof(size_t) + 4 * sizeof(void *)) +
+	4 * sizeof(double) +
+	// _M_bkt_for_elements this/n/result, max_load_factor this/float result,
+	// _M_state/_M_reset receiver/state-ref and returned state reference.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) + sizeof(float) + 5 * sizeof(void *);
+
+#endif
+}
+
+namespace
+{
+bool image_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(_GLIBCXX_RELEASE) &&                \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::unordered_set<uint64_t>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1
+using image_uid_set = std::unordered_set<uint64_t>;
+using image_uid_node =
+	std::__detail::_Hash_node<uint64_t,
+				  std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+using image_uid_base = std::__detail::_Hash_node_base;
+constexpr size_t image_source_uid_insert =
+	// unordered_set::insert(value const&), Insert_base::insert and Hashtable
+	// _M_insert(value,node generator,true): actual receiver/value/return pair.
+	6 * sizeof(void *) + 3 * sizeof(std::pair<image_uid_set::iterator, bool>) +
+	// _M_insert_unique(k,v,node_gen): receiver+three refs, code/bucket,
+	// actual loop iterator, found node, Scoped_node's real h/node fields,
+	// pos and returned pair. No string/hash_bytes or mapped pair is involved.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(image_uid_set::iterator) +
+	sizeof(image_uid_node *) + 2 * sizeof(void *) + sizeof(image_uid_set::iterator) +
+	sizeof(std::pair<image_uid_set::iterator, bool>) +
+	// actual guard ctor/dtor; NodeBuilder::_S_build argument refs,
+	// AllocNode::operator(), allocate_node args/nptr/n and valptr/to_address,
+	// forwarded uint64_t scalar construct/destroy and allocator instance.
+	6 * sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(void *) + 5 * sizeof(void *) +
+	sizeof(std::allocator<image_uid_node>) + image_source_allocator_frames +
+	4 * sizeof(void *) + sizeof(uint64_t) +
+	// _M_find_node_tr / find_before_node_tr: receiver,bkt,key,code,prev,p,
+	// next/node and bool equality; these remain live through extractor/hash.
+	8 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(image_uid_base *) +
+	3 * sizeof(image_uid_node *) + sizeof(bool) +
+	// _M_insert_unique_node: this,bkt,code,node,n_elt,saved state ref,
+	// actual rehash pair and returned iterator. insert_bucket_begin this/bkt/node.
+	3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::pair<bool, size_t>) +
+	sizeof(image_uid_set::iterator) + 2 * sizeof(void *) + sizeof(size_t) +
+	// Hash_code/hash_code_tr, hash<uint64_t> identity, _Identity and
+	// equal_to<uint64_t>; range_hash uses actual code/denominator/result.
+	12 * sizeof(void *) + 6 * sizeof(size_t) + 2 * sizeof(uint64_t) + 4 * sizeof(bool) +
+	sizeof(std::hash<uint64_t>) + sizeof(std::equal_to<uint64_t>) +
+	sizeof(std::__detail::_Identity) + sizeof(std::__detail::_Mod_range_hashing) +
+	// Pair<iterator,bool> construction: this, forwarded args, bool value,
+	// four actual forward() source/reference-return scopes.
+	3 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *);
+constexpr size_t image_source_uid_rehash =
+	// _M_rehash this/bkt/state; _M_rehash_aux(unique) this/bkt/tag,
+	// buckets,p,bbegin,next,bkt local scopes from authentic hashtable.h.
+	2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + 3 * sizeof(size_t) +
+	sizeof(std::true_type) +
+	// allocate_buckets receiver/count/allocator/ptr, memset args/result;
+	// deallocate_buckets receiver/ptr/count/pointer_to/allocator and matching
+	// node-pointer allocator constructor/traits/new_allocator source scopes.
+	6 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(std::allocator<image_uid_base *>) +
+	image_source_allocator_frames + 3 * sizeof(void *) + sizeof(size_t) +
+	// iterative clear/deallocate_nodes this/n/tmp and deallocate_node /
+	// deallocate_node_ptr this/n/ptr/allocator. No recursive tree cleanup.
+	8 * sizeof(void *) + sizeof(std::allocator<image_uid_node>) +
+	image_source_allocator_frames +
+	// actual default/dtor hashtable allocator/policy/base receivers,
+	// begin/end/size, node iterator ctor/increment/deref/equality.
+	10 * sizeof(void *) + 2 * sizeof(size_t) + 8 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t image_source_forest =
+	image_source_uid_insert + image_source_uid_rehash + image_source_prime_frames +
+	// forest_peak count/output/policy/buckets/heap_buckets/index/request,
+	// returned rehash pair and std::max reference/result source scopes.
+	2 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *);
+// The exact forest_valid source-local term is ALREADY in maintained
+// native_image_encode_entry_frames. Its actual set/path storage is separately
+// forest_peak-owned. Neither term is retained again by this supplement.
+#endif
+constexpr size_t image_source_heap_scan =
+	// native_capture_item_heap items/output/bytes, capturing string lambda,
+	// row and extra range-for begin/end/refs; checked-add formals and result.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + 6 * sizeof(void *) +
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// string lambda this/value/result; capacity->is_local->data->pointer_to
+	// ->addressof real GNU13 const query closure (no C-string length guess).
+	2 * sizeof(void *) + sizeof(bool) + 11 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// vector capacity/size and normal iterator constructor/base/deref/++/!=
+	// declarations for row and extra-description vectors; requests remain heap.
+	6 * (sizeof(void *) + sizeof(size_t)) + 8 * (2 * sizeof(void *)) + 2 * sizeof(bool);
+constexpr size_t image_source_byte_mutation =
+	// candidate.assign(n,0), actual byte fill, allocation/old disposal/final
+	// move/destruction. Caller workspaces, wire and prior outputs are NOT SOURCE.
+	image_source_vector_frames + image_source_move_frames +
+	image_source_vector_constructor_frames +
+	// Unlike range assign/default_append, assign(n,zero) reaches the real
+	// _M_fill_assign. Public/private this/n/value, branch-local __add, real
+	// vector __tmp, vector(n,value,allocator), _M_fill_initialize carriers.
+	6 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(std::vector<uint8_t>) +
+	// std::allocator<uint8_t> specialization of uninitialized_fill_n_a ->
+	// uninitialized_fill_n -> __uninitialized_fill_n<true>::__uninit_fill_n:
+	// first/n/value/allocator and returned iterator, actual can_fill boolean,
+	// integer/trivial/value-type constexpr carriers. fill_n's actual byte
+	// fill/memset descendants are separately in image_source_default_frames.
+	10 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	// _M_erase_at_end this/pos/__n; trivial _Destroy(first,last,allocator),
+	// Destroy(first,last)/Destroy_aux<true>, real get-allocator return scopes.
+	9 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// actual image aggregate move and optional cash assignment/default/destruct
+	// receiver and branch declarations; row-list move cleanup separately exported.
+	8 * sizeof(void *) + 4 * sizeof(bool);
+}
+
+bool quest_mobile_native_image_current_heap_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	size_t rows = 0, total = image_source_heap_scan;
+	// Actual native codec uses native_capture_item_heap; retained compiler
+	// uses the public whole-list CURRENT. This named union owns each authentic
+	// query graph; neither a decode envelope nor frozen heap scalar is substituted.
+	if (!player_item_snapshot_list_current_heap_source_frame_bytes(&rows) ||
+	    !native_image_add(total, rows))
+		return false;
+	*output = total;
+	return true;
+}
+bool quest_mobile_native_image_lifetime_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	size_t rows = 0,
+	       total =
+		       // Real image/reference/cash optional/array default, move and cleanup
+	       // receivers/optional branch; no template-only heap or cloned image object.
+	       12 * sizeof(void *) + 4 * sizeof(bool);
+	if (!player_item_snapshot_list_lifetime_source_frame_bytes(&rows) ||
+	    !native_image_add(total, rows))
+		return false;
+	*output = total;
+	return true;
+}
+bool quest_mobile_native_image_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1
+	size_t reference = 0, list = 0, total = image_source_forest + image_source_byte_mutation;
+	if (!quest_mobile_native_reference_encode_source_supplement_frame_bytes(&reference) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&list) ||
+	    !native_image_add(total, reference) || !native_image_add(total, list))
+		return false;
+	*output = total;
+	return true;
+#else
+	return false;
+#endif
+}
+bool quest_mobile_native_image_encode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1
+	size_t reference = 0, list = 0, list_entry = 0,
+	       total = native_image_encode_entry_frames + image_source_forest +
+		       image_source_byte_mutation +
+		       // Existing real fixed hash helper SOURCE; its result/digest context are
+		       // genuine owned inline in that helper, not early image workspace copies.
+		       native_image_fixed_sha_frames + native_image_fixed_control_frames +
+		       5 * sizeof(void *) + 5 * sizeof(size_t) +
+		       2 * sizeof(player_snapshot_codec_result) + sizeof(SHA256_CTX);
+	if (!quest_mobile_native_reference_encode_source_frame_bytes(&reference) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&list) ||
+	    !player_item_snapshot_list_encode_initial_inline_bytes(&list_entry) ||
+	    !native_image_add(total, reference) || !native_image_add(total, list) ||
+	    !native_image_add(total, list_entry))
+		return false;
+	*output = total;
+	return true;
+#else
+	return false;
+#endif
+}
+bool quest_mobile_native_image_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	size_t reference = 0, preflight = 0, decode = 0, encode = 0, total = image_source_heap_scan;
+	if (!quest_mobile_native_reference_decode_source_supplement_frame_bytes(&reference) ||
+	    !player_item_snapshot_list_preflight_source_frame_bytes(&preflight) ||
+	    !player_item_snapshot_list_decode_source_frame_bytes(&decode) ||
+	    !quest_mobile_native_image_encode_source_supplement_frame_bytes(&encode) ||
+	    !native_image_add(total, reference) || !native_image_add(total, preflight) ||
+	    !native_image_add(total, decode) || !native_image_add(total, encode))
+		return false;
+	*output = total;
+	return true;
+}
+bool quest_mobile_native_image_decode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	size_t reference = 0, preflight = 0, decode = 0, encode = 0, preflight_entry = 0,
+	       decode_entry = 0,
+	       total = native_image_decode_entry_frames + image_source_heap_scan +
+		       native_image_fixed_sha_frames + native_image_fixed_memcmp_frames +
+		       native_image_fixed_control_frames + 6 * sizeof(void *) + 5 * sizeof(size_t) +
+		       3 * sizeof(player_snapshot_codec_result) + sizeof(SHA256_CTX) +
+		       sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>);
+	if (!quest_mobile_native_reference_decode_source_frame_bytes(&reference) ||
+	    !player_item_snapshot_list_preflight_source_frame_bytes(&preflight) ||
+	    !player_item_snapshot_list_decode_source_frame_bytes(&decode) ||
+	    !quest_mobile_native_image_encode_source_frame_bytes(&encode) ||
+	    !player_item_snapshot_list_preflight_initial_inline_bytes(&preflight_entry) ||
+	    !player_item_snapshot_list_decode_initial_inline_bytes(&decode_entry) ||
+	    !native_image_add(total, reference) || !native_image_add(total, preflight) ||
+	    !native_image_add(total, decode) || !native_image_add(total, encode) ||
+	    !native_image_add(total, preflight_entry) || !native_image_add(total, decode_entry))
+		return false;
+	*output = total;
+	return true;
+}
+bool quest_mobile_native_image_encode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	// Real workspace follows genuine first base/entry admission.
+	*output = 0;
+	return true;
+}
+bool quest_mobile_native_image_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !image_source_policy())
+		return false;
+	// Actual decode workspace follows checksum and genuine separate admission.
+	*output = 0;
+	return true;
+}

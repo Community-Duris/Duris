@@ -84,4 +84,70 @@ economic_intent_freeze_fixed_bounded(const critical_command &, const economic_ad
 				     std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
 				     void *context, size_t outer_live) noexcept;
 
+// Additive proof using the same canonical intent, schema-1 command binding,
+// NUL-delimited original domain/intent tags and fixed SHA primitive as freeze.
+// Originals and older bounded APIs keep their exact implementations. Fixed
+// metadata output is strong; caller inputs/prior output remain in outer_live.
+economic_accounting_error economic_intent_verify_binding_fixed_bounded(
+	const critical_command &, const economic_frozen_intent &, bool (*)(size_t, void *) noexcept,
+	void *, size_t) noexcept;
+economic_accounting_error economic_intent_plan_metadata_fixed_bounded(
+	const critical_command &, const economic_frozen_intent &, economic_plan_metadata *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool economic_intent_decode_source_frame_bytes(size_t *) noexcept;
+bool economic_intent_decode_source_supplement_frame_bytes(size_t *) noexcept;
+bool economic_intent_decode_initial_inline_bytes(size_t *) noexcept;
+bool economic_intent_encode_source_frame_bytes(size_t *) noexcept;
+bool economic_intent_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool economic_intent_encode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t economic_intent_decode_source_query_frame_bytes() noexcept
+{
+	// Pure getter output/result plus its actual selected policy result.
+	// Accessor size_t result is admitted separately before calling it.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t economic_intent_encode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+bool economic_intent_verify_binding_fixed_source_frame_bytes(size_t *) noexcept;
+bool economic_intent_verify_binding_fixed_initial_inline_bytes(size_t *) noexcept;
+bool economic_intent_plan_metadata_fixed_source_frame_bytes(size_t *) noexcept;
+bool economic_intent_plan_metadata_fixed_initial_inline_bytes(size_t *) noexcept;
+bool economic_intent_freeze_fixed_source_frame_bytes(size_t *) noexcept;
+bool economic_intent_freeze_fixed_source_supplement_frame_bytes(size_t *) noexcept;
+bool economic_intent_freeze_fixed_initial_inline_bytes(size_t *) noexcept;
+// Fixed proof/metadata bodies retain their real local SOURCE internally.
+// Existing decode/encode/fixed-freeze remain byte exact: parent retains only
+// named supplement, not prospective inline or a second full SOURCE allowance.
+// Exact fixed-source query accessors are composed with the genuine paired
+// command-binding query contract below; they observe no physical storage.
+constexpr size_t economic_intent_binding_source_query_frames =
+	economic_command_binding_digest_source_profile_query_frame_bytes();
+constexpr size_t economic_intent_verify_binding_fixed_source_query_frame_bytes() noexcept
+{
+	// Actual getter out/result + two selected-policy bool results; three
+	// size_t locals; binding SOURCE and initial getter(P+B); two checked adds.
+	return economic_intent_binding_source_query_frames + 4 * sizeof(void *) +
+	       5 * sizeof(size_t) + 6 * sizeof(bool);
+}
+constexpr size_t economic_intent_plan_metadata_fixed_source_query_frame_bytes() noexcept
+{
+	// Metadata getter adds its out/results, proof/total and checked addition
+	// to the actual complete verify getter. Accessor's own N is separate.
+	return economic_intent_binding_source_query_frames + 6 * sizeof(void *) +
+	       8 * sizeof(size_t) + 10 * sizeof(bool);
+}
+constexpr size_t economic_intent_freeze_fixed_source_query_frame_bytes() noexcept
+{
+	// Actual freeze includes the critical valid-profile getter's N result.
+	return economic_intent_binding_source_query_frames + 4 * sizeof(void *) +
+	       6 * sizeof(size_t) + 6 * sizeof(bool);
+}
+constexpr size_t economic_intent_source_query_frame_bytes() noexcept
+{
+	// Maximum genuine metadata/verify/freeze/encode/decode profile-query graph.
+	return economic_intent_binding_source_query_frames + 6 * sizeof(void *) +
+	       8 * sizeof(size_t) + 10 * sizeof(bool);
+}
 #endif
