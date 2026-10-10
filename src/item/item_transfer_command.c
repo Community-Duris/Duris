@@ -6072,3 +6072,387 @@ bool item_transfer_command_encode_payload_bounded(const item_transfer_payload &p
 							    encoded, reserve, context, prefix,
 							    nullptr);
 }
+
+namespace
+{
+constexpr size_t item_generic_decode_default_payload_frames =
+	// Actual ten nontrivial aggregate default ctor/destructor this scopes,
+	// six vector/base/impl/data and six string/hider/local/NUL defaults.
+	2 * 10 * sizeof(void *) + 6 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	6 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) + sizeof(char)) +
+	payload_clone_allocator_frames;
+constexpr size_t item_generic_decode_predicate_equal_frames =
+	// equal(first,last,second,pred), __niter_base and actual normal iterator
+	// bool/++/dereference scope. This is the original predicate overload,
+	// not the byte memcmp specialization of the other equality provider.
+	3 * sizeof(void *) + sizeof(char) + sizeof(bool) + 3 * (2 * sizeof(void *)) +
+	6 * (2 * sizeof(void *)) + sizeof(bool) +
+	// Original key lambda this/left/right/bool, expected-revision lambda
+	// this/left/right/bool plus nested key equality left/right/bool.
+	2 * (3 * sizeof(void *) + sizeof(bool)) + 2 * (2 * sizeof(void *) + sizeof(bool));
+struct item_generic_decode_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *payload = nullptr;
+	const critical_command *expected = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observations =
+			9 * sizeof(void *) + 6 * sizeof(size_t) + 4 * sizeof(bool) +
+			5 * (sizeof(void *) + sizeof(size_t)) + payload_clone_observation_frames;
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observations) ||
+		    (payload && (!payload_clone_add(total, sizeof(*payload)) ||
+				 !payload_clone_heap(*payload, false, total))) ||
+		    (expected &&
+		     (!payload_clone_add(total, sizeof(*expected)) ||
+		      !payload_clone_vector_heap(expected->keys, false, total) ||
+		      !payload_clone_vector_heap(expected->expected_revisions, false, total) ||
+		      !payload_clone_vector_heap(expected->payload, false, total) ||
+		      !payload_clone_vector_heap(expected->accounting_intent, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+bool item_generic_decode_owned(const critical_command &command, item_transfer_payload *payload,
+			       item_generic_decode_budget &budget)
+{
+	if (command.payload_version == ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!payload || command.type != critical_command_type::item_transfer ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION) ||
+	    (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION ?
+		     command.payload.size() < ITEM_TRANSFER_HEADER_BYTES +
+						      ITEM_TRANSFER_ENTRY_BYTES + sizeof(uint32_t) :
+		     command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES))
+		return false;
+	if (!budget.peak(sizeof(item_transfer_payload) +
+			 item_generic_decode_default_payload_frames + payload_clone_frames))
+		return false;
+	*payload = {};
+	size_t admission_prefix = 0;
+	payload->from_owner = decode_owner(command.payload.data() + FROM_OFFSET);
+	payload->to_owner = decode_owner(command.payload.data() + TO_OFFSET);
+	payload->reason =
+		static_cast<item_transfer_reason>(get_u16(command.payload.data() + REASON_OFFSET));
+	payload->item_count = get_u16(command.payload.data() + COUNT_OFFSET);
+	payload->reason_id =
+		static_cast<int64_t>(get_u64(command.payload.data() + REASON_ID_OFFSET));
+	payload->expected_from_revision = get_u64(command.payload.data() + FROM_REVISION_OFFSET);
+	payload->expected_to_revision = get_u64(command.payload.data() + TO_REVISION_OFFSET);
+	payload->selected_item_uid = get_u64(command.payload.data() + SELECTED_ITEM_OFFSET);
+	payload->target_root_item_uid = get_u64(command.payload.data() + TARGET_ROOT_OFFSET);
+	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
+	payload->expected_target_parent_revision =
+		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
+	// Master v7 craft used 29 (the unpublished draft used 27). This branch
+	// already owns 29 for wear, so normalize only the old same-player craft
+	// shape. Wear targets its selected root; craft has no destination root.
+	if (command.payload_version == 7 &&
+	    (payload->reason == item_transfer_reason::soulbind ||
+	     payload->reason == item_transfer_reason::player_wear) &&
+	    payload->from_owner.type == item_owner_type::player &&
+	    item_owner_identity_equal(payload->from_owner, payload->to_owner) &&
+	    payload->selected_item_uid && !payload->target_root_item_uid &&
+	    !payload->target_parent_item_uid)
+		payload->reason = item_transfer_reason::craft;
+	payload->multi_root =
+		command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+		(payload->selected_item_uid == 0 || payload->reason == item_transfer_reason::craft);
+	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	const bool variable_items = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
+	if (!variable_items && payload->item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS)
+		return false;
+	const size_t encoded_item_count = variable_items ? payload->item_count :
+							   ITEM_TRANSFER_LEGACY_MAX_ITEMS;
+	const size_t item_section_size =
+		ITEM_TRANSFER_HEADER_BYTES + encoded_item_count * ITEM_TRANSFER_ENTRY_BYTES;
+	if (command.payload.size() < item_section_size)
+		return false;
+	for (size_t index = 0; index < encoded_item_count; ++index)
+	{
+		const uint8_t *input = command.payload.data() + ITEM_TRANSFER_HEADER_BYTES +
+				       index * ITEM_TRANSFER_ENTRY_BYTES;
+		if (index < payload->item_count)
+			payload->items[index] = { get_u64(input),
+						  get_u64(input + 8),
+						  get_u64(input + 16),
+						  get_u64(input + 24),
+						  static_cast<int32_t>(get_u32(input + 32)),
+						  static_cast<item_custody_state>(input[36]) };
+		else
+			for (size_t byte = 0; byte < ITEM_TRANSFER_ENTRY_BYTES; ++byte)
+				if (input[byte])
+					return false;
+		if (input[37] || input[38] || input[39])
+			return false;
+	}
+	if (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+	{
+		if (command.payload.size() < item_section_size + sizeof(uint32_t))
+			return false;
+		payload->item_blob_size = get_u32(command.payload.data() + item_section_size);
+		const size_t item_end =
+			item_section_size + sizeof(uint32_t) + payload->item_blob_size;
+		if (payload->item_blob_size > payload->item_blob.size() ||
+		    item_end > command.payload.size())
+			return false;
+		std::copy_n(command.payload.begin() + item_section_size + sizeof(uint32_t),
+			    payload->item_blob_size, payload->item_blob.begin());
+		if (command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+		{
+			if (command.payload.size() != item_end)
+				return false;
+		}
+		else
+		{
+			if (command.payload.size() < item_end + sizeof(uint32_t))
+				return false;
+			const uint32_t corpse_size = get_u32(command.payload.data() + item_end);
+			const size_t corpse_end = item_end + sizeof(uint32_t) + corpse_size;
+			if (corpse_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+			    corpse_end > command.payload.size() ||
+			    !(budget.prefix(admission_prefix) &&
+			      item_transfer_corpse_context_decode_bounded(
+				      command.payload.data() + item_end + sizeof(uint32_t),
+				      corpse_size, &payload->corpse, budget.reserve, budget.context,
+				      admission_prefix)))
+				return false;
+			if (command.payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION)
+			{
+				if (command.payload.size() != corpse_end)
+					return false;
+			}
+			else
+			{
+				if (command.payload.size() < corpse_end + sizeof(uint32_t))
+					return false;
+				const uint32_t collector_size =
+					get_u32(command.payload.data() + corpse_end);
+				const size_t collector_end =
+					corpse_end + sizeof(uint32_t) + collector_size;
+				if (collector_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+				    collector_end > command.payload.size() ||
+				    !(budget.prefix(admission_prefix) &&
+				      item_transfer_collector_context_decode_bounded(
+					      command.payload.data() + corpse_end + sizeof(uint32_t),
+					      collector_size, &payload->collector, budget.reserve,
+					      budget.context, admission_prefix)))
+					return false;
+				const size_t source_end =
+					collector_end +
+					(command.payload_version >=
+							 ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION ?
+						 sizeof(payload->logical_source_id) :
+						 0);
+				if (source_end > command.payload.size())
+					return false;
+				if (command.payload_version >= ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION)
+					payload->logical_source_id =
+						get_u64(command.payload.data() + collector_end);
+				if (command.payload_version <
+				    ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION)
+				{
+					if (command.payload.size() != source_end)
+						return false;
+				}
+				else
+				{
+					if (command.payload.size() <
+					    source_end + sizeof(uint32_t) * 2)
+						return false;
+					payload->continuation.kind =
+						static_cast<item_transfer_continuation_kind>(
+							get_u32(command.payload.data() +
+								source_end));
+					const uint32_t continuation_size =
+						get_u32(command.payload.data() + source_end +
+							sizeof(uint32_t));
+					if (continuation_size >
+						    item_transfer_continuation_limit(
+							    payload->continuation.kind) ||
+					    command.payload.size() <
+						    source_end + sizeof(uint32_t) * 2 +
+							    continuation_size +
+							    (native_mobile_version(
+								     command.payload_version) ?
+								     ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+								     0) ||
+					    (command.payload_version !=
+						     ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+					     command.payload.size() !=
+						     source_end + sizeof(uint32_t) * 2 +
+							     continuation_size +
+							     (native_mobile_version(
+								      command.payload_version) ?
+								      ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+								      0)))
+						return false;
+					if (!budget.peak(continuation_size +
+							 payload_clone_vector_frames))
+						return false;
+					payload->continuation.data.assign(
+						command.payload.begin() + source_end +
+							sizeof(uint32_t) * 2,
+						command.payload.begin() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size);
+					if (native_mobile_version(command.payload_version))
+					{
+						if (!budget.prefix(admission_prefix))
+							return false;
+						const uint8_t *tail =
+							command.payload.data() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size;
+						if (get_u16(tail) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION ||
+						    tail[3] ||
+						    get_u32(tail + 4) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES ||
+						    get_u32(tail + 12) || get_u32(tail + 164) ||
+						    quest_mobile_native_reference_decode_bounded(
+							    std::span<const uint8_t>(
+								    tail + 16,
+								    QUEST_MOBILE_NATIVE_REFERENCE_BYTES),
+							    &payload->native_mobile.reference,
+							    budget.reserve, budget.context,
+							    admission_prefix) !=
+							    player_snapshot_codec_result::ok)
+							return false;
+						payload->native_mobile.present = true;
+						payload->native_mobile.action =
+							static_cast<item_native_mobile_action>(
+								tail[2]);
+						payload->native_mobile.final_giver_pid =
+							get_u32(tail + 8);
+						if (command.payload_version ==
+						    ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION)
+						{
+							const size_t offset =
+								static_cast<size_t>(
+									tail -
+									command.payload.data()) +
+								ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES;
+							if (!(budget.prefix(admission_prefix) &&
+							      item_transfer_native_recovery_decode_bounded(
+								      std::span<const uint8_t>(
+									      command.payload)
+									      .subspan(offset),
+								      &payload->native_recovery,
+								      budget.reserve,
+								      budget.context,
+								      admission_prefix, nullptr)))
+								return false;
+						}
+					}
+				}
+			}
+		}
+	}
+	if (!(budget.prefix(admission_prefix) &&
+	      item_transfer_payload_valid_bounded(*payload, command.payload_version, budget.reserve,
+						  budget.context, admission_prefix)) ||
+	    (command.payload_version == ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION &&
+	     payload->reason > item_transfer_reason::auction_claim) ||
+	    command.expected_revisions.size() != command.keys.size())
+		return false;
+	if (!budget.peak(sizeof(critical_command) +
+			 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))))
+		return false;
+	critical_command expected = {};
+	budget.expected = &expected;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_transfer_command_entities_bounded(&expected, *payload, budget.reserve,
+						     budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(item_generic_decode_predicate_equal_frames))
+		return false;
+	const bool matched =
+		command.keys.size() == expected.keys.size() &&
+		command.expected_revisions.size() == expected.expected_revisions.size() &&
+		std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			   [](const critical_entity_key &left, const critical_entity_key &right)
+			   { return critical_entity_key_equal(left, right); }) &&
+		std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			   expected.expected_revisions.begin(),
+			   [](const critical_expected_revision &left,
+			      const critical_expected_revision &right) {
+				   return critical_entity_key_equal(left.key, right.key) &&
+					  left.revision == right.revision;
+			   });
+	budget.expected = nullptr;
+	return matched;
+}
+
+} // namespace
+bool item_transfer_payload_decode_generic_bounded(const critical_command &command,
+						  item_transfer_payload *payload,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live,
+						  size_t *retained_payload_heap_bytes) noexcept
+{
+	if (!payload || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		// Public/private command/payload/budget/callback/context/outer/scalar
+		// carriers, original version/variable-items/indices/offsets/byte/tail.
+		10 * sizeof(void *) + 18 * sizeof(size_t) + 6 * sizeof(uint32_t) +
+		sizeof(uint16_t) + 5 * sizeof(bool) + sizeof(uint8_t) +
+		// Original decode_owner input/result and two caller-owned returned
+		// owner identity carriers; fixed get16/32/64 source loops and values.
+		sizeof(void *) + 3 * sizeof(item_owner_identity) + 8 * sizeof(void *) +
+		2 * sizeof(uint16_t) + 3 * sizeof(uint32_t) + 6 * sizeof(uint64_t) +
+		4 * sizeof(unsigned int) +
+		// Original fixed item entry initializer and two real span parameter/
+		// return values; subspan this/offset/count/constructed-span scopes.
+		sizeof(item_transfer_entry) + 3 * sizeof(std::span<const uint8_t>) +
+		3 * sizeof(size_t) + item_sidecar_pure_frames + payload_clone_copy_frames +
+		8 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::random_access_iterator_tag) +
+		payload_clone_vector_frames + item_generic_decode_default_payload_frames +
+		payload_clone_frames + sizeof(size_t);
+	item_generic_decode_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(item_transfer_payload) +
+			 item_generic_decode_default_payload_frames))
+		return false;
+	try
+	{
+		item_transfer_payload candidate = {};
+		budget.payload = &candidate;
+		if (!item_generic_decode_owned(command, &candidate, budget) ||
+		    !budget.peak(payload_clone_frames))
+			return false;
+		size_t heap = 0;
+		if (!payload_clone_heap(candidate, false, heap))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_transfer_payload>);
+		*payload = std::move(candidate);
+		if (retained_payload_heap_bytes)
+			*retained_payload_heap_bytes = heap;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
