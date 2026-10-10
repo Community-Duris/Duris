@@ -2110,3 +2110,673 @@ flatfile_shopkeeper_list_locked_bounded(const std::string &root,
 	}
 #endif
 }
+
+// Genuine fixed-hash selected checkpoint path. Every original body stays
+// untouched; the private companions below are full original algorithms.
+namespace
+{
+bool initial_keeper_fixed_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(bool) == 1 && sizeof(SHA_LONG) == 4 && sizeof(unsigned int) == 4 &&
+	       sizeof(unsigned long) == 8 && sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::allocator<uint64_t>) == 1 &&
+	       sizeof(std::allocator<flatfile_shopkeeper_affect_record>) == 1 &&
+	       sizeof(std::allocator<flatfile_shopkeeper_record>) == 1 &&
+	       sizeof(std::vector<uint8_t>) == 3 * sizeof(void *) &&
+	       sizeof(std::vector<uint64_t>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<flatfile_shopkeeper_record>::const_iterator) == sizeof(void *) &&
+	       sizeof(std::vector<flatfile_shopkeeper_affect_record>::const_iterator) ==
+		       sizeof(void *) &&
+	       std::is_nothrow_move_assignable_v<flatfile_shopkeeper_record>;
+#else
+	return false;
+#endif
+}
+
+// Authentic OpenSSL3.0.13 fixed Init/Update/Final descendants, independently
+// named from sha256.c/md32_common.h/sha512-x86_64.pl/mem_clr.c. No one-shot EVP
+// or allocator path. Actual SHA256_CTX object is prospective INLINE below.
+constexpr size_t initial_keeper_fixed_sha_assembly_source =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t initial_keeper_fixed_sha_small_source =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(void *);
+constexpr size_t initial_keeper_fixed_sha_normal_source = 16 * sizeof(unsigned int) +
+							  11 * sizeof(unsigned int) +
+							  2 * sizeof(int) + 2 * sizeof(void *);
+constexpr size_t initial_keeper_fixed_sha_init_source = sizeof(void *) + sizeof(int);
+constexpr size_t initial_keeper_fixed_sha_update_source =
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned int) + sizeof(int);
+constexpr size_t initial_keeper_fixed_sha_final_source = 3 * sizeof(void *) + sizeof(size_t) +
+							 sizeof(unsigned long) +
+							 sizeof(unsigned int) + sizeof(int);
+constexpr size_t initial_keeper_fixed_sha_memory_source =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t initial_keeper_fixed_sha_cleanse_source =
+	2 * sizeof(void *) + sizeof(size_t) + initial_keeper_fixed_sha_memory_source;
+constexpr size_t initial_keeper_fixed_sha_block_source =
+	std::max(initial_keeper_fixed_sha_assembly_source,
+		 2 * sizeof(void *) + sizeof(size_t) +
+			 std::max(initial_keeper_fixed_sha_small_source,
+				  initial_keeper_fixed_sha_normal_source));
+constexpr size_t initial_keeper_fixed_sha_source =
+	std::max(initial_keeper_fixed_sha_init_source,
+		 std::max(initial_keeper_fixed_sha_update_source,
+			  initial_keeper_fixed_sha_final_source)) +
+	std::max(initial_keeper_fixed_sha_block_source,
+		 std::max(initial_keeper_fixed_sha_memory_source,
+			  initial_keeper_fixed_sha_cleanse_source));
+constexpr size_t initial_keeper_fixed_memcmp_source =
+	// Real cpuid.c fallback in_a/in_b/len/i/a/b/x/result; x86_64 assembly
+	// has no frame allocation but has its genuine caller return address.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned char) + sizeof(int) +
+	sizeof(void *);
+#if !defined(OPENSSL_NO_DEPRECATED_3_0)
+bool initial_keeper_fixed_hash(const uint8_t *data, size_t length, uint8_t *digest) noexcept
+{
+	SHA256_CTX ctx{};
+	return SHA256_Init(&ctx) == 1 && SHA256_Update(&ctx, data, length) == 1 &&
+	       SHA256_Final(digest, &ctx) == 1;
+}
+#endif
+
+// Genuine selected ordinary GNU13 vector allocation and trivial lifetime,
+// shared for byte/UID/AF/record methods that actually run here. No map/hash
+// nodes, count/value constructor or unrelated insertion profile.
+constexpr size_t initial_keeper_fixed_allocate_source =
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) + 4 * (sizeof(void *) + sizeof(size_t)) +
+	2 * sizeof(size_t) + 3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t initial_keeper_fixed_deallocate_source =
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t initial_keeper_fixed_default_source =
+	// vector/base/impl/allocator/new_allocator/data actual this pointers.
+	6 * sizeof(void *);
+constexpr size_t initial_keeper_fixed_destroy_source =
+	// ~vector(this), _M_get_Tp_allocator(this,returned ref), allocator-selected
+	// _Destroy(first,last,allocator), range _Destroy(first,last) with the sole
+	// selected C++20 constant-evaluation bool, trivial aux(first,last).
+	sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(bool) + 2 * sizeof(void *) +
+	// ~_Vector_base(this), generated impl/data/allocator/new_allocator dtors.
+	sizeof(void *) + 4 * sizeof(void *) + initial_keeper_fixed_deallocate_source;
+constexpr size_t initial_keeper_fixed_relocate_source =
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t initial_keeper_fixed_default_append_source =
+	// resize and _M_default_append real old/new/finish/destroy pointers,
+	// n/size/navail/len; trivial default_n and fill selected actual T graph.
+	sizeof(void *) + sizeof(size_t) + 5 * sizeof(void *) + 4 * sizeof(size_t) +
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	// Only actual byte resize uses default_n_1<true>/fill byte __tmp.
+	// AF/record member initializers select default_n_1<false>, whose __cur
+	// has the same pointer width; their genuine generated ctors are below.
+	6 * sizeof(void *) + sizeof(uint8_t) + 2 * sizeof(void *) + 2 * sizeof(bool) +
+	3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t initial_keeper_fixed_reserve_push_source =
+	// reserve this/n/old_size/tmp; push/emplace actual this/value/return,
+	// realloc_insert old/new/finish/position/forward/elems_before and checklen.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	7 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) + 3 * sizeof(size_t);
+template <class T> constexpr size_t initial_keeper_fixed_move_constructor_source() noexcept
+{
+	// Actual vector/base/impl/data move constructors and allocator/new_allocator
+	// const-copy constructors: each has genuine this + source. The allocator
+	// has no move overload. Impl has two real std::move reference/result calls;
+	// data resets the source with the actual pointer() null temporary.
+	return 6 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + sizeof(T *);
+}
+template <class T> constexpr size_t initial_keeper_fixed_move_assignment_source() noexcept
+{
+	constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+	using A = std::allocator<T>;
+	// operator=(this,source,returned ref), genuine __move_storage bool,
+	// std::move(source,returned ref), true_type argument, _M_move_assign
+	// (this,source,true_type) and its genuine vector __tmp.
+	constexpr size_t entry = 3 * P + B + 2 * P + sizeof(std::true_type) + 2 * P +
+				 sizeof(std::true_type) + sizeof(std::vector<T>);
+	// get_allocator(this,allocator return), _M_get_Tp_allocator(this,ref),
+	// allocator/new_allocator const-copy(this,source). Its allocator temporary
+	// then has actual allocator/new_allocator destructor this carriers.
+	constexpr size_t allocator_copy = 7 * P + sizeof(A) + 2 * P;
+	// __tmp is vector(const allocator&), not an empty default constructor:
+	// vector/base/impl/allocator/new_allocator(this,allocator), data(this).
+	constexpr size_t temporary_constructor = 5 * (2 * P) + P;
+	// Each of the two actual _M_swap_data calls has this/source, real data
+	// __tmp, data default ctor, three _M_copy_data(this,source), data dtor.
+	constexpr size_t data_swap = 2 * P + 3 * P + P + 3 * (2 * P) + P;
+	// Actual C++20 __alloc_on_move: two allocator refs; std::move ref/result;
+	// defaulted allocator and new_allocator assignments this/source/ref result.
+	// Both actual _M_get_Tp_allocator calls provide this/returned refs.
+	constexpr size_t allocator_move = 2 * P + 2 * P + 3 * P + 3 * P + 2 * (2 * P);
+	return entry + allocator_copy + temporary_constructor + 2 * data_swap + allocator_move +
+	       initial_keeper_fixed_destroy_source;
+}
+constexpr size_t initial_keeper_fixed_swap_source =
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	2 * 2 * sizeof(void *) + 4 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	sizeof(bool);
+constexpr size_t initial_keeper_fixed_vector_queries_source =
+	// begin/end/size/capacity/data/front/index/max_size/empty and actual
+	// normal-iterator ctor/base/compare/deref/increment/add source scopes.
+	9 * (sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	2 * (sizeof(void *) + sizeof(bool)) + 4 * (2 * sizeof(void *)) +
+	3 * (3 * sizeof(void *) + sizeof(bool)) + 2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t));
+constexpr size_t initial_keeper_fixed_array_queries_source =
+	// The three real array types (magic8/digest32/bitvectors5) use genuine
+	// begin/end/data (this/pointer return), size (this/size return), plus
+	// begin/end's selected data descendant. Same typed widths on this host;
+	// their real range-for begin/end carriers are retained here too.
+	3 * (4 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *);
+// Generated catalog/record/default/move-assignment/destructor this/source/ref
+// returns. Actual retained row string/member lifetime belongs to list source
+// exports; AF/record storage belongs to original prospective INLINE/heap peaks.
+constexpr size_t initial_keeper_fixed_record_source =
+	4 * sizeof(void *) + 2 * (3 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	3 * initial_keeper_fixed_default_source + 3 * initial_keeper_fixed_destroy_source +
+	// Actual generated catalog assignment moves its record vector; record
+	// output assignment independently moves its affects and item vectors.
+	initial_keeper_fixed_move_assignment_source<flatfile_shopkeeper_record>() +
+	initial_keeper_fixed_move_assignment_source<flatfile_shopkeeper_affect_record>() +
+	initial_keeper_fixed_move_assignment_source<player_item_snapshot>() +
+	// Full selected nontrivial record relocation invokes the generated record
+	// move constructor and its genuine two vector member move constructors.
+	2 * sizeof(void *) +
+	initial_keeper_fixed_move_constructor_source<flatfile_shopkeeper_affect_record>() +
+	initial_keeper_fixed_move_constructor_source<player_item_snapshot>() +
+	// Nontrivial _Destroy<record> aux cur/ptr, destroy_at/addressof/forward.
+	2 * sizeof(void *) + sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(void *) +
+	// Default construction record _Construct/placement and true iterator
+	// increment/pointer/end source; all member storage already in sizeof(row).
+	5 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *);
+
+// Exact selected GNU13 default uint64_t sort source map. Full original sort
+// stays selected. Its depth is bounded by the real item codec's count limit;
+// compare adapters are authentic default iterator/value types, not key sorts.
+using initial_keeper_uid_iterator = std::vector<uint64_t>::iterator;
+using initial_keeper_uid_difference = std::vector<uint64_t>::difference_type;
+using initial_keeper_uid_compare = __gnu_cxx::__ops::_Iter_less_iter;
+using initial_keeper_uid_value_compare = __gnu_cxx::__ops::_Val_less_iter;
+using initial_keeper_uid_iter_value_compare = __gnu_cxx::__ops::_Iter_less_val;
+constexpr size_t initial_keeper_fixed_sort_depth = []() constexpr
+{
+	size_t logarithm = 0;
+	for (size_t n = PLAYER_SNAPSHOT_MAX_OBJECTS; n > 1; n >>= 1)
+		++logarithm;
+	return PLAYER_SNAPSHOT_MAX_OBJECTS <= 16 ?
+		       size_t(1) :
+		       std::min(logarithm * 2 + 1, size_t(PLAYER_SNAPSHOT_MAX_OBJECTS - 16 + 1));
+}();
+constexpr size_t initial_keeper_fixed_sort_setup =
+	4 * sizeof(initial_keeper_uid_iterator) + 2 * sizeof(initial_keeper_uid_compare) +
+	2 * sizeof(void *) + 3 * sizeof(initial_keeper_uid_difference) + sizeof(int) +
+	8 * (sizeof(void *) + sizeof(initial_keeper_uid_iterator)) + 4 * sizeof(bool);
+constexpr size_t initial_keeper_fixed_sort_recursive = 3 * sizeof(initial_keeper_uid_iterator) +
+						       sizeof(initial_keeper_uid_difference) +
+						       sizeof(initial_keeper_uid_compare);
+constexpr size_t initial_keeper_fixed_sort_partition =
+	12 * sizeof(initial_keeper_uid_iterator) + 3 * sizeof(initial_keeper_uid_compare) +
+	2 * sizeof(bool) + 7 * sizeof(void *) + sizeof(uint64_t);
+constexpr size_t initial_keeper_fixed_sort_insertion =
+	10 * sizeof(initial_keeper_uid_iterator) + 2 * sizeof(initial_keeper_uid_compare) +
+	2 * sizeof(initial_keeper_uid_value_compare) +
+	sizeof(initial_keeper_uid_iter_value_compare) + 3 * sizeof(uint64_t) +
+	2 * sizeof(initial_keeper_uid_difference) + 12 * sizeof(void *) + 3 * sizeof(bool);
+constexpr size_t initial_keeper_fixed_sort_heap =
+	12 * sizeof(initial_keeper_uid_iterator) + 14 * sizeof(initial_keeper_uid_difference) +
+	5 * sizeof(initial_keeper_uid_compare) + 2 * sizeof(initial_keeper_uid_value_compare) +
+	2 * sizeof(initial_keeper_uid_iter_value_compare) + 4 * sizeof(uint64_t) +
+	18 * sizeof(void *) + 3 * sizeof(bool);
+constexpr size_t initial_keeper_fixed_sort_source =
+	initial_keeper_fixed_sort_setup +
+	initial_keeper_fixed_sort_depth * initial_keeper_fixed_sort_recursive +
+	std::max({ initial_keeper_fixed_sort_partition, initial_keeper_fixed_sort_insertion,
+		   initial_keeper_fixed_sort_heap }) +
+	2 * sizeof(initial_keeper_uid_iterator) + 2 * sizeof(void *) + 3 * sizeof(bool);
+constexpr size_t initial_keeper_fixed_sorted_source =
+	// Two actual function-pointer comparator types, record_less/affect_less,
+	// is_sorted/is_sorted_until/__is_sorted_until and real first/last/next.
+	2 * (9 * sizeof(void *) +
+	     3 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&record_less)>) +
+	     4 * sizeof(void *) + 4 * sizeof(bool)) +
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+	// Actual array<uint64,5> C++20 operator<=> (not lexicographical_compare):
+	// two array refs, __i, __c and ordering return; two operator[] calls
+	// this/index/ref-return; synth3way this/t/u/ordering. uint64_t isn't
+	// bytewise ordered on this little-endian selected host, so array's
+	// if-constexpr memcmp alternative is discarded. The actual rewritten
+	// __c!=0 and outer <0 use ordering/unspec/bool declaration carriers.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(std::strong_ordering) +
+	2 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) +
+	sizeof(std::strong_ordering) +
+	2 * (sizeof(std::strong_ordering) + sizeof(std::__cmp_cat::__unspec) + sizeof(bool)) +
+	// Actual adjacent_find equality adapter and iterators, not unique/erase.
+	12 * sizeof(initial_keeper_uid_iterator) +
+	4 * sizeof(__gnu_cxx::__ops::_Iter_equal_to_iter) + 8 * sizeof(void *) + 4 * sizeof(bool);
+
+template <class T> constexpr size_t initial_keeper_fixed_number_source =
+	2 * sizeof(void *) + sizeof(std::make_unsigned_t<T>) + sizeof(size_t) + sizeof(bool);
+template <class T> constexpr size_t initial_keeper_fixed_write_number_source =
+	sizeof(void *) + sizeof(T) + sizeof(std::make_unsigned_t<T>) + sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t initial_keeper_fixed_numbers_source =
+	initial_keeper_fixed_number_source<uint32_t> +
+	initial_keeper_fixed_number_source<uint64_t> + initial_keeper_fixed_number_source<int32_t> +
+	initial_keeper_fixed_number_source<int64_t> + initial_keeper_fixed_number_source<uint8_t> +
+	initial_keeper_fixed_write_number_source<uint32_t> +
+	initial_keeper_fixed_write_number_source<uint64_t> +
+	initial_keeper_fixed_write_number_source<int32_t> +
+	initial_keeper_fixed_write_number_source<int64_t> +
+	initial_keeper_fixed_write_number_source<uint8_t>;
+constexpr size_t initial_keeper_fixed_framing_source =
+	sizeof(void *) + sizeof(bool) + 6 * sizeof(uint32_t) + 2 * sizeof(uint64_t) +
+	2 * sizeof(int32_t) + 2 * sizeof(int64_t) + sizeof(uint8_t) + sizeof(size_t) +
+	initial_keeper_fixed_numbers_source + 3 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	2 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t initial_keeper_fixed_preflight_source =
+	// Actual public preflight scalar and two EMPTY lambda objects. Inline
+	// decoder/profile objects stay in the original scan admission, separate.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(char) +
+	2 * sizeof(uint32_t) + sizeof(uint64_t) + sizeof(void *) + sizeof(uint32_t) +
+	sizeof(void *) + sizeof(size_t) + sizeof(uint32_t) + 3 * sizeof(uint32_t) +
+	2 * sizeof(int32_t) + 2 * sizeof(int64_t) + sizeof(uint64_t) + sizeof(uint8_t) +
+	4 * sizeof(size_t) + sizeof(bool) +
+	// add(this,total,amount)/product(this,count,width,out) true signatures.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	// Actual decoder/query getters and std::max refs/return on the sizing path.
+	initial_keeper_fixed_numbers_source + 7 * (3 * sizeof(void *)) +
+	5 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t initial_keeper_fixed_decode_source =
+	// Full original catalog decoder lexical source: parameters/header_size,
+	// version/payload_size/revision/payload_bytes/count, row/AF loops and
+	// two typed catches/returns. Decoders/digest/catalog are INLINE, not here.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(uint32_t) +
+	sizeof(uint64_t) + sizeof(void *) + sizeof(uint32_t) + sizeof(void *) + sizeof(uint32_t) +
+	sizeof(uint8_t) + 3 * sizeof(void *) + sizeof(uint32_t) + sizeof(void *) + sizeof(bool) +
+	// Full original validator lexical source, exact fixed bitmap/UID storage
+	// remains INLINE/heap. Rows/AF/is_sorted/sort/adjacent are genuine below.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(size_t) + 2 * sizeof(void *) +
+	2 * sizeof(bool) + initial_keeper_fixed_numbers_source +
+	initial_keeper_fixed_sorted_source + initial_keeper_fixed_sort_source;
+constexpr size_t initial_keeper_fixed_canonical_source =
+	// Full original canonical helper parameters, selected record/AF/bit refs,
+	// offset/output scalars and return. Items/canonical/writer/digest INLINE.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(uint64_t) + initial_keeper_fixed_numbers_source +
+	// writer::raw(this,bytes,length) and memcpy exact input/result declarations.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) +
+	// Genuine copy(digest.begin,end,canonical.begin+24) byte-pointer closure.
+	5 * 4 * sizeof(void *) + 2 * 2 * sizeof(void *) + 3 * 2 * sizeof(void *) +
+	3 * sizeof(void *) + sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	// byte-vector equality/size and __equal/helper actual memcmp closure.
+	2 * sizeof(void *) + sizeof(bool) + 4 * (3 * sizeof(void *) + sizeof(bool)) +
+	sizeof(size_t) + 3 * 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t initial_keeper_fixed_local_source =
+	// Full wrapper parameters/results/early source scalar and its pure getter
+	// source; caller_fixed/scan_extra/decode_fixed/canonical_fixed named consts,
+	// base/scan_live/validation/decode_live/canonicalpayload/live scalar locals.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(flatfile_shopkeeper_result) +
+	4 * sizeof(size_t) + 7 * sizeof(size_t) + sizeof(size_t) +
+	flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_query_frame_bytes() +
+	// add total/amount/result and two original catch refs; arithmetic/max
+	// helpers' genuine declaration carriers and generated profile default.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	2 * sizeof(void *) +
+	// Hash data/digest/length/bool and complete genuine fixed SHA descendants.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + initial_keeper_fixed_sha_source +
+	initial_keeper_fixed_memcmp_source + initial_keeper_fixed_framing_source +
+	initial_keeper_fixed_preflight_source + initial_keeper_fixed_decode_source +
+	initial_keeper_fixed_canonical_source + initial_keeper_fixed_allocate_source +
+	initial_keeper_fixed_deallocate_source + initial_keeper_fixed_default_append_source +
+	initial_keeper_fixed_reserve_push_source + initial_keeper_fixed_relocate_source +
+	initial_keeper_fixed_vector_queries_source + initial_keeper_fixed_array_queries_source +
+	initial_keeper_fixed_record_source + initial_keeper_fixed_swap_source +
+	// First queries for the three genuinely nested original list routes;
+	// complete lower SOURCE returned below is retained once by this child.
+	player_item_snapshot_list_encode_source_query_frame_bytes() +
+	player_item_snapshot_list_preflight_source_query_frame_bytes() +
+	player_item_snapshot_list_decode_source_query_frame_bytes();
+}
+
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !initial_keeper_fixed_source_policy())
+		return false;
+	size_t encode = 0, decode = 0, preflight = 0;
+	if (!player_item_snapshot_list_encode_source_frame_bytes(&encode) ||
+	    !player_item_snapshot_list_decode_source_frame_bytes(&decode) ||
+	    !player_item_snapshot_list_preflight_source_frame_bytes(&preflight))
+		return false;
+	size_t total = initial_keeper_fixed_local_source;
+	if (!initial_keeper_budget_add(total, encode) ||
+	    !initial_keeper_budget_add(total, decode) ||
+	    !initial_keeper_budget_add(total, preflight))
+		return false;
+	*out = total;
+	return true;
+}
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !initial_keeper_fixed_source_policy())
+		return false;
+	*out = 0;
+	return true;
+}
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_supplement_frame_bytes(
+	size_t *out) noexcept
+{
+	if (!out || !initial_keeper_fixed_source_policy())
+		return false;
+	*out = 0; // This new complete child retains its own returned SOURCE once.
+	return true;
+}
+
+#if !defined(OPENSSL_NO_DEPRECATED_3_0)
+namespace
+{
+bool initial_keeper_fixed_decode_catalog(const std::vector<uint8_t> &bytes,
+					 shopkeeper_catalog *catalog, size_t expected_item_count)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	decoder header{ bytes.data() + 8, bytes.size() - 8 };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || (version != 1 && version != catalog_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (!initial_keeper_fixed_hash(payload_bytes, payload_size, digest.data()))
+		return false;
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > shopkeeper_maximum)
+		return false;
+	shopkeeper_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.records.resize(count);
+		for (auto &record : decoded.records)
+		{
+			uint32_t affect_count = 0;
+			uint8_t roaming = 0;
+			if (!payload.number(&record.shop_id) || !payload.number(&record.mob_vnum) ||
+			    !payload.number(&record.room_vnum) ||
+			    !payload.number(&record.saved_at) ||
+			    !payload.number(&record.revision) ||
+			    (version == catalog_version && !payload.number(&record.cash)) ||
+			    (version == catalog_version && !payload.number(&roaming)) ||
+			    roaming > 1 || !payload.number(&affect_count) ||
+			    affect_count > affect_maximum)
+				return false;
+			if (version == 1)
+				record.cash = -1;
+			record.roaming = roaming != 0;
+			record.affects.resize(affect_count);
+			for (auto &affect : record.affects)
+			{
+				if (!payload.number(&affect.type) ||
+				    !payload.number(&affect.duration) ||
+				    !payload.number(&affect.modifier) ||
+				    !payload.number(&affect.location))
+					return false;
+				for (uint64_t &bitvector : affect.bitvectors)
+					if (!payload.number(&bitvector))
+						return false;
+			}
+			uint32_t item_bytes = 0;
+			if (!payload.number(&item_bytes) || !item_bytes ||
+			    item_bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
+			    payload.offset > payload.size ||
+			    item_bytes > payload.size - payload.offset ||
+			    player_item_snapshot_list_decode(payload.data + payload.offset,
+							     item_bytes, &record.items) !=
+				    player_snapshot_codec_result::ok)
+				return false;
+			payload.offset += item_bytes;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (payload.offset != payload.size ||
+	    !valid_catalog_bounded_scratch(decoded, expected_item_count))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+// Resource origin is retained explicitly through semantic bool predicates.
+// Legacy decoders/validators below keep their original behavior for all callers.
+bool initial_keeper_fixed_canonical(const shopkeeper_catalog &catalog, size_t original_size,
+				    size_t original_item_bytes, std::vector<uint8_t> *output)
+{
+	if (!output || catalog.revision != 1 || catalog.records.size() != 1 ||
+	    original_size < initial_checkpoint_overhead_bytes ||
+	    original_size > initial_checkpoint_maximum_bytes)
+		return false;
+	const auto &record = catalog.records.front();
+	if (record.revision != 1 || record.cash < 0 ||
+	    record.cash > std::numeric_limits<int>::max() || record.affects.size() > affect_maximum)
+		return false;
+	std::vector<uint8_t> items;
+	// Original item encoder includes original relationships and complete semantic
+	// decode roundtrip. Its exact capacity/reallocation peak was admitted by caller.
+	if (player_item_snapshot_list_encode(record.items, &items) !=
+		    player_snapshot_codec_result::ok ||
+	    items.size() != original_item_bytes)
+		return false;
+	std::vector<uint8_t> canonical;
+	canonical.reserve(original_size); // Exact fresh request under pinned policy.
+	canonical.resize(original_size);
+	initial_keeper_canonical_writer file{ canonical.data(), canonical.size() };
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	if (!file.raw(catalog_magic.data(), catalog_magic.size()) ||
+	    !file.number<uint32_t>(catalog_version) ||
+	    !file.number<uint32_t>(original_size - initial_checkpoint_header_bytes) ||
+	    !file.number<uint64_t>(catalog.revision) || !file.raw(digest.data(), digest.size()) ||
+	    !file.number<uint32_t>(1) || !file.number(record.shop_id) ||
+	    !file.number(record.mob_vnum) || !file.number(record.room_vnum) ||
+	    !file.number(record.saved_at) || !file.number(record.revision) ||
+	    !file.number(record.cash) || !file.number<uint8_t>(record.roaming ? 1 : 0) ||
+	    !file.number<uint32_t>(record.affects.size()))
+		return false;
+	for (const auto &affect : record.affects)
+	{
+		if (!file.number(affect.type) || !file.number(affect.duration) ||
+		    !file.number(affect.modifier) || !file.number(affect.location))
+			return false;
+		for (uint64_t bits : affect.bitvectors)
+			if (!file.number(bits))
+				return false;
+	}
+	if (!file.number<uint32_t>(items.size()) || !file.raw(items.data(), items.size()) ||
+	    file.offset != file.size ||
+	    !initial_keeper_fixed_hash(canonical.data() + initial_checkpoint_header_bytes,
+				       canonical.size() - initial_checkpoint_header_bytes,
+				       digest.data()))
+		return false;
+	std::copy(digest.begin(), digest.end(), canonical.begin() + 24);
+	output->swap(canonical);
+	return true;
+}
+
+}
+#endif
+
+flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_bounded(
+	const std::vector<uint8_t> &bytes, flatfile_shopkeeper_record *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *context,
+	size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(OPENSSL_NO_DEPRECATED_3_0)
+	errno = ENOTSUP;
+	return flatfile_shopkeeper_result::io_error;
+#else
+	if (!output || !reserve_scratch_peak)
+	{
+		errno = EINVAL;
+		return flatfile_shopkeeper_result::invalid;
+	}
+	// Caller transiently preadmits the genuine pure query/full SOURCE before
+	// entry. This complete child retains that same returned SOURCE once in base,
+	// including all original nested list codec and fixed-hash descendants.
+	size_t source_frames = 0;
+	if (!flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_frame_bytes(&source_frames))
+	{
+		errno = ENOTSUP;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	// Admit actual named inline scan objects before inspecting the nested item
+	// wire. No sizing step calls SHA or an allocating decoder/container method.
+	constexpr size_t caller_fixed = sizeof(shopkeeper_catalog) +
+					sizeof(flatfile_shopkeeper_catalog_allocation_profile) +
+					sizeof(player_item_snapshot_list_allocation_profile) +
+					sizeof(std::vector<uint8_t>);
+	constexpr size_t scan_extra = sizeof(flatfile_shopkeeper_catalog_allocation_profile) +
+				      2 * sizeof(player_item_snapshot_list_allocation_profile) +
+				      2 * sizeof(decoder);
+	size_t base = outer_live_scratch, scan_live = 0;
+	if (!initial_keeper_budget_add(base, source_frames) ||
+	    !initial_keeper_budget_add(base, caller_fixed))
+	{
+		errno = ENOBUFS;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	scan_live = base;
+	if (!initial_keeper_budget_add(scan_live, scan_extra) ||
+	    !initial_keeper_budget_add(scan_live,
+				       player_item_snapshot_list_decoder_object_bytes()) ||
+	    !reserve_scratch_peak(scan_live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	if (!initial_checkpoint_framing(bytes))
+	{
+		errno = EBADMSG;
+		return flatfile_shopkeeper_result::invalid;
+	}
+	flatfile_shopkeeper_catalog_allocation_profile profile;
+	player_item_snapshot_list_allocation_profile items;
+	if (!flatfile_shopkeeper_catalog_preflight(bytes.data(), bytes.size(), &profile) ||
+	    profile.record_count != 1 || profile.canonical_catalog_bytes != bytes.size() ||
+	    profile.largest_item_blob_bytes > bytes.size() ||
+	    player_item_snapshot_list_preflight(
+		    bytes.data() + bytes.size() - profile.largest_item_blob_bytes,
+		    profile.largest_item_blob_bytes, &items) != player_snapshot_codec_result::ok)
+	{
+		errno = EBADMSG;
+		return flatfile_shopkeeper_result::invalid;
+	}
+	if (!profile.fresh_decode_storage_policy_supported ||
+	    !items.fresh_decode_storage_policy_supported ||
+	    !items.canonical_encoder_storage_policy_supported)
+	{
+		errno = ENOTSUP;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	// The local decoded catalog and its complete retained rows/AF/item payload
+	// are included in profile; caller framing's separate object is in base.
+	constexpr size_t decode_fixed =
+		2 * sizeof(decoder) + sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) +
+		sizeof(std::vector<uint64_t>) + sizeof(std::vector<uint8_t>) +
+		sizeof(std::array<bool, equipment_slot_maximum + 1>) + sizeof(SHA256_CTX);
+	size_t validation = profile.largest_item_roundtrip_scratch_bytes;
+	if (profile.item_count > SIZE_MAX / sizeof(uint64_t) ||
+	    !initial_keeper_budget_add(validation, profile.item_count * sizeof(uint64_t)))
+	{
+		errno = ENOBUFS;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	size_t decode_live = base;
+	if (!initial_keeper_budget_add(decode_live, profile.decoded_catalog_payload_bytes) ||
+	    !initial_keeper_budget_add(decode_live, decode_fixed) ||
+	    !initial_keeper_budget_add(
+		    decode_live, std::max(validation, profile.largest_item_decode_scratch_bytes)) ||
+	    !reserve_scratch_peak(decode_live, context))
+	{
+		errno = ENOBUFS;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	try
+	{
+		shopkeeper_catalog framing;
+		if (!initial_keeper_fixed_decode_catalog(bytes, &framing, profile.item_count) ||
+		    framing.revision != 1 || framing.records.size() != 1 ||
+		    framing.records.front().revision != 1 || framing.records.front().cash < 0)
+		{
+			errno = EBADMSG;
+			return flatfile_shopkeeper_result::invalid;
+		}
+		// Canonical writer uses original item encoder, then one exact-sized file
+		// vector; no whole-catalog payload encoder, hash/tree or affects clone.
+		constexpr size_t canonical_fixed =
+			2 * sizeof(std::vector<uint8_t>) + sizeof(initial_keeper_canonical_writer) +
+			sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) + sizeof(SHA256_CTX);
+		size_t canonical_payload = items.canonical_encoded_capacity_bytes;
+		size_t canonical_live = base;
+		if (!initial_keeper_budget_add(canonical_payload, bytes.size()) ||
+		    profile.decoded_catalog_payload_bytes < sizeof(shopkeeper_catalog) ||
+		    !initial_keeper_budget_add(canonical_live,
+					       profile.decoded_catalog_payload_bytes -
+						       sizeof(shopkeeper_catalog)) ||
+		    !initial_keeper_budget_add(canonical_live, canonical_fixed) ||
+		    !initial_keeper_budget_add(
+			    canonical_live,
+			    std::max(canonical_payload,
+				     profile.largest_item_roundtrip_scratch_bytes)) ||
+		    !reserve_scratch_peak(canonical_live, context))
+		{
+			errno = ENOBUFS;
+			return flatfile_shopkeeper_result::io_error;
+		}
+		std::vector<uint8_t> canonical;
+		if (!initial_keeper_fixed_canonical(framing, bytes.size(),
+						    profile.largest_item_blob_bytes, &canonical) ||
+		    canonical != bytes)
+		{
+			errno = EBADMSG;
+			return flatfile_shopkeeper_result::invalid;
+		}
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_shopkeeper_record>);
+		*output = std::move(framing.records.front());
+		return flatfile_shopkeeper_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_shopkeeper_result::io_error;
+	}
+	catch (...)
+	{
+		errno = EOVERFLOW;
+		return flatfile_shopkeeper_result::io_error;
+	}
+#endif
+}

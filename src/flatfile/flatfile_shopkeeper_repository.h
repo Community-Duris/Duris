@@ -208,4 +208,28 @@ class flatfile_shopkeeper_initial_catalog_storage final
 		       std::string *error) noexcept;
 };
 
+// Additive fixed-context companion of the existing complete bounded INITIAL
+// checkpoint decoder. Same wire, record/time/cash/AF/forest/canonical laws and
+// strong output; originals remain unchanged. Caller owns retained input/prior
+// output in outer. Child retains the complete SOURCE once, including real
+// original list codecs, before each fallible descendant. No I/O or authority.
+flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_bounded(
+	const std::vector<uint8_t> &, flatfile_shopkeeper_record *, flatfile_scratch_reserve_fn,
+	void *, size_t) noexcept;
+// Complete SOURCE is transient preentry; do not also retain it in caller outer.
+// Initial-inline is zero: the original object admission precedes construction;
+// genuine early scalar/query source is in the complete source contract.
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_frame_bytes(size_t *) noexcept;
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_initial_inline_bytes(size_t *) noexcept;
+bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_supplement_frame_bytes(
+	size_t *) noexcept;
+constexpr size_t
+flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_query_frame_bytes() noexcept
+{
+	// Genuine collector output/three lower totals/final total, policy and
+	// returned bool; lower P+2B and checked-add P+N+B descendants. The sum
+	// conservatively owns all these named scopes, not an unrelated profile.
+	return 3 * sizeof(void *) + 5 * sizeof(size_t) + 5 * sizeof(bool);
+}
+
 #endif

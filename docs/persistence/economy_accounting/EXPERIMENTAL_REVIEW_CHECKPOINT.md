@@ -4027,3 +4027,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Flat checkpoint fixed hash and source contracts implemented - 2026-10-10
+
+[Source checkpoint](FLAT_CHECKPOINT_FIXED_HASH_SOURCE_CONTRACTS_2026-10-10.md) adds the complete original fixed-context checkpoint decoder/canonical writer and actual source/query ownership, with typed vector and OpenSSL configuration defects corrected.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
