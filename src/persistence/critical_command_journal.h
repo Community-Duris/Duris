@@ -203,4 +203,48 @@ class critical_startup_journal_budget_owner final
 	static bool current_metadata_bytes(size_t *) noexcept;
 };
 
+// Pure source queries grant neither observation nor admission. Their own output
+// pointer/result/query carriers must be admitted by the real caller first.
+bool critical_command_journal_startup_projection_source_frame_bytes(size_t *) noexcept;
+bool critical_command_journal_startup_source_frame_bytes(size_t *) noexcept;
+// Pure prospective original initial workspace/lock/snapshot inline peak.
+// The fixed query accessor below dominates its own genuine P+B query carriers.
+// ROOT reserves this transiently with SOURCE before mutation; it is not retained
+// in outer when the journal's original per-operation admissions own it.
+bool critical_command_journal_startup_initial_inline_bytes(size_t *) noexcept;
+// Genuine source-query output/return/three locals and the two nested pure
+// source-provider signatures/returns plus both checked-add inputs/results. Caller
+// additionally owns this constexpr accessor's returned size_t carrier.
+constexpr size_t critical_command_journal_startup_source_query_frame_bytes() noexcept
+{
+	return sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	       2 * (sizeof(void *) + sizeof(bool)) +
+	       2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool));
+}
+// First callback admits source scopes before an actual journal mutex/census.
+// Second callback sees the genuinely published full J and excludes J from its
+// incoming prefix; aggregate supplies it once. No health/file/generation change.
+bool critical_command_journal_startup_persistent_projection_bounded(
+	bool (*source_reserve)(size_t, void *) noexcept, void *source_context,
+	bool (*physical_reserve)(size_t, void *) noexcept, void *physical_context,
+	size_t outer_live, size_t *full_journal_storage_bytes) noexcept;
+// Available only synchronously inside that exact reserve/context callback.
+// Success yields the genuine metadata term owned in this particular prefix;
+// subtract it once before full-J aggregate addition. It performs no observation,
+// lock or cached-output lookup. Failure leaves output unchanged.
+bool critical_command_journal_startup_owned_metadata(bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t *) noexcept;
+// Complete original counterparts: no readiness/ACK/authority/default selection.
+// The full journal source provider and real ROOT/caller frames remain retained
+// across all callbacks. Caller input/output heaps stay in outer, except genuine
+// locked metadata conveyed by the synchronous identity contract above.
+bool critical_command_journal_init_physical_bounded(
+	const char *directory, size_t quota_bytes, bool (*reserve)(size_t, void *) noexcept,
+	void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes = nullptr) noexcept;
+critical_command_journal_result critical_command_journal_replay_with_native_physical_bounded(
+	critical_command_replay_bounded_fn, critical_native_recovery_replay_bounded_fn,
+	void *original_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+	size_t outer_live, size_t *current_journal_metadata_bytes = nullptr) noexcept;
+
 #endif
