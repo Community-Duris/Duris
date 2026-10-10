@@ -1212,6 +1212,91 @@ class RestoreTests(Fixture):
             restore.restore(self.p, generation.name, self.ledger())
         database.assert_not_called()
 
+    def test_database_qualification_report_requires_complete_evidence(self):
+        env = {"DB_SOCKET": "/tmp/synthetic.sock", "DB_USER": "restore", "DB_NAME": "duris_restore"}
+        valid = b'{"history":"ok","reconciliation":"ok"}'
+        reports = [(b'', "invalid_database_qualification_report"),
+                   (b'{}', "invalid_database_qualification_report"),
+                   (b'[]', "invalid_database_qualification_report"),
+                   (b'null', "invalid_database_qualification_report"),
+                   (b'\xff', "invalid_database_qualification_report"),
+                   (b'{"history":"ok"}', "invalid_database_qualification_report"),
+                   (b'{"history":true,"reconciliation":"ok"}', "invalid_database_qualification_report"),
+                   (b'{"history":"ok","reconciliation":"failed"}', "invalid_database_qualification_report"),
+                   (b'{"history":"failed","history":"ok","reconciliation":"ok"}',
+                    "invalid_database_qualification_report"),
+                   (b'{"history":"ok","reconciliation":"ok","private-alias":"erased"}',
+                    "invalid_database_qualification_report")]
+        for diagnostics in ({"room_item_full_runtime_authority_unqualified": 1},
+                            {"room_item_retained_root_authority_unqualified": 1}, {}, None, False):
+            reports.append((json.dumps(dict(history="ok", reconciliation="ok",
+                                             room_item_diagnostics=diagnostics)).encode(),
+                            "restore_room_item_authority_unqualified"))
+        for profile in (64, 65):
+            with self.subTest(profile=profile), \
+                 mock.patch.object(backup, "database_runtime_profile", return_value=profile):
+                for reply in (valid, b' {"reconciliation":"ok","history":"ok"}\n'):
+                    with mock.patch.object(backup, "run", side_effect=[b'', reply]):
+                        restore.database_qualify(env, profile=profile)
+                for reply, reason in reports:
+                    with self.subTest(reply=reply), \
+                         mock.patch.object(backup, "run", side_effect=[b'', reply]), \
+                         self.assertRaisesRegex(backup.BackupError, "^" + reason + "$"):
+                        restore.database_qualify(env, profile=profile)
+                with mock.patch.object(backup, "run", side_effect=[b'', backup.BackupError("process_failed")]), \
+                     self.assertRaisesRegex(backup.BackupError, "^process_failed$"):
+                    restore.database_qualify(env, profile=profile)
+
+    def test_incomplete_database_reports_never_qualify_restore_or_drill(self):
+        generations = self.baseline("mariadb-primary")
+        selected = max(generations, key=lambda path: backup.verify(path)["created"])
+        ledger = self.ledger()
+        ledger_hash = backup.digest(ledger)
+        live = backup.inventory(self.base / "live", exclude_locks=True)
+        journals = backup.inventory(self.base / "journals", exclude_locks=True)
+        receipt = self.p["root"] / "drill.json"
+        backup.write_json(receipt, {"result": "qualified", "completed":
+                                   int(time.time()) - self.p["drill_seconds"] - 1})
+        receipt_hash = backup.digest(receipt)
+        valid = b'{"history":"ok","reconciliation":"ok"}'
+        env = {"DB_SOCKET": "/tmp/synthetic.sock", "DB_USER": "restore", "DB_NAME": "duris_restore"}
+        failures = [(json.dumps(dict(history="ok", reconciliation="ok", room_item_diagnostics={code: 1})).encode(),
+                     "restore_room_item_authority_unqualified")
+                    for code in ("room_item_full_runtime_authority_unqualified",
+                                 "room_item_retained_root_authority_unqualified")]
+        failures.append((b'{"history":"ok"}', "invalid_database_qualification_report"))
+        for drill in (False, True):
+            for phase in ("before_service", "after_service"):
+                for reply, reason in failures:
+                    with self.subTest(drill=drill, phase=phase, reply=reply):
+                        candidates = set(self.p["restore_root"].glob("candidate-*"))
+                        replies = iter([reply] if phase == "before_service" else [valid, reply])
+                        def run(command, **unused):
+                            if command[0] == "mysql":
+                                return b"64\n"
+                            if command[0] == "python3":
+                                return next(replies, valid)
+                            return b'{}'
+                        with mock.patch.object(restore, "private_database", return_value=contextlib.nullcontext(env)), \
+                             mock.patch.object(restore, "database_import") as importer, \
+                             mock.patch.object(restore, "service_load") as service, \
+                             mock.patch.object(backup, "run", side_effect=run), \
+                             self.assertRaisesRegex(backup.BackupError, "^" + reason + "$"):
+                            restore.restore(self.p, selected.name, ledger, drill=drill)
+                        importer.assert_called_once()
+                        self.assertEqual(service.call_count, int(phase == "after_service"))
+                        added = set(self.p["restore_root"].glob("candidate-*")) - candidates
+                        self.assertEqual(len(added), 0 if drill else 1)
+                        for candidate in added:
+                            self.assertEqual(backup.read_json(candidate / "FAILED.json"), {"result": "failed"})
+                            self.assertFalse((candidate / "QUALIFIED.json").exists())
+                        self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
+                        self.assert_preserved(generations)
+                        self.assertEqual(backup.digest(receipt), receipt_hash)
+                        self.assertEqual(backup.digest(ledger), ledger_hash)
+                        self.assertEqual(backup.inventory(self.base / "live", exclude_locks=True), live)
+                        self.assertEqual(backup.inventory(self.base / "journals", exclude_locks=True), journals)
+
     def test_operator_verifiers_dispatch_frozen_profile_and_refuse_unmeasured65(self):
         self.schema_check.stop()
         schema = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
@@ -1225,7 +1310,9 @@ class RestoreTests(Fixture):
                     "mysql8": "1" * 64, "mariadb10_11": "2" * 64}
             backup.write_json(frozen, schema)
             def result(command, **unused):
-                return str(profile).encode() + b"\n" if command[0] == "mysql" else b"{}"
+                if command[0] == "mysql":
+                    return str(profile).encode() + b"\n"
+                return b'{"history":"ok","reconciliation":"ok"}' if command[0] == "python3" else b"{}"
             with self.subTest(profile=profile), \
                  mock.patch.object(backup, "run", side_effect=result) as run, \
                  mock.patch.object(backup, "db_connection", return_value=([], env, "duris_restore")):

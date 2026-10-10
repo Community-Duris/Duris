@@ -164,7 +164,15 @@ def database_qualify(env, schema=None, profile=None):
     env = dict(env, RUNTIME_COMPATIBILITY_MANIFEST=str(schema))
     backup.run(["bash", str(backup.ROOT / "migrations/verify_runtime_compatibility.sh"),
                 *(["--schema65"] if actual == 65 else [])], env=env)
-    backup.run(["python3", str(backup.ROOT / "scripts/qualify_database_restore.py")], env=env)
+    output = backup.run(["python3", str(backup.ROOT / "scripts/qualify_database_restore.py")], env=env)
+    try:
+        report = json.loads(output, object_pairs_hook=backup.strict_json)
+    except (ValueError, TypeError, backup.BackupError) as error:
+        raise backup.BackupError("invalid_database_qualification_report") from error
+    backup.require(type(report) is dict and report.get("history") == "ok" and
+                   report.get("reconciliation") == "ok", "invalid_database_qualification_report")
+    backup.require("room_item_diagnostics" not in report, "restore_room_item_authority_unqualified")
+    backup.require(set(report) == {"history", "reconciliation"}, "invalid_database_qualification_report")
 
 
 def service_load(candidate, mode, env):
