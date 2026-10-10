@@ -18295,3 +18295,17 @@ full foreign C-G-J/loan/initial-and-surviving census/publication/drain/native32M
 gameplay/persistence/recovery/R1-R8/release stay OPEN. Tests remain batched at
 major-plan readiness; inactive/CLOSED, coverage incomplete, release BLOCKED and
 goal ACTIVE. Protected Plan5 WIP remains exact.
+
+
+## Lower recovery same-scope source join implemented - 2026-10-10
+
+[Source checkpoint](LOWER_RECOVERY_SAME_SCOPE_SOURCE_JOIN_2026-10-10.md) integrates
+complete auction, held-item/pipeline and native quest recovery counterparts
+through their genuine borrowed scopes. Settled RAW and actual formatted28 source
+reviews passed; held SHA parenthesis and pure-profile visibility defects are
+corrected. Original/default/inactive behavior and protected Plan5 WIP remain
+preserved. Registry476 pins/931 policies/2911 occurrences/2853 mapped sites,
+zero new/unmapped writers, is inventory only. Selecting full first host,
+historical birth joins, full native/gameplay/persistence/recovery and R1-R8/release
+remain OPEN; no major plan completion. Tests stay batched at major-plan readiness;
+inactive/CLOSED, coverage incomplete, release BLOCKED and goal ACTIVE.

@@ -110,4 +110,29 @@ bool native_quest_recovery_pair_context_valid(
 	const critical_native_recovery_envelope &child,
 	const critical_native_recovery_envelope *parent_successor) noexcept;
 
+// Complete original NQR1–5 pure value companions, all receipt/program/child
+// phases and canonical roundtrip retained. Original entry points unchanged.
+// No publication authority or runtime selection; complete source audit pending.
+size_t native_quest_recovery_codec_source_frame_bytes() noexcept;
+// Fixed first-query source includes the profile query and entry-inline getter.
+// Admit queried source+prospective entry before selection; do not carry the
+// prospective inline into the later child census, which owns actual objects.
+constexpr size_t native_quest_recovery_codec_source_profile_query_frames() noexcept
+{
+	return sizeof(void *) + 17 * sizeof(size_t) + sizeof(bool);
+}
+constexpr size_t native_quest_recovery_codec_entry_inline_query_frames() noexcept
+{
+	return sizeof(size_t);
+}
+size_t native_quest_recovery_codec_entry_inline_bytes() noexcept;
+bool native_quest_recovery_context_current_heap_bytes(const native_quest_recovery_context &,
+						      size_t *) noexcept;
+size_t native_quest_recovery_context_current_heap_observer_frame_bytes() noexcept;
+player_snapshot_codec_result native_quest_recovery_context_encode_bounded(
+	const critical_command &, const native_quest_recovery_context &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
+	const critical_command &, std::span<const uint8_t>, native_quest_recovery_context *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 #endif

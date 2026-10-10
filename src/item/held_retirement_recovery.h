@@ -101,4 +101,37 @@ bool critical_command_coordinator_cancel_held_retirement_publication(
 	player_save_restored_publication_owner &, const critical_native_recovery_envelope &,
 	bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
 	void *) noexcept;
+
+// Additive complete original pure recovery value companions. Outer owns actual
+// command/input/prior output/caller state. No replay or publication authority.
+// Bodies remain unselected until the complete source/native gate is joined.
+size_t held_retirement_codec_source_frame_bytes() noexcept;
+// First preadmit this fixed query source, then query source+prospective entry
+// inline and admit both before selecting any bounded entry. The entry inline
+// is transient prospective storage: actual child CURRENT owns it after entry.
+constexpr size_t held_retirement_codec_source_profile_query_frames() noexcept
+{
+	return sizeof(void *) + 17 * sizeof(size_t);
+}
+constexpr size_t held_retirement_codec_entry_inline_query_frames() noexcept
+{
+	return sizeof(size_t);
+}
+size_t held_retirement_codec_entry_inline_bytes() noexcept;
+bool held_retirement_command_identity_bounded(const critical_command &, item_transfer_payload *,
+					      lockpick_retirement_terms *,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t) noexcept;
+bool held_retirement_body_pair_bounded(const item_transfer_payload &, std::span<const uint8_t>,
+				       std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+				       void *, size_t) noexcept;
+bool held_retirement_recovery_encode_bounded(const critical_command &,
+					     const held_retirement_recovery &,
+					     std::vector<uint8_t> *,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
+bool held_retirement_recovery_decode_bounded(const critical_command &, std::span<const uint8_t>,
+					     held_retirement_recovery *,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
 #endif

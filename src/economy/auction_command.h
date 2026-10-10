@@ -113,4 +113,25 @@ bool auction_command_build(critical_command *command, critical_operation_id oper
 			   const auction_command_payload &payload, critical_source_site source_site,
 			   critical_deadline_class deadline_class);
 
+size_t auction_command_build_sort_source_frame_bytes(const critical_command &) noexcept;
+size_t auction_command_matching_fences_source_frame_bytes(const critical_command &) noexcept;
+bool auction_command_encode_payload_bounded(const auction_command_payload &, std::vector<uint8_t> *,
+					    bool (*)(size_t, void *) noexcept, void *, size_t,
+					    bool *budget_denied = nullptr) noexcept;
+bool auction_command_build_bounded(critical_command *, critical_operation_id,
+				   const auction_command_payload &, critical_source_site,
+				   critical_deadline_class, bool (*)(size_t, void *) noexcept,
+				   void *, size_t, bool *budget_denied = nullptr) noexcept;
+bool auction_command_decode_native_base_bounded(const critical_command &, std::span<const uint8_t>,
+						auction_command_payload *,
+						bool (*)(size_t, void *) noexcept, void *, size_t,
+						bool *budget_denied = nullptr) noexcept;
+bool auction_command_decode_payload_bounded(const critical_command &, auction_command_payload *,
+					    bool (*)(size_t, void *) noexcept, void *, size_t,
+					    bool *budget_denied = nullptr) noexcept;
+bool auction_command_encode_result_bounded(const auction_command_result &,
+					   std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> *,
+					   bool (*)(size_t, void *) noexcept, void *, size_t,
+					   bool *budget_denied = nullptr) noexcept;
+
 #endif

@@ -17,6 +17,8 @@ class auction_original_item_stage final
 				shop_trade_original_reload_effect &) noexcept;
 	static bool proclib_probe(P_obj, const object_template &, size_t,
 				  shop_trade_original_reload_effect &) noexcept;
+	bool current_private_heap_bytes(const player_item_snapshot &, size_t *) const noexcept;
+	static size_t current_private_heap_observer_frame_bytes() noexcept;
 	P_obj get() const noexcept;
 	P_obj consume() noexcept;
 };
@@ -76,5 +78,39 @@ bool auction_native_publication_player_busy(P_char) noexcept;
 // invokes native effects nor releases a player hold or publication reservation.
 bool auction_native_publication_restore(const critical_native_recovery_envelope &) noexcept;
 bool auction_native_publication_restore_replayed_command(const critical_command &) noexcept;
+
+// Pure actual retained native-auction owner storage on the game thread.
+// Includes the real registry/body/command/context/stage capacities; pooled object
+// and affect pages are owned by the caller's paired global census. No allocation,
+// callbacks, cached attachment estimate, readiness/route selection or authority.
+// False/null/unsupported preserves the scalar output. Frames are separately
+// admitted by the caller before observation and excluded from retained CURRENT.
+bool auction_native_publication_current_storage_bytes(size_t *) noexcept;
+size_t auction_native_publication_current_storage_observer_frame_bytes() noexcept;
+
+class player_save_coin_replay_budget_scope_owner;
+// Full genuine native owner; ROOT excludes this CURRENT and same-scope pipeline
+// CURRENT from outer. Every nested reservation refreshes both actual owners.
+size_t auction_native_publication_replay_source_frame_bytes() noexcept;
+bool auction_native_expected_player_forest_bounded(const auction_command_payload &,
+						   std::span<const player_item_snapshot>,
+						   std::span<const player_item_snapshot>, bool,
+						   uint32_t, std::vector<player_item_snapshot> *,
+						   bool (*)(size_t, void *) noexcept, void *,
+						   size_t) noexcept;
+bool auction_native_selected_forest_valid_bounded(const auction_command_payload &,
+						  std::span<const player_item_snapshot>,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept;
+bool auction_repository_frozen_accounting_valid_bounded(const critical_command &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept;
+bool auction_native_publication_restore_bounded(const critical_native_recovery_envelope &,
+						player_save_coin_replay_budget_scope_owner &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept;
+bool auction_native_publication_restore_replayed_command_bounded(
+	const critical_command &, player_save_coin_replay_budget_scope_owner &,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
 #endif

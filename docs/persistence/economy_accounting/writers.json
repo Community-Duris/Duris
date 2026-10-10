@@ -14650,12 +14650,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1012,
+          1014,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1020,
+          1022,
           "item_publication"
         ]
       ],
@@ -14712,7 +14712,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1039,
+          1041,
           "item_lifecycle"
         ]
       ],
@@ -14770,12 +14770,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3649,
+          3651,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3877,
+          3879,
           "economic_submit"
         ]
       ],
@@ -15077,42 +15077,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1655,
+          1657,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1673,
+          1675,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4000,
+          4002,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4008,
+          4010,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4020,
+          4022,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4146,
+          4148,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4164,
+          4166,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4222,
+          4224,
           "economic_submit"
         ],
         [
@@ -15181,7 +15181,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1590,
+          1592,
           "item_publication"
         ]
       ],
@@ -15224,7 +15224,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1486,
+          1488,
           "item_lifecycle"
         ]
       ],
@@ -15344,7 +15344,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1341,
+          1343,
           "item_lifecycle"
         ]
       ],
@@ -16458,7 +16458,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1181,
+          1183,
           "item_lifecycle"
         ]
       ],
@@ -16495,7 +16495,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1194,
+          1196,
           "item_lifecycle"
         ]
       ],
@@ -17812,7 +17812,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4273,
+          4275,
           "item_lifecycle"
         ]
       ],
@@ -17849,7 +17849,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4124,
+          4126,
           "item_lifecycle"
         ]
       ],
@@ -18733,37 +18733,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          2524,
+          2526,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2779,
+          2781,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2905,
+          2907,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3354,
+          3356,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3561,
+          3563,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3634,
+          3636,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3642,
+          3644,
           "economic_submit"
         ],
         [
@@ -18783,7 +18783,7 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          3029,
+          3031,
           "economic_submit"
         ]
       ],
@@ -19433,12 +19433,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1838,
+          1840,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1839,
+          1841,
           "item_publication"
         ]
       ],
@@ -19481,22 +19481,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1398,
+          1400,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1435,
+          1437,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1441,
+          1443,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1445,
+          1447,
           "item_publication"
         ]
       ],
@@ -19821,7 +19821,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1290,
+          1292,
           "item_publication"
         ]
       ],
@@ -28712,22 +28712,22 @@
       "sites": [
         [
           "src/world/quest.c",
-          202,
+          203,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          203,
+          204,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          218,
+          219,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          219,
+          220,
           "item_lifecycle"
         ]
       ],
@@ -28773,32 +28773,32 @@
       "sites": [
         [
           "src/world/quest.c",
-          963,
+          964,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          963,
+          964,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          965,
+          966,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1138,
+          1139,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1138,
+          1139,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          1140,
+          1141,
           "item_lifecycle"
         ]
       ],
@@ -28845,7 +28845,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          1004,
+          1005,
           "item_lifecycle"
         ]
       ],
@@ -28893,7 +28893,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          1758,
+          1759,
           "economic_submit"
         ]
       ],
@@ -29062,7 +29062,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          207,
+          208,
           "money_helper"
         ]
       ],
@@ -29097,7 +29097,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4154,
+          4156,
           "economic_submit"
         ],
         [
@@ -29107,62 +29107,62 @@
         ],
         [
           "src/world/quest.c",
-          470,
+          471,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          482,
+          483,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          502,
+          503,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          504,
+          505,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          508,
+          509,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          551,
+          552,
           "money_helper"
         ],
         [
           "src/world/quest.c",
-          1507,
+          1508,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          1525,
+          1526,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1533,
+          1534,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1557,
+          1558,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1561,
+          1562,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          1567,
+          1568,
           "item_lifecycle"
         ]
       ],
@@ -29201,22 +29201,22 @@
       "sites": [
         [
           "src/world/quest.c",
-          1805,
+          1806,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1810,
+          1811,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1841,
+          1842,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          1846,
+          1847,
           "item_lifecycle"
         ]
       ],
@@ -48277,17 +48277,17 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          8117,
+          8119,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          8004,
+          8006,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          8059,
+          8061,
           "item_publication"
         ]
       ],
@@ -48388,17 +48388,17 @@
       "sites": [
         [
           "src/economy/auction_native_publication.c",
-          2049,
+          2052,
           "item_lifecycle"
         ],
         [
           "src/economy/auction_native_publication.c",
-          2021,
+          2024,
           "item_publication"
         ],
         [
           "src/economy/auction_native_publication.c",
-          2038,
+          2041,
           "item_publication"
         ]
       ],
@@ -54146,19 +54146,19 @@
     },
     {
       "path": "src/economy/auction_native_publication.c",
-      "line": 2049,
+      "line": 2052,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/economy/auction_native_publication.c",
-      "line": 2021,
+      "line": 2024,
       "family": "item_publication",
       "excerpt": "obj_to_char("
     },
     {
       "path": "src/economy/auction_native_publication.c",
-      "line": 2038,
+      "line": 2041,
       "family": "item_publication",
       "excerpt": "obj_from_char("
     },
@@ -57314,235 +57314,235 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1655,
+      "line": 1657,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1673,
+      "line": 1675,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2524,
+      "line": 2526,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2779,
+      "line": 2781,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2905,
+      "line": 2907,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3029,
+      "line": 3031,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3354,
+      "line": 3356,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3561,
+      "line": 3563,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3634,
+      "line": 3636,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3642,
+      "line": 3644,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3649,
+      "line": 3651,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3877,
+      "line": 3879,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4000,
+      "line": 4002,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4008,
+      "line": 4010,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4020,
+      "line": 4022,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4146,
+      "line": 4148,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4154,
+      "line": 4156,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4164,
+      "line": 4166,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4222,
+      "line": 4224,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1012,
+      "line": 1014,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1039,
+      "line": 1041,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1181,
+      "line": 1183,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1194,
+      "line": 1196,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1341,
+      "line": 1343,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1486,
+      "line": 1488,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4124,
+      "line": 4126,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4273,
+      "line": 4275,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8117,
+      "line": 8119,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, TRUE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1020,
+      "line": 1022,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1290,
+      "line": 1292,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1398,
+      "line": 1400,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1435,
+      "line": 1437,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1441,
+      "line": 1443,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1445,
+      "line": 1447,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1590,
+      "line": 1592,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1838,
+      "line": 1840,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1839,
+      "line": 1841,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8004,
+      "line": 8006,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8059,
+      "line": 8061,
       "family": "item_publication",
       "excerpt": "const auto placed = obj_to_char_checked(root, mobile);"
     },
@@ -65504,175 +65504,175 @@
     },
     {
       "path": "src/world/quest.c",
-      "line": 207,
+      "line": 208,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(mob, gp->number, 0);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 551,
+      "line": 552,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, gp->number / temp);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 502,
+      "line": 503,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_player(pl, obj, pl, NULL,"
     },
     {
       "path": "src/world/quest.c",
-      "line": 504,
+      "line": 505,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_room("
     },
     {
       "path": "src/world/quest.c",
-      "line": 1507,
+      "line": 1508,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit_wallet_value_identified("
     },
     {
       "path": "src/world/quest.c",
-      "line": 1561,
+      "line": 1562,
       "family": "economic_submit",
       "excerpt": "if (!item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/world/quest.c",
-      "line": 1758,
+      "line": 1759,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/world/quest.c",
-      "line": 203,
+      "line": 204,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 219,
+      "line": 220,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 470,
+      "line": 471,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 482,
+      "line": 483,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 508,
+      "line": 509,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 963,
+      "line": 964,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 965,
+      "line": 966,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(mob->carrying, TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1004,
+      "line": 1005,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(roots[index], TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1138,
+      "line": 1139,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1140,
+      "line": 1141,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(mob->carrying, TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1525,
+      "line": 1526,
       "family": "item_lifecycle",
       "excerpt": "P_obj object = read_object(static_cast<int>(reward.number), VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1533,
+      "line": 1534,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1557,
+      "line": 1558,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1567,
+      "line": 1568,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1805,
+      "line": 1806,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1810,
+      "line": 1811,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1841,
+      "line": 1842,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1846,
+      "line": 1847,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 202,
+      "line": 203,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 218,
+      "line": 219,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 963,
+      "line": 964,
       "family": "item_publication",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 1138,
+      "line": 1139,
       "family": "item_publication",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
@@ -66511,8 +66511,8 @@
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "4f84667cd55683be6f17d68991e0bff7f72d9348abf268a1152772212e048c68",
-      "src/item/item_movement_transaction.h": "f51b99b3dcc31c98ee86983f72517c62f119627f4c700a065f2587eccfa5928c",
+      "src/item/item_movement_transaction.c": "371d538a2ead4fd3a0ad3712a55d548c3ff8c0cdc833ef3b9f964a182e6206c8",
+      "src/item/item_movement_transaction.h": "f2c04e3d028177d9391473cd91f8af93dbbbb692afd9c02ae0dbb493eb27dc6f",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
       "src/item/item_transfer_command.c": "eff01a826ac8236e577431a40258f6064169d14ef468eba689cc39536be7dc8b",
@@ -66543,8 +66543,8 @@
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "1ecbfd94f188f2fb0bb1228486738fd419bd6f8d5c65e3d5026a48d121fbd8a9",
-      "src/player/player_save_pipeline.h": "98c187cbf941f9f3cc2e5a1618d45ac6406c35656decf51099fcbca2a3a8ffc0",
+      "src/player/player_save_pipeline.c": "cbf1d1b016aaf0f7af5ee08daef843acb939a806e6538b71bdd312ac780ebab2",
+      "src/player/player_save_pipeline.h": "35e41e7408fc730c8c14488f9e8527a5ba22584ae581e1e39e84dc4718fbc97f",
       "src/player/player_snapshot_codec.c": "0886f0fa26fcbd268c1d4234fe2e5393df89bf12220192f0fde84ae7c51dc851",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
@@ -66563,9 +66563,9 @@
       "src/world/native_mobile_birth_procedure.h": "21fc9f5fd131ad71ca17ab69a60279360ba8e5d280eb790d89d1d9079ad49b94",
       "src/world/native_mobile_birth_reset_tail.c": "19cf9a57222920abe9eff5a4052d5b90b9f1957c5fd2371ca9b22a3d3d6bc939",
       "src/world/native_mobile_birth_reset_tail.h": "520e934beec4a71cd1328d41a53e92bca31d19281f28edfa1a90e1df20470eb3",
-      "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
-      "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
-      "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
+      "src/world/native_quest_frozen_continuation.h": "70d9427e8e0af7012e6041d68656087302094c18fc5798b209155c61c2107341",
+      "src/world/native_quest_recovery_context.c": "d787256574ba674421817e76e8e44e2d9e5efa91f726050d6586c3f8ec7b9c7c",
+      "src/world/native_quest_recovery_context.h": "420dfd3de61d7e0d4962fb66520e33a63685522b1d409ab51c6d3d43c767542f",
       "src/world/object_template.h": "665368e56fc30b87c2bb291b16879b313eb28c42f2a430b8b38fe8448a9c3fd5",
       "src/world/quest_mobile_native.c": "10b78580b5bfd5018ff0dceb93bce0aeaa296a63025cda84c0ff81d3193726bd",
       "src/world/quest_mobile_native.h": "b9b783bd913abc88b484764fa7d9cd637b84553a62990ce2d8489cd27ee19a15",
@@ -66599,18 +66599,18 @@
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
-      "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
-      "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
-      "src/economy/auction_item_claim_accounting.c": "7fe018e60a4d16c3d188703ea70fceb48e3d7b5026e239a6017fc8930d8a572d",
-      "src/economy/auction_item_claim_accounting.h": "73744633505c20bb315ab6eb99a3798b2a3f10693c5f8cfc4b599e57d500f83a",
-      "src/economy/auction_listing_accounting.c": "8921edc27abdb122d2dc2f6083e65303a42b29815f32b8cb3e60c57f6c26be34",
-      "src/economy/auction_listing_accounting.h": "6243fb0e2593ac42d58587f67f41f84230efb95350d3f0f5ffc62ded1e16dff3",
-      "src/economy/auction_native_command_context.c": "e6531f8c25be35d87c995d1acc6a01b6ab9dbfa6634417afe144bd87b31506cb",
-      "src/economy/auction_native_command_context.h": "5b788b82d8d261c768f6fb78bcadd9f0945fde51530b0f5887983a63a9a10b1b",
-      "src/economy/auction_native_publication.c": "869ed9f6cf0c70f232c2daa0e85fa7cb940f700c9472d19f338ff49d3c47cbe5",
-      "src/economy/auction_native_publication.h": "36d11f4cbc3e551985f8dc2c1ad5817eec175706af86602489f97531f5c6f87b",
-      "src/economy/auction_recovery_context.c": "f51081959a15f31721012f5ad604d72dea50b738240aeba43e5398334f978507",
-      "src/economy/auction_recovery_context.h": "bf53a80b683bbd0e5b73a375745101f14415f582c9a831c5280f6afd8d1ae923",
+      "src/economy/auction_command.c": "aebdab070c729c571f7497822aae7c6e9cccd57d108455697aa490204706d445",
+      "src/economy/auction_command.h": "968cc1851b4b0bfcc1d9e70b34722aae9b05b7c01f0da8e5fbadfe9d5dfe40ac",
+      "src/economy/auction_item_claim_accounting.c": "fa4939f7d2debfc95de94b70c3e9e735ef7c5288641492c9b1db0eb00f3563ce",
+      "src/economy/auction_item_claim_accounting.h": "7f9de46059fddd38cef5e85700674e297175021007a8a82ac8037f5ccf22fedb",
+      "src/economy/auction_listing_accounting.c": "097f2b7b46022984274940fbf51221ab143539372015828612adf36b64769676",
+      "src/economy/auction_listing_accounting.h": "ff7f3816217d4e87e70bd08d394a9ba5cec5a0b03a03af0439d53ea21655abd0",
+      "src/economy/auction_native_command_context.c": "56ca0a593cb9d40da65da9a881d0d0ea4b2940fb031722e3a093df9961a1cfd8",
+      "src/economy/auction_native_command_context.h": "f3def6967656d7e1f170e6e6f998905e1f616ff6019cd532c680db69a0d4dfa4",
+      "src/economy/auction_native_publication.c": "075b08c36ca6005a5175eb0ffd8182bcbf07d5fb60fa09cf65bce986c80cbac9",
+      "src/economy/auction_native_publication.h": "e92fc93fca607869e8f24f81bb282af79ec039d0dc33a373ad499039e07de23f",
+      "src/economy/auction_recovery_context.c": "55d2ee49f94a6abe5cbea7a0607c7d01d9ba648c40ca60cc433c57039a205272",
+      "src/economy/auction_recovery_context.h": "8f1de35cca6876f08cbb62ac26112e45e515d5794bb0f80b11d516ffd08bfbaa",
       "src/economy/auction_repository.c": "26d0a36705c3ef8915b89247f1da3b71793cd881a6d37c61867ec7980ac808af",
       "src/economy/auction_repository.h": "32f4adbca349e3a627ec39e751319cf35ac52d8874414b0d2d2df2a038db6233",
       "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
@@ -66619,8 +66619,8 @@
       "src/economy/native_quest_cost.c": "d514129c72287b3c16ed069eef149efed642ac082941dee7c7eaeeb23a00f093",
       "src/economy/native_quest_cost.h": "eb8dda41f776b0a544097f9259144764fb26cdd91d29fdc04b2cbf49306225af",
       "src/economy/native_quest_cost_policy.h": "6f96696981112246fee0fd3ab1af043591c62931f87407ca3cbaf67bbdb5be15",
-      "src/item/held_retirement_recovery.c": "b7532fffaba44c7f2b4ceb16c29d9148e6dc003f71d3c83bb6867ed1f6f59f31",
-      "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
+      "src/item/held_retirement_recovery.c": "b7a461c95179077ec9e4a5ba404cd7929fc033376ad6e9bfb722a8b12324f9c3",
+      "src/item/held_retirement_recovery.h": "d3b94fb478ae8e402e8808ea022ada04d0e5c3aee1e4ade8904c316325928e1d",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/lockpick_retirement_continuation.c": "8d7815710d0a231909c23fe41707cd509e323f26bdcfed8db8a046ca87d8e22b",
       "src/item/lockpick_retirement_continuation.h": "f420bdd8ac732aa298c931e09dad285ecaa4be2b62a15e2a8c7e6cf408180e54",
@@ -66652,7 +66652,7 @@
       "src/sql/sql.c": "57ee2e0fdbd7eede6e1c7e43f88013c76602fefcc068c5a4e90cdf56996ab70c",
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
-      "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
+      "src/world/quest.c": "4887b36475dd639c7bca78babb1fa8f44313f193bb6b262044eebe7a4d8fcf7d",
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
       "src/world/quest_mobile_published_saved_forest.h": "2c1ad2008827be9bb6e78573b3aeb029db2d06d86759565250ebc830aa242b4d",
       "src/world/quest_mobile_published_world_owner.c": "5b6508217886dd602a384e7058ec434b3716bba720953bbfde9c18cbb3aa74d3",
@@ -66899,7 +66899,13 @@
       "src/economy/collector_command.h": "19a66c44bf32ab1bb5bcb03db3ef5bd282701cbe2f0dbf4e8f5f56f5c3a62144",
       "src/item/item_actions.c": "b1c7a68f53c9260fb738586d63df43115ed54120f87a5a3945ced5091d23180c",
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
-      "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0"
+      "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
+      "src/economy/auction_accounting.c": "b502dd2e9f8f330b0c8c1a3b8ed5cc53ab0e9b181ad1255c73895d30635e0050",
+      "src/economy/auction_accounting.h": "97524ae769fa572836efebea752b78eb7e7ed42ef8fe7f0d5b5bb456bd7ecc34",
+      "src/economy/auction_settlement_accounting.c": "8bc0b719c4e719c9d2ce72c79a79dca1257aa43ee90b94e45acbf01e0cfed1b8",
+      "src/economy/auction_settlement_accounting.h": "dc59b2d9f106e75ceb89b3cb77c8bd2398f2c232ec60537d4613bbe075ebc3db",
+      "src/economy/auction_money_claim_accounting.c": "c94dd239f970c4fbaadfe0c10006198240b59e0d43d7e074eea56a2c6f036da2",
+      "src/economy/auction_money_claim_accounting.h": "9d6884069508eba68f010f2c1ff8ceac0e36f83b1bf4d34d00404be9c0486aa5"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
