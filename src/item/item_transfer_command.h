@@ -515,4 +515,19 @@ bool item_transfer_native_recovery_valid_bounded(const item_transfer_payload &,
 						 uint16_t, bool (*reserve)(size_t, void *) noexcept,
 						 void *context, size_t outer_live) noexcept;
 
+struct player_item_snapshot;
+// Complete original allocating continuation/craft-output validation leaves.
+// Actual private selected-row, quest-string and child-UID lifetimes are admitted
+// prospectively. Outer owns source/prior destination; no execution authority.
+bool item_transfer_quest_offering_continuation_valid_bounded(
+	const item_transfer_payload &, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_bounded(
+	const item_transfer_payload &, uint16_t, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+bool item_transfer_craft_outputs_decode_bounded(
+	const item_transfer_payload &, std::vector<player_item_snapshot> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_item_heap_bytes = nullptr) noexcept;
+
 #endif

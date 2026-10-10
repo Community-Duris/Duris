@@ -4462,3 +4462,307 @@ bool item_transfer_native_recovery_valid_bounded(
 		return false;
 	}
 }
+
+namespace
+{
+// Exact original fixed-array lower_bound lookup, not an allocation wrapper.
+constexpr size_t item_continuation_lower_bound_frames =
+	// find_payload_item payload/uid/found/returned pointer; original lambda
+	// this/entry/by-value UID/result and array begin/_S_ptr source scopes.
+	sizeof(void *) + sizeof(uint64_t) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(uint64_t) + sizeof(bool) + 4 * sizeof(void *) +
+	// lower_bound comparator overload first/last/value/comp/return;
+	// __lower_bound first/last/value/comp/len/step/middle/return.
+	4 * sizeof(void *) + sizeof(char) + 5 * sizeof(void *) + sizeof(char) +
+	2 * sizeof(std::ptrdiff_t) +
+	// __iter_comp_val empty closure by value/result; _Iter_comp_val ctor
+	// this/closure then operator(this,iterator,value)/bool.
+	2 * sizeof(char) + sizeof(void *) + sizeof(char) + 3 * sizeof(void *) + sizeof(bool) +
+	// distance and __distance: first/last and difference results, actual RA tag.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) +
+	sizeof(std::random_access_iterator_tag) +
+	// advance iterator-reference/n/local__d; __advance reference/n/tag;
+	// actual iterator-category reference and returned RA tag.
+	sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag);
+constexpr size_t item_continuation_sort_recursive_frame =
+	3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(char);
+constexpr size_t item_continuation_sort_leaf_frames =
+	// sort/__sort and median/partition/iter_swap carrier scopes.
+	18 * sizeof(void *) + 7 * sizeof(char) + sizeof(uint64_t) +
+	// final/insertion/unguarded-insertion/linear-insert and move-backward.
+	16 * sizeof(void *) + 6 * sizeof(char) + 2 * sizeof(uint64_t) +
+	// partial_sort/heap_select/make_heap/adjust_heap/push_heap/pop_heap/sort_heap.
+	23 * sizeof(void *) + 11 * sizeof(std::ptrdiff_t) + 7 * sizeof(char) +
+	4 * sizeof(uint64_t) +
+	// comparator adapters and scalar compare/result carriers.
+	8 * sizeof(void *) + 5 * sizeof(char) + 4 * sizeof(bool) +
+	// Original copy/copy_move_a/a1/a2/copy_m: five 3-iterator parameter
+	// scopes and their actual returned iterator carriers, then miter/niter,
+	// niter-wrap, assign-one, memmove parameters/result and real Num/length.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// adjacent_find's 2 input+returned iterators; __adjacent_find's 2
+	// input+next+returned; iter-equal's 2 input iterators/boolean result.
+	9 * sizeof(void *) + 2 * sizeof(char) + sizeof(bool);
+bool item_continuation_quest_valid_owned(const item_transfer_payload &payload,
+					 item_native_validation_budget &owner)
+{
+	const std::vector<uint8_t> &data = payload.continuation.data;
+	if (!owner.peak(sizeof(quest_reward_continuation) + 5 * sizeof(void *) +
+			2 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) +
+			     sizeof(char))))
+		return false;
+	quest_reward_continuation continuation;
+	owner.terms = &continuation;
+	size_t prefix = 0;
+	if (!owner.prefix(prefix))
+		return false;
+	if (!quest_reward_continuation_decode_bounded(data.data(), data.size(), &continuation,
+						      owner.reserve, owner.context, prefix) ||
+	    continuation.player_pid != (payload.native_mobile.present ?
+						payload.native_mobile.final_giver_pid :
+						payload.from_owner.id) ||
+	    continuation.mobile_vnum != static_cast<uint64_t>(payload.reason_id))
+		return false;
+	if (continuation.root_count > payload.item_count)
+		return false;
+	size_t selected_roots = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+		selected_roots += payload.items[index].parent_item_uid == 0;
+	if (selected_roots != continuation.root_count)
+		return false;
+	for (size_t index = 0; index < continuation.root_count; ++index)
+	{
+		const uint64_t uid = continuation.roots[index];
+		const item_transfer_entry *root = find_payload_item(payload, uid);
+		if (!root || root->parent_item_uid || root->root_item_uid != uid)
+			return false;
+	}
+	return true;
+}
+
+bool item_continuation_duplicate_valid_owned(const item_transfer_payload &payload,
+					     uint16_t payload_version,
+					     item_native_validation_budget &owner)
+{
+	const auto &data = payload.continuation.data;
+	if (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION || !payload.multi_root ||
+	    (payload.reason != item_transfer_reason::player_get &&
+	     payload.reason != item_transfer_reason::player_put) ||
+	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	    payload.from_owner.context_id || payload.from_owner.id != payload.to_owner.id ||
+	    payload.to_owner.type != item_owner_type::player || payload.to_owner.context_id ||
+	    payload.selected_item_uid || data.size() < 48 || get_u32(data.data()) != 1 ||
+	    get_u32(data.data() + 4) > 1 || !get_u64(data.data() + 8) ||
+	    !get_u32(data.data() + 16) || get_u32(data.data() + 16) > INT32_MAX ||
+	    !get_u64(data.data() + 20) ||
+	    get_u64(data.data() + 28) != payload.target_parent_item_uid)
+		return false;
+	const uint64_t duplicate_uid = get_u64(data.data() + 20);
+	const uint64_t target_parent_uid = get_u64(data.data() + 28);
+	const uint32_t direct_child_count = get_u32(data.data() + 36);
+	if (!direct_child_count || direct_child_count > 90 ||
+	    data.size() != 40 + static_cast<size_t>(direct_child_count) * sizeof(uint64_t) ||
+	    duplicate_uid == target_parent_uid ||
+	    (target_parent_uid ?
+		     payload.reason != item_transfer_reason::player_put ||
+			     payload.reason_id != static_cast<int64_t>(target_parent_uid) :
+		     payload.reason != item_transfer_reason::player_get ||
+			     payload.reason_id != static_cast<int64_t>(get_u64(data.data() + 40))))
+		return false;
+	if (!owner.peak(sizeof(std::vector<uint64_t>) + 4 * sizeof(void *) +
+			sizeof(std::allocator<uint64_t>)))
+		return false;
+	std::vector<uint64_t> child_uids;
+	owner.uids = &child_uids;
+	try
+	{
+		if (!owner.peak(direct_child_count * sizeof(uint64_t) +
+				payload_clone_vector_frames))
+			return false;
+		child_uids.reserve(direct_child_count);
+		for (size_t index = 0; index < direct_child_count; ++index)
+		{
+			const uint64_t uid = get_u64(data.data() + 40 + index * sizeof(uint64_t));
+			const item_transfer_entry *child = find_payload_item(payload, uid);
+			if (!uid || !child || child->parent_item_uid != duplicate_uid ||
+			    std::find(child_uids.begin(), child_uids.end(), uid) !=
+				    child_uids.end())
+				return false;
+			if (!owner.peak(payload_clone_vector_frames))
+				return false;
+			child_uids.push_back(uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t payload_direct_children = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+		if (payload.items[index].parent_item_uid == duplicate_uid)
+		{
+			++payload_direct_children;
+			if (std::find(child_uids.begin(), child_uids.end(),
+				      payload.items[index].item_uid) == child_uids.end())
+				return false;
+		}
+	return payload_direct_children == direct_child_count;
+}
+
+bool item_continuation_craft_outputs_owned(const item_transfer_payload &payload,
+					   std::vector<player_item_snapshot> *outputs,
+					   item_native_validation_budget &owner)
+{
+	if (!outputs || payload.reason != item_transfer_reason::craft ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return false;
+	outputs->clear();
+	if (!payload.item_blob_size)
+		return true;
+	size_t prefix = 0;
+	if (!owner.prefix(prefix))
+		return false;
+	if (player_item_snapshot_list_decode_bounded(
+		    payload.item_blob.data(), payload.item_blob_size, outputs, owner.reserve,
+		    owner.context, prefix, nullptr) != player_snapshot_codec_result::ok ||
+	    outputs->empty() || outputs->size() > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	if (!owner.peak(sizeof(std::vector<uint64_t>) + 4 * sizeof(void *) +
+			sizeof(std::allocator<uint64_t>)))
+		return false;
+	std::vector<uint64_t> uids;
+	owner.uids = &uids;
+	try
+	{
+		if (outputs->size() > SIZE_MAX / sizeof(uint64_t) ||
+		    !owner.peak(outputs->size() * sizeof(uint64_t) + payload_clone_vector_frames))
+			return false;
+		uids.reserve(outputs->size());
+		for (size_t index = 0; index < outputs->size(); ++index)
+		{
+			const player_item_snapshot &output = (*outputs)[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    output.parent_index >= static_cast<int32_t>(index) ||
+			    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    (index == 0 && output.object_uid != payload.selected_item_uid) ||
+			    (index && output.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			     output.object_uid == payload.selected_item_uid))
+				return false;
+			if (!owner.peak(payload_clone_vector_frames))
+				return false;
+			uids.push_back(output.object_uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t levels = 0, remaining = uids.size();
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	if (!owner.peak((2 * levels + 1) * item_continuation_sort_recursive_frame +
+			item_continuation_sort_leaf_frames))
+		return false;
+	std::sort(uids.begin(), uids.end());
+	return std::adjacent_find(uids.begin(), uids.end()) == uids.end();
+}
+
+} // namespace
+bool item_transfer_quest_offering_continuation_valid_bounded(
+	const item_transfer_payload &payload, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 6 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+				  4 * sizeof(size_t) + sizeof(uint64_t) + 3 * sizeof(void *) +
+				  item_continuation_lower_bound_frames +
+				  payload_clone_allocator_frames;
+	item_native_validation_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		return item_continuation_quest_valid_owned(payload, owner);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_duplicate_promotion_continuation_valid_bounded(
+	const item_transfer_payload &payload, uint16_t version,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		6 * sizeof(void *) + 2 * sizeof(uint16_t) + sizeof(size_t) + 2 * sizeof(bool) +
+		sizeof(void *) + 3 * sizeof(uint64_t) + sizeof(uint32_t) + 3 * sizeof(size_t) +
+		item_continuation_lower_bound_frames + item_native_validation_find_frames +
+		// Original get32/64 input/result/value/byte, array/vector size/data/query.
+		5 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+		2 * sizeof(uint32_t) + 2 * sizeof(unsigned int) + payload_clone_allocator_frames;
+	item_native_validation_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		return item_continuation_duplicate_valid_owned(payload, version, owner);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_craft_outputs_decode_bounded(const item_transfer_payload &payload,
+						std::vector<player_item_snapshot> *outputs,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer_live,
+						size_t *retained_item_heap_bytes) noexcept
+{
+	if (!outputs || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 8 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+				  4 * sizeof(size_t) + sizeof(void *) +
+				  4 * (sizeof(void *) + sizeof(size_t)) +
+				  payload_clone_allocator_frames;
+	item_native_validation_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak(sizeof(std::vector<player_item_snapshot>) + 4 * sizeof(void *) +
+			sizeof(std::allocator<player_item_snapshot>)))
+		return false;
+	std::vector<player_item_snapshot> candidate;
+	owner.items = &candidate;
+	static_assert(std::is_nothrow_move_assignable_v<std::vector<player_item_snapshot>>);
+	try
+	{
+		if (!item_continuation_craft_outputs_owned(payload, &candidate, owner))
+			return false;
+		// Private UID scratch has died; stop observing that expired local.
+		owner.uids = nullptr;
+		if (!owner.peak(payload_clone_move_frames))
+			return false;
+		size_t retained = 0, row = 0;
+		if (!payload_clone_vector_heap(candidate, false, retained))
+			return false;
+		for (const auto &item : candidate)
+			if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+			    !payload_clone_add(retained, row))
+				return false;
+		*outputs = std::move(candidate);
+		if (retained_item_heap_bytes)
+			*retained_item_heap_bytes = retained;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
