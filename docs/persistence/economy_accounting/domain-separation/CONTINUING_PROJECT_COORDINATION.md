@@ -453,6 +453,152 @@ Implementation inputs from actual public src833d3085:
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
 
+## FD correction failure preserved; exact heading selector addendum selected - 2026-10-10
+
+Quest's separately selected FD metadata correction delivered FAILED_NOT_RERUN.
+Root independently read/audited its whole23107-byte standalone stdlib/read-only
+Git verifier,16418-byte note and8715-byte handoff. Actual sole author default at
+20:18:36.383836-20:18:36.466080UTC failed exit1/stdout0/stderr762, SHA256
+93777fa1033da11cacfc0b26f763317e7b0e14788e5105370ce4f649808a7561.
+The broad ^FD[0-9] selector selects FIVE lines: the failure-history prose at
+note line42 beginning "FD1, FD2, FD3, FD4." plus the four real headings.
+Root independently confirms exact delimiter-qualified lines are only FD1-FD4.
+The first default stopped at heading selection BEFORE lexical negative controls,
+source/transform/numstat/library/history/Goal assertions. Those later controls
+are independently authenticated preparation facts, not passed default assertions.
+
+Correction canonical FOUR actual files remain immutable: note16418/
+c665258f7a539953cdbcf28870dc34419ba6abdde6e86b652d2be5ba8cacd2a3;
+PINS2206/b7c14535964c4824ac0bc2252b0f565ca1cce0b3e835692c980a767a8eae1d46;
+verify23107/7942dfc30001245d98bc6a269c4c6d3f2532748229367057a31ca5b451d0f8a5;
+INDEX377/2e073af115e533d064ef35a62173aef2f67dc939463b902ffa0222680cbc7307.
+Correction RECEIPT.txt ABSENT. Predicted1744 bytes/f8916b4ef04290b45de49f60b6f330998abb7587cc15fe730c07200c64a99dda
+remains predictionONLY, never actual output or pass. Root failed correction
+NOT_RUN_WILL_NOT_DISPATCH. Original failed FD exit1/stdout0/stderr587, its four
+principals/absent receipt/default count1 and all original history remain exact.
+Both separate author failed counts1 are immutable; no failed default is rerun.
+
+Root independent metadata auditor authenticates95 new payloads plus2 seal controls,
+original four principals/90 preparation files including original92 payloads plus
+two seal controls/328 historical STREAMHASHONLY controls,actual failure binaries,
+36 fresh whole providers/six commit objects/TEN F/P publicationpaths9M1A19modeblob
+endpoints/ten general whole transforms-inverses/four fixed S/F equalities/two entire
+original C prefixes/actual1477numstat+suffixlines/storeHASLF/transactionLACKSLF/
+separatorLF/18 genuine captured GNU13 headers/three provenance-package pairs/
+58 finite read ranges. All52 finite captured sections match the prior root union
+reading controls. Unchanged complete fixed sources retain the prior finite FD
+source/design PASS, profile dependencies OPEN. Whole-provider byte equality is
+not full transitive/emitted/native semantics. No failed/CLOSED proof program
+import/dispatch/exec/eval/compile/dynamic import or historical proof-body parsing.
+
+The new author predefault punctuation draft and its INDEX remain preserved; no
+default ran on that draft. Author initially named the wrong offending status
+line, then corrected that prose in an external update; actual note line42 and
+binary trace decide the finding. Original updates/history remain preserved.
+Root metadata auditor v1 classified string.replace as filesystem mutation;
+v2 introduced a text-decoding setup mismatch. Both failed root scripts remain
+preserved; separate UTF8-correct v3 authenticates all declared controls. These
+are ROOT review setup failures, not worker/default/native failures.
+
+ONE bounded separate exact-selector addendum is selected for the SAME Quest
+FD metadata correction; no new Architecture task:
+PUBLISHED_ORIGINAL_FLAT_DIAGNOSTIC_COMPLETION_EXACT_HEADING_SELECTOR_ADDENDUM_2026-10-10.txt.
+Concrete output: new private D note/PINS/strict INDEX/standalone stdlib-read-only
+Git verifier/one original NEW addendum normal default ONCE/actual binary stdout,
+stderr,exit,attempt and actual receipt ONLY on success, for root independent review.
+Future benefit: honest exact FD case identification while preserving both failed
+metadata deliveries. This continues fixed FD1-FD4; no source/design/category/law
+repair, native preparation expansion or source repin. F7262/P5bc/S2a01/SPc026
+remain fixed. Current additive selecting publication is context, not a source pin.
+
+Use an explicit actual heading delimiter after the numeric case identifier,
+for example anchored FD([0-9]+) followed by space/U+2014/space. Require exactly
+the original FOUR full heading strings in order, including each identifier.
+Reject duplicate/missing/reordered/extra FD5/FD10 and title-masquerading headings.
+Ignore the real nonnumeric title and the authentic failure-history sentence
+"FD1, FD2, FD3, FD4." because it lacks the heading delimiter. Retain that sentence
+in the new note as real regression context. Inspect candidates from the FULL
+saved new note before the sole default; checking invented heading-only strings
+cannot establish correctness for the actual note. Lexical controls are metadata
+only; no native/CXX/storage/allocator/financial simulation. No worker-program
+probe/import/alternate dispatch before or after the one selected normal default.
+
+Authenticate BOTH failed canonical four-file directories, both absent receipts,
+original92 payloads/two seal controls,correction95 payloads/two seal controls,
+actual original587 and correction762 stderr/binaries/attempts and328 historical
+stream controls, using byte/stream authentication only. Never parse failed PINS/
+verifier/helper/default/receipt/seal bodies as reusable implementation authority.
+Genuine fixed raw source/captured library/provenance/package inputs may be reused
+only by exact whole-byte equality; prior complete finite readings remain reusable.
+Authenticate actual TEN publicationpaths/19 modeblob endpoints/seven original
+transforms/inverses/four S/F equalities/two full original C prefixes/1477numstat/
+correct LF/finite source-library controls. Authenticate new selecting metadata
+separately; do not conflate published-document scope with four source providers.
+Fully read/audit the entire SAVED new verifier/note BEFORE its original NEW normal
+default ONCE. Any new failure stays immutable without retry; actual receipt follows
+only actual successful stdout. Predictions are never actual receipts. Preserve
+all preseal versions/findings; no edit/reseal/relabel/normalize either failed packet.
+Original failed FD count1, failed correction count1 and new addendum count1 are
+three separate execution histories. Root dispatches neither failed verifier.
+
+Architecture original finite SOURCE/DESIGN/METADATA CLOSED_NO_CORRECTION remains
+root1114 ONCE/count1 NOT_RERUN; author1114 count1 distinct. All212 files/history
+unchanged. Architecture IDLE, no second task. Original PENDING-at-seal labels,
+root reused boundary-helper stale labels and their additive disposition survive.
+Full after-every-return caller/input/prior-output/callback-private/sibling/global
+census remains genuine outer-caller obligation. FD1 innerresize completed failure
+versus outer exception,FD2 immediate irreversible rename/unlink flags,FD3 actual
+process mutex distinct coordinator/journal locks,FD4 fullsame-rootv1v2decoder/
+started-before-first-apply-or-final-remove/partial outcomes stay unchanged.
+No callback under held coordinator/journal locks,late fallible final-retirement
+reserve,blind recovery replay,rollback or fabricated owner/lock/accepting fixture.
+
+Captured GNU13 fresh allocator-selected __str_concat/reserve/twoappends versus
+unchanged FD copy/append descriptions/carriers remains unresolved source/profile
+correspondence; owned_root(root) remains a separate realcopy. Missing actual
+char_traits/move/construct/type/gthr/pthread/outofline/emitted/ABIallocator/libc/
+OpenSSL/fault/integrated caller/lock/global/alias/profile/native32MiBfullhost/
+producer/publication/recovery/ACK blocks dependent execution only. All FD1-FD4/
+component/native UNEXECUTED; commands UNAVAILABLE; expressions UNEVALUATED.
+No evaluated bound/native defect/conservative equivalence or source-law repair.
+
+New published88d2d0c0bc849e5156f81b2aef440a289af104ef/actualsoleparent9529 supplies
+startup command codec SOURCE profile. Full44-line handoff/two complete source diffs
+read;two whole C/H transforms-inverses/four modeblob endpoints/exact original C
+prefix/118 added C lines/14 header lines/four precise fixed FD equalities/charter-
+review whole equalities/finish15 additive lines authenticate. Eight changed paths/
+225 additions4 removals include registry replacements. Full semantic/profile/
+caller/native audit QUEUED_NOT_PERFORMED. Private owner55/token/preprocessing/
+registry470/Plan5 claims REPORTED_ONLY. Handoff reports no compiler/executable tests
+or major completion. New6c producer and forest/critical/passive/currency work remain
+queued after fixed FD addendum handoff; no source absence/adoption/native pass.
+
+Root evidence D:/Dev/Temp/coordinator-original-flat-diagnostic-completion-review-20261010
+adds quest-failed-fd-correction-authentication.json/v3 plus preserved v1/v2,
+startup-codec-successor-source-availability-authentication.json/full44-line handoff/
+complete source diffs and new additive finding/selection/publication/dispatch records.
+Original source-design review and library-read chunks are reused only at exact hashes.
+Root clean2a01, no fetch/merge/advance. Separate D checkout advances normally gc.auto0
+only after all original A root receipts sealed; changes ONLY three owned coordination
+docs. Full inserted-section inverse restores actual88d2. No maintained/private delta.
+
+Actual root/A/Q Goal IDs/objectives/BLOCKED timestamps,root/A/Q checkouts,Qcurrent
+three hashes/stash,original A212 files,both Qfailed canonical fours/receipt absence,
+all originals/excursions/archives/jobs/services/containers/build/failure evidence
+stay unchanged. No Goal mutation or historical Oct7 replay authorization.
+All CLOSED AS1936/763,RB2894/965correction/failedoriginal,RC2821/1045,TC11637/1434/
+original Q1036 UNACCEPTED/rootNOTRUN receipts/counts/seals/history remain NOT_RERUN.
+Primary maintained implementation/qualification;Plan5 backend/recovery/release;
+workers private D only. Original09a/NMB3/custody/coin/receiver/host/save/Smith/
+applicable restitution/source/origin/history/outbox/ACK/pause32MiB/SQL0065/schema65/
+measurement/history/backup/restore/recovery/release obligations remain owner-held.
+Broad Plans1-5/R1-R8 audit OPEN; accounting INACTIVE/admission CLOSED/coverage
+INCOMPLETE/release BLOCKED; heartbeat ACTIVE until broad audit/user pause.
+Only two authorized existing chats/one Qaddendum/no parallel second task/live
+expansion/repin/CLOSED reopen/adoption wait/restart. No private imports/commits/
+maintained edits/compiler/preprocessor/ELF/build/native/product/DB/runtime/lock/IO/
+deploy/activation/production. All Git gc.auto0; no destructive/housekeeping actions.
+
 ## FD architecture CLOSED; Quest narrow metadata correction selected - 2026-10-10
 
 Architecture original FD independently SOURCE/DESIGN/METADATA PASS
