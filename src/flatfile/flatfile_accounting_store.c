@@ -1653,3 +1653,227 @@ flatfile_ordinary_native_birth_receipt_storage::verify_retained_current_locked(
 		},
 		error);
 }
+
+namespace
+{
+// The original SCL1 payload is lineage16/event48/operation16/outcome1/padding7.
+constexpr size_t ordinary_claim_bytes = header_bytes + 16 + ECONOMIC_SOURCE_EVENT_BYTES + 16 + 8;
+struct ordinary_claim_directory
+{
+	DIR *value = nullptr;
+	explicit ordinary_claim_directory(DIR *directory)
+		: value(directory)
+	{
+	}
+	ordinary_claim_directory(const ordinary_claim_directory &) = delete;
+	ordinary_claim_directory &operator=(const ordinary_claim_directory &) = delete;
+	~ordinary_claim_directory()
+	{
+		if (value)
+			closedir(value);
+	}
+};
+struct ordinary_claim_file
+{
+	int value = -1;
+	explicit ordinary_claim_file(int descriptor)
+		: value(descriptor)
+	{
+	}
+	ordinary_claim_file(const ordinary_claim_file &) = delete;
+	ordinary_claim_file &operator=(const ordinary_claim_file &) = delete;
+	~ordinary_claim_file()
+	{
+		if (value >= 0)
+			close(value);
+	}
+};
+bool ordinary_claim_filename(const std::string &name)
+{
+	constexpr size_t prefix = sizeof("source-claim-") - 1;
+	if (name.size() != prefix + 64 + 4 || name.compare(0, prefix, "source-claim-") ||
+	    name.compare(prefix + 64, 4, ".bin"))
+		return false;
+	for (size_t index = prefix; index < prefix + 64; ++index)
+		if (!((name[index] >= '0' && name[index] <= '9') ||
+		      (name[index] >= 'a' && name[index] <= 'f')))
+			return false;
+	return true;
+}
+std::array<uint8_t, ordinary_claim_bytes> ordinary_claim_read(int parent, const std::string &name)
+{
+	ordinary_claim_file file(
+		openat(parent, name.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW));
+	require(file.value >= 0, errno == ELOOP ? status::invalid : status::io_error);
+	struct stat info
+	{
+	};
+	require(fstat(file.value, &info) == 0, status::io_error);
+	require(S_ISREG(info.st_mode) && info.st_nlink == 1 && info.st_uid == geteuid() &&
+		!(info.st_mode & 0077) && info.st_size == static_cast<off_t>(ordinary_claim_bytes));
+	std::array<uint8_t, ordinary_claim_bytes> bytes{};
+	size_t offset = 0;
+	while (offset < bytes.size())
+	{
+		const ssize_t received =
+			::read(file.value, bytes.data() + offset, bytes.size() - offset);
+		if (received < 0 && errno == EINTR)
+			continue;
+		require(received > 0, status::io_error);
+		offset += static_cast<size_t>(received);
+	}
+	uint8_t trailing = 0;
+	ssize_t received;
+	do
+	{
+		received = ::read(file.value, &trailing, 1);
+	} while (received < 0 && errno == EINTR);
+	require(received >= 0, status::io_error);
+	require(!received);
+	struct stat after
+	{
+	};
+	require(fstat(file.value, &after) == 0, status::io_error);
+	require(after.st_dev == info.st_dev && after.st_ino == info.st_ino &&
+		after.st_mode == info.st_mode && after.st_uid == info.st_uid &&
+		after.st_nlink == info.st_nlink && after.st_size == info.st_size);
+	const int descriptor = file.value;
+	file.value = -1;
+	require(close(descriptor) == 0, status::io_error);
+	return bytes;
+}
+void ordinary_birth_claim_census_locked(const std::string &root,
+					const flatfile_authority_lock &lock,
+					const critical_command &command, bool retained,
+					std::string *error)
+{
+	require(!root.empty() && lock.matches(root) &&
+		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		command.type == critical_command_type::native_mobile_birth &&
+		command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+		critical_command_envelope_valid(command) &&
+		!critical_operation_id_is_zero(command.operation_id));
+	quest_mobile_native_image born;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	checked(native_mobile_birth_cash_role_command_decode(command, &born, &recipes, &role));
+	require(role.role == native_mobile_birth_cash_role::ordinary_wallet && born.cash &&
+		born.reference.birth_operation.bytes == command.operation_id.bytes);
+	economic_frozen_intent intent;
+	checked(economic_intent_decode(command.accounting_intent, &intent));
+	checked(economic_intent_verify_binding(command, intent));
+	require(intent.admission.metadata.source_event.has_value());
+	const auto &metadata = intent.admission.metadata;
+	const std::string selected = source_claim_name(metadata);
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> event{};
+	checked(economic_source_event_encode(*metadata.source_event, &event));
+	std::vector<uint8_t> expected_payload;
+	raw(expected_payload, metadata.lineage.bytes);
+	raw(expected_payload, event);
+	raw(expected_payload, command.operation_id.bytes);
+	number(expected_payload, 1, 1);
+	number(expected_payload, 0, 7);
+	const auto expected = envelope(source_claim_magic, expected_payload);
+	require(expected.size() == ordinary_claim_bytes);
+
+	ordinary_claim_file directory_fd(
+		open(directory(root).c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW));
+	require(directory_fd.value >= 0, errno == ELOOP ? status::invalid : status::io_error);
+	struct stat directory_info
+	{
+	};
+	require(fstat(directory_fd.value, &directory_info) == 0, status::io_error);
+	require(S_ISDIR(directory_info.st_mode) && directory_info.st_uid == geteuid() &&
+		!(directory_info.st_mode & 0077));
+	ordinary_claim_directory entries(fdopendir(directory_fd.value));
+	require(entries.value, status::io_error);
+	directory_fd.value = -1; // fdopendir now owns this exact secure directory FD.
+	const int parent = dirfd(entries.value);
+	require(parent >= 0, status::io_error);
+	size_t operation_claims = 0;
+	bool selected_found = false;
+	for (;;)
+	{
+		// Each read's errno is isolated from every intervening codec/I/O call.
+		errno = 0;
+		const auto *entry = readdir(entries.value);
+		if (!entry)
+		{
+			require(!errno, status::io_error);
+			break;
+		}
+		const std::string name(entry->d_name);
+		if (name.compare(0, sizeof("source-claim-") - 1, "source-claim-"))
+			continue; // Other original evidence namespaces and atomic dot temporaries.
+		require(ordinary_claim_filename(name));
+		const auto bytes = ordinary_claim_read(parent, name);
+		reader input{ unwrap(bytes, source_claim_magic, ordinary_claim_bytes) };
+		economic_operation_metadata actual;
+		const auto lineage = input.take(actual.lineage.bytes.size());
+		std::copy(lineage.begin(), lineage.end(), actual.lineage.bytes.begin());
+		require(!critical_operation_id_is_zero(actual.lineage));
+		const auto encoded_event = input.take(ECONOMIC_SOURCE_EVENT_BYTES);
+		economic_source_event decoded_event;
+		checked(economic_source_event_decode(encoded_event, &decoded_event));
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> canonical_event{};
+		checked(economic_source_event_encode(decoded_event, &canonical_event));
+		require(std::equal(canonical_event.begin(), canonical_event.end(),
+				   encoded_event.begin()));
+		actual.source_event = decoded_event;
+		critical_operation_id operation;
+		const auto encoded_operation = input.take(operation.bytes.size());
+		std::copy(encoded_operation.begin(), encoded_operation.end(),
+			  operation.bytes.begin());
+		require(!critical_operation_id_is_zero(operation));
+		require(input.number(1) == 1 && input.number(7) == 0);
+		input.done();
+		require(name == source_claim_name(actual));
+		if (operation.bytes == command.operation_id.bytes)
+		{
+			++operation_claims;
+			require(retained && operation_claims == 1, status::conflict);
+		}
+		if (name == selected)
+		{
+			require(retained && !selected_found &&
+					std::equal(bytes.begin(), bytes.end(), expected.begin()),
+				status::conflict);
+			selected_found = true;
+		}
+	}
+	DIR *completed = entries.value;
+	entries.value = nullptr;
+	require(closedir(completed) == 0, status::io_error);
+	require(lock.matches(root));
+	require(operation_claims == (retained ? 1U : 0U) && selected_found == retained,
+		retained && !selected_found ? status::not_found : status::conflict);
+	(void)error; // Diagnostics remain at the original guarded public boundary.
+}
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_source_claim_absent_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, std::string *error)
+{
+	return guarded([&]
+		       { ordinary_birth_claim_census_locked(root, lock, command, false, error); },
+		       error);
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_source_claim_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(!record.result_code &&
+				record.failure_stage == critical_failure_stage::none &&
+				record.durable_revision == 1 &&
+				record.result.size() == NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES);
+			ordinary_birth_claim_census_locked(root, lock, record.command, true, error);
+		},
+		error);
+}
