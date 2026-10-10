@@ -467,4 +467,24 @@ bool item_transfer_payload_clone_bounded(const item_transfer_payload &, item_tra
 					 bool (*reserve)(size_t, void *) noexcept, void *context,
 					 size_t outer_live) noexcept;
 
+// Complete original corpse/collector value wire codecs with strong output and
+// genuine prospective requests. Outer owns input/prior output/all other actual
+// caller owners; excludes the callee private candidate. No semantic/custody/
+// publication authority; original active codecs unchanged.
+bool item_transfer_corpse_context_encode_bounded(const item_corpse_metadata &,
+						 std::vector<uint8_t> *,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+bool item_transfer_corpse_context_decode_bounded(const uint8_t *, size_t, item_corpse_metadata *,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+bool item_transfer_collector_context_encode_bounded(const item_collector_death_enrollment &,
+						    std::vector<uint8_t> *,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept;
+bool item_transfer_collector_context_decode_bounded(const uint8_t *, size_t,
+						    item_collector_death_enrollment *,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept;
+
 #endif
