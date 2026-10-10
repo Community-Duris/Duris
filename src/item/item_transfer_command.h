@@ -494,4 +494,40 @@ bool item_owner_key_bounded(const item_owner_identity &, critical_entity_key *,
 			    bool (*reserve)(size_t, void *) noexcept, void *context,
 			    size_t outer_live) noexcept;
 
+// Full original native recovery forests/consumed-root/publication wire codecs.
+// Outer owns authentic input/prior output and other caller state. Private real
+// heaps remain current at every request; outputs/actual retained scalars strong.
+// Pure companions only; original native authority/refusal/dispatch remain required.
+bool item_transfer_native_recovery_encode_bounded(
+	const item_native_mobile_recovery_context &, std::vector<uint8_t> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool item_transfer_native_recovery_decode_bounded(
+	std::span<const uint8_t>, item_native_mobile_recovery_context *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_recovery_heap_bytes = nullptr) noexcept;
+
+// Complete original native recovery value validator, including full selected
+// item-list and ordered forest/quest-continuation laws.
+// Outer owns authentic input and other caller state; no native authority or route.
+bool item_transfer_native_recovery_valid_bounded(const item_transfer_payload &,
+						 const item_native_mobile_recovery_context &,
+						 uint16_t, bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+
+struct player_item_snapshot;
+// Complete original allocating continuation/craft-output validation leaves.
+// Actual private selected-row, quest-string and child-UID lifetimes are admitted
+// prospectively. Outer owns source/prior destination; no execution authority.
+bool item_transfer_quest_offering_continuation_valid_bounded(
+	const item_transfer_payload &, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_bounded(
+	const item_transfer_payload &, uint16_t, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+bool item_transfer_craft_outputs_decode_bounded(
+	const item_transfer_payload &, std::vector<player_item_snapshot> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_item_heap_bytes = nullptr) noexcept;
+
 #endif
