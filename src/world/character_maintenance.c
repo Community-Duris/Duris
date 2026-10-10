@@ -239,3 +239,172 @@ void generic_char_event(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 	ch->character_maintenance_event_sequence = 0;
 	character_maintenance_changed(ch);
 }
+
+#include "net/comm.h"
+#include <initializer_list>
+
+namespace
+{
+struct maintenance_native_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	bool live(size_t *output) const noexcept
+	{
+		size_t pool, pending, diagnostics, cancellations;
+		if (!nevent_object_schedule_pool_storage_bytes(&pool) ||
+		    !nevent_native_reschedule_storage_bytes(&pending) ||
+		    !diagnostic_output_storage_bytes(&diagnostics) ||
+		    !nevent_character_cancel_storage_bytes(&cancellations))
+			return false;
+		size_t bytes = base;
+		for (size_t value : { pool, pending, diagnostics, cancellations })
+		{
+			if (value > SIZE_MAX - bytes)
+				return false;
+			bytes += value;
+		}
+		*output = bytes;
+		return true;
+	}
+};
+bool maintenance_changed_native_bounded(P_char character, maintenance_native_budget &budget,
+					bool *completed)
+{
+	if (!character || !maintenance_ready)
+	{
+		*completed = true;
+		return true;
+	}
+	if (!character->character_maintenance_in_world)
+	{
+		*completed = true;
+		return true;
+	}
+	if (!IS_ALIVE(character))
+	{
+		const nevent_handle handle = maintenance_handle(character);
+		character->character_maintenance_event = nullptr;
+		character->character_maintenance_event_sequence = 0;
+		if (handle.event)
+		{
+			size_t live;
+			nevent_cancel_result result;
+			if (!budget.live(&live) ||
+			    !nevent_cancel_character_maintenance_bounded(
+				    handle, &result, budget.reserve, budget.context, live))
+				return false;
+		}
+		*completed = true;
+		return true;
+	}
+	const nevent_handle existing = maintenance_handle(character);
+	if (existing.event == current_nevent && existing.event)
+	{
+		*completed = true;
+		return true;
+	}
+	auto &body_due = character->character_maintenance_body_due;
+	if (!body_due)
+		body_due = first_body_tick + character->runtime_id % BODY_PERIOD;
+	if (!existing.event && body_due <= ne_event_tick)
+		body_due += ((ne_event_tick - body_due) / BODY_PERIOD + 1) * BODY_PERIOD;
+	unsigned long long delay = body_due > ne_event_tick ? body_due - ne_event_tick : 1;
+	if (IS_NPC(character))
+	{
+		const auto phase = character->runtime_id % NPC_CHECK_PERIOD;
+		const auto now_phase = ne_event_tick % NPC_CHECK_PERIOD;
+		const auto check_delay =
+			(phase + NPC_CHECK_PERIOD - now_phase - 1) % NPC_CHECK_PERIOD + 1;
+		delay = std::min(delay, check_delay);
+	}
+	if (existing.event)
+	{
+		if (IS_NPC(character) && existing.event->due_tick > ne_event_tick + delay)
+		{
+			size_t live;
+			bool rescheduled;
+			if (!budget.live(&live) ||
+			    !nevent_reschedule_after_bounded(existing, delay, &rescheduled,
+							     budget.reserve, budget.context, live))
+				return false;
+		}
+		*completed = true;
+		return true;
+	}
+	nevent_schedule_result scheduled{};
+	bool returned = false, succeeded = false;
+	size_t live;
+	if (!budget.live(&live))
+		return false;
+	const bool complete = nevent_schedule_character_bounded(
+		generic_char_event, static_cast<int>(delay), character, &scheduled, &returned,
+		&succeeded, budget.reserve, budget.context, live);
+	if (returned)
+	{
+		if (!scheduled.was_scheduled())
+			panic_corruption("character-maintenance",
+					 "cannot arm runtime %llu (status=%u)",
+					 static_cast<unsigned long long>(character->runtime_id),
+					 static_cast<unsigned int>(scheduled.status));
+		character->character_maintenance_event = scheduled.handle.event;
+		character->character_maintenance_event_sequence = scheduled.handle.sequence;
+		*completed =
+			true; // Actual cache handoff survives a post-schedule diagnostic refusal.
+	}
+	return complete;
+}
+}
+
+bool character_maintenance_enter_bounded(P_char character, bool *returned, bool *succeeded,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+	if (!returned || !succeeded || returned == succeeded || *returned || !reserve ||
+	    !nevent_is_game_thread())
+		return false;
+	constexpr size_t frame = sizeof(maintenance_native_budget) + 3 * sizeof(nevent_handle) +
+				 sizeof(nevent_schedule_result) + 10 * sizeof(size_t) +
+				 5 * sizeof(void *) + 6 * sizeof(unsigned long long) +
+				 6 * sizeof(bool) + sizeof(nevent_cancel_result);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	maintenance_native_budget budget{ reserve, context, 0 };
+	size_t globals;
+	if (!budget.live(&globals) || globals > outer_live)
+		return false;
+	budget.base = outer_live - globals + frame;
+	try
+	{
+		if (character && character->runtime_id)
+		{
+			character->character_maintenance_in_world = true;
+			bool completed = false;
+			const bool status =
+				maintenance_changed_native_bounded(character, budget, &completed);
+			if (completed)
+			{
+				*returned = true;
+				*succeeded = character->character_maintenance_in_world;
+			}
+			if (!status)
+				return false;
+		}
+		*returned = true;
+		*succeeded = character && character->character_maintenance_in_world;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool character_maintenance_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	*output = sizeof(first_body_tick) + sizeof(maintenance_ready);
+	return true;
+}
