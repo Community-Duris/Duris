@@ -79,6 +79,62 @@ struct quest_mobile_original_reset_locals
 	} o;
 };
 class item_native_quest_publication_owner;
+// Closed original producer/source capsule. Only the actual private factory
+// owner can mint it while its real reset invocation and detached stage exist.
+class quest_mobile_native_birth_ordinary_source_pin final
+{
+	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_native_birth_ordinary_execution_lease;
+	struct implementation;
+	std::unique_ptr<implementation> state_;
+	explicit quest_mobile_native_birth_ordinary_source_pin(std::unique_ptr<implementation>);
+
+    public:
+	~quest_mobile_native_birth_ordinary_source_pin();
+	quest_mobile_native_birth_ordinary_source_pin(
+		const quest_mobile_native_birth_ordinary_source_pin &) = delete;
+	quest_mobile_native_birth_ordinary_source_pin &
+	operator=(const quest_mobile_native_birth_ordinary_source_pin &) = delete;
+};
+
+// Worker-stack request only. Constructor/request do not grant a world cut.
+// The real game-thread owner validates the exact retained producer and holds
+// its world interval until this noncopyable lease releases on the same worker.
+class quest_mobile_native_birth_ordinary_execution_lease final
+{
+	friend class critical_ordinary_native_flat_execution_owner;
+	friend class critical_shared_native_execution_dispatch;
+	friend class quest_mobile_native_birth_owner;
+	enum class phase : uint8_t
+	{
+		idle,
+		requested,
+		inspecting,
+		granted,
+		refused,
+		released
+	};
+	quest_mobile_native_birth_ordinary_execution_lease() noexcept = default;
+	~quest_mobile_native_birth_ordinary_execution_lease() noexcept;
+	quest_mobile_native_birth_ordinary_execution_lease(
+		const quest_mobile_native_birth_ordinary_execution_lease &) = delete;
+	quest_mobile_native_birth_ordinary_execution_lease &
+	operator=(const quest_mobile_native_birth_ordinary_execution_lease &) = delete;
+	bool request(const critical_ordinary_native_execution_owner &) noexcept;
+	bool current() const noexcept;
+	const std::string *selected_root() const noexcept;
+	static void cancel_pending() noexcept;
+	static size_t fixed_storage_bytes() noexcept;
+	quest_mobile_native_birth_ordinary_execution_lease *next_ = nullptr;
+	const critical_ordinary_native_execution_owner *worker_ = nullptr;
+	const quest_mobile_native_birth_ordinary_source_pin *source_ = nullptr;
+	const void *producer_ = nullptr;
+	uint64_t generation_ = 0;
+	unsigned int attempt_ = 0;
+	phase phase_ = phase::idle;
+	bool game_holds_request_ = false;
+};
+
 class quest_mobile_native_birth_owner final
 {
 	friend class item_native_quest_publication_owner;
@@ -176,6 +232,10 @@ class quest_mobile_native_birth_owner final
 					   int32_t *) noexcept;
 	static void finish_reset() noexcept;
 	static void seal_mobile() noexcept;
+	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
+	static bool ordinary_flat_execution_source_current(
+		const quest_mobile_native_birth_ordinary_execution_lease &, const void *) noexcept;
+	static void service_ordinary_flat_execution_requests() noexcept;
 	// Pure owning source capture/carrier only. General shared admission stays closed.
 	static bool capture_shared_checkpoint(size_t) noexcept;
 	static bool prepare_shared_capture(size_t) noexcept;

@@ -12,6 +12,7 @@
 
 class economic_sql_lifecycle_guard;
 class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+class flatfile_accounting_native_mobile_birth_ordinary_transaction;
 class flatfile_accounting_zone_reset_item_transaction;
 class economic_sql_cutover_transaction_owner;
 class player_save_restored_publication_owner;
@@ -207,6 +208,57 @@ class critical_shared_native_execution_owner final
 };
 using critical_shared_native_apply_fn =
 	critical_apply_result (*)(const critical_shared_native_execution_owner &, void *context);
+// Distinct original ordinary NMB4 worker lifetime. This pin authenticates
+// coordinator storage only; actual producer source/live-world protection
+// must remain a separate genuine owner cut before atomic entry.
+class critical_ordinary_native_execution_owner final
+{
+	friend class critical_shared_native_execution_dispatch;
+	friend class critical_ordinary_native_flat_execution_owner;
+	friend class quest_mobile_native_birth_ordinary_execution_lease;
+	friend class quest_mobile_native_birth_owner;
+	critical_ordinary_native_execution_owner() = default;
+	bool current() const noexcept;
+	bool current_locked() const noexcept;
+	bool borrowed_current() const noexcept;
+	bool borrowed_current_locked() const noexcept;
+	// Only the genuine private flat worker owns this proposal. It contains no
+	// held lock: each callback releases its acquired lock on that same thread.
+	// Reported bytes come from the private checked participant capacity proof.
+	flatfile_accounting_native_mobile_birth_ordinary_transaction *
+	flat_transaction() const noexcept;
+	bool retain_flat_transaction(
+		std::unique_ptr<flatfile_accounting_native_mobile_birth_ordinary_transaction> &,
+		size_t participant_bytes) const noexcept;
+	bool release_unpublished_flat_transaction(
+		flatfile_accounting_native_mobile_birth_ordinary_transaction *) const noexcept;
+	const void *operation_ = nullptr;
+	const void *native_ = nullptr;
+	const critical_command *command_ = nullptr;
+	std::span<const uint8_t> attachment_{};
+	uint64_t generation_ = 0, revision_ = 0;
+	unsigned int attempt_ = 0;
+	critical_native_recovery_phase phase_ = critical_native_recovery_phase::execution_pending;
+	std::thread::id worker_{};
+
+    public:
+	critical_ordinary_native_execution_owner(const critical_ordinary_native_execution_owner &) =
+		delete;
+	critical_ordinary_native_execution_owner &
+	operator=(const critical_ordinary_native_execution_owner &) = delete;
+	critical_ordinary_native_execution_owner(critical_ordinary_native_execution_owner &&) =
+		delete;
+	critical_ordinary_native_execution_owner &
+	operator=(critical_ordinary_native_execution_owner &&) = delete;
+	const critical_command &command() const noexcept { return *command_; }
+	std::span<const uint8_t> attachment() const noexcept { return attachment_; }
+	uint64_t revision() const noexcept { return revision_; }
+	critical_native_recovery_phase phase() const noexcept { return phase_; }
+	unsigned int attempt() const noexcept { return attempt_; }
+	uint64_t generation() const noexcept { return generation_; }
+};
+using critical_ordinary_native_apply_fn =
+	critical_apply_result (*)(const critical_ordinary_native_execution_owner &, void *context);
 // Distinct original ROOM execution pin, never a shared SHOP/source capability.
 // Actual root callback validates full original INITIAL carrier/season OUTSIDE
 // coordinator mutex before any storage effect. No public mint/copy/permission.
@@ -375,7 +427,8 @@ bool critical_command_coordinator_init(
 	critical_shared_native_apply_fn shared_native_apply = nullptr,
 	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr,
 	critical_extension_validator_bounded_fn extension_validator_bounded = nullptr,
-	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded = nullptr);
+	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded = nullptr,
+	critical_ordinary_native_apply_fn ordinary_native_apply = nullptr);
 // Separate original owner capabilities: continuation owners cannot submit or
 // cross physical ACK. Opaque context carries no source/SQL/publication authority.
 // Only the original birth owner can cross this physical publication boundary.

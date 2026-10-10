@@ -68,6 +68,13 @@ critical_apply_result
 critical_command_repository_apply_shared_native_flat(const critical_shared_native_execution_owner &,
 						     void *context);
 
+// Distinct genuine ordinary NMB4 worker plus real original producer/world
+// rendezvous. Identity is acquired before authority, after the original game
+// owner holds its detached/source/world cut. Full proposals remain owned across
+// ambiguity; no bare command, producer selection, publication or ACK authority.
+critical_apply_result critical_command_repository_apply_ordinary_native_flat(
+	const critical_ordinary_native_execution_owner &, void *context);
+
 // Original private queued ROOM callback only, with one acquired-thread root
 // lock per invocation and retained reconciliation-only proposals after possible
 // publication. Registration stays dormant until original source/budget/gates
