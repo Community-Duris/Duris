@@ -775,9 +775,12 @@ bool player_save_pipeline_literal_replay_storage_bytes(size_t *) noexcept;
 
 // Genuine same-lock passive currency replay memory owner. Only the complete
 // mixed currency replay counterpart can construct it. Outer excludes this
-// literal pool and this live scope; includes authentic currency/coordinator/
-// journal/input/other pipeline and execution-guard owners. Scope adds physical
-// CURRENT pool under its actual pipeline mutex exactly once at every cut.
+// literal pool, complete other-pipeline owner, prepared worker and live scope;
+// includes authentic currency/coordinator/journal/input/execution-guard owners.
+// Scope adds each physical CURRENT owner exactly once at every cut under its
+// actual pipeline mutex; the prepared worker uses its separate leaf mutex.
+// Prepared startup excludes dispatcher/worker execution. The ROOT startup
+// owner must separately exclude concurrent lifecycle callers; idle is not proof.
 // Reserve MUST NOT acquire pipeline/coordinator/journal or mutate replay owners.
 // Startup/main-thread coordinator ownership supplies currency pending stability.
 // Scope is required before first allocating proof, including wallet-only replay.
@@ -785,6 +788,8 @@ bool player_save_pipeline_literal_replay_storage_bytes(size_t *) noexcept;
 class player_save_coin_replay_budget_scope_owner final
 {
     private:
+	friend class critical_mixed_startup_replay_owner;
+	friend class currency_transaction_replay_owner;
 	friend bool currency_transaction_restore_replayed_command_bounded(const critical_command &,
 									  bool (*)(size_t,
 										   void *) noexcept,
@@ -796,6 +801,16 @@ class player_save_coin_replay_budget_scope_owner final
 	player_save_coin_replay_budget_scope_owner &
 	operator=(const player_save_coin_replay_budget_scope_owner &) = delete;
 	bool locked() const noexcept;
+	bool prepared() const noexcept;
+	bool prepared_worker_storage_bytes(size_t *) const noexcept;
+	// Pure complete fixed source-carrier handoff: ROOT admits these before
+	// constructing/scanning this scope. No storage/readiness is inferred.
+	static size_t observer_frame_bytes() noexcept;
+	static size_t prepared_worker_observer_frame_bytes() noexcept;
+	// ROOT holds authentic startup coordinator/lifecycle exclusion and this
+	// SAME pipeline scope across fresh bootstrap and complete replay. No DTO,
+	// cache, logical-byte baseline or first-call qualification is supplied.
+	bool bootstrap_storage_bytes(size_t *) const noexcept;
 	bool prefix(size_t exclusive, size_t &full) const noexcept;
 	bool admit(size_t exclusive) const noexcept;
 	static bool reserve_exclusive(size_t exclusive, void *context) noexcept;

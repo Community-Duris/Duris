@@ -170,14 +170,29 @@ bool currency_transaction_current_storage_bytes(size_t *output) noexcept;
 // Complete original mixed schema/publication/bank ATM/coin passive replay.
 // Genuine startup coordinator/main-thread caller owns pending stability. Outer
 // excludes CURRENT currency owner, complete literal replay pool and private
-// stack scope; includes actual coordinator/journal/input/caller and every
-// OTHER pipeline, worker and execution-guard owner with fresh genuine census.
+// stack scope and complete OTHER pipeline/prepared-worker owners. Includes
+// actual coordinator/journal/input/caller and execution guard with fresh census.
 // Real private pipeline scope lives across first allocating proof, wallet-only
-// too, and adds its same-lock CURRENT pool once to each absolute request.
+// too, and adds its same-lock CURRENT pool/pipeline/prepared-worker owners once.
 // Reserve must not acquire pipeline/coordinator/journal or mutate replay owners.
 // No native publication, ACK, alternate operation or selected route is granted.
 bool currency_transaction_restore_replayed_command_bounded(const critical_command &,
 							   bool (*)(size_t, void *) noexcept,
 							   void *, size_t outer_live) noexcept;
+
+// Narrow private complete replay companion for the genuine mixed startup owner.
+// It borrows the one actual already-held prepared pipeline scope. No public DTO,
+// standalone caller, callback selection or alternate initializer is supplied.
+class player_save_coin_replay_budget_scope_owner;
+class currency_transaction_replay_owner final
+{
+    private:
+	friend class critical_mixed_startup_replay_owner;
+	static size_t frame_bytes() noexcept;
+	static bool restore(const critical_command &, player_save_coin_replay_budget_scope_owner &,
+			    size_t outer_live) noexcept;
+	static bool reserve_exclusive(size_t, void *) noexcept;
+	static bool restore_exclusive(const critical_command &, void *, size_t) noexcept;
+};
 
 #endif

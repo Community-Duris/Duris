@@ -13,6 +13,7 @@
 #include "persistence/persistence_mode.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
+#include "player/player_retained_deque.h"
 #include "player/player_save_execution_guard.h"
 #include "player/player_save_replay_ownership.h"
 #include "player/player_snapshot_capture.h"
@@ -105,8 +106,8 @@ struct retained_snapshot
 		return *this;
 	}
 };
-std::deque<retained_snapshot> pending_append;
-std::deque<retained_snapshot> durable_ready;
+player_retained_deque<retained_snapshot> pending_append;
+player_retained_deque<retained_snapshot> durable_ready;
 // Allocation-free retention when a failed append cannot be requeued. Shutdown
 // cannot destroy an unjournaled original merely because its thread has joined.
 std::optional<retained_snapshot> append_retry;
@@ -9899,15 +9900,23 @@ bool player_save_coin_replay_budget_scope_owner::locked() const noexcept
 {
 	return lock_.mutex() == &pipeline_mutex && lock_.owns_lock();
 }
+namespace
+{
+bool coin_save_other_pipeline_current_locked(size_t *) noexcept;
+}
+
 bool player_save_coin_replay_budget_scope_owner::prefix(size_t exclusive,
 							size_t &result) const noexcept
 {
-	if (!locked() || !reserve_)
+	if (!prepared() || !reserve_)
 		return false;
-	size_t pool = 0, total = exclusive;
-	if (!coin_save_literal_pool_current_locked(&pool) || !coin_save_pool_add(total, pool) ||
+	size_t pool = 0, other = 0, worker = 0, total = exclusive;
+	if (!coin_save_literal_pool_current_locked(&pool) ||
+	    !coin_save_other_pipeline_current_locked(&other) ||
+	    !prepared_worker_storage_bytes(&worker) || !coin_save_pool_add(total, pool) ||
+	    !coin_save_pool_add(total, other) || !coin_save_pool_add(total, worker) ||
 	    !coin_save_pool_add(total, sizeof(*this)) ||
-	    !coin_save_pool_add(total, coin_save_lock_frames + coin_save_pool_observation_frames))
+	    !coin_save_pool_add(total, observer_frame_bytes()))
 		return false;
 	result = total;
 	return true;
@@ -10036,4 +10045,172 @@ bool player_save_coin_replay_budget_scope_owner::restore(const critical_command 
 	{
 		return false;
 	}
+}
+
+namespace
+{
+// Caller genuinely owns pipeline_mutex and has proved PREPARED startup, so no
+// dispatcher stack body exists outside these retained owners. Literal pool and
+// its two generations are excluded and observed by their existing provider.
+bool coin_save_other_pipeline_current_locked(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using recapture_node = std::_Rb_tree_node<int32_t>;
+	size_t bytes = sizeof(pipeline_mutex) + sizeof(append_available) + sizeof(pending_append) +
+		       sizeof(durable_ready) + sizeof(append_retry) + sizeof(dispatcher) +
+		       sizeof(health) + sizeof(replay_gate) + sizeof(retained_bytes) +
+		       sizeof(stop_requested) + sizeof(accepting) + sizeof(execution_started) +
+		       sizeof(dispatcher_entry_acknowledged) + sizeof(shutdown_incomplete) +
+		       sizeof(lifecycle_admission_closed) + sizeof(lifecycle_stop_attempted) +
+		       sizeof(append_inflight) + sizeof(replay_revisit_requested) +
+		       sizeof(append_inflight_pid) + sizeof(append_inflight_revision) +
+		       sizeof(custody_recapture_armed) + sizeof(terminal_fences) +
+		       sizeof(target_save_login_fences) +
+		       // Actual trace_player_saves function-local cached bool and lazy guard
+		       // occupy static storage even without calling/initializing the switch.
+		       sizeof(bool) + sizeof(__cxxabiv1::__guard);
+	size_t heap = 0;
+	if (!pending_append.current_heap_bytes(&heap) || !coin_save_pool_add(bytes, heap) ||
+	    !durable_ready.current_heap_bytes(&heap) || !coin_save_pool_add(bytes, heap))
+		return false;
+	const auto add_body = [&bytes](const player_snapshot &body) noexcept
+	{
+		size_t retained = 0;
+		return player_snapshot_current_heap_bytes(body, &retained) &&
+		       coin_save_pool_add(bytes, retained);
+	};
+	for (const auto &entry : pending_append)
+		if (!add_body(entry.body))
+			return false;
+	for (const auto &entry : durable_ready)
+		if (!add_body(entry.body))
+			return false;
+	if (append_retry && !add_body(append_retry->body))
+		return false;
+	for (const auto &fence : terminal_fences)
+		if (fence.death_snapshot && !add_body(*fence.death_snapshot))
+			return false;
+	if (custody_recapture_armed.size() > SIZE_MAX / sizeof(recapture_node) ||
+	    !coin_save_pool_add(bytes, custody_recapture_armed.size() * sizeof(recapture_node)))
+		return false;
+	*output = bytes;
+	return true;
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool player_save_coin_replay_budget_scope_owner::prepared() const noexcept
+{
+	// Actual same-lock lifecycle state, never an idle/zero-size substitute.
+	// The ROOT startup owner separately excludes concurrent lifecycle callers.
+	return locked() && health.initialized && !stop_requested && !accepting &&
+	       !execution_started && !dispatcher.joinable() && !health.dispatcher_running &&
+	       !dispatcher_entry_acknowledged && !append_inflight && !shutdown_incomplete &&
+	       !lifecycle_admission_closed && !lifecycle_stop_attempted &&
+	       !replay_gate.loads_allowed();
+}
+
+namespace
+{
+// Complete additional observer carriers beyond the preserved original pool
+// profile. True simultaneous parent-child lifetimes use a maximum of separate
+// branches; no guessed cushion substitutes for an undisclosed source path.
+constexpr size_t coin_save_prepared_queries =
+	// prepared()/locked(): this and bool results, unique_lock mutex/owns getters.
+	sizeof(void *) + sizeof(bool) +
+	player_retained_observer_source::maximum(
+		sizeof(void *) + sizeof(bool) + 2 * sizeof(void *),
+		player_retained_observer_source::maximum(
+			// thread::joinable, id temporary, by-value equality operands,
+			// real id default constructor and both bool result carriers.
+			2 * sizeof(void *) + 3 * sizeof(std::thread::id) + 2 * sizeof(bool),
+			// loads_allowed -> atomic<bool>::load -> __atomic_base::load;
+			// real __b local, memory_order mask operator and builtin load.
+			3 * sizeof(void *) + 3 * sizeof(std::memory_order) + 3 * sizeof(bool) +
+				player_retained_observer_source::maximum(
+					3 * sizeof(std::memory_order),
+					sizeof(void *) + sizeof(int) + sizeof(bool))));
+constexpr size_t coin_save_deque_observer_queries =
+	// this/output/impl refs, bool return, maximum/nodes/elements/block/
+	// map_bytes/node_bytes; numeric limit and real deque_buf_size query.
+	3 * sizeof(void *) + sizeof(bool) + 6 * sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	3 * sizeof(size_t);
+constexpr size_t coin_save_deque_range_live =
+	2 * sizeof(void *) + 2 * sizeof(decltype(pending_append)::iterator);
+constexpr size_t coin_save_deque_range_query = player_retained_observer_source::maximum(
+	// begin/end return real four-pointer iterator; converting/copy constructor.
+	3 * sizeof(void *) + sizeof(decltype(pending_append)::iterator),
+	// ++ -> _M_set_node -> _S_buffer_size -> __deque_buf_size. All genuine
+	// parameter/return scopes; compare and dereference are smaller branches.
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t));
+constexpr size_t coin_save_body_lambda_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	player_retained_observer_source::maximum(player_retained_observer_source::snapshot_request,
+						 player_retained_observer_source::checked_add);
+constexpr size_t coin_save_other_pipeline_observer_frames =
+	// output/result; bytes/heap locals; the actual one-reference add_body
+	// closure persists while deque/optional/fence observations execute.
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) +
+	player_retained_observer_source::maximum(
+		coin_save_deque_observer_queries,
+		player_retained_observer_source::maximum(
+			coin_save_deque_range_live +
+				player_retained_observer_source::maximum(
+					coin_save_deque_range_query, coin_save_body_lambda_frames),
+			player_retained_observer_source::maximum(
+				player_retained_observer_source::optional_arrow +
+					coin_save_body_lambda_frames,
+				player_retained_observer_source::array_range_live +
+					player_retained_observer_source::maximum(
+						player_retained_observer_source::array_range_query,
+						player_retained_observer_source::optional_value +
+							coin_save_body_lambda_frames)))) +
+	// Recapture set/tree size query and exact original checked-add call.
+	player_retained_observer_source::maximum(2 * sizeof(void *) + 2 * sizeof(size_t),
+						 player_retained_observer_source::checked_add);
+} // namespace
+
+size_t player_save_coin_replay_budget_scope_owner::observer_frame_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	// Original pool/lock profiles remain whole and unchanged. Two new prefix
+	// scalars plus bootstrap(this/output/result and all four named scalars)
+	// are real additional owning callers. Worker profile is separately typed
+	// in its own TU; both pure fixed getters' result carriers are included.
+	return coin_save_lock_frames + coin_save_pool_observation_frames + 2 * sizeof(size_t) +
+	       2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(size_t) +
+	       // Both getter return carriers; all nine real worker getter constexpr
+	       // automatic scalar locals; final maximum(a,b) parameters/result and
+	       // its genuine conditional comparison carrier. No emitted optimization
+	       // is assumed to erase these source-declared owning objects.
+	       2 * sizeof(size_t) + 9 * sizeof(size_t) + 3 * sizeof(size_t) + sizeof(bool) +
+	       coin_save_prepared_queries + coin_save_other_pipeline_observer_frames +
+	       prepared_worker_observer_frame_bytes();
+#else
+	return 0;
+#endif
+}
+
+bool player_save_coin_replay_budget_scope_owner::bootstrap_storage_bytes(
+	size_t *output) const noexcept
+{
+	if (!output || !prepared())
+		return false;
+	size_t pool = 0, other = 0, worker = 0, bytes = 0;
+	if (!coin_save_literal_pool_current_locked(&pool) ||
+	    !coin_save_other_pipeline_current_locked(&other) ||
+	    !prepared_worker_storage_bytes(&worker) || !coin_save_pool_add(bytes, pool) ||
+	    !coin_save_pool_add(bytes, other) || !coin_save_pool_add(bytes, worker) ||
+	    !coin_save_pool_add(bytes, sizeof(*this)))
+		return false;
+	// Fresh true storage on this SAME still-held pipeline scope, no caching.
+	// Fixed observer frames are handed off separately to the ROOT lender.
+	*output = bytes;
+	return true;
 }
