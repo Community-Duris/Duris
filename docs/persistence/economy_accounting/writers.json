@@ -66434,7 +66434,7 @@
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "src/Makefile": "63127298d309dc484b9119581f791edb242b9c89154ee925872f90cdff458b40",
+      "src/Makefile": "4b1ad08e10ec235a47bcab870c262a3a32f865dbcbcc9cdf137160cc07c8e60d",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
@@ -66667,7 +66667,7 @@
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
-      "src/flatfile/flatfile_collector_repository.c": "af1be45d70af38918b4f10f78504f8fef830c5f4e568c70bddde8a9214c9b4b3",
+      "src/flatfile/flatfile_collector_repository.c": "4fc5701f91b302f464968f18d211777c52ccbd19d49ee584ff548a1e859ca0ef",
       "src/flatfile/flatfile_collector_repository.h": "71add098796afe4add187b2d3fc994310215703f3327d0597497b277d5b14386",
       "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
@@ -66844,7 +66844,12 @@
       "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "29d1197e11ba2a4305cd5f804634fde5c657ebf0161de2e53c9cea4ac020894e",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "85d89092fb73602ad994365336f2d506be36379d33515771414b35bd69c25f98",
-      "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "abadd19eddef9336571001f8ff49565d7839a687ae5795a4a76a1d4201e50f6a"
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "abadd19eddef9336571001f8ff49565d7839a687ae5795a4a76a1d4201e50f6a",
+      "src/flatfile/flatfile_identity_repository.c": "1997e0a156d18317fb4dad2bc30b494a805d82759e2e4508fc7c781344f141c3",
+      "src/flatfile/flatfile_player_snapshot_file.c": "04186563b9e9a2fab8584c7fa75f8ef8b01aedf2757f1906b4834339649b281b",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.h": "024040638bfc27423e818d02ad4c561d5b6b8ae335305daf3e5a7c166fd81501",
+      "src/flatfile/flatfile_auction_repository.c": "24d9b025930bf3ece5a6e42f982045c805720cc3a72feeff61bc6d781b55706e",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

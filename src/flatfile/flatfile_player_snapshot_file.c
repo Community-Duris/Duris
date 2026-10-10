@@ -1,4 +1,14 @@
 #include "flatfile/flatfile_player_snapshot_file.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_physical.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include <algorithm>
+#include <cerrno>
+#include <charconv>
+#include <dirent.h>
+#include <fcntl.h>
+#include <string_view>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
@@ -158,4 +168,169 @@ flatfile_player_snapshot_read_file(const std::string &directory, const std::stri
 		return flatfile_player_load_result::invalid;
 	*snapshot = std::move(decoded);
 	return flatfile_player_load_result::ok;
+}
+
+unsigned int flatfile_native_mobile_birth_ordinary_player_physical_storage::verify_locked(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_native_mobile_birth_ordinary_player_physical_absence *output,
+	std::string *error) noexcept
+{
+	if (root.empty() || !output || !identity_lock.matches(root) ||
+	    !authority_lock.matches(root))
+		return EINVAL;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_valid(original))
+			return EINVAL;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		if (native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event)
+			return EINVAL;
+		std::vector<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			born.push_back(literal.object_uid);
+		std::sort(born.begin(), born.end());
+		if (std::adjacent_find(born.begin(), born.end()) != born.end() ||
+		    (!born.empty() && !born.front()))
+			return EINVAL;
+		flatfile_native_mobile_birth_ordinary_identity_current identities;
+		const auto identity_status =
+			flatfile_native_mobile_birth_ordinary_identity_storage::read_locked(
+				root, identity_lock, authority_lock, &identities, error);
+		if (identity_status != flatfile_identity_result::ok)
+			return identity_status == flatfile_identity_result::io_error ? EIO : EILSEQ;
+		flatfile_native_mobile_birth_ordinary_player_physical_absence observed;
+		observed.identity_catalog_revision = identities.catalog_revision;
+		observed.identities = identities.records.size();
+		for (const auto &identity : identities.records)
+			if (!identity.active)
+				++observed.retired_identities;
+
+		const std::string directory = flatfile_player_snapshot_file::player_directory(root);
+		std::vector<int32_t> pids;
+		{
+			// Enumerate actual canonical files, not only current/active identities.
+			// The original writer holds authority through snapshot rename; do not
+			// acquire player locks under authority and reverse its lock order.
+			const int descriptor = open(
+				directory.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+			if (descriptor < 0)
+				return errno ? static_cast<unsigned int>(errno) : EIO;
+			struct stat metadata
+			{
+			};
+			if (fstat(descriptor, &metadata) < 0)
+			{
+				const int saved = errno;
+				close(descriptor);
+				return saved ? static_cast<unsigned int>(saved) : EIO;
+			}
+			if (!S_ISDIR(metadata.st_mode) || metadata.st_uid != geteuid() ||
+			    (metadata.st_mode & 0077))
+			{
+				close(descriptor);
+				return EILSEQ;
+			}
+			DIR *stream = fdopendir(descriptor);
+			if (!stream)
+			{
+				const int saved = errno;
+				close(descriptor);
+				return saved ? static_cast<unsigned int>(saved) : EIO;
+			}
+			struct directory_owner
+			{
+				DIR *stream;
+				~directory_owner() { closedir(stream); }
+			} owned{ stream };
+			for (;;)
+			{
+				errno = 0;
+				const auto *entry = readdir(stream);
+				if (!entry)
+				{
+					if (errno)
+						return static_cast<unsigned int>(errno);
+					break;
+				}
+				const std::string_view name(entry->d_name);
+				constexpr std::string_view suffix = ".snapshot";
+				if (!name.ends_with(suffix))
+					continue; // Original lock/atomic temporary names are not snapshots.
+				const auto numeric = name.substr(0, name.size() - suffix.size());
+				int32_t pid = 0;
+				const auto parsed = std::from_chars(
+					numeric.data(), numeric.data() + numeric.size(), pid);
+				if (parsed.ec != std::errc{} ||
+				    parsed.ptr != numeric.data() + numeric.size() || pid <= 0 ||
+				    flatfile_player_snapshot_file::player_filename(pid) != name)
+					return EILSEQ;
+				pids.push_back(pid);
+			}
+		}
+		std::sort(pids.begin(), pids.end());
+		if (std::adjacent_find(pids.begin(), pids.end()) != pids.end())
+			return EILSEQ;
+		for (int32_t pid : pids)
+		{
+			player_snapshot snapshot{};
+			const auto loaded = flatfile_player_snapshot_read_file(
+				directory, flatfile_player_snapshot_file::player_filename(pid), pid,
+				&snapshot, error);
+			// An enumerated canonical file disappearing under this genuine freeze
+			// is not a harmless missing identity or an accepted empty inventory.
+			if (loaded != flatfile_player_load_result::ok)
+				return loaded == flatfile_player_load_result::io_error ?
+					       EIO :
+					       (loaded == flatfile_player_load_result::not_found ?
+							ENOENT :
+							EILSEQ);
+			++observed.snapshots;
+			const auto identity = std::lower_bound(identities.records.begin(),
+							       identities.records.end(), pid,
+							       [](const auto &value, int32_t sought)
+							       { return value.pid < sought; });
+			if (identity == identities.records.end() || identity->pid != pid)
+				++observed.unindexed_snapshots;
+			for (const auto &item : snapshot.items)
+			{
+				if (std::binary_search(born.begin(), born.end(), item.object_uid))
+					return EEXIST;
+				++observed.inventory_rows;
+			}
+			for (const auto &pet : snapshot.pets)
+				for (const auto &item : pet.items)
+				{
+					if (std::binary_search(born.begin(), born.end(),
+							       item.object_uid))
+						return EEXIST;
+					++observed.pet_item_rows;
+				}
+		}
+		if (!identity_lock.matches(root) || !authority_lock.matches(root))
+			return EINVAL;
+		*output = observed;
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
 }

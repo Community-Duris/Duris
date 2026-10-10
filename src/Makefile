@@ -404,6 +404,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_character_delete.o \
 				 flatfile/flatfile_player_repository.o \
 				 flatfile/flatfile_player_snapshot_file.o \
+				 flatfile/flatfile_native_mobile_birth_ordinary_physical.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
 				 flatfile/flatfile_collector_repository.o \

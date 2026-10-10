@@ -160,7 +160,7 @@
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
-      "src/Makefile": "63127298d309dc484b9119581f791edb242b9c89154ee925872f90cdff458b40",
+      "src/Makefile": "4b1ad08e10ec235a47bcab870c262a3a32f865dbcbcc9cdf137160cc07c8e60d",
       "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
@@ -313,27 +313,32 @@
       "src/flatfile/flatfile_accounting_store.h": "0778aa9f4b15baa310f42132983ac1103448717d96b12c0342e1a23938589c35",
       "src/flatfile/flatfile_accounting_zone_reset_item_transaction.c": "c74730d89e1b9122dd7073025289452561ac56f52186db745118c4185e696d8a",
       "src/flatfile/flatfile_accounting_zone_reset_item_transaction.h": "586a7224701eee6606c3567f6ca48faa40fb1497b1a56e1d5e3195b36d72f418",
+      "src/flatfile/flatfile_auction_repository.c": "24d9b025930bf3ece5a6e42f982045c805720cc3a72feeff61bc6d781b55706e",
       "src/flatfile/flatfile_authority_transaction.c": "c441de943f6289a58075dfeca6358b570399bbec8cb5ea9e5ec4d9cfb30c3023",
       "src/flatfile/flatfile_authority_transaction.h": "803e63cc9c188354dae88e44c29e00ff462396025c3fcb1e09dac8046c16811e",
-      "src/flatfile/flatfile_collector_repository.c": "af1be45d70af38918b4f10f78504f8fef830c5f4e568c70bddde8a9214c9b4b3",
+      "src/flatfile/flatfile_collector_repository.c": "4fc5701f91b302f464968f18d211777c52ccbd19d49ee584ff548a1e859ca0ef",
       "src/flatfile/flatfile_collector_repository.h": "71add098796afe4add187b2d3fc994310215703f3327d0597497b277d5b14386",
       "src/flatfile/flatfile_corpse_ownership.c": "bb7fa36dd5911211357b291203da6394093865c4033c1c49d9c63c218eb41593",
       "src/flatfile/flatfile_corpse_ownership.h": "4dcecdaeea059e35699a6697cd8e6ee7af9c2bca5ea7a4bd7133aaab3b4b746e",
       "src/flatfile/flatfile_corpse_restore.c": "db6b936bdf2fbcdf6d1441346e55e2373631dd14104dd8ebf2ca91ca7f1c53cf",
       "src/flatfile/flatfile_economic_runtime.c": "0361c613879b7ea4bfd4c5dca5fe441a1ea77558753a87db88cdc72a2434e6b9",
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
+      "src/flatfile/flatfile_identity_repository.c": "1997e0a156d18317fb4dad2bc30b494a805d82759e2e4508fc7c781344f141c3",
       "src/flatfile/flatfile_item_accounting_reference.c": "fc3fcd5680aa8f1ed63b7abb300d9efd5f5c1a8665bcc4f091f6180c3baf22dd",
       "src/flatfile/flatfile_item_accounting_reference.h": "b7623894a25f3898995f2e4dd531b9380ba7fcb49e3b9ba05a7e5d856f8530d5",
       "src/flatfile/flatfile_item_repository.c": "232451449290a33db5625175833366a44a1ddc9b35d7ddbd558542150331a373",
       "src/flatfile/flatfile_item_repository.h": "60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "abadd19eddef9336571001f8ff49565d7839a687ae5795a4a76a1d4201e50f6a",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.h": "024040638bfc27423e818d02ad4c561d5b6b8ae335305daf3e5a7c166fd81501",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "85d89092fb73602ad994365336f2d506be36379d33515771414b35bd69c25f98",
       "src/flatfile/flatfile_native_mobile_wallet.h": "2465dab1e202bf4ab2b2480cd1b61d633fa08fa556ead1b7610fad086487f15c",
       "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "29d1197e11ba2a4305cd5f804634fde5c657ebf0161de2e53c9cea4ac020894e",
       "src/flatfile/flatfile_player_domain_repository.c": "a72c2cabac5ddf06f4080dcbcdab383afd92831f0d021ac5dada33fde63e2c79",
       "src/flatfile/flatfile_player_domain_repository.h": "3f07545245c2549127fa49364627b96256736974d51427eabe6d9ee6bd02ed56",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
+      "src/flatfile/flatfile_player_snapshot_file.c": "04186563b9e9a2fab8584c7fa75f8ef8b01aedf2757f1906b4834339649b281b",
       "src/flatfile/flatfile_season_state.c": "4e842e8e825a00463ba2b6fbaed31a11efc514280695be4bd639c80bed082428",
       "src/flatfile/flatfile_season_state.h": "80206a0078296c4af79276c28a2adfc01a4e56f464cff644e7e78a9be51382da",
       "src/flatfile/flatfile_shop_native_checkpoint.c": "8b311979b435a2fcea692430c1eb9091a4e9e2565d9f119d6ac50993d302de15",
@@ -3336,7 +3341,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2595
+          2597
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -7699,7 +7704,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1997
+          1999
         ],
         "file": "src/flatfile/flatfile_collector_repository.c",
         "function": "flatfile_collector_repository_apply",
