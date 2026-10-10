@@ -48,6 +48,17 @@ class flatfile_native_mobile_birth_ordinary_custody_storage final
 		    const critical_native_recovery_envelope &, const flatfile_accounting_record &,
 		    flatfile_native_mobile_birth_ordinary_current_custody *,
 		    std::string *) noexcept;
+	// Complete original passive CURRENT custody proof with prospective explicit
+	// storage admission. Caller owns retained input/old output and holds the
+	// absolute simultaneous peak. Strong output and transferred heap scalar;
+	// no recovery, write, lifecycle, publication or ACK authority is granted.
+	static flatfile_item_repository_result
+	read_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &,
+			    const flatfile_accounting_record &,
+			    flatfile_native_mobile_birth_ordinary_current_custody *,
+			    flatfile_scratch_reserve_fn, void *, size_t,
+			    size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 #endif
