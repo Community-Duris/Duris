@@ -1766,7 +1766,7 @@ try
 			return flatfile_authority_transaction_result::io_error;
 		// Concrete original operation_directory, not a synthetic authority.
 		// Its copy+append temporary allocation must also be admitted.
-		const size_t suffix_length = strlen(suffix);
+		[[maybe_unused]] const size_t suffix_length = strlen(suffix);
 		const size_t capacity = length > copied_capacity ?
 						std::max(length, copied_capacity * 2) :
 						copied_capacity;
