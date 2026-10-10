@@ -100,4 +100,25 @@ economic_accounting_error native_mobile_birth_recipe_decode_profile(
 	std::span<const uint8_t>, std::span<const player_item_snapshot>,
 	native_mobile_birth_recipe_allocation_profile *) noexcept;
 
+// SOURCE companions for the unchanged NBR1 codec/profile algorithms. The old
+// profile already owns spans, DTOs, seen arrays, four named descriptor views and
+// exact fresh vector requests. Retain ONLY the returned supplement alongside
+// that old admission; full SOURCE is the same scalar/algorithm supplement.
+// Initial-inline describes the existing first profile/preflight object phase,
+// for transient admission before constructing it, not a second retained charge.
+bool native_mobile_birth_recipe_encode_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_decode_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_decode_source_supplement_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_encode_initial_inline_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_decode_initial_inline_bytes(size_t *) noexcept;
+// Actual retaining caller's recipe-vector default/move/cleanup path, including
+// nested library-vector destruction; no input/output capacity is included.
+bool native_mobile_birth_recipe_value_lifecycle_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recipe_valid_source_frame_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_recipe_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif
