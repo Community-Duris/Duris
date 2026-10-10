@@ -453,4 +453,18 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 				 critical_source_site source_site,
 				 critical_deadline_class deadline_class);
 
+// Allocation-free actual payload heap and fresh generated-copy request census,
+// under libstdc++13 C++11 ABI nondebug C++20. Excludes payload inline/caller
+// owners/allocator metadata; strong scalar output. No semantic authority.
+bool item_transfer_payload_current_heap_bytes(const item_transfer_payload &, size_t *) noexcept;
+bool item_transfer_payload_fresh_copy_request_bytes(const item_transfer_payload &,
+						    size_t *) noexcept;
+size_t item_transfer_payload_copy_frame_bytes() noexcept;
+// Full private generated payload copy with all twelve member requests admitted
+// before allocation, then nonthrowing strong-output move. Outer owns actual
+// source/prior output and all other live caller owners. Unselected companion.
+bool item_transfer_payload_clone_bounded(const item_transfer_payload &, item_transfer_payload *,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+
 #endif

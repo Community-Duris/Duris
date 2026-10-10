@@ -2979,3 +2979,273 @@ bool item_native_mobile_money_result_decode(std::span<const uint8_t> bytes,
 	*output = value;
 	return true;
 }
+#include <type_traits>
+namespace
+{
+using payload_clone_reserve_fn = bool (*)(size_t, void *) noexcept;
+bool payload_clone_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+constexpr size_t payload_clone_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t payload_clone_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t payload_clone_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t payload_clone_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t payload_clone_vector_frames =
+	payload_clone_allocator_frames + payload_clone_copy_frames + payload_clone_relocate_frames +
+	payload_clone_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t payload_clone_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + payload_clone_allocator_frames;
+
+// Fitting _M_replace calls _M_disjunct(this,s). Both actual less pointer
+// temporaries can coexist through the full || expression; their operator()
+// has this/x/y/result and is_constant_evaluated result. Data/size queries.
+constexpr size_t payload_clone_disjunct_frames =
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(std::less<const char *>) +
+	2 * (3 * sizeof(void *) + 2 * sizeof(bool)) + 2 * (2 * sizeof(void *)) + sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t payload_clone_string_frames =
+	payload_clone_disjunct_frames +
+	// assign(s,n): this/s/n/ref-return; _M_replace(this,pos,len1,s,len2),
+	// old_size/new_size/p/how_much/ref-return, actual length checks/queries.
+	3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + 5 * sizeof(size_t) +
+	6 * (sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+	// _M_mutate(this,pos,len1,s,len2), how_much/new_capacity/r;
+	// _M_create(this,capacityref,oldcapacity), max_size, allocation return.
+	3 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	payload_clone_allocator_frames +
+	// _S_copy(d,s,n), traits::copy(s1,s2,n) returned pointer and memcopy
+	// argument/result carriers; one-character assign reference/char scopes.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(char) +
+	// old block dispose/destroy plus data/capacity/set-length and final NUL.
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + sizeof(char);
+
+// basic_string copy constructor: this/source, allocator select/copy result,
+// allocator hider/local-data, _M_construct forward this/beg/end/tag, dnew,
+// its real one-pointer _Guard and constructor/destructor this parameters;
+// distance/__distance and returned difference, _S_copy_chars arguments.
+// Existing string/allocator profiles own _M_create( n,0 ), data/capacity/
+// set-length, traits copy, runtime memcpy and unwind disposal.
+constexpr size_t payload_clone_string_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<char>) + 6 * sizeof(void *) +
+	3 * sizeof(void *) + sizeof(std::forward_iterator_tag) + sizeof(size_t) + sizeof(void *) +
+	3 * sizeof(void *) + 2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) +
+	sizeof(std::random_access_iterator_tag) + 4 * sizeof(void *) + payload_clone_string_frames;
+// vector copy constructor calls _Vector_base(size,selected_allocator), then
+// __uninitialized_copy_a; the allocated capacity is exactly source.size().
+// Actual constructor/base/impl/data/create-storage/select/query carriers.
+// Existing vector allocator/copy profiles own the trivial-element path.
+constexpr size_t payload_clone_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + payload_clone_vector_frames;
+// String move assignment/operator and _M_assign path are allocation-free
+// for the standard equal allocator, including the actual _M_is_local tests,
+// old-pointer/old-capacity temporaries, memcpy args and source reset. The
+// existing string profile conservatively also retains all disposal scopes.
+constexpr size_t payload_clone_string_move_frames =
+	2 * sizeof(void *) + sizeof(char) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	12 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(char) + payload_clone_string_frames;
+
+constexpr size_t payload_clone_observation_frames = 12 * sizeof(void *) + 8 * sizeof(size_t) +
+						    5 * sizeof(bool) +
+						    12 * (sizeof(void *) + sizeof(size_t));
+// Actual generated payload/corpse/collector/continuation/recovery/forest/
+// publication/cost/projection copy and move this/source scopes. Fixed arrays
+// belong to the actual payload object; none allocates. Six string and six
+// vector copies have the identical actual constructors profiled above.
+constexpr size_t payload_clone_frames =
+	payload_clone_observation_frames +
+	// Ten actual nontrivial generated aggregate copy + move scopes:
+	// payload, corpse, collector, continuation, recovery, two forests,
+	// publication, cost context and cost projection. Each copy and move has
+	// this/source; each destructor has this. Native mobile/money/owners and
+	// fixed arrays are trivial member copies with no allocating closure.
+	(1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 + 1) * (4 * sizeof(void *) + sizeof(void *)) +
+	6 * payload_clone_string_constructor_frames + 6 * payload_clone_vector_constructor_frames +
+	6 * payload_clone_string_move_frames + 6 * payload_clone_move_frames +
+	// Actual string destructor/dispose/local/destroy and six vector destructor
+	// parameter/source scopes, with full real allocator/delete closure.
+	6 * (5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	6 * payload_clone_allocator_frames;
+template <typename T>
+bool payload_clone_vector_heap(const std::vector<T> &value, bool fresh, size_t &bytes) noexcept
+{
+	const size_t count = fresh ? value.size() : value.capacity();
+	return count <= SIZE_MAX / sizeof(T) && payload_clone_add(bytes, count * sizeof(T));
+}
+bool payload_clone_string_heap(const std::string &value, bool fresh, size_t &bytes) noexcept
+{
+	const size_t count = fresh ? value.size() : value.capacity();
+	return count <= 15 || (count < SIZE_MAX && payload_clone_add(bytes, count + 1));
+}
+bool payload_clone_heap(const item_transfer_payload &value, bool fresh, size_t &bytes) noexcept
+{
+	return payload_clone_string_heap(value.corpse.owner_name, fresh, bytes) &&
+	       payload_clone_string_heap(value.corpse.short_description, fresh, bytes) &&
+	       payload_clone_string_heap(value.corpse.description, fresh, bytes) &&
+	       payload_clone_string_heap(value.corpse.keywords, fresh, bytes) &&
+	       payload_clone_string_heap(value.native_recovery.publication_terms.message, fresh,
+					 bytes) &&
+	       payload_clone_string_heap(value.native_recovery.publication_terms.disappear_message,
+					 fresh, bytes) &&
+	       payload_clone_vector_heap(value.collector.eligible_item_uids, fresh, bytes) &&
+	       payload_clone_vector_heap(value.continuation.data, fresh, bytes) &&
+	       payload_clone_vector_heap(value.native_recovery.player_before.ordered_item_uids,
+					 fresh, bytes) &&
+	       payload_clone_vector_heap(value.native_recovery.player_after.ordered_item_uids,
+					 fresh, bytes) &&
+	       payload_clone_vector_heap(value.native_recovery.consumed_root_order, fresh, bytes) &&
+	       payload_clone_vector_heap(value.native_cost.projection.attempts, fresh, bytes);
+}
+bool payload_clone_policy_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return true;
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool item_transfer_payload_current_heap_bytes(const item_transfer_payload &value,
+					      size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!payload_clone_heap(value, false, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+bool item_transfer_payload_fresh_copy_request_bytes(const item_transfer_payload &value,
+						    size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!payload_clone_heap(value, true, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+size_t item_transfer_payload_copy_frame_bytes() noexcept
+{
+	return payload_clone_frames;
+}
+bool item_transfer_payload_clone_bounded(const item_transfer_payload &source,
+					 item_transfer_payload *output,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer) noexcept
+{
+	if (!output || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t own = sizeof(item_transfer_payload) + 4 * sizeof(void *) +
+			       3 * sizeof(size_t) + sizeof(bool) + payload_clone_observation_frames;
+	size_t peak = outer;
+	if (!payload_clone_add(peak, own) || !reserve(peak, context))
+		return false;
+	size_t request = 0;
+	if (!item_transfer_payload_fresh_copy_request_bytes(source, &request) ||
+	    !payload_clone_add(peak, request) || !payload_clone_add(peak, payload_clone_frames) ||
+	    !reserve(peak, context))
+		return false;
+	try
+	{
+		item_transfer_payload candidate(source);
+		static_assert(std::is_nothrow_move_assignable_v<item_transfer_payload>);
+		// Prior output remains outer-owned through actual nonthrowing move
+		// and destruction, including swapped surviving old string heaps.
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
