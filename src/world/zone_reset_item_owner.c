@@ -4747,6 +4747,8 @@ bool zone_reset_item_owner::flat_current_global_storage_with_literal_pools(size_
 	    !warm_scratch_add(bytes, current) ||
 	    !quest_mobile_native_mobile_catalog_string_storage_bytes(&current) ||
 	    !warm_scratch_add(bytes, current) ||
+	    !quest_mobile_native_object_catalog_string_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
 	    !quest_mobile_native_published_npc_storage_bytes(&current) ||
 	    !warm_scratch_add(bytes, current))
 		return false;

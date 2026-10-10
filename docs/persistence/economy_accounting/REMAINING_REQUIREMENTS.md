@@ -4328,3 +4328,19 @@ Configured-root passive host, full mixed startup and actual accepting/native/
 global32MiB/recovery/R1-R8 qualification remain OPEN. Tests deferred major-plan
 batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 No major-plan completion is claimed.
+
+
+## Original item constructor and catalog ownership implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_ITEM_CONSTRUCTOR_CATALOG_OWNERSHIP_2026-10-10.md)
+adds the complete original ordinary item constructor with prospective real
+allocation admission, current private/candidate recensus and retained-source
+copy ownership. Original parser/procedure/master/zombie/RNG/ID behavior survives;
+resource refusals retain actual candidates. Real object catalog/file retention
+joins both existing full-G policies exactly once; no ownership flag is added.
+Independent RAW/installed source review authenticates62+7+17members/four inverses/
+22deps/17fresh installed headers/formatting/460existingpins/931unchangedpolicies/
+2853mapped sites/protected Plan5 WIP. Complete accepting warm/cold/publication/
+startup/transitive/emitted/native32MiB/recovery/R1-R8 gates remain OPEN.
+Tests deferred major-plan batch; inactive/CLOSED, coverage incomplete, release
+BLOCKED, goal ACTIVE. No major-plan completion is claimed.
