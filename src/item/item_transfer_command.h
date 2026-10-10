@@ -530,4 +530,11 @@ bool item_transfer_craft_outputs_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_item_heap_bytes = nullptr) noexcept;
 
+// Complete original native mobile context predicate, with genuine fixed
+// reference codec and full item-list canonical/DFS/UID proof. Source/prior caller
+// owners stay outer; no UID issuance/native execution/admission authority or route.
+bool item_transfer_native_mobile_context_valid_bounded(const item_transfer_payload &, uint16_t,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept;
+
 #endif

@@ -4766,3 +4766,191 @@ bool item_transfer_craft_outputs_decode_bounded(const item_transfer_payload &pay
 		return false;
 	}
 }
+
+namespace
+{
+bool item_native_mobile_validation_owned(const item_transfer_payload &payload, uint16_t version,
+					 item_native_validation_budget &budget)
+{
+	const bool from_native = payload.from_owner.type == item_owner_type::native_mobile;
+	const bool to_native = payload.to_owner.type == item_owner_type::native_mobile;
+	if (!native_mobile_version(version))
+		return !from_native && !to_native && !payload.native_mobile.present &&
+		       payload.reason != item_transfer_reason::quest_offering;
+	const auto &context = payload.native_mobile;
+	if (!context.present || from_native == to_native || !context.final_giver_pid ||
+	    payload.corpse.present || payload.collector.present || payload.logical_source_id ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision)
+		return false;
+	const auto &owner = from_native ? payload.from_owner : payload.to_owner;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference = {};
+	size_t reference_prefix = 0;
+	if (!budget.prefix(reference_prefix))
+		return false;
+	if (!item_owner_identity_valid(owner) || owner.id != context.reference.mobile_instance_id ||
+	    quest_mobile_native_reference_encode_bounded(
+		    context.reference, &reference, budget.reserve, budget.context,
+		    reference_prefix) != player_snapshot_codec_result::ok ||
+	    payload.reason_id != context.reference.mobile_vnum)
+		return false;
+	const bool acceptance = context.action == item_native_mobile_action::acceptance;
+	const bool consumption = context.action == item_native_mobile_action::consumption;
+	if ((!acceptance && !consumption) ||
+	    (acceptance &&
+	     (from_native || payload.from_owner.type != item_owner_type::player ||
+	      payload.from_owner.context_id || payload.from_owner.id > UINT32_MAX ||
+	      context.final_giver_pid != payload.from_owner.id ||
+	      payload.reason != item_transfer_reason::quest_offering || payload.multi_root ||
+	      payload.continuation.kind != item_transfer_continuation_kind::none)) ||
+	    (consumption &&
+	     (!from_native || payload.to_owner.type != item_owner_type::destruction ||
+	      payload.reason != item_transfer_reason::quest_turnin || !payload.multi_root ||
+	      payload.selected_item_uid || payload.target_root_item_uid ||
+	      (payload.continuation.kind != item_transfer_continuation_kind::none &&
+	       payload.continuation.kind != item_transfer_continuation_kind::quest_offering))))
+		return false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		if (!entry.item_uid || entry.item_uid == UINT64_MAX || !entry.root_item_uid ||
+		    entry.root_item_uid == UINT64_MAX || entry.parent_item_uid == UINT64_MAX ||
+		    !entry.expected_item_revision || entry.expected_item_revision == UINT64_MAX ||
+		    entry.expected_state != item_custody_state::active ||
+		    (index && payload.items[index - 1].item_uid >= entry.item_uid))
+			return false;
+	}
+	if (!budget.peak(sizeof(std::vector<player_item_snapshot>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<player_item_snapshot>)))
+		return false;
+	std::vector<player_item_snapshot> items;
+	budget.items = &items;
+	size_t prefix = 0;
+	if (!budget.prefix(prefix))
+		return false;
+	if (player_item_snapshot_list_decode_bounded(
+		    payload.item_blob.data(), payload.item_blob_size, &items, budget.reserve,
+		    budget.context, prefix, nullptr) != player_snapshot_codec_result::ok ||
+	    items.size() != payload.item_count)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<uint8_t>)))
+		return false;
+	std::vector<uint8_t> canonical;
+	budget.canonical = &canonical;
+	if (!budget.prefix(prefix))
+		return false;
+	if (player_item_snapshot_list_encode_bounded(items, &canonical, budget.reserve,
+						     budget.context,
+						     prefix) != player_snapshot_codec_result::ok ||
+	    canonical.size() != payload.item_blob_size ||
+	    !budget.peak(item_native_validation_equal_frames) ||
+	    !std::equal(canonical.begin(), canonical.end(), payload.item_blob.begin()))
+		return false;
+	if (items.size() > SIZE_MAX / sizeof(uint64_t) ||
+	    !budget.peak(2 * sizeof(std::vector<uint64_t>) + items.size() * sizeof(uint64_t) +
+			 payload_clone_vector_constructor_frames + 4 * sizeof(void *) +
+			 sizeof(std::allocator<uint64_t>)))
+		return false;
+	std::vector<uint64_t> roots(items.size()), uids;
+	budget.roots = &roots;
+	budget.uids = &uids;
+	if (!budget.peak(sizeof(std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH>)))
+		return false;
+	std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH> path = {};
+	budget.path = &path;
+	size_t depth = 0;
+	if (!budget.peak(items.size() * sizeof(uint64_t) + payload_clone_vector_frames))
+		return false;
+	uids.reserve(items.size());
+	size_t root_count = 0;
+	uint64_t current_root = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &item = items[index];
+		if (!item.object_uid || item.object_uid == UINT64_MAX ||
+		    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    item.parent_index >= static_cast<int32_t>(index) || item.string_mask != 15 ||
+		    item.equipment_slot < 0 ||
+		    item.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
+			return false;
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		const uint64_t parent = root ? 0 : items[item.parent_index].object_uid;
+		roots[index] = root ? item.object_uid : roots[item.parent_index];
+		if (root)
+		{
+			++root_count;
+			current_root = item.object_uid;
+			depth = 1;
+			path[0] = static_cast<int32_t>(index);
+		}
+		else
+		{
+			if (roots[index] != current_root || item.equipment_slot)
+				return false;
+			while (depth && path[depth - 1] != item.parent_index)
+				--depth;
+			if (!depth || depth == path.size())
+				return false;
+			path[depth++] = static_cast<int32_t>(index);
+		}
+		const auto *entry = find_payload_item(payload, item.object_uid);
+		if (!entry || entry->vnum != item.vnum || entry->parent_item_uid != parent ||
+		    entry->root_item_uid != roots[index])
+			return false;
+		if (!budget.peak(payload_clone_vector_frames))
+			return false;
+		uids.push_back(item.object_uid);
+	}
+	size_t levels = 0, remaining = uids.size();
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	if (!budget.peak((2 * levels + 1) * item_continuation_sort_recursive_frame +
+			 item_continuation_sort_leaf_frames))
+		return false;
+	std::sort(uids.begin(), uids.end());
+	if (std::adjacent_find(uids.begin(), uids.end()) != uids.end())
+		return false;
+	if (acceptance &&
+	    (root_count != 1 ||
+	     (payload.selected_item_uid && payload.selected_item_uid != items[0].object_uid) ||
+	     (payload.target_root_item_uid && payload.target_root_item_uid != items[0].object_uid)))
+		return false;
+	return true;
+}
+} // namespace
+
+bool item_transfer_native_mobile_context_valid_bounded(const item_transfer_payload &payload,
+						       uint16_t version,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		// Public/private argument/result and genuine original scalar/ref locals,
+		// actual reference output array and separate reference-prefix scratch.
+		7 * sizeof(void *) + 2 * sizeof(uint16_t) + sizeof(size_t) + 7 * sizeof(bool) +
+		10 * sizeof(size_t) + 2 * sizeof(uint64_t) + 6 * sizeof(void *) +
+		sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+		// Original version/identity predicates and actual array/path []/_S_ref
+		// parameters/results. Reference codec's full nested scope is callee-owned.
+		5 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool) +
+		item_continuation_lower_bound_frames + item_native_validation_equal_frames +
+		payload_clone_allocator_frames;
+	item_native_validation_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_mobile_validation_owned(payload, version, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
