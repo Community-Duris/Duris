@@ -196,6 +196,70 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## TC ancestry correction and historical quest replay disposition - 2026-10-10
+
+This additive coordinator correction supersedes only erroneous TC parent prose in
+the original selecting759dcbd66095dea8667c5950fd7789f1566ccda4 section below.
+The fixed selected commits, original section and every CLOSED packet/default/
+receipt/seal/history/failure remain immutable. No source repin, algorithm correction,
+qualification, original default rerun or proof reopen follows.
+
+Fresh read-only Git independently confirms sole actual parents:
+- G7aeebe292db46305354cc574242d5f961f6f28d9 -> H6e3c40b47386140925c7757083301414ceb857d8.
+- C79e4ec0b26ad36cbc0ce062dbf14af527296f233 -> G7aeebe292db46305354cc574242d5f961f6f28d9.
+- I66513f7d733627a164a5e405f343a301146ae597 -> C79e4ec0b26ad36cbc0ce062dbf14af527296f233.
+The preceding C/I and I/T "actual parent" claims were root documentation errors.
+G-H physical, C-G CURRENT transaction/facade and I-C identity constructor/retained/
+acquire/lock dependency are the correct general source transforms. Preserved
+next-transaction-selection/authentication.json already records those actual parents
+and full transforms; no evidence rewrite. Fixed T416ae remains separate decoder/
+historical source context, not I's parent. All selected G/C/I bytes and TC1-TC4
+scope/gates/true lifetimes/strong tails/error categories/ownership remain fixed.
+
+Both workers independently detected the ancestry discrepancy and preserved it.
+Their sole authorized current delivery remains the private D: TC packet named in
+the original selection. Architecture continues using actual ancestry. Quest is
+directed to preserve its failed capture and reconcile the historical replay below,
+then continue the same TC packet. No second assignment, live scope expansion,
+adoption wait, new native permission or Goal mutation.
+
+Root independently read quest's recorded user-message metadata. Attachment
+C:/Users/alexa/.codex/attachments/e7c381c7-1d96-43ac-a776-21275da11d40/Pasted text.txt,
+SHA256751441cfd3c60e687a33f4bb72070062b420ddbb309b45ef6711cdef51674f06,
+belongs to historical human message msg_01a1151a-6f49-78e0-8829-8a96e911f648 at
+2026-10-07T06:43:36.393Z. Later recorded user inputs are Goal/AGENTS/environment
+context, not a new substantive implementation request. Historical Oct7/ae70
+disposition stands; genuinely newer human instructions take priority if received.
+Rereading that file does not refresh its authorization over the superseding charter.
+
+Quest nevertheless merged current759dc into its preserved prep checkout and refreshed
+owned source/fixture metadata before this correction. Fresh root snapshot identifies
+HEAD2b92df8b045f831c72c23463a893fe77fd07ced9 with actual parents
+93d606607e32980244e59fda6b2919c97e52a3bb and759dcbd66095dea8667c5950fd7789f1566ccda4.
+Original93d606/acb1/318de/630b-f4e and CLOSED proofs remain historical. Current worker
+HEAD/owned hashes cannot be relabelled equal to the original snapshot. No reset,
+revert, kill, delete, restart or undo is authorized. Preserve all new and old state,
+jobs/services/containers/build/failure evidence. Quest must supply exact excursion
+diffs/hashes/merge provenance and any actual live handle/execution evidence in its
+private handoff; root qualification and private execution claims remain UNREVIEWED.
+No further maintained edits/merges/commits/build/compiler/preprocessor/native/product/
+DB/operational execution follows from this historical replay. Continue sole fixed TC.
+
+Root correction uses a separate D: checkout and changes only the three owned
+coordination docs. Whole insertion inverse restores exact selecting759dc; its original
+TC section and all AC seals/default counts/receipts remain. Original coordinator
+checkout stays clean759dc for future original TC receipt seals; no original TC
+default attempted by root. Missing native/private prerequisites block execution
+only. Source/design preparation is not financial/transitive/global/libc/OpenSSL/
+ABI/allocator/emitted/native/transient32MiB/full host/integrated qualification.
+
+Actual root Goal BLOCKED unchanged1791410483 and worker Goals distinct BLOCKED remain;
+no replacement/resumption/pause/completion. Broad Plans1-5/R1-R8/applicable backend/
+gameplay/persistence/recovery/required blockers/owner completion audit OPEN.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED.
+Heartbeat ACTIVE until broader audit/user pause. No deployment/activation/production.
+All Git fetch/merge/commit/push gc.auto=0; no pruning/housekeeping/destructive action.
+
 ## Auction/Collector pair reviewed CLOSED; complete aggregate and CURRENT transaction pair selected - 2026-10-10
 
 Both original PUBLISHED_ORDINARY_AUCTION_COLLECTOR_AUTHORITY_BOUNDARY_2026-10-10.txt
