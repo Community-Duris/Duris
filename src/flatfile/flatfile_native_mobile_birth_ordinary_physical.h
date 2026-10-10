@@ -143,6 +143,15 @@ class flatfile_native_mobile_birth_ordinary_physical_storage final
 		const flatfile_authority_lock &, const critical_native_recovery_envelope &,
 		flatfile_native_mobile_birth_ordinary_catalog_namespaces_absence *,
 		std::string *) noexcept;
+
+	// Full passive bounded PLAYER/PET/world/locker/SHOP/auction/collector cut.
+	// Borrow identity THEN recovered authority for the complete interval.
+	// Strong counts; no acquisition/recovery/world/publication/ACK authority.
+	static unsigned int verify_catalog_namespaces_locked_bounded(
+		const std::string &, const flatfile_identity_lock &,
+		const flatfile_authority_lock &, const critical_native_recovery_envelope &,
+		flatfile_native_mobile_birth_ordinary_catalog_namespaces_absence *,
+		flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 };
 
 #endif
