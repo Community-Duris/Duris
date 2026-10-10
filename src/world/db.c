@@ -22,6 +22,8 @@
 #include <bit>
 #include <cmath>
 #include <openssl/evp.h>
+#include <openssl/sha.h>
+#include "core/utility.h"
 #include "core/structs.h"
 #include "player/pet_restore_runtime.h"
 #include "net/comm.h"
@@ -2100,16 +2102,372 @@ namespace
 using constructor_digest = quest_mobile_native_constructor_digest;
 using constructor_binding = quest_mobile_native_constructor_binding;
 
+bool birth_mobile_malloc_storage(const void *, size_t, size_t *) noexcept;
+constexpr size_t birth_mobile_malloc_header() noexcept;
+constexpr size_t mobile_constructor_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t mobile_constructor_sha_c_small_frames =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(void *);
+constexpr size_t mobile_constructor_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+							  11 * sizeof(unsigned int) +
+							  2 * sizeof(int) + 2 * sizeof(void *);
+constexpr size_t mobile_constructor_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t mobile_constructor_sha_update_frames = 2 * sizeof(void *) + sizeof(size_t) +
+							2 * sizeof(void *) + sizeof(unsigned int) +
+							sizeof(size_t) + sizeof(int);
+constexpr size_t mobile_constructor_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+						       sizeof(unsigned long) +
+						       sizeof(unsigned int) + sizeof(int);
+// Real SHA256_Init/Update/Final memcpy/memset call arguments and result;
+// OPENSSL_cleanse(buf,len) and the x86_64 leaf's return address. C fallback
+// cleanse's actual ptr/len/pointer-result carriers are included as well.
+constexpr size_t mobile_constructor_sha_memory_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(void *);
+constexpr size_t mobile_constructor_sha_cleanse_frames =
+	// mem_clr.c ptr/len and loaded volatile function pointer remain live
+	// through its authentic indirect memset leaf; asm fallback is smaller.
+	2 * sizeof(void *) + sizeof(size_t) + mobile_constructor_sha_memory_frames;
+constexpr size_t mobile_constructor_sha_block_frames =
+	// C compression ctx/in/num plus its actual typed locals; assembly term
+	// already includes its own real caller return address.
+	std::max(mobile_constructor_sha_assembly_frames,
+		 2 * sizeof(void *) + sizeof(size_t) +
+			 std::max(mobile_constructor_sha_c_small_frames,
+				  mobile_constructor_sha_c_normal_frames));
+constexpr size_t mobile_constructor_sha_frames =
+	std::max(mobile_constructor_sha_init_frames,
+		 std::max(mobile_constructor_sha_update_frames,
+			  mobile_constructor_sha_final_frames)) +
+	std::max(mobile_constructor_sha_block_frames,
+		 std::max(mobile_constructor_sha_memory_frames,
+			  mobile_constructor_sha_cleanse_frames));
+struct mobile_constructor_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept = nullptr;
+	bool (*reserve)(size_t, void *) noexcept = nullptr;
+	void *context = nullptr;
+	size_t exclusive = 0, ambient = 0;
+	P_char detached = nullptr;
+	bool denied = false;
+	int refusal = 0;
+	~mobile_constructor_budget()
+	{
+		if (denied && refusal)
+			errno = refusal;
+	}
+	bool fail(int code) noexcept
+	{
+		denied = true;
+		if (!refusal)
+			refusal = code;
+		errno = refusal;
+		return false;
+	}
+	bool init(size_t outer) noexcept
+	{
+		size_t global = 0;
+		if (!current_global || !reserve)
+			return fail(EINVAL);
+		const int saved_errno = errno;
+		errno = 0;
+		if (!current_global(&global, context))
+			return fail(errno ? errno : EIO);
+		errno = saved_errno;
+		if (global > outer)
+			return fail(EINVAL);
+		exclusive = outer - global;
+		return request(0);
+	}
+	bool live(size_t *output, size_t extra = 0) noexcept
+	{
+		if (!output || !current_global)
+			return fail(EINVAL);
+		size_t global = 0, private_heap = 0;
+		const int saved_errno = errno;
+		errno = 0;
+		if (!current_global(&global, context))
+			return fail(errno ? errno : EIO);
+		if (detached && detached->only.npc)
+		{
+			errno = 0;
+			if (!birth_mobile_malloc_storage(detached->only.npc, sizeof(npc_only_data),
+							 &private_heap))
+				return fail(errno ? errno : EIO);
+		}
+		errno = saved_errno;
+		size_t value = exclusive;
+		for (size_t part : { ambient, global, private_heap, extra })
+		{
+			if (part > SIZE_MAX - value)
+				return fail(EOVERFLOW);
+			value += part;
+		}
+		*output = value;
+		return true;
+	}
+	bool request(size_t extra) noexcept
+	{
+		size_t value = 0;
+		if (!live(&value, extra))
+			return false;
+		const int saved_errno = errno;
+		errno = 0;
+		if (!reserve(value, context))
+			return fail(errno ? errno : ENOBUFS);
+		errno = saved_errno;
+		return true;
+	}
+	static bool relay(size_t desired, void *opaque) noexcept
+	{
+		if (!opaque)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		auto &self = *static_cast<mobile_constructor_budget *>(opaque);
+		const int saved_errno = errno;
+		errno = 0;
+		if (!self.reserve(desired, self.context))
+			return self.fail(errno ? errno : ENOBUFS);
+		errno = saved_errno;
+		return true;
+	}
+};
+struct mobile_constructor_frame_scope
+{
+	mobile_constructor_budget *budget;
+	size_t bytes;
+	mobile_constructor_frame_scope(mobile_constructor_budget *b, size_t value) noexcept
+		: budget(b)
+		, bytes(value)
+	{
+		if (budget)
+			budget->ambient += bytes;
+	}
+	~mobile_constructor_frame_scope()
+	{
+		if (budget)
+			budget->ambient -= bytes;
+	}
+};
+
+template <class... Args> bool mobile_constructor_logit(mobile_constructor_budget *budget,
+						       const char *filename, const char *format,
+						       Args... args) noexcept
+{
+	if (!budget)
+	{
+		logit(filename, format, args...);
+		return true;
+	}
+	constexpr size_t frames = 4 * sizeof(void *) + sizeof(size_t) + (sizeof(Args) + ... + 0) +
+				  sizeof(bool) + sizeof(mobile_constructor_frame_scope);
+	if (!budget->request(frames))
+		return false;
+	mobile_constructor_frame_scope scope(budget, frames);
+	size_t live = 0;
+	return budget->live(&live) &&
+	       diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live, filename,
+					format, args...);
+}
+template <class... Args> bool mobile_constructor_debug(mobile_constructor_budget *budget,
+						       const char *format, Args... args) noexcept
+{
+	if (!budget)
+	{
+		debug(format, args...);
+		return true;
+	}
+	constexpr size_t frames = 3 * sizeof(void *) + sizeof(size_t) + (sizeof(Args) + ... + 0) +
+				  sizeof(bool) + sizeof(mobile_constructor_frame_scope);
+	if (!budget->request(frames))
+		return false;
+	mobile_constructor_frame_scope scope(budget, frames);
+	size_t live = 0;
+	return budget->live(&live) && diagnostic_debug_bounded(mobile_constructor_budget::relay,
+							       budget, live, format, args...);
+}
+
+bool mobile_constructor_wizlog_bounded(mobile_constructor_budget &budget, int level,
+				       const char *format, ...) noexcept
+{
+	constexpr size_t frames = sizeof(&budget) + sizeof(level) + sizeof(format) +
+				  sizeof(va_list) + sizeof(char *) + sizeof(P_desc) +
+				  3 * sizeof(size_t) + sizeof(bool) +
+				  sizeof(mobile_constructor_frame_scope);
+	if (!budget.request(frames))
+		return false;
+	mobile_constructor_frame_scope scope(&budget, frames);
+	size_t live = 0, retained = 0;
+	if (!budget.live(&live))
+		return false;
+	char *message = nullptr;
+	va_list args;
+	va_start(args, format);
+	const bool formatted = diagnostic_format_variadic_message_bounded(
+		"&+C*** WIZLOG:&n ", "\r\n", format, args, &message,
+		mobile_constructor_budget::relay, &budget, live, &retained);
+	va_end(args);
+	if (!formatted)
+		return false;
+	if (!message)
+		return true;
+	bool complete = true;
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act, PLR_WIZLOG))
+		{
+			if (!budget.live(&live, retained) ||
+			    !diagnostic_send_to_char_bounded(message, d->character,
+							     mobile_constructor_budget::relay,
+							     &budget, live))
+			{
+				complete = false;
+				break;
+			}
+		}
+	}
+	free(message);
+	return complete;
+}
+
+// Exact original tilde parser, ANSI suffix and request length. No temporary
+// std::string or substituted source. Empty original strings remain nullptr.
+bool mobile_constructor_read_text_bounded(FILE *fl, char **output,
+					  mobile_constructor_budget &budget) noexcept
+{
+	constexpr size_t frames = 2 * MAX_STRING_LENGTH * sizeof(char) + 4 * sizeof(void *) +
+				  3 * sizeof(int) + 3 * sizeof(size_t) + sizeof(bool) +
+				  sizeof(mobile_constructor_frame_scope);
+	if (!output || !budget.request(frames))
+		return false;
+	mobile_constructor_frame_scope scope(&budget, frames);
+	char buf[MAX_STRING_LENGTH]{}, tmp[MAX_STRING_LENGTH]{}, *rslt = nullptr, *point = nullptr;
+	int done = 0, length = 0, templength = 0;
+	if (!fl)
+	{
+		fprintf(stderr, "fread_str: null file pointer!\n");
+		return false;
+	}
+	do
+	{
+		if (!fgets(tmp, MAX_STRING_LENGTH - 5, fl))
+		{
+			perror("fread_string");
+			if (!mobile_constructor_logit(&budget, LOG_DEBUG, "%s", tmp))
+				return false;
+			return false;
+		}
+		templength = strlen(tmp);
+		for (point = tmp + templength - 1; (point > tmp) && isspace(*point); point--)
+			;
+		if (*point == '~')
+		{
+			*point = '\0';
+			templength = strlen(tmp);
+			done = 1;
+		}
+		else
+		{
+			point = tmp + templength - 1;
+			*(point++) = '\r';
+			*(point++) = '\n';
+			*point = '\0';
+		}
+		if (length + templength >= MAX_STRING_LENGTH)
+		{
+			if (!mobile_constructor_logit(&budget, LOG_EXIT,
+						      "fread_string: string too large (db.c)"))
+				return false;
+			return false;
+		}
+		strcat(buf + length, tmp);
+		length += strlen(tmp);
+	} while (!done);
+	if (strlen(buf) > 0)
+	{
+		if (strstr(buf, "&+"))
+			if (!((buf[strlen(buf) - 2] == '&') &&
+			      (toupper(buf[strlen(buf) - 1]) == 'N')))
+			{
+				strcat(buf, "&n");
+				length += 2;
+			}
+		const size_t request = static_cast<unsigned>(length + 1);
+		if (request > SIZE_MAX - birth_mobile_malloc_header())
+			return budget.fail(EOVERFLOW);
+		if (!budget.request(request + birth_mobile_malloc_header()))
+			return false;
+		const int saved_errno = errno;
+		errno = 0;
+		rslt = static_cast<char *>(
+			__try_malloc(request, MEM_TAG_STRING, __FILE__, __LINE__));
+		if (!rslt)
+			return budget.fail(errno ? errno : ENOMEM);
+		errno = saved_errno;
+		strcpy(rslt, buf);
+	}
+	*output = rslt;
+	return true;
+}
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 class constructor_hash
 {
-	std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context_{ EVP_MD_CTX_new(),
+	std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context_{ nullptr,
 									  EVP_MD_CTX_free };
-	bool valid_ = context_ && EVP_DigestInit_ex(context_.get(), EVP_sha256(), nullptr) == 1;
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	SHA256_CTX fixed_context_{};
+#endif
+	bool fixed_ = false, valid_ = false;
 
     public:
+	explicit constructor_hash(bool fixed = false) noexcept
+		: fixed_(fixed)
+	{
+		if (fixed_)
+		{
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+			valid_ = SHA256_Init(&fixed_context_) == 1;
+#else
+			valid_ = false;
+#endif
+		}
+		else
+		{
+			context_.reset(EVP_MD_CTX_new());
+			valid_ = context_ &&
+				 EVP_DigestInit_ex(context_.get(), EVP_sha256(), nullptr) == 1;
+		}
+	}
 	bool bytes(const void *data, size_t count) noexcept
 	{
-		valid_ = valid_ && (!count || EVP_DigestUpdate(context_.get(), data, count) == 1);
+		if (fixed_)
+		{
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+			valid_ = valid_ &&
+				 (!count || SHA256_Update(&fixed_context_, data, count) == 1);
+#else
+			valid_ = false;
+#endif
+		}
+		else
+			valid_ = valid_ &&
+				 (!count || EVP_DigestUpdate(context_.get(), data, count) == 1);
 		return valid_;
 	}
 	void integer(uint64_t value) noexcept
@@ -2147,14 +2505,33 @@ class constructor_hash
 	{
 		constructor_digest value{};
 		unsigned int length = 0;
-		if (!output || !valid_ ||
-		    EVP_DigestFinal_ex(context_.get(), value.data(), &length) != 1 ||
-		    length != value.size())
+		if (!output || !valid_)
+			return false;
+		if (fixed_)
+		{
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+			if (SHA256_Final(value.data(), &fixed_context_) != 1)
+				return false;
+#else
+			return false;
+#endif
+			length = value.size();
+		}
+		else if (EVP_DigestFinal_ex(context_.get(), value.data(), &length) != 1)
+			return false;
+		if (length != value.size())
 			return false;
 		*output = value;
 		return true;
 	}
 };
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 bool constructor_nonzero(const constructor_digest &value) noexcept
 {
@@ -2198,17 +2575,18 @@ bool constructor_binding_tag_v2(qst_func_type function, constructor_binding *out
 	return true;
 }
 
-bool constructor_string_digest(const char *value, constructor_digest *output) noexcept
+bool constructor_string_digest(const char *value, constructor_digest *output,
+			       bool fixed = false) noexcept
 {
-	constructor_hash hash;
+	constructor_hash hash(fixed);
 	hash.text(value);
 	return hash.finish(output);
 }
 
 // Hash the actual descriptor used by the parser, never a later path reopen.
 // All file movement is serialized on the game thread and restores its cursor.
-bool constructor_template_digest(long position, uint64_t length,
-				 constructor_digest *output) noexcept
+bool constructor_template_digest(long position, uint64_t length, constructor_digest *output,
+				 bool fixed = false) noexcept
 {
 	if (!mob_f || !output || position < 0 || !length || ferror(mob_f) ||
 	    length > static_cast<uint64_t>(LONG_MAX - position))
@@ -2220,7 +2598,7 @@ bool constructor_template_digest(long position, uint64_t length,
 	const long end = valid ? ftell(mob_f) : -1;
 	valid = valid && end >= position && length <= static_cast<uint64_t>(end - position) &&
 		fseek(mob_f, position, SEEK_SET) == 0;
-	constructor_hash hash;
+	constructor_hash hash(fixed);
 	hash.integer(length);
 	std::array<uint8_t, 4096> buffer{};
 	uint64_t remaining = length;
@@ -2250,7 +2628,14 @@ struct native_mobile_constructor_session
 	P_char prepared = nullptr;
 	unpublished_mobile_cleanup cleanup;
 	size_t clocks = 0;
+	mobile_constructor_budget *budget = nullptr;
 	constructor_hash inputs;
+	explicit native_mobile_constructor_session(
+		mobile_constructor_budget *bounded = nullptr) noexcept
+		: budget(bounded)
+		, inputs(bounded != nullptr)
+	{
+	}
 	constructor_digest effective{};
 	bool inputs_complete = false;
 	qst_func_type original_binding = nullptr, installed_fallback = nullptr;
@@ -2528,6 +2913,15 @@ bool native_mobile_constructor_session::after_conversion(P_char mobile) noexcept
 static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detached,
 			       native_mobile_constructor_session *capsule = nullptr)
 {
+	mobile_constructor_budget *budget = capsule ? capsule->budget : nullptr;
+	constexpr size_t parser_frames =
+		sizeof(P_char) + sizeof(unpublished_mobile_cleanup) +
+		MAX_STRING_LENGTH * sizeof(char) + MAX_INPUT_LENGTH * sizeof(char) + sizeof(char) +
+		10 * sizeof(int) + 9 * sizeof(long) + 9 * sizeof(unsigned) + 3 * sizeof(bool) +
+		2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(mobile_constructor_frame_scope);
+	if (budget && !budget->request(parser_frames))
+		return nullptr;
+	mobile_constructor_frame_scope frame_scope(budget, parser_frames);
 	P_char mob = NULL;
 	unpublished_mobile_cleanup cleanup;
 	char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
@@ -2542,31 +2936,114 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		if ((nr = real_mobile(nr)) < 0)
 		{
 #if defined(DB_NOTIFY) && DB_NOTIFY
-			logit(LOG_DEBUG, "read_mobile: Mob %d not in database", i);
+			if (!mobile_constructor_logit(budget, LOG_DEBUG,
+						      "read_mobile: Mob %d not in database", i))
+				return nullptr;
 #endif
 			return 0;
 		}
 	if (nr < 0)
 	{
-		logit(LOG_DEBUG, "read_mobile: negative rnum (%d). args %d, %s", nr, i,
-		      type ? "VIRTUAL" : "REAL");
+		if (!mobile_constructor_logit(budget, LOG_DEBUG,
+					      "read_mobile: negative rnum (%d). args %d, %s", nr, i,
+					      type ? "VIRTUAL" : "REAL"))
+			return nullptr;
 		return 0;
 	}
 	fseek(mob_f, mob_index[nr].pos, 0);
 	if (capsule && (ferror(mob_f) || ftell(mob_f) != mob_index[nr].pos))
 		return nullptr;
 
-	mob = (P_char)mm_get(dead_mob_pool);
+	if (budget)
+	{
+		size_t observed = 0;
+		const int saved_errno = errno;
+		errno = 0;
+		if (!dead_mob_pool)
+		{
+			budget->fail(EINVAL);
+			return nullptr;
+		}
+		if (!quest_mobile_native_mobile_pool_storage_bytes(&observed))
+		{
+			budget->fail(errno ? errno : EIO);
+			return nullptr;
+		}
+		errno = saved_errno;
+		size_t request = 0;
+		if (!dead_mob_pool->head)
+		{
+			if (dead_mob_pool->chunk_size <= 0)
+			{
+				budget->fail(EINVAL);
+				return nullptr;
+			}
+			if (static_cast<size_t>(dead_mob_pool->chunk_size) > SIZE_MAX / 4096)
+			{
+				budget->fail(EOVERFLOW);
+				return nullptr;
+			}
+			request = static_cast<size_t>(dead_mob_pool->chunk_size) * 4096;
+		}
+		if (!budget->request(request))
+			return nullptr;
+		errno = 0;
+		if (!mm_try_reserve_free_slot(dead_mob_pool))
+		{
+			budget->fail(errno ? errno : ENOMEM);
+			return nullptr;
+		}
+		errno = saved_errno;
+		if (!budget->request(0))
+			return nullptr;
+		errno = 0;
+		mob = static_cast<P_char>(mm_try_get(dead_mob_pool));
+		if (!mob)
+		{
+			budget->fail(errno ? errno : EIO);
+			return nullptr;
+		}
+		errno = saved_errno;
+	}
+	else
+		mob = (P_char)mm_get(dead_mob_pool);
 
 	clear_char(mob);
 	if (detached)
 		cleanup.character = mob;
-	CREATE(mob->only.npc, npc_only_data, 1, MEM_TAG_NPCONLY);
+	if (budget)
+	{
+		budget->detached = mob;
+		const size_t request = sizeof(npc_only_data) + birth_mobile_malloc_header();
+		if (!budget->request(request))
+			return nullptr;
+		const int saved_errno = errno;
+		errno = 0;
+		mob->only.npc = static_cast<npc_only_data *>(
+			__try_malloc(sizeof(npc_only_data), MEM_TAG_NPCONLY, __FILE__, __LINE__));
+		if (!mob->only.npc)
+		{
+			budget->fail(errno ? errno : ENOMEM);
+			return nullptr;
+		}
+		errno = saved_errno;
+	}
+	else
+		CREATE(mob->only.npc, npc_only_data, 1, MEM_TAG_NPCONLY);
 
 	if (!mob->only.npc)
 	{
-		wizlog(56, "mob has no only.npc struct!");
-		logit(LOG_DEBUG, "mob %s has no only.npc struct!", GET_NAME(mob));
+		if (budget)
+		{
+			if (!mobile_constructor_wizlog_bounded(*budget, 56,
+							       "mob has no only.npc struct!"))
+				return nullptr;
+		}
+		else
+			wizlog(56, "mob has no only.npc struct!");
+		if (!mobile_constructor_logit(budget, LOG_DEBUG, "mob %s has no only.npc struct!",
+					      GET_NAME(mob)))
+			return nullptr;
 		if (!detached)
 			mm_release(dead_mob_pool, mob);
 		return NULL;
@@ -2604,10 +3081,24 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 
 	if (!mob_index[nr].keys)
 	{
-		mob->player.name = fread_string(mob_f);
+		if (budget)
+		{
+			if (!mobile_constructor_read_text_bounded(mob_f, &mob->player.name,
+								  *budget))
+				return nullptr;
+		}
+		else
+			mob->player.name = fread_string(mob_f);
 		if (!mob->player.name)
 		{
-			wizlog(56, "Error with mob:  No name");
+			if (budget)
+			{
+				if (!mobile_constructor_wizlog_bounded(*budget, 56,
+								       "Error with mob:  No name"))
+					return nullptr;
+			}
+			else
+				wizlog(56, "Error with mob:  No name");
 			static char partial_mobile_name[] = "partial_mobile";
 			mob->player.name = partial_mobile_name;
 			SET_BIT(mob->specials.act, ACT_ISNPC);
@@ -2628,7 +3119,14 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 
 	if (!mob_index[nr].desc2)
 	{
-		mob->player.short_descr = fread_string(mob_f);
+		if (budget)
+		{
+			if (!mobile_constructor_read_text_bounded(mob_f, &mob->player.short_descr,
+								  *budget))
+				return nullptr;
+		}
+		else
+			mob->player.short_descr = fread_string(mob_f);
 		mob_index[nr].desc2 = mob->player.short_descr;
 	}
 	else
@@ -2639,7 +3137,14 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 
 	if (!mob_index[nr].desc1)
 	{
-		mob->player.long_descr = fread_string(mob_f);
+		if (budget)
+		{
+			if (!mobile_constructor_read_text_bounded(mob_f, &mob->player.long_descr,
+								  *budget))
+				return nullptr;
+		}
+		else
+			mob->player.long_descr = fread_string(mob_f);
 		mob_index[nr].desc1 = mob->player.long_descr;
 	}
 	else
@@ -2650,7 +3155,14 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 
 	if (!mob_index[nr].desc3)
 	{
-		mob->player.description = fread_string(mob_f);
+		if (budget)
+		{
+			if (!mobile_constructor_read_text_bounded(mob_f, &mob->player.description,
+								  *budget))
+				return nullptr;
+		}
+		else
+			mob->player.description = fread_string(mob_f);
 		mob_index[nr].desc3 = mob->player.description;
 	}
 	else
@@ -2706,8 +3218,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	{
 		if (sscanf(buf, " %ld %ld %ld %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3)
 		{
-			logit(LOG_DEBUG, "Mob %d has messed up format.",
-			      mob_index[nr].virtual_number);
+			if (!mobile_constructor_logit(budget, LOG_DEBUG,
+						      "Mob %d has messed up format.",
+						      mob_index[nr].virtual_number))
+				return nullptr;
 			SET_BIT(mob->specials.act, ACT_ISNPC);
 			if (!detached)
 				extract_char(mob);
@@ -2786,9 +3300,13 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		if (tmp > MAXLVL || tmp < 1)
 		{
-			logit(LOG_DEBUG, "Bad level %ld for mob '%s' %d.", tmp, J_NAME(mob),
-			      GET_VNUM(mob));
-			debug("Bad level %ld for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob));
+			if (!mobile_constructor_logit(budget, LOG_DEBUG,
+						      "Bad level %ld for mob '%s' %d.", tmp,
+						      J_NAME(mob), GET_VNUM(mob)))
+				return nullptr;
+			if (!mobile_constructor_debug(budget, "Bad level %ld for mob '%s' %d.", tmp,
+						      J_NAME(mob), GET_VNUM(mob)))
+				return nullptr;
 			mob->player.level = level = (tmp > MAXLVL) ? MAXLVL : 1;
 		}
 		else
@@ -2859,8 +3377,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		}
 		mob->points.hit = mob->points.max_hit = mob->points.base_hit;
 		if (mob->points.hit <= 0)
-			logit(LOG_MOB, "Warning: MOB #%d has negative (%d) hp.\n",
-			      mob_index[nr].virtual_number, mob->points.hit);
+			if (!mobile_constructor_logit(
+				    budget, LOG_MOB, "Warning: MOB #%d has negative (%d) hp.\n",
+				    mob_index[nr].virtual_number, mob->points.hit))
+				return nullptr;
 
 		REQUIRED_FSCANF(mob_f, " %ldd%ld+%ld \n", &tmp, &tmp2, &tmp3);
 		mob->points.base_damroll = mob->points.damroll = tmp3 + level;
@@ -2879,8 +3399,11 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 			GET_COPPER(mob) = tmp1; /* * (number(50, 200) / 100); */
 			if (tmp > 10000000)
 			{
-				logit(LOG_MOB, "Mob '%s' %d has extreme exp %s.", mob->player.name,
-				      mob_index[nr].virtual_number, comma_string(tmp));
+				if (!mobile_constructor_logit(
+					    budget, LOG_MOB, "Mob '%s' %d has extreme exp %s.",
+					    mob->player.name, mob_index[nr].virtual_number,
+					    comma_string(tmp)))
+					return nullptr;
 			}
 			GET_EXP(mob) = tmp * (capsule ?
 						      capsule->real_input("parsed-exp",
@@ -2952,8 +3475,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		mob->points.hit = mob->points.max_hit = mob->points.base_hit;
 		if (mob->points.hit < 0)
 		{
-			logit(LOG_DEBUG, "MOB #%d has negative (%d) hp.",
-			      mob_index[nr].virtual_number, mob->points.hit);
+			if (!mobile_constructor_logit(
+				    budget, LOG_DEBUG, "MOB #%d has negative (%d) hp.",
+				    mob_index[nr].virtual_number, mob->points.hit))
+				return nullptr;
 		}
 
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
@@ -2991,7 +3516,9 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	switch (tmp)
 	{
 	case 0: /* * was POSITION_DEAD */
-		logit(LOG_DEBUG, "Mob %d tried to load dead", mob_index[nr].virtual_number);
+		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d tried to load dead",
+					      mob_index[nr].virtual_number))
+			return nullptr;
 		SET_POS(mob, POS_PRONE + STAT_DYING);
 		break;
 	case 1: /* * was POSITION_MORTALLYW */
@@ -3013,7 +3540,9 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		SET_POS(mob, POS_SITTING + STAT_NORMAL);
 		break;
 	case 7: /* * was POSITION_FIGHTING */
-		logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
+		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d loaded fighting.",
+					      mob_index[nr].virtual_number))
+			return nullptr;
 		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
 		SET_POS(mob, POS_STANDING + STAT_NORMAL);
@@ -3041,7 +3570,9 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	switch (tmp)
 	{
 	case 0: /* * was POSITION_DEAD */
-		logit(LOG_DEBUG, "Mob %d tried to load dead", mob_index[nr].virtual_number);
+		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d tried to load dead",
+					      mob_index[nr].virtual_number))
+			return nullptr;
 		SET_POS(mob, POS_PRONE + STAT_DYING);
 		break;
 	case 1: /* * was POSITION_MORTALLYW */
@@ -3063,7 +3594,9 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		SET_POS(mob, POS_SITTING + STAT_NORMAL);
 		break;
 	case 7: /* * was POSITION_FIGHTING */
-		logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
+		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d loaded fighting.",
+					      mob_index[nr].virtual_number))
+			return nullptr;
 		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
 		SET_POS(mob, POS_STANDING + STAT_NORMAL);
@@ -3274,8 +3807,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 				     Gbuf1))
 				mob->player.race = i;
 
-		logit(LOG_MOB, "Old style mob: %d Race: %s(%d)", mob_index[nr].virtual_number,
-		      Gbuf1, mob->player.race);
+		if (!mobile_constructor_logit(budget, LOG_MOB, "Old style mob: %d Race: %s(%d)",
+					      mob_index[nr].virtual_number, Gbuf1,
+					      mob->player.race))
+			return nullptr;
 
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		//    GET_LEVEL(mob) = tmp;
@@ -3380,11 +3915,14 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	if (foo > bar)
 	{
 		foo = bar;
-		logit(LOG_MOB,
-		      "FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
-		      mob_index[nr].virtual_number, mob->points.damnodice, mob->points.damsizedice,
-		      GET_DAMROLL(mob), GET_DAMROLL(mob) + mob->points.damnodice,
-		      GET_DAMROLL(mob) + (mob->points.damnodice * mob->points.damsizedice));
+		if (!mobile_constructor_logit(
+			    budget, LOG_MOB,
+			    "FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
+			    mob_index[nr].virtual_number, mob->points.damnodice,
+			    mob->points.damsizedice, GET_DAMROLL(mob),
+			    GET_DAMROLL(mob) + mob->points.damnodice,
+			    GET_DAMROLL(mob) + (mob->points.damnodice * mob->points.damsizedice)))
+			return nullptr;
 	}
 
 	mob->curr_stats = mob->base_stats;
@@ -3401,8 +3939,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		if (mob_index[nr].number == (detached ? 0 : 1)) /*
 		                                * only first, not every
 		                                */
-			logit(LOG_MOB, "ACT_SPEC, but no function: %d %s",
-			      mob_index[nr].virtual_number, GET_NAME(mob));
+			if (!mobile_constructor_logit(budget, LOG_MOB,
+						      "ACT_SPEC, but no function: %d %s",
+						      mob_index[nr].virtual_number, GET_NAME(mob)))
+				return nullptr;
 	}
 	/* if they have a func but no spec bit, add one -- DTS 2/12/95 */
 	if (mob_index[nr].func.mob && !IS_SET(mob->specials.act, ACT_SPEC))
@@ -3431,6 +3971,11 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		schedule_mobile_periodic(mob, false);
 
 	if (capsule && !capsule->before_conversion(mob))
+		return nullptr;
+	constexpr size_t conversion_leaf_frames = MAX_STRING_LENGTH * sizeof(char) +
+						  2 * sizeof(P_char) + 14 * sizeof(int) +
+						  7 * sizeof(float) + sizeof(bool);
+	if (budget && !budget->request(conversion_leaf_frames))
 		return nullptr;
 	convertMob(mob, apply_mob_gold);
 	if (capsule && !capsule->after_conversion(mob))
@@ -3464,11 +4009,13 @@ bool construct_native_mobile_capsule(void *opaque)
 	auto &session = *static_cast<native_mobile_constructor_session *>(opaque);
 	session.prepared = read_mobile_body(session.rnum, REAL, session.apply_gold, true, &session);
 	session.cleanup.character = session.prepared;
+	if (session.budget)
+		session.budget->detached = session.prepared;
 	return session.prepared && session.clocks == 2;
 }
 
-bool constructor_cache_matches(int rnum,
-			       const quest_mobile_native_constructor_recipe &recipe) noexcept
+bool constructor_cache_matches(int rnum, const quest_mobile_native_constructor_recipe &recipe,
+			       bool fixed = false) noexcept
 {
 	const auto &entry = mob_index[rnum];
 	const std::array<const char *, 4> strings{ entry.keys, entry.desc2, entry.desc1,
@@ -3477,7 +4024,7 @@ bool constructor_cache_matches(int rnum,
 		if (strings[i])
 		{
 			constructor_digest digest{};
-			if (!constructor_string_digest(strings[i], &digest) ||
+			if (!constructor_string_digest(strings[i], &digest, fixed) ||
 			    digest != recipe.string_digests[i])
 				return false;
 		}
@@ -3535,8 +4082,21 @@ bool constructor_finish_capsule(native_mobile_constructor_session &session,
 
 bool constructor_finish_capsule_v2(native_mobile_constructor_session &session,
 				   quest_mobile_native_constructor_recipe *recipe,
-				   qst_func_type original_quest_binding) noexcept
+				   qst_func_type original_quest_binding,
+				   mobile_constructor_budget *budget = nullptr) noexcept
 {
+	constexpr size_t frames =
+		sizeof(constructor_hash) + mobile_constructor_sha_frames +
+		8 * sizeof(constructor_digest) + sizeof(std::array<const char *, 4>) +
+		4 * sizeof(bool) + 2 * sizeof(constructor_binding) + 2 * sizeof(long) +
+		sizeof(uint64_t) + 8 * sizeof(void *) + 8 * sizeof(size_t) +
+		sizeof(mobile_constructor_frame_scope) + sizeof(fpos_t) + 4096 * sizeof(uint8_t);
+	if (budget && !budget->request(frames))
+		return false;
+	mobile_constructor_frame_scope scope(budget, frames);
+	size_t live = 0;
+	if (budget && !budget->live(&live))
+		return false;
 	if (!session.prepared || !recipe || session.clocks != 2 ||
 	    (recipe->wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
 	     recipe->wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION) ||
@@ -3551,10 +4111,18 @@ bool constructor_finish_capsule_v2(native_mobile_constructor_session &session,
 		return false;
 	constructor_binding after, quest;
 	constructor_digest procedure{}, tail{};
-	if (!native_mobile_birth_procedure_capture(recipe->mobile_vnum, recipe->build_digest,
-						   &procedure) ||
-	    !native_mobile_birth_reset_tail_capture(recipe->mobile_vnum, recipe->reset_room_vnum,
-						    recipe->reset_shop_index, &tail) ||
+	if (!(budget ? native_mobile_birth_procedure_capture_bounded(
+			       recipe->mobile_vnum, recipe->build_digest, &procedure,
+			       mobile_constructor_budget::relay, budget, live) :
+		       native_mobile_birth_procedure_capture(recipe->mobile_vnum,
+							     recipe->build_digest, &procedure)) ||
+	    !(budget ? native_mobile_birth_reset_tail_capture_bounded(
+			       recipe->mobile_vnum, recipe->reset_room_vnum,
+			       recipe->reset_shop_index, &tail, mobile_constructor_budget::relay,
+			       budget, live) :
+		       native_mobile_birth_reset_tail_capture(recipe->mobile_vnum,
+							      recipe->reset_room_vnum,
+							      recipe->reset_shop_index, &tail)) ||
 	    tail != recipe->reset_tail || !constructor_binding_tag_v2(actual_after, &after) ||
 	    !constructor_binding_tag_v2(original_quest_binding, &quest) ||
 	    quest != recipe->quest_binding ||
@@ -3571,7 +4139,8 @@ bool constructor_finish_capsule_v2(native_mobile_constructor_session &session,
 		return false;
 	const uint64_t length = static_cast<uint64_t>(end - position);
 	constructor_digest raw{};
-	if (!constructor_template_digest(position, length, &raw) || !session.inputs_complete)
+	if (!constructor_template_digest(position, length, &raw, budget != nullptr) ||
+	    !session.inputs_complete)
 		return false;
 	const std::array<const char *, 4> strings{ session.prepared->player.name,
 						   session.prepared->player.short_descr,
@@ -3579,9 +4148,9 @@ bool constructor_finish_capsule_v2(native_mobile_constructor_session &session,
 						   session.prepared->player.description };
 	std::array<constructor_digest, 4> digests{};
 	for (size_t i = 0; i < strings.size(); ++i)
-		if (!constructor_string_digest(strings[i], &digests[i]))
+		if (!constructor_string_digest(strings[i], &digests[i], budget != nullptr))
 			return false;
-	constructor_hash cached;
+	constructor_hash cached(budget != nullptr);
 	for (const auto &value : digests)
 		cached.bytes(value.data(), value.size());
 	constructor_digest cache_digest{};
@@ -14015,4 +14584,253 @@ bool quest_mobile_native_stage::retained_bytes_excluding_mobile_pool(size_t *out
 	*output = request;
 	errno = 0;
 	return true;
+}
+
+bool quest_mobile_native_stage::prepare_captured_bounded(
+	int nr, int type, bool apply_mob_gold, const quest_mobile_native_constructor_digest &build,
+	int32_t reset_room_vnum, int configured_shop,
+	quest_mobile_native_constructor_recipe *output,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&       \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	// Full recipe/session/budget and original capsule RNG working objects,
+	// template descriptor/hash buffer, cache digests and conversion witnesses.
+	constexpr size_t frames =
+		sizeof(quest_mobile_native_constructor_recipe) +
+		sizeof(native_mobile_constructor_session) + sizeof(mobile_constructor_budget) +
+		sizeof(constructor_hash) + mobile_constructor_sha_frames +
+		sizeof(std::array<uint8_t, 4096>) + sizeof(fpos_t) +
+		10 * sizeof(constructor_digest) + sizeof(std::array<const char *, 4>) +
+		sizeof(native_mobile_birth_random_recipe) + sizeof(std::array<uint64_t, 4>) +
+		2 * sizeof(uint64_t) + 2 * sizeof(bool) + sizeof(char) +
+		// Original conversion-input before/after helper frames, isname, pure
+		// recipe/range validation and fixed SHA scalar/text helper carriers.
+		MAX_STRING_LENGTH * sizeof(char) + sizeof(std::initializer_list<int>) +
+		31 * sizeof(int) + 10 * sizeof(float) + 6 * sizeof(double) + 26 * sizeof(void *) +
+		20 * sizeof(size_t) + 12 * sizeof(uint64_t) + 12 * sizeof(bool) +
+		2 * sizeof(constructor_binding) + sizeof(qst_func_type) +
+		// New refusal propagation: entry errno, live/request/relay/fail saved
+		// errno/code/this/result carriers coexist with the original call path.
+		8 * sizeof(int) + 4 * sizeof(void *) + 4 * sizeof(bool);
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const int admission_errno = errno;
+	errno = 0;
+	if (!reserve(outer_live + frames, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	errno = admission_errno;
+	mobile_constructor_budget budget{ current_global, reserve, context };
+	if (!budget.init(outer_live + frames))
+		return false;
+	size_t live = 0;
+	if (!budget.live(&live))
+		return false;
+	if (!output || !constructor_nonzero(build) || !nevent_is_game_thread() || character_ ||
+	    publication_next_step_ || publication_step_started_ || publication_consumed_ ||
+	    publication_runtime_id_ || mobile_probe_mode || (type != REAL && type != VIRTUAL) ||
+	    !mob_f || !mob_index || ferror(mob_f))
+		return false;
+	const int rnum = type == VIRTUAL ? real_mobile(nr) : nr;
+	if (rnum < 0 || rnum > top_of_mobt)
+		return false;
+	quest_mobile_native_constructor_recipe recipe;
+	recipe.wire_version = NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION;
+	recipe.mobile_vnum = mob_index[rnum].virtual_number;
+	recipe.apply_mob_gold = apply_mob_gold;
+	recipe.build_digest = build;
+	recipe.reset_room_vnum = reset_room_vnum;
+	recipe.reset_shop_index = configured_shop;
+	if (!native_mobile_birth_procedure_capture_bounded(
+		    recipe.mobile_vnum, build, &recipe.procedure_before,
+		    mobile_constructor_budget::relay, &budget, live) ||
+	    !native_mobile_birth_reset_tail_capture_bounded(
+		    recipe.mobile_vnum, reset_room_vnum, configured_shop, &recipe.reset_tail,
+		    mobile_constructor_budget::relay, &budget, live) ||
+	    !constructor_binding_tag_v2(mob_index[rnum].func.mob, &recipe.binding_before) ||
+	    !constructor_binding_tag_v2(mob_index[rnum].qst_func, &recipe.quest_binding))
+		return false;
+	const qst_func_type original_quest_binding = mob_index[rnum].qst_func;
+	native_mobile_constructor_session session(&budget);
+	session.rnum = rnum;
+	session.original_binding = mob_index[rnum].func.mob;
+	session.apply_gold = apply_mob_gold;
+	session.recipe = &recipe;
+	if (!native_mobile_birth_random_owner::capture(construct_native_mobile_capsule, &session,
+						       &recipe.random) ||
+	    !constructor_finish_capsule_v2(session, &recipe, original_quest_binding, &budget) ||
+	    !native_mobile_birth_constructor_recipe_valid(recipe))
+		return false;
+	*output = recipe;
+	character_ = session.prepared;
+	budget.detached = nullptr;
+	session.cleanup.character = nullptr;
+	session.keep_binding = true;
+	return true;
+#else
+	(void)nr;
+	(void)type;
+	(void)apply_mob_gold;
+	(void)build;
+	(void)reset_room_vnum;
+	(void)configured_shop;
+	(void)output;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool quest_mobile_native_stage::restore_constructor_bounded(
+	const quest_mobile_native_constructor_recipe &original,
+	const quest_mobile_native_constructor_digest &build,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&       \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	// Full recipe/session/budget and original capsule RNG working objects,
+	// template descriptor/hash buffer, cache digests and conversion witnesses.
+	constexpr size_t frames =
+		sizeof(quest_mobile_native_constructor_recipe) +
+		sizeof(native_mobile_constructor_session) + sizeof(mobile_constructor_budget) +
+		sizeof(constructor_hash) + mobile_constructor_sha_frames +
+		sizeof(std::array<uint8_t, 4096>) + sizeof(fpos_t) +
+		10 * sizeof(constructor_digest) + sizeof(std::array<const char *, 4>) +
+		sizeof(native_mobile_birth_random_recipe) + sizeof(std::array<uint64_t, 4>) +
+		2 * sizeof(uint64_t) + 2 * sizeof(bool) + sizeof(char) +
+		// Original conversion-input before/after helper frames, isname, pure
+		// recipe/range validation and fixed SHA scalar/text helper carriers.
+		MAX_STRING_LENGTH * sizeof(char) + sizeof(std::initializer_list<int>) +
+		31 * sizeof(int) + 10 * sizeof(float) + 6 * sizeof(double) + 26 * sizeof(void *) +
+		20 * sizeof(size_t) + 12 * sizeof(uint64_t) + 12 * sizeof(bool) +
+		2 * sizeof(constructor_binding) + sizeof(qst_func_type) +
+		// New refusal propagation: entry errno, live/request/relay/fail saved
+		// errno/code/this/result carriers coexist with the original call path.
+		8 * sizeof(int) + 4 * sizeof(void *) + 4 * sizeof(bool);
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const int admission_errno = errno;
+	errno = 0;
+	if (!reserve(outer_live + frames, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	errno = admission_errno;
+	mobile_constructor_budget budget{ current_global, reserve, context };
+	if (!budget.init(outer_live + frames))
+		return false;
+	size_t live = 0;
+	if (!budget.live(&live))
+		return false;
+	if ((original.wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
+	     original.wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION) ||
+	    !native_mobile_birth_constructor_recipe_valid(original) ||
+	    !constructor_nonzero(build) || build != original.build_digest ||
+	    !nevent_is_game_thread() || character_ || publication_next_step_ ||
+	    publication_step_started_ || publication_consumed_ || publication_runtime_id_ ||
+	    mobile_probe_mode || !mob_f || !mob_index || ferror(mob_f) ||
+	    !constructor_binding_transition(original.binding_before, original.binding_after) ||
+	    (original.binding_before == original.binding_after &&
+	     original.procedure_before != original.procedure_after))
+		return false;
+	for (const int64_t clock : original.clock_values)
+		if (static_cast<int64_t>(static_cast<time_t>(clock)) != clock)
+			return false;
+	const int rnum = real_mobile(original.mobile_vnum);
+	if (rnum < 0 || rnum > top_of_mobt)
+		return false;
+	constructor_binding actual, quest;
+	constructor_digest procedure{}, tail{}, raw{};
+	if (!native_mobile_birth_procedure_capture_bounded(original.mobile_vnum, build, &procedure,
+							   mobile_constructor_budget::relay,
+							   &budget, live) ||
+	    !native_mobile_birth_reset_tail_capture_bounded(
+		    original.mobile_vnum, original.reset_room_vnum, original.reset_shop_index,
+		    &tail, mobile_constructor_budget::relay, &budget, live) ||
+	    tail != original.reset_tail ||
+	    !constructor_binding_tag_v2(mob_index[rnum].func.mob, &actual) ||
+	    !constructor_binding_tag_v2(mob_index[rnum].qst_func, &quest) ||
+	    quest != original.quest_binding ||
+	    !((actual == original.binding_before && procedure == original.procedure_before) ||
+	      (actual == original.binding_after && procedure == original.procedure_after)) ||
+	    !constructor_cache_matches(rnum, original, true) ||
+	    !constructor_template_digest(mob_index[rnum].pos, original.template_bytes, &raw,
+					 true) ||
+	    raw != original.template_digest)
+		return false;
+	const qst_func_type original_quest_binding = mob_index[rnum].qst_func;
+	quest_mobile_native_constructor_recipe recipe = original;
+	native_mobile_constructor_session session(&budget);
+	session.rnum = rnum;
+	session.original_binding = mob_index[rnum].func.mob;
+	session.apply_gold = recipe.apply_mob_gold;
+	session.replay = true;
+	session.recipe = &recipe;
+	if (!native_mobile_birth_random_owner::replay(recipe.random,
+						      construct_native_mobile_capsule, &session) ||
+	    !constructor_finish_capsule_v2(session, &recipe, original_quest_binding, &budget))
+		return false;
+	shared_affect_constructor_restored_ = true;
+	character_ = session.prepared;
+	budget.detached = nullptr;
+	session.cleanup.character = nullptr;
+	session.keep_binding = true;
+	return true;
+#else
+	(void)original;
+	(void)build;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#endif
 }

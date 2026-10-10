@@ -15840,3 +15840,19 @@ pass. Existing conservative shared-shopkeeper reservation/full caller/emitted/
 native/global32MiB/recovery/R1-R8 remain OPEN; tests deferred major-plan batch.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE. No major
 plan or full accounting completion is claimed.
+
+
+## Original native mobile constructor admission implemented — 2026-10-10
+
+[Source checkpoint](ORIGINAL_NATIVE_MOBILE_CONSTRUCTOR_ADMISSION_2026-10-10.md)
+supplies complete original warm NBC2/frozen NBC2/3 constructor admission with
+real pool/NPC/cache/parser/diagnostic/fixed-SHA providers. Default behavior and
+RNG/time/fallback/strong outputs survive. Existing errno distinguishes resource
+refusal and actual metadata corruption through cleanup, without stale errors.
+Independent RAW/installed source review, whole70/74/74-member chain/23 current
+dependencies/29 library captures/two inverses/newline aliases/formatting pass.
+458pins/two updates/noadds/931unchangedpolicies/source-proven relocations and
+protected Plan5 WIP authenticate. Actual factory/publication/item/adoption/startup,
+stdio/conversion/emitted/global32MiB/native/recovery/R1–R8 remain OPEN. Tests
+deferred major-plan batch. Inactive/CLOSED, coverage incomplete, release BLOCKED,
+goal ACTIVE. No major-plan or runtime gate completion is claimed.

@@ -277,6 +277,25 @@ class quest_mobile_native_stage
 			       std::span<const native_mobile_birth_recovery_choice>,
 			       struct char_data **live_after) noexcept;
 	bool prepare(int nr, int type, bool apply_mob_gold);
+
+	// Complete original NBC2/3 constructor and fixed local RNG/time witnesses.
+	// Actual configured pool, NPC-only malloc and tilde strings are admitted.
+	// Whole G includes the genuine mobile pool/catalog/source once; detached
+	// NPC-only remains stage/capsule-owned. All transfer outputs are strong.
+	// Pure profile/missing-callback/checked-add/admission refusals retain
+	// ENOTSUP/EINVAL/EOVERFLOW/ENOBUFS (or the actual callback error).
+	// Actual native allocation refusal preserves ENOMEM/underlying error;
+	// cleanup cannot erase a latched resource error. Outputs stay unchanged.
+	bool prepare_captured_bounded(int, int, bool,
+				      const quest_mobile_native_constructor_digest &, int32_t, int,
+				      quest_mobile_native_constructor_recipe *,
+				      bool (*)(size_t *, void *) noexcept,
+				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	bool restore_constructor_bounded(const quest_mobile_native_constructor_recipe &,
+					 const quest_mobile_native_constructor_digest &,
+					 bool (*)(size_t *, void *) noexcept,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
 	bool prepare_captured(int nr, int type, bool apply_mob_gold,
 			      const quest_mobile_native_constructor_digest &current_build,
 			      quest_mobile_native_constructor_recipe *) noexcept;
