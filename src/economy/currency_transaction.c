@@ -2658,3 +2658,96 @@ bool currency_transaction_restore_replayed_command_bounded(const critical_comman
 	return false;
 #endif
 }
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+namespace
+{
+constexpr size_t currency_borrowed_replay_frames =
+	// Real borrowed restore command/scope refs, outer and bool result; genuine
+	// complete owned body's command/budget refs, two admission scalars/result.
+	4 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool) +
+	// Two real static callback signatures and result carriers plus their named
+	// typed scope pointer locals. No lambda conversion or new scope is reached.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) +
+	// Original actor/account/racewar/room flag, two endpoint backing
+	// pointers/initializer descriptor/current endpoint reference.
+	sizeof(uint32_t) + sizeof(bool) +
+	sizeof(std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1>) + sizeof(uint8_t) +
+	2 * sizeof(void *) + sizeof(std::initializer_list<const coin_transfer_endpoint *>) +
+	3 * sizeof(void *) +
+	// Actual original restored_room_coin_shape params/drop/pickup,
+	// empty lambda and owner predicate refs/results/index getters.
+	2 * sizeof(void *) + 2 * sizeof(bool) + sizeof(char) + sizeof(void *) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(bool) + 8 * (sizeof(void *) + sizeof(size_t)) +
+	// Original successful health update full table iterator/reference,
+	// allocation-free publication state scalar predicate and results.
+	4 * sizeof(void *) + sizeof(currency_publication_state) + sizeof(bool) +
+	currency_full_lookup_erase_frames + currency_full_optional_frames;
+} // namespace
+#endif
+
+size_t currency_transaction_replay_owner::frame_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	// Complete INITIAL prospective currency prefix: real budget inline object,
+	// preserved full prefix/peak/current observation profile and each genuine
+	// codec/copy/valid frame getter reached by the first peak. ROOT admits this
+	// before its first physical census; no live table baseline is inferred.
+	return currency_borrowed_replay_frames + sizeof(currency_full_replay_budget) +
+	       13 * sizeof(void *) + 10 * sizeof(size_t) + 8 * sizeof(bool) +
+	       4 * (sizeof(void *) + sizeof(size_t)) + critical_command_copy_frame_bytes() +
+	       critical_command_valid_frame_bytes() + item_transfer_payload_copy_frame_bytes() +
+	       4 * sizeof(size_t);
+#else
+	return 0;
+#endif
+}
+
+bool currency_transaction_replay_owner::reserve_exclusive(size_t exclusive, void *actual) noexcept
+{
+	auto *scope = static_cast<player_save_coin_replay_budget_scope_owner *>(actual);
+	return scope && scope->admit(exclusive);
+}
+
+bool currency_transaction_replay_owner::restore_exclusive(const critical_command &command,
+							  void *actual, size_t exclusive) noexcept
+{
+	auto *scope = static_cast<player_save_coin_replay_budget_scope_owner *>(actual);
+	return scope && scope->restore(command, exclusive);
+}
+
+bool currency_transaction_replay_owner::restore(const critical_command &command,
+						player_save_coin_replay_budget_scope_owner &scope,
+						size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	// ROOT authenticates the uninterrupted coordinator init unique_lock and
+	// startup lifecycle exclusion, and keeps this actual SAME scope alive over
+	// the complete mixed scan/replay. No constructor or second pipeline lock.
+	if (!scope.prepared() || !scope.reserve_)
+		return false;
+	try
+	{
+		currency_full_replay_budget budget{ reserve_exclusive, restore_exclusive, &scope,
+						    outer_live, currency_borrowed_replay_frames };
+		// ROOT's genuine bootstrap already owns the complete same-cut physical
+		// baseline plus frame_bytes before these original retained observations.
+		// Every subsequent request refreshes currency and the actual same scope.
+		if (!budget.peak())
+			return false;
+		return currency_full_replay_owned(command, budget);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	(void)command;
+	(void)scope;
+	(void)outer_live;
+	return false;
+#endif
+}

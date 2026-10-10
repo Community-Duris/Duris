@@ -1,5 +1,8 @@
 #include "net/network_wakeup.h"
 #include "player/player_save_worker.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_snapshot_codec.h"
+#include "player/player_retained_deque.h"
 #include "player/player_save_execution_guard.h"
 #include "sql/sql_thread_init.h"
 
@@ -73,7 +76,7 @@ std::mutex worker_mutex;
 std::condition_variable job_available;
 std::condition_variable result_available;
 std::unordered_map<int, pid_slot> slots;
-std::deque<int> ready_pids;
+player_retained_deque<int> ready_pids;
 // Worker delivery must not allocate after a real journal ACK. All entries stay
 // within the existing result bound; their receipts remain on the active job
 // until pulse validates the revision and transfers that ownership.
@@ -105,6 +108,39 @@ class completion_queue
 		while (!empty())
 			pop_front();
 		head_ = 0;
+	}
+
+	// Observe all allocated receipt vectors, including idle ring entries.
+	// Array inline storage/head/count are counted by the enclosing owner.
+	bool current_heap_bytes(size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		size_t total = 0;
+		const auto add = [&total](size_t count, size_t width) noexcept
+		{
+			if (!width || count > SIZE_MAX / width)
+				return false;
+			const size_t value = count * width;
+			if (value > SIZE_MAX - total)
+				return false;
+			total += value;
+			return true;
+		};
+		for (const auto &entry : entries_)
+			if (!add(entry.quest_xp_receipts.capacity(),
+				 sizeof(player_quest_xp_receipt_snapshot)) ||
+			    !add(entry.spell_effect_receipts.capacity(),
+				 sizeof(player_spell_effect_receipt_snapshot)) ||
+			    !add(entry.failed_spell_effect_receipts.capacity(),
+				 sizeof(player_spell_effect_receipt_snapshot)) ||
+			    !add(entry.craft_receipts.capacity(),
+				 sizeof(player_craft_receipt_snapshot)) ||
+			    !add(entry.failed_craft_receipts.capacity(),
+				 sizeof(player_craft_receipt_snapshot)))
+				return false;
+		*output = total;
+		return true;
 	}
 
     private:
@@ -1204,4 +1240,157 @@ void player_save_worker_reset_for_tests(void)
 	journal_ack_callback = nullptr;
 	journal_terminal_callback = nullptr;
 	journal_context = nullptr;
+}
+
+namespace
+{
+bool prepared_worker_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+bool prepared_worker_array(size_t &total, size_t count, size_t width) noexcept
+{
+	return width && count <= SIZE_MAX / width && prepared_worker_add(total, count * width);
+}
+template <typename HashOwner>
+bool prepared_worker_hash(size_t &total, const HashOwner &owner) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using node =
+		std::__detail::_Hash_node<typename HashOwner::value_type,
+					  std::__cache_default<typename HashOwner::key_type,
+							       typename HashOwner::hasher>::value>;
+	// Genuine globals never move; their default one-bucket storage is inline.
+	// Original insertions grow allocated bucket arrays beyond that singleton.
+	return owner.bucket_count() &&
+	       (owner.bucket_count() == 1 ||
+		prepared_worker_array(total, owner.bucket_count(),
+				      sizeof(std::__detail::_Hash_node_base *))) &&
+	       prepared_worker_array(total, owner.size(), sizeof(node));
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool player_save_coin_replay_budget_scope_owner::prepared_worker_storage_bytes(
+	size_t *output) const noexcept
+{
+	if (!output || !prepared())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	size_t bytes = sizeof(worker_mutex) + sizeof(job_available) + sizeof(result_available) +
+		       sizeof(slots) + sizeof(ready_pids) + sizeof(results) + sizeof(ready_set) +
+		       sizeof(workers) + sizeof(apply_callback) + sizeof(apply_context) +
+		       sizeof(journal_append_callback) + sizeof(journal_ack_callback) +
+		       sizeof(journal_terminal_callback) + sizeof(journal_context) +
+		       sizeof(health) + sizeof(retained_bytes) + sizeof(stop_requested) +
+		       sizeof(next_request_generation) + sizeof(worker_lifecycle) +
+		       sizeof(wake_turn);
+	try
+	{
+		{
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			// Worker entry and thread-vector construction/join mutate ownership
+			// outside this lock. Only the actual prepared startup owner may call
+			// this private method; running or join-incomplete owners refuse.
+			if (health.running || health.running_workers || health.stop_pending ||
+			    !workers.empty())
+				return false;
+			size_t heap = 0;
+			if (!ready_pids.current_heap_bytes(&heap) ||
+			    !prepared_worker_add(bytes, heap) ||
+			    !prepared_worker_hash(bytes, slots) ||
+			    !prepared_worker_hash(bytes, ready_set) ||
+			    !prepared_worker_array(bytes, workers.capacity(),
+						   sizeof(std::thread)) ||
+			    !results.current_heap_bytes(&heap) || !prepared_worker_add(bytes, heap))
+				return false;
+			for (const auto &entry : slots)
+			{
+				for (const auto *job :
+				     { entry.second.active.get(), entry.second.pending.get() })
+				{
+					if (!job)
+						continue;
+					// unique_ptr pointee is a real independent allocation;
+					// its inline snapshot/claim are counted here exactly once.
+					if (!prepared_worker_add(bytes, sizeof(queued_snapshot)) ||
+					    !player_snapshot_current_heap_bytes(job->snapshot,
+										&heap) ||
+					    !prepared_worker_add(bytes, heap))
+						return false;
+				}
+			}
+		}
+		// No leaf worker lock or callback survives the observation.
+		*output = bytes;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	return false;
+#endif
+}
+
+size_t player_save_coin_replay_budget_scope_owner::prepared_worker_observer_frame_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using namespace player_retained_observer_source;
+	// Genuine map/set bucket_count/size -> hashtable getters; the hash observer
+	// owns two refs and result around either query or checked-array child.
+	constexpr size_t hash_frame = 2 * ptr + bit + maximum(2 * (ptr + scalar), checked_array);
+	// Real nonconst slots range has two pointer iterators and both range/entry
+	// refs. begin -> iterator/base ctor/_M_begin; ++ -> _M_incr/_M_next;
+	// * -> _M_v -> _M_valptr -> __aligned_buffer::_M_ptr/_M_addr.
+	constexpr size_t hash_range_live = 2 * ptr + 2 * sizeof(decltype(slots)::iterator);
+	constexpr size_t hash_range_query =
+		maximum(7 * ptr + sizeof(decltype(slots)::iterator), maximum(5 * ptr, 10 * ptr));
+	// completion_queue::current_heap_bytes: this/output/result, total, actual
+	// reference-capturing add closure; one constant-size array range. All five
+	// receipt capacities are sequential, with identical capacity/add chains.
+	constexpr size_t completion_add = ptr + 3 * scalar + bit;
+	constexpr size_t completion_frame =
+		3 * ptr + scalar + bit + array_range_live +
+		maximum(array_range_query, maximum(vector_query, completion_add));
+	// Actual deque current observer named fields/queries, typed int block.
+	constexpr size_t deque_frame = 3 * ptr + bit + 9 * scalar + sizeof(std::ptrdiff_t);
+	// workers.empty owns both genuine returned vector iterator temporaries;
+	// constructor/query and equality scopes have their actual signatures.
+	constexpr size_t empty_frame = ptr + bit + 2 * sizeof(decltype(workers)::const_iterator) +
+				       maximum(3 * ptr, 2 * ptr + bit);
+	// Hash/receipt/deque/vector inspections finish before jobs range begins;
+	// inside each job, backing pointer pair/initializer descriptor and both
+	// hash iterators persist across the actual deep snapshot observation.
+	constexpr size_t jobs_frame =
+		hash_range_live +
+		maximum(hash_range_query,
+			job_range_live + maximum(job_range_query,
+						 maximum(unique_get,
+							 maximum(snapshot_request, checked_add))));
+	constexpr size_t children = maximum(
+		empty_frame,
+		maximum(deque_frame,
+			maximum(hash_frame, maximum(completion_frame,
+						    maximum(checked_array,
+							    maximum(jobs_frame, checked_add))))));
+	// Private worker method this/output/result, bytes/heap, genuine lock_guard.
+	// Worker lock ctor/destructor scopes are also admitted before construction.
+	// prepared() is charged by the caller's full prepared-query profile.
+	return 2 * ptr + bit + 2 * scalar + sizeof(std::lock_guard<std::mutex>) +
+	       maximum(leaf_lock_queries, children) + scalar;
+#else
+	return 0;
+#endif
 }
