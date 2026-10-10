@@ -117,7 +117,89 @@ struct pending_movement
 	bool publication_attempted_this_batch = false;
 };
 
-std::unordered_map<std::string, pending_movement> pending;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+// New data-free owner of the original unordered_map's actual table. No existing
+// map is cast or layout-read. All selected ordinary algorithms remain inherited.
+class item_replay_pending_table final : public std::__umap_hashtable<std::string, pending_movement>
+{
+	using table_type = std::__umap_hashtable<std::string, pending_movement>;
+	using original_type = std::unordered_map<std::string, pending_movement>;
+	using actual_node = std::__detail::_Hash_node<
+		typename table_type::value_type,
+		std::__cache_default<std::string, std::hash<std::string>>::value>;
+
+    public:
+	using table_type::table_type;
+	using table_type::operator=;
+	using table_type::insert;
+	// Exact original unordered_map node-handle forwarding used by selected
+	// coin-publication refusal recovery; retain inherited value insert overloads.
+	insert_return_type insert(node_type &&node)
+	{
+		return this->_M_reinsert_node(std::move(node));
+	}
+	bool current_table_heap_bytes(size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		size_t bytes = 0;
+		const size_t buckets = this->bucket_count();
+		if (!buckets ||
+		    (buckets > 1 && buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		if (buckets > 1)
+			bytes = buckets * sizeof(std::__detail::_Hash_node_base *);
+		if (this->size() > (SIZE_MAX - bytes) / sizeof(actual_node))
+			return false;
+		bytes += this->size() * sizeof(actual_node);
+		for (const auto &entry : *this)
+			if (entry.first.capacity() > 15)
+			{
+				if (entry.first.capacity() == SIZE_MAX ||
+				    entry.first.capacity() + 1 > SIZE_MAX - bytes)
+					return false;
+				bytes += entry.first.capacity() + 1;
+			}
+		*output = bytes;
+		return true;
+	}
+	bool next_replay_insert_extra_peak(const std::string &key, size_t *output) const noexcept
+	{
+		if (!output || this->size() == this->max_size() || key.size() == SIZE_MAX)
+			return false;
+		const size_t text = key.size() > 15 ? key.size() + 1 : 0;
+		if (text > SIZE_MAX - sizeof(actual_node))
+			return false;
+		size_t extra = sizeof(actual_node) + text;
+		// These objects are admitted by the owning caller before this pure profile
+		// call. Copy the actual CURRENT original policy, never guess a threshold.
+		auto policy = this->__rehash_policy();
+		const auto next = policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+		if (next.first && next.second > 1)
+		{
+			if (next.second >
+			    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				return false;
+			extra += next.second * sizeof(std::__detail::_Hash_node_base *);
+		}
+		*output = extra;
+		return true;
+	}
+};
+static_assert(sizeof(item_replay_pending_table) ==
+	      sizeof(std::unordered_map<std::string, pending_movement>));
+static_assert(alignof(item_replay_pending_table) ==
+	      alignof(std::unordered_map<std::string, pending_movement>));
+static_assert(std::is_same_v<item_replay_pending_table::iterator,
+			     std::unordered_map<std::string, pending_movement>::iterator>);
+static_assert(std::is_same_v<item_replay_pending_table::allocator_type,
+			     std::unordered_map<std::string, pending_movement>::allocator_type>);
+using item_pending_table = item_replay_pending_table;
+#else
+using item_pending_table = std::unordered_map<std::string, pending_movement>;
+#endif
+item_pending_table pending;
 item_movement_health health = {};
 
 struct pending_drop_preparation
@@ -9103,4 +9185,466 @@ bool item_native_quest_coordinator_budget_scope_owner::reset_before_replay() noe
 	native_quest_coordinator_guard = nullptr;
 	native_quest_coordinator_borrowed_bytes = 0;
 	return true;
+}
+
+namespace
+{
+constexpr size_t item_replay_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t item_replay_operation_key_frames =
+	// Original operation_key reference and returned string carrier, actual
+	// string(char*,n,allocator) this/source/n/allocator, _Alloc_hider,
+	// _M_construct forward begin/end/dnew/_Guard/_M_create parameters.
+	sizeof(void *) + sizeof(std::string) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::allocator<char>) + 3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::string *) + 3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+	// Actual traits copy(dest,source,n,result), _M_data/_M_capacity/setlength,
+	// original string destruction and equal-allocator dispose/deallocate.
+	3 * sizeof(void *) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + item_replay_allocator_frames;
+bool item_replay_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+bool item_replay_command_heap(const critical_command &value, size_t &bytes) noexcept
+{
+	return value.keys.capacity() <= SIZE_MAX / sizeof(critical_entity_key) &&
+	       item_replay_add(bytes, value.keys.capacity() * sizeof(critical_entity_key)) &&
+	       value.expected_revisions.capacity() <=
+		       SIZE_MAX / sizeof(critical_expected_revision) &&
+	       item_replay_add(bytes, value.expected_revisions.capacity() *
+					      sizeof(critical_expected_revision)) &&
+	       item_replay_add(bytes, value.payload.capacity()) &&
+	       item_replay_add(bytes, value.accounting_intent.capacity());
+}
+struct item_replay_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *payload = nullptr;
+	const pending_movement *entry = nullptr;
+	const std::string *key = nullptr;
+	bool current(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		if (!item_movement_transaction_replay_current_storage_bytes(&bytes) ||
+		    !item_replay_add(bytes, outer) || !item_replay_add(bytes, frames) ||
+		    !item_replay_add(bytes, extra) ||
+		    !item_replay_add(bytes,
+				     item_movement_transaction_replay_observer_frame_bytes()))
+			return false;
+		for (const item_transfer_payload *body :
+		     { payload, entry ? &entry->payload : nullptr })
+		{
+			size_t heap = 0;
+			if (body && (!item_transfer_payload_current_heap_bytes(*body, &heap) ||
+				     !item_replay_add(bytes, heap)))
+				return false;
+		}
+		return !key || key->capacity() <= 15 ||
+		       (key->capacity() != SIZE_MAX && item_replay_add(bytes, key->capacity() + 1));
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return reserve && current(bytes, extra) && reserve(bytes, context);
+	}
+	static bool decode_reserve(size_t child, void *opaque) noexcept
+	{
+		auto &budget = *static_cast<item_replay_budget *>(opaque);
+		return budget.peak(child);
+	}
+};
+}
+
+size_t item_movement_transaction_replay_observer_frame_bytes() noexcept
+{
+	// Actual observer/output/table references, sums, table/node/string loops,
+	// two retained-command pointers and duplicate scan iterators/reference,
+	// result flags; provider's complete payload observation closure is included.
+	return 20 * sizeof(void *) + 16 * sizeof(size_t) + 6 * sizeof(bool) +
+	       item_transfer_payload_copy_frame_bytes() + critical_command_copy_frame_bytes();
+}
+
+// The actual replay registration table, including original live entries. Foreign
+// creation/native/drop-preparation owners stay in the selecting caller's outer.
+bool item_movement_transaction_replay_current_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output)
+		return false;
+	size_t bytes = sizeof(pending) + sizeof(health), heap = 0;
+	if (!pending.current_table_heap_bytes(&heap) || !item_replay_add(bytes, heap))
+		return false;
+	for (const auto &[key, value] : pending)
+	{
+		(void)key;
+		if (!item_transfer_payload_current_heap_bytes(value.payload, &heap) ||
+		    !item_replay_add(bytes, heap))
+			return false;
+		for (const auto *owned : { &value.live_drop_command, &value.held_command })
+		{
+			if (!*owned)
+				continue;
+			// These original commands are created by make_shared<const command>.
+			// Count a shared allocation once even if an original entry aliases it.
+			bool seen = false;
+			for (const auto &[prior_key, prior] : pending)
+			{
+				(void)prior_key;
+				if (&prior == &value)
+					break;
+				seen = seen || prior.live_drop_command.get() == owned->get() ||
+				       prior.held_command.get() == owned->get();
+			}
+			if (owned == &value.held_command &&
+			    value.live_drop_command.get() == owned->get())
+				seen = true;
+			if (!seen &&
+			    (!item_replay_add(bytes,
+					      sizeof(std::_Sp_counted_ptr_inplace<
+						      const critical_command, std::allocator<void>,
+						      __gnu_cxx::_S_atomic>)) ||
+			     !item_replay_command_heap(**owned, bytes)))
+				return false;
+		}
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool item_movement_transaction_restore_replayed_publication_bounded(
+	const critical_command &command, item_movement_publication_fn publication,
+	const void *context, size_t context_size, bool (*reserve)(size_t, void *) noexcept,
+	void *reserve_context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)command;
+	(void)publication;
+	(void)context;
+	(void)context_size;
+	(void)reserve;
+	(void)reserve_context;
+	(void)outer_live;
+	return false;
+#else
+	using insertion_result = std::pair<item_pending_table::iterator, bool>;
+	constexpr size_t entry_frames =
+		sizeof(item_replay_budget) + sizeof(std::string) + sizeof(item_transfer_payload) +
+		sizeof(pending_movement) + sizeof(item_owner_identity) + sizeof(uint64_t) +
+		sizeof(item_transfer_reason) + sizeof(int64_t) +
+		sizeof(item_pending_table::iterator) + 3 * sizeof(bool) +
+		// Genuine entry reference/callback/context/outer/return carriers, helper
+		// current sum and two payload pointer-loop elements/results.
+		8 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool);
+	constexpr size_t policy_frames =
+		sizeof(std::__detail::_Prime_rehash_policy) + 2 * sizeof(std::pair<bool, size_t>);
+	const size_t insertion_frames =
+		3 * sizeof(void *) + sizeof(std::__detail::_Prime_rehash_policy::_State) +
+		2 * sizeof(std::pair<bool, size_t>) +
+		sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+		sizeof(item_pending_table::iterator) + sizeof(insertion_result) +
+		item_replay_allocator_frames + item_replay_operation_key_frames +
+		// Actual node constructor/emplace/hash/rehash declared carriers and results.
+		34 * sizeof(void *) + 19 * sizeof(size_t) + 5 * sizeof(bool) +
+		// Full actual pair/node/key/payload generated constructor/move closure.
+		item_transfer_payload_copy_frame_bytes();
+	item_replay_budget budget{ reserve, reserve_context, outer_live, entry_frames };
+	if (!budget.peak())
+		return false;
+	item_pending_table::iterator inserted_node = pending.end();
+	bool inserted = false, completed = false;
+	try
+	{
+		{
+			std::string key;
+			item_transfer_payload payload{};
+			pending_movement entry{};
+			budget.key = &key;
+			budget.payload = &payload;
+			budget.entry = &entry;
+			do
+			{
+				if (command.type != critical_command_type::item_transfer ||
+				    !command.publication_required || !publication ||
+				    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES ||
+				    (context_size && !context))
+					break;
+				if (!budget.peak(sizeof(std::string) +
+						 item_replay_operation_key_frames +
+						 command.operation_id.bytes.size() + 1))
+					break;
+				key = operation_key(command.operation_id);
+				if (!budget.peak() || pending.find(key) != pending.end() ||
+				    pending.size() + native_quest_pending_count() >=
+					    ITEM_MOVEMENT_PENDING_MAX)
+					break;
+				if (!item_transfer_command_decode_payload_bounded(
+					    command, &payload, item_replay_budget::decode_reserve,
+					    &budget, 0) ||
+				    !budget.peak() ||
+				    payload.from_owner.type != item_owner_type::player ||
+				    !payload.from_owner.id || payload.from_owner.id > UINT32_MAX ||
+				    payload.continuation.kind ==
+					    static_cast<item_transfer_continuation_kind>(8))
+					break;
+				const item_owner_identity to_owner = payload.to_owner;
+				const uint64_t target_parent_uid = payload.target_parent_item_uid;
+				const item_transfer_reason reason = payload.reason;
+				const int64_t reason_id = payload.reason_id;
+				entry.actor_pid = static_cast<uint32_t>(payload.from_owner.id);
+				entry.payload = std::move(payload);
+				entry.requested_to_owner = to_owner;
+				entry.requested_target_parent_uid = target_parent_uid;
+				entry.requested_reason = reason;
+				entry.requested_reason_id = reason_id;
+				entry.publication = publication;
+				entry.context_size = context_size;
+				entry.publication_attempts =
+					(publication == unresolved_replay_publication ||
+					 publication ==
+						 spell_component_retirement_replayed_publication) ?
+						ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS - 1 :
+						0;
+				entry.publication_status = publication_state::ready;
+				entry.registry_applied = true;
+				entry.recovered_publication = true;
+				if (context_size)
+					memcpy(entry.context.data(), context, context_size);
+				size_t extra = 0;
+				if (!budget.peak(policy_frames) ||
+				    !pending.next_replay_insert_extra_peak(key, &extra) ||
+				    extra > SIZE_MAX - insertion_frames ||
+				    !budget.peak(extra + insertion_frames))
+					break;
+				const auto actual = pending.emplace(key, std::move(entry));
+				inserted_node = actual.first;
+				inserted = actual.second;
+				completed = inserted;
+			} while (false);
+			budget.key = nullptr;
+			budget.payload = nullptr;
+			budget.entry = nullptr;
+		}
+	}
+	catch (...)
+	{
+		budget.key = nullptr;
+		budget.payload = nullptr;
+		budget.entry = nullptr;
+		completed = false;
+	}
+	// Insertion remains reversible until this actual CURRENT rebase succeeds.
+	budget.frames = sizeof(budget) + sizeof(inserted_node) + 3 * sizeof(bool) +
+			8 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool);
+	const bool refreshed = budget.peak();
+	if (!completed || !refreshed)
+	{
+		if (inserted)
+			pending.erase(inserted_node);
+		budget.peak();
+		return false;
+	}
+	return true;
+#endif
+}
+
+bool item_movement_transaction_restore_replayed_command_bounded(
+	const critical_command &command, player_save_coin_replay_budget_scope_owner &actual_scope,
+	bool (*reserve)(size_t, void *) noexcept, void *reserve_context, size_t outer_live) noexcept
+{
+	const size_t frames =
+		sizeof(item_replay_budget) + sizeof(std::string) + sizeof(item_transfer_payload) +
+		sizeof(std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES>) + 3 * sizeof(size_t) +
+		2 * sizeof(uint32_t) + sizeof(item_movement_publication_fn) + 8 * sizeof(void *) +
+		13 * sizeof(bool) + item_transfer_payload_copy_frame_bytes();
+	item_replay_budget budget{ reserve, reserve_context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	bool completed = false;
+	try
+	{
+		{
+			std::string key;
+			item_transfer_payload payload{};
+			budget.key = &key;
+			budget.payload = &payload;
+			do
+			{
+				if (command.type != critical_command_type::item_transfer ||
+				    !command.publication_required)
+				{
+					completed = true;
+					break;
+				}
+				if (!budget.peak(sizeof(std::string) +
+						 item_replay_operation_key_frames +
+						 command.operation_id.bytes.size() + 1))
+					break;
+				key = operation_key(command.operation_id);
+				if (!budget.peak())
+					break;
+				if (pending.find(key) != pending.end())
+				{
+					completed =
+						true; // Original duplicate command restore succeeds.
+					break;
+				}
+				if (!item_transfer_command_decode_payload_bounded(
+					    command, &payload, item_replay_budget::decode_reserve,
+					    &budget, 0) ||
+				    !budget.peak() ||
+				    payload.from_owner.type != item_owner_type::player ||
+				    !payload.from_owner.id || payload.from_owner.id > UINT32_MAX ||
+				    payload.continuation.kind ==
+					    static_cast<item_transfer_continuation_kind>(8))
+					break;
+#ifndef __NO_MYSQL__
+				const bool ordinary_sql_drop =
+					command.schema_version ==
+						CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+					payload.reason == item_transfer_reason::player_drop &&
+					payload.to_owner.type == item_owner_type::room;
+#else
+				const bool ordinary_sql_drop = false;
+#endif
+				const bool quest_offering =
+					payload.reason == item_transfer_reason::quest_turnin &&
+					payload.continuation.kind ==
+						item_transfer_continuation_kind::quest_offering;
+				const bool forced_room_drop =
+					item_transfer_forced_weapon_drop(payload.reason) &&
+					payload.continuation.kind ==
+						item_transfer_continuation_kind::none &&
+					payload.to_owner.type == item_owner_type::room;
+				const bool account_reward_retirement =
+					payload.continuation.kind ==
+					item_transfer_continuation_kind::account_reward_retirement;
+				const bool account_reward_duplicate_promotion =
+					payload.continuation.kind ==
+					item_transfer_continuation_kind::
+						account_reward_duplicate_promotion;
+				const bool spell_component_retirement =
+					payload.continuation.kind ==
+					item_transfer_continuation_kind::spell_component_retirement;
+				std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> spell_context{};
+				size_t spell_context_size = 0;
+				uint32_t spell_effect_id = 0, spell_receipt_owner_pid = 0;
+				if (spell_component_retirement &&
+				    !spell_component_retirement_restore_context(
+					    payload, &spell_context, &spell_context_size,
+					    &spell_effect_id, &spell_receipt_owner_pid))
+					break;
+				const item_movement_publication_fn publication =
+					account_reward_duplicate_promotion ?
+						account_reward_duplicate_promotion_publication :
+						(account_reward_retirement ?
+							 account_reward_retirement_publication :
+							 (spell_component_retirement ?
+								  spell_component_retirement_replayed_publication :
+								  ((quest_offering ||
+								    forced_room_drop) ?
+									   recovered_durable_item_publication :
+									   unresolved_replay_publication)));
+				const void *replay_context =
+					(account_reward_retirement ||
+					 account_reward_duplicate_promotion) ?
+						payload.continuation.data.data() :
+						(spell_component_retirement ? spell_context.data() :
+									      nullptr);
+				const size_t replay_context_size =
+					(account_reward_retirement ||
+					 account_reward_duplicate_promotion) ?
+						payload.continuation.data.size() :
+						(spell_component_retirement ? spell_context_size :
+									      0);
+				size_t caller = outer_live, heap = 0;
+				if (!item_transfer_payload_current_heap_bytes(payload, &heap) ||
+				    !item_replay_add(caller, frames) ||
+				    !item_replay_add(caller, heap) ||
+				    (key.capacity() > 15 &&
+				     (key.capacity() == SIZE_MAX ||
+				      !item_replay_add(caller, key.capacity() + 1))) ||
+				    !item_movement_transaction_restore_replayed_publication_bounded(
+					    command, publication, replay_context,
+					    replay_context_size, reserve, reserve_context, caller))
+					break;
+				if (ordinary_sql_drop)
+				{
+					size_t full = 0, owned = 0;
+					if (!budget.current(full) ||
+					    !player_save_sql_drop_replay_owner::current_storage_bytes(
+						    actual_scope, &owned) ||
+					    owned > outer_live || owned > full ||
+					    !player_save_sql_drop_replay_owner::restore(
+						    command, actual_scope, full - owned))
+					{
+						pending.erase(
+							key); // Original SQL obligation failure rollback.
+						break;
+					}
+					pending.find(key)->second.restored_sql_drop = true;
+					pending.find(key)->second.publication_attempts = 0;
+				}
+				if (!spell_component_retirement)
+				{
+					completed = true;
+					break;
+				}
+				size_t full = 0, owned = 0;
+				if (!budget.current(full) ||
+				    !spell_component_retirement_current_storage_bytes(&owned) ||
+				    owned > outer_live || owned > full)
+					break;
+				completed =
+					spell_component_retirement_restore_replayed_effect_bounded(
+						command.operation_id,
+						static_cast<uint32_t>(payload.from_owner.id),
+						spell_effect_id, spell_receipt_owner_pid, reserve,
+						reserve_context, full - owned);
+				// Preserve original partial pending registration on effect failure.
+			} while (false);
+			budget.key = nullptr;
+			budget.payload = nullptr;
+		}
+	}
+	catch (...)
+	{
+		budget.key = nullptr;
+		budget.payload = nullptr;
+		completed = false;
+	}
+	// Genuine retained registration readback every outcome. A successful SQL
+	// hold/effect attachment has no later fallible callback and is never undone.
+	size_t observed = 0;
+	const bool current = item_movement_transaction_replay_current_storage_bytes(&observed);
+	if (!completed)
+		budget.peak();
+	(void)current;
+	return completed;
 }

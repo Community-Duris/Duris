@@ -25,6 +25,9 @@
 #include <new>
 #include <time.h>
 #include <unordered_map>
+#include <type_traits>
+#include <utility>
+#include <tuple>
 #include <vector>
 #include "world/achievements.h"
 #include "guild/alliances.h"
@@ -182,7 +185,104 @@ struct spell_component_retirement_state
 	uint64_t next_save_request_at_usec = 0;
 };
 
-std::unordered_map<std::string, spell_component_retirement_state> spell_component_retired_items;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+// New data-free owner of the original unordered_map's actual table. No existing
+// map is cast or layout-read. All selected ordinary algorithms remain inherited.
+class spell_retirement_native_table final
+	: public std::__umap_hashtable<std::string, spell_component_retirement_state>
+{
+	using table_type = std::__umap_hashtable<std::string, spell_component_retirement_state>;
+	using original_type = std::unordered_map<std::string, spell_component_retirement_state>;
+	using actual_node = std::__detail::_Hash_node<
+		typename table_type::value_type,
+		std::__cache_default<std::string, std::hash<std::string>>::value>;
+
+    public:
+	using table_type::table_type;
+	using table_type::operator=;
+	using table_type::insert;
+	template <class... Args>
+	std::pair<iterator, bool> try_emplace(const key_type &key, Args &&...args)
+	{
+		return table_type::try_emplace(this->cend(), key, std::forward<Args>(args)...);
+	}
+	template <class... Args>
+	std::pair<iterator, bool> try_emplace(key_type &&key, Args &&...args)
+	{
+		return table_type::try_emplace(this->cend(), std::move(key),
+					       std::forward<Args>(args)...);
+	}
+
+	// Exact original unordered_map node-handle forwarding used by selected
+	// coin-publication refusal recovery; retain inherited value insert overloads.
+	insert_return_type insert(node_type &&node)
+	{
+		return this->_M_reinsert_node(std::move(node));
+	}
+	bool current_table_heap_bytes(size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		size_t bytes = 0;
+		const size_t buckets = this->bucket_count();
+		if (!buckets ||
+		    (buckets > 1 && buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		if (buckets > 1)
+			bytes = buckets * sizeof(std::__detail::_Hash_node_base *);
+		if (this->size() > (SIZE_MAX - bytes) / sizeof(actual_node))
+			return false;
+		bytes += this->size() * sizeof(actual_node);
+		for (const auto &entry : *this)
+			if (entry.first.capacity() > 15)
+			{
+				if (entry.first.capacity() == SIZE_MAX ||
+				    entry.first.capacity() + 1 > SIZE_MAX - bytes)
+					return false;
+				bytes += entry.first.capacity() + 1;
+			}
+		*output = bytes;
+		return true;
+	}
+	bool next_insert_extra_peak(const std::string &key, size_t *output) const noexcept
+	{
+		if (!output || this->size() == this->max_size() || key.size() == SIZE_MAX)
+			return false;
+		const size_t text = key.size() > 15 ? key.size() + 1 : 0;
+		if (text > SIZE_MAX - sizeof(actual_node))
+			return false;
+		size_t extra = sizeof(actual_node) + text;
+		// These objects are admitted by the owning caller before this pure profile
+		// call. Copy the actual CURRENT original policy, never guess a threshold.
+		auto policy = this->__rehash_policy();
+		const auto next = policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+		if (next.first && next.second > 1)
+		{
+			if (next.second >
+			    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				return false;
+			extra += next.second * sizeof(std::__detail::_Hash_node_base *);
+		}
+		*output = extra;
+		return true;
+	}
+};
+static_assert(sizeof(spell_retirement_native_table) ==
+	      sizeof(std::unordered_map<std::string, spell_component_retirement_state>));
+static_assert(alignof(spell_retirement_native_table) ==
+	      alignof(std::unordered_map<std::string, spell_component_retirement_state>));
+static_assert(
+	std::is_same_v<spell_retirement_native_table::iterator,
+		       std::unordered_map<std::string, spell_component_retirement_state>::iterator>);
+static_assert(std::is_same_v<
+	      spell_retirement_native_table::allocator_type,
+	      std::unordered_map<std::string, spell_component_retirement_state>::allocator_type>);
+using spell_retirement_table = spell_retirement_native_table;
+#else
+using spell_retirement_table = std::unordered_map<std::string, spell_component_retirement_state>;
+#endif
+spell_retirement_table spell_component_retired_items;
 
 std::string spell_component_operation_key(const critical_operation_id &operation_id)
 {
@@ -1127,3 +1227,185 @@ void spell_windstrom_blessing(int level, P_char ch, char *arg, int type,
 ;
 
 // end spell_feeblemind
+
+#include <cerrno>
+#include <type_traits>
+
+namespace
+{
+bool spell_replay_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+constexpr size_t spell_replay_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t spell_replay_key_frames =
+	// Original operation_key reference and returned string carrier, actual
+	// string(char*,n,allocator) this/source/n/allocator, _Alloc_hider,
+	// _M_construct forward begin/end/dnew/_Guard/_M_create parameters.
+	sizeof(void *) + sizeof(std::string) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::allocator<char>) + 3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::string *) + 3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+	// Actual traits copy(dest,source,n,result), _M_data/_M_capacity/setlength,
+	// original string destruction and equal-allocator dispose/deallocate.
+	3 * sizeof(void *) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + spell_replay_allocator_frames;
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+constexpr size_t spell_replay_table_frames =
+	// current_table_heap_bytes: this/output/bool, bytes/buckets, range begin/end,
+	// entry reference and real iterator query/advance/key capacity/add carriers.
+	4 * sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) +
+	2 * sizeof(spell_retirement_table::const_iterator) +
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(bool);
+constexpr size_t spell_replay_policy_frames =
+	// next_insert_extra_peak: this/key/output, bool, text/extra, CURRENT policy
+	// copy, _M_need_rehash input this/buckets/elements/insert, result/local pair.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) +
+	sizeof(std::__detail::_Prime_rehash_policy) + 2 * sizeof(std::pair<bool, size_t>) +
+	3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t spell_replay_insert_frames =
+	// Original try_emplace -> table try_emplace -> lookup key/hash/bucket/node.
+	4 * (3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	// _Scoped_node original two-pointer owner, saved policy state/new pair,
+	// node/bucket allocator, piecewise pair/forward tuples and returned pair.
+	3 * sizeof(void *) + sizeof(std::__detail::_Prime_rehash_policy::_State) +
+	2 * sizeof(std::pair<bool, size_t>) +
+	sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+	sizeof(std::pair<spell_retirement_table::iterator, bool>) +
+	sizeof(std::piecewise_construct_t) + sizeof(std::tuple<std::string &&>) +
+	sizeof(std::tuple<>) + 6 * sizeof(void *) + spell_replay_allocator_frames +
+	// Moving the actual key into the node is allocation-free but owns real
+	// string move/hider/traits copied inline and destructor carriers.
+	spell_replay_key_frames;
+#endif
+} // namespace
+
+bool spell_component_retirement_current_storage_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	size_t bytes = 0;
+	if (!spell_component_retired_items.current_table_heap_bytes(&bytes) ||
+	    !spell_replay_add(bytes, sizeof(spell_component_retired_items)))
+		return false;
+	*output = bytes;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool spell_component_retirement_restore_replayed_effect_bounded(
+	const critical_operation_id &operation_id, uint32_t actor_pid, uint32_t effect_id,
+	uint32_t receipt_owner_pid, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t exclusive_outer) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (!reserve)
+		return false;
+	// Genuine source parameter/local/reference/result carriers. This is source
+	// lifetime accounting; emitted/native stack qualification remains separate.
+	constexpr size_t frames =
+		3 * sizeof(void *) + 3 * sizeof(uint32_t) + sizeof(size_t) +
+		sizeof(item_spell_component_effect) + sizeof(bool) + sizeof(std::string) +
+		sizeof(std::pair<spell_retirement_table::iterator, bool>) + 3 * sizeof(size_t) +
+		2 * sizeof(void *) + spell_replay_table_frames + spell_replay_key_frames;
+	const auto peak = [&](size_t extra) noexcept
+	{
+		size_t bytes = exclusive_outer, current = 0;
+		return spell_component_retirement_current_storage_bytes(&current) &&
+		       spell_replay_add(bytes, current) && spell_replay_add(bytes, frames) &&
+		       spell_replay_add(bytes, sizeof(extra) + 2 * sizeof(size_t) +
+						       3 * sizeof(void *) + 2 * sizeof(bool)) &&
+		       spell_replay_add(bytes, extra) && reserve(bytes, context);
+	};
+	if (!peak(0))
+		return false;
+	const auto effect = static_cast<item_spell_component_effect>(effect_id);
+	if (effect != item_spell_component_effect::vines &&
+	    effect != item_spell_component_effect::faerie_sight)
+		return true;
+	if (effect == item_spell_component_effect::vines && !receipt_owner_pid)
+		receipt_owner_pid = actor_pid;
+	if (!receipt_owner_pid)
+		return true;
+	if (!actor_pid)
+		return false;
+	try
+	{
+		// The original 16-byte operation-key constructor owns one fresh 17-byte
+		// string allocation. Admit before construction, not after it is retained.
+		if (!peak(operation_id.bytes.size() > 15 ? operation_id.bytes.size() + 1 : 0))
+			return false;
+		std::string key = spell_component_operation_key(operation_id);
+		const size_t key_heap = key.capacity() > 15 ? key.capacity() + 1 : 0;
+		if (!peak(key_heap + spell_replay_policy_frames))
+			return false;
+		size_t request = 0;
+		// try_emplace's duplicate branch allocates neither node nor buckets.
+		if (spell_component_retired_items.find(key) ==
+			    spell_component_retired_items.end() &&
+		    !spell_component_retired_items.next_insert_extra_peak(key, &request))
+			return false;
+		// Move-key try_emplace transfers the original string heap into the node.
+		// The shared prospective provider also includes a fresh key
+		// copy request; drop it here because this original path is an rvalue move.
+		if (request && key_heap)
+			request -= key.size() + 1;
+		if (!spell_replay_add(request, key_heap) ||
+		    !spell_replay_add(request, spell_replay_insert_frames) || !peak(request))
+			return false;
+		auto [found, inserted] = spell_component_retired_items.try_emplace(std::move(key));
+		if (inserted)
+		{
+			found->second.stage = spell_component_retirement_stage::items_retired;
+			found->second.actor_pid = actor_pid;
+			found->second.owner_pid = receipt_owner_pid;
+			found->second.effect = effect;
+		}
+		// No fallible reservation follows insertion/attachment. The caller obtains
+		// fresh CURRENT on every outcome, including retained bucket growth on throw.
+		return found->second.actor_pid == actor_pid &&
+		       found->second.owner_pid == receipt_owner_pid &&
+		       found->second.effect == effect;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#else
+	(void)operation_id;
+	(void)actor_pid;
+	(void)effect_id;
+	(void)receipt_owner_pid;
+	(void)reserve;
+	(void)context;
+	(void)exclusive_outer;
+	return false;
+#endif
+}

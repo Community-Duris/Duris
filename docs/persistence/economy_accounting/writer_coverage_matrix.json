@@ -241,8 +241,8 @@
       "src/economy/economic_sql_runtime_cache_correspondence.h": "a4dc66b8078fb5ca47b95708982490f4b38c2c7daec916f28bb2f3a09e64c880",
       "src/economy/economic_sql_source_normalize.c": "c55cb471ded87505a0f8a2001917117c2199d0f3688645c2dca2dbf5495a65be",
       "src/economy/economic_sql_source_normalize.h": "90292b6e84971132c1873c6385423e5a20c09559a3cef9fb92734f1920b1e5b4",
-      "src/economy/item_transfer_accounting.c": "e396965caf0841ffad09111ffb65e1e945580c0526eaf13fdea17ba5fde15ded",
-      "src/economy/item_transfer_accounting.h": "7d807e020bb5e4f85933be311aad19acc0a3fde08273a7f73035cdb284087116",
+      "src/economy/item_transfer_accounting.c": "1e6cfd2b86496fa0ec4ddbd3f70068e7b02b363b24ff8a7ace194f5e75e9ad70",
+      "src/economy/item_transfer_accounting.h": "cab4b908821e1367d06b1b479fe2143f9728870c4dfe5ee288f73db57aee9621",
       "src/economy/native_mobile_birth_accounting.c": "49bcd15184a11a474e4593ca2cc1a220826b75c58abb3b9759fe1015cfd8adc8",
       "src/economy/native_mobile_birth_accounting.h": "22285496559c1d286c760ce7c3d1964ff93396189015ec812b7cec64927ab058",
       "src/economy/native_mobile_birth_cash_role_accounting.c": "7a19f1301f29f138a2a18b875c68da0e01912a0a2780c32d96fe4f1ef5516e20",
@@ -390,8 +390,8 @@
       "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "24801cdbcc09f1d873022bc6a5c3bd5b133dedffc0760eed0923dba54fbb4131",
-      "src/item/item_movement_transaction.h": "ed4f1173b8e5dfa515f4f88de4666b7ae18268c87fc17206662adc6985e71ce1",
+      "src/item/item_movement_transaction.c": "4f84667cd55683be6f17d68991e0bff7f72d9348abf268a1152772212e048c68",
+      "src/item/item_movement_transaction.h": "f51b99b3dcc31c98ee86983f72517c62f119627f4c700a065f2587eccfa5928c",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
       "src/item/item_transfer_command.c": "7c4abe22c225cc925e8692d60bb118079c8ac648080026ab51d2d3cae3e13bd1",
@@ -409,6 +409,9 @@
       "src/item/smith_native_compound_images.h": "0507bf104c325a2f5850ab6e31b26103a1701da0a0a33746ed7a6ca3d0455510",
       "src/item/smith_native_compound_owner.c": "f13474af8470ed96f92e5980722b4f6201fec89fa54d87c94acfae7b344964f5",
       "src/item/smith_native_compound_owner.h": "58cfd00d0c80d667dd80c61710a5671a4cf48c94ac15bbf86a390937f4733fd0",
+      "src/magic/magic.c": "08ee4ddb1004f8b7c56fb8f0de506d4418c26b2f9ae4ebccdceec53cc84cc3a4",
+      "src/magic/spell_item_lifecycle.c": "ef1e584035c5e314201fbdcebd6910e6bd567e5ce1d8e9fc44dd7a0f079ad565",
+      "src/magic/spell_item_lifecycle.h": "3907673c6f702b0ff0839108b5de26c86a2cd6416b09606aa8679681b6ab0d66",
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproc.c": "0bf886302eab9f8ac57b0eac9d03dfd9d2d7d2daf8fd60e08324d57b2286ac25",
       "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c",
@@ -473,8 +476,8 @@
       "src/persistence/sql_room_creation_correspondence.h": "294430cc6d97023f0e36db560cadee313227d11ca41c4850ed0fc0719ff55116",
       "src/persistence/sql_room_creation_source.c": "58954396d0377349191142cc539ff01a59dc06b987510dab5bb9d98ea85940d0",
       "src/persistence/sql_room_creation_source.h": "3748e305a486fbb3a645b109b73fa201d77470597686a5e6c8cdae8f9d55d5c1",
-      "src/persistence/sql_room_item_payload.c": "76c7caf9fd905b6017a7cb08c987a6df5ad50e534b7bd96ba95eb3ccb6c7adec",
-      "src/persistence/sql_room_item_payload.h": "f8e6bd60afaf4acef93e993506c08de2d1ac62d7dd459632d012360cceee856e",
+      "src/persistence/sql_room_item_payload.c": "a8aae14f717d25a5a60d0fc63539bd6c8d551c6ddde242c541ad22ebdaaae2fa",
+      "src/persistence/sql_room_item_payload.h": "f532f4219aacc2d6188c37c338982f532403eb480299de85e40c1a57d801732f",
       "src/persistence/zone_reset_creation_budget.c": "73aa3168504b167acfa4ba1024cc13b250189b63b260bcbb55c6e1fcaf0dc1d0",
       "src/persistence/zone_reset_creation_budget.h": "55a11e28e0f412bbaf1b77e8d51e5b67241ce3ce9ec8e5358d15a02d28261fde",
       "src/persistence/zone_reset_item_origin_sql.c": "3a36b4d281cccaa9ff598d94585f75cfd6b19e0251a249078baa08420fe2d1fe",
@@ -492,8 +495,8 @@
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "f98d015bb85837d3dd62afc5c0d9ada428ab429aea8f11078e9a4b119f98b638",
-      "src/player/player_save_pipeline.h": "815af3816dcec077029293a15214884eb929c3f3a6555bc6adedc5f930634dd2",
+      "src/player/player_save_pipeline.c": "0ec4884156ce027c5f096d6daf6201a35b8dfe3eb23ef76a6d7a0adfdccac8e9",
+      "src/player/player_save_pipeline.h": "0132515a78023c9be8f6649e486a719907de16ea3c0c3f3f035204c16d0104f5",
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
       "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
@@ -17613,7 +17616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          962
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17663,7 +17666,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          945
+          1027
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17751,7 +17754,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3567
+          3649
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -18189,8 +18192,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3926,
-          3938
+          4008,
+          4020
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -18252,7 +18255,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1473
+          1555
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18314,7 +18317,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1373
+          1455
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18499,7 +18502,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1254
+          1336
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19621,7 +19624,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1095
+          1177
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19683,7 +19686,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1102
+          1184
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -20756,7 +20759,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4174
+          4256
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20818,7 +20821,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3986
+          4068
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -21804,7 +21807,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2823
+          2905
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -22582,7 +22585,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1749
+          1831
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22644,7 +22647,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1305
+          1387
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -23012,7 +23015,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1160
+          1242
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -28085,7 +28088,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          227
+          327
         ],
         "file": "src/magic/magic.c",
         "function": "spell_component_retirement_published",
@@ -28142,7 +28145,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          137
         ],
         "file": "src/magic/magic.c",
         "function": "get_spell_component",
@@ -54878,7 +54881,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7794
+          7876
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",

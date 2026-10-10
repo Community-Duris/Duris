@@ -3200,3 +3200,400 @@ unsigned int sql_room_item_payload_capture_sources_in_transaction(
 	}
 #endif
 }
+
+namespace
+{
+bool sql_drop_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+bool sql_drop_policy_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8;
+#else
+	return false;
+#endif
+}
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+class sql_drop_entry_table final
+	: public std::__umap_hashtable<uint64_t, const item_transfer_entry *>
+{
+	using table_type = std::__umap_hashtable<uint64_t, const item_transfer_entry *>;
+	using node_type_actual =
+		std::__detail::_Hash_node<typename table_type::value_type,
+					  std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+
+    public:
+	using table_type::table_type;
+	bool current_heap(size_t *out) const noexcept
+	{
+		if (!out || !this->bucket_count())
+			return false;
+		size_t bytes = 0;
+		if (this->bucket_count() > 1 &&
+		    (this->bucket_count() > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+		     !sql_drop_add(bytes, this->bucket_count() *
+						  sizeof(std::__detail::_Hash_node_base *))))
+			return false;
+		if (this->size() > SIZE_MAX / sizeof(node_type_actual) ||
+		    !sql_drop_add(bytes, this->size() * sizeof(node_type_actual)))
+			return false;
+		*out = bytes;
+		return true;
+	}
+	bool next_insert_request(size_t *out) const noexcept
+	{
+		if (!out || this->size() == this->max_size())
+			return false;
+		size_t bytes = sizeof(node_type_actual);
+		auto policy = this->__rehash_policy();
+		const auto next = policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+		if (next.first && next.second > 1 &&
+		    (next.second > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+		     !sql_drop_add(bytes, next.second * sizeof(std::__detail::_Hash_node_base *))))
+			return false;
+		*out = bytes;
+		return true;
+	}
+};
+static_assert(sizeof(sql_drop_entry_table) ==
+	      sizeof(std::unordered_map<uint64_t, const item_transfer_entry *>));
+static_assert(alignof(sql_drop_entry_table) ==
+	      alignof(std::unordered_map<uint64_t, const item_transfer_entry *>));
+static_assert(std::is_same_v<sql_drop_entry_table::iterator,
+			     std::unordered_map<uint64_t, const item_transfer_entry *>::iterator>);
+#else
+using sql_drop_entry_table = std::unordered_map<uint64_t, const item_transfer_entry *>;
+#endif
+bool sql_room_item_payload_batch_heap(const sql_room_item_payload_batch &value,
+				      size_t &bytes) noexcept
+{
+	if (value.items.capacity() > SIZE_MAX / sizeof(player_item_snapshot) ||
+	    value.payloads.capacity() > SIZE_MAX / sizeof(std::vector<uint8_t>) ||
+	    !sql_drop_add(bytes, value.items.capacity() * sizeof(player_item_snapshot)) ||
+	    !sql_drop_add(bytes, value.payloads.capacity() * sizeof(std::vector<uint8_t>)))
+		return false;
+	for (const auto &item : value.items)
+	{
+		size_t heap = 0;
+		if (!player_item_snapshot_current_heap_bytes(item, &heap) ||
+		    !sql_drop_add(bytes, heap))
+			return false;
+	}
+	for (const auto &encoded : value.payloads)
+		if (!sql_drop_add(bytes, encoded.capacity()))
+			return false;
+	return true;
+}
+// Complete original singleton helper: original by-value row, normalized fields,
+// initializer-list copied row and vector copy all coexist during the full codec.
+bool sql_drop_encode_one_bounded(const player_item_snapshot &input, std::vector<uint8_t> *bytes,
+				 bool (*reserve)(size_t, void *) noexcept, void *context,
+				 size_t outer) noexcept
+{
+	try
+	{
+		size_t prefix = outer, heap = 0;
+		const size_t frames = 4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+				      3 * sizeof(player_item_snapshot) +
+				      sizeof(std::vector<player_item_snapshot>) +
+				      sizeof(std::initializer_list<player_item_snapshot>) +
+				      player_item_snapshot_copy_frame_bytes();
+		if (!sql_drop_add(prefix, frames) || !reserve || !reserve(prefix, context))
+			return false;
+		player_item_snapshot item;
+		if (player_item_snapshot_clone_bounded(input, &item, reserve, context, prefix) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		item.equipment_slot = 0;
+		if (!player_item_snapshot_current_heap_bytes(item, &heap) ||
+		    !sql_drop_add(prefix, heap))
+			return false;
+		player_item_snapshot singleton;
+		if (player_item_snapshot_clone_bounded(item, &singleton, reserve, context,
+						       prefix) != player_snapshot_codec_result::ok)
+			return false;
+		if (!player_item_snapshot_current_heap_bytes(singleton, &heap) ||
+		    !sql_drop_add(prefix, heap) ||
+		    !sql_drop_add(prefix, sizeof(player_item_snapshot)) ||
+		    !reserve(prefix, context))
+			return false;
+		std::vector<player_item_snapshot> rows;
+		rows.reserve(1);
+		player_item_snapshot copied;
+		if (player_item_snapshot_clone_bounded(singleton, &copied, reserve, context,
+						       prefix) != player_snapshot_codec_result::ok)
+			return false;
+		rows.push_back(std::move(copied));
+		if (!player_item_snapshot_current_heap_bytes(rows.front(), &heap) ||
+		    !sql_drop_add(prefix, heap))
+			return false;
+		return player_item_snapshot_list_encode_bounded(rows, bytes, reserve, context,
+								prefix) ==
+			       player_snapshot_codec_result::ok &&
+		       !bytes->empty() && bytes->size() <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+struct sql_drop_capture_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, nested = 0;
+	const sql_room_item_payload_batch *candidate = nullptr;
+	const std::vector<uint8_t> *canonical = nullptr, *encoded = nullptr;
+	const sql_drop_entry_table *entries = nullptr;
+	const std::set<uint64_t> *captured = nullptr;
+	mutable bool denied = false;
+	static bool forward(size_t bytes, void *context) noexcept
+	{
+		auto *owner = static_cast<sql_drop_capture_budget *>(context);
+		if (!owner || owner->denied || !owner->reserve)
+			return false;
+		if (!owner->reserve(bytes, owner->context))
+		{
+			owner->denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool refuse_after(int semantic_error) const noexcept
+	{
+		// Only an actual refused reservation sets denied. Stale errno,
+		// malformed literals and pure profile/limit errors cannot set it.
+		return refuse(denied ? ENOBUFS : semantic_error);
+	}
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		// Full capture parameters, loop locals, lookup iterators, references,
+		// return/closure carriers and original exact_item validation predicates.
+		// The genuine bool latch lives in sizeof(*this), including real padding.
+		// Relay owns bytes/context parameters, typed owner pointer and bool
+		// return; refuse_after owns this/error parameters and bool return plus
+		// original refuse's int argument and bool result. These two paths do
+		// not coexist. Admit their exact larger source carrier sum prospectively.
+		constexpr size_t relay_frames = sizeof(size_t) + 2 * sizeof(void *) + sizeof(bool);
+		constexpr size_t refusal_frames =
+			sizeof(void *) + 2 * sizeof(int) + 2 * sizeof(bool);
+		constexpr size_t forwarding_frames = relay_frames > refusal_frames ? relay_frames :
+										     refusal_frames;
+		// The three named constexpr size_t profile locals also own real source
+		// carriers during prefix; no emitted optimization erasure is assumed.
+		constexpr size_t frames =
+			forwarding_frames + 3 * sizeof(size_t) + 14 * sizeof(void *) +
+			12 * sizeof(size_t) + 7 * sizeof(bool) + 4 * sizeof(std::vector<uint8_t>) +
+			sizeof(sql_room_item_payload_batch) + sizeof(sql_drop_entry_table) +
+			sizeof(std::set<uint64_t>) + player_item_snapshot_copy_frame_bytes();
+		size_t bytes = outer, heap = 0;
+		if (!sql_drop_add(bytes, sizeof(*this)) || !sql_drop_add(bytes, frames) ||
+		    (candidate && !sql_room_item_payload_batch_heap(*candidate, bytes)) ||
+		    (canonical && !sql_drop_add(bytes, canonical->capacity())) ||
+		    (encoded && !sql_drop_add(bytes, encoded->capacity())))
+			return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (entries && (!entries->current_heap(&heap) || !sql_drop_add(bytes, heap)))
+			return false;
+		if (captured &&
+		    (captured->size() > SIZE_MAX / sizeof(std::_Rb_tree_node<uint64_t>) ||
+		     !sql_drop_add(bytes, captured->size() * sizeof(std::_Rb_tree_node<uint64_t>))))
+			return false;
+#else
+		return false;
+#endif
+		if (!sql_drop_add(bytes, extra))
+			return false;
+		result = bytes;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return prefix(bytes, extra) &&
+		       forward(bytes, const_cast<sql_drop_capture_budget *>(this));
+	}
+	bool entry_insert(uint64_t key) const noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		const size_t frames =
+			sizeof(std::__detail::_Prime_rehash_policy) +
+			2 * sizeof(std::pair<bool, size_t>) +
+			sizeof(std::__detail::_Prime_rehash_policy::_State) + 3 * sizeof(void *) +
+			3 * sizeof(size_t) + sizeof(bool) +
+			sizeof(std::pair<sql_drop_entry_table::iterator, bool>) +
+			// Genuine emplace allocation: _Scoped_node, actual node/pair/forward,
+			// node and bucket allocator and original rollback/destruction scopes.
+			4 * (3 * sizeof(void *) + sizeof(size_t)) +
+			sizeof(std::allocator<std::__detail::_Hash_node_base *>);
+		if (!entries || !peak(frames))
+			return false;
+		size_t request = 0;
+		// Original emplace eagerly owns a node even for duplicates, unlike try_emplace.
+		if (!entries->next_insert_request(&request))
+			return false;
+		(void)key;
+		return sql_drop_add(request, frames) && peak(request);
+#else
+		(void)key;
+		return false;
+#endif
+	}
+	bool uid_insert(uint64_t key) const noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (!captured)
+			return false;
+		// Genuine set unique-insert compares before allocating. Existing UID
+		// consumes no node; fresh UID uses one actual original red-black node.
+		const size_t request = captured->find(key) == captured->end() ?
+					       sizeof(std::_Rb_tree_node<uint64_t>) :
+					       0;
+		const size_t frames =
+			5 * sizeof(void *) + 2 * sizeof(uint64_t) + 3 * sizeof(bool) +
+			sizeof(std::pair<std::set<uint64_t>::iterator, bool>) +
+			2 * sizeof(std::pair<std::_Rb_tree_node_base *, std::_Rb_tree_node_base *>) +
+			4 * (3 * sizeof(void *) + sizeof(size_t));
+		return peak(request + frames);
+#else
+		(void)key;
+		return false;
+#endif
+	}
+	bool payload_reserve(size_t count) const noexcept
+	{
+		const size_t frames = 5 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool) +
+				      4 * (3 * sizeof(void *) + sizeof(size_t));
+		return count <= SIZE_MAX / sizeof(std::vector<uint8_t>) &&
+		       peak(count * sizeof(std::vector<uint8_t>) + frames);
+	}
+};
+} // namespace
+
+bool sql_room_item_payload_batch_current_heap_bytes(const sql_room_item_payload_batch &value,
+						    size_t *output) noexcept
+{
+	if (!output || !sql_drop_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!sql_room_item_payload_batch_heap(value, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+bool sql_room_item_payload_capture_bounded(const item_transfer_payload &payload,
+					   sql_room_item_payload_batch *batch,
+					   bool (*reserve)(size_t, void *) noexcept, void *context,
+					   size_t outer_live) noexcept
+try
+{
+	if (!batch || !reserve || !sql_drop_policy_supported() ||
+	    payload.reason != item_transfer_reason::player_drop ||
+	    payload.reason_id != static_cast<int64_t>(payload.to_owner.id) ||
+	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	    payload.from_owner.id > INT32_MAX || payload.from_owner.context_id ||
+	    payload.to_owner.type != item_owner_type::room || !payload.to_owner.id ||
+	    payload.to_owner.id > INT32_MAX || payload.to_owner.context_id || payload.multi_root ||
+	    !payload.selected_item_uid || payload.target_parent_item_uid ||
+	    (payload.target_root_item_uid &&
+	     payload.target_root_item_uid != payload.selected_item_uid) ||
+	    payload.expected_target_parent_revision || payload.logical_source_id ||
+	    payload.corpse.present || payload.collector.present ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    !payload.continuation.data.empty() || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return refuse(ENOTSUP);
+	// Admit actual default object/frame construction before private owners exist.
+	sql_drop_capture_budget budget{ reserve, context, outer_live };
+	if (!budget.peak(sizeof(sql_room_item_payload_batch) + sizeof(std::vector<uint8_t>) +
+			 sizeof(sql_drop_entry_table) + sizeof(std::set<uint64_t>)))
+		return refuse(ENOBUFS);
+	sql_room_item_payload_batch candidate;
+	budget.candidate = &candidate;
+	if ((!budget.prefix(budget.nested) ?
+		     player_snapshot_codec_result::overflow :
+		     player_item_snapshot_list_decode_bounded(
+			     payload.item_blob.data(), payload.item_blob_size, &candidate.items,
+			     sql_drop_capture_budget::forward, &budget, budget.nested)) !=
+		    player_snapshot_codec_result::ok ||
+	    candidate.items.size() != payload.item_count)
+		return budget.refuse_after(EBADMSG);
+	std::vector<uint8_t> canonical;
+	budget.canonical = &canonical;
+	if ((!budget.prefix(budget.nested) ?
+		     player_snapshot_codec_result::overflow :
+		     player_item_snapshot_list_encode_bounded(
+			     candidate.items, &canonical, sql_drop_capture_budget::forward, &budget,
+			     budget.nested)) != player_snapshot_codec_result::ok ||
+	    canonical.size() != payload.item_blob_size ||
+	    !std::equal(canonical.begin(), canonical.end(), payload.item_blob.begin()))
+		return budget.refuse_after(EBADMSG);
+	sql_drop_entry_table entries;
+	budget.entries = &entries;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		if (!entry.item_uid || entry.root_item_uid != payload.selected_item_uid ||
+		    !entry.expected_item_revision || entry.expected_item_revision == UINT64_MAX ||
+		    entry.expected_state != item_custody_state::active ||
+		    (!budget.entry_insert(entry.item_uid) ||
+		     !entries.emplace(entry.item_uid, &entry).second))
+			return budget.refuse_after(EBADMSG);
+	}
+	if (!budget.payload_reserve(candidate.items.size()))
+		return refuse(ENOBUFS);
+	candidate.payloads.reserve(candidate.items.size());
+	size_t total_bytes = 0;
+	std::set<uint64_t> captured_uids;
+	budget.captured = &captured_uids;
+	for (size_t index = 0; index < candidate.items.size(); ++index)
+	{
+		const auto &item = candidate.items[index];
+		const auto found = entries.find(item.object_uid);
+		if (!exact_item(item) ||
+		    (!budget.uid_insert(item.object_uid) ||
+		     !captured_uids.insert(item.object_uid).second) ||
+		    found == entries.end() || found->second->vnum != item.vnum ||
+		    (index == 0 ? (item.object_uid != payload.selected_item_uid ||
+				   item.parent_index != -1) :
+				  (item.parent_index < 0 ||
+				   item.parent_index >= static_cast<int32_t>(index))) ||
+		    found->second->parent_item_uid !=
+			    (index == 0 ? 0 : candidate.items[item.parent_index].object_uid))
+			return budget.refuse_after(EBADMSG);
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		if (!budget.prefix(budget.nested) ||
+		    !sql_drop_encode_one_bounded(item, &encoded, sql_drop_capture_budget::forward,
+						 &budget, budget.nested))
+			return budget.refuse_after(EBADMSG);
+		if (total_bytes > SQL_ROOM_ITEM_GRAPH_MAX_BYTES - encoded.size())
+			return refuse(E2BIG);
+		total_bytes += encoded.size();
+		// The original reserve owns every descriptor; this nonallocating move
+		// keeps the original payload insertion order and literal bytes.
+		candidate.payloads.push_back(std::move(encoded));
+		budget.encoded = nullptr;
+	}
+	if (!budget.peak())
+		return refuse(ENOBUFS);
+	*batch = std::move(candidate);
+	return true;
+}
+catch (const std::bad_alloc &)
+{
+	return refuse(ENOMEM);
+}

@@ -10220,3 +10220,125 @@ bool player_save_coin_replay_budget_scope_owner::bootstrap_storage_bytes(
 	*output = bytes;
 	return true;
 }
+
+size_t player_save_sql_drop_replay_owner::frame_bytes() noexcept
+{
+	// Full restore(original command/scope refs + outer + bool), typed payload,
+	// full original captured SQL literal batch, two prospective prefix scalars,
+	// original pid cast/root UID arguments, relay and genuine heap observers.
+	return 8 * sizeof(void *) + 7 * sizeof(size_t) + 5 * sizeof(bool) + sizeof(int) +
+	       sizeof(uint64_t) + sizeof(item_transfer_payload) +
+	       sizeof(sql_room_item_payload_batch) + item_transfer_payload_copy_frame_bytes() +
+	       player_item_snapshot_copy_frame_bytes() + critical_command_valid_frame_bytes();
+}
+
+bool player_save_sql_drop_replay_owner::current_storage_bytes(
+	player_save_coin_replay_budget_scope_owner &scope, size_t *output) noexcept
+{
+	// Caller owns this genuine uninterrupted scope. Includes its inline lock/
+	// callback/context storage once; unlike the public external physical getter.
+	return scope.bootstrap_storage_bytes(output);
+}
+
+bool player_save_sql_drop_replay_owner::restore(const critical_command &command,
+						player_save_coin_replay_budget_scope_owner &scope,
+						size_t exclusive_outer) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)scope;
+	(void)exclusive_outer;
+	return false; // Original flatfile early refusal, no provider/decoder entered.
+#else
+	if (!scope.prepared() || !scope.reserve_)
+		return false;
+	try
+	{
+		size_t prefix = exclusive_outer, heap = 0;
+		if (!coin_save_pool_add(prefix, frame_bytes()) || !scope.admit(prefix))
+			return false;
+		if (!command.publication_required || !critical_command_envelope_valid(command) ||
+		    !item_transfer_accounting_command_supported_bounded(
+			    command, player_save_coin_replay_budget_scope_owner::reserve_exclusive,
+			    &scope, prefix))
+			return false;
+		item_transfer_payload payload = {};
+		sql_room_item_payload_batch captured;
+		if (!item_transfer_command_decode_payload_bounded(
+			    command, &payload,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) ||
+		    !item_transfer_payload_current_heap_bytes(payload, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !sql_room_item_payload_capture_bounded(
+			    payload, &captured,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) ||
+		    !sql_room_item_payload_batch_current_heap_bytes(captured, &heap) ||
+		    !coin_save_pool_add(prefix, heap))
+			return false;
+		// SAME actual scope, complete original ordinary-drop registration.
+		// All original profile/duplicate/generation/poison/capacity/hold laws are
+		// retained. restore_obligation has no fallible callback after attachment.
+		return scope.restore_obligation(command, static_cast<int>(payload.from_owner.id),
+						payload.selected_item_uid, prefix);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
+bool player_save_pipeline_replay_current_storage_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	try
+	{
+		player_save_coin_replay_budget_scope_owner scope(nullptr, nullptr);
+		size_t bytes = 0;
+		if (!scope.bootstrap_storage_bytes(&bytes) || bytes < sizeof(scope))
+			return false;
+		// The transient observer scope is not retained pipeline storage. This
+		// external physical owner excludes it; borrowed getter includes actual
+		// caller-held scope instead. Lifecycle/PREPARED stability is mandatory.
+		*output = bytes - sizeof(scope);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool player_save_pipeline_restore_sql_drop_obligation_bounded(
+	const critical_command &command, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t exclusive_outer) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)reserve;
+	(void)context;
+	(void)exclusive_outer;
+	return false;
+#else
+	if (!reserve)
+		return false;
+	try
+	{
+		// Authentic standalone owner for callers which do not hold pipeline_mutex.
+		// A mixed startup caller MUST use the borrowed bridge above, not this.
+		player_save_coin_replay_budget_scope_owner scope(reserve, context);
+		size_t prefix = exclusive_outer;
+		if (!coin_save_pool_add(prefix,
+					4 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool)))
+			return false;
+		return player_save_sql_drop_replay_owner::restore(command, scope, prefix);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

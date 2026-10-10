@@ -64,4 +64,15 @@ item_transfer_craft_accounting_effects(const item_transfer_payload &payload,
 				       std::span<const economic_item_snapshot> inputs,
 				       economic_accounting_plan *plan);
 
+// Complete original all-branch pure intent and support proof. Full authentic
+// callers/inputs/prior output remain outer-owned; source-only companions do not
+// select admission, gameplay, persistence or inactive spell routes.
+economic_accounting_error item_transfer_accounting_intent_bounded(
+	const critical_command &, const critical_operation_id &, const critical_operation_id &,
+	uint32_t, std::vector<uint8_t> *, economic_source_kind, const economic_account_key *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool item_transfer_accounting_command_supported_bounded(const critical_command &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept;
+
 #endif

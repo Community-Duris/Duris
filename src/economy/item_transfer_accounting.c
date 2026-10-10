@@ -819,3 +819,501 @@ item_transfer_refine_wallet_accounting_effects(const item_transfer_payload &payl
 		return error::capacity;
 	}
 }
+
+#include <type_traits>
+namespace
+{
+bool item_replay_accounting_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+class item_replay_uid_set final : public std::__uset_hashtable<uint64_t>
+{
+	using table_type = std::__uset_hashtable<uint64_t>;
+	using actual_node = std::__detail::_Hash_node<
+		uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+
+    public:
+	using table_type::table_type;
+	bool current_heap(size_t *out) const noexcept
+	{
+		if (!out || !this->bucket_count())
+			return false;
+		size_t bytes = 0;
+		if (this->bucket_count() > 1 &&
+		    (this->bucket_count() > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+		     !item_replay_accounting_add(bytes,
+						 this->bucket_count() *
+							 sizeof(std::__detail::_Hash_node_base *))))
+			return false;
+		if (this->size() > SIZE_MAX / sizeof(actual_node) ||
+		    !item_replay_accounting_add(bytes, this->size() * sizeof(actual_node)))
+			return false;
+		*out = bytes;
+		return true;
+	}
+	bool prospective_insert(uint64_t uid, size_t *out) const noexcept
+	{
+		if (!out || this->size() == this->max_size())
+			return false;
+		if (this->find(uid) != this->end())
+		{
+			*out = 0;
+			return true;
+		}
+		size_t bytes = sizeof(actual_node);
+		auto policy = this->__rehash_policy();
+		const auto next = policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+		if (next.first && next.second > 1 &&
+		    (next.second > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+		     !item_replay_accounting_add(
+			     bytes, next.second * sizeof(std::__detail::_Hash_node_base *))))
+			return false;
+		*out = bytes;
+		return true;
+	}
+};
+static_assert(sizeof(item_replay_uid_set) == sizeof(std::unordered_set<uint64_t>));
+static_assert(alignof(item_replay_uid_set) == alignof(std::unordered_set<uint64_t>));
+static_assert(std::is_same_v<item_replay_uid_set::iterator, std::unordered_set<uint64_t>::iterator>);
+#else
+using item_replay_uid_set = std::unordered_set<uint64_t>;
+#endif
+struct item_replay_accounting_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *projection = nullptr, *admission = nullptr;
+	const economic_frozen_intent *intent = nullptr;
+	const item_transfer_payload *payload = nullptr;
+	const std::vector<uint8_t> *expected = nullptr;
+	const craft_pouch_mutation *pouch = nullptr;
+	const craft_recipe_continuation *refine = nullptr;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	const item_replay_uid_set *uids = nullptr;
+	mutable bool denied = false;
+	static bool forward(size_t bytes, void *context) noexcept
+	{
+		auto *owner = static_cast<item_replay_accounting_budget *>(context);
+		if (!owner || owner->denied || !owner->reserve)
+			return false;
+		if (!owner->reserve(bytes, owner->context))
+		{
+			owner->denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool rows(const std::vector<player_item_snapshot> &value, size_t &bytes) const noexcept
+	{
+		if (value.capacity() > SIZE_MAX / sizeof(player_item_snapshot) ||
+		    !item_replay_accounting_add(bytes,
+						value.capacity() * sizeof(player_item_snapshot)))
+			return false;
+		for (const auto &row : value)
+		{
+			size_t heap = 0;
+			if (!player_item_snapshot_current_heap_bytes(row, &heap) ||
+			    !item_replay_accounting_add(bytes, heap))
+				return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		if (denied)
+			return false;
+		// Actual prefix/rows/typed observers' argument/local/result/reference
+		// carriers; pure leaf copy-frame and full codec profiles are additive.
+		constexpr size_t observations =
+			18 * sizeof(void *) + 10 * sizeof(size_t) + 8 * sizeof(bool) +
+			2 * sizeof(std::vector<player_item_snapshot>::const_iterator);
+		size_t bytes = outer, heap = 0;
+		if (!item_replay_accounting_add(bytes, sizeof(*this)) ||
+		    !item_replay_accounting_add(bytes, frames + observations) ||
+		    !item_replay_accounting_add(bytes, critical_command_copy_frame_bytes()) ||
+		    !item_replay_accounting_add(bytes, critical_command_valid_frame_bytes()) ||
+		    !item_replay_accounting_add(bytes, item_transfer_payload_copy_frame_bytes()))
+			return false;
+		for (const auto *value : { projection, admission })
+			if (value && (!critical_command_current_heap_bytes(*value, &heap) ||
+				      !item_replay_accounting_add(bytes, heap)))
+				return false;
+		if (intent &&
+		    !item_replay_accounting_add(bytes, intent->admission.facts.capacity()))
+			return false;
+		if (payload && (!item_transfer_payload_current_heap_bytes(*payload, &heap) ||
+				!item_replay_accounting_add(bytes, heap)))
+			return false;
+		if (expected && !item_replay_accounting_add(bytes, expected->capacity()))
+			return false;
+		if (outputs && !rows(*outputs, bytes))
+			return false;
+		if (pouch)
+		{
+			if (pouch->usage.capacity() >
+				    SIZE_MAX / sizeof(chaos_material_pouch_usage) ||
+			    !item_replay_accounting_add(
+				    bytes,
+				    pouch->usage.capacity() * sizeof(chaos_material_pouch_usage)) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->before, &heap) ||
+			    !item_replay_accounting_add(bytes, heap) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->after, &heap) ||
+			    !item_replay_accounting_add(bytes, heap))
+				return false;
+		}
+		if (refine &&
+		    (!item_replay_accounting_add(bytes, refine->pouch_mutation.capacity()) ||
+		     refine->refine_root_order.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		     !item_replay_accounting_add(bytes, refine->refine_root_order.capacity() *
+								sizeof(uint64_t)) ||
+		     (refine->refine_material_name.capacity() > 15 &&
+		      (refine->refine_material_name.capacity() == SIZE_MAX ||
+		       !item_replay_accounting_add(bytes,
+						   refine->refine_material_name.capacity() + 1)))))
+			return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		if (uids &&
+		    (!uids->current_heap(&heap) || !item_replay_accounting_add(bytes, heap)))
+			return false;
+#else
+		return false;
+#endif
+		if (!item_replay_accounting_add(bytes, extra))
+			return false;
+		result = bytes;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return prefix(bytes, extra) &&
+		       forward(bytes, const_cast<item_replay_accounting_budget *>(this));
+	}
+	bool copy_command(const critical_command &input, critical_command &output) noexcept
+	{
+		size_t request = 0;
+		if (!peak(4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) ||
+		    !critical_command_fresh_copy_request_bytes(input, &request) || !peak(request))
+			return false;
+		try
+		{
+			output = input;
+			return true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	bool uid_insert(uint64_t uid) const noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		constexpr size_t frames = sizeof(std::__detail::_Prime_rehash_policy) +
+					  2 * sizeof(std::pair<bool, size_t>) +
+					  sizeof(std::__detail::_Prime_rehash_policy::_State) +
+					  3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+					  sizeof(std::pair<item_replay_uid_set::iterator, bool>) +
+					  sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+					  4 * (3 * sizeof(void *) + sizeof(size_t));
+		if (!uids || !peak(frames))
+			return false;
+		size_t request = 0;
+		return uids->prospective_insert(uid, &request) &&
+		       item_replay_accounting_add(request, frames) && peak(request);
+#else
+		(void)uid;
+		return false;
+#endif
+	}
+};
+bool craft_outputs_bounded(const item_transfer_payload &payload, uint32_t actor_pid,
+			   std::vector<player_item_snapshot> *outputs,
+			   item_replay_accounting_budget &budget)
+{
+	if (!outputs || !actor_pid || actor_pid > INT32_MAX ||
+	    payload.reason != item_transfer_reason::craft ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != actor_pid || payload.from_owner.context_id ||
+	    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	    payload.expected_from_revision != payload.expected_to_revision || !payload.multi_root ||
+	    !payload.item_count || payload.item_count > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS ||
+	    payload.target_root_item_uid || payload.target_parent_item_uid ||
+	    payload.expected_target_parent_revision || payload.reason_id <= 0 ||
+	    payload.reason_id > UINT32_MAX || payload.logical_source_id || payload.corpse.present ||
+	    payload.collector.present || payload.item_blob_size > payload.item_blob.size())
+		return false;
+	const size_t old_frames = budget.frames;
+	budget.frames += sizeof(craft_pouch_mutation) + sizeof(item_replay_uid_set) +
+			 6 * sizeof(void *) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+	if (!budget.peak())
+	{
+		budget.frames = old_frames;
+		return false;
+	}
+	// Scope cleanup removes only private source ownership, never caller owners.
+	struct reset_owner
+	{
+		item_replay_accounting_budget &budget;
+		size_t frames;
+		~reset_owner()
+		{
+			budget.pouch = nullptr;
+			budget.uids = nullptr;
+			budget.frames = frames;
+		}
+	} reset{ budget, old_frames };
+	craft_pouch_mutation pouch;
+	budget.pouch = &pouch;
+	size_t nested = 0;
+	if ((!budget.prefix(nested) ||
+	     !craft_pouch_mutation_from_payload_bounded(
+		     payload, &pouch, item_replay_accounting_budget::forward, &budget, nested)))
+		return false;
+	item_replay_uid_set uids;
+	budget.uids = &uids;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		if (!item.item_uid || item.expected_state != item_custody_state::active ||
+		    item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+		    item.vnum == VOBJ_COINS ||
+		    (!budget.uid_insert(item.item_uid) || !uids.insert(item.item_uid).second))
+			return false;
+	}
+	outputs->clear();
+	if (payload.item_blob_size &&
+	    ((!budget.prefix(nested) ?
+		      player_snapshot_codec_result::overflow :
+		      player_item_snapshot_list_decode_bounded(
+			      payload.item_blob.data(), payload.item_blob_size, outputs,
+			      item_replay_accounting_budget::forward, &budget, nested)) !=
+		     player_snapshot_codec_result::ok ||
+	     outputs->empty()))
+		return false;
+	if (outputs->size() > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS - payload.item_count)
+		return false;
+	for (size_t index = 0; index < outputs->size(); ++index)
+	{
+		const auto &output = (*outputs)[index];
+		if (!output.object_uid || output.vnum <= 0 || output.vnum == VOBJ_COINS ||
+		    output.type == ITEM_MONEY ||
+		    (!budget.uid_insert(output.object_uid) ||
+		     !uids.insert(output.object_uid).second) ||
+		    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    output.parent_index >= static_cast<int32_t>(index) ||
+		    (output.equipment_slot != -1 && output.equipment_slot != 0))
+			return false;
+	}
+	return outputs->empty() || outputs->front().object_uid == payload.selected_item_uid;
+}
+
+} // namespace
+economic_accounting_error item_transfer_accounting_intent_bounded(
+	const critical_command &command, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, uint32_t actor_pid, std::vector<uint8_t> *encoded,
+	economic_source_kind lifecycle_source, const economic_account_key *fresh_player_wallet,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	if (!encoded || command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    command.type != critical_command_type::item_transfer ||
+	    !critical_command_legacy_execution_supported(command) ||
+	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
+		return error::invalid_identity;
+	constexpr size_t frames = 8 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(uint32_t) +
+				  5 * sizeof(bool) + 2 * sizeof(economic_source_kind) +
+				  sizeof(uint64_t) + sizeof(item_transfer_payload) +
+				  sizeof(economic_admission_facts) +
+				  sizeof(std::vector<player_item_snapshot>) +
+				  sizeof(craft_recipe_continuation) + sizeof(craft_pouch_mutation);
+	item_replay_accounting_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return error::capacity;
+	item_transfer_payload payload = {};
+	budget.payload = &payload;
+	size_t nested = 0;
+	if ((!budget.prefix(nested) ||
+	     !item_transfer_command_decode_payload_bounded(
+		     command, &payload, item_replay_accounting_budget::forward, &budget, nested)))
+		return budget.denied ? error::capacity : error::unauthorized;
+	try
+	{
+		economic_admission_facts facts;
+		facts.metadata.lineage = lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = actor_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_ITEM_TRANSFER;
+		if (payload.reason == item_transfer_reason::creation)
+		{
+			if (!creation_source_valid(lifecycle_source) ||
+			    !sourced_item_creation(payload, actor_pid, lifecycle_source))
+				return error::unauthorized;
+			facts.metadata.reason = economic_reason::item_create;
+			facts.metadata.source_event =
+				item_lifecycle_source(payload, lifecycle_source, lineage);
+		}
+		else if (payload.reason == item_transfer_reason::destruction ||
+			 payload.reason == item_transfer_reason::quest_turnin)
+		{
+			if ((lifecycle_source != economic_source_kind::item_action &&
+			     lifecycle_source != economic_source_kind::spell_consumption &&
+			     lifecycle_source != economic_source_kind::intentional_destruction) ||
+			    !sourced_item_destruction(payload))
+				return error::unauthorized;
+			facts.metadata.reason = economic_reason::item_destroy;
+			facts.metadata.source_event =
+				item_lifecycle_source(payload, lifecycle_source, lineage);
+		}
+		else if (payload.reason == item_transfer_reason::craft)
+		{
+			std::vector<player_item_snapshot> outputs;
+			budget.outputs = &outputs;
+			if (lifecycle_source != economic_source_kind::crafting ||
+			    !craft_outputs_bounded(payload, actor_pid, &outputs, budget))
+				return budget.denied ? error::capacity : error::unauthorized;
+			craft_recipe_continuation refine;
+			budget.refine = &refine;
+			if ((payload.continuation.kind ==
+				     item_transfer_continuation_kind::craft_recipe &&
+			     budget.prefix(nested) &&
+			     craft_recipe_continuation_decode_bounded(
+				     payload.continuation.data, &refine,
+				     item_replay_accounting_budget::forward, &budget, nested) &&
+			     refine.discipline == craft_recipe_discipline::refine &&
+			     craft_recipe_continuation_matches(refine, payload)) &&
+			    refine.refine_ore_count != 1 && fresh_player_wallet &&
+			    (!economic_account_key_valid(*fresh_player_wallet) ||
+			     fresh_player_wallet->kind != economic_account_kind::wallet ||
+			     fresh_player_wallet->context_id ||
+			     fresh_player_wallet->lineage.bytes != lineage.bytes ||
+			     fresh_player_wallet->authority_id !=
+				     refine.refine_cost.wallet_mapping_id))
+				return error::unauthorized;
+			if (budget.denied)
+				return error::capacity;
+			facts.metadata.reason = economic_reason::crafting_cost;
+			// Input UID lifetimes identify the consumed recipe even if a retry
+			// rebuilds its output UID or command ID. An output cannot be its own
+			// issuance authority.
+			craft_pouch_mutation pouch;
+			budget.pouch = &pouch;
+			if ((!budget.prefix(nested) ||
+			     !craft_pouch_mutation_from_payload_bounded(
+				     payload, &pouch, item_replay_accounting_budget::forward,
+				     &budget, nested)))
+				return budget.denied ? error::capacity : error::unauthorized;
+			uint64_t consumed_uid = 0;
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (payload.items[index].item_uid != pouch.before.object_uid &&
+				    (!consumed_uid || payload.items[index].item_uid < consumed_uid))
+					consumed_uid = payload.items[index].item_uid;
+			if (!consumed_uid)
+				return error::unauthorized;
+			facts.metadata.source_event = { lifecycle_source, lineage, lineage,
+							consumed_uid,
+							static_cast<uint32_t>(payload.reason_id) };
+		}
+		else
+		{
+			if (lifecycle_source != economic_source_kind{} ||
+			    (!ordinary_player_move(payload, actor_pid) &&
+			     !corpse_player_move(payload, actor_pid)))
+				return error::unauthorized;
+			facts.metadata.reason = economic_reason::item_move;
+		}
+		budget.outputs = nullptr;
+		budget.refine = nullptr;
+		budget.pouch = nullptr;
+		if (!budget.prefix(nested))
+			return error::capacity;
+		return economic_intent_freeze_fixed_bounded(command, facts, encoded,
+							    item_replay_accounting_budget::forward,
+							    &budget, nested);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+bool item_transfer_accounting_command_supported_bounded(const critical_command &command,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	try
+	{
+		constexpr size_t frames =
+			7 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) +
+			2 * sizeof(critical_command) + sizeof(economic_frozen_intent) +
+			sizeof(std::vector<uint8_t>) + sizeof(economic_source_kind);
+		item_replay_accounting_budget budget{ reserve, context, outer_live, frames };
+		size_t nested = 0;
+		if (!budget.peak())
+			return false;
+		critical_command projection;
+		budget.projection = &projection;
+		if (!budget.copy_command(command, projection))
+			return false;
+		if (!projection.accepted_at_usec)
+			projection.accepted_at_usec = 1;
+		if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    !critical_command_envelope_valid(projection) ||
+		    command.type != critical_command_type::item_transfer)
+			return false;
+		economic_frozen_intent intent;
+		budget.intent = &intent;
+		if ((!budget.prefix(nested) ?
+			     error::capacity :
+			     economic_intent_decode_bounded(command.accounting_intent, &intent,
+							    item_replay_accounting_budget::forward,
+							    &budget, nested)) != error::ok ||
+		    intent.admission.metadata.writer_id != ECONOMIC_WRITER_ITEM_TRANSFER ||
+		    intent.admission.metadata.actor_kind != economic_actor_kind::domain ||
+		    intent.admission.metadata.actor_id > INT32_MAX)
+			return false;
+		economic_source_kind lifecycle_source = {};
+		if (intent.admission.metadata.reason == economic_reason::item_create ||
+		    intent.admission.metadata.reason == economic_reason::item_destroy ||
+		    intent.admission.metadata.reason == economic_reason::crafting_cost)
+		{
+			if (!intent.admission.metadata.source_event)
+				return false;
+			lifecycle_source = intent.admission.metadata.source_event->kind;
+		}
+		critical_command admission;
+		budget.admission = &admission;
+		if (!budget.copy_command(projection, admission))
+			return false;
+		admission.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		admission.accounting_intent.clear();
+		admission.publication_required = false;
+		std::vector<uint8_t> expected;
+		budget.expected = &expected;
+		if (!budget.prefix(nested) ||
+		    item_transfer_accounting_intent_bounded(
+			    admission, intent.admission.metadata.lineage,
+			    intent.admission.metadata.epoch,
+			    static_cast<uint32_t>(intent.admission.metadata.actor_id), &expected,
+			    lifecycle_source, nullptr, item_replay_accounting_budget::forward,
+			    &budget, nested) != error::ok)
+			return false;
+		if (!budget.peak(3 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool)))
+			return false;
+		return expected == command.accounting_intent;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}

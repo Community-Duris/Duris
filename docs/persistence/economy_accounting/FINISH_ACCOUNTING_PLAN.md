@@ -16390,3 +16390,18 @@ Independent RAW/installed source review authenticates62+7+17members/four inverse
 startup/transitive/emitted/native32MiB/recovery/R1-R8 gates remain OPEN.
 Tests deferred major-plan batch; inactive/CLOSED, coverage incomplete, release
 BLOCKED, goal ACTIVE. No major-plan completion is claimed.
+
+
+## Bounded passive item and spell replay implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_PASSIVE_ITEM_SPELL_REPLAY_2026-10-10.md) supplies full
+original passive soulbind/item/publication, real same-save-scope SQL drop and
+spell receipt registration companions. Original inactive/default bodies and
+duplicate/callback/rollback laws survive; genuine current table/shared-command
+storage and full accounting/canonical SQL payload proofs are admitted. Actual
+budget denials retain capacity/ENOBUFS instead of semantic errors. Independent
+RAW/installed reviews authenticate57+78+83+36members/eleven source inverses,
+18 freshly matched library controls,463pins/931unchanged policies/2853mapped
+sites/protected Plan5 WIP. Full mixed host/foreign CURRENT/native32MiB/recovery/
+R1-R8 and release stay OPEN. Tests deferred to major-plan batch; accounting
+inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
