@@ -66835,7 +66835,9 @@
       "src/item/smith_native_compound_owner.c": "f13474af8470ed96f92e5980722b4f6201fec89fa54d87c94acfae7b344964f5",
       "src/item/smith_native_compound_owner.h": "58cfd00d0c80d667dd80c61710a5671a4cf48c94ac15bbf86a390937f4733fd0",
       "src/economy/currency_command.c": "6a17b573574ae842c5df655382b484aad4a0344f69cf75db0fcff0954f344b7c",
-      "src/economy/currency_command.h": "5e3cb5657e0fdbfb0e0c10f68b05f8eb3a23be4a8b9a93968a21d13ec50846b7"
+      "src/economy/currency_command.h": "5e3cb5657e0fdbfb0e0c10f68b05f8eb3a23be4a8b9a93968a21d13ec50846b7",
+      "src/player/player_death_restitution_adapter.c": "4bfc78c342ec657aa4f30dd61bd50670f48df54bbd0d7e8ed86e477c993f0d18",
+      "src/player/player_death_restitution_adapter.h": "a52ea0c72af1809dad588dc79b1852e6e380d7675baec074eb371b98f1dafc6e"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -524,3 +524,269 @@ player_death_restitution_runtime_live_health player_death_restitution_runtime_li
 		}
 	return health;
 }
+
+// This owner is deliberately private to the genuine future adapter replay
+// provider. The original live/replay paths above are unchanged and unselected.
+class player_death_restitution_replay_budget_owner;
+class player_death_restitution_status_cache_budget_owner
+{
+	friend class player_death_restitution_replay_budget_owner;
+	friend bool player_death_restitution_runtime_replay_storage_bytes(size_t *) noexcept;
+
+	using reserve_fn = bool (*)(size_t, void *) noexcept;
+	struct census
+	{
+		size_t total = sizeof(live_submissions) + sizeof(operation_statuses) +
+			       sizeof(live_callbacks);
+		size_t index = 0;
+		size_t capacity = 0;
+
+		bool observe() noexcept
+		{
+			total = sizeof(live_submissions) + sizeof(operation_statuses) +
+				sizeof(live_callbacks);
+			for (index = 0; index < operation_statuses.size(); ++index)
+			{
+				// Empty/inactive records can retain their old allocation after
+				// record = {}. Capacity, rather than in_use or size, owns it.
+				capacity = operation_statuses[index].actor.capacity();
+				if (capacity <= 15)
+					continue;
+				if (capacity == std::numeric_limits<size_t>::max() ||
+				    capacity + 1 > std::numeric_limits<size_t>::max() - total)
+					return false;
+				total += capacity + 1;
+			}
+			return true;
+		}
+	};
+
+	struct workspace
+	{
+		census cache;
+		size_t base = 0;
+		size_t current = 0;
+		size_t requested = 0;
+		size_t length = 0;
+		size_t new_capacity = 0;
+		size_t index = 0;
+		size_t id_index = 0;
+		operation_status_record *record = nullptr;
+		bool evict = false;
+		bool zero = true;
+		reserve_fn reserve = nullptr;
+		void *context = nullptr;
+
+		bool admit(size_t request) noexcept
+		{
+			if (!cache.observe() ||
+			    cache.total > std::numeric_limits<size_t>::max() - base)
+				return false;
+			current = base + cache.total;
+			if (request > std::numeric_limits<size_t>::max() - current)
+				return false;
+			requested = current + request;
+			return reserve && reserve(requested, context);
+		}
+	};
+
+	static bool profile() noexcept
+	{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG)
+		return true;
+#else
+		return false;
+#endif
+	}
+
+	// Incoming full outer owns command/plan/input/caller/C and sibling owners,
+	// and excludes exactly the three owned static objects observed above.
+	// This method owns its real workspace and prospective reset/assignment
+	// carriers. It is not a lease for later calls or a historical peak.
+	static bool reserve_status_bounded(const critical_command &command,
+					   const player_death_restitution_plan &plan,
+					   const char *actor, reserve_fn reserve, void *context,
+					   size_t outer_live, operation_status_record **record_out,
+					   size_t *current_cache_out) noexcept
+	{
+		if (!record_out || !current_cache_out || !reserve || !profile() ||
+		    outer_live > std::numeric_limits<size_t>::max() - sizeof(workspace))
+			return false;
+		workspace work;
+		work.base = outer_live + sizeof(workspace);
+		work.reserve = reserve;
+		work.context = context;
+		if (!work.admit(0))
+			return false;
+		// Same original first-NUL actor and zero-ID refusals, with no hidden
+		// allocating identity helper or temporary string.
+		if (!actor || !*actor)
+		{
+			*record_out = nullptr;
+			*current_cache_out = work.cache.total;
+			return true;
+		}
+		for (work.id_index = 0; work.id_index < command.operation_id.bytes.size();
+		     ++work.id_index)
+			if (command.operation_id.bytes[work.id_index])
+				work.zero = false;
+		if (work.zero)
+		{
+			*record_out = nullptr;
+			*current_cache_out = work.cache.total;
+			return true;
+		}
+		// Preserve duplicate precedence over free/completed rows.
+		for (work.index = 0; work.index < operation_statuses.size(); ++work.index)
+		{
+			work.record = &operation_statuses[work.index];
+			if (!work.record->in_use)
+				continue;
+			for (work.id_index = 0; work.id_index < command.operation_id.bytes.size();
+			     ++work.id_index)
+				if (work.record->operation_id.bytes[work.id_index] !=
+				    command.operation_id.bytes[work.id_index])
+					break;
+			if (work.id_index == command.operation_id.bytes.size())
+			{
+				*record_out = work.record;
+				*current_cache_out = work.cache.total;
+				return true;
+			}
+		}
+		work.record = nullptr;
+		for (work.index = 0; work.index < operation_statuses.size(); ++work.index)
+			if (!operation_statuses[work.index].in_use)
+			{
+				work.record = &operation_statuses[work.index];
+				break;
+			}
+		if (!work.record)
+			for (work.index = 0; work.index < operation_statuses.size(); ++work.index)
+				if (operation_statuses[work.index].in_use &&
+				    !operation_statuses[work.index]
+					     .status.target_save_login_fence_held &&
+				    operation_statuses[work.index].status.completion_available)
+				{
+					work.record = &operation_statuses[work.index];
+					work.evict = true;
+					break;
+				}
+		if (!work.record)
+		{
+			*record_out = nullptr;
+			*current_cache_out = work.cache.total;
+			return true;
+		}
+		// Original operator=(const char*) uses char_traits::length: a protected
+		// actor containing NUL stores only its prefix, not plan.actor.size().
+		while (actor[work.length])
+			++work.length;
+		if (work.length > work.record->actor.max_size())
+			return false;
+		work.requested = 0;
+		if (work.length > work.record->actor.capacity())
+		{
+			work.new_capacity = work.length;
+			if (work.record->actor.capacity() > std::numeric_limits<size_t>::max() / 2)
+				return false;
+			if (work.length < 2 * work.record->actor.capacity())
+			{
+				work.new_capacity = 2 * work.record->actor.capacity();
+				if (work.new_capacity > work.record->actor.max_size())
+					work.new_capacity = work.record->actor.max_size();
+			}
+			if (work.new_capacity == std::numeric_limits<size_t>::max())
+				return false;
+			work.requested = work.new_capacity + 1;
+		}
+		// Admit the new allocation while the real old cache heap still lives,
+		// and admit the original record/status reset carriers before any
+		// mutation. Cleanup will not call a fallible reserve after refusal.
+		// _M_replace/_M_mutate/_M_create actual source fixed scalar carriers:
+		// old/new size, pos/len1/len2, how_much/new_capacity, pointer/result,
+		// capacity reference and old_capacity. Runtime assign is disjoint
+		// (actor belongs to the decoded plan), so cold overlapping copy is
+		// not a hidden path. These are source expressions, not a heap cap.
+		constexpr size_t assignment_frames =
+			// operator=(const char*) -> assign(const char*): this/source and
+			// reference result carriers; char_traits::length pointer/result.
+			6 * sizeof(void *) + sizeof(size_t) +
+			// _M_replace: this/source, pos/len1/len2, old/new sizes,
+			// in-capacity p/how_much (included though allocation disjoint).
+			3 * sizeof(void *) + 6 * sizeof(size_t) +
+			// _M_mutate: this/source, pos/len1/len2, how_much/new_capacity/r.
+			3 * sizeof(void *) + 5 * sizeof(size_t) +
+			// _M_create: this/capacity-reference/returned allocation, old cap.
+			3 * sizeof(void *) + sizeof(size_t) +
+			// _S_allocate and allocator argument/returned-pointer carriers.
+			4 * sizeof(void *) + 2 * sizeof(size_t) +
+			// _S_copy / char_traits::copy: destination/source/count/result.
+			5 * sizeof(void *) + 2 * sizeof(size_t);
+		constexpr size_t cleanup_frames =
+			sizeof(operation_status_record) +
+			sizeof(player_death_restitution_runtime_operation_status);
+		if (work.requested > std::numeric_limits<size_t>::max() - assignment_frames -
+					     cleanup_frames ||
+		    !work.admit(work.requested + assignment_frames + cleanup_frames))
+			return false;
+		if (work.evict)
+			*work.record = {};
+		try
+		{
+			work.record->in_use = true;
+			work.record->operation_id = command.operation_id;
+			work.record->plan_digest = plan.plan_digest;
+			work.record->schema_version = command.schema_version;
+			work.record->payload_version = command.payload_version;
+			work.record->source_site = command.source_site;
+			work.record->deadline_class = command.deadline_class;
+			work.record->accepted_at_usec = command.accepted_at_usec;
+			work.record->actor = actor;
+			if (!work.evict)
+				work.record->status = {};
+			work.record->status.operation_id = command.operation_id;
+			work.record->status.phase =
+				player_death_restitution_runtime_operation_phase::unknown;
+			work.record->status.durability = critical_command_durability::unknown;
+			work.record->status.completion_outcome =
+				critical_apply_outcome::retryable_failure;
+			work.record->status.exact_verification_required = true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			*work.record = {};
+			work.record = nullptr;
+		}
+		// Actual same-owner observation, not stale preallocation size. All
+		// admitted actor capacities are representable, including failed
+		// resets. There is no allocating or fallible admission here.
+		// Representability is established above: all unchanged heaps were in
+		// the admitted old total and the only new capacity was admitted while
+		// that old total still lived. This game-thread owner admits no cache
+		// concurrency. Fresh census is therefore strong and cannot overflow.
+		work.cache.observe();
+		*record_out = work.record;
+		*current_cache_out = work.cache.total;
+		return true;
+	}
+
+	// Caller has already admitted the full record={} cleanup carrier while
+	// it owned the returned status. This is the original no-allocation reset.
+	static void release_status_preallowed(operation_status_record *record) noexcept
+	{
+		release_status(record);
+	}
+};
+
+bool player_death_restitution_runtime_replay_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !player_death_restitution_status_cache_budget_owner::profile())
+		return false;
+	player_death_restitution_status_cache_budget_owner::census observed;
+	if (!observed.observe())
+		return false;
+	*output = observed.total;
+	return true;
+}
