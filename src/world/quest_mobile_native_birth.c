@@ -12057,3 +12057,1062 @@ bool quest_mobile_native_birth_current_source_frames(size_t *output) noexcept
 	return true;
 #endif
 }
+
+// Exact additive lower interfaces owned by other agents. No duplicate codec.
+economic_accounting_error
+native_mobile_birth_command_decode_v1_bounded(const critical_command &, quest_mobile_native_image *,
+					      bool (*)(size_t, void *) noexcept, void *, size_t,
+					      size_t *) noexcept;
+economic_accounting_error native_mobile_birth_command_historical_decode_fixed_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, bool (*)(size_t, void *) noexcept, void *,
+	size_t, size_t *, size_t *) noexcept;
+economic_accounting_error native_mobile_birth_command_decode_constructor_fixed_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, quest_mobile_native_constructor_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t, size_t *, size_t *) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_command_decode_fixed_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, native_mobile_birth_cash_role_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t, size_t *, size_t *) noexcept;
+economic_accounting_error native_mobile_birth_recovery_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *, size_t,
+	size_t *) noexcept;
+bool native_mobile_birth_recovery_valid_bounded(const critical_native_recovery_envelope &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept;
+
+economic_accounting_error native_mobile_birth_cash_role_recovery_decode_fixed_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *, size_t,
+	size_t *) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_decode_fixed_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_shared_shop_recovery_context *, bool (*)(size_t, void *) noexcept,
+	void *, size_t, size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_valid_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_shared_shop_recovery_valid_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+
+namespace
+{
+bool birth_historical_entry_admit(size_t &, size_t, bool (*)(size_t, void *) noexcept,
+				  void *) noexcept;
+}
+
+// Exact reviewed keeper10 SOURCE only; original retained_budget remains actual.
+bool item_native_quest_birth_retained_budget_source_frames(size_t *) noexcept;
+
+// Actual matching pure lower profiles are supplied by the paired lower headers.
+
+namespace
+{
+using birth_historical_profile_fn = bool (*)(size_t *) noexcept;
+// Complete child SOURCE/entry is transient. New command/recovery children
+// own their source/workspace after entry; caller sibling/input heaps stay here.
+// This helper's real formals/locals are part of the historical owning SOURCE.
+bool birth_historical_child_admit(size_t current, size_t query,
+				  birth_historical_profile_fn source_profile,
+				  birth_historical_profile_fn initial_profile,
+				  bool (*reserve)(size_t, void *) noexcept, void *context) noexcept
+{
+	size_t source = 0, initial = 0, prospective = current;
+	if (!birth_passive_admit(current, query, reserve, context) || !source_profile(&source) ||
+	    !initial_profile(&initial) || !birth_passive_add(prospective, source) ||
+	    !birth_passive_add(prospective, initial))
+		return false;
+	return birth_passive_admit(prospective, 0, reserve, context);
+}
+// Old byte-exact image encoder admits its own controller but requires its
+// named uncovered SOURCE supplement. Obtain it under its own pure query law;
+// retain only that supplement in the exact child outer, never early inline.
+bool birth_historical_child_supplement(size_t current, size_t query,
+				       birth_historical_profile_fn profile, size_t *outer,
+				       bool (*reserve)(size_t, void *) noexcept,
+				       void *context) noexcept
+{
+	size_t supplement = 0;
+	if (!outer || !birth_passive_admit(current, query, reserve, context) ||
+	    !profile(&supplement) || !birth_passive_add(current, supplement))
+		return false;
+	*outer = current;
+	return true;
+}
+bool birth_historical_same_image(const quest_mobile_native_image &left,
+				 const quest_mobile_native_image &right,
+				 bool (*reserve)(size_t, void *) noexcept, void *context,
+				 size_t outer) noexcept
+{
+	struct comparison_workspace
+	{
+		std::vector<uint8_t> left, right;
+		size_t current = 0;
+	};
+	size_t base = outer, child = 0;
+	if (!birth_passive_add(base, sizeof(comparison_workspace)) ||
+	    !birth_passive_admit(base, 0, reserve, context))
+		return false;
+	comparison_workspace work;
+	if (!birth_historical_child_admit(
+		    base, quest_mobile_native_image_source_query_frame_bytes(),
+		    quest_mobile_native_image_encode_source_frame_bytes,
+		    quest_mobile_native_image_encode_initial_inline_bytes, reserve, context) ||
+	    !birth_historical_child_supplement(
+		    base, quest_mobile_native_image_source_query_frame_bytes(),
+		    quest_mobile_native_image_encode_source_supplement_frame_bytes, &child, reserve,
+		    context) ||
+	    quest_mobile_native_image_encode_bounded(left, &work.left, reserve, context, child) !=
+		    player_snapshot_codec_result::ok)
+		return false;
+	work.current = base;
+	if (!birth_passive_add(work.current, work.left.capacity()) ||
+	    !birth_passive_add(work.current, work.right.capacity()) ||
+	    !birth_historical_child_admit(
+		    work.current, quest_mobile_native_image_source_query_frame_bytes(),
+		    quest_mobile_native_image_encode_source_frame_bytes,
+		    quest_mobile_native_image_encode_initial_inline_bytes, reserve, context) ||
+	    !birth_historical_child_supplement(
+		    work.current, quest_mobile_native_image_source_query_frame_bytes(),
+		    quest_mobile_native_image_encode_source_supplement_frame_bytes, &child, reserve,
+		    context) ||
+	    quest_mobile_native_image_encode_bounded(right, &work.right, reserve, context, child) !=
+		    player_snapshot_codec_result::ok)
+		return false;
+	return work.left == work.right;
+}
+}
+
+// Complete original passive restore dispatch. SOURCE profile/provider joins
+// are separate controls; original/default entry points remain byte-exact.
+namespace
+{
+// Every operation after the original registry transfer is a genuine no-throw
+// member transfer, callback or keeper call. Allocation failure cannot leave a
+// published private candidate without entering the explicit rollback branch.
+static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+static_assert(std::is_nothrow_move_assignable_v<critical_native_recovery_envelope>);
+static_assert(std::is_nothrow_move_assignable_v<native_mobile_birth_recovery_context>);
+static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_image>);
+static_assert(std::is_nothrow_move_constructible_v<original_item>);
+static_assert(std::is_nothrow_move_assignable_v<std::unique_ptr<original_birth>>);
+struct birth_historical_command_workspace
+{
+	quest_mobile_native_image image;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	quest_mobile_native_constructor_recipe constructor;
+	native_mobile_birth_cash_role_recipe cash_role;
+	std::vector<uint8_t> canonical;
+	std::unique_ptr<original_birth> body;
+	original_item item;
+	size_t base = 0, current = 0, request = 0, available = 0;
+	bool shared = false, ordinary = false, constructor_present = false;
+	bool current_bytes(size_t *output) const noexcept
+	{
+		size_t bytes = base;
+		if (!output || !birth_passive_image_heap(bytes, image) ||
+		    !birth_passive_recipes_heap(bytes, recipes) ||
+		    !birth_passive_add(bytes, canonical.capacity()) ||
+		    !birth_passive_rows(bytes, item.effects.capacity(),
+					sizeof(quest_mobile_native_item_effect)) ||
+		    (body && !birth_passive_new_body_heap(bytes, *body)))
+			return false;
+		*output = bytes;
+		return true;
+	}
+};
+
+economic_accounting_error birth_historical_command_values(const critical_command &command,
+							  birth_historical_command_workspace &work,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context) noexcept
+{
+	if (!work.current_bytes(&work.current))
+		return economic_accounting_error::capacity;
+	if (work.ordinary)
+	{
+		constexpr size_t query_frames =
+			native_mobile_birth_cash_role_command_source_query_frame_bytes();
+		if (!birth_historical_child_admit(
+			    work.current, query_frames,
+			    native_mobile_birth_cash_role_command_decode_source_frame_bytes,
+			    native_mobile_birth_cash_role_command_decode_initial_inline_bytes,
+			    reserve, context))
+			return economic_accounting_error::capacity;
+		return native_mobile_birth_cash_role_command_decode_fixed_bounded(
+			command, &work.image, &work.recipes, &work.cash_role, reserve, context,
+			work.current, nullptr, nullptr);
+	}
+	if (work.constructor_present)
+	{
+		constexpr size_t query_frames =
+			native_mobile_birth_command_source_query_frame_bytes();
+		if (!birth_historical_child_admit(
+			    work.current, query_frames,
+			    native_mobile_birth_command_constructor_decode_source_frame_bytes,
+			    native_mobile_birth_command_historical_decode_initial_inline_bytes,
+			    reserve, context))
+			return economic_accounting_error::capacity;
+		return native_mobile_birth_command_decode_constructor_fixed_bounded(
+			command, &work.image, &work.recipes, &work.constructor, reserve, context,
+			work.current, nullptr, nullptr);
+	}
+	if (command.payload_version == NATIVE_MOBILE_BIRTH_PAYLOAD_VERSION)
+	{
+		constexpr size_t query_frames =
+			native_mobile_birth_command_source_query_frame_bytes();
+		if (!birth_historical_child_admit(
+			    work.current, query_frames,
+			    native_mobile_birth_command_v1_decode_source_frame_bytes,
+			    native_mobile_birth_command_v1_decode_initial_inline_bytes, reserve,
+			    context))
+			return economic_accounting_error::capacity;
+		return native_mobile_birth_command_decode_v1_bounded(
+			command, &work.image, reserve, context, work.current, nullptr);
+	}
+	constexpr size_t query_frames = native_mobile_birth_command_source_query_frame_bytes();
+	if (!birth_historical_child_admit(
+		    work.current, query_frames,
+		    native_mobile_birth_command_historical_decode_source_frame_bytes,
+		    native_mobile_birth_command_historical_decode_initial_inline_bytes, reserve,
+		    context))
+		return economic_accounting_error::capacity;
+	return native_mobile_birth_command_historical_decode_fixed_bounded(command, &work.image,
+									   &work.recipes, reserve,
+									   context, work.current,
+									   nullptr, nullptr);
+}
+
+struct birth_historical_envelope_workspace
+{
+	native_mobile_birth_recovery_context progress;
+	native_mobile_birth_shared_shop_recovery_context shared_values;
+	std::vector<uint8_t> checkpoint;
+	critical_native_recovery_envelope retained;
+	quest_mobile_native_image image;
+	std::vector<uint8_t> canonical;
+	std::vector<original_item> stock;
+	original_item item;
+	size_t base = 0, current = 0, request = 0;
+	bool shared = false;
+	bool current_bytes(size_t *output) const noexcept
+	{
+		size_t bytes = base;
+		if (!output || !birth_passive_context_heap(bytes, progress) ||
+		    !birth_passive_context_heap(bytes, shared_values.progress) ||
+		    !birth_passive_add(bytes, shared_values.original_checkpoint.capacity()) ||
+		    !birth_passive_add(bytes, checkpoint.capacity()) ||
+		    !birth_passive_envelope_heap(bytes, retained) ||
+		    !birth_passive_image_heap(bytes, image) ||
+		    !birth_passive_add(bytes, canonical.capacity()) ||
+		    !birth_passive_stock_heap(bytes, stock) ||
+		    !birth_passive_rows(bytes, item.effects.capacity(),
+					sizeof(quest_mobile_native_item_effect)))
+			return false;
+		*output = bytes;
+		return true;
+	}
+};
+}
+
+bool quest_mobile_native_birth_owner::restore_historical_command_bounded(
+	const critical_command &command, const std::vector<uint8_t> *shared_checkpoint,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	// Original non-birth bare-command behavior precedes every private query.
+	if (command.type != critical_command_type::native_mobile_birth)
+		return true;
+	size_t base = outer;
+	if (!birth_historical_entry_admit(base, sizeof(birth_historical_command_workspace), reserve,
+					  context))
+		return false;
+	birth_historical_command_workspace work;
+	work.base = base;
+	try
+	{
+		work.shared = shared_shop_command(command);
+		if (work.shared && (!shared_checkpoint || shared_checkpoint->empty()))
+			return false;
+		work.ordinary = ordinary_wallet_command(command);
+		work.constructor_present = work.ordinary ||
+					   command.payload_version ==
+						   NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION;
+		const auto decoded =
+			birth_historical_command_values(command, work, reserve, context);
+		if (work.ordinary)
+			work.constructor = work.cash_role.original;
+		if (decoded != economic_accounting_error::ok ||
+		    (work.ordinary &&
+		     work.cash_role.role !=
+			     (work.shared ? native_mobile_birth_cash_role::shared_shopkeeper :
+					    native_mobile_birth_cash_role::ordinary_wallet)) ||
+		    !work.current_bytes(&work.current) ||
+		    critical_command_encode_bounded(command, &work.canonical, reserve, context,
+						    work.current) !=
+			    critical_command_codec_result::ok)
+			return false;
+		for (const auto &previous : births)
+			if (previous &&
+			    previous->reference.birth_operation.bytes == command.operation_id.bytes)
+				return previous->canonical == work.canonical &&
+				       work.current_bytes(&work.current) &&
+				       birth_historical_same_image(previous->image, work.image,
+								   reserve, context,
+								   work.current) &&
+				       (!work.shared ||
+					(previous->shared_checkpoint &&
+					 *previous->shared_checkpoint == *shared_checkpoint));
+		for (const auto &previous : births)
+			if (previous)
+			{
+				const auto &left = previous->reference.birth_source;
+				const auto &right = work.image.reference.birth_source;
+				if (previous->reference.mobile_instance_id ==
+					    work.image.reference.mobile_instance_id ||
+				    (left.kind == right.kind &&
+				     left.source.bytes == right.source.bytes &&
+				     left.generation.bytes == right.generation.bytes &&
+				     left.sequence == right.sequence && left.slot == right.slot))
+					return false;
+				for (const auto &row : work.image.items)
+					for (const auto &old : previous->image.items)
+						if (row.object_uid == old.object_uid)
+							return false;
+			}
+		while (work.available < births.size() && births[work.available])
+			++work.available;
+		if (work.available == births.size() &&
+		    births.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS)
+			return false;
+		if (!work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, sizeof(original_birth), reserve, context))
+			return false;
+		work.body = std::make_unique<original_birth>();
+		auto &body = *work.body;
+		body.reference = work.image.reference;
+		body.image = std::move(work.image);
+		body.recipes = std::move(work.recipes);
+		body.constructor = work.constructor;
+		body.constructor_present = work.constructor_present;
+		body.cash_role = work.cash_role;
+		body.cash_role_present = work.ordinary;
+		if (work.shared)
+		{
+			work.request = sizeof(std::vector<uint8_t>);
+			if (!birth_passive_add(work.request, shared_checkpoint->size()) ||
+			    !work.current_bytes(&work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			body.shared_checkpoint =
+				std::make_unique<const std::vector<uint8_t>>(*shared_checkpoint);
+		}
+		if (work.constructor_present &&
+		    (work.constructor.wire_version ==
+			     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION ||
+		     work.constructor.wire_version ==
+			     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
+		{
+			if (work.constructor.reset_room_vnum != body.reference.birthplace_vnum)
+				return false;
+			body.shop = work.constructor.reset_shop_index;
+		}
+		work.request = 0;
+		if (!birth_passive_command_heap(work.request, command, true) ||
+		    !birth_passive_add(work.request, sizeof(critical_command)) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		// Exact fresh command copy with the genuine reviewed copy-constructor
+		// closure, then no-throw transfer into the original empty body member.
+		{
+			auto copied = command;
+			body.command = std::move(copied);
+		}
+		body.canonical = std::move(work.canonical);
+		body.rnum = real_mobile(body.reference.mobile_vnum);
+		body.zone = real_zone(body.reference.reset_zone_vnum);
+		body.room = real_room0(body.reference.birthplace_vnum);
+		if (body.rnum < 0 || body.zone < 0 || body.room < 0)
+			return false;
+		body.cold = true;
+		body.cold_replay_enrolled = true;
+		body.sealed = true;
+		body.submitted = true;
+		work.request = 0;
+		if (!birth_passive_rows(work.request, body.image.items.size(),
+					sizeof(item_ownership_runtime_entry)) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		body.current_custody.resize(body.image.items.size());
+		for (const auto &row : body.image.items)
+		{
+			work.item.uid = row.object_uid;
+			work.item.rnum = real_object(row.vnum);
+			if (work.item.rnum < 0)
+				return false;
+			if (!birth_passive_push_request(body.stock, &work.request) ||
+			    !work.current_bytes(&work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			body.stock.push_back(std::move(work.item));
+		}
+		if (work.available == births.size())
+		{
+			if (!birth_passive_push_request(births, &work.request) ||
+			    !work.current_bytes(&work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			births.push_back(std::move(work.body));
+		}
+		else
+			births[work.available] = std::move(work.body);
+		// Preserve the actual original keeper charge, including its game-thread
+		// gate and publishing of the authentic retained native birth subtotal.
+		// ROOT's callback separately observes the newly transferred registry.
+		if (!work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, 0, reserve, context) || !charge())
+		{
+			births[work.available].reset();
+			(void)charge();
+			if (work.current_bytes(&work.current))
+				(void)birth_passive_admit(work.current, 0, reserve, context);
+			return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::restore_historical_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer) noexcept
+{
+	if (envelope.command.type != critical_command_type::native_mobile_birth)
+		return false;
+	size_t base = outer;
+	if (!birth_historical_entry_admit(base, sizeof(birth_historical_envelope_workspace),
+					  reserve, context))
+		return false;
+	birth_historical_envelope_workspace work;
+	work.base = base;
+	try
+	{
+		work.shared = shared_shop_command(envelope.command);
+		const bool ordinary = ordinary_wallet_command(envelope.command);
+		const std::span<const uint8_t> attachment = envelope.attachment;
+		if (!work.current_bytes(&work.current) ||
+		    !birth_historical_child_admit(
+			    work.current,
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes() :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_valid_source_query_frame_bytes() :
+				    native_mobile_birth_recovery_historical_valid_source_query_frame_bytes(),
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_valid_source_frame_bytes :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_valid_source_frame_bytes :
+				    native_mobile_birth_recovery_historical_valid_source_frame_bytes,
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_valid_initial_inline_bytes :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_valid_initial_inline_bytes :
+				    native_mobile_birth_recovery_historical_valid_initial_inline_bytes,
+			    reserve, context))
+			return false;
+		const bool valid =
+			work.shared ? native_mobile_birth_shared_shop_recovery_valid_fixed_bounded(
+					      envelope, reserve, context, work.current) :
+			ordinary ? native_mobile_birth_cash_role_recovery_valid_fixed_bounded(
+					   envelope, reserve, context, work.current) :
+				   native_mobile_birth_recovery_valid_bounded(
+					   envelope, reserve, context, work.current);
+		if (!valid)
+			return false;
+		if (!work.current_bytes(&work.current) ||
+		    !birth_historical_child_admit(
+			    work.current,
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_source_query_frame_bytes() :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_source_query_frame_bytes() :
+				    native_mobile_birth_recovery_historical_source_query_frame_bytes(),
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_source_frame_bytes :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_source_frame_bytes :
+				    native_mobile_birth_recovery_historical_source_frame_bytes,
+			    work.shared ?
+				    native_mobile_birth_shared_shop_recovery_fixed_initial_inline_bytes :
+			    ordinary ?
+				    native_mobile_birth_cash_role_recovery_fixed_initial_inline_bytes :
+				    native_mobile_birth_recovery_historical_initial_inline_bytes,
+			    reserve, context))
+			return false;
+		if (work.shared)
+		{
+			if (native_mobile_birth_shared_shop_recovery_decode_fixed_bounded(
+				    envelope.command, attachment, &work.shared_values, reserve,
+				    context, work.current,
+				    nullptr) != economic_accounting_error::ok)
+				return false;
+			work.progress = std::move(work.shared_values.progress);
+			work.checkpoint = std::move(work.shared_values.original_checkpoint);
+		}
+		else if ((ordinary ? native_mobile_birth_cash_role_recovery_decode_fixed_bounded(
+					     envelope.command, attachment, &work.progress, reserve,
+					     context, work.current, nullptr) :
+				     native_mobile_birth_recovery_decode_bounded(
+					     envelope.command, attachment, &work.progress, reserve,
+					     context, work.current, nullptr)) !=
+			 economic_accounting_error::ok)
+			return false;
+		work.request = 0;
+		if (!birth_passive_envelope_heap(work.request, envelope, true) ||
+		    !birth_passive_add(work.request, sizeof(critical_native_recovery_envelope)) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		// Same complete original fresh envelope copy before duplicate checks.
+		{
+			auto retained = envelope;
+			work.retained = std::move(retained);
+		}
+		for (const auto &entry : births)
+			if (entry && entry->reference.birth_operation.bytes ==
+					     envelope.command.operation_id.bytes)
+			{
+				if ((work.shared &&
+				     (!entry->shared_checkpoint ||
+				      *entry->shared_checkpoint != work.checkpoint)) ||
+				    entry->envelope.revision != envelope.revision ||
+				    entry->envelope.phase != envelope.phase ||
+				    entry->envelope.attachment != envelope.attachment)
+					return false;
+				return work.current_bytes(&work.current) &&
+				       critical_command_encode_bounded(envelope.command,
+								       &work.canonical, reserve,
+								       context, work.current) ==
+					       critical_command_codec_result::ok &&
+				       entry->canonical == work.canonical;
+			}
+		// Preserve the original nested decode lifetime: recipe/role outputs die
+		// before original stock construction. No configured-flat domain is added.
+		{
+			size_t decoded_base = 0;
+			if (!work.current_bytes(&work.current) ||
+			    !birth_passive_add(decoded_base, work.current) ||
+			    !birth_passive_add(decoded_base,
+					       sizeof(birth_historical_command_workspace)) ||
+			    !birth_passive_admit(decoded_base, 0, reserve, context))
+				return false;
+			birth_historical_command_workspace decoded;
+			decoded.base = decoded_base;
+			decoded.ordinary = ordinary;
+			decoded.constructor_present = false;
+			if (birth_historical_command_values(envelope.command, decoded, reserve,
+							    context) !=
+				    economic_accounting_error::ok ||
+			    (ordinary &&
+			     decoded.cash_role.role !=
+				     (work.shared ?
+					      native_mobile_birth_cash_role::shared_shopkeeper :
+					      native_mobile_birth_cash_role::ordinary_wallet)))
+				return false;
+			work.image = std::move(decoded.image);
+		}
+		work.request = 0;
+		if (!birth_passive_rows(work.request, work.progress.items.size(),
+					sizeof(original_item)) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.stock.reserve(work.progress.items.size());
+		for (const auto &row : work.progress.items)
+		{
+			const auto found =
+				std::find_if(work.image.items.begin(), work.image.items.end(),
+					     [&](const auto &item)
+					     { return item.object_uid == row.object_uid; });
+			if (found == work.image.items.end())
+				return false;
+			work.item.uid = found->object_uid;
+			work.item.rnum = real_object(found->vnum);
+			if (work.item.rnum < 0)
+				return false;
+			if (!birth_passive_push_request(work.stock, &work.request) ||
+			    !work.current_bytes(&work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			work.stock.push_back(std::move(work.item));
+		}
+		if (!work.current_bytes(&work.current) ||
+		    !restore_historical_command_bounded(envelope.command,
+							work.shared ? &work.checkpoint : nullptr,
+							reserve, context, work.current))
+			return false;
+		for (auto &entry : births)
+			if (entry && entry->reference.birth_operation.bytes ==
+					     envelope.command.operation_id.bytes)
+			{
+				entry->stock = std::move(work.stock);
+				entry->envelope = std::move(work.retained);
+				entry->recovery = std::move(work.progress);
+				if (!work.current_bytes(&work.current) ||
+				    !birth_passive_admit(work.current, 0, reserve, context) ||
+				    !charge())
+				{
+					entry.reset();
+					(void)charge();
+					if (work.current_bytes(&work.current))
+						(void)birth_passive_admit(work.current, 0, reserve,
+									  context);
+					return false;
+				}
+				return true;
+			}
+		return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_restore_historical_bounded(const critical_command &command,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept
+{
+	return quest_mobile_native_birth_owner::restore_historical_command_bounded(
+		command, nullptr, reserve, context, outer);
+}
+bool quest_mobile_native_birth_restore_historical_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer) noexcept
+{
+	return quest_mobile_native_birth_owner::restore_historical_bounded(envelope, reserve,
+									   context, outer);
+}
+
+// Owning historical registration SOURCE map. Every child codec retains its
+// separate own SOURCE/entry; the actual foreign capacity keeper is ROOT-owned.
+// These declarations are source carriers, not an emitted/native stack claim.
+namespace
+{
+constexpr size_t birth_historical_p = sizeof(void *);
+constexpr size_t birth_historical_n = sizeof(size_t);
+constexpr size_t birth_historical_b = sizeof(bool);
+constexpr size_t birth_historical_max(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+
+// Genuine generated empty vector chain, stl_vector vector/base/impl/data and
+// allocator/new_allocator: six actual this pointers, no element constructor.
+template <class T> constexpr size_t birth_historical_empty_vector_source = 6 * sizeof(void *);
+// Exact GNU13 move-constructor graph, stl_vector620/338/154/105,
+// allocator167/new_allocator92, two std::move references/results, pointer reset.
+template <class T> constexpr size_t birth_historical_move_constructor_source =
+	6 * 2 * sizeof(void *) + 2 * 2 * sizeof(void *) + sizeof(T *);
+
+// The actual ordinary vector destruction and deallocation graph. A nontrivial
+// T destructor is supplied independently by its genuinely selected containing
+// object below; null/empty vectors do not enter any T destructor.
+template <class T> constexpr size_t birth_historical_vector_cleanup_source =
+	sizeof(std::vector<T> *) + 2 * sizeof(void *) +
+	// _Destroy(first,last,allocator), _Destroy(first,last), destroy aux/loop.
+	3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	// _Vector_base destructor, _M_deallocate, traits/allocator/new_allocator,
+	// sized delete and real allocator/base destructor receivers.
+	sizeof(void *) + 3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+	sizeof(size_t) + 3 * sizeof(void *);
+
+// Upper fitting and reallocating rvalue push_back: push -> emplace ->
+// _M_realloc_insert. No position insert/range insert or assign helper occurs.
+// Allocator and _S_relocate declarations are the actual common descendants
+// of the genuine GNU13 reserve graph, not its unused reserve entry scope.
+template <class T> constexpr size_t birth_historical_push_source()
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	constexpr size_t public_push =
+		2 * sizeof(V *) + 2 * sizeof(T *) + sizeof(T *) +
+		// forward and allocator_traits::construct -> construct_at -> placement new.
+		2 * sizeof(T *) + 3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+		2 * sizeof(void *) + sizeof(size_t);
+	constexpr size_t reallocate = sizeof(V *) + sizeof(typename V::iterator) + sizeof(T *) +
+				      2 * sizeof(size_t) + 4 * sizeof(T *) +
+				      // _M_check_len(this,n,message): sz/len; max_size/_S_max_size.
+				      2 * sizeof(void *) + 3 * sizeof(size_t) +
+				      4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+				      // std::max two refs/result and actual begin/base/subtraction.
+				      3 * sizeof(void *) + 4 * sizeof(void *) +
+				      sizeof(std::ptrdiff_t);
+	constexpr size_t allocate = 3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) +
+				    2 * sizeof(size_t) + sizeof(void *);
+	constexpr size_t relocate =
+		3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+		sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) +
+		// Non-bitwise __relocate_a_1 loop plus relocate_object/construct/destroy.
+		4 * sizeof(T *) + sizeof(A *) + 4 * sizeof(T *) + sizeof(A *) + 3 * sizeof(void *) +
+		3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t);
+	constexpr size_t deallocate =
+		3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t);
+	return public_push + reallocate + allocate + relocate + deallocate;
+}
+
+// Actual unique_ptr move/reset/release/deleter graph. Both tuple indices are
+// genuine: pointer access and default_delete access. The old pointee destructor
+// is supplied separately, because it is a real original_birth, not a pointer.
+constexpr size_t birth_historical_unique_source =
+	// public operator=/reset/release/destructor and impl operator=/reset/release.
+	2 * 2 * sizeof(void *) + 2 * 3 * sizeof(void *) + 2 * 2 * sizeof(void *) +
+	// impl reset old_p; release p; destructor pointer reference and deleter.
+	3 * sizeof(void *) +
+	// _M_ptr/_M_deleter -> get -> get_helper -> tuple head -> head_base.
+	2 * (2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	     2 * sizeof(void *)) +
+	// std::forward(default_delete), default_delete(this,p), sized delete(p,n).
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(size_t);
+
+// Actual stage unique_ptr MOVE CONSTRUCTOR, separate from operator=/reset.
+// unique_ptr.h366/242/184: unique_ptr/data/impl this + source, std::move
+// tuple reference/result, tuple.h1358 two-element tuple default move,
+// _Tuple_impl302/524 and _Head_base88/197 for pointer/default_delete.
+// default_delete's implicit move has its own this/source pair. The impl
+// resets source through _M_ptr; it does not call release or reset here.
+constexpr size_t birth_historical_unique_move_constructor_source =
+	3 * (2 * sizeof(void *)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+	// _M_ptr -> get<0> -> __get_helper -> _Tuple_impl::_M_head ->
+	// _Head_base::_M_head: each actual receiver/reference and ref result.
+	5 * (2 * sizeof(void *));
+
+// Genuine passive observers have the same parameter/range/string/vector
+// descendants as the named settled CURRENT graph; no registry/census/warm
+// frame is imported. Each selected helper is mapped separately.
+constexpr size_t birth_historical_observer_source =
+	// Both current_bytes(this,out,bytes,result) and value dispatcher formals.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) + 4 * sizeof(void *) +
+	sizeof(economic_accounting_error) + birth_current_source_command +
+	birth_current_source_envelope + birth_current_source_context + birth_current_source_image +
+	birth_current_source_recipes + birth_current_source_stock +
+	// new_body_heap(value,body,result) and its shared-checkpoint unique/capacity.
+	2 * sizeof(void *) + sizeof(bool) + birth_current_source_unique +
+	birth_current_source_text + birth_current_source_rows +
+	// push_request(values,out,increment,capacity,bytes,result) and actual
+	// max_size plus max reference/return scopes; current count remains heap.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) + 3 * sizeof(void *);
+
+constexpr size_t birth_historical_array_equality_source =
+	// array== -> equal -> __equal_aux/aux1/equal<true> -> memcmp.
+	2 * sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) + sizeof(bool) +
+	2 * (3 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t birth_historical_vector_equality_source =
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	3 * (sizeof(void *) + sizeof(void *)) + birth_historical_array_equality_source;
+constexpr size_t birth_historical_search_source =
+	// any_of -> none_of -> find_if -> __find_if -> predicate wrapper.
+	// The selected iterator kind is random access; loop trip_count is real.
+	4 * (2 * sizeof(void *) + sizeof(void *) + sizeof(void *)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// predicate this/element/result and constructor predicate arg/receiver.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	// actual iterator ++/difference/dereference/comparison/base descendants.
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool);
+
+// Generated containing constructor/destructor receivers for the selected
+// actual image/command/recovery/item/body/workspaces. Vector and string graphs
+// are independently named below; inline object bytes remain actual workspace.
+constexpr size_t birth_historical_generated_source =
+	// command workspace, envelope workspace, original_birth, original_item,
+	// image/reference, critical command/envelope, recovery/shared context,
+	// native stage and procedure binding/chain: genuine default receivers.
+	13 * sizeof(void *) +
+	// Actual generated containing move assignment receivers/source refs:
+	// image, command, envelope and recovery; no copy of item rows is selected.
+	4 * 2 * sizeof(void *) +
+	// Generated original_item MOVE CONSTRUCTOR this/source: fitting push
+	// and non-bitwise relocation construct stage/effects, not assign them.
+	2 * sizeof(void *) +
+	// Actual containing cleanup receivers for body, item, image, snapshot,
+	// extra-description, recipe, recovery-item/context/envelope/command.
+	10 * sizeof(void *);
+constexpr size_t birth_historical_string_source =
+	// Empty recovery-root string constructor basic_string.h522 receiver.
+	sizeof(void *) +
+	// Mutable _M_local_data234 (this, pointer result), pointer_traits<char*>::
+	// pointer_to141 -> addressof137 -> __addressof51 (ref + pointer result).
+	4 * (2 * sizeof(void *)) +
+	// _Alloc_hider188(this,dat,allocator-ref); actual empty allocator temporary;
+	// allocator default/new_allocator default receivers, std::move ref/result,
+	// allocator const-copy and new_allocator const-copy this/source pairs.
+	3 * sizeof(void *) + sizeof(std::allocator<char>) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + 2 * (2 * sizeof(void *)) +
+	// Actual _Alloc_hider default-argument allocator temporary cleanup:
+	// allocator.h destructor and implicit new_allocator base receivers.
+	2 * sizeof(void *) +
+	// _M_init_local_buf348 receiver and selected is_constant_evaluated bool.
+	sizeof(void *) + sizeof(bool) +
+	// _M_set_length254(this,n) -> _M_length217(this,n), _M_data222
+	// (this,pointer result), char_traits<char>::assign351(two refs, runtime
+	// __is_constant_evaluated bool), actual zero-character temporary.
+	2 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(bool) + sizeof(char) +
+	// string destructor/dispose/destroy and real capacity/local-data chain.
+	3 * sizeof(void *) + sizeof(size_t) + birth_current_source_string +
+	// traits/allocator/new_allocator deallocate and sized delete.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t);
+
+constexpr size_t birth_historical_body_source =
+	// make_unique<>: returned pointer, value new size/result, unique_ptr(pointer)
+	// actual tuple construction plus pointer store; original_birth this above.
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) +
+	// Original body top-level vector members: stock,image,recipes,command4,
+	// canonical,custody,envelope5,recovery =15. Exact default six-P chain.
+	15 * birth_historical_empty_vector_source<uint8_t> +
+	// Actual always-empty native/binding four vectors and chain reset/free,
+	// with genuine cleanup mapped in the settled selected source contract.
+	ordinary_passive_nested_empty_vector_frames +
+	// Eleven genuinely null body/stage pointer handles and two shared handles:
+	// empty tuple/head-base construction and shared_count destructor guard.
+	11 * (9 * sizeof(void *)) + 2 * (6 * sizeof(void *)) + birth_historical_unique_source +
+	birth_historical_string_source +
+	birth_historical_push_source<std::unique_ptr<original_birth>>();
+
+constexpr size_t birth_historical_cleanup_source =
+	birth_historical_vector_cleanup_source<uint8_t> +
+	birth_historical_vector_cleanup_source<original_item> +
+	birth_historical_vector_cleanup_source<player_item_snapshot> +
+	birth_historical_vector_cleanup_source<player_item_extra_description_snapshot> +
+	birth_historical_vector_cleanup_source<player_item_dynamic_affect_snapshot> +
+	birth_historical_vector_cleanup_source<int32_t> +
+	birth_historical_vector_cleanup_source<native_mobile_birth_item_recipe> +
+	birth_historical_vector_cleanup_source<native_mobile_birth_library_recipe> +
+	birth_historical_vector_cleanup_source<native_mobile_birth_recovery_item> +
+	birth_historical_vector_cleanup_source<native_mobile_birth_recovery_effect> +
+	birth_historical_vector_cleanup_source<quest_mobile_native_item_effect> +
+	birth_historical_vector_cleanup_source<item_ownership_runtime_entry> +
+	birth_historical_string_source;
+
+// Scope-specific lexical carriers; workspace, fresh command/envelope temporaries
+// and decoded workspace inline are admitted separately by the actual requests.
+constexpr size_t birth_historical_command_lexical_source =
+	// Public command params/result -> owner params/result -> local base/decoded.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 4 * sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + sizeof(size_t) + sizeof(economic_accounting_error) +
+	// Three original ranges, four nested image ranges and two source references.
+	7 * (4 * sizeof(void *)) + 2 * sizeof(void *) +
+	// Actual body reference; shared-checkpoint public allocator return/const ctor.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// original real_mobile/zone/room/object: virtual/bot/top/mid/result, sequential.
+	5 * sizeof(int);
+constexpr size_t birth_historical_envelope_lexical_source =
+	// Public+owner params/result, base, ordinary/valid and span local.
+	2 * (3 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) + sizeof(size_t) +
+	2 * sizeof(bool) + sizeof(std::span<const uint8_t>) +
+	// duplicate/stock/registration ranges, find_if result/predicate capture,
+	// and exact prospective decoded_base query; lambda parameter/result.
+	3 * 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(bool) + 5 * sizeof(int);
+
+// Exact original charge(size_t) owning census: the real independent keeper
+// still publishes its historical conservative subtotal. SOURCE-only reuse here
+// names unchanged actual callees (warm, binding, mobile, affect, item-stage),
+// not the unrelated public CURRENT wrapper or its whole registry heap.
+constexpr size_t birth_historical_charge_command_source =
+	2 * sizeof(void *) + sizeof(bool) +
+	birth_historical_max(birth_current_source_vector, birth_current_source_add);
+constexpr size_t birth_historical_charge_envelope_source =
+	2 * sizeof(void *) + sizeof(bool) + birth_historical_charge_command_source;
+constexpr size_t birth_historical_charge_context_source =
+	2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) +
+	birth_historical_max(birth_current_source_vector, birth_current_source_add);
+constexpr size_t birth_historical_charge_source =
+	// charge() bool result, charge(scratch) parameter/result and bytes/warm locals.
+	2 * sizeof(bool) + 3 * sizeof(size_t) +
+	// births range/body; recipe/image/description/stock/writer ranges; original
+	// retained/binding/mobile_private/stage retained named size_t declarations.
+	6 * 4 * sizeof(void *) + sizeof(void *) + 5 * sizeof(size_t) +
+	// charge_writer closure capture, lambda receiver/argument/result.
+	3 * sizeof(void *) + sizeof(bool) + birth_historical_charge_envelope_source +
+	birth_historical_charge_context_source + birth_current_source_unique +
+	birth_current_source_shared + birth_current_source_string + birth_current_source_array +
+	birth_current_source_mobile + birth_current_source_affects + birth_current_source_binding +
+	birth_current_source_prospective_stage + birth_current_source_warm +
+	// ordinary lease fixed_storage returns size_t; literal_pool_owned bool
+	// query's own result. The complete genuine keeper SOURCE joins below once.
+	sizeof(size_t) + sizeof(bool);
+
+constexpr size_t birth_historical_owned_source =
+	birth_historical_max(birth_historical_command_lexical_source,
+			     birth_historical_envelope_lexical_source) +
+	birth_historical_observer_source + birth_historical_generated_source +
+	birth_historical_body_source + birth_historical_cleanup_source +
+	birth_historical_vector_equality_source + birth_historical_charge_source +
+	// Four command-workspace and fourteen envelope-workspace empty vectors;
+	// actual nested command workspace defaults also select the command group.
+	18 * birth_historical_empty_vector_source<uint8_t> +
+	// Workspace body/item handles and original_item nested effects default.
+	2 * 9 * sizeof(void *) +
+	birth_historical_empty_vector_source<quest_mobile_native_item_effect> +
+	// Genuine same_image comparison helper left/right/return and byte-vector
+	// defaults. Its own original body admits comparison-workspace/parameters.
+	2 * sizeof(void *) + sizeof(bool) + 2 * birth_historical_empty_vector_source<uint8_t> +
+	birth_historical_search_source +
+	// Genuine byte checkpoint/envelope copy, stock reserve/push and custody
+	// default append. Equal-allocator member transfers select these actual Ts.
+	ordinary_passive_vector_copy_frames<uint8_t>() +
+	birth_envelope_vector_reserve_frames<original_item>() +
+	birth_historical_push_source<original_item>() +
+	birth_envelope_vector_default_frames<item_ownership_runtime_entry>() +
+	ordinary_passive_vector_move_frames<player_item_snapshot>() +
+	ordinary_passive_vector_move_frames<native_mobile_birth_item_recipe>() +
+	ordinary_passive_vector_move_frames<native_mobile_birth_recovery_item>() +
+	ordinary_passive_vector_move_frames<original_item>() +
+	ordinary_passive_vector_move_frames<uint8_t>() +
+	birth_historical_unique_move_constructor_source +
+	birth_historical_move_constructor_source<quest_mobile_native_item_effect> +
+	// Genuine transient child_admit(current,query,source,initial,reserve,ctx):
+	// four function/context pointers, five size_t formals/locals, own result
+	// and two lower getter bools. Actual caller branch-local constexpr
+	// query_frames N replaces the former accessor return carrier; required
+	// constant evaluation excludes the nested common accessor runtime graph.
+	4 * sizeof(void *) + 6 * sizeof(size_t) + 3 * sizeof(bool) +
+	// child_supplement current/query/profile/output/reserve/context, actual
+	// supplement local and own/lower results; caller query accessor return N.
+	4 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool) +
+	// Additive actual same-image helper left/right/reserve/context + outer,
+	// base/child; result plus two concrete encoder enum returns, generated
+	// comparison_workspace constructor/destructor receivers. Its two vector
+	// default/cleanup graphs are already in the named original source above.
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(player_snapshot_codec_result) + 2 * sizeof(void *) +
+	// SOURCE getter/query, entry helper fixed/working/queried/result formals,
+	// and actual callback forwarding bool result. admit already owns its own
+	// current/request/reserve/context carriers; do not charge those twice.
+	5 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(bool) +
+	// Actual keeper SOURCE getter(output/return), its five named capacity/thread
+	// profile values, and this owning getter's additional keeper size_t local.
+	sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool);
+}
+
+namespace
+{
+// Pure selection of the exact captured ordinary LP64 source graph. No state,
+// profile output or gameplay authority changes on an unsupported selection.
+constexpr bool birth_historical_source_supported() noexcept
+{
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&             \
+	(!defined(DB_NOTIFY) || DB_NOTIFY == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(int) == 4 && sizeof(bool) == 1 && CHAR_BIT == 8 &&
+	       sizeof(std::string) == 4 * sizeof(void *) &&
+	       sizeof(std::vector<uint8_t>) == 3 * sizeof(void *) &&
+	       sizeof(std::vector<original_item>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<player_item_snapshot>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_entity_key>::const_iterator) == sizeof(void *) &&
+	       sizeof(std::allocator<original_item>) == 1 &&
+	       sizeof(std::allocator<item_ownership_runtime_entry>) == 1 &&
+	       std::is_trivial_v<item_ownership_runtime_entry>;
+#else
+	return false;
+#endif
+}
+}
+
+bool quest_mobile_native_birth_historical_restore_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_supported())
+		return false;
+	size_t codec = 0;
+	if (!critical_command_startup_codec_source_frame_bytes(&codec))
+		return false;
+	// The actual canonical encoder does not self-retain this supplementary
+	// codec55 SOURCE. This owning upper does, once. Copy/move/observation are
+	// exactly the real command constructor/member-transfer/heap query graph.
+	size_t keeper = 0;
+	if (!item_native_quest_birth_retained_budget_source_frames(&keeper))
+		return false;
+	size_t bytes = birth_historical_owned_source;
+	const size_t command_copy = critical_command_copy_frame_bytes();
+	if (codec > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+		return false;
+	bytes += codec;
+	if (command_copy > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+		return false;
+	bytes += command_copy;
+	if (keeper > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+		return false;
+	bytes += keeper;
+	*output = bytes;
+	return true;
+}
+
+bool quest_mobile_native_birth_historical_restore_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_supported())
+		return false;
+	// The exact complete largest prospective workspace, before any constructor.
+	// SOURCE declaration/formal/helper carriers are separate. Fresh command,
+	// envelope and nested decoded workspaces have their own actual admissions.
+	*output = sizeof(birth_historical_command_workspace) >
+				  sizeof(birth_historical_envelope_workspace) ?
+			  sizeof(birth_historical_command_workspace) :
+			  sizeof(birth_historical_envelope_workspace);
+	return true;
+}
+
+namespace
+{
+bool birth_historical_entry_admit(size_t &base, size_t workspace,
+				  bool (*reserve)(size_t, void *) noexcept, void *context) noexcept
+{
+	// Original public/owner and this helper first-live source carriers, actual
+	// source-query output and complete query descendants, all before entry work.
+	// Early arithmetic has no allocator, getter, helper call or state mutation.
+	constexpr size_t first =
+		// Public+owner real formals/results and owner's live base.
+		7 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool) +
+		// entry(base-ref,workspace,reserve,context), first/source/early/result.
+		3 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool) +
+		// Owning SOURCE(output,codec,keeper,bytes,command_copy), checked codec
+		// P+B query, keeper P+5N+B query and pure copy getter returned size_t.
+		// Caller accessor return is separately priced by its caller.
+		3 * sizeof(void *) + 10 * sizeof(size_t) + 4 * sizeof(bool);
+	size_t source = 0;
+	size_t early = 0;
+	if (!reserve || !birth_historical_source_supported() ||
+	    base > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    workspace > PLAYER_SAVE_PIPELINE_MAX_BYTES - base ||
+	    first > PLAYER_SAVE_PIPELINE_MAX_BYTES - base - workspace)
+		return false;
+	early = base + workspace + first;
+	if (!reserve(early, context) ||
+	    !quest_mobile_native_birth_historical_restore_source_frame_bytes(&source))
+		return false;
+	if (source > PLAYER_SAVE_PIPELINE_MAX_BYTES - base - workspace)
+		return false;
+	// The initial query supplement is transient. The published child base owns
+	// actual workspace and complete owning SOURCE exactly once, not first+SOURCE.
+	early = base + workspace + source;
+	if (!reserve(early, context))
+		return false;
+	base = early;
+	return true;
+}
+}
