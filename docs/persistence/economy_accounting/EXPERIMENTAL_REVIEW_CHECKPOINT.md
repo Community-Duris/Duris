@@ -3955,3 +3955,19 @@ a separate selecting preconstruction obligation. Full first host/physical foreig
 C-G-J/loan/publication/drain/native32MiB/gameplay/persistence/recovery/R1-R8/release
 remain OPEN. Tests stay batched at major-plan readiness; inactive/CLOSED, coverage
 incomplete, release BLOCKED and goal ACTIVE. No major-plan completion is claimed.
+
+
+## Journal physical startup source prerequisite implemented - 2026-10-10
+
+[Source checkpoint](JOURNAL_PHYSICAL_STARTUP_SOURCE_2026-10-10.md) adds complete
+journal SOURCE/first-query, actual initial-inline preconstruction, fresh full-J
+projection and exact synchronous metadata identity. Original init/replay engines,
+default/inactive behavior, uncertainty and strong outputs remain preserved.
+Independent owner215 and actual formatted2 source reviews passed; all six source
+corrections and real member-vector move-constructor closure are included.
+Registry470/931 unchanged policies/2911 census entries/2853 mapped sites remains
+inventory only; no new writers or major-plan completion. First selecting host,
+full foreign C-G-J/loan/initial-and-surviving census/publication/drain/native32MiB/
+gameplay/persistence/recovery/R1-R8/release stay OPEN. Tests remain batched at
+major-plan readiness; inactive/CLOSED, coverage incomplete, release BLOCKED and
+goal ACTIVE. Protected Plan5 WIP remains exact.

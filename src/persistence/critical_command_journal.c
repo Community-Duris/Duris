@@ -2534,3 +2534,923 @@ critical_command_journal_result critical_command_journal_replay_with_native_boun
 	}
 #endif
 }
+
+// Additive physical startup journal owner. Original entry points remain exact.
+namespace
+{
+struct journal_physical_metadata_scope
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t metadata;
+	const journal_physical_metadata_scope *previous;
+};
+thread_local const journal_physical_metadata_scope *journal_physical_active_scope = nullptr;
+
+struct journal_physical_scope_restore
+{
+	const journal_physical_metadata_scope *previous;
+	~journal_physical_scope_restore() noexcept { journal_physical_active_scope = previous; }
+};
+
+// Source-declared scopes of the unchanged complete persistent census:
+// publish local, checked-add inputs/results; vector capacity's this/result;
+// string capacity's this/result and its genuine const _M_is_local/_M_data/
+// _M_local_data/pointer_to/addressof/__addressof descendants. Calls are sequential.
+constexpr size_t journal_physical_current_source_frames =
+	sizeof(size_t) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	11 * sizeof(void *) + sizeof(bool) +
+	// Atomic store/load: this/value/order/__b and declared returned value;
+	// each __b initialization reaches operator&(order,modifier): both enum
+	// parameters and returned enum. Store/load builtin ptr/value/order/result.
+	4 * sizeof(void *) + 4 * sizeof(size_t) + 8 * sizeof(std::memory_order) +
+	2 * sizeof(std::__memory_order_modifier) + 2 * sizeof(int) +
+	// Public persistent getter's genuine returned size_t, in addition to the
+	// selected atomic load's own returned value.
+	sizeof(size_t);
+constexpr size_t journal_physical_lock_source_frames =
+	// Actual lock_guard ctor this/mutex, destructor this; mutex lock owns
+	// this + __e while unlock has only this. Two gthread wrappers each own
+	// the mutex pointer/int return and call active_p's int return. The genuine
+	// weak glibc active_p alternative declares __gthread_active_ptr once.
+	3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(int) +
+	2 * (sizeof(void *) + 2 * sizeof(int)) + sizeof(void *) +
+	// __throw_system_error(int) and declared pthread lock/unlock boundaries.
+	// No fabricated catch reference: both original catches are catch(...).
+	sizeof(int) + 2 * (sizeof(void *) + sizeof(int));
+constexpr size_t journal_physical_projection_source_frames =
+	journal_physical_current_source_frames + journal_physical_lock_source_frames +
+	// Public two callback/context pairs, output; outer/frame/total/current;
+	// pure getter output/result and checked arithmetic/admission results.
+	6 * sizeof(void *) + 4 * sizeof(size_t) + 5 * sizeof(bool) +
+	sizeof(std::lock_guard<std::mutex>);
+constexpr size_t journal_physical_scope_source_frames =
+	sizeof(journal_physical_metadata_scope) + sizeof(journal_physical_scope_restore) +
+	sizeof(journal_physical_active_scope) +
+	// call: reserve/context,amount/metadata,return. Lookup: exact pair/output,
+	// scope pointer,return. Relay: opaque/owner reference,amount,return.
+	// Restore destructor this. observe_metadata: this/bytes,observed,return.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 4 * sizeof(void *) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(bool);
+
+bool journal_physical_call(bool (*reserve)(size_t, void *) noexcept, void *context, size_t amount,
+			   size_t metadata) noexcept
+{
+	if (!reserve)
+		return false;
+	const journal_physical_metadata_scope scope{ reserve, context, metadata,
+						     journal_physical_active_scope };
+	const journal_physical_scope_restore restore{ scope.previous };
+	journal_physical_active_scope = &scope;
+	return reserve(amount, context);
+}
+
+struct journal_physical_startup_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t metadata = 0;
+	bool metadata_ready = false;
+	static bool relay(size_t amount, void *opaque) noexcept
+	{
+		auto &owner = *static_cast<journal_physical_startup_budget *>(opaque);
+		return owner.metadata_ready &&
+		       journal_physical_call(owner.reserve, owner.context, amount, owner.metadata);
+	}
+	bool observe_metadata(size_t &bytes) noexcept
+	{
+		size_t observed = 0;
+		if (!journal_startup_current_metadata_locked(&observed) ||
+		    !journal_admit_add(bytes, observed))
+			return false;
+		metadata = observed;
+		metadata_ready = true;
+		return true;
+	}
+};
+}
+
+bool critical_command_journal_startup_owned_metadata(bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t *output) noexcept
+{
+	const auto *scope = journal_physical_active_scope;
+	if (!output || !reserve || !scope || scope->reserve != reserve || scope->context != context)
+		return false;
+	*output = scope->metadata;
+	return true;
+}
+
+bool critical_command_journal_startup_projection_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4 ||
+		      sizeof(std::ptrdiff_t) != 8 || sizeof(std::allocator<uint8_t>) != 1 ||
+		      sizeof(std::vector<uint8_t>::const_iterator) != sizeof(void *) ||
+		      sizeof(std::memory_order) != 4 || sizeof(std::__memory_order_modifier) != 4)
+		return false;
+	*output = journal_physical_projection_source_frames + journal_physical_scope_source_frames;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_command_journal_startup_persistent_projection_bounded(
+	bool (*source_reserve)(size_t, void *) noexcept, void *source_context,
+	bool (*physical_reserve)(size_t, void *) noexcept, void *physical_context, size_t outer,
+	size_t *output) noexcept
+{
+	if (!source_reserve || !physical_reserve || !output)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4 ||
+		      sizeof(std::ptrdiff_t) != 8 || sizeof(std::allocator<uint8_t>) != 1 ||
+		      sizeof(std::vector<uint8_t>::const_iterator) != sizeof(void *) ||
+		      sizeof(std::memory_order) != 4 || sizeof(std::__memory_order_modifier) != 4)
+		return false;
+	size_t total = outer;
+	if (!journal_admit_add(total, journal_physical_projection_source_frames) ||
+	    !journal_admit_add(total, journal_physical_scope_source_frames) ||
+	    !source_reserve(total, source_context))
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		// Publication derives solely from this actual journal owner. No health,
+		// generation, file or readiness state changes. Initial SIZE_MAX is not zero.
+		publish_journal_persistent_storage();
+		const size_t current = critical_command_journal_persistent_storage_bytes();
+		if (current == SIZE_MAX ||
+		    !journal_physical_call(physical_reserve, physical_context, total, 0))
+			return false;
+		*output = current;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	(void)source_context;
+	(void)physical_context;
+	(void)outer;
+	return false;
+#endif
+}
+
+namespace
+{
+constexpr size_t journal_physical_library_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t journal_physical_library_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Actual forward assign body reaches advance(__mid,size()) at vector.tcc340.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t journal_physical_library_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t journal_physical_library_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t journal_physical_library_vector_frames =
+	journal_physical_library_allocator_frames + journal_physical_library_copy_frames +
+	journal_physical_library_relocate_frames + journal_physical_library_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+template <class T> constexpr size_t journal_physical_library_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<T>) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + journal_physical_library_allocator_frames;
+// Genuine empty-vector source for the actual selected T: vector ->
+// _Vector_base -> _Vector_impl -> allocator -> new_allocator ->
+// _Vector_impl_data. Each owns its actual this pointer; no T element is built.
+template <class T> constexpr size_t journal_physical_library_empty_vector_frames =
+	6 * sizeof(void *);
+// Actual vector(vector&&)=default -> _Vector_base(move)=default ->
+// _Vector_impl(move) -> allocator(const&) -> new_allocator(const&) and
+// _Vector_impl_data(move), captured stl_vector620/338/154/105 and allocator167.
+// Each selected constructor has this/source. _Vector_impl uses two genuine
+// std::move calls, each reference argument/returned reference; data reset has
+// its actual pointer() null value. This path performs no allocation.
+template <class T> constexpr size_t journal_physical_library_move_constructor_frames =
+	6 * 2 * sizeof(void *) + 2 * 2 * sizeof(void *) + sizeof(T *);
+constexpr size_t journal_physical_library_disjunct_frames =
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(std::less<const char *>) +
+	2 * (3 * sizeof(void *) + 2 * sizeof(bool)) + 2 * (2 * sizeof(void *)) + sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t journal_physical_library_string_frames =
+	journal_physical_library_disjunct_frames +
+	// assign(s,n): this/s/n/ref-return; _M_replace(this,pos,len1,s,len2),
+	// old_size/new_size/p/how_much/ref-return, actual length checks/queries.
+	3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + 5 * sizeof(size_t) +
+	6 * (sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+	// _M_mutate(this,pos,len1,s,len2), how_much/new_capacity/r;
+	// _M_create(this,capacityref,oldcapacity), max_size, allocation return.
+	3 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	journal_physical_library_allocator_frames +
+	// _S_copy(d,s,n), traits::copy(s1,s2,n) returned pointer and memcopy
+	// argument/result carriers; one-character assign reference/char scopes.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(char) +
+	// old block dispose/destroy plus data/capacity/set-length and final NUL.
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + sizeof(char);
+
+}
+
+// Complete official zlib1.3 and authenticated Ubuntu declared amd64 source.
+// No CRC implementation, table, input, result or original call is changed.
+// Source-reference carrier bounds do not qualify installed/emitted code.
+namespace
+{
+constexpr size_t journal_physical_crc_wrapper_frames =
+	sizeof(uLong) + sizeof(void *) + sizeof(uInt) + sizeof(uLong);
+constexpr size_t journal_physical_crc_root_frames =
+	sizeof(uLong) + sizeof(void *) + sizeof(z_size_t) + sizeof(uLong);
+constexpr size_t journal_physical_crc_word_frames =
+	sizeof(uint64_t) + sizeof(int) + sizeof(z_crc_t);
+constexpr size_t journal_physical_crc_word_big_frames = 2 * sizeof(uint64_t) + sizeof(int);
+constexpr size_t journal_physical_crc_swap_frames = 2 * sizeof(uint64_t);
+constexpr size_t journal_physical_crc_braid_common_frames =
+	sizeof(size_t) + sizeof(void *) + sizeof(unsigned) + sizeof(int);
+constexpr size_t journal_physical_crc_little_five_frames =
+	5 * sizeof(z_crc_t) + 5 * sizeof(uint64_t) + journal_physical_crc_word_frames;
+constexpr size_t journal_physical_crc_big_five_frames =
+	11 * sizeof(uint64_t) +
+	(journal_physical_crc_word_big_frames > journal_physical_crc_swap_frames ?
+		 journal_physical_crc_word_big_frames :
+		 journal_physical_crc_swap_frames);
+constexpr size_t journal_physical_crc_default_frames =
+	journal_physical_crc_wrapper_frames + journal_physical_crc_root_frames +
+	journal_physical_crc_braid_common_frames +
+	(journal_physical_crc_little_five_frames > journal_physical_crc_big_five_frames ?
+		 journal_physical_crc_little_five_frames :
+		 journal_physical_crc_big_five_frames);
+// Optional DYNAMIC_CRC_TABLE, without standalone MAKECRCH generation:
+// make owns i,j,n,p; braid owns table pointers,n,w,k,i,p,q; x2nmodp's
+// n,k,p/return coexists with multmodp's a,b,m,p/return. All these descendants
+// finish before the braided CRC block starts. No recursion or private heap.
+constexpr size_t journal_physical_crc_mult_frames = 5 * sizeof(z_crc_t);
+constexpr size_t journal_physical_crc_x2n_frames =
+	sizeof(z_off64_t) + sizeof(unsigned) + 2 * sizeof(z_crc_t);
+constexpr size_t journal_physical_crc_braid_table_frames =
+	2 * sizeof(void *) + 3 * sizeof(int) + 3 * sizeof(z_crc_t) +
+	journal_physical_crc_x2n_frames + journal_physical_crc_mult_frames;
+constexpr size_t journal_physical_crc_make_frames =
+	3 * sizeof(unsigned) + sizeof(z_crc_t) + journal_physical_crc_braid_table_frames;
+constexpr size_t journal_physical_crc_test_frames = sizeof(void *) + 2 * sizeof(int);
+// Authentic GNU13 C stdatomic statement expressions, not C++ atomic_base.
+// Each macro ends before init(); store follows its return. Include the genuine
+// generic builtin pointer/output-pointer/order boundary without inventing an
+// external library body or hidden compiler temporary.
+constexpr size_t journal_physical_crc_atomic_load_frames =
+	sizeof(void *) + 2 * sizeof(int) + 2 * sizeof(void *) + sizeof(int);
+constexpr size_t journal_physical_crc_atomic_store_frames =
+	sizeof(void *) + sizeof(int) + 2 * sizeof(void *) + sizeof(int);
+constexpr size_t journal_physical_crc_atomic_flag_frames =
+	sizeof(void *) + sizeof(int) + sizeof(bool);
+static_assert(journal_physical_crc_atomic_load_frames <= journal_physical_crc_make_frames &&
+	      journal_physical_crc_atomic_store_frames <= journal_physical_crc_make_frames &&
+	      journal_physical_crc_atomic_flag_frames <= journal_physical_crc_make_frames);
+constexpr size_t journal_physical_crc_once_frames =
+	sizeof(void *) + sizeof(void (*)(void)) +
+	(journal_physical_crc_make_frames > journal_physical_crc_test_frames ?
+		 journal_physical_crc_make_frames :
+		 journal_physical_crc_test_frames);
+constexpr size_t journal_physical_crc_dynamic_frames = journal_physical_crc_wrapper_frames +
+						       journal_physical_crc_root_frames +
+						       journal_physical_crc_once_frames;
+constexpr size_t journal_physical_crc32_reference_source_frames =
+	journal_physical_crc_default_frames > journal_physical_crc_dynamic_frames ?
+		journal_physical_crc_default_frames :
+		journal_physical_crc_dynamic_frames;
+}
+bool journal_physical_crc32_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(ZLIB_VERNUM) && ZLIB_VERNUM == 0x1300
+	if (!output || sizeof(uLong) != 8 || sizeof(void *) != 8 || sizeof(uInt) != 4 ||
+	    sizeof(z_crc_t) != 4 || sizeof(size_t) != 8 || sizeof(z_size_t) != 8 ||
+	    sizeof(z_off64_t) != 8 || sizeof(void (*)(void)) != 8 || sizeof(bool) != 1)
+		return false;
+	*output = journal_physical_crc32_reference_source_frames;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+// Genuine lower source dependencies, deliberately named instead of assigning
+// an unrelated copy/SSO/hash allowance. Definitions/source controls must join
+// before this prospective journal lane can be selected.
+bool critical_command_startup_codec_source_frame_bytes(size_t *) noexcept;
+bool journal_physical_crc32_source_frame_bytes(size_t *) noexcept;
+
+namespace
+{
+// Genuine initial operation objects, independent of SOURCE. Their later
+// actual original per-operation admissions own them once; ROOT may query this
+// exact prospective peak for its transient pre-mutation entry reservation.
+constexpr size_t journal_physical_initial_inline_bytes =
+	(sizeof(journal_startup_init_workspace) > sizeof(journal_startup_replay_workspace) ?
+		 sizeof(journal_startup_init_workspace) :
+		 sizeof(journal_startup_replay_workspace)) +
+	sizeof(std::lock_guard<std::mutex>) + sizeof(journal_startup_metadata_snapshot);
+// This hidden owner and actual entry/query carriers belong to the journal lane,
+// not ROOT outer. Include them in the public complete SOURCE result so the real
+// parent can make its transient pre-mutation entry reservation authentically.
+constexpr size_t journal_physical_entry_source_frames =
+	sizeof(journal_physical_startup_budget) +
+	critical_command_journal_startup_source_query_frame_bytes() + sizeof(size_t) +
+	2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool);
+// Public/init/replay signatures, scalar locals and real helper observations.
+// Workspace/vector/envelope objects and their heap remain in the original
+// per-operation admissions, rather than being duplicated in this profile.
+constexpr size_t journal_physical_startup_declared_source_frames =
+	// Init's exact signature: directory/reserve/context/metadata-output,
+	// quota/outer, bool return; original fd and scan result. Its actual guard,
+	// snapshot/workspace inline are per-operation owned, not source duplicates.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(int) +
+	sizeof(critical_command_journal_result) +
+	// Actual journal_startup_metadata_snapshot destructor this parameter.
+	sizeof(void *) +
+	// Complete original health={} and rewrite={} assignment temporaries are
+	// distinct from persistent J. Their four vector default/move/cleanup
+	// descendants are genuine byte-vector source controls below.
+	sizeof(critical_command_journal_health) + sizeof(native_rewrite_attempt) +
+	// Replay's exact signature: legacy/native/original/reserve/context/output,
+	// outer and result return; original scan result, actual range/frame
+	// references plus hidden begin/end normal iterators. work.accepted is
+	// already inside the original replay workspace; no duplicate bool local.
+	6 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(critical_command_journal_result) +
+	2 * sizeof(void *) + 2 * sizeof(std::vector<journal_frame>::iterator) +
+	// scan: output/budget/outer/physical output and genuine guard/base/file
+	// prefixes, fd/status/read_offset/count, parsed scalar fields, byte ptrs,
+	// unique operation/cursor/prior/find/equality query locals.
+	7 * sizeof(void *) + 14 * sizeof(size_t) + sizeof(int) + sizeof(ssize_t) +
+	3 * sizeof(uint32_t) + sizeof(uint64_t) + sizeof(bool) + 3 * sizeof(uint32_t) +
+	sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint16_t) +
+	sizeof(std::vector<journal_frame>::iterator) +
+	// scan's nested native validation: envelope reference, shared bool,
+	// actual any_of range predicate/capture, route/type/phase helpers.
+	6 * sizeof(void *) + 3 * sizeof(bool) + sizeof(critical_native_recovery_phase) +
+	// CURRENT frame/command loops and four-vector/attachment/bytes queries;
+	// exact add/array helper inputs/results, initializer-list range carriers.
+	9 * sizeof(void *) + 6 * sizeof(size_t) + 5 * sizeof(bool) +
+	sizeof(std::vector<journal_frame>::const_iterator) +
+	// string request: five parameters, genuine capacity local and result;
+	// actual locked metadata getter/output/bytes/return and its storage-add
+	// reference/amount/return. Private observe_metadata is scope-owned above.
+	// update_health loop/current age; rewrite publisher's real bytes local.
+	4 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(bool) +
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) + sizeof(size_t) + 4 * sizeof(void *) +
+	3 * sizeof(uint64_t) + 3 * sizeof(bool) +
+	// native_checksum: data,size,real zero array owned by scan admission,
+	// uLong checksum and uint32 return; crc32 leaf lives in named lower profile.
+	sizeof(void *) + sizeof(size_t) + sizeof(uLong) + sizeof(uint32_t) +
+	// Exact held transport function bytes-reference, integer capture/this,
+	// offset/count/result/i, item_section/blob_size/tail/terms and returned bool;
+	// native quest transport command parameter and returned bool. No decoding.
+	4 * sizeof(void *) + 6 * sizeof(size_t) + 2 * sizeof(uint64_t) + 2 * sizeof(bool) +
+	// Typed read_le input/size/offset/value, decoded/index/return; record_result
+	// enum formal and bool comparisons; operation equality/array== leaves.
+	3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(uint64_t) + sizeof(bool) +
+	sizeof(critical_command_journal_result) + sizeof(bool) + 4 * sizeof(void *) +
+	2 * sizeof(bool) +
+	// safe_directory/safe_regular signatures and declared filesystem boundary
+	// arguments. Their actual status objects and scan's own status already
+	// belong to the original sizeof(struct stat) per-operation admissions.
+	3 * sizeof(void *) + sizeof(mode_t) + 2 * sizeof(bool) + 7 * sizeof(void *) +
+	6 * sizeof(int) + 3 * sizeof(mode_t) + 2 * sizeof(uid_t) +
+	// Actual now_msec chain: returned time_point, time_since_epoch's this/
+	// duration, duration_cast reference/milliseconds and the selected
+	// __duration_cast_impl<...,true,false>::__cast reference/milliseconds.
+	// The real duration(rep) has this/rep reference and a temporary rep;
+	// each of the two selected duration::count calls has this/rep return.
+	sizeof(std::chrono::system_clock::time_point) +
+	sizeof(std::chrono::system_clock::duration) + sizeof(std::chrono::milliseconds) +
+	sizeof(uint64_t) + sizeof(std::chrono::system_clock::time_point) + sizeof(void *) +
+	sizeof(std::chrono::system_clock::duration) +
+	2 * (sizeof(void *) + sizeof(std::chrono::milliseconds)) + 2 * sizeof(void *) +
+	sizeof(std::chrono::milliseconds::rep) + sizeof(void *) +
+	sizeof(std::chrono::system_clock::duration::rep) + sizeof(void *) +
+	sizeof(std::chrono::milliseconds::rep) + journal_physical_lock_source_frames +
+	journal_physical_current_source_frames + journal_physical_scope_source_frames +
+	// Actual journal_admission_budget::admit forwarding layer is separate
+	// from physical::relay: peak,opaque,self reference and bool return.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Actual outer byte-vector resize/assign and frame-vector push/growth/
+	// relocation/cleanup paths, with their genuine selected T instantiation.
+	journal_physical_library_vector_frames + journal_physical_library_move_frames<uint8_t> +
+	journal_physical_library_move_frames<journal_frame> +
+	journal_physical_library_empty_vector_frames<uint8_t> +
+	journal_physical_library_empty_vector_frames<journal_frame> +
+	journal_physical_library_empty_vector_frames<critical_entity_key> +
+	journal_physical_library_empty_vector_frames<critical_expected_revision> +
+	// Actual containing generated bodies, separate from their already-owned
+	// object storage and empty-vector/source-member closures: frame, command
+	// and replay/decode envelope default ctor and destructor each have this;
+	// frame/command/by-value-envelope move ctors have this/source;
+	// command/rewrite move assignment has this/source/reference-return;
+	// aggregate rewrite temporary cleanup has its real destructor this.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 3 * 2 * sizeof(void *) + 2 * 3 * sizeof(void *) +
+	sizeof(void *) +
+	// Exact frame member moves: four byte vectors plus actual key/revision.
+	4 * journal_physical_library_move_frames<uint8_t> +
+	journal_physical_library_move_frames<critical_entity_key> +
+	journal_physical_library_move_frames<critical_expected_revision> +
+	// Actual generated frame/command/envelope move construction selects the
+	// separate vector move-CONSTRUCTOR chain, not _M_move_assign. Six actual
+	// members: four byte vectors, key vector and expected-revision vector.
+	4 * journal_physical_library_move_constructor_frames<uint8_t> +
+	journal_physical_library_move_constructor_frames<critical_entity_key> +
+	journal_physical_library_move_constructor_frames<critical_expected_revision> +
+	// Actual nontrivial journal_frame relocation, in addition to the genuine
+	// shared _S_relocate/__relocate_a selected above: __relocate_a_1 owns four
+	// formal pointers, a returned pointer and its __cur local. Each genuine
+	// __relocate_object_a has dest/orig/allocator, two addressof closures,
+	// allocator_traits::destroy and destroy_at. Real member moves are above.
+	6 * sizeof(void *) + 3 * sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(void *) +
+	// Nontrivial _Destroy(range,allocator), _Destroy(range), aux<false>,
+	// _Destroy(pointer), destroy_at and __addressof; journal_frame's actual
+	// generated destructor plus six typed member vector destructors/allocator
+	// descendants live in the genuine selected move/constructor controls.
+	3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	// Actual char assignment/replacement/append and fresh __str_concat:
+	// two operator+ alternatives, lhs/rhs/allocator/result refs, lengths;
+	// default allocator/hider/use-local-data/set-length/constructor cleanup.
+	journal_physical_library_string_frames + 10 * sizeof(void *) + 6 * sizeof(size_t) +
+	3 * sizeof(std::allocator<char>) + 6 * sizeof(void *) + sizeof(size_t) + sizeof(char) +
+	// reserve this/resarg/oldcap/tmp, rvalue append this/ptr/count/result,
+	// generated string move this/source and allocator/data/capacity scopes.
+	5 * sizeof(void *) + 4 * sizeof(size_t) + 12 * (sizeof(void *) + sizeof(size_t)) +
+	2 * sizeof(bool) + sizeof(char) +
+	// Actual find_if/__find_if random-access journal_frame iterator and
+	// captured operation predicate; any_of/__find_if key range predicate;
+	// equal/__equal_aux/__memcmp byte range and typed iterator query leaves.
+	14 * sizeof(void *) + 4 * sizeof(std::ptrdiff_t) + 6 * sizeof(bool) +
+	2 * sizeof(std::random_access_iterator_tag) + 2 * sizeof(char) +
+	5 * (3 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+}
+
+bool critical_command_journal_startup_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    sizeof(std::vector<journal_frame>::iterator) != sizeof(void *) ||
+	    sizeof(std::vector<journal_frame>::const_iterator) != sizeof(void *) ||
+	    sizeof(std::vector<uint8_t>) != 3 * sizeof(void *) ||
+	    sizeof(std::vector<critical_entity_key>) != 3 * sizeof(void *) ||
+	    sizeof(std::vector<critical_expected_revision>) != 3 * sizeof(void *) ||
+	    !std::is_nothrow_move_constructible_v<journal_frame> ||
+	    !std::is_nothrow_move_assignable_v<journal_frame>)
+		return false;
+	size_t bytes = journal_physical_startup_declared_source_frames +
+		       journal_physical_entry_source_frames;
+	size_t codec = 0, crc = 0;
+	// Required complete original codec and CRC source closures are strong
+	// query outputs; no runtime/installed-library qualification is inferred.
+	if (!critical_command_startup_codec_source_frame_bytes(&codec) ||
+	    !journal_physical_crc32_source_frame_bytes(&crc) || !journal_admit_add(bytes, codec) ||
+	    !journal_admit_add(bytes, crc))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+bool critical_command_journal_startup_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4 ||
+		      sizeof(std::ptrdiff_t) != 8 || sizeof(std::allocator<uint8_t>) != 1 ||
+		      sizeof(std::vector<uint8_t>::const_iterator) != sizeof(void *) ||
+		      sizeof(std::memory_order) != 4 || sizeof(std::__memory_order_modifier) != 4)
+		return false;
+	*output = journal_physical_initial_inline_bytes;
+	return true;
+#else
+	return false;
+#endif
+}
+
+namespace
+{
+bool journal_physical_entry_prepare(journal_physical_startup_budget &physical,
+				    size_t &outer) noexcept
+{
+	size_t initial = outer, frames = 0;
+	// Genuine entry, source-query, lower query return and checked-add carriers
+	// precede all profile calls, ownership observation and journal mutation.
+	constexpr size_t query = journal_physical_entry_source_frames;
+	if (!physical.reserve || !journal_admit_add(initial, query) ||
+	    !journal_admit_add(initial, journal_physical_scope_source_frames) ||
+	    !journal_physical_call(physical.reserve, physical.context, initial, 0) ||
+	    !critical_command_journal_startup_source_frame_bytes(&frames))
+		return false;
+	if (!journal_admit_add(outer, frames))
+		return false;
+	// The original workspace is constructed only after its authentic source
+	// closure is admitted. Its owning inline storage joins per-original peaks.
+	size_t construction = outer;
+	const size_t workspace = journal_physical_initial_inline_bytes;
+	return journal_admit_add(construction, workspace) &&
+	       journal_physical_call(physical.reserve, physical.context, construction, 0);
+}
+}
+
+bool critical_command_journal_init_physical_bounded(const char *directory, size_t quota_bytes,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *budget_context, size_t outer_live,
+						    size_t *current_journal_metadata_bytes) noexcept
+{
+	if (!directory || !*directory || !quota_bytes || !reserve)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	journal_physical_startup_budget physical{ reserve, budget_context };
+	if (!journal_physical_entry_prepare(physical, outer_live))
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+		if (health.initialized)
+			return false;
+		health = {};
+		native_rewrite_uncertain = {};
+		publish_native_rewrite_storage();
+		journal_has_native = false;
+		try
+		{
+			journal_startup_init_workspace work{
+				{ journal_physical_startup_budget::relay, &physical }
+			};
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !journal_admit_add(work.base, sizeof(struct stat)) ||
+			    !physical.observe_metadata(work.base) ||
+			    !work.budget.admit(work.base, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.directory_size = std::strlen(directory);
+			work.live = work.base;
+			if (!journal_startup_string_request(work.directory_size,
+							    journal_directory.capacity(),
+							    &work.capacity, &work.request) ||
+			    !journal_admit_add(work.live, work.request) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			journal_directory = directory; // Exact original assignment/request.
+			publish_journal_persistent_storage();
+			if (mkdir(directory, 0700) != 0 && errno != EEXIST)
+			{
+				health.last_result = critical_command_journal_result::io_failure;
+				++health.io_failures;
+				return false;
+			}
+			if (!safe_directory(journal_directory))
+			{
+				health.last_result =
+					critical_command_journal_result::unsafe_permissions;
+				return false;
+			}
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !journal_admit_add(work.base, sizeof(struct stat)) ||
+			    !physical.observe_metadata(work.base))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.first_size = journal_directory.size();
+			work.final_size = work.first_size;
+			// Installed lvalue operator+ uses a fresh __str_concat reserve; the
+			// following rvalue operator+ appends to that actual result. Admit old
+			// and new heaps during append mutation, before the exact expression.
+			if (!journal_admit_add(work.first_size, 1) ||
+			    !journal_admit_add(work.final_size, 1) ||
+			    !journal_admit_add(work.final_size, std::strlen(JOURNAL_FILE)) ||
+			    !journal_startup_string_request(work.first_size, 15,
+							    &work.first_capacity,
+							    &work.first_request) ||
+			    !journal_startup_string_request(work.final_size, work.first_capacity,
+							    &work.final_capacity,
+							    &work.final_request))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			work.live = work.base;
+			if (!journal_admit_add(work.live, 2 * sizeof(std::string)) ||
+			    !journal_admit_add(work.live, 2 * sizeof(std::allocator<char>)) ||
+			    !journal_admit_add(work.live, work.first_request) ||
+			    !journal_admit_add(work.live, work.final_request) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			journal_path = journal_directory + "/" + JOURNAL_FILE;
+			publish_journal_persistent_storage();
+			journal_quota = quota_bytes;
+			const int fd = open(journal_path.c_str(),
+					    O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC | O_NOFOLLOW,
+					    0600);
+			if (fd < 0)
+			{
+				health.last_result = critical_command_journal_result::io_failure;
+				++health.io_failures;
+				return false;
+			}
+			close(fd);
+			if (!safe_regular(journal_path, 0600))
+			{
+				health.last_result =
+					critical_command_journal_result::unsafe_permissions;
+				return false;
+			}
+			health.initialized = true;
+			// Concatenation carriers and replaced old path storage have died.
+			// Reobserve the actual persistent strings before the complete first scan.
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !journal_admit_add(work.base, sizeof(lock)) ||
+			    !journal_admit_add(work.base, sizeof(snapshot)) ||
+			    !physical.observe_metadata(work.base))
+			{
+				health.initialized = false;
+				record_result(critical_command_journal_result::quota_exceeded);
+				return false;
+			}
+			const auto result =
+				journal_scan_admitted(&work.frames, work.budget, work.base);
+			if (result != critical_command_journal_result::ok)
+			{
+				health.initialized = false;
+				record_result(result);
+				return false;
+			}
+			health.last_result = critical_command_journal_result::ok;
+			update_health(work.frames);
+			return true;
+		}
+		catch (...)
+		{
+			health.initialized = false;
+			record_result(critical_command_journal_result::quota_exceeded);
+			return false;
+		}
+	}
+	catch (...)
+	{
+		// Real mutex acquisition failed; no unlocked journal mutation.
+		return false;
+	}
+#endif
+}
+
+critical_command_journal_result critical_command_journal_replay_with_native_physical_bounded(
+	critical_command_replay_bounded_fn legacy_replay,
+	critical_native_recovery_replay_bounded_fn native_replay, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes) noexcept
+{
+	if (!legacy_replay || !native_replay || !reserve)
+		return critical_command_journal_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	journal_physical_startup_budget physical{ reserve, budget_context };
+	if (!journal_physical_entry_prepare(physical, outer_live))
+		return critical_command_journal_result::quota_exceeded;
+	try
+	{
+		journal_startup_replay_workspace work{ { journal_physical_startup_budget::relay,
+							 &physical } };
+		{
+			std::lock_guard<std::mutex> lock(journal_mutex);
+			journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+			if (!health.initialized)
+				return critical_command_journal_result::not_initialized;
+			// Full original uncertainty refusal precedes every registration.
+			if (health.append_uncertain || native_rewrite_uncertain.active)
+				return critical_command_journal_result::append_uncertain;
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !physical.observe_metadata(work.base))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			work.live = work.base;
+			if (!journal_admit_add(work.live, sizeof(lock)) ||
+			    !journal_admit_add(work.live, sizeof(snapshot)) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			const auto result =
+				journal_scan_admitted(&work.frames, work.budget, work.live);
+			if (result != critical_command_journal_result::ok)
+			{
+				record_result(result);
+				return result;
+			}
+			++health.replays;
+		}
+		// Original startup caller keeps coordinator ownership. The journal lock
+		// is released exactly before callbacks; no outside coor getter is called.
+		for (auto &frame : work.frames)
+		{
+			if (frame.native)
+			{
+				work.live = work.base;
+				// Local envelope and original by-value parameter coexist. Full
+				// current frame heap remains owned once before their nonallocating moves.
+				if (!journal_admit_add(
+					    work.live,
+					    2 * sizeof(critical_native_recovery_envelope)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				critical_native_recovery_envelope envelope;
+				envelope.command = std::move(frame.command);
+				envelope.revision = frame.native_revision;
+				envelope.phase = frame.native_phase;
+				envelope.attachment = std::move(frame.native_attachment);
+				// Recount actual moved-from frames and authentic current envelope.
+				// Its next move transfers this heap to the by-value parameter once.
+				work.live = work.base;
+				if (!journal_admit_add(
+					    work.live,
+					    2 * sizeof(critical_native_recovery_envelope)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !journal_command_heap(envelope.command, false, work.live) ||
+				    !journal_admit_add(work.live, envelope.attachment.capacity()) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				work.accepted =
+					native_replay(std::move(envelope), original_context,
+						      journal_physical_startup_budget::relay,
+						      &physical, work.live);
+			}
+			else
+			{
+				work.live = work.base;
+				if (!journal_admit_add(work.live, sizeof(critical_command)) ||
+				    !journal_startup_frames(work.frames, work.live) ||
+				    !work.budget.admit(work.live, &work.budget))
+				{
+					std::lock_guard<std::mutex> lock(journal_mutex);
+					journal_startup_metadata_snapshot snapshot{
+						current_journal_metadata_bytes
+					};
+					health.last_result =
+						critical_command_journal_result::quota_exceeded;
+					return critical_command_journal_result::quota_exceeded;
+				}
+				// Original by-value parameter steals only this frame's command heap.
+				// Parameter inline and all other retained frame capacities are admitted.
+				work.accepted =
+					legacy_replay(std::move(frame.command), original_context,
+						      journal_physical_startup_budget::relay,
+						      &physical, work.live);
+			}
+			if (!work.accepted)
+			{
+				std::lock_guard<std::mutex> lock(journal_mutex);
+				journal_startup_metadata_snapshot snapshot{
+					current_journal_metadata_bytes
+				};
+				health.last_result =
+					critical_command_journal_result::replay_blocked;
+				return critical_command_journal_result::replay_blocked;
+			}
+		}
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+		health.last_result = critical_command_journal_result::ok;
+		return critical_command_journal_result::ok;
+	}
+	catch (...)
+	{
+		// No callback throws through its noexcept interface. An actual mutex or
+		// construction failure grants no registration and performs no unlocked write.
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
+}
