@@ -1100,3 +1100,474 @@ economic_accounting_error economic_intent_freeze_fixed_bounded(
 	return economic_accounting_error::capacity;
 #endif
 }
+
+// Additive fixed primitive proof: the original APIs, tag including NUL,
+// schema-1 binding projection and canonical comparison remain authoritative.
+namespace
+{
+constexpr size_t intent_fixed_bytes_equal_source =
+	// vector<uint8_t>::operator==: two actual const references/bool result;
+	// both size() receivers/results, begin/end receivers and real normal
+	// iterator result/constructor/base scopes before std::equal.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	3 * (2 * sizeof(void *)) + 6 * (2 * sizeof(void *)) +
+	// equal -> __equal_aux -> __equal_aux1 -> __equal<true>::equal:
+	// actual three iterators/results, niter_base and pointer specializations,
+	// constexpr integer/simple policy bool carriers, ptrdiff len and memcmp.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(bool) + 3 * (2 * sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t intent_proof_validation_source =
+	// valid(intent), zero(span), metadata_validate/rule_for/source-kind and
+	// source_event_valid; fixed optional queries, ID zero/equality and arrays.
+	4 * sizeof(void *) + 2 * sizeof(economic_accounting_error) +
+	2 * sizeof(std::span<const uint8_t>) + sizeof(bool) + 8 * sizeof(void *) +
+	sizeof(economic_reason) + sizeof(economic_source_kind) + 3 * sizeof(bool) +
+	4 * (2 * sizeof(void *) + sizeof(bool)) + sizeof(uint8_t) +
+	6 * (sizeof(void *) + sizeof(bool)) +
+	// all_of -> find_if_not -> __find_if RA; predicates, tag, trip_count;
+	// actual scalar byte lambda, array begin/end and equality memcmp leaf.
+	5 * (3 * sizeof(void *) + sizeof(char) + sizeof(bool)) +
+	sizeof(std::random_access_iterator_tag) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(uint8_t) + sizeof(bool) + 4 * (2 * sizeof(void *) + sizeof(bool)) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t intent_fixed_proof_local_source =
+	// Public/owned proof formal references, reserve/context/outer, prefix,
+	// status, digest comparison result, catch reference and wrapper return.
+	// Nine actual N carriers: wrapper outer, canonical prefix, later prefix,
+	// binding source/inline/supplement/request/query and previous_outer.
+	12 * sizeof(void *) + 9 * sizeof(size_t) + 4 * sizeof(economic_accounting_error) +
+	sizeof(bool) + intent_proof_validation_source + intent_fixed_bytes_equal_source;
+constexpr size_t intent_fixed_metadata_local_source =
+	// Public plan formals, owned budget, prefix/status, aggregate metadata
+	// base assignment and fixed arrays/source optional copy and final assignment.
+	9 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(economic_accounting_error) +
+	12 * sizeof(void *) + 4 * sizeof(bool) + intent_fixed_copy_frames;
+constexpr size_t intent_fixed_domain_local_source =
+	// Domain helper/hash helper formals, local admission request/status, put
+	// span parameters and byte-copy iterator scopes. Their actual vector and
+	// digest/context aggregates are owned by the unchanged fixed budget.
+	9 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(economic_accounting_error) +
+	sizeof(std::span<uint8_t>) + 3 * sizeof(size_t) + sizeof(uint64_t) +
+	intent_fixed_copy_frames + 8 * (sizeof(void *) + sizeof(size_t));
+// Existing fixed SHA controllers count compression/Init/Update/Final. Add
+// actual md32 memcpy/memset/cleanse leaves, not EVP or a guessed SHA margin.
+constexpr size_t intent_fixed_sha_memory_source =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) + (2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(void *));
+
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                          \
+	!defined(__SANITIZE_THREAD__) &&                                                          \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+economic_accounting_error intent_verify_fixed_owned(const critical_command &command,
+						    const economic_frozen_intent &intent,
+						    intent_fixed_budget &budget)
+{
+	using error = economic_accounting_error;
+	auto status = valid(intent);
+	if (status != error::ok)
+		return status;
+	if (!critical_operation_id_equal(command.operation_id,
+					 intent.admission.metadata.operation_id))
+		return error::payload_conflict;
+	try
+	{
+		if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			if (!budget.peak(sizeof(std::vector<uint8_t>) +
+					 intent_fixed_vector_constructor_frames))
+				return error::capacity;
+			std::vector<uint8_t> canonical;
+			budget.domain_bytes = &canonical;
+			size_t prefix = 0;
+			if (!budget.prefix(prefix, intent_fixed_encode_frames))
+				return error::capacity;
+			status = economic_intent_encode_bounded(intent, &canonical, budget.reserve,
+								budget.context, prefix);
+			if (status != error::ok)
+				return status;
+			if (!budget.peak(intent_fixed_copy_frames))
+				return error::capacity;
+			if (canonical != command.accounting_intent)
+				return error::payload_conflict;
+			budget.domain_bytes = nullptr;
+		}
+		if (!budget.peak(2 * sizeof(economic_digest)))
+			return error::capacity;
+		economic_digest binding = {}, domain = {};
+		size_t prefix = 0, binding_source = 0, binding_inline = 0, binding_supplement = 0,
+		       binding_request = 0;
+		// The exact lower profile-query graph is admitted before even its accessor.
+		// Caller preentry covers these formals; this real parent budget retains the
+		// actual digests and each source-query local across every lower query.
+		if (!budget.peak(2 * sizeof(economic_digest) + sizeof(size_t)))
+			return error::capacity;
+		const size_t binding_query =
+			economic_command_binding_digest_source_profile_query_frame_bytes();
+		if (!budget.peak(2 * sizeof(economic_digest) + binding_query) ||
+		    !economic_command_binding_digest_source_frame_bytes(&binding_source) ||
+		    !economic_command_binding_digest_initial_inline_bytes(&binding_inline) ||
+		    !economic_command_binding_digest_source_supplement_frame_bytes(
+			    &binding_supplement))
+			return error::capacity;
+		binding_request = 2 * sizeof(economic_digest);
+		if (!intent_fixed_add(binding_request, binding_source) ||
+		    !intent_fixed_add(binding_request, binding_inline) ||
+		    !budget.peak(binding_request) ||
+		    !budget.prefix(prefix, 2 * sizeof(economic_digest)) ||
+		    !intent_fixed_add(prefix, binding_supplement))
+			return error::capacity;
+		status = economic_command_binding_digest_bounded(command, &binding, budget.reserve,
+								 budget.context, prefix);
+		if (status != error::ok)
+			return status;
+		// Original short-circuit: a binding mismatch never computes domain_hash.
+		if (binding != intent.command_binding)
+			return error::payload_conflict;
+		// The two actual local digests survive every domain helper callback.
+		const size_t previous_outer = budget.outer;
+		if (!intent_fixed_add(budget.outer, 2 * sizeof(economic_digest)))
+			return error::capacity;
+		status = intent_fixed_domain_hash_owned(command, &domain, budget);
+		budget.outer = previous_outer;
+		if (status != error::ok)
+			return status;
+		if (domain != intent.domain_digest)
+			return error::payload_conflict;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	return error::ok;
+}
+#endif
+} // namespace
+
+economic_accounting_error economic_intent_verify_binding_fixed_bounded(
+	const critical_command &command, const economic_frozen_intent &intent,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve)
+		return economic_accounting_error::capacity;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                          \
+	!defined(__SANITIZE_THREAD__) &&                                                          \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	intent_fixed_budget budget{ reserve, context, outer_live,
+				    intent_fixed_proof_local_source +
+					    intent_fixed_domain_local_source +
+					    intent_fixed_sha_memory_source };
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	return intent_verify_fixed_owned(command, intent, budget);
+#else
+	(void)command;
+	(void)intent;
+	(void)context;
+	(void)outer_live;
+	return economic_accounting_error::capacity;
+#endif
+}
+
+economic_accounting_error economic_intent_plan_metadata_fixed_bounded(
+	const critical_command &command, const economic_frozen_intent &intent,
+	economic_plan_metadata *metadata, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	if (!metadata)
+		return economic_accounting_error::corrupt_evidence;
+	if (!reserve)
+		return economic_accounting_error::capacity;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                          \
+	!defined(__SANITIZE_THREAD__) &&                                                          \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned long) != 8)
+		return economic_accounting_error::capacity;
+	intent_fixed_budget budget{ reserve, context, outer_live,
+				    intent_fixed_metadata_local_source +
+					    intent_fixed_domain_local_source +
+					    intent_fixed_sha_memory_source };
+	size_t prefix = 0;
+	if (!budget.prefix(prefix) || !budget.peak(sizeof(intent_fixed_budget)))
+		return economic_accounting_error::capacity;
+	auto status = economic_intent_verify_binding_fixed_bounded(command, intent, reserve,
+								   context, prefix);
+	if (status != economic_accounting_error::ok)
+		return status;
+	try
+	{
+		if (!budget.peak(sizeof(economic_plan_metadata) + sizeof(std::vector<uint8_t>) +
+				 intent_fixed_intent_default_frames +
+				 intent_fixed_vector_constructor_frames))
+			return economic_accounting_error::capacity;
+		economic_plan_metadata result;
+		static_cast<economic_operation_metadata &>(result) = intent.admission.metadata;
+		result.domain_digest = intent.domain_digest;
+		// Real metadata candidate stays live throughout encoding and tagged hash.
+		if (!intent_fixed_add(budget.outer, sizeof(result)))
+			return economic_accounting_error::capacity;
+		std::vector<uint8_t> encoded;
+		budget.domain_bytes = &encoded;
+		if (!budget.prefix(prefix, intent_fixed_encode_frames))
+			return economic_accounting_error::capacity;
+		status = economic_intent_encode_bounded(intent, &encoded, reserve, context, prefix);
+		if (status != economic_accounting_error::ok)
+			return status;
+		if (!budget.peak(sizeof(std::vector<uint8_t>) + intent_fixed_move_frames))
+			return economic_accounting_error::capacity;
+		status = intent_fixed_hash_owned("DURIS-ECONOMIC-INTENT-V1", std::move(encoded),
+						 &result.intent_digest, budget);
+		if (status != economic_accounting_error::ok)
+			return status;
+		*metadata = result;
+		return economic_accounting_error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+#else
+	(void)command;
+	(void)intent;
+	(void)context;
+	(void)outer_live;
+	return economic_accounting_error::capacity;
+#endif
+}
+
+namespace
+{
+bool intent_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(_GLIBCXX_RELEASE) &&                \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::vector<uint8_t>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+constexpr size_t intent_decode_wire_source =
+	// Original decoder/bounded wrapper formals; original meta ref/status,
+	// bound fixed/source/peak, catch refs. Original span input/result object
+	// already covered by legacy decoder admission is deliberately separate.
+	7 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(economic_accounting_error) +
+	// get(span,offset,length): result/index/widest value, span query/operator[];
+	// read_array(span,offset,array&), copy_n and actual fixed array/span access.
+	2 * sizeof(std::span<const uint8_t>) + 5 * sizeof(size_t) + sizeof(uint64_t) +
+	2 * sizeof(void *) + intent_fixed_copy_frames + 8 * (sizeof(void *) + sizeof(size_t)) +
+	// source-event reader take/block/id/integer, metadata optional emplace/
+	// assignment and generated move assignment of admission/intents/facts.
+	9 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(uint64_t) + 4 * sizeof(bool) +
+	3 * sizeof(std::span<const uint8_t>) + 4 * sizeof(economic_accounting_error) +
+	10 * sizeof(void *) + 4 * sizeof(bool) + intent_fixed_move_frames +
+	// actual byte-vector suffix assign, nonallocating wire equality and scalar
+	// allocator/default/cleanup paths; result inline/facts request are child-owned.
+	intent_fixed_vector_frames + intent_fixed_intent_default_frames +
+	intent_proof_validation_source +
+	// std::equal magic/span bytes (iterator wrappers, equality dispatcher,
+	// actual memcmp input/result and is_constant_evaluated bool).
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(std::ptrdiff_t) +
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(int)) + sizeof(bool);
+}
+bool economic_intent_decode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	*output = intent_decode_wire_source + sizeof(std::span<const uint8_t>);
+	return true;
+}
+bool economic_intent_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	// Original bounded decode owns its explicit by-value span/result/source DTO
+	// objects and facts request, but none of the source declarations above.
+	*output = intent_decode_wire_source;
+	return true;
+}
+bool economic_intent_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	// Only scalar source carriers precede the first existing reserve. The actual
+	// decoded intent is constructed after the admitted original call begins.
+	*output = 0;
+	return true;
+}
+bool economic_intent_encode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	*output = intent_fixed_encode_frames;
+	return true;
+}
+bool economic_intent_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	// Existing encode working request owns arrays, fresh vector and wire storage;
+	// source-declared encoder/STL closures are supplied by the actual parent.
+	*output = intent_fixed_encode_frames;
+	return true;
+}
+bool economic_intent_encode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_source_policy())
+		return false;
+	*output = 0;
+	return true;
+}
+
+namespace
+{
+// Constant source policy value, not a per-query runtime profile scan. Its
+// genuine named lower definition is pinned together with this companion.
+constexpr size_t intent_binding_profile_query_source =
+	economic_command_binding_digest_source_profile_query_frame_bytes();
+constexpr size_t intent_budget_observer_source =
+	// prefix/peak/assign/growth actual this/result/extra/total/request/next,
+	// vector capacity/max_size/size and checked-add formal/result declarations.
+	11 * sizeof(void *) + 7 * sizeof(size_t) + 6 * sizeof(bool) +
+	6 * (sizeof(void *) + sizeof(size_t)) + 5 * sizeof(void *) + 7 * sizeof(size_t) +
+	4 * sizeof(bool);
+constexpr size_t intent_hash_complete_source =
+	intent_fixed_domain_local_source + intent_fixed_count_constructor_frames +
+	intent_fixed_vector_frames + intent_fixed_move_frames + intent_fixed_sha_frames +
+	intent_fixed_sha_memory_source +
+	// Hash result/context are not source scope substitutes: actual fixed
+	// controller admits these real aggregate objects before constructing them.
+	sizeof(economic_digest) + sizeof(SHA256_CTX) + 3 * (sizeof(void *) + sizeof(size_t));
+bool intent_fixed_source_policy() noexcept
+{
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return intent_source_policy() && sizeof(SHA_LONG) == 4 && sizeof(unsigned long) == 8;
+#else
+	return false;
+#endif
+}
+}
+bool economic_intent_verify_binding_fixed_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	size_t binding = 0, entry = 0,
+	       total = intent_fixed_proof_local_source + intent_budget_observer_source +
+		       intent_fixed_encode_frames + intent_hash_complete_source +
+		       intent_fixed_vector_constructor_frames + 2 * sizeof(economic_digest) +
+		       sizeof(std::vector<uint8_t>) + intent_binding_profile_query_source +
+		       sizeof(size_t);
+	if (!economic_command_binding_digest_source_frame_bytes(&binding) ||
+	    !economic_command_binding_digest_initial_inline_bytes(&entry) ||
+	    !intent_fixed_add(total, binding) || !intent_fixed_add(total, entry))
+		return false;
+	*output = total;
+	return true;
+}
+bool economic_intent_verify_binding_fixed_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	*output = sizeof(intent_fixed_budget);
+	return true;
+}
+bool economic_intent_plan_metadata_fixed_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	size_t proof = 0,
+	       total = intent_fixed_metadata_local_source + intent_fixed_domain_local_source +
+		       intent_fixed_sha_memory_source + intent_budget_observer_source +
+		       intent_fixed_encode_frames + intent_hash_complete_source +
+		       intent_fixed_vector_constructor_frames + intent_fixed_intent_default_frames +
+		       sizeof(economic_plan_metadata) + sizeof(std::vector<uint8_t>) +
+		       sizeof(intent_fixed_budget);
+	if (!economic_intent_verify_binding_fixed_source_frame_bytes(&proof) ||
+	    !intent_fixed_add(total, proof))
+		return false;
+	*output = total;
+	return true;
+}
+bool economic_intent_plan_metadata_fixed_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	*output = sizeof(intent_fixed_budget);
+	return true;
+}
+bool economic_intent_freeze_fixed_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	size_t binding = 0, entry = 0,
+	       total =
+		       // Exact existing public/owned freeze-local frames at the maintained entry.
+	       9 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(economic_accounting_error) +
+	       2 * sizeof(size_t) + sizeof(void *) + 5 * sizeof(void *) +
+	       sizeof(economic_accounting_error) + sizeof(size_t) +
+	       sizeof(economic_accounting_error) + sizeof(std::span<uint8_t>) + 3 * sizeof(size_t) +
+	       sizeof(uint64_t) + intent_fixed_copy_frames + 8 * (sizeof(void *) + sizeof(size_t)) +
+	       intent_budget_observer_source + intent_hash_complete_source +
+	       intent_fixed_encode_frames + intent_fixed_intent_default_frames +
+	       intent_fixed_vector_constructor_frames + critical_command_valid_frame_bytes();
+	if (!economic_command_binding_digest_source_frame_bytes(&binding) ||
+	    !economic_command_binding_digest_initial_inline_bytes(&entry) ||
+	    !intent_fixed_add(total, binding) || !intent_fixed_add(total, entry))
+		return false;
+	*output = total;
+	return true;
+}
+bool economic_intent_freeze_fixed_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	size_t binding = 0, total = intent_fixed_sha_memory_source + sizeof(size_t);
+	// Existing fixed freeze already owns its exact lexical frames, vector,
+	// default/encode/crypto controllers. Retain only the identified missing
+	// primitive-memory leaf, actual public constexpr frames carrier, and actual
+	// binding child's uncovered SOURCE.
+	if (!economic_command_binding_digest_source_supplement_frame_bytes(&binding) ||
+	    !intent_fixed_add(total, binding))
+		return false;
+	*output = total;
+	return true;
+}
+bool economic_intent_freeze_fixed_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !intent_fixed_source_policy())
+		return false;
+	*output = sizeof(intent_fixed_budget);
+	return true;
+}

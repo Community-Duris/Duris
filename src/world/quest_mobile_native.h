@@ -180,4 +180,33 @@ player_snapshot_codec_result quest_mobile_native_items_transition_bounded(
 	const item_transfer_payload &, std::vector<player_item_snapshot> *,
 	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
+// Pure selected SOURCE contracts. Whole SOURCE + early inline is a transient
+// preentry admission; the actual parent retains only *_source_supplement across
+// existing byte-exact bounded entries. Real child workspaces/requests stay
+// child-owned. Queries allocate/scan nothing, strong output on refusal; no
+// factory, publication, activation or emitted/native qualification follows.
+bool quest_mobile_native_image_encode_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_decode_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_decode_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_encode_initial_inline_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t quest_mobile_native_image_source_query_frame_bytes() noexcept
+{
+	// Largest real query is decode: own output/result/policy + seven size_t
+	// locals, six lower queries (including nested encode's four locals and
+	// three queries), six checked adds. Accessor size_t result is separate.
+	return 19 * sizeof(void *) + 20 * sizeof(size_t) + 29 * sizeof(bool);
+}
+bool quest_mobile_native_image_lifetime_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_image_current_heap_source_frame_bytes(size_t *) noexcept;
+constexpr size_t quest_mobile_native_image_lifetime_source_query_frame_bytes() noexcept
+{
+	// Own output/result/policy, two locals, list query and checked add.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+}
+constexpr size_t quest_mobile_native_image_current_heap_source_query_frame_bytes() noexcept
+{
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+}
 #endif
