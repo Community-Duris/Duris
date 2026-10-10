@@ -50,6 +50,8 @@ class quest_mobile_native_room_restore_owner;
 class world_activity_native_birth_restore_owner
 {
 	static bool enter(P_char) noexcept;
+	static bool enter_bounded(P_char, bool (*)(size_t, void *) noexcept, void *,
+				  size_t) noexcept;
 	friend class quest_mobile_native_room_restore_owner;
 };
 
@@ -90,5 +92,18 @@ bool world_activity_storage_bytes(size_t *) noexcept;
 // never retry already-effected placement or RNG/advances on a false return.
 bool world_activity_object_enter_bounded(P_obj, bool (*)(size_t, void *) noexcept, void *,
 					 size_t outer_live) noexcept;
+
+// Full original character NPC/control/corpse activity; same actual global
+// allocation helpers and freshly observed activity/pending/output retention.
+// No substitute object-connection notification. Partial refusal never retries
+// an already effected room or activity action. Strong preaction markers.
+bool world_activity_character_enter_bounded(P_char, bool *, bool *,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
+// Original validated cached/fallback event, original existing-event reschedule
+// or actual character scheduler. Actual returned handoff survives diagnostics.
+bool world_activity_schedule_mundane_after_bounded(P_char, int, bool *, bool *,
+						   bool (*)(size_t, void *) noexcept, void *,
+						   size_t) noexcept;
 
 #endif /* DURIS_WORLD_ACTIVITY_H */

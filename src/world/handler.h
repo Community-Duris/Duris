@@ -2,6 +2,8 @@
 #define DURIS_WORLD_HANDLER_H
 
 #include "core/structs.h"
+#include <string>
+class flatfile_authority_lock;
 #include "economy/economic_accounting_intent.h"
 
 enum class obj_to_char_result
@@ -72,6 +74,16 @@ class quest_mobile_native_local_stock final
 	static bool finish_reducing_nest(P_obj, P_obj, P_char,
 					 quest_mobile_native_container_shell &) noexcept;
 	static bool detach(P_obj, P_char) noexcept;
+	// Original native owner supplies borrowed root/authority and genuine common
+	// CURRENT observer. No callback identity/boolean grants publication authority.
+	static bool enroll_bounded(P_obj, P_char, const std::string &,
+				   const flatfile_authority_lock &, bool *, bool *,
+				   bool (*)(size_t *, void *) noexcept,
+				   bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_enrollment_bounded(P_obj, P_char, bool *, bool *,
+					       bool (*)(size_t *, void *) noexcept,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
 	static bool enroll(P_obj, P_char) noexcept;
 	static bool restore_enrollment(P_obj, P_char) noexcept;
 };
@@ -83,6 +95,8 @@ class quest_mobile_native_room_restore_owner final
 {
 	friend class quest_mobile_native_stage;
 	static bool restore(P_char, int room_rnum, size_t *retained_step) noexcept;
+	static bool restore_bounded(P_char, int, size_t *, bool (*)(size_t *, void *) noexcept,
+				    bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 };
 
 class zone_reset_item_owner;
@@ -135,5 +149,12 @@ class zone_reset_original_room_placement_stage final
 	uint32_t roll_ = 0;
 	bool levitates_ = false, drawn_ = false, falls_ = false, valid_ = false;
 };
+
+// Full original -2 NPC room path, within genuine detached native birth domain.
+// Actual common CURRENT observer is nonowning and fresh before EACH nested
+// request and every effected return, including artifact/Redis siblings.
+bool char_to_room_native_birth_bounded(P_char, int, bool *, bool *,
+				       bool (*)(size_t *, void *) noexcept,
+				       bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
 #endif

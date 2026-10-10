@@ -23570,7 +23570,7 @@
       "sites": [
         [
           "src/world/handler.h",
-          16,
+          18,
           "item_publication"
         ]
       ],
@@ -65414,7 +65414,7 @@
     },
     {
       "path": "src/world/handler.h",
-      "line": 16,
+      "line": 18,
       "family": "item_publication",
       "excerpt": "obj_to_char_result obj_to_char_checked(P_obj object, P_char character);"
     },
@@ -66555,8 +66555,8 @@
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
       "src/world/db.c": "0776e68878800332b1e4efc9929bac627c5dcc0cc6ea1c27db9c359ddfd59f83",
       "src/world/db.h": "a322f9bb086e1ccf05d7772d06bac92cd4ee5bf613e9e9bc4154c5165f9dec1b",
-      "src/world/handler.c": "ced28c7b8a5191241130114f0f06399bd8764ea077c9c3ebf2e77af3d3646ce1",
-      "src/world/handler.h": "9d9e461f1d7a38fa20f2b659e9882baecc2764890ca40bd7a305548947ae14b2",
+      "src/world/handler.c": "6466084c8314d8477a2f09cc4c11c5a98a5ed5d76824999cef9c082b3725f02e",
+      "src/world/handler.h": "c14200a5ef74e2ca7014e0c1839e40d3b364316bc64652791a0bc75911e05b90",
       "src/world/native_mobile_birth_artifact.c": "b7c368d336c0bdd75e9bb2a6a1a8e4be0ed19f103e9ae42beba357eeb6a4407f",
       "src/world/native_mobile_birth_artifact.h": "5dd9f4ccc3057dc5228f1b17330e2b696b6a6ec9fe19ad48650c28cf5e64bfd1",
       "src/world/native_mobile_birth_procedure.c": "24935e912a9d1aea36894e03d532e1eeb4f6515b64b946de7207468e3974f659",
@@ -66576,8 +66576,8 @@
       "src/world/quest_mobile_native_reference.c": "e35b73e7a93b47cf87df6c3a4aea47d4956bb20d587865b3b56de23c6a0b8663",
       "src/world/quest_mobile_native_reference.h": "33737074b17c0becce2db83baf1372d34cc4f6fe10cbd46ec9dbbedfcb8dba27",
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
-      "src/world/world_activity.c": "ac1276dd8dc074389c59e1caac099900fbe3c7c2c5d2a261da685a39b638b0ef",
-      "src/world/world_activity.h": "cf51fa0bce171c2051003c08aa32cacb09b236ab591b09267f56d8056619b716",
+      "src/world/world_activity.c": "ced87fcf9feba9086a4f31ae2addf09ee91f538505c4e7dc355088c9827b8345",
+      "src/world/world_activity.h": "5a2d13812eb5e427a1e50de92b56af98f120a61c4ff206da8356089037370427",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
       "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "bf8d360313dacfb724c9d03e90963f47ccd689292c081c6ac4a2d500ef14145c",
       "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "ee2974d3694a4dea04ab691e7ea266be32ed5050d564a19fc1d1d0d606ed3681",
@@ -66823,8 +66823,8 @@
       "src/economy/economic_accounting_types.h": "7ece1fcd2bfe0022dea37abc2329f71f6ae1ef635e0b37ee88c2c7c881c10a67",
       "src/flatfile/flatfile_item_accounting_reference.c": "f6f08fa25516427e509f5e37d07aa9a52f42132f41691fe9dccbf34ba22e5dbc",
       "src/flatfile/flatfile_item_accounting_reference.h": "a027f934d96a892d2839b9d6eb22e67bee3eec3fee57e25533fa0c03f03b2417",
-      "src/world/new_events.c": "7a1269a3bbaff307cd852859f883b7efe9ea26cf82cee1943ba7c9b7b91f4cdc",
-      "src/world/events.h": "45613e376dc7419837c45faf4cadca84505ec28a801c06d8161665b8cbddda4e",
+      "src/world/new_events.c": "fcf4a5257d3c3b96a6a753490ef731c884d23b2b29217c7ff95ccd3e5cb37694",
+      "src/world/events.h": "f763dc32818e5729102b7b1e56a2d9e7a8b7917f56bf65b1c32b25fa445e964b",
       "src/core/utility.c": "9e31e75c9e62c76aecc72e5d573f6377424993e90087ba6cd825983a88f9fba8",
       "src/core/utility.h": "67b283f7f66a83511ed9bb17ff22bce27901a50c675b6099217edc2846823cc4",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d",
@@ -66880,7 +66880,11 @@
       "src/redis/redis_cache_store.c": "f63f882e473750d93be4dc36eb804a51f65a8cd52b4ea3bbadd458266bc8e9b5",
       "src/redis/redis_cache_store.h": "b431c65c0e9a4ae6c0b3e848e3e856d05df3efe6ac242e4dcce8bd80b24a9a0c",
       "src/redis/redis_report_cache.c": "489ee4e0ef74bc965ad29e8c314d3e5677aa4eaf9b616c3887ac9355b20f2162",
-      "src/redis/redis_report_cache.h": "3fbf991880742815b69bdcb15e69501128ee31c410893c01ec757581192934fc"
+      "src/redis/redis_report_cache.h": "3fbf991880742815b69bdcb15e69501128ee31c410893c01ec757581192934fc",
+      "src/account/character_identity.c": "a2bde31e9458217bbbefc2e8f0148092d7b38a9c4bf63f40be7037d34ad17549",
+      "src/account/character_identity.h": "a79f84fe9984b730dfd22180dd3cbb91d316f0f93a9cf6eef5b56234673dbe59",
+      "src/world/character_maintenance.c": "b298ddcecf918824a6056ac7a6c16df3027c27f5feeab12f522e1735dd9ac746",
+      "src/world/character_maintenance.h": "038c7a2e9537586e25db99136e9b1e9f3bccdc27eea16a14dae193addd91891b"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
