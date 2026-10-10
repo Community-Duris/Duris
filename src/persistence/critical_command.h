@@ -239,6 +239,9 @@ bool critical_command_normalize_bounded(critical_command *, bool (*)(size_t, voi
 // Heaps exclude command inline object. Fresh request uses each source.size();
 // current uses capacity(), never encoded bytes. Caller owns observations/frames.
 bool critical_command_current_heap_bytes(const critical_command &, size_t *) noexcept;
+// Pure GNU13 source allowance for that unchanged CURRENT scan; does not scan
+// storage or confer admission. Query itself owns size_t* and bool only.
+bool critical_command_current_heap_observer_frame_bytes(size_t *) noexcept;
 bool critical_command_fresh_copy_request_bytes(const critical_command &, size_t *) noexcept;
 size_t critical_command_copy_frame_bytes() noexcept;
 size_t critical_command_valid_frame_bytes() noexcept;
