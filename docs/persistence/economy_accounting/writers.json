@@ -23534,7 +23534,7 @@
       "sites": [
         [
           "src/core/prototypes.h",
-          1327,
+          1348,
           "coin_bulk_mutation"
         ]
       ],
@@ -23863,57 +23863,57 @@
         ],
         [
           "src/core/prototypes.h",
-          1292,
+          1313,
           "item_lifecycle"
         ],
         [
           "src/core/prototypes.h",
-          1301,
+          1322,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1347,
+          1368,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1352,
+          1373,
           "item_lifecycle"
         ],
         [
           "src/core/prototypes.h",
-          1357,
+          1378,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1358,
+          1379,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1364,
+          1385,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1365,
+          1386,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1366,
+          1387,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1367,
+          1388,
           "item_publication"
         ],
         [
           "src/core/prototypes.h",
-          1369,
+          1390,
           "item_publication"
         ]
       ],
@@ -23949,17 +23949,17 @@
       "sites": [
         [
           "src/core/prototypes.h",
-          2455,
+          2476,
           "money_helper"
         ],
         [
           "src/core/prototypes.h",
-          3040,
+          3061,
           "money_helper"
         ],
         [
           "src/core/prototypes.h",
-          3069,
+          3090,
           "money_helper"
         ],
         [
@@ -53534,25 +53534,25 @@
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 2455,
+      "line": 2476,
       "family": "money_helper",
       "excerpt": "bool transact(P_char, P_obj, P_char, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 3040,
+      "line": 3061,
       "family": "money_helper",
       "excerpt": "int SUB_MONEY(P_char, int, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 3069,
+      "line": 3090,
       "family": "money_helper",
       "excerpt": "void ADD_MONEY(P_char, int, const char *committed_message = nullptr);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1327,
+      "line": 1348,
       "family": "coin_bulk_mutation",
       "excerpt": "void add_coins(P_obj, int, int, int, int);"
     },
@@ -53570,67 +53570,67 @@
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1292,
+      "line": 1313,
       "family": "item_lifecycle",
       "excerpt": "P_obj create_money(int, int, int, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1352,
+      "line": 1373,
       "family": "item_lifecycle",
       "excerpt": "void extract_obj(P_obj obj,"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1301,
+      "line": 1322,
       "family": "item_publication",
       "excerpt": "P_obj unequip_char(P_char, int, bool = FALSE);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1347,
+      "line": 1368,
       "family": "item_publication",
       "excerpt": "void equip_char(P_char, P_obj, int, int);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1357,
+      "line": 1378,
       "family": "item_publication",
       "excerpt": "void obj_from_char(P_obj);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1358,
+      "line": 1379,
       "family": "item_publication",
       "excerpt": "void obj_from_obj(P_obj);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1364,
+      "line": 1385,
       "family": "item_publication",
       "excerpt": "void obj_from_room(P_obj);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1365,
+      "line": 1386,
       "family": "item_publication",
       "excerpt": "void obj_to_char(P_obj obj, P_char ch);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1366,
+      "line": 1387,
       "family": "item_publication",
       "excerpt": "void obj_to_char_at_end(P_obj obj, P_char ch);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1367,
+      "line": 1388,
       "family": "item_publication",
       "excerpt": "void obj_to_obj(P_obj, P_obj);"
     },
     {
       "path": "src/core/prototypes.h",
-      "line": 1369,
+      "line": 1390,
       "family": "item_publication",
       "excerpt": "void obj_to_room(P_obj, int);"
     },
@@ -66889,7 +66889,7 @@
       "src/mob/studioproc.c": "0bf886302eab9f8ac57b0eac9d03dfd9d2d7d2daf8fd60e08324d57b2286ac25",
       "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c",
       "src/classes/memorize.c": "6b05f31332d935276e3421598ee0cb5d8b9e41e4089f1985360c1dd99ef9105b",
-      "src/core/prototypes.h": "9987a299943e094ab181cd02b4b44b35ae6ae7258ad5b56d098bb98fd8746d52",
+      "src/core/prototypes.h": "081adcce171c2b738172be89fcce38381a02d59e1820ed098ef390c229886e64",
       "src/magic/spell_item_lifecycle.c": "ef1e584035c5e314201fbdcebd6910e6bd567e5ce1d8e9fc44dd7a0f079ad565",
       "src/magic/spell_item_lifecycle.h": "3907673c6f702b0ff0839108b5de26c86a2cd6416b09606aa8679681b6ab0d66",
       "src/magic/magic.c": "08ee4ddb1004f8b7c56fb8f0de506d4418c26b2f9ae4ebccdceec53cc84cc3a4",
