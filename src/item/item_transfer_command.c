@@ -8157,3 +8157,123 @@ size_t item_transfer_payload_current_heap_observer_frame_bytes() noexcept
 	return payload_clone_observation_frames + 11 * sizeof(void *) + sizeof(bool) +
 	       2 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool);
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+// Actual first item_owner_key_bounded fixed allowance, not a full item codec.
+// 4P+N+B formals/result; base N; actual candidate and braced key; identity-valid
+// owner ref/result; type conversion parameter/result; actual add/reserve graph.
+constexpr size_t item_owner_source_fixed_owned =
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(size_t) +
+	2 * sizeof(critical_entity_key) + sizeof(void *) + sizeof(bool) + sizeof(item_owner_type) +
+	sizeof(critical_entity_type) + 4 * sizeof(size_t) + 3 * sizeof(void *) + 2 * sizeof(bool);
+// The exact actual original hash leaf: encode_owner and put_u64; get_u64's
+// input/value/byte/result; four array.data(this,pointer-result) call sites and
+// encoded.size(this,size-result). Actual GNU13 array data is a direct _M_elems
+// return; the old comment's _S_ptr label does not imply another function call.
+constexpr size_t item_owner_source_leaf_owned =
+	2 * sizeof(void *) + sizeof(void *) + sizeof(uint64_t) + sizeof(unsigned int) +
+	sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(unsigned int) + 4 * (2 * sizeof(void *)) +
+	sizeof(void *) + sizeof(size_t);
+// The original fixed group's 4N distributes to parameters/fixed_frames constexpr
+// objects and genuine add/reserve scalar arguments; its 3P to add's bytes-ref,
+// reserve's context, and one generated key-assignment reference. That assignment
+// actually owns this+source references and returned reference, so two further P
+// are required even on the
+// direct owner-id branch. Hash branch's automatic constexpr leaf_frames adds N.
+constexpr size_t item_owner_source_supplement = 2 * sizeof(void *) + sizeof(size_t);
+
+// Same authenticated fixed SHA phase law as the currency account leaf. Init
+// memset, Update memcpy/memset and Final memset/cleanse are sequential with block
+// calls. OPENSSL_cleanse's ptr/len + volatile loaded target + memset are explicit.
+constexpr size_t item_owner_sha_memory_copy = 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_owner_sha_memory_set = 2 * sizeof(void *) + sizeof(int) + sizeof(size_t);
+constexpr size_t item_owner_sha_cleanse =
+	sizeof(void *) + sizeof(size_t) + sizeof(void *) + item_owner_sha_memory_set;
+constexpr size_t item_owner_sha_block_source =
+	std::max(item_key_sha_assembly_frames,
+		 std::max(item_key_sha_c_small_frames, item_key_sha_c_normal_frames));
+static_assert(item_owner_sha_block_source >= item_owner_sha_memory_copy);
+static_assert(item_owner_sha_block_source >= item_owner_sha_memory_set);
+static_assert(item_owner_sha_block_source >= item_owner_sha_cleanse);
+// Hash workspace default/member initialization and cleanup are sequential before
+// the first SHA call/after the last SHA call. Its generated constructor/destructor
+// receivers and the two trivial fixed-array destructor receivers are this pointers;
+// array brace initialization has no separate allocating constructor graph. This
+// real hash-phase alternative is dominated by its already-admitted fixed SHA graph.
+constexpr size_t item_owner_hash_lifetime_source = 4 * sizeof(void *);
+static_assert(item_key_sha_frames >= item_owner_hash_lifetime_source);
+
+// Whole named SOURCE alternative union. Initial candidate is a separate preentry
+// inline object; old actual workspace is created only after the second original
+// reserve and remains child-owned. No workspace/encoded-body heap is added here.
+constexpr size_t item_owner_source_full =
+	item_owner_source_fixed_owned - sizeof(critical_entity_key) + item_owner_source_leaf_owned +
+	item_key_sha_frames + item_owner_source_supplement;
+#endif
+}
+
+bool item_owner_key_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*output = item_owner_source_full;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool item_owner_key_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*output = item_owner_source_supplement;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool item_owner_key_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	*output = sizeof(critical_entity_key);
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
