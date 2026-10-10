@@ -93,4 +93,34 @@ economic_accounting_error economic_quest_wallet_reward_prepare(
 	const economic_currency_authority &authority, currency_revision_policy revision_policy,
 	std::optional<economic_prepared_currency> *prepared);
 
+// Full original typed bank-intent builders with bounded fixed-facts freeze.
+// Authentic inputs/prior encoded output belong to the caller outer. Complete
+// SOURCE/entry profiles are transient before entry; actual local source/facts
+// live in the child, with only named uncovered lower supplements retained.
+economic_accounting_error
+economic_bank_transfer_intent_bounded(const critical_command &, const critical_operation_id &,
+				      const economic_account_key &, const economic_account_key &,
+				      std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+				      void *, size_t outer_live) noexcept;
+economic_accounting_error economic_chaos_starter_bank_intent_bounded(
+	const critical_command &, const critical_operation_id &, const economic_account_key &,
+	const economic_account_key &, std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+	void *, size_t outer_live) noexcept;
+economic_accounting_error economic_quest_wallet_reward_intent_bounded(
+	const critical_command &, const critical_operation_id &, const economic_account_key &,
+	const economic_account_key &, std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+	void *, size_t outer_live) noexcept;
+bool economic_currency_intent_source_frame_bytes(size_t *) noexcept;
+bool economic_currency_intent_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t economic_currency_intent_source_query_frame_bytes() noexcept
+{
+	// Complete getter composes three genuine child SOURCE queries; own fixed
+	// return/policy/out/local/checked-add carriers and entry getter are explicit.
+	// Its constexpr accessor N is separately admitted by the selecting parent.
+	return currency_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes() +
+	       critical_operation_id_derive_source_query_frame_bytes() + 6 * sizeof(void *) +
+	       8 * sizeof(size_t) + 7 * sizeof(bool);
+}
+
 #endif
