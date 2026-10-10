@@ -1847,6 +1847,13 @@ int knows_spell(P_char, int);
 void use_spell(P_char, int);
 int AddSpellToSpellBook(P_char, P_obj, int);
 int FillMasterSpellBook(P_obj);
+// Native-only original master-book construction. Outer excludes CURRENT G;
+// refresh the actual spell description/private retention on EVERY outcome.
+// Pages is strong on refusal; a complete linked description remains owned.
+bool native_mobile_birth_fill_master_spellbook_bounded(P_obj, int *,
+						       bool (*)(size_t *, void *) noexcept,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
 int get_max_circle(P_char);
 int GetPagesInBook(P_obj);
 int get_spell_circle(P_char, int);

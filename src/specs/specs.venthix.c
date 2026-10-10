@@ -1335,3 +1335,143 @@ bool quest_mobile_native_zombie_stage::restore_bounded(P_obj object,
 	}
 #endif
 }
+
+#include <cerrno>
+#include <stdexcept>
+// Native-only original warm preparation with fresh genuine CURRENT admission.
+// Outer excludes G and includes the existing private candidate/stage prefix.
+bool quest_mobile_native_zombie_stage::prepare_bounded(
+	P_obj object, quest_mobile_native_zombie_stage &output,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if !defined(__linux__) || !defined(__LP64__) || !defined(_GLIBCXX_RELEASE) || \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)object;
+	(void)output;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	extern int top_of_mobt;
+	struct frame
+	{
+		size_t global = 0, game = 0, requested = 0, replacement = 0, live = 0, locals = 0;
+		int number = -1, failure = 0, saved_errno = errno;
+	} work;
+	if (!current_global || !reserve || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	auto observe = [&](size_t pending) noexcept -> bool
+	{
+		errno = 0;
+		if (!current_global(&work.global, context))
+		{
+			if (!work.failure)
+				work.failure = EIO;
+			return false;
+		}
+		if (work.locals > SIZE_MAX - outer_live ||
+		    work.game > SIZE_MAX - outer_live - work.locals ||
+		    pending > SIZE_MAX - outer_live - work.locals - work.game ||
+		    work.global > SIZE_MAX - outer_live - work.locals - work.game - pending)
+		{
+			if (!work.failure)
+				work.failure = EOVERFLOW;
+			return false;
+		}
+		work.live = outer_live + work.locals + work.game + pending + work.global;
+		errno = 0;
+		if (!reserve(work.live, context))
+		{
+			if (!work.failure)
+				work.failure = errno ? errno : ENOBUFS;
+			return false;
+		}
+		return true;
+	};
+	work.locals = sizeof(work) + sizeof(observe) + sizeof(size_t) +
+		      sizeof(std::unique_ptr<ZombieGame>) + sizeof(object) + sizeof(&output) +
+		      sizeof(current_global) + sizeof(reserve) + sizeof(context) +
+		      sizeof(outer_live);
+	if (!observe(0))
+	{
+		errno = work.failure;
+		return false;
+	}
+	if (!object || !object->obj_uid || output.game_ || !mob_index || ZombieGame::next_id <= 0 ||
+	    ZombieGame::next_id == INT_MAX ||
+	    retained_birth_zombie_reservations == std::numeric_limits<size_t>::max() ||
+	    zgames.size() >= zgames.max_size() ||
+	    retained_birth_zombie_reservations >= zgames.max_size() - zgames.size())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	work.number = real_mobile0(87);
+	if (work.number < 0 || work.number > top_of_mobt ||
+	    mob_index[work.number].virtual_number != 87)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!observe(sizeof(ZombieGame)))
+	{
+		errno = work.failure;
+		return false;
+	}
+	try
+	{
+		// Exactly the original initializer/constructor/load and ID/status order.
+		// The original game has no allocated zombie-vector entries at creation.
+		std::unique_ptr<ZombieGame> game(native_birth_zombie_initialize(object));
+		work.game = sizeof(ZombieGame);
+		work.requested = zgames.size() + retained_birth_zombie_reservations + 1;
+		if (work.requested > zgames.capacity())
+		{
+			if (work.requested > SIZE_MAX / sizeof(ZombieGame *))
+				work.failure = EOVERFLOW;
+			else
+				work.replacement = work.requested * sizeof(ZombieGame *);
+		}
+		// Current G retains the old registry allocation while reserve allocates
+		// its replacement. This private game is owned locally, outside G.
+		if (!work.failure && observe(work.replacement))
+		{
+			zgames.reserve(work.requested);
+			work.replacement = 0;
+			if (observe(0))
+			{
+				object->value[ZOMBIES_ID] = game->id;
+				output.mob_rnum_ = work.number;
+				output.original_mob_index_ = mob_index;
+				output.original_mob_proc_ = mob_index[work.number].func.mob;
+				output.item_uid_ = object->obj_uid;
+				output.game_ = game.release();
+				++retained_birth_zombie_reservations;
+				errno = work.saved_errno;
+				return true;
+			}
+		}
+		// The original failed prepare destroys the private, empty game. Keep
+		// its consumed ephemeral ID/status effects and any enlarged registry.
+	}
+	catch (const std::length_error &)
+	{
+		work.failure = EOVERFLOW;
+	}
+	catch (...)
+	{
+		work.failure = ENOMEM;
+	}
+	work.game = 0;
+	(void)observe(0); // Fresh G after cleanup; first refusal remains authoritative.
+	errno = work.failure ? work.failure : EIO;
+	return false;
+#endif
+}
