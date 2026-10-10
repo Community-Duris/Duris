@@ -298,4 +298,19 @@ bool shop_trade_transaction_keeper_busy(uint32_t shop_id);
 bool shop_trade_transaction_item_busy(uint64_t uid);
 void shop_trade_transaction_reset_for_tests(void);
 
+// Genuine passive same-pipeline-scope counterpart. Outer owns the immutable
+// input, ROOT/coordinator/journal/execution guard and caller frames, excluding
+// this pending owner and the complete borrowed pipeline CURRENT. SQL retains
+// its inserted entry on hold uncertainty; flat transfers a same-allocator node
+// only after the authentic hold returns. No default route is selected.
+bool shop_trade_transaction_restore_replayed_command_bounded(
+	const critical_command &, player_save_coin_replay_budget_scope_owner &,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept;
+// Full allocation-free pending/stage CURRENT census. Excludes pooled object
+// and affect slots, owned once by shared literal pool pages; includes genuinely
+// unpublished private malloc text/descriptor requests. Strong scalar output.
+bool shop_trade_transaction_replay_current_storage_bytes(size_t *) noexcept;
+size_t shop_trade_transaction_replay_storage_observer_frame_bytes() noexcept;
+
 #endif

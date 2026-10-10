@@ -78,4 +78,18 @@ economic_accounting_error collector_held_accounting_plan(
 	const collector_held_accounting_authority &authority,
 	const collector_command_result &result, economic_accounting_plan *plan);
 
+// Complete original listing/source/mapping/canonical-intent reconstruction;
+// caller owns old outputs and authentic command. Strong outputs on refusal.
+economic_accounting_error collector_purchase_accounting_intent_bounded(
+	const critical_command &, const critical_operation_id &, const economic_account_key &,
+	const economic_account_key &, const collector::record &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error collector_purchase_accounting_decode_bounded(
+	const critical_command &, economic_frozen_intent *, collector_command_payload *,
+	collector::record *, economic_account_key *, economic_account_key *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+size_t collector_purchase_accounting_replay_observer_frame_bytes() noexcept;
+bool collector_purchase_accounting_replay_heap_bytes(const economic_frozen_intent &,
+						     size_t *) noexcept;
+
 #endif

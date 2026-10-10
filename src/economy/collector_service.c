@@ -1054,3 +1054,69 @@ bool collector_service_recover_player(P_char character)
 {
 	return recover_purchase_for_player(character) && !player_has_purchase_save_fence(character);
 }
+
+#include <type_traits>
+bool collector_service_restore_replayed_purchase_bounded(
+	const critical_command &original, player_save_coin_replay_budget_scope_owner &scope,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	// Complete original passive handler identity; no native effect or notification
+	// is run at boot and no callback/context substitution is accepted.
+	constexpr size_t frames = 4 * sizeof(void *) + sizeof(collector_purchase_effect_fn) +
+				  sizeof(collector_completion_fn) + sizeof(size_t) + sizeof(bool);
+	if (!reserve || frames > SIZE_MAX - outer_live)
+		return false;
+	return collector_purchase_cold_restore_owner::restore_bounded(original, purchase_effect,
+								      purchase_accounted_completed,
+								      scope, reserve, context,
+								      outer_live + frames);
+}
+size_t collector_service_replay_observer_frame_bytes() noexcept
+{
+	return 15 * sizeof(void *) + 12 * sizeof(size_t) + 5 * sizeof(bool);
+}
+bool collector_service_replay_current_storage_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (!output || !nevent_is_game_thread())
+		return false;
+	size_t bytes = sizeof(pending_details) + sizeof(purchase_recoveries) +
+		       sizeof(purchase_fallback_recoveries) + sizeof(health);
+	auto add = [&](size_t extra)
+	{
+		if (extra > SIZE_MAX - bytes)
+			return false;
+		bytes += extra;
+		return true;
+	};
+	auto table = [&](const auto &map)
+	{
+		using map_type = std::decay_t<decltype(map)>;
+		using key_type = typename map_type::key_type;
+		using node_type = std::__detail::_Hash_node<
+			typename map_type::value_type,
+			std::__cache_default<key_type, std::hash<key_type>>::value>;
+		const size_t buckets = map.bucket_count();
+		return buckets &&
+		       (buckets == 1 ||
+			(buckets <= SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) &&
+			 add(buckets * sizeof(std::__detail::_Hash_node_base *)))) &&
+		       map.size() <= SIZE_MAX / sizeof(node_type) &&
+		       add(map.size() * sizeof(node_type));
+	};
+	if (!table(pending_details) || !table(purchase_recoveries))
+		return false;
+	for (const auto &value : purchase_recoveries)
+		if (value.second.payload && !add(sizeof(collector_command_payload)))
+			return false;
+	for (const auto &value : purchase_fallback_recoveries)
+		if (value.payload && !add(sizeof(collector_command_payload)))
+			return false;
+	*output = bytes;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
