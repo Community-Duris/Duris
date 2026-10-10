@@ -324,8 +324,9 @@
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
       "src/flatfile/flatfile_item_accounting_reference.c": "fc3fcd5680aa8f1ed63b7abb300d9efd5f5c1a8665bcc4f091f6180c3baf22dd",
       "src/flatfile/flatfile_item_accounting_reference.h": "b7623894a25f3898995f2e4dd531b9380ba7fcb49e3b9ba05a7e5d856f8530d5",
-      "src/flatfile/flatfile_item_repository.c": "9f1819ce2ef730eeee22e00e156c482ae477725fe62431fe940a910d2897e249",
+      "src/flatfile/flatfile_item_repository.c": "232451449290a33db5625175833366a44a1ddc9b35d7ddbd558542150331a373",
       "src/flatfile/flatfile_item_repository.h": "60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "abadd19eddef9336571001f8ff49565d7839a687ae5795a4a76a1d4201e50f6a",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "85d89092fb73602ad994365336f2d506be36379d33515771414b35bd69c25f98",
       "src/flatfile/flatfile_native_mobile_wallet.h": "2465dab1e202bf4ab2b2480cd1b61d633fa08fa556ead1b7610fad086487f15c",
@@ -6497,7 +6498,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4782
+          4783
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -33147,7 +33148,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5102
+          5103
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_item_repository_prepare_native_mobile",
