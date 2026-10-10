@@ -603,4 +603,14 @@ bool item_transfer_native_cost_encode_bounded(const item_transfer_payload &, boo
 					      bool (*)(size_t, void *) noexcept, void *context,
 					      size_t outer_live) noexcept;
 
+// Complete original NQF2 native fee and NQM1 native money wire decoders,
+// including full canonical/key/revision/action-operation proof. Pure strong
+// output prerequisites; public all-version dispatcher is a separate owner.
+bool item_transfer_native_fee_decode_bounded(const critical_command &, item_transfer_payload *,
+					     bool (*)(size_t, void *) noexcept, void *context,
+					     size_t outer_live) noexcept;
+bool item_transfer_native_money_decode_bounded(const critical_command &, item_transfer_payload *,
+					       bool (*)(size_t, void *) noexcept, void *context,
+					       size_t outer_live) noexcept;
+
 #endif
