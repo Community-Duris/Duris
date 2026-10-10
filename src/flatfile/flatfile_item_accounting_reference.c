@@ -1000,3 +1000,141 @@ flatfile_native_mobile_birth_ordinary_reference_history_storage::verify_initial_
 		return status::io_error;
 	}
 }
+
+flatfile_item_accounting_status flatfile_native_mobile_birth_ordinary_reference_history_storage::
+	verify_initial_quarantine_absence_locked(
+		const std::string &root, const flatfile_authority_lock &lock,
+		const critical_native_recovery_envelope &original,
+		flatfile_native_mobile_birth_ordinary_reference_quarantine_absence *output,
+		std::string *error) noexcept
+{
+	using status = flatfile_item_accounting_status;
+	if (root.empty() || !output || !lock.matches(root))
+		return status::invalid;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_initial(original))
+			return status::invalid;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		if (native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event)
+			return status::invalid;
+		std::vector<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			born.push_back(literal.object_uid);
+		std::sort(born.begin(), born.end());
+		if (std::adjacent_find(born.begin(), born.end()) != born.end() ||
+		    (!born.empty() && !born.front()))
+			return status::invalid;
+
+		// Quarantine files are retained evidence copies, not a second SQL table.
+		// Census original key identities without imposing SQL insertion uniqueness
+		// on those copies. Every decoded retained row still participates in absence.
+		using key = std::pair<std::array<uint8_t, 16>, uint16_t>;
+		std::set<key> operation_lines, legacy_events;
+		const std::string directory = item_refs_directory(root);
+		flatfile_native_mobile_birth_ordinary_reference_quarantine_absence observed;
+		observed.born_uids = born.size();
+		for (unsigned int bucket = 0; bucket < 256; ++bucket)
+		{
+			const auto shard = static_cast<uint8_t>(bucket);
+			const std::string filename = bucket_filename(shard) + ".corrupt";
+			std::vector<uint8_t> retained;
+			const auto loaded =
+				flatfile_read(directory, filename,
+					      FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					      &retained, error);
+			if (loaded == flatfile_read_result::not_found)
+			{
+				++observed.missing_files;
+				++observed.buckets_verified;
+				continue;
+			}
+			if (loaded != flatfile_read_result::ok)
+				return read_status(loaded);
+			if (retained.size() % FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+			{
+				if (error)
+					*error =
+						"retained reference quarantine has unknown partial-record evidence";
+				return status::invalid;
+			}
+			for (size_t offset = 0; offset < retained.size();
+			     offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+			{
+				const auto bytes = std::span<const uint8_t>(retained).subspan(
+					offset, FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+				economic_accounting_item_reference reference{};
+				if (flatfile_item_accounting_reference_decode(bytes, &reference) !=
+					    status::ok ||
+				    reference.legacy_operation_id.bytes[0] != shard)
+				{
+					if (error)
+						*error =
+							"retained reference quarantine cannot authenticate record identity";
+					return status::invalid;
+				}
+				std::vector<uint8_t> canonical;
+				const auto encoded = flatfile_item_accounting_reference_encode(
+					reference, &canonical);
+				if (encoded != status::ok)
+					return encoded;
+				if (canonical.size() != bytes.size() ||
+				    !std::equal(canonical.begin(), canonical.end(), bytes.begin()))
+				{
+					if (error)
+						*error =
+							"retained reference quarantine is not canonical evidence";
+					return status::invalid;
+				}
+				if (std::binary_search(born.begin(), born.end(),
+						       reference.item_uid) ||
+				    reference.operation_id.bytes ==
+					    original.command.operation_id.bytes ||
+				    reference.legacy_operation_id.bytes ==
+					    original.command.operation_id.bytes)
+				{
+					if (error)
+						*error =
+							"ordinary birth conflicts with retained reference quarantine evidence";
+					return status::already_exists;
+				}
+				operation_lines.emplace(reference.operation_id.bytes,
+							reference.line_index);
+				legacy_events.emplace(reference.legacy_operation_id.bytes,
+						      reference.legacy_event_index);
+				++observed.retained_records;
+			}
+			++observed.buckets_verified;
+		}
+		if (observed.buckets_verified != 256 || !lock.matches(root))
+			return status::invalid;
+		observed.unique_operation_lines = operation_lines.size();
+		observed.unique_legacy_events = legacy_events.size();
+		// Strong scalar output: this describes currently retained quarantine
+		// bytes only. Original repair can overwrite a quarantine or truncate
+		// trailing canonical data without retaining it; no historical-completeness
+		// or CURRENT law follows from these counts.
+		*output = observed;
+		return status::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+}
