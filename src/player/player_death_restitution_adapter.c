@@ -790,3 +790,265 @@ bool player_death_restitution_runtime_replay_storage_bytes(size_t *output) noexc
 	*output = observed.total;
 	return true;
 }
+
+#include <deque>
+#include <mutex>
+#include "player/player_revision_state.h"
+
+// The concrete adapter is the only friend capable of constructing the paired
+// private runtime callback table. It forwards to the ACTUAL original callbacks
+// only after their entire allocation-free source closure has been admitted.
+class player_death_restitution_replay_budget_owner
+{
+	friend bool player_death_restitution_runtime_restore_replayed_command_bounded(
+		const critical_command &, void *, bool (*)(size_t, void *) noexcept, void *,
+		size_t) noexcept;
+	using reserve_fn = bool (*)(size_t, void *) noexcept;
+	using cache_owner = player_death_restitution_status_cache_budget_owner;
+	using runtime_owner = player_death_restitution_runtime_replay_budget_owner;
+
+	// Exact supported ordinary GCC13 lookup profile. These are prospective
+	// SOURCE carrier expressions, not claims about emitted machine stack.
+	// Source calls iterate fixed arrays/deques/linked lists and map/set lookups.
+	// None constructs or copies a snapshot, string, native object or queue.
+	static constexpr size_t deque_read_frames =
+		// Actual two range iterators plus begin/end returned carriers; actual
+		// _Deque_iterator has four pointer fields for every element type.
+		4 * sizeof(std::deque<player_load_result>::iterator) +
+		// job/result reference, iterator ++/set_node and comparison arguments.
+		8 * sizeof(void *) + 2 * sizeof(size_t);
+	static constexpr size_t hash_read_frames =
+		// unordered_map::find, _Hashtable::find code/bucket/iterator carriers.
+		7 * sizeof(void *) + 2 * sizeof(size_t) +
+		// _M_find_node/_M_find_before_node this/key/node/prev/returned pointers.
+		9 * sizeof(void *) + 4 * sizeof(size_t) +
+		// _M_equals/_M_key_equals, hash/extract/equal and bucket-index calls.
+		12 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(int) + 3 * sizeof(bool) +
+		2 * sizeof(char);
+	static constexpr size_t set_read_frames =
+		// set.count calls _Rb_tree.find, NOT _Rb_tree.count/equal_range.
+		// Its actual find iterator and iterative lower_bound x/y/key carriers,
+		// begin/end/key/left/right/less/iterator comparison and result carriers.
+		23 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(char);
+	static constexpr size_t fixed_array_find_frames =
+		// Real pid parameter, two array-range pointers, current reference and
+		// returned pointer, with no copying of the pointed-to owner.
+		sizeof(int) + 4 * sizeof(void *);
+	static constexpr size_t revision_read_frames =
+		// snapshot_copy pid/out/state, actual fixed aggregate return carrier,
+		// find_state pid/found iterator plus original map lookup closure.
+		2 * sizeof(int) + 3 * sizeof(void *) + sizeof(player_revision_snapshot) +
+		hash_read_frames + sizeof(bool);
+	static constexpr size_t quarantine_read_frames =
+		sizeof(int) + sizeof(std::lock_guard<std::mutex>) + set_read_frames + sizeof(bool);
+	static constexpr size_t worker_read_frames =
+		sizeof(int) + sizeof(std::lock_guard<std::mutex>) + sizeof(void *) +
+		hash_read_frames + sizeof(bool);
+	static constexpr size_t retained_read_frames =
+		// append_retry pointer inspection and the two real retained deques.
+		sizeof(int) + 2 * deque_read_frames + sizeof(bool);
+	static constexpr size_t offline_frames =
+		// Original recipient callback parameters and target_pid, descriptor,
+		// actual candidates[2], range pointers and character reference.
+		sizeof(uint32_t) + sizeof(int) + 8 * sizeof(void *) + sizeof(bool) +
+		// Original load predicate: pid, lock and queued/completion range reads.
+		sizeof(int) + sizeof(std::lock_guard<std::mutex>) + 2 * deque_read_frames +
+		sizeof(bool) +
+		// is_pid_online(true): actual pid/includeLD/temp_ch and scalar return.
+		sizeof(int) + 2 * sizeof(bool) + sizeof(void *);
+	static constexpr size_t pending_frames =
+		// Original adapter pending callback by-value parameters/result.
+		sizeof(uint32_t) + sizeof(uint64_t) + sizeof(void *) + sizeof(bool) +
+		// Actual pipeline pending pid, lock, revision object and fixed lookups.
+		sizeof(int) + sizeof(std::lock_guard<std::mutex>) +
+		sizeof(player_revision_snapshot) + sizeof(bool) + 2 * fixed_array_find_frames +
+		retained_read_frames + quarantine_read_frames + worker_read_frames +
+		revision_read_frames;
+	static constexpr size_t pipeline_release_frames =
+		sizeof(int) + sizeof(uint64_t) + sizeof(std::lock_guard<std::mutex>) +
+		sizeof(void *) + fixed_array_find_frames +
+		// Original target_save_login_fence={} carrier: supported LP64 fields
+		// int4, padding4, uint64 revision8. No mirror struct or fake instance.
+		2 * sizeof(uint64_t);
+	static constexpr size_t pipeline_acquire_frames =
+		sizeof(int) + sizeof(uint64_t) + 2 * sizeof(std::lock_guard<std::mutex>) +
+		sizeof(player_revision_snapshot) + sizeof(void *) + sizeof(bool) +
+		quarantine_read_frames + worker_read_frames + revision_read_frames +
+		// terminal, target, literal, allocate-target's nested target lookup
+		// and own range, then final-target. Allocate's revision parameter is
+		// an additional actual by-value carrier alongside its pid parameter.
+		6 * fixed_array_find_frames + sizeof(uint64_t) + 2 * retained_read_frames +
+		pipeline_release_frames + 2 * sizeof(uint64_t);
+	static constexpr size_t acquire_frames =
+		sizeof(uint32_t) + sizeof(uint64_t) + sizeof(void *) + sizeof(bool) +
+		2 * offline_frames + pipeline_acquire_frames + pipeline_release_frames;
+	static constexpr size_t bounded_callback_carriers = sizeof(uint32_t) + sizeof(uint64_t) +
+							    3 * sizeof(void *) + sizeof(size_t) +
+							    sizeof(bool);
+
+	static bool callback_admit(reserve_fn reserve, void *context, size_t outer,
+				   size_t frames) noexcept
+	{
+		constexpr size_t own_carriers =
+			2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+		return reserve && frames <= std::numeric_limits<size_t>::max() - own_carriers &&
+		       outer <= std::numeric_limits<size_t>::max() - frames - own_carriers &&
+		       reserve(outer + frames + own_carriers, context);
+	}
+	static bool offline_bounded(uint32_t pid, void *original_context, reserve_fn reserve,
+				    void *context, size_t outer) noexcept
+	{
+		return callback_admit(reserve, context, outer,
+				      bounded_callback_carriers + offline_frames) &&
+		       recipient_is_offline(pid, original_context);
+	}
+	static bool pending_bounded(uint32_t pid, uint64_t revision, void *original_context,
+				    reserve_fn reserve, void *context, size_t outer) noexcept
+	{
+		return callback_admit(reserve, context, outer,
+				      bounded_callback_carriers + pending_frames) &&
+		       pending_save_is_empty(pid, revision, original_context);
+	}
+	static bool acquire_bounded(uint32_t pid, uint64_t revision, void *original_context,
+				    reserve_fn reserve, void *context, size_t outer) noexcept
+	{
+		// Entire original first offline, acquisition (including failure
+		// release), second offline and exact second-refusal release admitted
+		// BEFORE the actual fence. No post-acquire budget callback is possible.
+		return callback_admit(reserve, context, outer,
+				      bounded_callback_carriers + acquire_frames) &&
+		       acquire_target_save_login_fence(pid, revision, original_context);
+	}
+
+	struct workspace
+	{
+		player_death_restitution_plan plan = {};
+		player_death_restitution_runtime_submission submission = {};
+		cache_owner::census cache;
+		const runtime_owner::callbacks bounded = {
+			offline_bounded,
+			pending_bounded,
+			acquire_bounded,
+		};
+		size_t plan_heap = 0;
+		size_t base = 0;
+		size_t current = 0;
+		size_t requested = 0;
+		size_t cache_after_reservation = 0;
+		operation_status_record *status = nullptr;
+		player_death_restitution_runtime_submission *slot = nullptr;
+		player_death_restitution_runtime_result result =
+			player_death_restitution_runtime_result::invalid_plan;
+		reserve_fn reserve = nullptr;
+		void *context = nullptr;
+
+		bool observe() noexcept
+		{
+			if (!cache.observe() ||
+			    plan_heap > std::numeric_limits<size_t>::max() - base)
+				return false;
+			current = base + plan_heap;
+			if (cache.total > std::numeric_limits<size_t>::max() - current)
+				return false;
+			current += cache.total;
+			return true;
+		}
+		bool admit(size_t request) noexcept
+		{
+			if (!observe() || request > std::numeric_limits<size_t>::max() - current)
+				return false;
+			requested = current + request;
+			return reserve && reserve(requested, context);
+		}
+	};
+
+	static bool restore(const critical_command &command, void *original_context,
+			    reserve_fn reserve, void *context, size_t outer_live) noexcept
+	{
+		(void)original_context; // Original adapter ignores its host callback context.
+		// Preserve the original host family skip BEFORE capability admission.
+		if (command.type != critical_command_type::player_death_restitution)
+			return true;
+		constexpr size_t entry_carriers =
+			2 * (4 * sizeof(void *) + sizeof(size_t) + sizeof(bool));
+		constexpr size_t lookup_frames = 14 * sizeof(void *) + 4 * sizeof(size_t) +
+						 4 * sizeof(bool) + sizeof(uint8_t);
+		constexpr size_t identity_frames =
+			12 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool);
+		constexpr size_t status_call_carriers = 7 * sizeof(void *) + sizeof(size_t);
+		constexpr size_t cleanup_frames =
+			sizeof(operation_status_record) + 2 * sizeof(void *);
+		constexpr size_t success_tail_frames =
+			4 * sizeof(void *) + sizeof(player_death_restitution_runtime_result) +
+			sizeof(player_death_restitution_runtime_submission);
+		if (!reserve || !cache_owner::profile() || sizeof(void *) != 8 ||
+		    sizeof(int) != 4 || alignof(uint64_t) != 8 ||
+		    outer_live >
+			    std::numeric_limits<size_t>::max() - sizeof(workspace) - entry_carriers)
+			return false;
+		workspace work;
+		work.base = outer_live + sizeof(work) + entry_carriers;
+		work.reserve = reserve;
+		work.context = context;
+		if (!work.admit(0) ||
+		    !runtime_owner::command_valid_bounded(command, reserve, context,
+							  work.current) ||
+		    !work.admit(0) ||
+		    !player_death_restitution_command_decode_payload_bounded(
+			    command, &work.plan, reserve, context, work.current, &work.plan_heap))
+			return false;
+		if (!work.admit(lookup_frames + identity_frames))
+			return false;
+		if ((work.status = find_status(command.operation_id)))
+		{
+			if (!status_identity_matches(*work.status, command, work.plan,
+						     work.plan.actor.c_str()))
+				return false;
+			return find_submission(command.operation_id) != nullptr;
+		}
+		work.slot = find_free_submission();
+		if (!work.slot)
+			return false;
+		// Incoming cache-owner outer excludes exactly its static arrays/table
+		// and actor heaps, and includes actual adapter plan/workspace/call and
+		// future cleanup carriers. Census reobserves every owned capacity.
+		if (work.plan_heap > std::numeric_limits<size_t>::max() - work.base ||
+		    work.base + work.plan_heap > std::numeric_limits<size_t>::max() -
+							 status_call_carriers - cleanup_frames -
+							 success_tail_frames ||
+		    !cache_owner::reserve_status_bounded(
+			    command, work.plan, work.plan.actor.c_str(), reserve, context,
+			    work.base + work.plan_heap + status_call_carriers + cleanup_frames +
+				    success_tail_frames,
+			    &work.status, &work.cache_after_reservation) ||
+		    !work.status)
+			return false;
+		if (!work.observe())
+		{
+			cache_owner::release_status_preallowed(work.status);
+			return false;
+		}
+		work.result = runtime_owner::restore(command, live_callbacks, nullptr, work.bounded,
+						     reserve, context, work.current,
+						     &work.submission);
+		if (work.result != player_death_restitution_runtime_result::accepted)
+		{
+			cache_owner::release_status_preallowed(work.status);
+			return false;
+		}
+		// Exact original nonfallible success/removal tail; fence is now real.
+		// Cache actor storage did not mutate during runtime's pure decode and
+		// actual read-only/fixed-slot callbacks. No admission follows success.
+		*work.slot = work.submission;
+		update_status_from_submission(*work.status, work.result, work.submission);
+		return true;
+	}
+};
+
+bool player_death_restitution_runtime_restore_replayed_command_bounded(
+	const critical_command &command, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live) noexcept
+{
+	return player_death_restitution_replay_budget_owner::restore(
+		command, original_context, reserve, budget_context, outer_live);
+}
