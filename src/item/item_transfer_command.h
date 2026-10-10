@@ -566,4 +566,11 @@ bool item_transfer_command_encode_payload_bounded(const item_transfer_payload &,
 						  bool (*)(size_t, void *) noexcept, void *context,
 						  size_t outer_live) noexcept;
 
+// Complete original private generic decoder (its original v2-v12 set),
+// including real restored sidecars, legacy normalization and full key/revision
+// proof. Native fee/cost/money and public canonical dispatch remain separate.
+bool item_transfer_payload_decode_generic_bounded(
+	const critical_command &, item_transfer_payload *, bool (*)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_payload_heap_bytes = nullptr) noexcept;
+
 #endif
