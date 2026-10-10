@@ -411,6 +411,8 @@
       "src/persistence/economic_sql_zone_reset_item_transaction.h": "b02c0ceffe28b132744942522203e634ad1868b50674e4e6217bbdd70748949e",
       "src/persistence/held_retirement_sql_observer.c": "9b51e13afcae6279f671967641eedaa4731764fc9074d9fcaf316b8648d7217b",
       "src/persistence/persistence_mode.c": "a5ea3469c66e87a0c6cb51c5956ac8f8688700e907ad53b9e7e25470878db11e",
+      "src/persistence/player_death_restitution_command.c": "3e72ed565b81f86b8e4d4ee9d5957607ed23835d7ffe25e7368e68c4eaebde0b",
+      "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d",
       "src/persistence/quest_mobile_native_origin_sql.c": "ec956318fe0b74fdb32dc6b6e81fb84b27c59a163f69e43aa122754d679e1da9",
       "src/persistence/quest_mobile_native_origin_sql.h": "f9841cf88d8b31075926be221a3a398f814a2ae1afd676c57a78b1a916f29503",
       "src/persistence/quest_mobile_native_sql.c": "41e67cfda8d21bf6ecc1abf4b560d7ae5eec1a1c15d5507b6055fcd0ff432790",

@@ -66829,7 +66829,9 @@
       "src/core/utility.h": "67b283f7f66a83511ed9bb17ff22bce27901a50c675b6099217edc2846823cc4",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d",
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
-      "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a"
+      "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
+      "src/persistence/player_death_restitution_command.c": "3e72ed565b81f86b8e4d4ee9d5957607ed23835d7ffe25e7368e68c4eaebde0b",
+      "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -194,4 +194,13 @@ bool player_death_restitution_command_encode_result(
 bool player_death_restitution_command_decode_result(const uint8_t *encoded, size_t encoded_size,
 						    player_death_restitution_result *result);
 
+// Prospective item-state owner: caller outer includes authentic input storage,
+// destination inline/prior heap and its own live frames. On success the optional
+// scalar reports transferred actual heap capacities, excluding destination inline.
+// Both outputs remain unchanged on refusal. No route is selected by this API.
+bool player_death_restitution_item_state_decode_bounded(
+	const uint8_t *encoded, size_t encoded_size, player_death_restitution_item_state *state,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_state_heap_bytes = nullptr) noexcept;
+
 #endif
