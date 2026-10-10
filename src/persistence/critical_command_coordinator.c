@@ -242,7 +242,8 @@ class native_identity_queue final : public std::deque<std::string>
 	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 		if (!output)
 			return false;
-		const auto &actual = storage_base::_M_impl;
+		const auto &actual =
+			this->std::_Deque_base<std::string, std::allocator<std::string>>::_M_impl;
 		if (!actual._M_map || !actual._M_map_size ||
 		    actual._M_map_size > SIZE_MAX / sizeof(std::string *))
 			return false;
@@ -290,7 +291,8 @@ class native_identity_queue final : public std::deque<std::string>
 	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 		if (!output || size() == max_size() || identity.size() == SIZE_MAX)
 			return false;
-		const auto &actual = storage_base::_M_impl;
+		const auto &actual =
+			this->std::_Deque_base<std::string, std::allocator<std::string>>::_M_impl;
 		if (!actual._M_map || !actual._M_map_size)
 			return false;
 		const size_t text = identity.size() > 15 ? identity.size() + 1 : 0;
@@ -9034,10 +9036,10 @@ struct ordinary_birth_observation_workspace
 	void *context;
 	size_t outer, live = 0, current = 0, extra = 0;
 	std::unique_lock<std::mutex> lock{ coordinator_mutex, std::defer_lock };
-	std::string identity;
-	critical_native_recovery_envelope copy;
-	decltype(operations)::iterator operation;
-	decltype(completed_cache)::iterator completed;
+	std::string identity = {};
+	critical_native_recovery_envelope copy = {};
+	decltype(operations)::iterator operation = {};
+	decltype(completed_cache)::iterator completed = {};
 	const operation_state *state = nullptr;
 	critical_native_recovery_phase phase = critical_native_recovery_phase::execution_pending;
 
@@ -9317,12 +9319,12 @@ struct ordinary_birth_publication_workspace
 	uint64_t generation = 0;
 	bool prior_uncertain = false, cleaned = false, same = false;
 	std::unique_lock<std::mutex> lock{ coordinator_mutex, std::defer_lock };
-	std::string identity;
-	critical_native_recovery_envelope frozen, prepared;
+	std::string identity = {};
+	critical_native_recovery_envelope frozen = {}, prepared = {};
 	critical_completion receipt{};
-	native_mobile_birth_recovery_context before, after;
-	std::span<const uint8_t> attachment;
-	decltype(operations)::iterator found;
+	native_mobile_birth_recovery_context before = {}, after = {};
+	std::span<const uint8_t> attachment = {};
+	decltype(operations)::iterator found = {};
 	operation_state *pinned = nullptr;
 	critical_command_journal_result result = critical_command_journal_result::io_failure;
 
