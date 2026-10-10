@@ -17330,3 +17330,17 @@ explicit published aliases and actual formatted candidate. Source registry keeps
 Full first-host/foreign CURRENT/producer/publication/native32MiB/running drain/
 gameplay/persistence/recovery/R1-R8 remain OPEN. Tests deferred major-plan batch;
 inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Pure currency and restitution source profiles implemented - 2026-10-10
+
+[Source checkpoint](PURE_CURRENCY_RESTITUTION_SOURCE_PROFILES_2026-10-10.md)
+adds actual pure CURRENT observer profiles for currency and death restitution.
+Original scans/replay/default/inactive bodies remain intact; the real private
+census replaces guessed storage types. Immutable66+3/root15 dependencies/17
+installed headers, full inverses and formatted-source review authenticate the
+four-file slice. Registry retains467 pins/931 policies/2853 mapped sites and all
+protected Plan5 work. Full selecting host/foreign ownership/producer/publication/
+running drain/native32MiB/gameplay/persistence/recovery/R1-R8 remain OPEN. Tests
+deferred to major-plan batch; inactive/CLOSED, incomplete coverage, release
+BLOCKED and goal ACTIVE. No major plan is declared complete.

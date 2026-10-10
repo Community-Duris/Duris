@@ -195,4 +195,13 @@ class currency_transaction_replay_owner final
 	static bool restore_exclusive(const critical_command &, void *, size_t) noexcept;
 };
 
+// Pure prospective named-source frame allowance for the unchanged CURRENT reader.
+// No CURRENT observation, allocation, lock/thread query or retained-storage result.
+// Strong output; ordinary GNU13/C++20/CXX11 ABI/nondebug/nonasserting selection only.
+// Caller admits this query's output-pointer/returned-bool (P+B), then the reported
+// CURRENT frames BEFORE reading storage. Dynamic source scratch is zero; original
+// CURRENT owner bytes must still be observed and included exactly once. This is
+// source introspection, not a stability lease or emitted/native/runtime proof.
+bool currency_transaction_current_storage_source_frames(size_t *output) noexcept;
+
 #endif
