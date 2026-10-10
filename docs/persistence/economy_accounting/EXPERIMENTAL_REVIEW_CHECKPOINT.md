@@ -3940,3 +3940,18 @@ preserved. Full selecting startup/physical first admission/foreign ownership/hos
 publication/drain/native32MiB/gameplay/persistence/recovery/R1-R8/release remain
 OPEN. Tests stay batched at major-plan readiness; inactive/CLOSED, coverage
 incomplete, release BLOCKED and goal ACTIVE. No major-plan completion is claimed.
+
+
+## Complete startup codec source profile implemented - 2026-10-10
+
+[Source checkpoint](CRITICAL_COMMAND_STARTUP_CODEC_SOURCE_PROFILE_2026-10-10.md)
+adds the authentic original encode/decode SOURCE closure and genuine first-query
+contract required before journal startup. Independent55 full source and actual
+formatted2 token/logicalPP reviews passed; original C prefix, additive declarations,
+inverses, supported guards, strong outputs and protected Plan5 WIP survive.
+Registry470/931 unchanged policies/2911 census entries/2853 sites remains complete
+only as an inventory, with no new writers. Genuine initial inline storage stays
+a separate selecting preconstruction obligation. Full first host/physical foreign
+C-G-J/loan/publication/drain/native32MiB/gameplay/persistence/recovery/R1-R8/release
+remain OPEN. Tests stay batched at major-plan readiness; inactive/CLOSED, coverage
+incomplete, release BLOCKED and goal ACTIVE. No major-plan completion is claimed.

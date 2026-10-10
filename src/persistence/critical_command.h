@@ -246,4 +246,18 @@ bool critical_command_fresh_copy_request_bytes(const critical_command &, size_t 
 size_t critical_command_copy_frame_bytes() noexcept;
 size_t critical_command_valid_frame_bytes() noexcept;
 
+// Pure complete SOURCE allowance for the existing bounded encode/decode paths.
+// Includes original helper/STL validation, construction, mutation and cleanup;
+// actual candidate/request storage stays with their unchanged codec admission.
+// Caller owns input/prior output and callback descendants. Strong output on
+// unsupported ordinary GNU13 C++20 Linux LP64 ABI1 policy. Native/emitted/external
+// allocator/libc implementation qualification is separate from this source law.
+bool critical_command_startup_codec_source_frame_bytes(size_t *) noexcept;
+// This pure profile query itself owns exactly its output pointer and bool return.
+// Caller preadmits this accessor's size_t return before invoking the profile.
+constexpr size_t critical_command_startup_codec_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif

@@ -1245,3 +1245,121 @@ bool critical_command_current_heap_observer_frame_bytes(size_t *output) noexcept
 	return false;
 #endif
 }
+
+namespace
+{
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+constexpr size_t critical_startup_codec_encode_callers =
+	// encode_bounded: command/output/reserve/context; outer/working; status/result.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(critical_command_codec_result) +
+	// encoder_working_bytes and unchanged encode: command/output/wire/result each.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(critical_command_codec_result));
+constexpr size_t critical_startup_codec_encode_loops =
+	// Both actual range loops: hidden range reference, begin/end const iterators,
+	// current key/revision reference and original unsigned pad. Sequential loops
+	// are summed conservatively, using each actual owning iterator type.
+	2 * sizeof(void *) + 2 * sizeof(std::vector<critical_entity_key>::const_iterator) +
+	sizeof(unsigned int) + 2 * sizeof(void *) +
+	2 * sizeof(std::vector<critical_expected_revision>::const_iterator) + sizeof(unsigned int);
+constexpr size_t critical_startup_codec_append_read =
+	// Largest append_le<uint64_t>: output reference/value/index and converted
+	// uint8_t argument. Smaller actual uint16/uint32 instances are dominated.
+	sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(uint8_t) +
+	// read_le: input/offset/value, size/index, decoded uint64 and bool return.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(uint64_t) + sizeof(bool) +
+	// Operation-id array begin/end/data/size forwarding source carriers.
+	4 * (2 * sizeof(void *)) + 2 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t critical_startup_codec_decode_callers =
+	// decode_bounded: input/output/reserve/context/retained-output; size/outer;
+	// live/offset/key_limit/retained; type/source; key/revision/payload counts;
+	// actual native_auction_header/required and returned codec result.
+	5 * sizeof(void *) + 6 * sizeof(size_t) + 2 * sizeof(uint16_t) + 3 * sizeof(uint32_t) +
+	sizeof(bool) + sizeof(uint64_t) + sizeof(critical_command_codec_result) +
+	// Schema-two preflight intent_offset/intent_size; the later intent_size;
+	// key and revision loops index/pad/request/extra. These lexical alternatives
+	// are summed conservatively, not multiplied by key/revision element count.
+	2 * sizeof(size_t) + sizeof(uint32_t) + 2 * (sizeof(uint32_t) + 3 * sizeof(size_t)) +
+	// std::max's actual two size_t temporary arguments on the growth branch.
+	2 * sizeof(size_t);
+constexpr size_t critical_startup_codec_decode_observation =
+	// decode_admit(command,extra,reserve,context,live): 3P+2N+B and heap local N;
+	// decode_heap(command,output): 2P+N+B; checked add(reference,amount): P+N+B.
+	3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Genuine vector capacity/size queries are sequential. The existing owning
+	// observation subtotal covers their complete source scopes and checked-add
+	// descendants; its fresh-copy observation excess is conservatively retained.
+	critical_normalize_observation_frames;
+constexpr size_t critical_startup_codec_vector_defaults =
+	// Default vector, _Vector_base, _Vector_impl, allocator, new_allocator and
+	// _Vector_impl_data each own this. Four decoded members plus encoder result.
+	// This is the actual default constructor chain, not a command-copy profile.
+	5 * 6 * sizeof(void *) +
+	// Actual vector/_Vector_base destructor and get-allocator formal/return,
+	// surrounding genuine trivial _Destroy/deallocate closure. Sum all five
+	// member/result cleanup alternatives, including exception paths.
+	5 * (4 * sizeof(void *) + critical_normalize_allocator_frames);
+constexpr size_t critical_startup_codec_vector_operations =
+	// Same genuine GNU13 source algorithms already named by the normalize owner:
+	// allocator/traits/C++20 construct/deallocate; trivial pointer copy/relocate;
+	// reserve; forward insert; assign; const/rvalue push/emplace/realloc_insert;
+	// iterator/query/check_len/advance. Actual byte/key/revision T is trivial;
+	// pointer iterators and returned tagged normal iterators use selected LP64.
+	// No sort/copy-command profile is aliased to this codec source allowance.
+	critical_normalize_vector_frames +
+	// Original encoder result vector move; original decoded command's four
+	// member moves/old-destination disposal/moved-from destruction. Authentic
+	// inline _M_move_assign temporary vectors are part of these owning closures.
+	critical_normalize_move_frames + critical_normalize_move_frames_total;
+constexpr size_t critical_startup_codec_c_callers =
+	// Actual memcmp(input,magic,size)->int; memcpy/memmove(dst,src,n)->pointer.
+	// External libc/operator-new/delete implementation remains qualification-open.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t critical_startup_codec_complete_source =
+	critical_startup_codec_encode_callers + critical_startup_codec_encode_loops +
+	critical_startup_codec_append_read + critical_startup_codec_decode_callers +
+	critical_startup_codec_decode_observation + critical_startup_codec_vector_defaults +
+	critical_startup_codec_vector_operations + critical_startup_codec_c_callers +
+	// Complete authentic envelope/native-auction/legacy/zero/key/binary-search
+	// predicate closure dominates the exact envelope-only codec subset.
+	critical_normalize_valid_frames;
+#endif
+} // namespace
+
+bool critical_command_startup_codec_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	// Actual captured ordinary LP64 selected-source policy, not merely a GNU
+	// version label. A profile query never scans storage or grants admission.
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(std::allocator<uint8_t>) != 1 ||
+		      sizeof(std::allocator<critical_entity_key>) != 1 ||
+		      sizeof(std::allocator<critical_expected_revision>) != 1 ||
+		      sizeof(std::vector<uint8_t>::iterator) != sizeof(void *) ||
+		      sizeof(std::vector<critical_entity_key>::const_iterator) != sizeof(void *) ||
+		      sizeof(std::vector<critical_expected_revision>::const_iterator) !=
+			      sizeof(void *) ||
+		      !std::is_trivially_copyable_v<critical_entity_key> ||
+		      !std::is_trivially_copyable_v<critical_expected_revision>)
+		return false;
+	// Result vector/decoded command and temporary decoded key/revision inline
+	// objects are already owned by unchanged real codec admission. Input/prior
+	// output heaps and caller frames remain outer. This adds source closure only.
+	*output = critical_startup_codec_complete_source;
+	return true;
+#else
+	return false;
+#endif
+}
