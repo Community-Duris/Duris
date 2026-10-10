@@ -55,6 +55,27 @@ class quest_mobile_native_original_proclib
 	friend class quest_mobile_native_item_stage;
 	static int prepare(P_obj, char *name, char *arguments, size_t *library_index);
 	static bool probe(P_obj, size_t library_index, bool *periodic) noexcept;
+	// Full original five-parser preparation and original known-library periodic
+	// probes. Caller owns original locked/game-thread proof, input strings and
+	// prior private object/description storage in outer, EXCLUDING genuine G.
+	// current_global observes only genuine G; reserve admits a complete total.
+	// Reobserve private object and G on EVERY return before another callback.
+	// New descriptor storage is admitted once, retained through return, and
+	// transferred only after every refusal point. No event/bridge/prototype
+	// publication, account/admission/activation authority is supplied.
+	// prepare: original 0/-1/library_index+1 statuses; errno distinguishes
+	// EINVAL semantic refusal, ENOBUFS budget/overflow, ENOMEM allocation,
+	// ENOTSUP unsupported source/ABI, EOVERFLOW undefined fixed-token/suffix
+	// overflow. probe preserves output on failure and actual periodic value.
+	static int prepare_bounded(P_obj, char *, char *, size_t *,
+				   bool (*current_global)(size_t *, void *) noexcept,
+				   bool (*reserve)(size_t, void *) noexcept, void *,
+				   size_t) noexcept;
+	static bool probe_bounded(P_obj, size_t, bool *,
+				  bool (*current_global)(size_t *, void *) noexcept,
+				  bool (*reserve)(size_t, void *) noexcept, void *,
+				  size_t) noexcept;
+
 	static bool retained_library(size_t, native_mobile_birth_library *) noexcept;
 	static bool retained_index(native_mobile_birth_library, size_t *) noexcept;
 };

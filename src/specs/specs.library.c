@@ -815,3 +815,573 @@ bool quest_mobile_native_original_proclib::retained_index(native_mobile_birth_li
 	}
 	return false;
 }
+
+#include "core/utility.h"
+#include <algorithm>
+#include <cerrno>
+#include <initializer_list>
+
+namespace
+{
+using original_proclib_current = bool (*)(size_t *, void *) noexcept;
+using original_proclib_reserve = bool (*)(size_t, void *) noexcept;
+
+struct original_proclib_budget
+{
+	original_proclib_current current;
+	original_proclib_reserve reserve;
+	void *context;
+	size_t outer, fixed, retained = 0;
+
+	bool charge(size_t prospective = 0) const noexcept
+	{
+		size_t global = 0, total = outer;
+		if (!current || !reserve || !current(&global, context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		for (const size_t bytes : { fixed, retained, prospective, global })
+		{
+			if (bytes > SIZE_MAX - total)
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			total += bytes;
+		}
+		if (!reserve(total, context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		return true;
+	}
+	bool finish(int error) const noexcept
+	{
+		if (!charge())
+			return false;
+		errno = error;
+		return !error;
+	}
+	void *allocate(size_t bytes) noexcept
+	{
+		if (!bytes || bytes > SIZE_MAX - malloc_header())
+		{
+			errno = ENOBUFS;
+			return nullptr;
+		}
+		const size_t storage = bytes + malloc_header();
+		if (!charge(storage))
+			return nullptr;
+		void *result = __try_malloc(bytes, MEM_TAG_EXDESCD, __FILE__, __LINE__);
+		if (!result)
+		{
+			errno = ENOMEM;
+			return nullptr;
+		}
+		retained += storage; // charge proved this addition cannot overflow.
+		if (!charge())
+		{
+			__free(result, __FILE__, __LINE__);
+			retained -= storage;
+			return nullptr;
+		}
+		return result;
+	}
+	void release(void *allocation, size_t bytes) noexcept
+	{
+		if (!allocation)
+			return;
+		__free(allocation, __FILE__, __LINE__);
+		retained -= bytes + malloc_header();
+	}
+	static constexpr size_t malloc_header() noexcept
+	{
+#ifdef MEMCHK
+		return sizeof(ALLOCATION_HEADER);
+#else
+		return 0;
+#endif
+	}
+};
+
+struct original_proclib_log_relay
+{
+	original_proclib_budget *budget;
+	size_t initial_global;
+	static bool reserve_current(size_t request, void *opaque) noexcept
+	{
+		auto &relay = *static_cast<original_proclib_log_relay *>(opaque);
+		size_t global = 0;
+		if (request < relay.initial_global ||
+		    !relay.budget->current(&global, relay.budget->context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		request -= relay.initial_global;
+		if (global > SIZE_MAX - request ||
+		    !relay.budget->reserve(request + global, relay.budget->context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		return true;
+	}
+};
+
+// These are actual companion buffers, not a prediction of a compiler frame.
+// They accommodate each of the five original parser layouts, including the
+// sayresponse parser's MAX_STRING_LENGTH * 2 + 2 parameter destination.
+struct original_proclib_parse_buffers
+{
+	char first[MAX_STRING_LENGTH], second[MAX_STRING_LENGTH];
+	char params[MAX_STRING_LENGTH * 2 + 2];
+};
+
+// Declaration-level inventories of the original allocation-free token helpers:
+// getNext(source,nextString,p1,quote,nIdx,result), one_argument(argument,first,
+// begin,look_at,result), fill_word(argument,result), search_block(arg,list,exact,
+// i,l,result), strn_cmp(arg1,arg2,n,chk,i,result), and is_number(str,result).
+constexpr size_t original_proclib_token_declarations =
+	4 * sizeof(char *) + sizeof(char) + sizeof(int) + 3 * sizeof(char *) + 2 * sizeof(int) +
+	sizeof(char *) + sizeof(int) + sizeof(char *) + sizeof(const char **) + 4 * sizeof(int) +
+	2 * sizeof(char *) + sizeof(unsigned int) + 3 * sizeof(int) + sizeof(char *) + sizeof(bool);
+// Actual literal format-companion declarations: budget/destination/format,
+// longest pack(int,char*,char*), capacity/required/request/rendered/available/
+// copy_size/observed/error; malloc/free/snprintf/memcpy/fprintf call carriers.
+// The original checked_vsnprintf va_list objects are NOT called or counted.
+// Native libc implementation qualification remains the existing libc policy.
+constexpr size_t original_proclib_format_declarations =
+	6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(int) + sizeof(bool) +
+	10 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(int);
+// __try_malloc/__free and the real MEMCHK init/increment/decrement paths are
+// allocation-free for MEMCHK <= 1. Their literal header is charged separately.
+constexpr size_t original_proclib_malloc_declarations =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(int) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(int) + sizeof(void *) + 2 * sizeof(const char *) +
+	2 * sizeof(size_t) + 4 * sizeof(int);
+constexpr size_t original_proclib_control_declarations =
+	// charge(this,prospective,global,total,range array/begin/end/bytes,result),
+	// allocate(this,bytes,storage,result) and finish(this,error,result).
+	3 * sizeof(void *) + 9 * sizeof(size_t) + sizeof(bool) +
+	sizeof(std::initializer_list<size_t>) + 2 * sizeof(void *) + 2 * sizeof(size_t) +
+	sizeof(void *) + sizeof(int) + sizeof(bool) +
+	// Real logging relay object and reserve_current(request,opaque,relay,
+	// global,result), plus next_bounded(source/destination/budget/first,
+	// quote/length/cursor/global/live/range array/begin/end/bytes/result).
+	sizeof(original_proclib_log_relay) + 2 * sizeof(void *) + 2 * sizeof(size_t) +
+	sizeof(bool) + 5 * sizeof(void *) + sizeof(char) + 8 * sizeof(size_t) + 2 * sizeof(void *) +
+	sizeof(bool) + sizeof(std::initializer_list<size_t>) +
+	// repeated strcpy/strlen/strchr/strstr/atoi leaf call declarations.
+	12 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(int);
+
+// Use the ORIGINAL token routine whenever it is safe and allocation-free.
+// Its unquoted oversized-input branch originally logs and returns no token;
+// reproduce that exact diagnostic through the existing bounded log owner.
+bool original_proclib_next_bounded(char *&source, char *destination,
+				   original_proclib_budget &budget) noexcept
+{
+	if (source)
+	{
+		char *first = source;
+		while (*first && isspace(*first))
+			++first;
+		const char quote = ISQUOTE(*first);
+		if (quote)
+		{
+			size_t length = 0;
+			for (const char *cursor = first + 1; *cursor && *cursor != quote; ++cursor)
+				if (++length >= MAX_STRING_LENGTH)
+				{
+					// The original fixed array would overflow; no defined parser
+					// result is replaced by accepting a truncated token.
+					errno = EOVERFLOW;
+					return false;
+				}
+		}
+		else if (strlen(source) >= MAX_INPUT_LENGTH)
+		{
+			// diagnostic_logit_bounded reserves through the authentic caller.
+			// Its callback receives a total including the fresh global bytes.
+			size_t global = 0;
+			if (!budget.charge() || !budget.current(&global, budget.context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			size_t live = budget.outer;
+			for (const size_t bytes : { budget.fixed, budget.retained, global })
+			{
+				if (bytes > SIZE_MAX - live)
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				live += bytes;
+			}
+			original_proclib_log_relay relay{ &budget, global };
+			if (!diagnostic_logit_bounded(original_proclib_log_relay::reserve_current,
+						      &relay, live, LOG_SYS,
+						      "one_argument: argument too long."))
+				return false;
+			destination[0] = '\0';
+			source = nullptr;
+			return budget.charge();
+		}
+	}
+	source = proclib_getNext_string(source, destination);
+	return budget.charge();
+}
+
+// Literal owning companion of checked_vsnprintf's measure/malloc/render/copy/
+// warning/free algorithm. The actual separate malloc is admitted before it is
+// made. Preserve the exact original destination truncation and stderr warning.
+// These parser destinations never alias their arguments. Native libc/stdio
+// qualification is still part of the existing combined major-plan gate.
+template <typename... Arguments>
+bool original_proclib_format_bounded(original_proclib_budget &budget, char *destination,
+				     size_t capacity, const char *format,
+				     Arguments... arguments) noexcept
+{
+	const int required = snprintf(nullptr, 0, format, arguments...);
+	if (required < 0)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!budget.charge(static_cast<size_t>(required) + 1))
+		return false;
+	const size_t request = static_cast<size_t>(required) + 1;
+	char *rendered = static_cast<char *>(malloc(request));
+	if (!rendered)
+		return budget.finish(ENOMEM);
+	budget.retained += request;
+	if (!budget.charge())
+	{
+		free(rendered);
+		budget.retained -= request;
+		budget.finish(ENOBUFS);
+		return false;
+	}
+	snprintf(rendered, request, format, arguments...);
+	if (capacity)
+	{
+		const size_t available = capacity - 1;
+		const size_t copy_size = static_cast<size_t>(required) < available ?
+						 static_cast<size_t>(required) :
+						 available;
+		memcpy(destination, rendered, copy_size);
+		destination[copy_size] = '\0';
+	}
+	if (static_cast<size_t>(required) >= capacity)
+		fprintf(stderr,
+			"checked_snprintf: output requires %d bytes but destination holds %zu; truncated.\n",
+			required, capacity ? capacity - 1 : 0);
+	const bool observed = budget.charge();
+	const int error = observed ? 0 : ENOBUFS;
+	free(rendered);
+	budget.retained -= request;
+	if (!budget.finish(error))
+		return false;
+	return true;
+}
+
+char *original_proclib_parse_bounded(const ObjProcLib &library, char *argument,
+				     original_proclib_budget &budget,
+				     size_t &allocation_bytes) noexcept
+{
+	original_proclib_parse_buffers buffers;
+	char *arg1 = buffers.first, *arg2 = buffers.second, *params = buffers.params;
+	int chance = 0;
+	size_t capacity = 0;
+	if (library.parse_params == proclibobj_parse_default)
+	{
+		char *result = static_cast<char *>(budget.allocate(2));
+		if (!result)
+			return nullptr;
+		result[0] = ' ';
+		result[1] = '\0';
+		allocation_bytes = 2;
+		return result;
+	}
+	if (!original_proclib_next_bounded(argument, arg1, budget))
+		return nullptr;
+	if (!arg1[0])
+	{
+		errno = EINVAL;
+		return nullptr;
+	}
+	if (library.parse_params == proclibobj_parse_actroom ||
+	    library.parse_params == proclibobj_parse_actworn)
+	{
+		chance = atoi(arg1);
+		if (!chance || !original_proclib_next_bounded(argument, arg1, budget))
+		{
+			if (!chance)
+				errno = EINVAL;
+			return nullptr;
+		}
+		if (!arg1[0] || (!strstr(arg1, "%p") && !strstr(arg1, "%q")))
+		{
+			errno = EINVAL;
+			return nullptr;
+		}
+		if (library.parse_params == proclibobj_parse_actworn && !strstr(arg1, "%n"))
+		{
+			errno = EINVAL;
+			return nullptr;
+		}
+		while (strchr(arg1, '%'))
+			*strchr(arg1, '%') = '$';
+		capacity = MAX_STRING_LENGTH;
+		if (library.parse_params == proclibobj_parse_actworn)
+		{
+			if (!original_proclib_next_bounded(argument, arg2, budget))
+				return nullptr;
+			if (!arg2[0] || (!strstr(arg2, "%p") && !strstr(arg2, "%q")))
+			{
+				errno = EINVAL;
+				return nullptr;
+			}
+			while (strchr(arg2, '%'))
+				*strchr(arg2, '%') = '$';
+			if (!original_proclib_format_bounded(budget, params, capacity,
+							     "%d\xFF%s\xFF%s", chance, arg1, arg2))
+				return nullptr;
+		}
+		else if (!original_proclib_format_bounded(budget, params, capacity, "%d\xFF%s",
+							  chance, arg1))
+			return nullptr;
+	}
+	else if (library.parse_params == proclibobj_parse_sayresponse)
+	{
+		if (!original_proclib_next_bounded(argument, arg2, budget))
+			return nullptr;
+		if (!arg2[0])
+		{
+			errno = EINVAL;
+			return nullptr;
+		}
+		capacity = MAX_STRING_LENGTH * 2 + 2;
+		if (!original_proclib_format_bounded(budget, params, capacity, "%s\xFF%s", arg1,
+						     arg2))
+			return nullptr;
+	}
+	else if (library.parse_params == proclibobj_parse_transporter)
+	{
+		if (is_number(arg1))
+		{
+			errno = EINVAL;
+			return nullptr;
+		}
+		if (!original_proclib_next_bounded(argument, arg2, budget))
+			return nullptr;
+		if (!arg2[0] || !is_number(arg2) || atoi(arg2) <= 0)
+		{
+			errno = EINVAL;
+			return nullptr;
+		}
+		capacity = MAX_STRING_LENGTH + 16;
+		if (!original_proclib_format_bounded(budget, params, capacity, "%s\xFF%d", arg1,
+						     atoi(arg2)))
+			return nullptr;
+	}
+	else
+	{
+		// A future parser needs its actual owning companion, never prediction.
+		errno = ENOTSUP;
+		return nullptr;
+	}
+	allocation_bytes = strlen(params) + 1;
+	char *result = static_cast<char *>(budget.allocate(allocation_bytes));
+	if (!result)
+		return nullptr;
+	strcpy(result, params);
+	return result;
+}
+}
+
+int quest_mobile_native_original_proclib::prepare_bounded(
+	P_obj obj, char *procName, char *args, size_t *library_index,
+	bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	_GLIBCXX_USE_CXX11_ABI != 1 || !defined(__linux__) || !defined(__GLIBC__) ||            \
+	!defined(__x86_64__) || (defined(MEMCHK) && MEMCHK > 1)
+	(void)obj;
+	(void)procName;
+	(void)args;
+	(void)library_index;
+	(void)current_global;
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return -1;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4)
+	{
+		errno = ENOTSUP;
+		return -1;
+	}
+	// Actual entry parameters/locals, nested parser's real buffers and typed
+	// helper inventories. Input/old object/old description storage is caller-owned.
+	constexpr size_t fixed =
+		sizeof(original_proclib_budget) + sizeof(original_proclib_parse_buffers) +
+		// obj/name/args/index/current/reserve/context, outer, libIdx,
+		// params/node/keyword, their allocation lengths, suffix/tempSuff,
+		// traversal cursor, keyword[50], status/error and parser locals.
+		11 * sizeof(void *) + 5 * sizeof(size_t) + 5 * sizeof(int) + 50 +
+		6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int) +
+		original_proclib_token_declarations + original_proclib_format_declarations +
+		original_proclib_malloc_declarations + original_proclib_control_declarations;
+	original_proclib_budget budget{ current_global, reserve_scratch_peak, context,
+					outer_live_scratch, fixed };
+	if (!budget.charge())
+		return -1;
+	if (!obj || !procName || !library_index)
+	{
+		budget.finish(EINVAL);
+		return -1;
+	}
+	int libIdx = -1;
+	for (libIdx = (sizeof(object_proc_libs) / sizeof(ObjProcLib)) - 1; libIdx >= 0; --libIdx)
+		if (!strn_cmp(procName, object_proc_libs[libIdx].procName,
+			      strlen(object_proc_libs[libIdx].procName)) &&
+		    object_proc_libs[libIdx].func)
+			break;
+	if (libIdx == -1)
+	{
+		budget.finish(EINVAL);
+		return -1;
+	}
+	size_t params_bytes = 0, keyword_bytes = 0;
+	char *params = original_proclib_parse_bounded(object_proc_libs[libIdx], args, budget,
+						      params_bytes);
+	if (!params)
+	{
+		budget.finish(errno ? errno : EINVAL);
+		return libIdx + 1;
+	}
+	int suffix = 0;
+	for (extra_descr_data *description = obj->ex_description; description;
+	     description = description->next)
+		if (description->keyword && !strn_cmp(description->keyword, "_proclib_", 9) &&
+		    !strn_cmp(description->keyword + 9, object_proc_libs[libIdx].procName,
+			      strlen(object_proc_libs[libIdx].procName)))
+		{
+			const int tempSuff = atoi(description->keyword +
+						  (9 + strlen(object_proc_libs[libIdx].procName)));
+			if (tempSuff > suffix)
+				suffix = tempSuff;
+		}
+	if (suffix == INT_MAX)
+	{
+		budget.release(params, params_bytes);
+		budget.finish(EOVERFLOW);
+		return libIdx + 1;
+	}
+	char keyword[50];
+	snprintf(keyword, 50, "_proclib_%s%d", object_proc_libs[libIdx].procName, suffix + 1);
+	keyword_bytes = strlen(keyword) + 1;
+	auto *ed = static_cast<extra_descr_data *>(budget.allocate(sizeof(extra_descr_data)));
+	char *saved_keyword = ed ? static_cast<char *>(budget.allocate(keyword_bytes)) : nullptr;
+	if (!ed || !saved_keyword)
+	{
+		const int error = errno ? errno : ENOMEM;
+		budget.release(ed, sizeof(extra_descr_data));
+		budget.release(params, params_bytes);
+		budget.finish(error);
+		return libIdx + 1;
+	}
+	strcpy(saved_keyword, keyword);
+	ed->keyword = saved_keyword;
+	ed->description = params;
+	ed->next = obj->ex_description;
+	// Every possible refusal occurs before the original one-way descriptor/flag
+	// mutation. Reobserve genuine G immediately before transferring ownership.
+	if (!budget.charge())
+	{
+		const int error = errno;
+		budget.release(saved_keyword, keyword_bytes);
+		budget.release(ed, sizeof(extra_descr_data));
+		budget.release(params, params_bytes);
+		budget.finish(error);
+		return libIdx + 1;
+	}
+	obj->ex_description = ed;
+	obj->str_mask |= STRUNG_EDESC;
+	SET_BIT(obj->extra_flags, ITEM_PROCLIB);
+	*library_index = static_cast<size_t>(libIdx);
+	// Allocation-free final attachment does not alter global storage; caller
+	// reobserves its private object now, before any next mutation/callback.
+	errno = 0;
+	return 0;
+#endif
+}
+
+bool quest_mobile_native_original_proclib::probe_bounded(
+	P_obj object, size_t index, bool *periodic,
+	bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	_GLIBCXX_USE_CXX11_ABI != 1 || !defined(__linux__) || !defined(__GLIBC__) ||            \
+	!defined(__x86_64__) || (defined(MEMCHK) && MEMCHK > 1)
+	(void)object;
+	(void)index;
+	(void)periodic;
+	(void)current_global;
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	// Actual entry carrier object, selected function and returned bool. Known
+	// original CMD_SET_PERIODIC bodies return before further callback work.
+	// sayresponse/transporter declare their first buffers BEFORE that test;
+	// count their real declarations even though the periodic branch does not
+	// use them. No assumption that the compiler optimizes those arrays away.
+	constexpr size_t fixed =
+		sizeof(original_proclib_budget) + 8 * sizeof(void *) + 2 * sizeof(size_t) +
+		sizeof(bool) + 3 * sizeof(void *) + 2 * sizeof(int) +
+		std::max(MAX_STRING_LENGTH + sizeof(extra_descr_data *) + 3 * sizeof(int),
+			 MAX_INPUT_LENGTH + sizeof(extra_descr_data *) + sizeof(int)) +
+		original_proclib_control_declarations;
+	original_proclib_budget budget{ current_global, reserve_scratch_peak, context,
+					outer_live_scratch, fixed };
+	if (!budget.charge())
+		return false;
+	if (!object || !periodic || index >= ARRAY_SIZE(object_proc_libs) ||
+	    !object_proc_libs[index].func)
+		return budget.finish(EINVAL);
+	const auto function = object_proc_libs[index].func;
+	if (function != proclibobj_hummer && function != proclibobj_actroom &&
+	    function != proclibobj_actworn && function != proclibobj_sayresponse &&
+	    function != proclibobj_transporter)
+		return budget.finish(ENOTSUP);
+	try
+	{
+		const bool requested = function(object, nullptr, CMD_SET_PERIODIC, nullptr);
+		if (!budget.finish(0))
+			return false;
+		*periodic = requested;
+		return true;
+	}
+	catch (...)
+	{
+		return budget.finish(EINVAL);
+	}
+#endif
+}
