@@ -89,4 +89,20 @@ bool shop_trade_recovery_manifest_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_manifest_heap_bytes = nullptr) noexcept;
 
+// Complete original standalone role/presence/count/digest/UID frame companions.
+// Outer owns authentic input/prior output and all other caller storage. Strong
+// output and optional actual capacity scalar; no recovery/admission authority.
+bool shop_trade_recovery_forest_shape_valid_bounded(const shop_trade_recovery_forest_binding &,
+						    shop_trade_recovery_forest_role,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept;
+bool shop_trade_recovery_forest_encode_bounded(
+	const shop_trade_recovery_forest_binding &, shop_trade_recovery_forest_role,
+	std::vector<uint8_t> *, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live, size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool shop_trade_recovery_forest_decode_bounded(
+	std::span<const uint8_t>, shop_trade_recovery_forest_role,
+	shop_trade_recovery_forest_binding *, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_forest_heap_bytes = nullptr) noexcept;
+
 #endif

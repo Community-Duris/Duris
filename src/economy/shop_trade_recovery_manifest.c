@@ -993,3 +993,166 @@ bool shop_trade_recovery_manifest_decode_bounded(std::span<const uint8_t> bytes,
 		return false;
 	}
 }
+
+// Complete original standalone forest companions; unselected.
+bool shop_trade_recovery_forest_shape_valid_bounded(
+	const shop_trade_recovery_forest_binding &binding, shop_trade_recovery_forest_role role,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	constexpr size_t frames = 3 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) +
+				  sizeof(size_t) + sizeof(bool) + sizeof(size_t);
+	size_t base = outer_live;
+	if (!valid_role(role) || !shop_manifest_storage_profile() ||
+	    !shop_manifest_add(base, frames) || !shop_manifest_admit(base, 0, reserve, context))
+		return false;
+	return shop_manifest_binding_valid_bounded(binding, role, reserve, context, base);
+}
+
+bool shop_trade_recovery_forest_encode_bounded(const shop_trade_recovery_forest_binding &binding,
+					       shop_trade_recovery_forest_role role,
+					       std::vector<uint8_t> *out,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live,
+					       size_t *retained_encoded_heap_bytes) noexcept
+{
+	// Parameters and real base survive the pre-candidate shape proof.
+	constexpr size_t parameters = 5 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) +
+				      sizeof(size_t) + sizeof(bool);
+	size_t base = outer_live;
+	if (!out || !shop_manifest_storage_profile() ||
+	    !shop_manifest_add(base, parameters + sizeof(base)) ||
+	    !shop_trade_recovery_forest_shape_valid_bounded(binding, role, reserve, context, base))
+		return false;
+	constexpr size_t method_frames =
+		sizeof(std::vector<uint8_t>) + 3 * sizeof(size_t) +
+		// append_le: out, value, unsigned encoded, index; largest instantiation.
+		sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(size_t) +
+		// Range-for begin/end/reference and actual uid by-value carrier.
+		3 * sizeof(void *) + sizeof(uint64_t) +
+		// Default vector/base/impl/data constructors and genuine by-value allocator.
+		4 * sizeof(void *) + sizeof(std::allocator<uint8_t>) +
+		// add/admit actual reference/scalar/function/context/result carriers.
+		5 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool) +
+		// Exact already-defined reserve/fitting push/insert/copy/advance/cleanup.
+		shop_manifest_vector_frames;
+	if (!shop_manifest_add(base, method_frames) ||
+	    !shop_manifest_admit(base, 0, reserve, context))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<std::vector<uint8_t>>);
+	try
+	{
+		std::vector<uint8_t> candidate;
+		const size_t requested = SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+					 binding.ordered_item_uids.size() * sizeof(uint64_t);
+		// Fresh original reserve requests exactly requested bytes. Full fixed
+		// STL call profile stays in base for fitting append/insert too.
+		if (!shop_manifest_admit(base, requested, reserve, context))
+			return false;
+		candidate.reserve(SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+				  binding.ordered_item_uids.size() * sizeof(uint64_t));
+		append_le<uint8_t>(&candidate, static_cast<uint8_t>(role));
+		append_le<uint8_t>(&candidate, binding.present ? 1 : 0);
+		append_le<uint16_t>(&candidate,
+				    static_cast<uint16_t>(binding.ordered_item_uids.size()));
+		append_le<uint32_t>(&candidate, binding.canonical_bytes);
+		candidate.insert(candidate.end(), binding.canonical_digest.begin(),
+				 binding.canonical_digest.end());
+		for (const auto uid : binding.ordered_item_uids)
+			append_le<uint64_t>(&candidate, uid);
+		size_t current = base;
+		if (!shop_manifest_add(current, candidate.capacity()) ||
+		    !shop_manifest_admit(current, shop_manifest_move_frames, reserve, context))
+			return false;
+		const size_t retained = candidate.capacity();
+		*out = std::move(candidate);
+		if (retained_encoded_heap_bytes)
+			*retained_encoded_heap_bytes = retained;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_recovery_forest_decode_bounded(std::span<const uint8_t> bytes,
+					       shop_trade_recovery_forest_role expected_role,
+					       shop_trade_recovery_forest_binding *out,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live,
+					       size_t *retained_forest_heap_bytes) noexcept
+{
+	if (!out || !shop_manifest_storage_profile() || !valid_role(expected_role) ||
+	    bytes.size() < SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES ||
+	    bytes.size() > SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+				   SHOP_TRADE_RECOVERY_MAX_UIDS * sizeof(uint64_t))
+		return false;
+	constexpr size_t frames =
+		sizeof(std::span<const uint8_t>) + 4 * sizeof(void *) +
+		sizeof(shop_trade_recovery_forest_role) + sizeof(size_t) + sizeof(bool) +
+		// Original cursor/end, role/present/count, candidate and UID reference.
+		3 * sizeof(void *) + 2 * sizeof(uint8_t) + sizeof(uint16_t) +
+		sizeof(shop_trade_recovery_forest_binding) + 3 * sizeof(size_t) +
+		// Largest read_le instantiation: cursor/end/out, unsigned value/index/result.
+		3 * sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+		// Candidate aggregate/vector default construction, no heap allocation.
+		5 * sizeof(void *) + sizeof(std::allocator<uint64_t>) +
+		// Actual add/admit/shape handoff scalar and pointer carriers.
+		5 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool) +
+		shop_manifest_vector_frames;
+	size_t base = outer_live;
+	if (!shop_manifest_add(base, frames) || !shop_manifest_admit(base, 0, reserve, context))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<shop_trade_recovery_forest_binding>);
+	try
+	{
+		const uint8_t *cursor = bytes.data(), *end = cursor + bytes.size();
+		uint8_t role = 0, present = 0;
+		uint16_t count = 0;
+		shop_trade_recovery_forest_binding candidate;
+		if (!read_le(&cursor, end, &role) || role != static_cast<uint8_t>(expected_role) ||
+		    !read_le(&cursor, end, &present) || present > 1 ||
+		    !read_le(&cursor, end, &count) || count > SHOP_TRADE_RECOVERY_MAX_UIDS ||
+		    !read_le(&cursor, end, &candidate.canonical_bytes) ||
+		    static_cast<size_t>(end - cursor) !=
+			    candidate.canonical_digest.size() + count * sizeof(uint64_t))
+			return false;
+		candidate.present = present != 0;
+		std::copy(cursor, cursor + candidate.canonical_digest.size(),
+			  candidate.canonical_digest.begin());
+		cursor += candidate.canonical_digest.size();
+		// Fresh original resize requests count*sizeof(uint64_t), even though
+		// the wire only claims count. Actual current capacity is observed.
+		size_t current = base;
+		if (candidate.ordered_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		    !shop_manifest_add(current,
+				       candidate.ordered_item_uids.capacity() * sizeof(uint64_t)) ||
+		    !shop_manifest_admit(current, count * sizeof(uint64_t), reserve, context))
+			return false;
+		candidate.ordered_item_uids.resize(count);
+		for (auto &uid : candidate.ordered_item_uids)
+			if (!read_le(&cursor, end, &uid))
+				return false;
+		current = base;
+		if (candidate.ordered_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		    !shop_manifest_add(current,
+				       candidate.ordered_item_uids.capacity() * sizeof(uint64_t)))
+			return false;
+		if (cursor != end || !shop_trade_recovery_forest_shape_valid_bounded(
+					     candidate, expected_role, reserve, context, current))
+			return false;
+		if (!shop_manifest_admit(current, shop_manifest_move_frames + 2 * sizeof(void *),
+					 reserve, context))
+			return false;
+		// Aggregate move's destination/source references coexist with vector move.
+		const size_t retained = candidate.ordered_item_uids.capacity() * sizeof(uint64_t);
+		*out = std::move(candidate);
+		if (retained_forest_heap_bytes)
+			*retained_forest_heap_bytes = retained;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
