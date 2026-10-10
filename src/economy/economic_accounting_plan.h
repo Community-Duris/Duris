@@ -154,4 +154,14 @@ economic_plan_decode_bounded(const std::span<const uint8_t> &encoded, economic_a
 			     size_t outer_live,
 			     size_t *retained_plan_heap_bytes = nullptr) noexcept;
 
+// Complete original tagged schema1 binding projection and digest. Genuine
+// whole command COPY/four vector allocations, exact sort/encode/prepend and
+// fixed-context SHA own prospective storage; original methods unchanged.
+// Caller owns authentic input/prior digest/all sibling state in outer_live.
+economic_accounting_error economic_command_binding_digest_bounded(const critical_command &,
+								  economic_digest *,
+								  bool (*)(size_t, void *) noexcept,
+								  void *context,
+								  size_t outer_live) noexcept;
+
 #endif
