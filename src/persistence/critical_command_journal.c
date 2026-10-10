@@ -2258,7 +2258,7 @@ bool critical_command_journal_init_bounded(const char *directory, size_t quota_b
 		journal_has_native = false;
 		try
 		{
-			journal_startup_init_workspace work{ { reserve, budget_context } };
+			journal_startup_init_workspace work{ { reserve, budget_context }, {} };
 			work.base = outer_live;
 			if (!journal_admit_add(work.base, sizeof(work)) ||
 			    !journal_admit_add(work.base, sizeof(lock)) ||
@@ -2406,7 +2406,7 @@ critical_command_journal_result critical_command_journal_replay_with_native_boun
 #else
 	try
 	{
-		journal_startup_replay_workspace work{ { reserve, budget_context } };
+		journal_startup_replay_workspace work{ { reserve, budget_context }, {} };
 		{
 			std::lock_guard<std::mutex> lock(journal_mutex);
 			journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
@@ -3170,7 +3170,7 @@ bool critical_command_journal_init_physical_bounded(const char *directory, size_
 		try
 		{
 			journal_startup_init_workspace work{
-				{ journal_physical_startup_budget::relay, &physical }
+				{ journal_physical_startup_budget::relay, &physical }, {}
 			};
 			work.base = outer_live;
 			if (!journal_admit_add(work.base, sizeof(work)) ||
@@ -3322,8 +3322,9 @@ critical_command_journal_result critical_command_journal_replay_with_native_phys
 		return critical_command_journal_result::quota_exceeded;
 	try
 	{
-		journal_startup_replay_workspace work{ { journal_physical_startup_budget::relay,
-							 &physical } };
+		journal_startup_replay_workspace work{
+			{ journal_physical_startup_budget::relay, &physical }, {}
+		};
 		{
 			std::lock_guard<std::mutex> lock(journal_mutex);
 			journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
