@@ -3020,6 +3020,21 @@ bool nevent_reserve_object_schedule_slot_bounded(bool (*reserve)(size_t, void *)
 namespace
 {
 // Owning ONLY this complete scheduler diagnostic's actual node/bucket requests.
+enum class object_schedule_debug_format
+{
+	message_0,
+	message_1,
+	message_2,
+	message_3,
+	message_4
+};
+
+enum class object_schedule_log_format
+{
+	message_0,
+	message_1
+};
+
 struct object_schedule_diagnostic_budget
 {
 	bool (*reserve)(size_t, void *) noexcept;
@@ -3040,15 +3055,60 @@ struct object_schedule_diagnostic_budget
 			reject();
 		return base + heap + output_now;
 	}
-	template <class... A> void debug(const char *format, A... args)
+	template <object_schedule_debug_format Format, class... A> void debug(A... args)
 	{
-		if (!diagnostic_debug_bounded(reserve, context, live(), format, args...))
-			reject();
+		if constexpr (Format == object_schedule_debug_format::message_0)
+		{
+			if (!diagnostic_debug_bounded(reserve, context, live(), "check_nevents: %s",
+						      args...))
+				reject();
+		}
+		else if constexpr (Format == object_schedule_debug_format::message_1)
+		{
+			if (!diagnostic_debug_bounded(
+				    reserve, context, live(),
+				    "check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld periodic_errors=%ld at %ld",
+				    args...))
+				reject();
+		}
+		else if constexpr (Format == object_schedule_debug_format::message_2)
+		{
+			if (!diagnostic_debug_bounded(reserve, context, live(),
+						      "add_event: No function!", args...))
+				reject();
+		}
+		else if constexpr (Format == object_schedule_debug_format::message_3)
+		{
+			if (!diagnostic_debug_bounded(reserve, context, live(),
+						      "add_event: Delay (%d) les than zero?!",
+						      args...))
+				reject();
+		}
+		else if constexpr (Format == object_schedule_debug_format::message_4)
+		{
+			if (!diagnostic_debug_bounded(
+				    reserve, context, live(),
+				    "add_event: dead ch '%s' in room r%d/v%d function %s", args...))
+				reject();
+		}
 	}
-	template <class... A> void logit(const char *filename, const char *format, A... args)
+	template <object_schedule_log_format Format, class... A>
+	void logit(const char *filename, A... args)
 	{
-		if (!diagnostic_logit_bounded(reserve, context, live(), filename, format, args...))
-			reject();
+		if constexpr (Format == object_schedule_log_format::message_0)
+		{
+			if (!diagnostic_logit_bounded(
+				    reserve, context, live(), filename,
+				    "add_event: scheduler sequence space exhausted", args...))
+				reject();
+		}
+		else if constexpr (Format == object_schedule_log_format::message_1)
+		{
+			if (!diagnostic_logit_bounded(
+				    reserve, context, live(), filename,
+				    "add_event: dead ch '%s' in room r%d/v%d function %s", args...))
+				reject();
+		}
 	}
 };
 
@@ -3160,7 +3220,7 @@ void nevent_integrity_problem_object_schedule_bounded(object_schedule_diagnostic
 	va_start(frame.arguments, format);
 	vsnprintf(frame.message, sizeof(frame.message), format, frame.arguments);
 	va_end(frame.arguments);
-	budget.debug("check_nevents: %s", frame.message);
+	budget.debug<object_schedule_debug_format::message_0>(frame.message);
 }
 static bool nevent_character_link_present_bounded(P_char character, struct char_link_data *expected,
 						  bool linking_list,
@@ -3462,8 +3522,7 @@ nevent_inspect_invariants_object_schedule_bounded(bool emit_summary,
 	report.errors += report.periodic_errors;
 
 	if (emit_summary || report.errors)
-		budget.debug(
-			"check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld periodic_errors=%ld at %ld",
+		budget.debug<object_schedule_debug_format::message_1>(
 			report.errors, report.wheel_count,
 			ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, ne_event_counter,
 			report.character_links, report.object_links, report.deferred_count,
@@ -3566,20 +3625,19 @@ bool nevent_schedule_object_bounded(event_func_type func, int delay, P_obj objec
 		// Same original object-only validation / emitted messages before allocation.
 		if (!func)
 		{
-			work.budget.debug("add_event: No function!");
+			work.budget.debug<object_schedule_debug_format::message_2>();
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::null_callback);
 		}
 		else if (delay < 0)
 		{
-			work.budget.debug("add_event: Delay (%d) les than zero?!", delay);
+			work.budget.debug<object_schedule_debug_format::message_3>(delay);
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::negative_delay);
 		}
 		else if (ne_event_sequence == ULLONG_MAX)
 		{
-			work.budget.logit(LOG_EXIT,
-					  "add_event: scheduler sequence space exhausted");
+			work.budget.logit<object_schedule_log_format::message_0>(LOG_EXIT);
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::sequence_exhausted);
 		}
@@ -3875,33 +3933,29 @@ bool nevent_schedule_character_bounded(event_func_type func, int delay, P_char c
 		// Complete original character-only/no-victim/no-payload validation and messages.
 		if (!func)
 		{
-			work.budget.debug("add_event: No function!");
+			work.budget.debug<object_schedule_debug_format::message_2>();
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::null_callback);
 		}
 		else if (delay < 0)
 		{
-			work.budget.debug("add_event: Delay (%d) les than zero?!", delay);
+			work.budget.debug<object_schedule_debug_format::message_3>(delay);
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::negative_delay);
 		}
 		else if (!IS_ALIVE(character) && func != release_mob_mem)
 		{
-			work.budget.logit(LOG_DEBUG,
-					  "add_event: dead ch '%s' in room r%d/v%d function %s",
-					  GET_NAME(character), character->in_room,
-					  ROOM_VNUM(character->in_room),
-					  get_function_name((void *)func));
-			work.budget.debug("add_event: dead ch '%s' in room r%d/v%d function %s",
-					  GET_NAME(character), character->in_room,
-					  ROOM_VNUM(character->in_room),
-					  get_function_name((void *)func));
+			work.budget.logit<object_schedule_log_format::message_1>(
+				LOG_DEBUG, GET_NAME(character), character->in_room,
+				ROOM_VNUM(character->in_room), get_function_name((void *)func));
+			work.budget.debug<object_schedule_debug_format::message_4>(
+				GET_NAME(character), character->in_room,
+				ROOM_VNUM(character->in_room), get_function_name((void *)func));
 			work.result = nevent_schedule_failure(nevent_schedule_status::dead_owner);
 		}
 		else if (ne_event_sequence == ULLONG_MAX)
 		{
-			work.budget.logit(LOG_EXIT,
-					  "add_event: scheduler sequence space exhausted");
+			work.budget.logit<object_schedule_log_format::message_0>(LOG_EXIT);
 			work.result =
 				nevent_schedule_failure(nevent_schedule_status::sequence_exhausted);
 		}

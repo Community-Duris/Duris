@@ -59,6 +59,7 @@ bool recovery_object_templates_ready() noexcept;
 // Existing SQL readiness/lookup/finalization and their caller gates stay intact.
 class flatfile_coin_boot_templates final
 {
+	friend class quest_mobile_native_flat_factory_scope;
 	friend class inert_item_stage;
 	friend class flatfile_coin_boot_stage;
 	friend class coin_physical_recovery_owner;
@@ -102,6 +103,7 @@ class shop_trade_original_procedure_binding_stage
 
     private:
 	friend class shop_trade_native_publication_owner;
+	friend class quest_mobile_native_item_stage;
 	friend class auction_native_publication_owner;
 	friend class quest_mobile_native_birth_owner;
 	friend class zone_reset_item_owner;

@@ -529,6 +529,9 @@ class quest_mobile_native_item_stage
 	// Private constructor-local census/parser types; no public allocation or source capability.
 	struct ordinary_item_constructor_budget;
 	struct ordinary_item_template_reader;
+	static const object_template *
+	cold_birth_bound_flat_template(const player_item_snapshot &,
+				       const native_mobile_birth_item_recipe &) noexcept;
 
 	// Genuine listed original read/weight/extract. Outer includes CURRENT G once,
 	// excludes probe-private during exact helper ownership; actual survivors stay
@@ -536,9 +539,10 @@ class quest_mobile_native_item_stage
 	bool read_original_shell_bounded(bool *, bool (*)(size_t *, void *) noexcept,
 					 bool (*)(size_t, void *) noexcept, void *,
 					 size_t) noexcept;
-	static bool
-	schedule_original_shell_event_bounded(P_obj, event_func_type, int,
-					      ordinary_item_constructor_budget &) noexcept;
+	static bool schedule_original_shell_event_bounded(
+		struct obj_data *,
+		void (*)(struct char_data *, struct char_data *, struct obj_data *, void *), int,
+		ordinary_item_constructor_budget &) noexcept;
 	bool capture_container_shell_bounded(quest_mobile_native_container_shell *,
 					     bool (*)(size_t *, void *) noexcept,
 					     bool (*)(size_t, void *) noexcept, void *,
@@ -782,11 +786,12 @@ bool quest_mobile_native_object_catalog_string_storage_bytes(size_t *) noexcept;
 
 // Actual owned shell-private requests, distinct from object/affect pool/catalog G.
 // Caller establishes actual probe ownership; strong output on invalid metadata.
-bool obj_native_birth_shell_private_storage_bytes(P_obj, size_t *) noexcept;
+bool obj_native_birth_shell_private_storage_bytes(struct obj_data *, size_t *) noexcept;
 size_t obj_native_birth_shell_private_storage_observer_frame_bytes() noexcept;
 // Outer excludes private probe requests and G, both refreshed by the actual helper.
 // Returned records real pool release before any fallible final observation.
-bool free_obj_native_birth_shell_bounded(P_obj, bool *, bool (*)(size_t *, void *) noexcept,
+bool free_obj_native_birth_shell_bounded(struct obj_data *, bool *,
+					 bool (*)(size_t *, void *) noexcept,
 					 bool (*)(size_t, void *) noexcept, void *,
 					 size_t) noexcept;
 
