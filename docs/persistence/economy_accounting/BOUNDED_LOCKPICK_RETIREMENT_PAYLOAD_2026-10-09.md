@@ -1,0 +1,7 @@
+# Add complete bounded lockpick retirement payload validation - 2026-10-09
+
+The original full item parser validates lockpick retirement literals through the allocating item-list decoder. The new bounded predicate uses the complete genuine decoder and preserves every original reason, UID, topology, revision, PICK and HOLD+1 literal check. The transferred item heap is observed only while the actual local vector remains unchanged and alive; fixed typed decoding remains allocation-free.
+
+Full original RAW and final formatted source reviews passed. The whole predicate and source/header inverses, genuine decoder dependency, actual local/destructor scopes, logical preprocessing, token streams and protected files authenticate. Registry authentication retains 420 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/lockpick-retirement-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.

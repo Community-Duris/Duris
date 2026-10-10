@@ -29,4 +29,9 @@ struct item_transfer_payload;
 // The shared codec separately selects the reserved kind8 and v9+ transport.
 // This validates the exact one-item original held-pick graph and literal binding.
 bool lockpick_retirement_payload_valid(const item_transfer_payload &) noexcept;
+// Complete unselected original held-pick literal predicate. Authentic outer
+// owns input/caller/global storage; this owns the full private decoded item.
+bool lockpick_retirement_payload_valid_bounded(const item_transfer_payload &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
 #endif
