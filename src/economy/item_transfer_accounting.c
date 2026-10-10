@@ -1317,3 +1317,97 @@ bool item_transfer_accounting_command_supported_bounded(const critical_command &
 		return false;
 	}
 }
+
+economic_accounting_error item_native_mobile_accounting_intent_bounded(
+	const critical_command &command, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, uint32_t actor_pid,
+	const economic_source_event *original_quest_event, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	if (!encoded || !actor_pid || actor_pid > INT32_MAX ||
+	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command.accounting_intent.empty() || command.accepted_at_usec ||
+	    command.publication_required || command.type != critical_command_type::item_transfer ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION &&
+	     command.payload_version !=
+		     ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION) ||
+	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
+		return error::invalid_identity;
+	constexpr size_t frames = sizeof(item_transfer_payload) + sizeof(economic_admission_facts) +
+				  10 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(uint32_t) +
+				  8 * sizeof(bool) + sizeof(error);
+	item_replay_accounting_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return error::capacity;
+	try
+	{
+		item_transfer_payload payload = {};
+		budget.payload = &payload;
+		size_t nested = 0;
+		if (!budget.prefix(nested))
+			return error::capacity;
+		if (!item_transfer_command_decode_payload_bounded(
+			    command, &payload, item_replay_accounting_budget::forward, &budget,
+			    nested) ||
+		    payload.native_mobile.final_giver_pid != actor_pid)
+			return budget.denied ? error::capacity : error::unauthorized;
+		economic_admission_facts facts;
+		facts.metadata.lineage = lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = actor_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_ITEM_TRANSFER;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance)
+		{
+			if (original_quest_event)
+				return error::
+					unauthorized; // Acceptance does not create reward authority.
+			facts.metadata.reason = payload.native_money.present ?
+							economic_reason::coin_transfer :
+							economic_reason::item_move;
+		}
+		else
+		{
+			if (!original_quest_event ||
+			    !economic_source_event_valid(*original_quest_event) ||
+			    (original_quest_event->kind != economic_source_kind::quest_action &&
+			     original_quest_event->kind !=
+				     economic_source_kind::quest_completion) ||
+			    (payload.native_cost.present &&
+			     original_quest_event->kind != economic_source_kind::quest_action) ||
+			    (!payload.native_cost.present &&
+			     payload.continuation.kind ==
+				     item_transfer_continuation_kind::quest_offering &&
+			     original_quest_event->kind != economic_source_kind::quest_completion))
+				return error::unauthorized;
+			if (payload.native_cost.fee_only &&
+			    (original_quest_event->source.bytes != command.operation_id.bytes ||
+			     original_quest_event->generation.bytes !=
+				     payload.native_mobile.reference.birth_source.generation.bytes ||
+			     original_quest_event->sequence !=
+				     payload.native_mobile.reference.mobile_revision ||
+			     original_quest_event->slot != payload.native_cost.completion_slot))
+				return error::unauthorized;
+			// One original action source covers every bound attempted fee slot.
+			// Frozen successful reward terms retain their genuine later issuer.
+			facts.metadata.reason = payload.native_cost.present ?
+							economic_reason::quest_cost :
+							economic_reason::item_destroy;
+			facts.metadata.source_event = *original_quest_event;
+		}
+		if (!budget.prefix(nested))
+			return error::capacity;
+		return economic_intent_freeze_fixed_bounded(command, facts, encoded,
+							    item_replay_accounting_budget::forward,
+							    &budget, nested);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
