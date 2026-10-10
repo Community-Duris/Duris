@@ -271,4 +271,22 @@ bool native_mobile_birth_recovery_initial_bounded(const critical_native_recovery
 						  bool (*)(size_t, void *) noexcept, void *,
 						  size_t outer_live) noexcept;
 
+// Full passive ordinary context decode with resource/profile errors preserved
+// through command, successful receipt, intent, compiler and result proof.
+// Output context and retained heap scalar change only on complete success.
+// Caller owns original input/output capacities; GCC13/CXX11 supported storage
+// and prospective nested admission contract is identical to bounded decode.
+economic_accounting_error native_mobile_birth_cash_role_recovery_decode_status_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live, size_t *retained_context_heap_bytes = nullptr) noexcept;
+
+// Complete original ordinary recovery validity with decoded error retained.
+// Resource/profile refusal stays distinct from semantic invalidity; passive,
+// no execution/phase advancement, mutation, acquisition or authority granted.
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_validate_bounded(const critical_native_recovery_envelope &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t outer_live) noexcept;
+
 #endif

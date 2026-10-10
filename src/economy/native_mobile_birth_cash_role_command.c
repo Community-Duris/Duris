@@ -329,14 +329,16 @@ error cash_role_recipe_decode_bounded(const std::span<const uint8_t> &bytes,
 	};
 	size_t base = outer;
 	if (!cash_role_add(base, sizeof(workspace)) ||
-	    !cash_role_admit(base, sizeof(std::span<const uint8_t>), reserve, context))
+	    !cash_role_admit(base, sizeof(std::span<const uint8_t>) + sizeof(error), reserve,
+			     context))
 		return error::capacity;
 	workspace work{ {}, {}, { reserve, context } };
 	work.original = bytes.subspan(8, NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES);
-	if (!native_mobile_birth_constructor_recipe_decode_bounded(
-		    work.original, &work.candidate.original, cash_role_bool_reservation::reserve,
-		    &work.reservation, base))
-		return work.reservation.refused ? error::capacity : error::corrupt_evidence;
+	const auto decoded = native_mobile_birth_constructor_recipe_decode_status_bounded(
+		work.original, &work.candidate.original, cash_role_bool_reservation::reserve,
+		&work.reservation, base);
+	if (decoded != error::ok)
+		return decoded;
 	constexpr size_t role_offset = 8 + NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES;
 	work.candidate.role = static_cast<native_mobile_birth_cash_role>(bytes[role_offset]);
 	work.candidate.configured_shop_matches = 0;

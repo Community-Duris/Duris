@@ -98,4 +98,13 @@ bool native_mobile_birth_constructor_recipe_decode_bounded(const std::span<const
 							   bool (*)(size_t, void *) noexcept,
 							   void *, size_t outer_live) noexcept;
 
+// Structured passive result for the full original allocation-free decoder.
+// Checked-add/null callback/admission refusal is capacity even before callback;
+// unsupported request policy is unresolved; malformed NBC1/2/3 is corrupt_evidence.
+// Strong output, genuine complete candidate/frame admission, no errno inference.
+enum class economic_accounting_error : uint8_t;
+economic_accounting_error native_mobile_birth_constructor_recipe_decode_status_bounded(
+	const std::span<const uint8_t> &, quest_mobile_native_constructor_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 #endif

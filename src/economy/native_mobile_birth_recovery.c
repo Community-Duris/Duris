@@ -2287,3 +2287,418 @@ bool native_mobile_birth_recovery_initial_bounded(const critical_native_recovery
 						 reserve, context, base, nullptr) == error::ok &&
 	       !work.value.receipt_present && no_progress(work.value);
 }
+
+namespace
+{
+// Only ordinary resource/profile outcomes change classification. Every other
+// failed proof retains its original enclosing command/receipt error category.
+error recovery_ordinary_proof_status(error code, error invalid) noexcept
+{
+	if (code == error::capacity || code == error::overflow)
+		return error::capacity;
+	if (code == error::unresolved)
+		return error::unresolved;
+	return code == error::ok ? error::ok : invalid;
+}
+struct recovery_ordinary_command_workspace
+{
+	recovery_command_workspace decoded;
+	size_t base = 0, image_heap = 0, recipes_heap = 0;
+	critical_command_codec_result encoded = critical_command_codec_result::invalid;
+	error status = error::ok;
+};
+error recovery_ordinary_command_values_status_bounded(
+	const critical_command &command, std::vector<uint8_t> *canonical,
+	std::vector<native_mobile_birth_item_recipe> *recipes, recovery_reserve_fn reserve,
+	void *context, size_t outer, size_t *recipe_heap)
+{
+	// The workspace owns the actual decoder DTO, both enum results and heap
+	// scalars. Two mapping enum parameters are prospective nested source frames.
+	// The caller already retains the output vector objects and old heap.
+	if (!recovery_admit(outer, sizeof(recovery_ordinary_command_workspace) + 2 * sizeof(error),
+			    reserve, context))
+		return error::capacity;
+	recovery_ordinary_command_workspace work;
+	work.base = outer;
+	if (!recovery_add(work.base, sizeof(work)) || !recovery_add(work.base, 2 * sizeof(error)))
+		return error::capacity;
+	if (command.payload_version != NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ||
+	    !command.publication_required)
+		return error::payload_conflict;
+	work.encoded =
+		critical_command_encode_bounded(command, canonical, reserve, context, work.base);
+	if (work.encoded == critical_command_codec_result::overflow)
+		return error::capacity;
+	if (work.encoded != critical_command_codec_result::ok ||
+	    canonical->size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES)
+		return error::payload_conflict;
+	if (!recovery_add(work.base, canonical->capacity()))
+		return error::capacity;
+	work.status = native_mobile_birth_cash_role_command_decode_bounded(
+		command, &work.decoded.image, recipes, &work.decoded.role, reserve, context,
+		work.base, &work.image_heap, &work.recipes_heap);
+	if (work.status != error::ok)
+		return recovery_ordinary_proof_status(work.status, error::payload_conflict);
+	if (work.decoded.role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return error::payload_conflict;
+	*recipe_heap = work.recipes_heap;
+	return error::ok;
+}
+struct recovery_ordinary_receipt_workspace
+{
+	native_mobile_birth_cash_role_result result, expected;
+	economic_frozen_intent intent;
+	economic_account_key wallet;
+	economic_accounting_plan plan;
+	std::span<const uint8_t> payload, intent_bytes;
+	std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> actual_bytes{},
+		expected_bytes{};
+	size_t base = 0, plan_heap = 0;
+	error status = error::ok;
+};
+error recovery_ordinary_receipt_status_bounded(const critical_command &command, bool present,
+					       const critical_completion &receipt,
+					       recovery_reserve_fn reserve, void *context,
+					       size_t outer)
+{
+	if (present && receipt.operation_id.bytes != command.operation_id.bytes)
+		return error::corrupt_evidence;
+	if (!present && !recovery_admit(outer, sizeof(critical_completion), reserve, context))
+		return error::capacity;
+	if (!receipt_shape(command, present, receipt, recovery_policy::ordinary_cash_role))
+		return error::corrupt_evidence;
+	if (!present || !successful(receipt))
+		return error::ok;
+	if (!recovery_admit(outer, sizeof(recovery_ordinary_receipt_workspace) + 2 * sizeof(error),
+			    reserve, context))
+		return error::capacity;
+	recovery_ordinary_receipt_workspace work;
+	work.base = outer;
+	if (!recovery_add(work.base, sizeof(work)) || !recovery_add(work.base, 2 * sizeof(error)))
+		return error::capacity;
+	// The complete fixed decoder retains its own result/canonical/encoder DTOs.
+	// These coexist with both strong result outputs and equality arrays in work.
+	if (!recovery_admit(
+		    work.base,
+		    sizeof(std::span<const uint8_t>) +
+			    sizeof(native_mobile_birth_cash_role_result) +
+			    2 * sizeof(std::array<uint8_t,
+						  NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>) +
+			    std::max(sizeof(uint64_t[7]) + sizeof(uint64_t[4]),
+				     sizeof(economic_coin_vector)),
+		    reserve, context))
+		return error::capacity;
+	work.payload = { receipt.result_payload.data(), receipt.result_size };
+	if (!native_mobile_birth_cash_role_result_decode(work.payload, &work.result) ||
+	    work.result.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return error::corrupt_evidence;
+	if (!recovery_admit(work.base, sizeof(std::span<const uint8_t>), reserve, context))
+		return error::capacity;
+	work.intent_bytes = command.accounting_intent;
+	work.status = economic_intent_decode_bounded(work.intent_bytes, &work.intent, reserve,
+						     context, work.base);
+	if (work.status != error::ok)
+		return recovery_ordinary_proof_status(work.status, error::corrupt_evidence);
+	if (!recovery_add(work.base, work.intent.admission.facts.capacity()))
+		return error::capacity;
+	work.wallet.lineage = work.intent.admission.metadata.lineage;
+	work.wallet.kind = economic_account_kind::wallet;
+	work.wallet.authority_id = work.result.wallet_mapping_id;
+	work.wallet.context_id = ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT;
+	work.status = native_mobile_birth_cash_role_accounting_compile_bounded(
+		command, work.wallet, &work.plan, reserve, context, work.base, &work.plan_heap);
+	if (work.status != error::ok)
+		return recovery_ordinary_proof_status(work.status, error::corrupt_evidence);
+	if (!recovery_add(work.base, work.plan_heap))
+		return error::capacity;
+	// Match the original complete builder and canonical equality, retaining its
+	// enum before comparison. This includes command/image/role and plan digests.
+	work.status = native_mobile_birth_cash_role_result_build_bounded(
+		command, work.wallet, work.plan, &work.expected, reserve, context, work.base);
+	if (work.status != error::ok)
+		return recovery_ordinary_proof_status(work.status, error::corrupt_evidence);
+	// a,b are already real admitted workspace members; the encoder's own bytes,
+	// complete fields and clocks remain live together in either sequential call.
+	if (!recovery_admit(work.base,
+			    sizeof(std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>) +
+				    sizeof(uint64_t[7]) + sizeof(uint64_t[4]),
+			    reserve, context))
+		return error::capacity;
+	if (!native_mobile_birth_cash_role_result_encode(work.expected, &work.expected_bytes) ||
+	    !native_mobile_birth_cash_role_result_encode(work.result, &work.actual_bytes) ||
+	    work.expected_bytes != work.actual_bytes)
+		return error::corrupt_evidence;
+	return error::ok;
+}
+template <typename GetItem, typename GetCount, typename GetEffect>
+error recovery_ordinary_context_status_bounded(
+	const critical_command &command,
+	const std::span<const native_mobile_birth_item_recipe> &recipes,
+	const native_mobile_birth_recovery_context &value, size_t count, const GetItem &get_item,
+	const GetCount &get_count, const GetEffect &get_effect, recovery_reserve_fn reserve,
+	void *context, size_t outer)
+{
+	// Admit the actual status scalar before it exists. Original row DTO/lambda
+	// and mobile/effect proof frames remain separately admitted below.
+	if (!recovery_admit(outer, sizeof(error), reserve, context) ||
+	    !recovery_add(outer, sizeof(error)))
+		return error::capacity;
+	if (value.stage > native_mobile_birth_recovery_stage::physically_proven ||
+	    count != recipes.size() || recipes.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
+	    !valid_action(value.whole_binding) || !valid_action(value.reference_install) ||
+	    (value.mobile_publication.returned && !value.mobile_publication.started) ||
+	    (value.mobile_publication.consumed && !value.mobile_publication.started))
+		return error::corrupt_evidence;
+	if (!recovery_admit(outer,
+			    std::max(sizeof(std::array<size_t, 4>),
+				     sizeof(native_mobile_birth_recovery_action)),
+			    reserve, context))
+		return error::capacity;
+	if (!mobile_shape(value))
+		return error::corrupt_evidence;
+	const auto receipt_status = recovery_ordinary_receipt_status_bounded(
+		command, value.receipt_present, value.receipt, reserve, context, outer);
+	if (receipt_status != error::ok)
+		return receipt_status;
+	if ((!value.receipt_present || !successful(value.receipt)) && !no_progress(value))
+		return error::corrupt_evidence;
+	if (value.stage == native_mobile_birth_recovery_stage::captured && !no_progress(value))
+		return error::corrupt_evidence;
+	if (value.reference_install.started && !complete(value.whole_binding))
+		return error::corrupt_evidence;
+	bool all_published = true, previous_item_done = true, all_done = true;
+	const bool must_zero = !value.receipt_present || !successful(value.receipt) ||
+			       value.stage == native_mobile_birth_recovery_stage::captured;
+	// Two no-NRVO read_item DTOs cover the returned temporary and its callee;
+	// encode accessors return a reference and make no row/vector copy.
+	const size_t row_object = std::is_reference_v<decltype(get_item(size_t{}))> ?
+					  0 :
+					  sizeof(native_mobile_birth_recovery_item);
+	const size_t proof_objects =
+		sizeof(std::array<uint8_t, PLAYER_SNAPSHOT_MAX_ROWS>) +
+		std::max(2 * row_object,
+			 row_object +
+				 std::max(sizeof(std::span<const native_mobile_birth_item_recipe>),
+					  sizeof(native_mobile_birth_recovery_effect)));
+	if (!recovery_admit(outer, proof_objects, reserve, context))
+		return error::capacity;
+	std::array<uint8_t, PLAYER_SNAPSHOT_MAX_ROWS> seen{};
+	for (size_t i = 0; i < count; ++i)
+	{
+		const auto &item = get_item(i);
+		const size_t effect_count = get_count(i);
+		const size_t index = recipe_index(recipes, item.object_uid);
+		// Count equality plus complete unique membership binds every image UID,
+		// while these prefix guards retain the actual original publication order.
+		if (index == recipes.size() || seen[index])
+			return error::corrupt_evidence;
+		seen[index] = 1;
+		if (!valid_action(item.publication) || !valid_action(item.enrollment) ||
+		    !effects_valid(recipes[index], item.next_step, item.current_step_started,
+				   effect_count, [&](size_t e) { return get_effect(i, e); }) ||
+		    (must_zero &&
+		     (item.next_step || item.current_step_started || item.admitted ||
+		      item.published || bits(item.publication) || bits(item.enrollment))) ||
+		    item.published != complete(item.publication) ||
+		    (item.publication.started &&
+		     (!item.admitted || !complete(value.reference_install) || !all_published)) ||
+		    (item.enrollment.started &&
+		     (!complete(value.mobile_publication) || !previous_item_done)) ||
+		    ((item.next_step || item.current_step_started) && !complete(item.enrollment)))
+			return error::corrupt_evidence;
+		all_published = all_published && item.published;
+		previous_item_done = item_done_fields(item, effect_count);
+		all_done = all_done && previous_item_done;
+	}
+	if ((value.mobile_publication.started &&
+	     (!all_published || !complete(value.reference_install))) ||
+	    (value.runtime_applied && (!complete(value.mobile_publication) || !all_done)))
+		return error::corrupt_evidence;
+	return value.stage != native_mobile_birth_recovery_stage::physically_proven ||
+			       (value.receipt_present && successful(value.receipt) &&
+				complete(value.whole_binding) &&
+				complete(value.reference_install) &&
+				complete(value.mobile_publication) && value.runtime_applied &&
+				all_done) ?
+		       error::ok :
+		       error::corrupt_evidence;
+}
+error recovery_ordinary_decode_status_bounded(const critical_command &command,
+					      const std::span<const uint8_t> &bytes,
+					      native_mobile_birth_recovery_context *output,
+					      recovery_reserve_fn reserve, void *context,
+					      size_t outer, size_t *retained_heap) noexcept
+{
+	constexpr auto policy = recovery_policy::ordinary_cash_role;
+	if (!output)
+		return error::corrupt_evidence;
+	if (!recovery_storage_policy())
+		return error::unresolved;
+	size_t base = outer;
+	if (!recovery_add(base, sizeof(recovery_decode_workspace)) ||
+	    !recovery_add(base, sizeof(recovery_reservation)) ||
+	    !recovery_add(base, sizeof(recovery_wire_item_access)) ||
+	    !recovery_add(base, sizeof(recovery_wire_count_access)) ||
+	    !recovery_add(base, sizeof(recovery_wire_effect_access)) ||
+	    !recovery_add(base, 3 * sizeof(error) + sizeof(recovery_policy)) ||
+	    !recovery_admit(base, 0, reserve, context))
+		return error::capacity;
+	recovery_reservation admission{ reserve, context };
+	reserve = &recovery_reservation::forward;
+	context = &admission;
+	try
+	{
+		recovery_decode_workspace work;
+		recovery_wire_item_access get_item{ bytes, work.view };
+		recovery_wire_count_access get_count{ bytes, work.view };
+		recovery_wire_effect_access get_effect{ bytes, work.view };
+		const auto checked = recovery_preflight_bounded(&command, bytes, &work.view, policy,
+								reserve, context, base);
+		if (checked != error::ok)
+			return checked;
+		size_t recipe_heap = 0;
+		const auto command_status = recovery_ordinary_command_values_status_bounded(
+			command, &work.canonical, &work.recipes, reserve, context, base,
+			&recipe_heap);
+		if (admission.refused)
+			return error::capacity;
+		if (command_status != error::ok)
+			return command_status;
+		if (!std::equal(work.canonical.begin(), work.canonical.end(),
+				work.view.command.begin(), work.view.command.end()) ||
+		    work.view.count != work.recipes.size())
+			return error::payload_conflict;
+		size_t current = base;
+		if (!recovery_add(current, work.canonical.capacity()) ||
+		    !recovery_add(current, recipe_heap))
+			return error::capacity;
+		if (!recovery_admit(current,
+				    sizeof(std::span<const native_mobile_birth_item_recipe>),
+				    reserve, context))
+			return error::capacity;
+		work.recipe_values = work.recipes;
+		if (!recovery_admit(current,
+				    sizeof(std::span<const native_mobile_birth_item_recipe>),
+				    reserve, context))
+			return error::capacity;
+		// The complete wire bounds preceded all allocation. Check recipe-derived
+		// counts before creating any attachment container, not only afterwards.
+		size_t offset = work.view.items_offset;
+		for (size_t i = 0; i < work.recipes.size(); ++i)
+		{
+			const size_t count =
+				static_cast<uint32_t>(get(bytes.data() + offset + 16, 4));
+			const size_t index =
+				recipe_index(work.recipe_values, get(bytes.data() + offset, 8));
+			if (index == work.recipes.size() ||
+			    count != step_count(work.recipes[index]))
+				return error::corrupt_evidence;
+			offset += ITEM_BYTES + count;
+		}
+		if (!recovery_admit(current, 2 * sizeof(critical_completion), reserve, context))
+			return error::capacity;
+		read_body(work.view.body, &work.candidate);
+		const auto context_status = recovery_ordinary_context_status_bounded(
+			command, work.recipe_values, work.candidate, work.view.count, get_item,
+			get_count, get_effect, reserve, context, current);
+		if (admission.refused)
+			return error::capacity;
+		if (context_status != error::ok)
+			return context_status;
+		// All attachment semantics, including ordering, cursor/latches and exact
+		// recipe/result correlation, now passed before attachment containers allocate.
+		size_t retained = 0;
+		if (!recovery_rows(retained, work.view.count,
+				   sizeof(native_mobile_birth_recovery_item)) ||
+		    !recovery_admit(current, retained, reserve, context))
+			return error::capacity;
+		work.candidate.items.reserve(work.view.count);
+		offset = work.view.items_offset;
+		for (size_t i = 0; i < work.view.count; ++i)
+		{
+			size_t row_live = current;
+			if (!recovery_add(row_live, retained) ||
+			    !recovery_admit(row_live, 2 * sizeof(native_mobile_birth_recovery_item),
+					    reserve, context))
+				return error::capacity;
+			auto item = read_item(bytes.data() + offset);
+			// Already proved against this UID's recipe before any container allocation.
+			const size_t count =
+				static_cast<uint32_t>(get(bytes.data() + offset + 16, 4));
+			offset += ITEM_BYTES;
+			size_t effect_heap = 0, effect_live = row_live;
+			if (!recovery_rows(effect_heap, count,
+					   sizeof(native_mobile_birth_recovery_effect)) ||
+			    !recovery_add(effect_live, sizeof(native_mobile_birth_recovery_item)) ||
+			    !recovery_add(effect_live, effect_heap) ||
+			    !recovery_admit(effect_live,
+					    sizeof(native_mobile_birth_recovery_effect), reserve,
+					    context))
+				return error::capacity;
+			item.effects.reserve(count);
+			for (size_t e = 0; e < count; ++e)
+				item.effects.push_back(effect(bytes[offset++]));
+			work.candidate.items.push_back(std::move(item));
+			if (!recovery_add(retained, effect_heap))
+				return error::capacity;
+		}
+		static_assert(
+			std::is_nothrow_move_assignable_v<native_mobile_birth_recovery_context>);
+		*output = std::move(work.candidate);
+		if (retained_heap)
+			*retained_heap = retained;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+}
+} // namespace
+
+economic_accounting_error native_mobile_birth_cash_role_recovery_decode_status_bounded(
+	const critical_command &command, const std::span<const uint8_t> &bytes,
+	native_mobile_birth_recovery_context *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_context_heap_bytes) noexcept
+{
+	return recovery_ordinary_decode_status_bounded(command, bytes, output, reserve, context,
+						       outer_live, retained_context_heap_bytes);
+}
+
+economic_accounting_error native_mobile_birth_cash_role_recovery_validate_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Complete original ordinary validity predicate, preserving the decoded
+	// error rather than flattening resource/profile refusals into false.
+	if (!envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending))
+		return economic_accounting_error::corrupt_evidence;
+	struct workspace
+	{
+		native_mobile_birth_recovery_context progress;
+		std::span<const uint8_t> attachment;
+	};
+	// Actual wrapper objects, references, scalar results and full predicates.
+	// Nested decoder admits its own complete temporary storage; outer retains
+	// input command/attachment, prior caller output and borrowed lock storage.
+	constexpr size_t own = sizeof(workspace) + 4 * sizeof(void *) + 3 * sizeof(size_t) +
+			       sizeof(economic_accounting_error) + 5 * sizeof(bool);
+	size_t base = outer_live;
+	if (!recovery_add(base, own) || !recovery_admit(base, 0, reserve, context))
+		return economic_accounting_error::capacity;
+	workspace work;
+	work.attachment = envelope.attachment;
+	const auto decoded = native_mobile_birth_cash_role_recovery_decode_status_bounded(
+		envelope.command, work.attachment, &work.progress, reserve, context, base);
+	if (decoded != economic_accounting_error::ok)
+		return decoded;
+	if ((envelope.revision == 1 &&
+	     (envelope.phase != critical_native_recovery_phase::execution_pending ||
+	      work.progress.receipt_present || !no_progress(work.progress))) ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     !body_terminal(work.progress)))
+		return economic_accounting_error::corrupt_evidence;
+	return economic_accounting_error::ok;
+}

@@ -416,3 +416,64 @@ bool native_mobile_birth_constructor_recipe_decode_bounded(
 	return native_mobile_birth_constructor_recipe_decode(bytes, output);
 #endif
 }
+
+#include "economy/economic_accounting_types.h"
+
+economic_accounting_error native_mobile_birth_constructor_recipe_decode_status_bounded(
+	const std::span<const uint8_t> &bytes, quest_mobile_native_constructor_recipe *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	using status = economic_accounting_error;
+	// Identical original null/length shape validation before any admission.
+	if (!output || (bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_BYTES &&
+			bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_BYTES &&
+			bytes.size() != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_BYTES))
+		return status::corrupt_evidence;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return status::unresolved;
+#else
+	// Full original decoder's genuinely simultaneous by-value span, reader,
+	// magic, and complete fixed-value candidate; no heap is allocated here.
+	constexpr size_t objects = sizeof(std::span<const uint8_t>) + sizeof(reader) +
+				   sizeof(std::array<uint8_t, 4>) +
+				   sizeof(quest_mobile_native_constructor_recipe);
+	// Actual status/decode parameter and return carriers, version/apply_gold,
+	// three range references; reader number's this/value/i/return and raw's
+	// this/value parameters. These are source scopes, not emitted stack.
+	constexpr size_t decoder_frames =
+		4 * sizeof(void *) + sizeof(size_t) + sizeof(status) + sizeof(bool) +
+		2 * sizeof(void *) + sizeof(uint16_t) + sizeof(uint8_t) + 3 * sizeof(void *) +
+		sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(size_t) + 2 * sizeof(void *);
+	// Actual fixed array copy_n/copy/source scopes (iterators, count/result,
+	// runtime tag, memmove arguments), bit_cast's source/value return, and
+	// scalar reader's index/arithmetic/query carriers. No byte buffer copy.
+	constexpr size_t transport_frames = 4 * (3 * sizeof(void *) + sizeof(void *)) +
+					    4 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(char) +
+					    3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+					    2 * sizeof(uint64_t) + sizeof(bool);
+	// Full original valid() parameter, clock iteration/local cast and result;
+	// binding_valid's value/version; nonzero()/any_of/find_if predicate/range
+	// carriers and the actual uint64_t predicate item. The array values remain
+	// inline in the genuine candidate already counted above.
+	constexpr size_t validation_frames =
+		2 * sizeof(void *) + sizeof(int64_t) + sizeof(time_t) + sizeof(bool) +
+		sizeof(binding) + sizeof(uint16_t) + sizeof(bool) + 2 * sizeof(void *) +
+		3 * sizeof(void *) + sizeof(uint64_t) + 4 * (3 * sizeof(void *) + sizeof(bool)) +
+		2 * sizeof(size_t) + 3 * sizeof(char);
+	constexpr size_t working = objects + decoder_frames + transport_frames + validation_frames;
+	// Return the failure directly, including checked-add refusal before the
+	// callback. No errno/global-state inference can turn capacity into corrupt
+	// evidence. The callback owns admission only; no authority is granted.
+	if (working > SIZE_MAX - outer_live || !reserve || !reserve(outer_live + working, context))
+		return status::capacity;
+	// Original complete NBC1/NBC2/NBC3 magic/header/version/body/semantic decode
+	// remains authoritative and preserves output on any malformed evidence.
+	return native_mobile_birth_constructor_recipe_decode(bytes, output) ?
+		       status::ok :
+		       status::corrupt_evidence;
+#endif
+}
