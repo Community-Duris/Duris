@@ -66625,7 +66625,7 @@
       "src/item/lockpick_retirement_continuation.c": "fcf706b98339b2a5266e3ea1897c93d399820c621a85c0aef99dcaf14007e0a3",
       "src/item/lockpick_retirement_continuation.h": "bd74b154fdcddccc539ebee24cf43442ff859457dc94faa6148491b9a1d96bc2",
       "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
-      "src/item/quest_reward_continuation.h": "5d00eddbab2b36ff66ffd714b757bf87a88d3f6f7dda85a556eaa6c015ed4ae3",
+      "src/item/quest_reward_continuation.h": "85137766303a568055c3679094cdb5b845c262fda8dfbb0461408da0f30b5965",
       "src/persistence/economic_sql_auction_bid_transaction.c": "2f2e402df47df7ed2d721591718eb9522c06e7c364584f7a89d0d44acae8de23",
       "src/persistence/economic_sql_auction_item_claim_transaction.c": "d93346b6bca28b78e763eeb299a114f229f23cc60937e1265b6476a58a5a9a19",
       "src/persistence/economic_sql_auction_listing_transaction.c": "47a873fcbac117132ed37cdbb0be7ba217a6f0846f57a61e31886803320dcddc",

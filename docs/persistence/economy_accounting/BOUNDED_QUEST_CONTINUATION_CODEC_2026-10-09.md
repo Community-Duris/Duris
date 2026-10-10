@@ -1,0 +1,7 @@
+# Add complete bounded quest continuation decoders - 2026-10-09
+
+The original full item decoder reaches quest continuation parsing before coin normalization. Complete bounded v1-v5 and v6 companions preserve every original field, predicate, source-event binding and accepted wire. They admit both actual string allocations and genuine fitting-string source scopes. Private candidate moves preserve caller outputs on refusal; original selected methods remain unchanged.
+
+Full original and corrected RAW plus final formatted source review passed. Full header and method inverses, actual compiler-source dependencies, logical preprocessing, token streams, strong final transfer and protected files authenticate. Registry authentication retains 415 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/quest-continuation-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
