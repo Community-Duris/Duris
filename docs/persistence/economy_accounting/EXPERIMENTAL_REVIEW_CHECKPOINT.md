@@ -3591,3 +3591,17 @@ Full152/310/51captures/fourwholeinverses/tokens/logicalPP/originalCprefixes/
 SOURCE PASS. Caller durable commit+recheck before retirement, real integration
 and native/library/backend/global32MiB/R1-R8 remain OPEN. Tests deferred major-
 plan batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Bounded warm artifact location and Redis retention implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_WARM_ARTIFACT_LOCATION_REDIS_RETENTION_2026-10-10.md)
+supplies the full borrowed-authority catalog/NPC-location companion and genuine
+Redis queue/worker-tail current retention. Original ownership/timer/binding/
+revision/all-row and durable-result laws survive; ignored cache refusal remains.
+Independent complete RAW/formatted source review closes filename31, typed
+carrier and unsupported-profile omissions. Eight whole inverses/dependency
+chains/formatting/protected3 and451pins/931unchangedpolicies authenticate.
+Actual producer/common-G joins, native/global32MiB/concurrency/recovery/R1-R8
+remain OPEN; tests deferred major-plan batch. Inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE. Source evidence completes no major plan.

@@ -5232,3 +5232,174 @@ void arti_player_sql(P_char ch, char *arg)
 		send_to_char("No artifacts found.\n\r", ch);
 #endif
 }
+
+#include "guild/artifact_native_birth.h"
+#include <cerrno>
+
+namespace
+{
+bool native_artifact_list_member(P_obj list, P_obj selected) noexcept
+{
+	P_obj slow = list, fast = list;
+	while (fast && fast->next_content)
+	{
+		slow = slow->next_content;
+		fast = fast->next_content->next_content;
+		if (slow == fast)
+			return false;
+	}
+	unsigned count = 0;
+	for (P_obj item = list; item; item = item->next_content)
+		if (item == selected)
+			++count;
+	return count == 1;
+}
+bool native_artifact_owner(P_obj artifact, P_char expected) noexcept
+{
+	if (!artifact || !expected || !IS_NPC(expected) || GET_VNUM(expected) <= 0)
+		return false;
+	P_obj slow = artifact, fast = artifact;
+	// Allocation-free cycle refusal before walking the complete genuine parent
+	// chain. Accepted native birth captures authenticate its full forest separately.
+	while (OBJ_INSIDE(fast))
+	{
+		if (!fast->loc.inside)
+			return false;
+		fast = fast->loc.inside;
+		if (OBJ_INSIDE(fast))
+		{
+			if (!fast->loc.inside)
+				return false;
+			fast = fast->loc.inside;
+		}
+		else
+			break;
+		if (OBJ_INSIDE(slow))
+		{
+			if (!slow->loc.inside)
+				return false;
+			slow = slow->loc.inside;
+		}
+		if (slow == fast)
+			return false;
+	}
+	P_obj outer = artifact;
+	while (OBJ_INSIDE(outer))
+	{
+		P_obj parent = outer->loc.inside;
+		if (!parent || !native_artifact_list_member(parent->contains, outer))
+			return false;
+		outer = parent;
+	}
+	if (OBJ_CARRIED(outer))
+		return outer->loc.carrying == expected &&
+		       native_artifact_list_member(expected->carrying, outer);
+	if (!OBJ_WORN(outer) || outer->loc.wearing != expected)
+		return false;
+	unsigned count = 0;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (expected->equipment[slot] == outer)
+			++count;
+	return count == 1;
+}
+}
+
+int artifact_native_birth_location_bounded(const std::string &root,
+					   const flatfile_authority_lock &lock, P_obj artifact,
+					   P_char expected_npc_owner, bool *returned,
+					   bool *succeeded,
+					   bool (*reserve)(size_t, void *) noexcept, void *context,
+					   size_t outer) noexcept
+{
+	if (!returned || !succeeded || !reserve)
+		return EINVAL;
+	if (*returned || *succeeded)
+		return EALREADY;
+	if (!artifact || !IS_ARTIFACT(artifact) || !updateArtis)
+	{
+		*returned = true;
+		*succeeded = true;
+		return 0;
+	}
+#ifndef __NO_MYSQL__
+	(void)root;
+	(void)lock;
+	(void)expected_npc_owner;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#else
+	struct work
+	{
+		flatfile_artifact_record record;
+		bool owned = false;
+		time_t timer = 0;
+		int type = 0;
+		int status = 0;
+	};
+	// Eight own references/pointers, outer and live scalars, failure/return
+	// statuses, and actual time() argument/result carriers. The owner/list walk
+	// contributes its declared args, slow/fast/outer/parent pointers, count/slot,
+	// plus nested list args/slow/fast/item/count, while the wrapper remains live.
+	constexpr size_t wrapper_carriers =
+		8 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(int) + sizeof(void *) +
+		sizeof(time_t) + 6 * sizeof(void *) + sizeof(unsigned) + sizeof(int) +
+		5 * sizeof(void *) + sizeof(unsigned) + 2 * sizeof(bool);
+	if (sizeof(work) > SIZE_MAX - wrapper_carriers ||
+	    sizeof(work) + wrapper_carriers > SIZE_MAX - outer ||
+	    !reserve(outer + sizeof(work) + wrapper_carriers, context))
+		return ENOBUFS;
+	work w;
+	// Genuine accepted ordinary stock is a reciprocal NPC forest. PC switching,
+	// trusted-PC bypass, corpse and corrupt-location salvage are outside this
+	// original warm enrollment's authenticated domain, never silently substituted.
+	if (!lock.matches(root) || !native_artifact_owner(artifact, expected_npc_owner))
+		return EINVAL;
+	const size_t live = outer + sizeof(work) + wrapper_carriers;
+	w.status = flatfile_artifact_get_bounded(root, lock, OBJ_VNUM(artifact), &w.record, reserve,
+						 context, live);
+	if (w.status && w.status != ENOENT)
+	{
+		const int failure = w.status;
+		if (!diagnostic_logit_bounded(reserve, context, live, LOG_ARTIFACT,
+					      "get_artifact_data_sql: flat artifact read failed: %s",
+					      "invalid artifact authority"))
+			return ENOBUFS;
+		return failure;
+	}
+	// Original get_artifact_data_sql returns OWNED, not mere record presence.
+	// Preserve the existing owner flag for the wrapper's literal '0' update.
+	w.owned = w.status == 0 && w.record.owned;
+	w.timer = w.owned ? static_cast<time_t>(w.record.timer) : 0;
+	w.type = IS_IOUN(artifact)   ? ARTIFACT_IOUN :
+		 IS_UNIQUE(artifact) ? ARTIFACT_UNIQUE :
+				       ARTIFACT_MAJOR;
+	if (w.timer <= 0)
+	{
+		w.timer = time(nullptr) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+		if (w.owned &&
+		    !diagnostic_logit_bounded(
+			    reserve, context, live, LOG_ARTIFACT,
+			    "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
+			    static_cast<long>(0), OBJ_VNUM(artifact)))
+			return ENOBUFS;
+	}
+	w.status = flatfile_artifact_gameplay_update_bounded(
+		root, lock, OBJ_VNUM(artifact), w.owned, ARTIFACT_ON_NPC,
+		GET_VNUM(expected_npc_owner), w.timer, w.type, static_cast<int64_t>(time(nullptr)),
+		returned, succeeded, reserve, context, live);
+	if (w.status)
+	{
+		const int failure = w.status;
+		if (*returned &&
+		    !diagnostic_logit_bounded(reserve, context, live, LOG_ARTIFACT,
+					      "arti_update_sql: flat artifact update failed: %s",
+					      "invalid or missing artifact authority"))
+			return ENOBUFS;
+		return failure;
+	}
+	// The original invalidation ignores false queue acceptance. The bounded
+	// companion must likewise distinguish resource refusal from that bool.
+	return redis_invalidate_artifact_cache_bounded(reserve, context, live);
+#endif
+}

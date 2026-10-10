@@ -605,3 +605,88 @@ bool redis_invalidate_artifact_cache(void)
 	return submitted;
 #endif
 }
+
+#include <cerrno>
+bool redis_report_cache_retained_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#ifdef __NO_REDIS__
+	*output = sizeof(report_cache_enabled) + sizeof(cache_prefix) + sizeof(cache_pattern) +
+		  sizeof(named_key) + sizeof(fraglist_key) + sizeof(epic_zones_key) +
+		  sizeof(artifact_keys);
+	return true;
+#else
+	size_t current = 0;
+	if (!redis_cache_store_retained_bytes(&current))
+		return false;
+	constexpr size_t own = sizeof(report_cache_enabled) + sizeof(cache_prefix) +
+			       sizeof(cache_pattern) + sizeof(named_key) + sizeof(fraglist_key) +
+			       sizeof(epic_zones_key) + sizeof(artifact_keys);
+	if (current > SIZE_MAX - own)
+		return false;
+	*output = current + own;
+	return true;
+#endif
+}
+int redis_invalidate_artifact_cache_bounded(bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer) noexcept
+{
+#ifdef __NO_REDIS__
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return 0;
+#else
+	if (!report_cache_enabled)
+		return 0;
+	if (!reserve)
+		return EINVAL;
+	struct work
+	{
+		int type = 1;
+		bool submitted = true, current = false;
+		int result = 0;
+	};
+	// Own reserve/context/outer, actual loop key pointer, reserve invocation
+	// size/context and bool result, and int return carrier coexist with work.
+	constexpr size_t report_carriers = 2 * sizeof(void *) + sizeof(size_t) +
+					   sizeof(const char *) + sizeof(size_t) + sizeof(void *) +
+					   sizeof(bool) + sizeof(int);
+	if (sizeof(work) > SIZE_MAX - report_carriers ||
+	    sizeof(work) + report_carriers > SIZE_MAX - outer ||
+	    !reserve(outer + sizeof(work) + report_carriers, context))
+		return ENOBUFS;
+	work w;
+	for (w.type = 1; w.type <= 3; ++w.type)
+	{
+		const char *key = resolve_key(artifact_key(w.type, false));
+		if (key)
+		{
+			w.result = redis_cache_store_delete_bounded(
+				key, &w.current, reserve, context,
+				outer + sizeof(work) + report_carriers);
+			if (w.result)
+				return w.result;
+		}
+		else
+			w.current = false;
+		w.submitted = w.current && w.submitted;
+		key = resolve_key(artifact_key(w.type, true));
+		if (key)
+		{
+			w.result = redis_cache_store_delete_bounded(
+				key, &w.current, reserve, context,
+				outer + sizeof(work) + report_carriers);
+			if (w.result)
+				return w.result;
+		}
+		else
+			w.current = false;
+		w.submitted = w.current && w.submitted;
+	}
+	// Original artifact callers ignore submitted=false. Only prospective resource
+	// failure interrupts the owning bounded publication route.
+	return 0;
+#endif
+}
