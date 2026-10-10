@@ -42,4 +42,19 @@ player_snapshot_codec_result quest_mobile_native_reference_encode(
 player_snapshot_codec_result
 quest_mobile_native_reference_decode(std::span<const uint8_t>,
 				     quest_mobile_native_reference *output) noexcept;
+// Complete original fixed reference codecs/validation with genuine prospective
+// source-event/checksum/SHA frames. Same 148 bytes, digest, original version and
+// provenance laws; no native UID/source/custody/admission authority or selection.
+// Outer includes real input/prior output/caller state; strong output on refusal.
+bool quest_mobile_native_reference_valid_bounded(const quest_mobile_native_reference &,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept;
+player_snapshot_codec_result quest_mobile_native_reference_encode_bounded(
+	const quest_mobile_native_reference &,
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
+player_snapshot_codec_result quest_mobile_native_reference_decode_bounded(
+	std::span<const uint8_t>, quest_mobile_native_reference *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
+
 #endif
