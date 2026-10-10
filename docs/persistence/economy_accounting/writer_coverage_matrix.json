@@ -493,7 +493,7 @@
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
       "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
-      "src/player/player_snapshot_codec.c": "d52379ce1d4fa21224604676b59bfaba6847bcdbf73442a99df0458a422f2f03",
+      "src/player/player_snapshot_codec.c": "4353b4f432d8955d5030a4e35ba432eb979dc02bf42157de0b7e8c94c4a706e8",
       "src/player/player_snapshot_codec.h": "50c37692eeffd4a784a9db548cd83d02d029e70b223593777ca81967b1e1a870",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
@@ -591,6 +591,7 @@
       "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804",
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
+      "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_reconcile_economy_accounting.py": "7c430d5650ce51a47e1cc2487663ce52c1644df3612e4378ebde7802253096cc",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
       "tests/integration_manifest.json": "78b7fc1fc4342d7708e3e87bc944588ca0c40677c9e8efc08043df67103aeb27"

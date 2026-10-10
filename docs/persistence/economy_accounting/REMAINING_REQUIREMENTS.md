@@ -4175,3 +4175,16 @@ after two reviewed header additions; its declaration and policy remain unchanged
 Actual producer/common-G/publication integration and native/global32MiB/R1-R8
 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE; no major-plan completion is claimed.
+
+
+## Snapshot decoder false-success result repaired - 2026-10-10
+
+[Source checkpoint](SNAPSHOT_DECODER_INVALID_STATUS_RESULT_2026-10-10.md)
+repairs all four original/bounded status range callbacks to return existing
+invalid_value before output transfer. Truncation/resource distinctions, strong
+snapshot/heap outputs and valid wire behavior survive. Real existing-journal
+harness characterization is added, with execution deferred to the major-plan
+batch. Independent source/test review, whole inverses, formatting, AST syntax,
+456pins/931 unchanged policies and protected Plan5 WIP pass. Native runtime,
+producer/global budget/recovery/R1-R8 remain OPEN; inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE. No major plan completion is claimed.

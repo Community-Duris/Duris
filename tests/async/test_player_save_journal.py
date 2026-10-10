@@ -313,6 +313,103 @@ void downgrade_frame(const std::string &path, uint8_t version, size_t preference
     close(fd);
 }
 
+
+// Malformed enum IDs must refuse before either decoder commits its output.
+void check_snapshot_status_field_refusals()
+{
+    auto valid = make_snapshot(9910, 37);
+    valid.status_integers[0].field = player_status_field::last_ip;
+    valid.status_strings[0].field = player_status_string_field::poof_out;
+    std::vector<uint8_t> bytes;
+    assert(player_snapshot_encode(valid, &bytes) == player_snapshot_codec_result::ok);
+    // Exact existing wire widths, not host struct offsets or padding.
+    constexpr size_t integer_field = 4 + 4 + 8 + 8 + 4 + 4 + 8 + 4;
+    constexpr size_t string_field = integer_field + 2 + 8 + 8 + 1 + 4;
+    assert(bytes.size() > string_field);
+    assert(bytes[integer_field] == (static_cast<uint16_t>(player_status_field::last_ip) & 255));
+    assert(bytes[string_field] == static_cast<uint8_t>(player_status_string_field::poof_out));
+    auto prior = make_snapshot(9911, 38);
+    prior.status_strings[0].value = "retained non-SSO output sentinel";
+    std::vector<uint8_t> prior_bytes;
+    assert(player_snapshot_encode(prior, &prior_bytes) == player_snapshot_codec_result::ok);
+    auto preserved = [&](const player_snapshot &output) {
+        std::vector<uint8_t> actual;
+        assert(player_snapshot_encode(output, &actual) == player_snapshot_codec_result::ok);
+        assert(actual == prior_bytes);
+    };
+    auto check = [&](const std::vector<uint8_t> &input, player_snapshot_codec_result expected) {
+        auto output = prior;
+        const auto *rows = output.status_strings.data();
+        const auto *text = output.status_strings[0].value.data();
+        assert(player_snapshot_decode(input.data(), input.size(), &output) == expected);
+        assert(output.status_strings.data() == rows && output.status_strings[0].value.data() == text);
+        preserved(output);
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+    _GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+        if (sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::string) == 32 &&
+            sizeof(std::vector<uint8_t>) == 24) {
+            size_t heap = 777;
+            auto allow = [](size_t, void *) noexcept { return true; };
+            errno = 0;
+            assert(player_snapshot_decode_bounded(input.data(), input.size(), &output,
+                                                  allow, nullptr, 0, &heap) == expected);
+            assert(heap == 777 && errno == 0);
+            assert(output.status_strings.data() == rows && output.status_strings[0].value.data() == text);
+            preserved(output);
+        }
+#endif
+    };
+    player_snapshot output{};
+    assert(player_snapshot_decode(bytes.data(), bytes.size(), &output) == player_snapshot_codec_result::ok);
+    assert(output.status_integers[0].field == player_status_field::last_ip);
+    assert(output.status_strings[0].field == player_status_string_field::poof_out);
+    for (bool integer : {true, false}) {
+        const size_t offset = integer ? integer_field : string_field;
+        const uint16_t first_invalid = integer ? static_cast<uint16_t>(player_status_field::last_ip) + 1 :
+                                                static_cast<uint8_t>(player_status_string_field::poof_out) + 1;
+        for (uint16_t bad : {first_invalid, static_cast<uint16_t>(integer ? UINT16_MAX : UINT8_MAX)}) {
+            auto malformed = bytes;
+            malformed[offset] = static_cast<uint8_t>(bad);
+            if (integer) malformed[offset + 1] = static_cast<uint8_t>(bad >> 8);
+            check(malformed, player_snapshot_codec_result::invalid_value);
+            // A recognized invalid field is invalid even when no value bytes follow.
+            malformed.resize(offset + (integer ? 2 : 1));
+            check(malformed, player_snapshot_codec_result::invalid_value);
+            auto invalid = valid;
+            if (integer) invalid.status_integers[0].field = static_cast<player_status_field>(bad);
+            else invalid.status_strings[0].field = static_cast<player_status_string_field>(bad);
+            auto retained = prior_bytes;
+            assert(player_snapshot_encode(invalid, &retained) == player_snapshot_codec_result::invalid_value);
+            assert(retained == prior_bytes);
+        }
+        // Incomplete enum storage and missing payload with a valid enum keep truncated.
+        auto truncated = bytes;
+        truncated.resize(offset + (integer ? 1 : 0));
+        check(truncated, player_snapshot_codec_result::truncated);
+        truncated = bytes;
+        truncated.resize(offset + (integer ? 2 : 1));
+        check(truncated, player_snapshot_codec_result::truncated);
+    }
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+    _GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+    if (sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::string) == 32 &&
+        sizeof(std::vector<uint8_t>) == 24) {
+        size_t heap = 777;
+        auto allow = [](size_t, void *) noexcept { return true; };
+        assert(player_snapshot_decode_bounded(bytes.data(), bytes.size(), &output,
+                                              allow, nullptr, 0, &heap) == player_snapshot_codec_result::ok);
+        size_t observed = 0;
+        assert(player_snapshot_current_heap_bytes(output, &observed) && observed == heap);
+        auto refuse = [](size_t, void *) noexcept { return false; };
+        output = prior; heap = 777; errno = 0;
+        assert(player_snapshot_decode_bounded(bytes.data(), bytes.size(), &output,
+                                              refuse, nullptr, 0, &heap) == player_snapshot_codec_result::allocation_failure);
+        assert(errno == ENOBUFS && heap == 777);
+        preserved(output);
+    }
+#endif
+}
+
 int main(int argc, char **argv)
 {
     assert(argc == 2);
@@ -414,6 +511,7 @@ int main(int argc, char **argv)
         player_save_journal_shutdown();
     }
 
+    check_snapshot_status_field_refusals();
     player_snapshot original = make_snapshot(10, 1);
     std::vector<uint8_t> encoded;
     assert(player_snapshot_encode(original, &encoded) == player_snapshot_codec_result::ok);
