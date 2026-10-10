@@ -43,4 +43,53 @@ economic_accounting_error native_mobile_birth_cash_role_command_decode_bounded(
 	size_t *retained_image_heap_bytes = nullptr,
 	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
 
+// Complete original v4 structure/role/projection/canonical semantics using
+// genuine fixed proof/freeze and original v3 fixed constructor-output decoder.
+// Strong outputs; input/prior output inline and heap remain caller outer.
+economic_accounting_error native_mobile_birth_cash_role_command_decode_fixed_bounded(
+	const critical_command &, quest_mobile_native_image *,
+	std::vector<native_mobile_birth_item_recipe> *, native_mobile_birth_cash_role_recipe *,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
+	size_t *retained_image_heap_bytes = nullptr,
+	size_t *retained_recipe_heap_bytes = nullptr) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_command_build_fixed_bounded(
+	const economic_operation_metadata &, const quest_mobile_native_image &,
+	const std::span<const native_mobile_birth_item_recipe> &,
+	const native_mobile_birth_cash_role_recipe &, critical_source_site,
+	uint64_t accepted_at_usec, critical_command *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live) noexcept;
+// Partial LOCAL named entries only. These are not complete lower SOURCE getters.
+bool native_mobile_birth_cash_role_command_decode_own_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_command_decode_initial_inline_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_command_build_own_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_command_build_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_cash_role_command_build_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+constexpr size_t native_mobile_birth_cash_role_command_decode_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
+// Genuine prospective full SOURCE; independent SOURCE/native review remains
+// separate. Caller full SOURCE+initial is transient; child owns actual local
+// graph and retains only named lower supplements/lifetime through their use.
+bool native_mobile_birth_cash_role_command_build_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_command_decode_source_frame_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_cash_role_command_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool) + sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) +
+	       2 * native_mobile_birth_command_source_query_frame_bytes() +
+	       native_mobile_birth_cash_role_recipe_query_frame_bytes() +
+	       native_mobile_birth_constructor_recipe_query_frame_bytes() +
+	       quest_mobile_native_image_lifetime_source_query_frame_bytes() +
+	       native_mobile_birth_recipe_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       critical_command_startup_codec_source_query_frame_bytes();
+}
+
 #endif

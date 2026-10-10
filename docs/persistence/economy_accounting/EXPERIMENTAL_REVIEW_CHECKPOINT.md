@@ -4057,3 +4057,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Native birth general and cash role command source contracts implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_BIRTH_GENERAL_CASH_COMMAND_SOURCE_CONTRACTS_2026-10-10.md) adds complete original general/cash command source, query and preentry contracts with genuine allocator/search/lifetime corrections.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
