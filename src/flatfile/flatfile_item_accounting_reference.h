@@ -95,4 +95,17 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_verify_operat
 	const std::span<const economic_accounting_item_reference> &, flatfile_scratch_reserve_fn,
 	void *, size_t) noexcept;
 
+// CLOSED passive ordinary staging: original encoding/key/merge/capacity law.
+// Actual established namespace and same recovered root lock required; no
+// directory creation, chmod, recovery, acquisition or commit. Strong output.
+class flatfile_native_mobile_birth_ordinary_reference_stage_storage final
+{
+	friend class flatfile_accounting_native_mobile_birth_ordinary_transaction;
+	static flatfile_item_accounting_status
+	stage_locked(const std::string &, const flatfile_authority_lock &,
+		     const critical_operation_id &,
+		     std::span<const economic_accounting_item_reference>,
+		     std::vector<flatfile_authority_operation> *, std::string *);
+};
+
 #endif
