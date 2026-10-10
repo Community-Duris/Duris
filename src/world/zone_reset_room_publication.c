@@ -3631,6 +3631,8 @@ struct room_cold_current_globals
 		    !room_prepare_add(bytes, current) ||
 		    !quest_mobile_native_mobile_catalog_string_storage_bytes(&current) ||
 		    !room_prepare_add(bytes, current) ||
+		    !quest_mobile_native_object_catalog_string_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
 		    !quest_mobile_native_published_npc_storage_bytes(&current) ||
 		    !room_prepare_add(bytes, current))
 			return false;

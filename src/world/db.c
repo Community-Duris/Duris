@@ -14834,3 +14834,1400 @@ bool quest_mobile_native_stage::restore_constructor_bounded(
 	return false;
 #endif
 }
+
+// Complete original ordinary NPC item constructor companion.
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+namespace
+{
+constexpr size_t ordinary_item_budget_source_frames =
+	// private_bytes: this/output/bytes, the actual range reference/begin/end/row,
+	// retained getter value and isolated errno. Inline owner fields are separate.
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	sizeof(bool) +
+	// string_heap/capacity and add helper source arguments/return carriers.
+	2 * sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(size_t *) +
+	sizeof(size_t) + sizeof(bool) +
+	// relay full/context/self/private_heap/saved_errno/admitted/return.
+	sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + 2 * sizeof(bool) +
+	// global output/context/self/return, init/request this/input/return.
+	3 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// full_private_prefix this/output/full/private_heap/return; lower_call ctor/dtor.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) +
+	// Actual selected mobile_constructor_budget init/live/request sources:
+	// this/input, globals/saved_errno, output/extra/private_heap/value, and its
+	// initializer-list hidden range/begin/end/part coexist with the item relay.
+	sizeof(void *) + sizeof(size_t) + sizeof(size_t) + sizeof(int) + sizeof(bool) +
+	sizeof(void *) + sizeof(size_t *) + sizeof(size_t) + 2 * sizeof(size_t) + sizeof(int) +
+	sizeof(size_t) + sizeof(std::initializer_list<size_t>) + 2 * sizeof(const size_t *) +
+	sizeof(size_t) + sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(int) +
+	sizeof(bool);
+// Installed GCC13 full source scopes, conservatively summed even where their
+// branches are exclusive. Actual malloc payloads are admitted separately.
+constexpr size_t ordinary_item_string_source_frames =
+	// basic_string.h641 constructor this/s/a/end and its allocator hider.
+	sizeof(std::string *) + sizeof(const char *) + sizeof(const std::allocator<char> *) +
+	sizeof(const char *) + sizeof(void *) + sizeof(char *) + sizeof(std::allocator<char> *) +
+	// basic_string.tcc222 construct: this/beg/end/tag/dnew/guard and guard ctor.
+	sizeof(std::string *) + 2 * sizeof(const char *) + sizeof(std::forward_iterator_tag) +
+	sizeof(size_t) + sizeof(std::string *) + 2 * sizeof(std::string *) +
+	// _M_create this/capacity-reference/old-capacity, allocate and new_allocator.
+	sizeof(std::string *) + sizeof(size_t *) + sizeof(size_t) + sizeof(char *) +
+	sizeof(std::allocator<char> *) + sizeof(size_t) + sizeof(const void *) +
+	sizeof(std::allocator<char> *) + sizeof(size_t) + sizeof(void *) +
+	// char_traits length, distance and copy/set-length actual scalar scopes.
+	sizeof(const char *) + sizeof(size_t) + 2 * sizeof(const char *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(char *) + 2 * sizeof(const char *) +
+	sizeof(char *) + sizeof(const char *) + sizeof(size_t) + sizeof(std::string *) +
+	sizeof(size_t) +
+	// Move constructor/assignment and both _Alloc_hider/copy-local-buffer tails.
+	2 * sizeof(std::string *) + sizeof(void *) + sizeof(char *) +
+	sizeof(std::allocator<char> *) + 2 * sizeof(std::string *) + sizeof(char *) +
+	sizeof(size_t) + 2 * sizeof(char *) + sizeof(size_t) + sizeof(bool) +
+	// Dispose/deallocate and genuine memcpy/memmove return/argument carriers.
+	sizeof(std::string *) + sizeof(char *) + sizeof(size_t) + sizeof(std::allocator<char> *) +
+	sizeof(char *) + sizeof(size_t) + sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *);
+
+template <class T> constexpr size_t ordinary_item_vector_source_frames() noexcept
+{
+	return
+		// vector.tcc68 reserve: this/n/old-size/tmp.
+		sizeof(std::vector<T> *) + 2 * sizeof(size_t) + sizeof(T *) +
+		// _M_allocate/_M_deallocate and actual allocator-traits/new-allocator scopes.
+		sizeof(void *) + sizeof(size_t) + sizeof(T *) + sizeof(void *) + sizeof(T *) +
+		sizeof(size_t) + sizeof(std::allocator<T> *) + sizeof(size_t) +
+		sizeof(const void *) + sizeof(std::allocator<T> *) + sizeof(size_t) +
+		sizeof(size_t) + sizeof(void *) + sizeof(std::allocator<T> *) + sizeof(T *) +
+		sizeof(size_t) + sizeof(size_t) +
+		// _S_relocate -> relocate_a -> relocate_a_1; actual n/result/iterator carriers.
+		3 * (3 * sizeof(T *) + sizeof(std::allocator<T> *)) + sizeof(size_t) + sizeof(T *) +
+		// relocate_object_a and allocator_traits::construct/_Construct source refs.
+		2 * sizeof(T *) + sizeof(std::allocator<T> *) + sizeof(std::allocator<T> *) +
+		2 * sizeof(T *) + 2 * sizeof(T *) +
+		// push_back/emplace_back and _M_realloc_insert full retained source scopes.
+		sizeof(std::vector<T> *) + sizeof(T *) + sizeof(std::vector<T> *) + sizeof(T *) +
+		sizeof(std::vector<T> *) + sizeof(typename std::vector<T>::iterator) + sizeof(T *) +
+		2 * sizeof(size_t) + 4 * sizeof(T *) +
+		// _M_check_len(this,n,s,len), iterator subtraction and maximum source refs.
+		sizeof(std::vector<T> *) + sizeof(size_t) + sizeof(const char *) + sizeof(size_t) +
+		2 * sizeof(typename std::vector<T>::iterator) + sizeof(std::ptrdiff_t) +
+		sizeof(const size_t *) + sizeof(const size_t *) +
+		// _Destroy(first,last,allocator)/deallocation plus memmove call carriers.
+		2 * sizeof(T *) + sizeof(std::allocator<T> *) + sizeof(T *) + sizeof(T *) +
+		2 * sizeof(void *) + sizeof(size_t) + sizeof(void *);
+}
+constexpr size_t ordinary_item_bit_vector_source_frames =
+	// stl_bvector reserve / _M_reallocate / allocate: real bit-word count/pointers.
+	sizeof(std::vector<bool> *) + sizeof(size_t) + sizeof(std::vector<bool> *) +
+	sizeof(size_t) + sizeof(std::_Bit_type *) + sizeof(std::_Bit_type *) +
+	2 * sizeof(std::_Bit_iterator) + sizeof(std::vector<bool> *) + sizeof(size_t) +
+	sizeof(std::allocator<std::_Bit_type> *) + sizeof(size_t) +
+	sizeof(std::allocator<std::_Bit_type> *) + sizeof(size_t) + sizeof(const void *) +
+	sizeof(size_t) + sizeof(void *) +
+	// _M_copy_aligned(first,last,result), bit/pointer copy and filled leading word.
+	2 * sizeof(std::_Bit_const_iterator) + sizeof(std::_Bit_iterator) +
+	3 * sizeof(std::_Bit_type *) + sizeof(size_t) +
+	// Empty old vector copy still enters its actual pointer and bit iterator
+	// copy dispatcher before testing the range; no growth occurs on later push.
+	3 * sizeof(std::_Bit_type *) + 3 * sizeof(std::_Bit_const_iterator) +
+	2 * sizeof(std::_Bit_iterator) + sizeof(bool) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	// push_back bool/reference assignment and dispose old bit storage.
+	sizeof(std::vector<bool> *) + sizeof(bool) + sizeof(std::_Bit_reference) + sizeof(bool) +
+	sizeof(std::vector<bool> *) + sizeof(std::_Bit_type *) + sizeof(size_t) +
+	sizeof(std::allocator<std::_Bit_type> *) + sizeof(std::_Bit_type *) + sizeof(size_t);
+}
+#endif
+
+// Genuine original warm-item constructor ownership only. Prototype and the
+// not-yet-returned native candidate stay private beside whole ROOT storage.
+// A lower parser/initializer owns its explicit old-input/staged-result prefix
+// during the actual call; the constructor recenses those bodies on return.
+struct quest_mobile_native_item_stage::ordinary_item_constructor_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	const object_template *prototype = nullptr;
+	const object_template_description *description = nullptr;
+	const quest_mobile_native_item_stage *candidate = nullptr;
+	size_t transient_heap = 0, pre_stage_inline = 0;
+	const std::vector<size_t> *pre_libraries = nullptr;
+	const std::vector<extra_descr_data *> *pre_descriptions = nullptr;
+	const std::vector<int> *pre_delays = nullptr;
+	const std::vector<bool> *pre_requested = nullptr;
+	bool lower_owns_private = false;
+	mobile_constructor_budget request_owner;
+	ordinary_item_constructor_budget(bool (*g)(size_t *, void *) noexcept,
+					 bool (*r)(size_t, void *) noexcept, void *c) noexcept
+		: current_global(g)
+		, reserve(r)
+		, context(c)
+		, request_owner{ global, relay, this }
+	{
+	}
+	static bool global(size_t *output, void *opaque) noexcept
+	{
+		auto &self = *static_cast<ordinary_item_constructor_budget *>(opaque);
+		return self.current_global && self.current_global(output, self.context);
+	}
+	static bool add(size_t &bytes, size_t part) noexcept
+	{
+		if (part > SIZE_MAX - bytes)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		bytes += part;
+		return true;
+	}
+	static bool string_heap(size_t &bytes, const std::string &text) noexcept
+	{
+		if (text.capacity() <= 15)
+			return true;
+		if (text.capacity() == SIZE_MAX)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		return add(bytes, text.capacity() + 1);
+	}
+	bool private_bytes(size_t *output) noexcept
+	{
+		if (!output)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		size_t bytes = transient_heap;
+		if (!add(bytes, pre_stage_inline))
+			return false;
+		if (pre_libraries && pre_libraries->capacity() > SIZE_MAX / sizeof(size_t))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		if (pre_libraries && !add(bytes, pre_libraries->capacity() * sizeof(size_t)))
+			return false;
+		if (pre_descriptions &&
+		    pre_descriptions->capacity() > SIZE_MAX / sizeof(extra_descr_data *))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		if (pre_descriptions &&
+		    !add(bytes, pre_descriptions->capacity() * sizeof(extra_descr_data *)))
+			return false;
+		if (pre_delays && pre_delays->capacity() > SIZE_MAX / sizeof(int))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		if (pre_delays && !add(bytes, pre_delays->capacity() * sizeof(int)))
+			return false;
+		if (pre_requested &&
+		    !add(bytes, pre_requested->capacity() / CHAR_BIT +
+					bool(pre_requested->capacity() % CHAR_BIT)))
+			return false;
+		if (prototype)
+		{
+			if (prototype->descriptions.capacity() >
+			    SIZE_MAX / sizeof(object_template_description))
+			{
+				errno = EOVERFLOW;
+				return false;
+			}
+			if (!string_heap(bytes, prototype->name) ||
+			    !string_heap(bytes, prototype->short_description) ||
+			    !string_heap(bytes, prototype->description) ||
+			    !string_heap(bytes, prototype->action_description) ||
+			    !add(bytes, prototype->descriptions.capacity() *
+						sizeof(object_template_description)))
+				return false;
+			for (const auto &row : prototype->descriptions)
+				if (!string_heap(bytes, row.keyword) ||
+				    !string_heap(bytes, row.description))
+					return false;
+		}
+		if (description && (!string_heap(bytes, description->keyword) ||
+				    !string_heap(bytes, description->description)))
+			return false;
+		if (candidate && !candidate->empty())
+		{
+			size_t retained = 0;
+			const int saved_errno = errno;
+			errno = 0;
+			if (!candidate->retained_bytes_excluding_literal_pools(&retained) ||
+			    retained < sizeof(*candidate))
+			{
+				if (!errno)
+					errno = EIO;
+				return false;
+			}
+			errno = saved_errno;
+			if (!add(bytes, retained - sizeof(*candidate)))
+				return false;
+		}
+		*output = bytes;
+		return true;
+	}
+	static bool relay(size_t full, void *opaque) noexcept
+	{
+		auto &self = *static_cast<ordinary_item_constructor_budget *>(opaque);
+		if (!self.lower_owns_private)
+		{
+			size_t private_heap = 0;
+			if (!self.private_bytes(&private_heap) || !add(full, private_heap))
+				return false;
+		}
+		if (!self.reserve)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		const int saved_errno = errno;
+		errno = 0;
+		const bool admitted = self.reserve(full, self.context);
+		if (!admitted && !errno)
+			errno = ENOBUFS;
+		if (admitted)
+			errno = saved_errno;
+		return admitted;
+	}
+	bool init(size_t full) noexcept { return request_owner.init(full); }
+	bool request(size_t extra = 0) noexcept { return request_owner.request(extra); }
+	bool full_private_prefix(size_t *output) noexcept
+	{
+		if (!output)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		size_t full = 0, private_heap = 0;
+		if (!request_owner.live(&full) || !private_bytes(&private_heap) ||
+		    !add(full, private_heap))
+			return false;
+		*output = full;
+		return true;
+	}
+	struct lower_call
+	{
+		ordinary_item_constructor_budget &owner;
+		explicit lower_call(ordinary_item_constructor_budget &value) noexcept
+			: owner(value)
+		{
+			owner.lower_owns_private = true;
+		}
+		~lower_call() { owner.lower_owns_private = false; }
+	};
+};
+
+struct quest_mobile_native_item_stage::ordinary_item_template_reader : object_template_reader
+{
+	ordinary_item_constructor_budget &budget;
+	ordinary_item_template_reader(FILE *file, ordinary_item_constructor_budget &value) noexcept
+		: object_template_reader{ file, false }
+		, budget(value)
+	{
+	}
+	std::string string(const char *shared = nullptr)
+	{
+		constexpr size_t frames = sizeof(std::string) + 5 * sizeof(void *) +
+					  4 * sizeof(size_t) + sizeof(int) + sizeof(bool) +
+					  sizeof(mobile_constructor_frame_scope);
+		if (!budget.request(frames))
+			throw template_read_failure{ static_cast<unsigned>(errno ? errno :
+										   ENOBUFS) };
+		mobile_constructor_frame_scope scope(&budget.request_owner, frames);
+		if (shared)
+		{
+			skip_fread(file); // Full original native source advancement.
+			const size_t length = strlen(shared);
+			if (length == SIZE_MAX || !budget.request(length > 15 ? length + 1 : 0))
+				throw template_read_failure{ static_cast<unsigned>(
+					errno ? errno : EOVERFLOW) };
+			return std::string(shared);
+		}
+		char *text = nullptr;
+		if (!mobile_constructor_read_text_bounded(file, &text, budget.request_owner))
+			throw template_read_failure{ static_cast<unsigned>(errno ? errno : EIO) };
+		struct text_owner
+		{
+			ordinary_item_constructor_budget &budget;
+			char *text;
+			~text_owner()
+			{
+				if (text)
+					FREE(text);
+				budget.transient_heap = 0;
+			}
+		} cleanup{ budget, text };
+		if (text &&
+		    !birth_mobile_malloc_storage(text, strlen(text) + 1, &budget.transient_heap))
+			throw template_read_failure{ EIO };
+		const size_t length = text ? strlen(text) : 0;
+		if (length == SIZE_MAX || !budget.request(length > 15 ? length + 1 : 0))
+			throw template_read_failure{ static_cast<unsigned>(errno ? errno :
+										   EOVERFLOW) };
+		return std::string(text ? text : "");
+	}
+};
+
+object_template quest_mobile_native_item_stage::parse_ordinary_item_template_bounded(
+	int nr, ordinary_item_template_reader &input)
+{
+	object_template result;
+	struct prototype_owner
+	{
+		ordinary_item_constructor_budget &budget;
+		prototype_owner(ordinary_item_constructor_budget &b,
+				const object_template &p) noexcept
+			: budget(b)
+		{
+			budget.prototype = &p;
+		}
+		~prototype_owner()
+		{
+			budget.prototype = nullptr;
+			budget.description = nullptr;
+		}
+	} current(input.budget, result);
+	auto *obj = &result;
+	int tmp, i;
+	unsigned long utmp;
+	char chk[MAX_STRING_LENGTH];
+	obj->R_num = nr;
+	if (input.recoverable)
+	{
+		if (fseek(input.file, obj_index[nr].pos, SEEK_SET))
+			throw template_read_failure{ EIO };
+	}
+	else
+		fseek(obj_f, obj_index[nr].pos, 0);
+	obj->name = input.string(obj_index[nr].keys);
+	for (char &letter : obj->name)
+		letter = LOWER(letter);
+	obj->short_description = input.string(obj_index[nr].desc2);
+	obj->description = input.string(obj_index[nr].desc1);
+	obj->action_description = input.string(obj_index[nr].desc3);
+	/* *** numeric data *** */
+
+	input.required(&tmp);
+	obj->type = tmp;
+	input.required(&tmp);
+	obj->material = tmp;
+	input.required(&tmp);
+	//  obj->size = tmp;
+	input.required(&tmp);
+	//  obj->space = tmp;
+	input.required(&tmp);
+	obj->craftsmanship = tmp;
+	input.required(&tmp);
+	//  obj->damres_bonus = tmp;
+	input.required(&utmp);
+	obj->extra_flags = utmp;
+	input.required(&utmp);
+	obj->wear_flags = utmp;
+	input.required(&utmp);
+	obj->extra2_flags = utmp;
+	input.required(&utmp);
+	obj->anti_flags = utmp;
+	input.required(&utmp);
+	// Hack until we make as script to edit files directly.
+	if (IS_SET(obj->anti_flags, CLASS_NECROMANCER))
+		SET_BIT(obj->anti_flags, CLASS_THEURGIST);
+	obj->anti2_flags = utmp;
+	input.required(&tmp);
+	obj->value[0] = tmp;
+	input.required(&tmp);
+	obj->value[1] = tmp;
+	input.required(&tmp);
+	obj->value[2] = tmp;
+	input.required(&tmp);
+	obj->value[3] = tmp;
+	input.required(&tmp);
+	obj->value[4] = tmp;
+	input.required(&tmp);
+	obj->value[5] = tmp;
+	input.required(&tmp);
+	obj->value[6] = tmp;
+	input.required(&tmp);
+	obj->value[7] = tmp;
+	input.required(&tmp);
+	obj->weight = tmp;
+	input.required(&tmp);
+	obj->cost = tmp;
+	input.required(&tmp);
+	obj->condition = tmp;
+	//  fscanf(obj_f, " %d \n", &tmp);
+	//  obj->max_condition = tmp;  wipe2011
+	//  if(obj->max_condition < 100)
+	//    obj->max_condition = 100;
+
+	if (input.optional(&utmp) == 1)
+	{
+		obj->bitvector = utmp;
+		if (input.optional(&utmp) == 1)
+		{
+			obj->bitvector2 = utmp;
+			if (input.optional(&utmp) == 1)
+			{
+				obj->bitvector3 = utmp;
+				if (input.optional(&utmp) == 1)
+					obj->bitvector4 = utmp;
+			}
+		}
+	}
+	if (input.token(chk) != 1)
+		*chk = '\0';
+	if (!strcmp(chk, "B5"))
+	{
+		if (input.optional(&utmp) == 1)
+			obj->bitvector5 = utmp;
+		else
+		{
+			if (input.recoverable)
+				throw template_read_failure{ EILSEQ };
+			if (!mobile_constructor_logit(&input.budget.request_owner, LOG_STATUS,
+						      "Object %d has an invalid B5 affect mask.",
+						      obj_index[nr].virtual_number))
+				throw template_read_failure{ static_cast<unsigned>(
+					errno ? errno : ENOBUFS) };
+		}
+		if (input.token(chk) != 1)
+			*chk = '\0';
+	}
+
+	//  if(obj->craftsmanship > ((OBJCRAFT_HIGHEST - 1) / 2))
+	//  {
+	//    obj->max_condition = (int) BOUNDED(100, (50 * 1.4285 * (obj->craftsmanship - 6)), 500);
+	// 1.4285 = 10 / 7(max condition is 1000, there are 7 values after average craftsmanship)
+	//  }
+	//  obj->condition = obj->max_condition;  wipe2011
+
+	// nuke the proclib flag - it'll be put back if needed
+	REMOVE_BIT(obj->extra_flags, ITEM_PROCLIB);
+
+	/* *** extra descriptions *** */
+	// Proc-library descriptions stay inert until main-thread publication.
+	while (*chk == 'E')
+	{
+		object_template_description description;
+		input.budget.description = &description;
+		description.keyword = input.string();
+		description.description = input.string();
+		if (obj->descriptions.size() == obj->descriptions.capacity())
+		{
+			const size_t size = obj->descriptions.size();
+			if (size == obj->descriptions.max_size() ||
+			    size > SIZE_MAX - (size ? size : 1))
+				throw template_read_failure{ EOVERFLOW };
+			const size_t capacity =
+				std::min(obj->descriptions.max_size(), size + (size ? size : 1));
+			if (capacity > SIZE_MAX / sizeof(object_template_description) ||
+			    !input.budget.request(capacity * sizeof(object_template_description)))
+				throw template_read_failure{ static_cast<unsigned>(
+					errno ? errno : EOVERFLOW) };
+		}
+		obj->descriptions.push_back(std::move(description));
+		input.budget.description = nullptr;
+		if (input.token(chk) != 1)
+			*chk = '\0';
+	}
+	for (i = 0; (i < MAX_OBJ_AFFECT) && (*chk == 'A'); i++)
+	{
+		input.required(&tmp);
+		obj->affected[i].location = tmp;
+		input.required(&tmp);
+		obj->affected[i].modifier = tmp;
+		input.required(chk);
+	}
+
+	/* Trapped item data */
+	obj->trap_eff = obj->trap_dam = obj->trap_charge = 0;
+	if (*chk == 'T')
+	{
+		input.required(&tmp);
+		obj->trap_eff = tmp;
+		input.required(&tmp);
+		obj->trap_dam = tmp;
+		input.required(&tmp);
+		obj->trap_charge = tmp;
+		input.required(&tmp);
+		obj->trap_level = tmp;
+	}
+	/* ensure builders dont mess things up */
+	if (IS_SET(obj->wear_flags, ITEM_TAKE) && !IS_SET(obj->wear_flags, ITEM_HOLD))
+		SET_BIT(obj->wear_flags, ITEM_HOLD);
+	if (IS_SET(obj->wear_flags, ITEM_HOLD) && !IS_SET(obj->wear_flags, ITEM_TAKE))
+		SET_BIT(obj->wear_flags, ITEM_TAKE);
+	if (obj->type == ITEM_ARMOR && !obj->value[0])
+		obj->type = ITEM_WORN;
+#if 0
+  if (obj->type == ITEM_ARMOR && !IS_SET(obj->wear_flags, ITEM_WEAR_BODY)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_LEGS)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_ARMS)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_HEAD)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_ABOUT)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_FEET)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_SHIELD)
+      && !IS_SET(obj->wear_flags, ITEM_WEAR_HANDS))
+  {
+    obj->type = ITEM_WORN;
+    obj->affected[2].location = APPLY_ARMOR;
+    obj->affected[2].modifier = -(obj->value[0]);
+  }
+#endif
+	/* set up a few items that are belt attachable */
+	if (((GET_ITEM_TYPE(obj) == ITEM_DRINKCON) /*&& !isname("barrel", obj->name.c_str()) */
+	     && (isname("canteen", obj->name.c_str()) || isname("skin", obj->name.c_str()) ||
+		 isname("horn", obj->name.c_str()))) ||
+	    ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER) &&
+	     (isname("bag", obj->name.c_str()) || isname("sack", obj->name.c_str()) ||
+	      isname("tube", obj->name.c_str()) || isname("case", obj->name.c_str()) ||
+	      isname("scabbard", obj->name.c_str()) || isname("pouch", obj->name.c_str())) &&
+	     (obj->value[0] < 25)) ||
+	    (GET_ITEM_TYPE(obj) == ITEM_QUIVER))
+		SET_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
+
+	/* and some that are back */
+	if ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER && isname("backpack", obj->name.c_str())) ||
+	    GET_ITEM_TYPE(obj) == ITEM_QUIVER)
+		SET_BIT(obj->wear_flags, ITEM_WEAR_BACK);
+
+	/* set throw flag to obj */
+	if (obj->type == ITEM_WEAPON)
+	{
+		if (strstr(obj->name.c_str(), "axe") || strstr(obj->name.c_str(), "hammer") ||
+		    strstr(obj->name.c_str(), "trident") || strstr(obj->name.c_str(), "club") ||
+		    strstr(obj->name.c_str(), "dart"))
+			SET_BIT(obj->extra_flags, ITEM_CAN_THROW1);
+		else if (strstr(obj->name.c_str(), "dagger") ||
+			 strstr(obj->name.c_str(), "spear") || strstr(obj->name.c_str(), "javelin"))
+			SET_BIT(obj->extra_flags, ITEM_CAN_THROW2);
+		else if (strstr(obj->name.c_str(), "boomerang"))
+		{
+			SET_BIT(obj->extra_flags, ITEM_CAN_THROW1);
+			SET_BIT(obj->extra_flags, ITEM_CAN_THROW2);
+			SET_BIT(obj->extra_flags, ITEM_RETURNING);
+		}
+		if (obj->value[0] == WEAPON_2HANDSWORD)
+		{
+			SET_BIT(obj->extra_flags, ITEM_TWOHANDS);
+		}
+	}
+
+	return result;
+}
+
+bool quest_mobile_native_item_stage::prepare_impl_npc_flat_bounded(
+	int nr, int type, uint64_t supplied_reserved_uid,
+	const quest_mobile_native_npc_flat_factory_scope &source,
+	quest_mobile_native_item_stage *output, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!nevent_is_game_thread() || !output || output->state_ || !supplied_reserved_uid ||
+	    supplied_reserved_uid == UINT64_MAX || supplied_reserved_uid > ULONG_MAX ||
+	    !obj_index || !dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+	    dead_obj_pool->next_off != offsetof(obj_data, next))
+		return false;
+	if (type == VIRTUAL)
+		nr = real_object(nr);
+	else if (type != REAL)
+		return false;
+	if (nr < 0 || nr > top_of_objt)
+		return false;
+	if (!current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	const size_t frames =
+		sizeof(ordinary_item_constructor_budget) + sizeof(object_template) +
+		sizeof(ordinary_item_template_reader) + sizeof(quest_mobile_native_item_stage) +
+		sizeof(std::unique_ptr<implementation>) + MAX_STRING_LENGTH * sizeof(char) +
+		sizeof(object_template_description) + 28 * sizeof(void *) + 22 * sizeof(size_t) +
+		8 * sizeof(int) + 12 * sizeof(bool) + sizeof(obj_proc_type) +
+		4 * sizeof(std::ptrdiff_t) + 4 * sizeof(std::random_access_iterator_tag) +
+		sizeof(std::initializer_list<obj_proc_type>) + ordinary_item_budget_source_frames +
+		ordinary_item_string_source_frames +
+		ordinary_item_vector_source_frames<object_template_description>() +
+		ordinary_item_vector_source_frames<size_t>() +
+		ordinary_item_vector_source_frames<extra_descr_data *>() +
+		ordinary_item_vector_source_frames<int>() + ordinary_item_bit_vector_source_frames +
+		quest_mobile_native_item_stage::npc_retained_observation_source_frames();
+	if (frames > SIZE_MAX - outer)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	ordinary_item_constructor_budget budget{ current_global, reserve, context };
+	if (!budget.init(outer + frames) ||
+	    !source.current_bounded(ordinary_item_constructor_budget::relay, &budget,
+				    outer + frames))
+		return false;
+	quest_mobile_native_item_stage candidate;
+	budget.candidate = &candidate;
+	struct candidate_owner
+	{
+		ordinary_item_constructor_budget &budget;
+		~candidate_owner()
+		{
+			budget.candidate = nullptr;
+			budget.prototype = nullptr;
+			budget.description = nullptr;
+		}
+	} current_candidate{ budget };
+	// The original body owns its candidate until success. Retained callers
+	// also inherit an exact surviving candidate when original cleanup refuses;
+	// never report empty ownership merely because preparation returned false.
+	struct failure_retention
+	{
+		implementation *&candidate, *&output;
+		bool retain;
+		~failure_retention() noexcept
+		{
+			if (retain && candidate)
+			{
+				output = candidate;
+				candidate = nullptr;
+			}
+		}
+	} retention{ candidate.state_, output->state_, true };
+	try
+	{
+		ordinary_item_template_reader reader{ obj_f, budget };
+		const object_template prototype = parse_ordinary_item_template_bounded(nr, reader);
+		budget.prototype = &prototype;
+		if (prototype.R_num != nr ||
+		    prototype.descriptions.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+			return false;
+		if (!budget.request(sizeof(implementation)))
+			return false;
+		auto state = std::make_unique<implementation>();
+		budget.pre_stage_inline = sizeof(implementation);
+		budget.pre_libraries = &state->libraries;
+		budget.pre_descriptions = &state->parsed_descriptions;
+		budget.pre_delays = &state->library_delays;
+		budget.pre_requested = &state->requested;
+		state->flat_factory = true;
+		state->index = obj_index;
+		state->pool = dead_obj_pool;
+		state->rnum = nr;
+		state->vnum = obj_index[nr].virtual_number;
+		state->position = obj_index[nr].pos;
+		state->original_proc = obj_index[nr].func.obj;
+		state->uid = supplied_reserved_uid;
+		const auto original_proc = state->original_proc;
+		const auto effective = [original_proc, nr](obj_proc_type function)
+		{
+			return original_proc == function ||
+			       (original_proc == proclib_obj_cmd_bridge &&
+				proclib_recovery_chain_stage::predecessor_matches(nr, function));
+		};
+		// REPOP can mutate literals and the world. It has no detached original
+		// trigger/source participant yet; refuse before any birth or publication.
+		if (effective(studioproc_obj))
+			return false;
+		// Only these actual original CMD_SET_PERIODIC branches are detached-safe.
+		// An unrecognized incumbent/predecessor is not a predicted probe result.
+		if (!effective(nullptr) && !effective(spell_pool) && !effective(super_cannon) &&
+		    !effective(vecna_deathportal) && !effective(blood_stains) &&
+		    !effective(zombies_game) && !effective(item_switch) &&
+		    !effective(proclib_obj_proc))
+			return false;
+		for (const auto function : { static_cast<obj_proc_type>(nullptr), spell_pool,
+					     super_cannon, vecna_deathportal, blood_stains,
+					     zombies_game, item_switch, proclib_obj_proc })
+			if (effective(function))
+			{
+				state->effective_proc = function;
+				break;
+			}
+		const size_t rows = prototype.descriptions.size();
+		if (rows > SIZE_MAX / sizeof(size_t))
+		{
+			budget.request_owner.fail(EOVERFLOW);
+			return false;
+		}
+		if (!budget.request(rows * sizeof(size_t)))
+			return false;
+		state->libraries.reserve(rows);
+		if (rows > SIZE_MAX / sizeof(extra_descr_data *))
+		{
+			budget.request_owner.fail(EOVERFLOW);
+			return false;
+		}
+		if (!budget.request(rows * sizeof(extra_descr_data *)))
+			return false;
+		state->parsed_descriptions.reserve(rows);
+		const size_t bits = sizeof(std::_Bit_type) * CHAR_BIT;
+		const size_t words = rows / bits + bool(rows % bits);
+		if (words > SIZE_MAX / sizeof(std::_Bit_type))
+		{
+			budget.request_owner.fail(EOVERFLOW);
+			return false;
+		}
+		if (!budget.request(words * sizeof(std::_Bit_type)))
+			return false;
+		state->requested.reserve(rows);
+		if (rows > SIZE_MAX / sizeof(int))
+		{
+			budget.request_owner.fail(EOVERFLOW);
+			return false;
+		}
+		if (!budget.request(rows * sizeof(int)))
+			return false;
+		state->library_delays.reserve(rows);
+		size_t pool_request = 0;
+		if (!dead_obj_pool->head)
+		{
+			if (dead_obj_pool->chunk_size <= 0)
+			{
+				errno = EINVAL;
+				return false;
+			}
+			if (static_cast<size_t>(dead_obj_pool->chunk_size) > SIZE_MAX / 4096)
+			{
+				errno = EOVERFLOW;
+				return false;
+			}
+			pool_request = static_cast<size_t>(dead_obj_pool->chunk_size) * 4096;
+		}
+		if (!budget.request(pool_request))
+			return false;
+		errno = 0;
+		if (!mm_try_reserve_free_slot(dead_obj_pool))
+		{
+			budget.request_owner.fail(errno ? errno : ENOMEM);
+			return false;
+		}
+		if (!budget.request())
+			return false;
+		errno = 0;
+		P_obj obj = static_cast<P_obj>(mm_try_get(dead_obj_pool));
+		if (!obj)
+		{
+			budget.request_owner.fail(errno ? errno : EIO);
+			return false;
+		}
+		memset(obj, 0, sizeof(*obj));
+		state->object = obj;
+		candidate.state_ = state.release();
+		budget.pre_stage_inline = 0;
+		budget.pre_libraries = nullptr;
+		budget.pre_descriptions = nullptr;
+		budget.pre_delays = nullptr;
+		budget.pre_requested = nullptr;
+		auto &s = *candidate.state_;
+		obj->R_num = prototype.R_num;
+		obj->type = prototype.type;
+		obj->material = prototype.material;
+		obj->craftsmanship = prototype.craftsmanship;
+		obj->extra_flags = prototype.extra_flags;
+		obj->wear_flags = prototype.wear_flags;
+		obj->extra2_flags = prototype.extra2_flags;
+		obj->anti_flags = prototype.anti_flags;
+		obj->anti2_flags = prototype.anti2_flags;
+		memcpy(&obj->value, &prototype.value, sizeof(obj->value));
+		obj->weight = prototype.weight;
+		obj->cost = prototype.cost;
+		obj->condition = prototype.condition;
+		obj->bitvector = prototype.bitvector;
+		obj->bitvector2 = prototype.bitvector2;
+		obj->bitvector3 = prototype.bitvector3;
+		obj->bitvector4 = prototype.bitvector4;
+		obj->bitvector5 = prototype.bitvector5;
+		memcpy(&obj->affected, &prototype.affected, sizeof(obj->affected));
+		obj->trap_eff = prototype.trap_eff;
+		obj->trap_dam = prototype.trap_dam;
+		obj->trap_charge = prototype.trap_charge;
+		obj->trap_level = prototype.trap_level;
+		obj->obj_uid = static_cast<unsigned long>(supplied_reserved_uid);
+		SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		obj->loc_p = LOC_NOWHERE;
+		obj->loc.room = NOWHERE;
+		if (!reset_order_detached(obj))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		// Same immutable prototype string sharing; no index count/list enrollment.
+		if (!obj_index[nr].keys && !prototype.name.empty())
+		{
+			const size_t length = prototype.name.size();
+			if (length == SIZE_MAX ||
+			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
+				return false;
+			errno = 0;
+			char *text = static_cast<char *>(
+				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
+			if (!text)
+			{
+				budget.request_owner.fail(errno ? errno : ENOMEM);
+				return false;
+			}
+			memcpy(text, prototype.name.c_str(), length + 1);
+			obj_index[nr].keys = text;
+		}
+		obj->name = obj_index[nr].keys;
+		s.shared[0] = obj->name;
+		if (!obj_index[nr].desc2 && !prototype.short_description.empty())
+		{
+			const size_t length = prototype.short_description.size();
+			if (length == SIZE_MAX ||
+			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
+				return false;
+			errno = 0;
+			char *text = static_cast<char *>(
+				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
+			if (!text)
+			{
+				budget.request_owner.fail(errno ? errno : ENOMEM);
+				return false;
+			}
+			memcpy(text, prototype.short_description.c_str(), length + 1);
+			obj_index[nr].desc2 = text;
+		}
+		obj->short_description = obj_index[nr].desc2;
+		s.shared[1] = obj->short_description;
+		if (!obj_index[nr].desc1 && !prototype.description.empty())
+		{
+			const size_t length = prototype.description.size();
+			if (length == SIZE_MAX ||
+			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
+				return false;
+			errno = 0;
+			char *text = static_cast<char *>(
+				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
+			if (!text)
+			{
+				budget.request_owner.fail(errno ? errno : ENOMEM);
+				return false;
+			}
+			memcpy(text, prototype.description.c_str(), length + 1);
+			obj_index[nr].desc1 = text;
+		}
+		obj->description = obj_index[nr].desc1;
+		s.shared[2] = obj->description;
+		if (!obj_index[nr].desc3 && !prototype.action_description.empty())
+		{
+			const size_t length = prototype.action_description.size();
+			if (length == SIZE_MAX ||
+			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
+				return false;
+			errno = 0;
+			char *text = static_cast<char *>(
+				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
+			if (!text)
+			{
+				budget.request_owner.fail(errno ? errno : ENOMEM);
+				return false;
+			}
+			memcpy(text, prototype.action_description.c_str(), length + 1);
+			obj_index[nr].desc3 = text;
+		}
+		obj->action_description = obj_index[nr].desc3;
+		s.shared[3] = obj->action_description;
+		for (const auto &description : prototype.descriptions)
+		{
+			if (description.keyword.size() == SIZE_MAX ||
+			    description.description.size() == SIZE_MAX)
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			const size_t keyword_bytes =
+				description.keyword.empty() ? 0 : description.keyword.size() + 1;
+			const size_t description_bytes = description.description.empty() ?
+								 0 :
+								 description.description.size() + 1;
+			if (keyword_bytes > SIZE_MAX - birth_mobile_malloc_header() ||
+			    description_bytes > SIZE_MAX - birth_mobile_malloc_header())
+			{
+				budget.request_owner.fail(EOVERFLOW);
+				return false;
+			}
+			size_t request = sizeof(extra_descr_data) + birth_mobile_malloc_header();
+			if ((keyword_bytes &&
+			     !ordinary_item_constructor_budget::add(
+				     request, keyword_bytes + birth_mobile_malloc_header())) ||
+			    (description_bytes &&
+			     !ordinary_item_constructor_budget::add(
+				     request, description_bytes + birth_mobile_malloc_header())) ||
+			    !budget.request(request))
+				return false;
+			struct description_owner
+			{
+				ordinary_item_constructor_budget &budget;
+				extra_descr_data *value = nullptr;
+				~description_owner()
+				{
+					if (value)
+					{
+						if (value->keyword)
+							FREE(value->keyword);
+						if (value->description)
+							FREE(value->description);
+						FREE(value);
+					}
+					budget.transient_heap = 0;
+				}
+			} pending{ budget };
+			errno = 0;
+			pending.value = static_cast<extra_descr_data *>(__try_malloc(
+				sizeof(extra_descr_data), MEM_TAG_EXDESCD, __FILE__, __LINE__));
+			if (!pending.value)
+			{
+				budget.request_owner.fail(errno ? errno : ENOMEM);
+				return false;
+			}
+			memset(pending.value, 0, sizeof(*pending.value));
+			extra_descr_data *new_descr = pending.value;
+			budget.transient_heap =
+				sizeof(extra_descr_data) + birth_mobile_malloc_header();
+			if (keyword_bytes)
+			{
+				if (!budget.request(keyword_bytes + birth_mobile_malloc_header()))
+					return false;
+				errno = 0;
+				new_descr->keyword = static_cast<char *>(__try_malloc(
+					keyword_bytes, MEM_TAG_STRING, __FILE__, __LINE__));
+				if (!new_descr->keyword)
+				{
+					budget.request_owner.fail(errno ? errno : ENOMEM);
+					return false;
+				}
+				memcpy(new_descr->keyword, description.keyword.c_str(),
+				       keyword_bytes);
+				if (!ordinary_item_constructor_budget::add(
+					    budget.transient_heap,
+					    keyword_bytes + birth_mobile_malloc_header()))
+					return false;
+			}
+			if (description_bytes)
+			{
+				if (!budget.request(description_bytes +
+						    birth_mobile_malloc_header()))
+					return false;
+				errno = 0;
+				new_descr->description = static_cast<char *>(__try_malloc(
+					description_bytes, MEM_TAG_STRING, __FILE__, __LINE__));
+				if (!new_descr->description)
+				{
+					budget.request_owner.fail(errno ? errno : ENOMEM);
+					return false;
+				}
+				memcpy(new_descr->description, description.description.c_str(),
+				       description_bytes);
+				if (!ordinary_item_constructor_budget::add(
+					    budget.transient_heap,
+					    description_bytes + birth_mobile_malloc_header()))
+					return false;
+			}
+			char empty_args[] = "";
+			size_t library = 0;
+			int parsed = -1;
+			if (new_descr->keyword && !strn_cmp("_proclib_", new_descr->keyword, 9))
+			{
+				size_t lower_outer = 0, globals = 0;
+				if (!budget.full_private_prefix(&lower_outer) ||
+				    !current_global(&globals, context) || globals > lower_outer)
+					return false;
+				lower_outer -= globals;
+				ordinary_item_constructor_budget::lower_call lower(budget);
+				errno = 0;
+				parsed = quest_mobile_native_original_proclib::prepare_bounded(
+					obj, new_descr->keyword + 9,
+					new_descr->description ? new_descr->description :
+								 empty_args,
+					&library, ordinary_item_constructor_budget::global,
+					ordinary_item_constructor_budget::relay, &budget,
+					lower_outer);
+				if (parsed && errno && errno != EINVAL)
+				{
+					budget.request_owner.fail(errno);
+					return false;
+				}
+			}
+			if (!budget.request())
+				return false; // Fresh candidate and G before fallback/probe/RNG.
+			if (!parsed)
+			{
+				FREE(new_descr->keyword);
+				if (new_descr->description)
+					FREE(new_descr->description);
+				FREE(new_descr);
+				pending.value = nullptr;
+				budget.transient_heap = 0;
+				if (!budget.request())
+					return false;
+				s.libraries.push_back(library);
+				s.parsed_descriptions.push_back(obj->ex_description);
+				bool periodic = false;
+				if (!s.library_event_requested)
+				{
+					size_t lower_outer = 0, globals = 0;
+					if (!budget.full_private_prefix(&lower_outer) ||
+					    !current_global(&globals, context) ||
+					    globals > lower_outer)
+						return false;
+					lower_outer -= globals;
+					ordinary_item_constructor_budget::lower_call lower(budget);
+					if (!quest_mobile_native_original_proclib::probe_bounded(
+						    obj, library, &periodic,
+						    ordinary_item_constructor_budget::global,
+						    ordinary_item_constructor_budget::relay,
+						    &budget, lower_outer))
+					{
+						candidate.discard_unadmitted();
+						return false;
+					}
+				}
+				if (!budget.request())
+					return false;
+				s.requested.push_back(periodic);
+				s.library_delays.push_back(periodic ? PULSE_MOBILE + number(-4, 4) :
+								      0);
+				s.library_event_requested = s.library_event_requested || periodic;
+				s.parsed_proclib = true;
+				continue;
+			}
+			new_descr->next = obj->ex_description;
+			obj->ex_description = new_descr;
+			pending.value = nullptr;
+			budget.transient_heap = 0;
+		}
+		// Actual local initializer decisions precede spellbook filling/conversion.
+		// Library parsing is complete, and a bridge preserves the original incumbent.
+		if (effective(spell_pool))
+		{
+			s.general_periodic = native_birth_spell_pool_initialize(obj, number(0, 8),
+										time(nullptr));
+			s.general_initialized = true;
+		}
+		else if (effective(super_cannon))
+		{
+			s.general_periodic = native_birth_super_cannon_initialize(obj);
+			s.general_initialized = true;
+		}
+		else if (effective(vecna_deathportal))
+		{
+			s.general_periodic = native_birth_vecna_deathportal_initialize(obj);
+			s.general_initialized = true;
+		}
+		else if (effective(blood_stains))
+		{
+			s.general_periodic = blood_stains(obj, nullptr, CMD_SET_PERIODIC, nullptr);
+			s.general_initialized = true;
+		}
+		else if (effective(zombies_game))
+		{
+			size_t lower_outer = 0, globals = 0;
+			if (!budget.full_private_prefix(&lower_outer) ||
+			    !current_global(&globals, context) || globals > lower_outer)
+				return false;
+			lower_outer -= globals;
+			ordinary_item_constructor_budget::lower_call lower(budget);
+			if (!quest_mobile_native_zombie_stage::prepare_bounded(
+				    obj, s.zombie, ordinary_item_constructor_budget::global,
+				    ordinary_item_constructor_budget::relay, &budget, lower_outer))
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			s.general_periodic = true;
+			s.general_initialized = true;
+		}
+		// The remaining known dispatches have no literal/global initialization.
+		// Newly installed bridge with no incumbent ignores CMD_SET_PERIODIC;
+		// ITEM_SWITCH fallback is installed only if no successful library bound it.
+		else if (effective(item_switch) ||
+			 (effective(nullptr) && !s.parsed_proclib && obj->type == ITEM_SWITCH))
+		{
+			s.general_periodic = item_switch(obj, nullptr, CMD_SET_PERIODIC, nullptr);
+			s.general_initialized = true;
+		}
+		else if (effective(proclib_obj_proc))
+		{
+			s.general_periodic =
+				proclib_obj_proc(obj, nullptr, CMD_SET_PERIODIC, nullptr);
+			s.general_initialized = true;
+		}
+		else
+			s.general_initialized = true;
+		if (s.general_periodic)
+			s.general_delay = PULSE_MOBILE + number(-4, 4);
+		s.random_exit_requested = isname("random_exit", obj->name);
+		if (obj->type == ITEM_SPELLBOOK &&
+		    obj_index[nr].virtual_number == MASTER_SPELLBOOK_VNUM)
+		{
+			const bool had_spell_description = find_spell_description(obj) != nullptr;
+			size_t lower_outer = 0, globals = 0;
+			if (!budget.full_private_prefix(&lower_outer) ||
+			    !current_global(&globals, context) || globals > lower_outer)
+				return false;
+			lower_outer -= globals;
+			int pages = 0;
+			bool filled = false;
+			{
+				ordinary_item_constructor_budget::lower_call lower(budget);
+				filled = native_mobile_birth_fill_master_spellbook_bounded(
+					obj, &pages, ordinary_item_constructor_budget::global,
+					ordinary_item_constructor_budget::relay, &budget,
+					lower_outer);
+			}
+			// Preserve actual descriptor ownership even when the provider refuses.
+			if (!had_spell_description)
+				s.allocated_spell_description = find_spell_description(obj);
+			if (!filled || !budget.request())
+				return false;
+		}
+		if (!budget.request())
+			return false;
+		convertObj(obj);
+		if (obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
+		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		s.preparation_completed = true;
+		obj->reset_order_state = 3;
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (const template_read_failure &failure)
+	{
+		budget.request_owner.fail(static_cast<int>(failure.error));
+		candidate.discard_unadmitted();
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		budget.request_owner.fail(ENOMEM);
+		candidate.discard_unadmitted();
+		return false;
+	}
+	catch (...)
+	{
+		candidate.discard_unadmitted();
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::prepare_retaining_npc_flat_bounded(
+	int nr, int type, uint64_t reserved_uid,
+	const quest_mobile_native_npc_flat_factory_scope &scope,
+	quest_mobile_native_item_stage *output, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!output || output->state_ || !current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	// The constructor owns its hidden candidate; this wrapper owns the actual
+	// output after transfer. Both handoffs use the same fresh whole-G policy.
+	const size_t frames =
+		sizeof(mobile_constructor_budget) + 9 * sizeof(void *) + 8 * sizeof(size_t) +
+		6 * sizeof(bool) + sizeof(nr) + sizeof(type) + sizeof(reserved_uid) +
+		sizeof(std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>) +
+		quest_mobile_native_npc_flat_factory_scope::copy_source_frames();
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	mobile_constructor_budget budget{ current_global, reserve, context };
+	if (!budget.init(outer_live + frames))
+		return false;
+	size_t live = 0;
+	if (!budget.live(&live) || !scope.current_bounded(reserve, context, live) ||
+	    !scope.retained_heap_bytes())
+		return false;
+	const bool prepared = prepare_impl_npc_flat_bounded(nr, type, reserved_uid, scope, output,
+							    current_global, reserve, context, live);
+	if (!output->state_)
+		return false;
+	output->state_->flat_factory = true;
+	// Failed preparation can retain a genuine partial candidate. Keep it closed
+	// and preserve its copied original scope; the fixed caller prefix owns the
+	// stage inline while G owns actual pools and shared catalog strings.
+	const auto output_live = [&](size_t *value) noexcept
+	{
+		size_t full = 0, retained = 0;
+		const int saved_errno = errno;
+		errno = 0;
+		if (!output->retained_bytes_excluding_literal_pools(&retained) ||
+		    retained < sizeof(*output))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+		errno = saved_errno;
+		if (!budget.live(&full))
+			return false;
+		if (retained - sizeof(*output) > SIZE_MAX - full)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		*value = full + retained - sizeof(*output);
+		return true;
+	};
+	size_t request = sizeof(quest_mobile_native_npc_flat_factory_scope) +
+			 sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+						     __gnu_cxx::_S_atomic>);
+	if (scope.root_.size() > 15)
+	{
+		if (scope.root_.size() == SIZE_MAX || scope.root_.size() + 1 > SIZE_MAX - request)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		request += scope.root_.size() + 1;
+	}
+	if (!output_live(&live))
+		return false;
+	if (request > SIZE_MAX - live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const int saved_errno = errno;
+	errno = 0;
+	if (!reserve(live + request, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	errno = saved_errno;
+	try
+	{
+		output->state_->npc_flat_scope =
+			std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>(
+				new quest_mobile_native_npc_flat_factory_scope(scope));
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EIO;
+		return false;
+	}
+	return prepared && output_live(&live) && scope.current_bounded(reserve, context, live) &&
+	       output->npc_flat_factory_matches(scope);
+#endif
+}
+
+bool quest_mobile_native_object_catalog_string_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	if (obj_f && obj_f == mob_f)
+		return false; // Distinct genuine boot sources; avoid an alias counted twice.
+	size_t bytes = 0;
+	// obj_f is the actual fopen allocation opened by boot, never a reopened
+	// source. Its glibc allocation extent includes the private lock/wide-data
+	// tails; sizeof(FILE) alone does not cover that retained object. Server
+	// MEMCHK headers do not apply to these libc-owned malloc allocations.
+	if (obj_f)
+	{
+#if defined(__linux__) && defined(__GLIBC__)
+		const size_t file_storage = malloc_usable_size(obj_f);
+		if (file_storage < sizeof(FILE) || !cold_birth_add(bytes, file_storage))
+			return false;
+		if (obj_f->_IO_buf_base)
+		{
+			if (!obj_f->_IO_buf_end || obj_f->_IO_buf_end < obj_f->_IO_buf_base)
+				return false;
+			const auto file_begin = reinterpret_cast<uintptr_t>(obj_f);
+			const auto buffer_begin = reinterpret_cast<uintptr_t>(obj_f->_IO_buf_base);
+			const size_t extent =
+				static_cast<size_t>(obj_f->_IO_buf_end - obj_f->_IO_buf_base);
+			if (buffer_begin < file_begin || buffer_begin - file_begin >= sizeof(FILE))
+			{
+				// This checkout never installs a borrowed user buffer on obj_f.
+				// A foreign buffer is a violated source ownership contract.
+				if (obj_f->_flags & 1)
+					return false; // glibc _IO_USER_BUF
+				const size_t buffer_storage =
+					malloc_usable_size(obj_f->_IO_buf_base);
+				if (buffer_storage < extent ||
+				    !cold_birth_add(bytes, buffer_storage))
+					return false;
+			}
+		}
+#else
+		return false; // Existing retained-file allocation policy is unavailable.
+#endif
+	}
+	if (!obj_index)
+	{
+		*output = bytes;
+		return true;
+	}
+	if (top_of_objt < 0)
+		return false;
+	// The four original cached columns exclusively retain each fread_string
+	// allocation; every original object borrows those texts. Their per-object aliases never
+	// add another allocation. MEMCHK observes the actual allocation requests.
+	for (int rnum = 0; rnum <= top_of_objt; ++rnum)
+	{
+		const std::array<const char *, 4> strings{ obj_index[rnum].keys,
+							   obj_index[rnum].desc2,
+							   obj_index[rnum].desc1,
+							   obj_index[rnum].desc3 };
+		for (const char *text : strings)
+			if (text)
+			{
+				const size_t length = std::char_traits<char>::length(text);
+				size_t request = 0;
+				if (length == SIZE_MAX ||
+				    !birth_mobile_malloc_storage(text, length + 1, &request) ||
+				    !cold_birth_add(bytes, request))
+					return false;
+			}
+	}
+	*output = bytes;
+	return true;
+}
