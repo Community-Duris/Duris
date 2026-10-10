@@ -603,4 +603,48 @@ bool item_transfer_native_cost_encode_bounded(const item_transfer_payload &, boo
 					      bool (*)(size_t, void *) noexcept, void *context,
 					      size_t outer_live) noexcept;
 
+// Complete original NQF2 native fee and NQM1 native money wire decoders,
+// including full canonical/key/revision/action-operation proof. Pure strong
+// output prerequisites; public all-version dispatcher is a separate owner.
+bool item_transfer_native_fee_decode_bounded(const critical_command &, item_transfer_payload *,
+					     bool (*)(size_t, void *) noexcept, void *context,
+					     size_t outer_live) noexcept;
+bool item_transfer_native_money_decode_bounded(const critical_command &, item_transfer_payload *,
+					       bool (*)(size_t, void *) noexcept, void *context,
+					       size_t outer_live) noexcept;
+
+// Complete original public item native encoders and all-version payload
+// decoder dispatch, preserving full v2-v16 parse/canonical/refusal order.
+// Authentic input/old output/caller/siblings outer-owned; pure strong output.
+bool item_transfer_command_encode_native_mobile_bounded(const item_transfer_payload &,
+							std::vector<uint8_t> *,
+							bool (*)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_bounded(const item_transfer_payload &,
+								 std::vector<uint8_t> *,
+								 bool (*)(size_t, void *) noexcept,
+								 void *context,
+								 size_t outer_live) noexcept;
+bool item_transfer_command_decode_payload_bounded(const critical_command &, item_transfer_payload *,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+
+// Complete original ordinary/native/native-recovery item value builders.
+// Original schema/version/source/deadline/selection/entity laws; no execution
+// or accounting authority. Authentic input/old command/callers stay outer.
+bool item_transfer_command_build_bounded(critical_command *, critical_operation_id,
+					 const item_transfer_payload &, critical_source_site,
+					 critical_deadline_class, bool (*)(size_t, void *) noexcept,
+					 void *context, size_t outer_live) noexcept;
+bool item_transfer_command_build_native_mobile_bounded(critical_command *, critical_operation_id,
+						       const item_transfer_payload &,
+						       critical_source_site,
+						       critical_deadline_class,
+						       bool (*)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept;
+bool item_transfer_command_build_native_mobile_recovery_bounded(
+	critical_command *, critical_operation_id, const item_transfer_payload &,
+	critical_source_site, critical_deadline_class, bool (*)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+
 #endif
