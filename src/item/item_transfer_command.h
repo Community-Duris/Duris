@@ -530,4 +530,77 @@ bool item_transfer_craft_outputs_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_item_heap_bytes = nullptr) noexcept;
 
+// Complete original native mobile context predicate, with genuine fixed
+// reference codec and full item-list canonical/DFS/UID proof. Source/prior caller
+// owners stay outer; no UID issuance/native execution/admission authority or route.
+bool item_transfer_native_mobile_context_valid_bounded(const item_transfer_payload &, uint16_t,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept;
+
+// Complete original generic payload validator, including all original native,
+// continuation/craft/corpse/collector/pet/multi-root/topology refusals in order.
+// Pure unselected companion; authentic input/sibling/caller owners stay outer.
+bool item_transfer_payload_valid_bounded(const item_transfer_payload &, uint16_t,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+
+// Complete original selected-root and entity-vector construction companions.
+// Caller retains authentic payload/prior output/command/all siblings in outer;
+// strong refusal, original identity/revision/key rules, no admission authority.
+bool item_transfer_selected_roots_bounded(const item_transfer_payload &, std::vector<uint64_t> *,
+					  bool (*)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept;
+bool item_transfer_command_entities_bounded(critical_command *, const item_transfer_payload &,
+					    bool (*)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept;
+
+// Complete original generic payload wire encoder for its original version
+// argument, including true corpse/collector/native-reference/recovery tails.
+// This is a pure prerequisite; native cost/fee/money dispatch remains separate.
+bool item_transfer_payload_encode_version_bounded(
+	const item_transfer_payload &, uint16_t, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool item_transfer_command_encode_payload_bounded(const item_transfer_payload &,
+						  std::vector<uint8_t> *,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+
+// Complete original private generic decoder (its original v2-v12 set),
+// including real restored sidecars, legacy normalization and full key/revision
+// proof. Native fee/cost/money and public canonical dispatch remain separate.
+bool item_transfer_payload_decode_generic_bounded(
+	const critical_command &, item_transfer_payload *, bool (*)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_payload_heap_bytes = nullptr) noexcept;
+
+// Complete original native cost value and fee/money shape prerequisites.
+// Same original acknowledged/unacknowledged laws; authentic payload/caller
+// heaps outer-owned. Pure companions, no source/native/admission authority.
+bool item_transfer_native_cost_value_valid_bounded(const item_transfer_payload &,
+						   bool (*)(size_t, void *) noexcept, void *context,
+						   size_t outer_live) noexcept;
+bool item_transfer_native_fee_shape_valid_bounded(const item_transfer_payload &, bool acknowledged,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+bool item_transfer_native_money_shape_valid_bounded(const item_transfer_payload &,
+						    bool acknowledged,
+						    bool (*)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept;
+
+// Complete original native NQF2 fee / NQM1 money / NQF1 cost wire encoders,
+// preserving full original shapes, actual copy/sidecars and acknowledged tails.
+// Pure strong-output prerequisites; public dispatcher/build remains separate.
+bool item_transfer_native_fee_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					     std::vector<uint8_t> *,
+					     bool (*)(size_t, void *) noexcept, void *context,
+					     size_t outer_live) noexcept;
+bool item_transfer_native_money_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					       std::vector<uint8_t> *,
+					       bool (*)(size_t, void *) noexcept, void *context,
+					       size_t outer_live) noexcept;
+bool item_transfer_native_cost_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					      std::vector<uint8_t> *,
+					      bool (*)(size_t, void *) noexcept, void *context,
+					      size_t outer_live) noexcept;
+
 #endif
