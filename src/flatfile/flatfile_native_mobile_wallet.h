@@ -55,6 +55,13 @@ class flatfile_native_mobile_wallet_storage
 			       const economic_account_key &original_wallet,
 			       const quest_mobile_native_reference &exact_current_reference,
 			       flatfile_native_mobile_wallet_current *) noexcept;
+	// Full original CURRENT proof; caller owns input and prior output storage.
+	// New retained scalar counts transferred heaps only. Strong output/scalar.
+	static unsigned int observe_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+		const economic_account_key &, const quest_mobile_native_reference &,
+		flatfile_native_mobile_wallet_current *, flatfile_scratch_reserve_fn, void *,
+		size_t, size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 #endif

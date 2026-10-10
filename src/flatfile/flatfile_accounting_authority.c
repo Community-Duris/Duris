@@ -2332,3 +2332,901 @@ unsigned int flatfile_native_mobile_birth_ordinary_baseline_history_storage::rea
 		},
 		error);
 }
+
+// Passive CURRENT companions. Explicit C++ storage requests only; whole native,
+// allocator, OpenSSL and emitted stack qualification remains a separate gate.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct ordinary_authority_budget
+{
+	size_t outer;
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	void admit(size_t request) const
+	{
+		authority_bounded_admit(outer, request, reserve, context);
+	}
+	ordinary_authority_budget nested(size_t retained) const
+	{
+		need(authority_bounded_add(retained, outer), ENOBUFS);
+		return { retained, reserve, context };
+	}
+};
+size_t ordinary_authority_sum(size_t a, size_t b)
+{
+	need(authority_bounded_add(a, b), ENOBUFS);
+	return a;
+}
+size_t ordinary_authority_product(size_t count, size_t width)
+{
+	need(!width || count <= SIZE_MAX / width, ENOBUFS);
+	return count * width;
+}
+size_t ordinary_authority_string(const std::string &value)
+{
+	// The supported pinned C++11 ABI's local buffer is 15 characters.
+	return value.capacity() > 15 ? ordinary_authority_sum(value.capacity(), 1) : 0;
+}
+size_t ordinary_authority_mappings(const mappings &values)
+{
+	size_t total =
+		ordinary_authority_product(values.capacity(), sizeof(flatfile_economic_mapping));
+	for (const auto &value : values)
+		total = ordinary_authority_sum(total,
+					       ordinary_authority_string(value.locator.name));
+	return total;
+}
+size_t ordinary_authority_native(const native_index &values)
+{
+	size_t total = ordinary_authority_product(values.capacity(), sizeof(native_entry));
+	for (const auto &value : values)
+		total = ordinary_authority_sum(total, value.key.capacity());
+	return total;
+}
+// Callback, checked arithmetic and census parameters/return channels are owned
+// in every nested interval, in addition to each helper's real work objects.
+constexpr size_t ordinary_authority_callback_frames =
+	sizeof(ordinary_authority_budget) * 2 + sizeof(void *) * 4 +
+	sizeof(flatfile_scratch_reserve_fn) + sizeof(size_t) * 10 + sizeof(bool) * 2;
+bytes ordinary_authority_file(const std::string &root, const char *name, bool absent,
+			      ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(authority_bounded_file_workspace) + sizeof(size_t) * 4 +
+			     sizeof(void *) * 3 + sizeof(bool) + sizeof(flatfile_read_result) +
+			     ordinary_authority_callback_frames;
+	const size_t directory_size =
+		ordinary_authority_sum(root.size(), sizeof("/economic-evidence") - 1);
+	const size_t name_size = std::strlen(name);
+	size_t request = frame;
+	if (directory_size > 15)
+		request =
+			ordinary_authority_sum(request, ordinary_authority_sum(directory_size, 1));
+	if (name_size > 15)
+		request = ordinary_authority_sum(request, ordinary_authority_sum(name_size, 1));
+	budget.admit(request);
+	authority_bounded_file_workspace work(directory_size, name);
+	std::copy(root.begin(), root.end(), work.directory.begin());
+	std::copy_n("/economic-evidence", sizeof("/economic-evidence") - 1,
+		    work.directory.begin() + root.size());
+	const size_t live = ordinary_authority_sum(
+		frame, ordinary_authority_sum(ordinary_authority_string(work.directory),
+					      ordinary_authority_string(work.name)));
+	budget.admit(live);
+	errno = 0;
+	const auto result = flatfile_read_bounded(work.directory, work.name,
+						  FLATFILE_ECONOMIC_METADATA_MAX_BYTES,
+						  &work.encoded, budget.reserve, budget.context,
+						  budget.nested(live).outer);
+	budget.admit(ordinary_authority_sum(live, work.encoded.capacity()));
+	if (absent)
+		need(result == flatfile_read_result::not_found,
+		     result == flatfile_read_result::io_error ? (errno == ENOBUFS ? ENOBUFS : EIO) :
+								EILSEQ);
+	else
+		need(result == flatfile_read_result::ok, result == flatfile_read_result::io_error ?
+								 (errno == ENOMEM  ? ENOMEM :
+								  errno == ENOBUFS ? ENOBUFS :
+										     EIO) :
+								 EILSEQ);
+	return std::move(work.encoded);
+}
+bytes ordinary_authority_key(economic_account_kind kind, uint64_t context,
+			     const flatfile_economic_locator &locator,
+			     ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(bytes) + sizeof(economic_account_kind) + sizeof(uint64_t) +
+			     sizeof(void *) * 2 + sizeof(size_t) * 3 +
+			     ordinary_authority_callback_frames;
+	locator_valid(kind, context, locator,
+		      kind == economic_account_kind::bank && locator.native_id == 0);
+	const size_t length = kind == economic_account_kind::bank ?
+				      ordinary_authority_sum(12, locator.name.size()) :
+				      20;
+	budget.admit(ordinary_authority_sum(frame, length));
+	bytes key;
+	key.reserve(length);
+	budget.admit(ordinary_authority_sum(frame, key.capacity()));
+	number(key, static_cast<uint16_t>(kind), 2);
+	number(key, context, 8);
+	number(key, locator.kind, 2);
+	if (kind != economic_account_kind::bank)
+		number(key, locator.native_id, 8);
+	else
+		raw(key, { reinterpret_cast<const uint8_t *>(locator.name.data()),
+			   locator.name.size() });
+	return key;
+}
+flatfile_economic_mapping ordinary_authority_decode_mapping(std::span<const uint8_t> encoded,
+							    ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(reader) + sizeof(flatfile_economic_mapping) +
+			     sizeof(std::span<const uint8_t>) * 3 + sizeof(uint64_t) +
+			     sizeof(void *) * 2 + ordinary_authority_callback_frames;
+	budget.admit(frame);
+	reader in{ encoded };
+	flatfile_economic_mapping value;
+	need(economic_account_key_decode(in.take(40), &value.account) ==
+	     economic_accounting_error::ok);
+	value.locator.kind = in.number(2);
+	auto name_size = in.number(2);
+	need(name_size <= CURRENCY_ACCOUNT_NAME_MAX_BYTES);
+	value.locator.native_id = in.number(8);
+	auto name = in.take(name_size);
+	{
+		// uint8 iterator assign constructs another string and may grow the
+		// destination from its local-buffer capacity. Own exactly one fresh
+		// length constructor instead; character copy and swap allocate nothing.
+		const size_t name_frame =
+			ordinary_authority_sum(frame, sizeof(std::string) + sizeof(size_t));
+		budget.admit(ordinary_authority_sum(
+			name_frame, name_size > 15 ? ordinary_authority_sum(name_size, 1) : 0));
+		std::string decoded_name(name_size, '\0');
+		budget.admit(ordinary_authority_sum(name_frame,
+						    ordinary_authority_string(decoded_name)));
+		std::copy(name.begin(), name.end(), decoded_name.begin());
+		value.locator.name.swap(decoded_name);
+	}
+	budget.admit(ordinary_authority_sum(frame, ordinary_authority_string(value.locator.name)));
+	value.creating_operation = in.id();
+	value.retiring_operation = in.id();
+	value.last_operation = in.id();
+	value.revision = in.number(8);
+	in.done();
+	try
+	{
+		validate_mapping(value);
+	}
+	catch (const failure &)
+	{
+		throw failure{ EILSEQ };
+	}
+	return value;
+}
+mappings ordinary_authority_load_mappings(const std::string &root,
+					  const flatfile_economic_control &control, size_t bucket,
+					  ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(std::string) + sizeof(bytes) + sizeof(reader) +
+			     sizeof(mappings) + sizeof(flatfile_economic_mapping) +
+			     sizeof(size_t) * 5 + sizeof(uint64_t) * 2 + sizeof(void *) * 3 +
+			     authority_unwrap_working + ordinary_authority_callback_frames;
+	// All canonical mapping names fit the pinned ABI local string buffer.
+	budget.admit(frame);
+	const auto name = mapping_name(bucket);
+	const size_t prefix = ordinary_authority_sum(frame, ordinary_authority_string(name));
+	if (control.mapping_digests[bucket] == economic_digest{})
+	{
+		need(mapping_count(control, bucket) == 0);
+		(void)ordinary_authority_file(root, name.c_str(), true, budget.nested(prefix));
+		return {};
+	}
+	auto encoded = ordinary_authority_file(root, name.c_str(), false, budget.nested(prefix));
+	need(hash(encoded) == control.mapping_digests[bucket]);
+	auto in = unwrap(encoded, "DURECM1");
+	need(in.id().bytes == control.lineage.bytes && in.number(4) == bucket);
+	auto count = in.number(4);
+	need(count == mapping_count(control, bucket) && count <= FLATFILE_ECONOMIC_BUCKET_MAPPINGS);
+	mappings values;
+	const size_t base = ordinary_authority_sum(prefix, encoded.capacity());
+	budget.admit(ordinary_authority_sum(
+		base, ordinary_authority_product(count, sizeof(flatfile_economic_mapping))));
+	values.reserve(count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		const auto size = in.number(4);
+		auto value = ordinary_authority_decode_mapping(
+			in.take(size), budget.nested(ordinary_authority_sum(
+					       base, ordinary_authority_mappings(values))));
+		budget.admit(ordinary_authority_sum(
+			ordinary_authority_sum(base, ordinary_authority_mappings(values)),
+			ordinary_authority_string(value.locator.name)));
+		values.push_back(std::move(value));
+	}
+	in.done();
+	budget.admit(ordinary_authority_sum(base, ordinary_authority_mappings(values)));
+	validate_mappings(control, bucket, values);
+	return values;
+}
+void ordinary_authority_validate_key(const bytes &key, ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(reader) + sizeof(economic_account_kind) + sizeof(uint64_t) +
+			     sizeof(flatfile_economic_locator) + sizeof(std::span<const uint8_t>) +
+			     sizeof(bytes) + sizeof(void *) * 2 +
+			     ordinary_authority_callback_frames;
+	budget.admit(frame);
+	reader in{ key };
+	const auto kind = static_cast<economic_account_kind>(in.number(2));
+	auto context = in.number(8);
+	flatfile_economic_locator locator;
+	locator.kind = in.number(2);
+	if (kind != economic_account_kind::bank)
+		locator.native_id = in.number(8);
+	else
+	{
+		auto name = in.take(key.size() - in.offset);
+		{
+			const size_t name_frame =
+				ordinary_authority_sum(frame, sizeof(std::string) + sizeof(size_t));
+			budget.admit(ordinary_authority_sum(
+				name_frame,
+				name.size() > 15 ? ordinary_authority_sum(name.size(), 1) : 0));
+			std::string decoded_name(name.size(), '\0');
+			budget.admit(ordinary_authority_sum(
+				name_frame, ordinary_authority_string(decoded_name)));
+			std::copy(name.begin(), name.end(), decoded_name.begin());
+			locator.name.swap(decoded_name);
+		}
+	}
+	in.done();
+	try
+	{
+		need(ordinary_authority_key(
+			     kind, context, locator,
+			     budget.nested(ordinary_authority_sum(
+				     frame, ordinary_authority_string(locator.name)))) == key);
+	}
+	catch (const failure &value)
+	{
+		// Capacity refusal is not malformed persisted metadata.
+		if (value.code == ENOBUFS)
+			throw;
+		throw failure{ EILSEQ };
+	}
+}
+native_index ordinary_authority_load_native(const std::string &root,
+					    const flatfile_economic_control &control, size_t bucket,
+					    ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(std::string) + sizeof(bytes) + sizeof(reader) +
+			     sizeof(native_index) + sizeof(native_entry) + sizeof(size_t) * 4 +
+			     sizeof(uint64_t) * 2 + sizeof(std::span<const uint8_t>) +
+			     sizeof(void *) * 3 + authority_unwrap_working +
+			     ordinary_authority_callback_frames;
+	budget.admit(frame);
+	const auto name = native_name(bucket);
+	const size_t prefix = ordinary_authority_sum(frame, ordinary_authority_string(name));
+	if (control.native_digests[bucket] == economic_digest{})
+	{
+		(void)ordinary_authority_file(root, name.c_str(), true, budget.nested(prefix));
+		throw failure{ ENODATA };
+	}
+	auto encoded = ordinary_authority_file(root, name.c_str(), false, budget.nested(prefix));
+	need(hash(encoded) == control.native_digests[bucket]);
+	auto in = unwrap(encoded, "DURECN1");
+	need(in.id().bytes == control.lineage.bytes && in.number(4) == bucket);
+	auto count = in.number(4);
+	need(count <= FLATFILE_ECONOMIC_BUCKET_MAPPINGS);
+	native_index values;
+	const size_t base = ordinary_authority_sum(prefix, encoded.capacity());
+	budget.admit(ordinary_authority_sum(
+		base, ordinary_authority_product(count, sizeof(native_entry))));
+	values.reserve(count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		native_entry entry;
+		auto length = in.number(2);
+		need(length <= 12 + CURRENCY_ACCOUNT_NAME_MAX_BYTES && in.number(2) == 0);
+		entry.active = in.number(8);
+		entry.last = in.number(8);
+		auto key = in.take(length);
+		budget.admit(ordinary_authority_sum(
+			ordinary_authority_sum(base, ordinary_authority_native(values)), length));
+		entry.key.assign(key.begin(), key.end());
+		budget.admit(ordinary_authority_sum(
+			ordinary_authority_sum(base, ordinary_authority_native(values)),
+			entry.key.capacity()));
+		values.push_back(std::move(entry));
+	}
+	in.done();
+	const size_t live = ordinary_authority_sum(base, ordinary_authority_native(values));
+	budget.admit(live);
+	need(values.size() <= FLATFILE_ECONOMIC_BUCKET_MAPPINGS, ENOSPC);
+	for (size_t i = 0; i < values.size(); ++i)
+	{
+		const auto &value = values[i];
+		ordinary_authority_validate_key(value.key, budget.nested(live));
+		need(hash(value.key)[0] == bucket && value.last &&
+		     value.last < control.next_mapping_id &&
+		     (!value.active || value.active == value.last) &&
+		     (!i || values[i - 1].key < value.key));
+	}
+	return values;
+}
+size_t ordinary_authority_image_payload(const quest_mobile_native_image &image)
+{
+	size_t total =
+		ordinary_authority_product(image.items.capacity(), sizeof(player_item_snapshot));
+	for (const auto &item : image.items)
+	{
+		for (const auto *value : { &item.name, &item.short_description, &item.description,
+					   &item.action_description })
+			total = ordinary_authority_sum(total, ordinary_authority_string(*value));
+		total = ordinary_authority_sum(
+			total,
+			ordinary_authority_product(item.dynamic_affects.capacity(),
+						   sizeof(player_item_dynamic_affect_snapshot)));
+		total = ordinary_authority_sum(
+			total,
+			ordinary_authority_product(item.extra_descriptions.capacity(),
+						   sizeof(player_item_extra_description_snapshot)));
+		for (const auto &description : item.extra_descriptions)
+		{
+			total = ordinary_authority_sum(
+				total, ordinary_authority_string(description.keyword));
+			total = ordinary_authority_sum(
+				total, ordinary_authority_string(description.description));
+			total = ordinary_authority_sum(
+				total, ordinary_authority_product(description.spell_ids.capacity(),
+								  sizeof(int32_t)));
+		}
+	}
+	return total;
+}
+flatfile_economic_mapping ordinary_authority_mapping_for_key(
+	const std::string &root, const flatfile_economic_control &control,
+	const economic_account_key &key, ordinary_authority_budget budget)
+{
+	const size_t frame = sizeof(mappings) + sizeof(flatfile_economic_mapping) + sizeof(size_t) +
+			     sizeof(void *) * 3 + ordinary_authority_callback_frames;
+	budget.admit(frame);
+	need(economic_account_key_valid(key), EINVAL);
+	need(key.lineage.bytes == control.lineage.bytes, ESTALE);
+	need(key.authority_id && key.authority_id < control.next_mapping_id, ESTALE);
+	auto values = ordinary_authority_load_mappings(root, control, key.authority_id % 256,
+						       budget.nested(frame));
+	auto position = (key.authority_id - 1) / 256;
+	need(position < values.size());
+	const auto &selected = values[position];
+	need(economic_account_key_equal(selected.account, key), ESTALE);
+	const size_t live = ordinary_authority_sum(frame, ordinary_authority_mappings(values));
+	budget.admit(ordinary_authority_sum(
+		live, selected.locator.name.size() > 15 ?
+			      ordinary_authority_sum(selected.locator.name.size(), 1) :
+			      0));
+	auto value = selected;
+	budget.admit(ordinary_authority_sum(live, ordinary_authority_string(value.locator.name)));
+	return value;
+}
+#endif
+}
+
+unsigned int economic_flatfile_read_current_authority_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const std::span<const flatfile_economic_mapping_request> &requests,
+	flatfile_economic_authority_snapshot *out, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer, size_t *retained_payload) noexcept
+{
+	if (!out || !reserve || !nonzero(lineage) || !nonzero(epoch))
+		return EINVAL;
+	if (requests.size() > ECONOMIC_ACCOUNTING_MAX_ACCOUNTS)
+		return E2BIG;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)context;
+	(void)outer;
+	(void)retained_payload;
+	return ENOTSUP;
+#else
+	try
+	{
+		using groups_type =
+			std::map<size_t, std::vector<const flatfile_economic_mapping_request *>>;
+		using native_groups_type = std::map<size_t, std::vector<size_t>>;
+		struct source_frame
+		{
+			flatfile_economic_control control;
+			std::set<uint64_t> ids;
+			groups_type groups;
+			native_groups_type native_groups;
+			flatfile_economic_authority_snapshot candidate;
+			mappings values;
+			native_index index;
+			bytes key;
+			size_t bucket, i, at, payload, live, request;
+			const flatfile_economic_mapping_request *request_pointer;
+			const flatfile_economic_mapping *mapping_pointer;
+			groups_type::iterator group_iterator;
+			native_groups_type::iterator native_group_iterator;
+			flatfile_economic_mapping copy;
+		};
+		const size_t frame = sizeof(source_frame) + sizeof(void *) * 13 + sizeof(size_t) +
+				     sizeof(flatfile_scratch_reserve_fn) +
+				     ordinary_authority_callback_frames;
+		ordinary_authority_budget budget{ outer, reserve, context };
+		budget.admit(frame);
+		need(!root.empty() && lock.matches(root), EINVAL);
+		auto control = authority_load_control_bounded(root, reserve, context,
+							      budget.nested(frame).outer);
+		need(control.lineage.bytes == lineage.bytes, ESTALE);
+		need(nonzero(control.active_epoch), ENODATA);
+		need(control.active_epoch.bytes == epoch.bytes, ESTALE);
+		std::set<uint64_t> ids;
+		groups_type groups;
+		native_groups_type native_groups;
+		flatfile_economic_authority_snapshot candidate;
+		// Actual map/set node type and actual returned vector/string capacities.
+		const auto current = [&]()
+		{
+			size_t live = frame;
+			live = ordinary_authority_sum(
+				live, ordinary_authority_product(
+					      ids.size(), sizeof(std::_Rb_tree_node<uint64_t>)));
+			live = ordinary_authority_sum(
+				live, ordinary_authority_product(
+					      groups.size(),
+					      sizeof(std::_Rb_tree_node<groups_type::value_type>)));
+			live = ordinary_authority_sum(
+				live,
+				ordinary_authority_product(
+					native_groups.size(),
+					sizeof(std::_Rb_tree_node<native_groups_type::value_type>)));
+			for (const auto &[bucket, group] : groups)
+				live = ordinary_authority_sum(
+					live,
+					ordinary_authority_product(
+						group.capacity(),
+						sizeof(const flatfile_economic_mapping_request *)));
+			for (const auto &[bucket, group] : native_groups)
+				live = ordinary_authority_sum(
+					live, ordinary_authority_product(group.capacity(),
+									 sizeof(size_t)));
+			return ordinary_authority_sum(
+				live, ordinary_authority_mappings(candidate.mappings));
+		};
+		for (const auto &request : requests)
+		{
+			need(economic_account_key_valid(request.account), EINVAL);
+			budget.admit(ordinary_authority_sum(current(),
+							    sizeof(std::_Rb_tree_node<uint64_t>)));
+			need(ids.insert(request.account.authority_id).second, EINVAL);
+			need(request.account.lineage.bytes == lineage.bytes &&
+				     request.account.authority_id < control.next_mapping_id,
+			     ESTALE);
+			const size_t bucket = request.account.authority_id % 256;
+			auto at = groups.find(bucket);
+			if (at == groups.end())
+			{
+				budget.admit(ordinary_authority_sum(
+					current(),
+					sizeof(std::_Rb_tree_node<groups_type::value_type>)));
+				at = groups.emplace(
+						   bucket,
+						   std::vector<const flatfile_economic_mapping_request
+								       *>{})
+					     .first;
+				budget.admit(ordinary_authority_sum(
+					current(),
+					ordinary_authority_product(
+						requests.size(),
+						sizeof(const flatfile_economic_mapping_request *))));
+				at->second.reserve(requests.size());
+			}
+			budget.admit(current());
+			at->second.push_back(&request);
+		}
+		candidate.lineage = lineage;
+		candidate.epoch = epoch;
+		candidate.lineage_revision = control.revision;
+		budget.admit(ordinary_authority_sum(
+			current(), ordinary_authority_product(requests.size(),
+							      sizeof(flatfile_economic_mapping))));
+		candidate.mappings.reserve(requests.size());
+		budget.admit(current());
+		for (const auto &[bucket, group] : groups)
+		{
+			auto values = ordinary_authority_load_mappings(root, control, bucket,
+								       budget.nested(current()));
+			for (const auto *request : group)
+			{
+				const auto &value =
+					values.at((request->account.authority_id - 1) / 256);
+				need(economic_account_key_equal(value.account, request->account) &&
+					     value.locator.kind == request->locator.kind &&
+					     value.locator.native_id ==
+						     request->locator.native_id &&
+					     value.locator.name == request->locator.name &&
+					     !nonzero(value.retiring_operation),
+				     ESTALE);
+				size_t live = ordinary_authority_sum(
+					current(), ordinary_authority_mappings(values));
+				budget.admit(ordinary_authority_sum(
+					live, value.locator.name.size() > 15 ?
+						      ordinary_authority_sum(
+							      value.locator.name.size(), 1) :
+						      0));
+				candidate.mappings.push_back(value);
+				budget.admit(ordinary_authority_sum(
+					current(), ordinary_authority_mappings(values)));
+			}
+		}
+		for (size_t i = 0; i < candidate.mappings.size(); ++i)
+		{
+			const auto &value = candidate.mappings[i];
+			auto key = ordinary_authority_key(value.account.kind,
+							  value.account.context_id, value.locator,
+							  budget.nested(current()));
+			const size_t bucket = hash(key)[0];
+			auto at = native_groups.find(bucket);
+			if (at == native_groups.end())
+			{
+				budget.admit(ordinary_authority_sum(
+					ordinary_authority_sum(current(), key.capacity()),
+					sizeof(std::_Rb_tree_node<native_groups_type::value_type>)));
+				at = native_groups.emplace(bucket, std::vector<size_t>{}).first;
+				budget.admit(ordinary_authority_sum(
+					ordinary_authority_sum(current(), key.capacity()),
+					ordinary_authority_product(candidate.mappings.size(),
+								   sizeof(size_t))));
+				at->second.reserve(candidate.mappings.size());
+			}
+			budget.admit(ordinary_authority_sum(current(), key.capacity()));
+			at->second.push_back(i);
+		}
+		for (const auto &[bucket, group] : native_groups)
+		{
+			auto index = ordinary_authority_load_native(root, control, bucket,
+								    budget.nested(current()));
+			for (auto i : group)
+			{
+				const auto &value = candidate.mappings[i];
+				auto key = ordinary_authority_key(
+					value.account.kind, value.account.context_id, value.locator,
+					budget.nested(ordinary_authority_sum(
+						current(), ordinary_authority_native(index))));
+				budget.admit(ordinary_authority_sum(
+					ordinary_authority_sum(current(),
+							       ordinary_authority_native(index)),
+					key.capacity()));
+				auto at = find_native(index, key);
+				need(at < index.size() &&
+				     index[at].active == value.account.authority_id);
+			}
+		}
+		std::sort(candidate.mappings.begin(), candidate.mappings.end(),
+			  [](const auto &a, const auto &b)
+			  { return a.account.authority_id < b.account.authority_id; });
+		const size_t payload = ordinary_authority_mappings(candidate.mappings);
+		budget.admit(current());
+		need(lock.matches(root), EINVAL);
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_economic_authority_snapshot>);
+		*out = std::move(candidate);
+		if (retained_payload)
+			*retained_payload = payload;
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}
+
+unsigned int
+flatfile_native_mobile_birth_ordinary_baseline_history_storage::read_metadata_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_native_mobile_birth_ordinary_retained_metadata *output,
+	flatfile_scratch_reserve_fn reserve, void *context, size_t outer,
+	size_t *retained_payload) noexcept
+{
+	if (!output || !reserve || root.empty() || !lock.matches(root))
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)context;
+	(void)outer;
+	(void)retained_payload;
+	return ENOTSUP;
+#else
+	try
+	{
+		const size_t frame =
+			sizeof(flatfile_native_mobile_birth_ordinary_retained_metadata) +
+			sizeof(epochs) + sizeof(size_t) + sizeof(void *) * 5 +
+			sizeof(flatfile_scratch_reserve_fn) + ordinary_authority_callback_frames;
+		ordinary_authority_budget budget{ outer, reserve, context };
+		budget.admit(frame);
+		flatfile_native_mobile_birth_ordinary_retained_metadata candidate;
+		candidate.control = authority_load_control_bounded(root, reserve, context,
+								   budget.nested(frame).outer);
+		candidate.epochs = authority_load_epochs_bounded(
+			root, candidate.control, reserve, context, budget.nested(frame).outer);
+		const size_t payload = ordinary_authority_product(candidate.epochs.capacity(),
+								  sizeof(flatfile_economic_epoch));
+		budget.admit(ordinary_authority_sum(frame, payload));
+		need(lock.matches(root), EINVAL);
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_native_mobile_birth_ordinary_retained_metadata>);
+		*output = std::move(candidate);
+		if (retained_payload)
+			*retained_payload = payload;
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}
+
+unsigned int flatfile_ordinary_native_birth_history_storage::verify_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const economic_account_key &wallet, const critical_operation_id &birth_epoch,
+	const critical_operation_id &birth_operation, uint64_t native_id,
+	flatfile_scratch_reserve_fn reserve, void *context, size_t outer) noexcept
+{
+	if (!reserve)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)wallet;
+	(void)birth_epoch;
+	(void)birth_operation;
+	(void)native_id;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#else
+	try
+	{
+		const size_t frame =
+			sizeof(flatfile_economic_locator) + sizeof(flatfile_economic_control) +
+			sizeof(epochs) + sizeof(flatfile_economic_mapping) + sizeof(mappings) +
+			sizeof(size_t) * 8 + sizeof(void *) * 8 + sizeof(uint64_t) +
+			sizeof(flatfile_scratch_reserve_fn) + ordinary_authority_callback_frames;
+		ordinary_authority_budget budget{ outer, reserve, context };
+		budget.admit(frame);
+		flatfile_economic_locator locator;
+		locator.kind = FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR;
+		locator.native_id = native_id;
+		need(!root.empty() && lock.matches(root) && economic_account_key_valid(wallet) &&
+			     wallet.authority_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS &&
+			     nonzero(birth_epoch) && nonzero(birth_operation) &&
+			     flatfile_native_mobile_wallet_locator_valid(
+				     wallet.kind, wallet.context_id, locator),
+		     EINVAL);
+		// Complete original authenticated control/epochs loading. No recover()
+		// or active/current selection gate is introduced into historical proof.
+		const auto control = authority_load_control_bounded(root, reserve, context,
+								    budget.nested(frame).outer);
+		need(control.lineage.bytes == wallet.lineage.bytes, ESTALE);
+		const size_t evidence_bucket = birth_operation.bytes[0];
+		need(control.evidence_initialized[evidence_bucket / 8] &
+			     (1U << (evidence_bucket % 8)),
+		     ENODATA);
+		const auto historical_epochs = authority_load_epochs_bounded(
+			root, control, reserve, context, budget.nested(frame).outer);
+		const size_t epochs_payload = ordinary_authority_product(
+			historical_epochs.capacity(), sizeof(flatfile_economic_epoch));
+		budget.admit(ordinary_authority_sum(frame, epochs_payload));
+		need(std::any_of(historical_epochs.begin(), historical_epochs.end(),
+				 [&](const auto &epoch)
+				 { return epoch.epoch.bytes == birth_epoch.bytes; }),
+		     ENODATA);
+
+		const auto original = ordinary_authority_mapping_for_key(
+			root, control, wallet,
+			budget.nested(ordinary_authority_sum(frame, epochs_payload)));
+		const size_t live =
+			ordinary_authority_sum(ordinary_authority_sum(frame, epochs_payload),
+					       ordinary_authority_string(original.locator.name));
+		budget.admit(live);
+		need(original.locator.kind == FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR &&
+			     original.locator.native_id == native_id &&
+			     original.locator.name.empty() &&
+			     original.creating_operation.bytes == birth_operation.bytes,
+		     EILSEQ);
+		// Original SQL retained proof requires ONE locator/native lifetime and
+		// ONE mapping created by this operation. Authenticate all real buckets,
+		// including retired rows; absence is never an empty damaged bucket.
+		size_t native_lifetimes = 0, created_lifetimes = 0;
+		for (size_t bucket = 0; bucket < FLATFILE_ECONOMIC_METADATA_BUCKETS; ++bucket)
+		{
+			const auto values = ordinary_authority_load_mappings(root, control, bucket,
+									     budget.nested(live));
+			budget.admit(
+				ordinary_authority_sum(live, ordinary_authority_mappings(values)));
+			for (const auto &value : values)
+			{
+				if (value.locator.kind == FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR &&
+				    value.locator.native_id == native_id)
+				{
+					++native_lifetimes;
+					need(economic_account_key_equal(value.account, wallet),
+					     EILSEQ);
+				}
+				if (value.creating_operation.bytes == birth_operation.bytes)
+				{
+					++created_lifetimes;
+					need(economic_account_key_equal(value.account, wallet),
+					     EILSEQ);
+				}
+			}
+		}
+		need(native_lifetimes == 1 && created_lifetimes == 1, EILSEQ);
+		need(lock.matches(root), EINVAL);
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}
+
+unsigned int flatfile_native_mobile_wallet_storage::observe_current_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &active_epoch, const economic_account_key &wallet,
+	const quest_mobile_native_reference &reference,
+	flatfile_native_mobile_wallet_current *output, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer, size_t *retained_payload) noexcept
+{
+	if (!reserve)
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)active_epoch;
+	(void)wallet;
+	(void)reference;
+	(void)output;
+	(void)context;
+	(void)outer;
+	(void)retained_payload;
+	return ENOTSUP;
+#else
+	try
+	{
+		const size_t frame =
+			sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) * 2 +
+			sizeof(flatfile_economic_mapping_request) +
+			sizeof(flatfile_economic_authority_snapshot) +
+			sizeof(quest_mobile_native_flatfile_row) +
+			sizeof(flatfile_native_mobile_wallet_current) + sizeof(size_t) * 5 +
+			sizeof(int64_t) + sizeof(unsigned int) * 2 + sizeof(void *) * 8 +
+			sizeof(flatfile_scratch_reserve_fn) + ordinary_authority_callback_frames;
+		ordinary_authority_budget budget{ outer, reserve, context };
+		budget.admit(frame);
+		size_t authority_payload = 0;
+		need(output && !root.empty() && lock.matches(root) &&
+			     !critical_operation_id_is_zero(active_epoch) &&
+			     economic_account_key_valid(wallet) &&
+			     wallet.kind == economic_account_kind::wallet &&
+			     wallet.context_id == ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT &&
+			     wallet.authority_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS &&
+			     quest_mobile_native_reference_valid(reference),
+		     EINVAL);
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> expected{}, current{};
+		need(quest_mobile_native_reference_encode(reference, &expected) ==
+			     player_snapshot_codec_result::ok,
+		     EINVAL);
+		flatfile_economic_mapping_request request;
+		request.account = wallet;
+		request.locator.kind = FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR;
+		request.locator.native_id = reference.mobile_instance_id;
+		flatfile_economic_authority_snapshot authority;
+		const auto authority_error =
+			economic_flatfile_read_current_authority_locked_bounded(
+				root, lock, wallet.lineage, active_epoch, { &request, 1 },
+				&authority, reserve, context, budget.nested(frame).outer,
+				&authority_payload);
+		budget.admit(ordinary_authority_sum(frame, authority_payload));
+		need(!authority_error, authority_error);
+		need(authority.mappings.size() == 1 &&
+			     economic_account_key_equal(authority.mappings.front().account,
+							wallet) &&
+			     flatfile_native_mobile_wallet_locator_valid(
+				     authority.mappings.front().account.kind,
+				     authority.mappings.front().account.context_id,
+				     authority.mappings.front().locator) &&
+			     authority.mappings.front().locator.native_id ==
+				     reference.mobile_instance_id &&
+			     authority.mappings.front().creating_operation.bytes ==
+				     reference.birth_operation.bytes &&
+			     critical_operation_id_is_zero(
+				     authority.mappings.front().retiring_operation),
+		     ESTALE);
+		quest_mobile_native_flatfile_row row;
+		const auto native_error = quest_mobile_native_flatfile_read_locked_bounded(
+			root, lock, reference.mobile_instance_id, &row, reserve, context,
+			budget.nested(ordinary_authority_sum(frame, authority_payload)).outer);
+		need(!native_error, static_cast<unsigned int>(native_error));
+		const size_t image_payload = ordinary_authority_image_payload(row.image);
+		const size_t live = ordinary_authority_sum(
+			ordinary_authority_sum(frame, authority_payload), image_payload);
+		budget.admit(live);
+		need(row.present && row.mobile_instance_id == reference.mobile_instance_id &&
+			     row.image.state == quest_mobile_lifetime_state::live &&
+			     row.image.cash && row.image.cash->revision,
+		     ESTALE);
+		need(quest_mobile_native_reference_encode(row.image.reference, &current) ==
+				     player_snapshot_codec_result::ok &&
+			     current == expected,
+		     ESTALE);
+		int64_t copper = 0;
+		need(economic_coin_value(row.image.cash->denominations.amount, &copper) ==
+			     economic_accounting_error::ok,
+		     EILSEQ);
+		flatfile_native_mobile_wallet_current candidate;
+		candidate.active_epoch = authority.epoch;
+		candidate.lineage_revision = authority.lineage_revision;
+		candidate.mapping = std::move(authority.mappings.front());
+		candidate.native = std::move(row.image);
+		need(lock.matches(root), EINVAL);
+		static_assert(
+			std::is_nothrow_move_assignable_v<flatfile_native_mobile_wallet_current>);
+		const size_t payload = ordinary_authority_sum(
+			ordinary_authority_string(candidate.mapping.locator.name),
+			ordinary_authority_image_payload(candidate.native));
+		budget.admit(live);
+		*output = std::move(candidate);
+		if (retained_payload)
+			*retained_payload = payload;
+		return 0;
+	}
+	catch (const failure &value)
+	{
+		return value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}

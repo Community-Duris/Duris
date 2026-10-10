@@ -27,6 +27,29 @@ class flatfile_ordinary_native_birth_receipt_storage final
 {
     private:
 	friend class flatfile_accounting_native_mobile_birth_ordinary_transaction;
+
+	// Complete passive ordinary CURRENT companions. Original readers above
+	// remain unchanged. Same already recovered root lock; no recovery/acquire,
+	// mutation, native selection, publication or ACK authority follows.
+	// Caller owns authentic input, prior/inline outputs and outside state in
+	// outer. Genuine nested requests and retained capacities are admitted before
+	// construction. Both record/count outputs and optional transferred new-heap
+	// scalar are strong. Explicit GCC13 C++11-ABI storage only; library/system/
+	// OpenSSL/emitted/native and complete 32MiB qualification remain separate.
+	static flatfile_accounting_status verify_retained_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+		flatfile_accounting_record *, flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_output_payload_bytes = nullptr) noexcept;
+	static flatfile_accounting_status verify_source_claim_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &,
+		const flatfile_accounting_record &, flatfile_scratch_reserve_fn, void *,
+		size_t) noexcept;
+	static flatfile_accounting_status verify_retained_history_current_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+		flatfile_accounting_record *,
+		flatfile_ordinary_native_birth_economic_history_counts *,
+		flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_output_payload_bytes = nullptr) noexcept;
 	// Caller resolves original journals BEFORE this SAME borrowed root lock.
 	// Full canonical immutable command/intent/EAP1/MBR4/item-reference evidence,
 	// selected exact sourceclaim and retained epoch/mapping proof are required.
@@ -84,6 +107,16 @@ class flatfile_ordinary_native_birth_history_storage final
 {
     private:
 	friend class flatfile_ordinary_native_birth_receipt_storage;
+
+	// Matching complete retired/retained-history definition is supplied by the
+	// authority owner. This declaration does not widen either existing friend.
+	static unsigned int verify_locked_bounded(const std::string &,
+						  const flatfile_authority_lock &,
+						  const economic_account_key &,
+						  const critical_operation_id &birth_epoch,
+						  const critical_operation_id &birth_operation,
+						  uint64_t native_id, flatfile_scratch_reserve_fn,
+						  void *, size_t) noexcept;
 	static unsigned int verify_locked(const std::string &, const flatfile_authority_lock &,
 					  const economic_account_key &original_wallet,
 					  const critical_operation_id &birth_epoch,

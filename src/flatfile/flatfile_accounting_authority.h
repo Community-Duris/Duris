@@ -111,6 +111,14 @@ unsigned int economic_flatfile_read_current_authority_locked(
 	const critical_operation_id &epoch, std::span<const flatfile_economic_mapping_request>,
 	flatfile_economic_authority_snapshot *, std::string *);
 
+// Complete passive selected CURRENT proof with prospective explicit C++ requests.
+// Same recovered borrowed lock; no recovery, write, INITIAL relaxation or grant.
+unsigned int economic_flatfile_read_current_authority_locked_bounded(
+	const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+	const critical_operation_id &, const std::span<const flatfile_economic_mapping_request> &,
+	flatfile_economic_authority_snapshot *, flatfile_scratch_reserve_fn, void *, size_t,
+	size_t *retained_output_payload_bytes = nullptr) noexcept;
+
 // The private lifecycle owner must supply proven native effects and an operation
 // receipt in the same bundle. Helpers never publish or authorize creation,
 // baseline or activation. Bootstrap additionally requires external durable proof

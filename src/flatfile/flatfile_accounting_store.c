@@ -2352,3 +2352,1041 @@ flatfile_accounting_status flatfile_accounting_storage::stage_ordinary_locked(
 		},
 		error);
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+// Only explicit source objects and pinned libstdc++ requests are counted here.
+// Library, system, OpenSSL and emitted/native frame qualification remain separate.
+struct ordinary_receipt_forward
+{
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	bool refused = false;
+	static bool admit(size_t absolute, void *opaque) noexcept
+	{
+		auto &value = *static_cast<ordinary_receipt_forward *>(opaque);
+		const size_t relay = sizeof(size_t) * 2 + sizeof(void *) * 2 + sizeof(bool);
+		if (value.refused || !receipt_bounded_add(absolute, relay) ||
+		    !value.reserve(absolute, value.context))
+		{
+			value.refused = true;
+			return false;
+		}
+		return true;
+	}
+};
+// Existing secure-read companions own the stat/vector/data objects. Their
+// named parameter/scalar/private-directory/read_all frames remain a caller
+// responsibility. Keep these real captured source frames through every nested
+// read; this does not assert compiler/system or standard-library stack sizes.
+constexpr size_t ordinary_receipt_secure_read_source_frames =
+	5 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) + 4 * sizeof(size_t) +
+	5 * sizeof(int) + sizeof(bool) +
+	// read_all(fd,data,size): fd, data, size, chunk and received.
+	sizeof(int) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(ssize_t) + sizeof(bool);
+// Nonallocating canonical MBR4 decoder/encoder/validator plus put/get source
+// frames. The caller retains its inline destination separately. The successful
+// decoder owns both its candidate and canonical array while the encoder runs.
+constexpr size_t ordinary_receipt_result_source_frames =
+	sizeof(std::span<const uint8_t>) + sizeof(void *) +
+	sizeof(native_mobile_birth_cash_role_result) +
+	2 * sizeof(std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>) +
+	11 * sizeof(uint64_t) + 4 * sizeof(size_t) + 6 * sizeof(void *) + 3 * sizeof(uint64_t) +
+	3 * sizeof(bool);
+size_t ordinary_receipt_sum(size_t first, size_t second)
+{
+	require(receipt_bounded_add(first, second), status::capacity);
+	return first;
+}
+template <class T> size_t ordinary_receipt_vector_heap(const std::vector<T> &value)
+{
+	require(value.capacity() <= SIZE_MAX / sizeof(T), status::capacity);
+	return value.capacity() * sizeof(T);
+}
+size_t ordinary_receipt_string_heap(const std::string &value)
+{
+	// Inline bytes already belong to the containing string object.
+	if (value.capacity() <= 15)
+		return 0;
+	require(value.capacity() != SIZE_MAX, status::capacity);
+	return value.capacity() + 1;
+}
+void ordinary_receipt_plan_encode_bounded(const economic_accounting_plan &plan,
+					  std::vector<uint8_t> *output,
+					  flatfile_scratch_reserve_fn reserve, void *context,
+					  size_t outer)
+{
+	const size_t frame = sizeof(economic_accounting_plan_allocation_profile) +
+			     4 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) +
+			     3 * sizeof(size_t);
+	receipt_bounded_admit(outer, frame, reserve, context);
+	economic_accounting_plan_allocation_profile profile;
+	const size_t live = ordinary_receipt_sum(outer, frame);
+	receipt_bounded_admit(live, economic_plan_allocation_preflight_working_bytes(), reserve,
+			      context);
+	checked(economic_plan_allocation_preflight(plan, &profile));
+	require(profile.storage_policy_supported, status::capacity);
+	receipt_bounded_admit(live, profile.encode_working_bytes, reserve, context);
+	checked(economic_plan_encode(plan, output));
+}
+struct ordinary_receipt_record_encoding_workspace
+{
+	std::vector<uint8_t> command, payload;
+	size_t payload_size = 26, live = 0, envelope_request = 0;
+};
+std::vector<uint8_t>
+ordinary_receipt_record_encode_bounded(const flatfile_accounting_record &record,
+				       flatfile_scratch_reserve_fn reserve, void *context,
+				       size_t outer)
+{
+	const size_t frame = sizeof(ordinary_receipt_record_encoding_workspace) +
+			     2 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) +
+			     2 * sizeof(size_t);
+	receipt_bounded_admit(outer, frame, reserve, context);
+	ordinary_receipt_record_encoding_workspace work;
+	work.live = ordinary_receipt_sum(outer, frame);
+	work.command = receipt_validate_record_bounded(record, reserve, context, work.live);
+	work.live = ordinary_receipt_sum(work.live, work.command.capacity());
+	work.payload_size = ordinary_receipt_sum(work.payload_size, work.command.size());
+	work.payload_size = ordinary_receipt_sum(work.payload_size, record.plan.size());
+	work.payload_size = ordinary_receipt_sum(work.payload_size, record.result.size());
+	// Exact original reserve before construction; no growth occurs afterwards.
+	receipt_bounded_admit(work.live,
+			      ordinary_receipt_sum(work.payload_size,
+						   sizeof(std::span<const uint8_t>) +
+							   2 * sizeof(uint64_t) + sizeof(size_t)),
+			      reserve, context);
+	work.payload.reserve(work.payload_size);
+	number(work.payload, work.command.size(), 4);
+	number(work.payload, record.plan.size(), 4);
+	number(work.payload, record.result.size(), 4);
+	number(work.payload, record.result_code, 4);
+	number(work.payload, record.durable_revision, 8);
+	number(work.payload, static_cast<uint16_t>(record.failure_stage), 2);
+	raw(work.payload, work.command);
+	raw(work.payload, record.plan);
+	raw(work.payload, record.result);
+	work.live = ordinary_receipt_sum(work.live, work.payload.capacity());
+	work.envelope_request = ordinary_receipt_sum(header_bytes, work.payload.size());
+	work.envelope_request = ordinary_receipt_sum(
+		work.envelope_request, sizeof(std::vector<uint8_t>) + sizeof(economic_digest) +
+					       3 * sizeof(std::span<const uint8_t>) +
+					       3 * sizeof(void *) + 2 * sizeof(uint64_t) +
+					       2 * sizeof(size_t));
+	receipt_bounded_admit(work.live, work.envelope_request, reserve, context);
+	return envelope(record_magic, work.payload);
+}
+std::string ordinary_receipt_directory_bounded(const std::string &root,
+					       flatfile_scratch_reserve_fn reserve, void *context,
+					       size_t outer)
+{
+	const size_t length = ordinary_receipt_sum(root.size(), sizeof("/economic-evidence") - 1);
+	const size_t frame = sizeof(std::string) + 2 * sizeof(void *) +
+			     sizeof(flatfile_scratch_reserve_fn) + 3 * sizeof(size_t);
+	receipt_bounded_admit(
+		outer,
+		ordinary_receipt_sum(frame, length > 15 ? ordinary_receipt_sum(length, 1) : 0),
+		reserve, context);
+	std::string value(length, '\0');
+	std::copy(root.begin(), root.end(), value.begin());
+	std::copy_n("/economic-evidence", sizeof("/economic-evidence") - 1,
+		    value.begin() + root.size());
+	return value;
+}
+void ordinary_receipt_empty_bucket_bounded(const std::string &root, size_t bucket,
+					   flatfile_scratch_reserve_fn reserve, void *context,
+					   size_t outer)
+{
+	// Same whole-prefix namespace fence, secure FD checks and original errors.
+	const size_t frame = 2 * sizeof(std::string) + sizeof(struct stat) + 2 * sizeof(void *) +
+			     sizeof(flatfile_scratch_reserve_fn) + 3 * sizeof(size_t) +
+			     3 * sizeof(int) + sizeof(DIR *) + sizeof(struct dirent *) +
+			     2 * sizeof(bool);
+	receipt_bounded_admit(outer, frame, reserve, context);
+	const auto prefix = bucket_prefix(bucket); // nine-byte inline prefix.
+	const auto path = ordinary_receipt_directory_bounded(root, reserve, context,
+							     ordinary_receipt_sum(outer, frame));
+	receipt_bounded_admit(ordinary_receipt_sum(outer, frame),
+			      ordinary_receipt_string_heap(path), reserve, context);
+	const int fd = open(path.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	require(fd >= 0, status::io_error);
+	struct stat info = {};
+	const bool safe = fstat(fd, &info) == 0 && S_ISDIR(info.st_mode) &&
+			  info.st_uid == geteuid() && !(info.st_mode & 0077);
+	if (!safe)
+	{
+		close(fd);
+		throw failure{ status::invalid };
+	}
+	DIR *dir = fdopendir(fd);
+	if (!dir)
+	{
+		close(fd);
+		throw failure{ status::io_error };
+	}
+	bool empty = true;
+	errno = 0;
+	while (auto *item = readdir(dir))
+	{
+		if (!strncmp(item->d_name, prefix.c_str(), prefix.size()))
+		{
+			empty = false;
+			break;
+		}
+	}
+	const int error = errno;
+	closedir(dir);
+	require(!error, status::io_error);
+	require(empty, status::already_exists);
+}
+std::vector<uint64_t> ordinary_receipt_born_bounded(const quest_mobile_native_image &image,
+						    flatfile_scratch_reserve_fn reserve,
+						    void *context, size_t outer)
+{
+	const size_t frame = sizeof(std::vector<uint64_t>) + 3 * sizeof(void *) +
+			     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t);
+	require(image.items.size() <= SIZE_MAX / sizeof(uint64_t), status::capacity);
+	receipt_bounded_admit(outer,
+			      ordinary_receipt_sum(frame, image.items.size() * sizeof(uint64_t)),
+			      reserve, context);
+	return ordinary_history_born_uids(image);
+}
+void ordinary_receipt_creation_bounded(const critical_command &command,
+				       const quest_mobile_native_image &image,
+				       const economic_accounting_plan &plan,
+				       flatfile_scratch_reserve_fn reserve, void *context,
+				       size_t outer)
+{
+	// The genuine original reserve(image.items.size()) and all named source
+	// loop objects coexist with the caller's full plan/image/record storage.
+	const size_t frame = sizeof(std::vector<uint64_t>) + 2 * sizeof(uint64_t) +
+			     2 * sizeof(size_t) + 6 * sizeof(void *) +
+			     2 * sizeof(decltype(plan.items_before.begin())) +
+			     sizeof(economic_item_position) + sizeof(flatfile_scratch_reserve_fn) +
+			     2 * sizeof(size_t);
+	require(image.items.size() <= SIZE_MAX / sizeof(uint64_t), status::capacity);
+	receipt_bounded_admit(outer,
+			      ordinary_receipt_sum(frame, image.items.size() * sizeof(uint64_t)),
+			      reserve, context);
+	ordinary_history_verify_creation_events(command, image, plan);
+}
+struct ordinary_receipt_claim_workspace
+{
+	quest_mobile_native_image born;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	economic_frozen_intent intent;
+	std::span<const uint8_t> intent_wire;
+	std::string selected, path;
+	std::vector<uint8_t> expected;
+	size_t image_heap = 0, recipe_heap = 0, live = 0, operation_claims = 0;
+	bool selected_found = false;
+};
+void ordinary_receipt_claim_census_bounded(const std::string &root,
+					   const flatfile_authority_lock &lock,
+					   const flatfile_accounting_record &record,
+					   flatfile_scratch_reserve_fn reserve, void *context,
+					   size_t outer)
+{
+	const auto &command = record.command;
+	require(!root.empty() && lock.matches(root) &&
+		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		command.type == critical_command_type::native_mobile_birth &&
+		command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+		critical_command_envelope_valid(command) &&
+		!critical_operation_id_is_zero(command.operation_id));
+	const size_t frame = sizeof(ordinary_receipt_claim_workspace) +
+			     sizeof(ordinary_claim_file) + sizeof(ordinary_claim_directory) +
+			     sizeof(struct stat) + 5 * sizeof(void *) +
+			     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t) +
+			     sizeof(int) + sizeof(DIR *);
+	receipt_bounded_admit(outer, frame, reserve, context);
+	ordinary_receipt_claim_workspace work;
+	work.live = ordinary_receipt_sum(outer, frame);
+	checked(native_mobile_birth_cash_role_command_decode_bounded(
+		command, &work.born, &work.recipes, &work.role, reserve, context, work.live,
+		&work.image_heap, &work.recipe_heap));
+	work.live = ordinary_receipt_sum(work.live, work.image_heap);
+	work.live = ordinary_receipt_sum(work.live, work.recipe_heap);
+	require(work.role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+		work.born.cash &&
+		work.born.reference.birth_operation.bytes == command.operation_id.bytes);
+	work.intent_wire = command.accounting_intent;
+	checked(economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve, context,
+					       work.live));
+	work.live = ordinary_receipt_sum(work.live, work.intent.admission.facts.capacity());
+	checked(economic_intent_verify_binding_bounded(command, work.intent, reserve, context,
+						       work.live));
+	require(work.intent.admission.metadata.source_event.has_value());
+	work.selected = current_source_claim_name_bounded(work.intent.admission.metadata, reserve,
+							  context, work.live);
+	work.live = ordinary_receipt_sum(work.live, ordinary_receipt_string_heap(work.selected));
+	work.expected = current_source_claim_bytes_bounded(record, reserve, context, work.live);
+	require(work.expected.size() == ordinary_claim_bytes);
+	work.live = ordinary_receipt_sum(work.live, work.expected.capacity());
+	work.path = ordinary_receipt_directory_bounded(root, reserve, context, work.live);
+	work.live = ordinary_receipt_sum(work.live, ordinary_receipt_string_heap(work.path));
+	receipt_bounded_admit(work.live, 0, reserve, context);
+	ordinary_claim_file directory_fd(
+		open(work.path.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW));
+	require(directory_fd.value >= 0, errno == ELOOP ? status::invalid : status::io_error);
+	struct stat directory_info
+	{
+	};
+	require(fstat(directory_fd.value, &directory_info) == 0, status::io_error);
+	require(S_ISDIR(directory_info.st_mode) && directory_info.st_uid == geteuid() &&
+		!(directory_info.st_mode & 0077));
+	ordinary_claim_directory entries(fdopendir(directory_fd.value));
+	require(entries.value, status::io_error);
+	directory_fd.value = -1;
+	const int parent = dirfd(entries.value);
+	require(parent >= 0, status::io_error);
+	for (;;)
+	{
+		const size_t entry_frame =
+			sizeof(std::string) + sizeof(struct dirent *) + 3 * sizeof(size_t) +
+			sizeof(std::array<uint8_t, ordinary_claim_bytes>) + sizeof(reader) +
+			sizeof(economic_operation_metadata) + 3 * sizeof(std::span<const uint8_t>) +
+			sizeof(economic_source_event) +
+			sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) +
+			sizeof(critical_operation_id) + sizeof(std::string);
+		receipt_bounded_admit(work.live, entry_frame, reserve, context);
+		errno = 0;
+		const auto *entry = readdir(entries.value);
+		if (!entry)
+		{
+			require(!errno, status::io_error);
+			break;
+		}
+		const size_t length = strlen(entry->d_name);
+		size_t entry_live = ordinary_receipt_sum(work.live, entry_frame);
+		receipt_bounded_admit(entry_live, length > 15 ? ordinary_receipt_sum(length, 1) : 0,
+				      reserve, context);
+		const std::string name(entry->d_name);
+		entry_live = ordinary_receipt_sum(entry_live, ordinary_receipt_string_heap(name));
+		if (name.compare(0, sizeof("source-claim-") - 1, "source-claim-"))
+			continue;
+		receipt_bounded_admit(entry_live,
+				      sizeof(size_t) * 2 + sizeof(void *) + sizeof(bool), reserve,
+				      context);
+		require(ordinary_claim_filename(name));
+		// Fixed-array secure read has no C++ allocation. Admit every original
+		// descriptor/stat/read-tail/return object before entering it.
+		receipt_bounded_admit(entry_live,
+				      sizeof(ordinary_claim_file) + 2 * sizeof(struct stat) +
+					      sizeof(std::array<uint8_t, ordinary_claim_bytes>) +
+					      sizeof(size_t) + 2 * sizeof(ssize_t) +
+					      sizeof(uint8_t) + 2 * sizeof(int) + sizeof(void *),
+				      reserve, context);
+		const auto bytes = ordinary_claim_read(parent, name);
+		receipt_bounded_admit(entry_live, receipt_unwrap_working, reserve, context);
+		reader input{ unwrap(bytes, source_claim_magic, ordinary_claim_bytes) };
+		economic_operation_metadata actual;
+		const auto lineage = input.take(actual.lineage.bytes.size());
+		std::copy(lineage.begin(), lineage.end(), actual.lineage.bytes.begin());
+		require(!critical_operation_id_is_zero(actual.lineage));
+		const auto encoded_event = input.take(ECONOMIC_SOURCE_EVENT_BYTES);
+		economic_source_event decoded_event;
+		checked(economic_source_event_decode(encoded_event, &decoded_event));
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> canonical_event{};
+		checked(economic_source_event_encode(decoded_event, &canonical_event));
+		require(std::equal(canonical_event.begin(), canonical_event.end(),
+				   encoded_event.begin()));
+		actual.source_event = decoded_event;
+		critical_operation_id operation;
+		const auto encoded_operation = input.take(operation.bytes.size());
+		std::copy(encoded_operation.begin(), encoded_operation.end(),
+			  operation.bytes.begin());
+		require(!critical_operation_id_is_zero(operation));
+		require(input.number(1) == 1 && input.number(7) == 0);
+		input.done();
+		const auto canonical_name =
+			current_source_claim_name_bounded(actual, reserve, context, entry_live);
+		require(name == canonical_name);
+		if (operation.bytes == command.operation_id.bytes)
+		{
+			++work.operation_claims;
+			require(work.operation_claims == 1, status::conflict);
+		}
+		if (name == work.selected)
+		{
+			require(!work.selected_found && std::equal(bytes.begin(), bytes.end(),
+								   work.expected.begin()),
+				status::conflict);
+			work.selected_found = true;
+		}
+	}
+	DIR *completed = entries.value;
+	entries.value = nullptr;
+	require(closedir(completed) == 0, status::io_error);
+	require(lock.matches(root));
+	require(work.operation_claims == 1 && work.selected_found,
+		!work.selected_found ? status::not_found : status::conflict);
+}
+#endif
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+
+// Bounded-only provider error law. Genuine callback/capacity and unsupported
+// request-policy failures must not become damaged historical evidence.
+// The original unbounded helper and all its original callers stay byte-exact.
+void ordinary_receipt_authority_checked_bounded(unsigned int error)
+{
+	require(!error,
+		error == ENOMEM || error == ENOSPC || error == EOVERFLOW || error == ENOBUFS ?
+			status::capacity :
+		error == EIO || error == ENOTSUP ? status::io_error :
+						   status::invalid);
+}
+struct ordinary_receipt_retained_workspace
+{
+	context current;
+	flatfile_accounting_record record;
+	quest_mobile_native_image born;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	economic_frozen_intent intent;
+	std::span<const uint8_t> intent_wire;
+	native_mobile_birth_cash_role_result receipt, expected_receipt;
+	economic_account_key wallet;
+	economic_accounting_plan expected;
+	std::vector<uint8_t> plan_bytes;
+	std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> receipt_bytes{};
+	std::vector<economic_accounting_item_reference> references;
+	flatfile_native_mobile_birth_ordinary_reference_current reference_counts;
+	size_t image_heap = 0, recipe_heap = 0, plan_heap = 0, record_heap = 0, live = 0;
+	unsigned int authority_error = 0;
+	flatfile_item_accounting_status references_error{};
+	status claim_error{};
+};
+struct ordinary_receipt_history_workspace
+{
+	flatfile_accounting_record record;
+	quest_mobile_native_image image;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	native_mobile_birth_cash_role_result receipt;
+	economic_frozen_intent intent;
+	std::span<const uint8_t> intent_wire;
+	economic_account_key wallet;
+	economic_accounting_plan expected;
+	std::vector<uint8_t> expected_plan, original_record;
+	std::vector<uint64_t> born;
+	flatfile_native_mobile_birth_ordinary_retained_metadata metadata;
+	flatfile_ordinary_native_birth_economic_history_counts observed;
+	size_t image_heap = 0, recipe_heap = 0, plan_heap = 0, record_heap = 0, metadata_heap = 0,
+	       live = 0;
+	status receipt_status{}, claim_status{};
+};
+struct ordinary_receipt_history_visit
+{
+	const critical_operation_id &operation;
+	ordinary_receipt_history_workspace &work;
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	void operator()(const flatfile_accounting_record &retained,
+			const economic_accounting_plan *plan, std::span<const uint8_t> wire) const
+	{
+		const size_t frame =
+			4 * sizeof(void *) + sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t);
+		receipt_bounded_admit(outer, frame, reserve, context);
+		if (retained.command.operation_id.bytes == operation.bytes)
+		{
+			require(plan && work.original_record.size() == wire.size() &&
+				std::equal(work.original_record.begin(), work.original_record.end(),
+					   wire.begin()));
+			ordinary_receipt_creation_bounded(retained.command, work.image, *plan,
+							  reserve, context,
+							  ordinary_receipt_sum(outer, frame));
+			require(retained.command.source_site == work.record.command.source_site &&
+				retained.plan == work.expected_plan &&
+				plan->accounts.size() == work.expected.accounts.size() &&
+				plan->postings.size() == work.expected.postings.size() &&
+				plan->children.empty());
+			++work.observed.birth_records_verified;
+			work.observed.creation_events_verified += plan->item_events.size();
+			work.observed.birth_account_effects_verified += plan->accounts.size();
+			work.observed.birth_coin_postings_verified += plan->postings.size();
+			return;
+		}
+		if (!plan)
+			return;
+		for (const auto &event : plan->item_events)
+			require(event.after.revision != 1 ||
+					!std::binary_search(work.born.begin(), work.born.end(),
+							    event.uid),
+				status::conflict);
+		if (retained.command.type == critical_command_type::economic_baseline)
+			work.observed.baseline_witness_rows_verified +=
+				plan->items_before.size() + plan->items_after.size();
+	}
+};
+struct ordinary_receipt_scan_workspace
+{
+	std::set<std::array<uint8_t, 16>> retained_epochs;
+	size_t live = 0, bucket = 0;
+	bool initialized = false;
+};
+struct ordinary_receipt_scan_bucket_workspace
+{
+	context value;
+	size_t live = 0;
+	uint32_t active = 0, segment = 0;
+};
+struct ordinary_receipt_scan_segment_workspace
+{
+	std::vector<uint8_t> bytes;
+	std::vector<const entry *> entries;
+	size_t live = 0;
+};
+struct ordinary_receipt_scan_record_workspace
+{
+	std::span<const uint8_t> wire, intent_wire, plan_wire;
+	flatfile_accounting_record record;
+	economic_frozen_intent intent;
+	std::vector<uint8_t> canonical;
+	economic_accounting_plan plan;
+	size_t live = 0, plan_heap = 0;
+};
+void ordinary_receipt_history_scan_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_native_mobile_birth_ordinary_retained_metadata &metadata,
+	flatfile_ordinary_native_birth_economic_history_counts &observed,
+	ordinary_receipt_history_visit &visit, flatfile_scratch_reserve_fn reserve,
+	void *context_pointer, size_t outer)
+{
+	require(!root.empty() && lock.matches(root));
+	const size_t frame = sizeof(ordinary_receipt_scan_workspace) + 6 * sizeof(void *) +
+			     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t);
+	receipt_bounded_admit(outer, frame, reserve, context_pointer);
+	ordinary_receipt_scan_workspace scan;
+	scan.live = ordinary_receipt_sum(outer, frame);
+	for (const auto &epoch : metadata.epochs)
+	{
+		// Each original set insertion owns one real rb-tree node, with all
+		// previously inserted retained epoch nodes still live.
+		require(scan.retained_epochs.size() <
+				SIZE_MAX / sizeof(std::_Rb_tree_node<std::array<uint8_t, 16>>),
+			status::capacity);
+		receipt_bounded_admit(
+			scan.live,
+			(scan.retained_epochs.size() + 1) *
+					sizeof(std::_Rb_tree_node<std::array<uint8_t, 16>>) +
+				sizeof(void *) +
+				sizeof(std::pair<decltype(scan.retained_epochs.begin()), bool>),
+			reserve, context_pointer);
+		require(scan.retained_epochs.insert(epoch.epoch.bytes).second);
+	}
+	scan.live = ordinary_receipt_sum(
+		scan.live,
+		scan.retained_epochs.size() * sizeof(std::_Rb_tree_node<std::array<uint8_t, 16>>));
+	require(metadata.epochs.size() == metadata.control.epoch_count);
+	observed.lineage = metadata.control.lineage;
+	observed.lineage_revision = metadata.control.revision;
+	observed.epochs_digest = metadata.control.epochs_digest;
+	observed.retained_epochs = static_cast<uint32_t>(metadata.epochs.size());
+	for (scan.bucket = 0; scan.bucket < FLATFILE_ACCOUNTING_BUCKETS; ++scan.bucket)
+	{
+		scan.initialized = (metadata.control.evidence_initialized[scan.bucket / 8] &
+				    (uint8_t{ 1 } << (scan.bucket % 8))) != 0;
+		if (!scan.initialized)
+		{
+			ordinary_receipt_empty_bucket_bounded(root, scan.bucket, reserve,
+							      context_pointer, scan.live);
+			++observed.clear_buckets;
+		}
+		else
+		{
+			receipt_bounded_admit(scan.live,
+					      sizeof(ordinary_receipt_scan_bucket_workspace),
+					      reserve, context_pointer);
+			ordinary_receipt_scan_bucket_workspace bucket;
+			bucket.live = ordinary_receipt_sum(scan.live, sizeof(bucket));
+			bucket.value = receipt_load_context_bounded(root, scan.bucket, reserve,
+								    context_pointer, bucket.live);
+			bucket.live = ordinary_receipt_sum(
+				bucket.live,
+				ordinary_receipt_vector_heap(bucket.value.index.entries));
+			bucket.live =
+				ordinary_receipt_sum(bucket.live, bucket.value.active.capacity());
+			require(bucket.value.index.lineage.bytes == metadata.control.lineage.bytes,
+				status::conflict);
+			++observed.initialized_buckets;
+			if (!bucket.value.index.entries.empty())
+			{
+				bucket.active = last_segment(bucket.value.index);
+				for (bucket.segment = 0; bucket.segment <= bucket.active;
+				     ++bucket.segment)
+				{
+					receipt_bounded_admit(
+						bucket.live,
+						sizeof(ordinary_receipt_scan_segment_workspace),
+						reserve, context_pointer);
+					ordinary_receipt_scan_segment_workspace segment;
+					segment.live =
+						ordinary_receipt_sum(bucket.live, sizeof(segment));
+					if (bucket.segment == bucket.active)
+					{
+						segment.bytes = std::move(bucket.value.active);
+						// The active payload was already charged in bucket.live.
+					}
+					else
+					{
+						segment.bytes = receipt_load_segment_bounded(
+							root, bucket.value.index, bucket.segment,
+							reserve, context_pointer, segment.live);
+						segment.live = ordinary_receipt_sum(
+							segment.live, segment.bytes.capacity());
+					}
+					receipt_bounded_admit(
+						segment.live,
+						receipt_segment_entries_working(bucket.value.index,
+										bucket.segment),
+						reserve, context_pointer);
+					segment.entries =
+						segment_entries(bucket.value.index, bucket.segment);
+					segment.live = ordinary_receipt_sum(
+						segment.live,
+						ordinary_receipt_vector_heap(segment.entries));
+					for (const auto *item : segment.entries)
+					{
+						receipt_bounded_admit(
+							segment.live,
+							sizeof(ordinary_receipt_scan_record_workspace) +
+								sizeof(const entry *),
+							reserve, context_pointer);
+						ordinary_receipt_scan_record_workspace row;
+						row.live = ordinary_receipt_sum(
+							segment.live, sizeof(row) + sizeof(item));
+						row.wire = std::span<const uint8_t>(segment.bytes)
+								   .subspan(header_bytes + 32 +
+										    item->offset,
+									    item->bytes);
+						row.record = receipt_decode_record_bounded(
+							row.wire, reserve, context_pointer,
+							row.live);
+						row.live = ordinary_receipt_sum(
+							row.live, receipt_record_heap(row.record));
+						row.intent_wire =
+							row.record.command.accounting_intent;
+						checked(economic_intent_decode_bounded(
+							row.intent_wire, &row.intent, reserve,
+							context_pointer, row.live));
+						row.live = ordinary_receipt_sum(
+							row.live,
+							row.intent.admission.facts.capacity());
+						checked(economic_intent_verify_binding_bounded(
+							row.record.command, row.intent, reserve,
+							context_pointer, row.live));
+						require(row.record.command.operation_id.bytes ==
+								item->id.bytes &&
+							row.intent.admission.metadata.lineage.bytes ==
+								bucket.value.index.lineage.bytes &&
+							scan.retained_epochs.contains(
+								row.intent.admission.metadata.epoch
+									.bytes));
+						row.canonical =
+							ordinary_receipt_record_encode_bounded(
+								row.record, reserve,
+								context_pointer, row.live);
+						row.live = ordinary_receipt_sum(
+							row.live, row.canonical.capacity());
+						require(row.canonical.size() == row.wire.size() &&
+							std::equal(row.canonical.begin(),
+								   row.canonical.end(),
+								   row.wire.begin()));
+						++observed.records_verified;
+						if (row.record.result_code)
+						{
+							++observed.failed_records;
+							visit.outer = row.live;
+							visit(row.record, nullptr, row.wire);
+						}
+						else
+						{
+							row.plan_wire = row.record.plan;
+							checked(economic_plan_decode_bounded(
+								row.plan_wire, &row.plan, reserve,
+								context_pointer, row.live,
+								&row.plan_heap));
+							row.live = ordinary_receipt_sum(
+								row.live, row.plan_heap);
+							require(row.plan.metadata.operation_id
+										.bytes ==
+									row.record.command
+										.operation_id
+										.bytes &&
+								row.plan.metadata.lineage.bytes ==
+									metadata.control.lineage
+										.bytes &&
+								row.plan.metadata.epoch.bytes ==
+									row.intent.admission
+										.metadata.epoch
+										.bytes &&
+								row.plan.children.empty());
+							++observed.successful_records;
+							observed.item_events_verified +=
+								row.plan.item_events.size();
+							visit.outer = row.live;
+							visit(row.record, &row.plan, row.wire);
+						}
+					}
+					++observed.segments_verified;
+				}
+			}
+		}
+		++observed.buckets_verified;
+	}
+	require(observed.buckets_verified == FLATFILE_ACCOUNTING_BUCKETS && lock.matches(root));
+}
+#endif
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_retained_current_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, flatfile_accounting_record *output,
+	flatfile_scratch_reserve_fn reserve, void *context_pointer, size_t outer,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (!output || !reserve)
+		return status::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)operation;
+	(void)context_pointer;
+	(void)outer;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return status::io_error;
+#else
+	ordinary_receipt_forward forward{ reserve, context_pointer };
+	try
+	{
+		require(!root.empty() && lock.matches(root) &&
+			!critical_operation_id_is_zero(operation));
+		const size_t frame = sizeof(ordinary_receipt_retained_workspace) +
+				     sizeof(ordinary_receipt_forward) +
+				     ordinary_receipt_secure_read_source_frames +
+				     ordinary_receipt_result_source_frames + 6 * sizeof(void *) +
+				     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t) +
+				     sizeof(std::span<const economic_accounting_item_reference>);
+		receipt_bounded_admit(outer, frame, reserve, context_pointer);
+		reserve = ordinary_receipt_forward::admit;
+		context_pointer = &forward;
+		ordinary_receipt_retained_workspace work;
+		work.live = ordinary_receipt_sum(outer, frame);
+		work.current = receipt_load_context_bounded(root, bucket_for(operation), reserve,
+							    context_pointer, work.live);
+		work.live = ordinary_receipt_sum(
+			work.live, ordinary_receipt_vector_heap(work.current.index.entries));
+		work.live = ordinary_receipt_sum(work.live, work.current.active.capacity());
+		work.record = receipt_retained_in_bounded(root, work.current, operation, reserve,
+							  context_pointer, work.live);
+		work.record_heap = receipt_record_heap(work.record);
+		work.live = ordinary_receipt_sum(work.live, work.record_heap);
+		require(work.record.command.schema_version ==
+				CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			work.record.command.type == critical_command_type::native_mobile_birth &&
+			work.record.command.payload_version ==
+				NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+			!work.record.result_code &&
+			work.record.failure_stage == critical_failure_stage::none &&
+			work.record.durable_revision == 1 &&
+			work.record.result.size() == NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES);
+		checked(native_mobile_birth_cash_role_command_decode_bounded(
+			work.record.command, &work.born, &work.recipes, &work.role, reserve,
+			context_pointer, work.live, &work.image_heap, &work.recipe_heap));
+		work.live = ordinary_receipt_sum(work.live, work.image_heap);
+		work.live = ordinary_receipt_sum(work.live, work.recipe_heap);
+		require(work.role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+			work.born.cash &&
+			work.born.reference.birth_operation.bytes == operation.bytes);
+		work.intent_wire = work.record.command.accounting_intent;
+		checked(economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve,
+						       context_pointer, work.live));
+		work.live = ordinary_receipt_sum(work.live, work.intent.admission.facts.capacity());
+		checked(economic_intent_verify_binding_bounded(
+			work.record.command, work.intent, reserve, context_pointer, work.live));
+		require(work.intent.admission.metadata.source_event.has_value());
+		require(native_mobile_birth_cash_role_result_decode(work.record.result,
+								    &work.receipt) &&
+			work.receipt.role == native_mobile_birth_cash_role::ordinary_wallet);
+		work.wallet = { work.intent.admission.metadata.lineage,
+				economic_account_kind::wallet, work.receipt.wallet_mapping_id,
+				ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		checked(native_mobile_birth_cash_role_accounting_compile_bounded(
+			work.record.command, work.wallet, &work.expected, reserve, context_pointer,
+			work.live, &work.plan_heap));
+		work.live = ordinary_receipt_sum(work.live, work.plan_heap);
+		ordinary_receipt_plan_encode_bounded(work.expected, &work.plan_bytes, reserve,
+						     context_pointer, work.live);
+		work.live = ordinary_receipt_sum(work.live, work.plan_bytes.capacity());
+		require(work.plan_bytes == work.record.plan && work.expected.children.empty());
+		checked(native_mobile_birth_cash_role_result_build_bounded(
+			work.record.command, work.wallet, work.expected, &work.expected_receipt,
+			reserve, context_pointer, work.live));
+		require(native_mobile_birth_cash_role_result_encode(work.expected_receipt,
+								    &work.receipt_bytes) &&
+			std::equal(work.receipt_bytes.begin(), work.receipt_bytes.end(),
+				   work.record.result.begin()));
+		work.authority_error =
+			flatfile_ordinary_native_birth_history_storage::verify_locked_bounded(
+				root, lock, work.wallet, work.intent.admission.metadata.epoch,
+				operation, work.born.reference.mobile_instance_id, reserve,
+				context_pointer, work.live);
+		ordinary_receipt_authority_checked_bounded(work.authority_error);
+		require(work.expected.item_events.size() <=
+				SIZE_MAX / sizeof(economic_accounting_item_reference),
+			status::capacity);
+		receipt_bounded_admit(work.live,
+				      work.expected.item_events.size() *
+						      sizeof(economic_accounting_item_reference) +
+					      sizeof(economic_accounting_item_reference) +
+					      sizeof(void *),
+				      reserve, context_pointer);
+		work.references.reserve(work.expected.item_events.size());
+		work.live = ordinary_receipt_sum(work.live,
+						 ordinary_receipt_vector_heap(work.references));
+		for (const auto &event : work.expected.item_events)
+		{
+			require(event.event_index < UINT16_MAX);
+			economic_accounting_item_reference reference;
+			reference.operation_id = operation;
+			reference.line_index = static_cast<uint16_t>(event.event_index);
+			reference.event_index = event.event_index;
+			reference.child_index = event.child_index;
+			reference.item_uid = event.uid;
+			reference.before_revision = event.before.revision;
+			reference.after_revision = event.after.revision;
+			reference.legacy_operation_id = operation;
+			reference.legacy_event_index = reference.line_index;
+			require(economic_accounting_item_reference_validate(reference));
+			work.references.push_back(reference);
+		}
+		work.references_error =
+			flatfile_native_mobile_birth_ordinary_reference_history_storage::
+				verify_current_operation_locked_bounded(root, lock, operation,
+									work.references,
+									&work.reference_counts,
+									reserve, context_pointer,
+									work.live);
+		require(work.references_error == flatfile_item_accounting_status::ok,
+			work.references_error == flatfile_item_accounting_status::capacity ?
+				status::capacity :
+			work.references_error == flatfile_item_accounting_status::io_error ?
+				status::io_error :
+			work.references_error == flatfile_item_accounting_status::not_found ?
+				status::not_found :
+				status::invalid);
+		work.claim_error = flatfile_accounting_storage::verify_source_claim_bounded(
+			root, lock, work.record, reserve, context_pointer, work.live);
+		require(work.claim_error == status::ok, work.claim_error);
+		require(lock.matches(root));
+		receipt_bounded_admit(work.live, 0, reserve, context_pointer);
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_accounting_record>);
+		*output = std::move(work.record);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = work.record_heap;
+		return status::ok;
+	}
+	catch (const failure &value)
+	{
+		return forward.refused ? status::capacity : value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+#endif
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_retained_history_current_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, flatfile_accounting_record *output,
+	flatfile_ordinary_native_birth_economic_history_counts *counts,
+	flatfile_scratch_reserve_fn reserve, void *context_pointer, size_t outer,
+	size_t *retained_output_payload_bytes) noexcept
+{
+	if (!output || !counts || !reserve)
+		return status::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)operation;
+	(void)context_pointer;
+	(void)outer;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return status::io_error;
+#else
+	ordinary_receipt_forward forward{ reserve, context_pointer };
+	try
+	{
+		require(!root.empty() && lock.matches(root) &&
+			!critical_operation_id_is_zero(operation));
+		const size_t frame = sizeof(ordinary_receipt_history_workspace) +
+				     sizeof(ordinary_receipt_forward) +
+				     ordinary_receipt_secure_read_source_frames +
+				     ordinary_receipt_result_source_frames +
+				     sizeof(ordinary_receipt_history_visit) + 7 * sizeof(void *) +
+				     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t);
+		receipt_bounded_admit(outer, frame, reserve, context_pointer);
+		reserve = ordinary_receipt_forward::admit;
+		context_pointer = &forward;
+		ordinary_receipt_history_workspace work;
+		work.live = ordinary_receipt_sum(outer, frame);
+		work.receipt_status = verify_retained_current_locked_bounded(
+			root, lock, operation, &work.record, reserve, context_pointer, work.live,
+			&work.record_heap);
+		require(work.receipt_status == status::ok, work.receipt_status);
+		work.live = ordinary_receipt_sum(work.live, work.record_heap);
+		work.claim_status = verify_source_claim_current_locked_bounded(
+			root, lock, work.record, reserve, context_pointer, work.live);
+		require(work.claim_status == status::ok, work.claim_status);
+		checked(native_mobile_birth_cash_role_command_decode_bounded(
+			work.record.command, &work.image, &work.recipes, &work.role, reserve,
+			context_pointer, work.live, &work.image_heap, &work.recipe_heap));
+		work.live = ordinary_receipt_sum(work.live, work.image_heap);
+		work.live = ordinary_receipt_sum(work.live, work.recipe_heap);
+		require(work.role.role == native_mobile_birth_cash_role::ordinary_wallet);
+		require(native_mobile_birth_cash_role_result_decode(work.record.result,
+								    &work.receipt) &&
+			work.receipt.role == native_mobile_birth_cash_role::ordinary_wallet);
+		work.intent_wire = work.record.command.accounting_intent;
+		checked(economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve,
+						       context_pointer, work.live));
+		work.live = ordinary_receipt_sum(work.live, work.intent.admission.facts.capacity());
+		checked(economic_intent_verify_binding_bounded(
+			work.record.command, work.intent, reserve, context_pointer, work.live));
+		work.wallet = { work.intent.admission.metadata.lineage,
+				economic_account_kind::wallet, work.receipt.wallet_mapping_id,
+				ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		checked(native_mobile_birth_cash_role_accounting_compile_bounded(
+			work.record.command, work.wallet, &work.expected, reserve, context_pointer,
+			work.live, &work.plan_heap));
+		work.live = ordinary_receipt_sum(work.live, work.plan_heap);
+		ordinary_receipt_plan_encode_bounded(work.expected, &work.expected_plan, reserve,
+						     context_pointer, work.live);
+		work.live = ordinary_receipt_sum(work.live, work.expected_plan.capacity());
+		require(work.expected_plan == work.record.plan);
+		ordinary_receipt_creation_bounded(work.record.command, work.image, work.expected,
+						  reserve, context_pointer, work.live);
+		work.original_record = ordinary_receipt_record_encode_bounded(
+			work.record, reserve, context_pointer, work.live);
+		work.live = ordinary_receipt_sum(work.live, work.original_record.capacity());
+		work.born = ordinary_receipt_born_bounded(work.image, reserve, context_pointer,
+							  work.live);
+		work.live =
+			ordinary_receipt_sum(work.live, ordinary_receipt_vector_heap(work.born));
+		ordinary_receipt_authority_checked_bounded(
+			flatfile_native_mobile_birth_ordinary_baseline_history_storage::
+				read_metadata_locked_bounded(root, lock, &work.metadata, reserve,
+							     context_pointer, work.live,
+							     &work.metadata_heap));
+		work.live = ordinary_receipt_sum(work.live, work.metadata_heap);
+		require(work.metadata.control.lineage.bytes ==
+			work.expected.metadata.lineage.bytes);
+		work.observed.born_uids = work.born.size();
+		ordinary_receipt_history_visit visit{ operation, work, reserve, context_pointer,
+						      work.live };
+		ordinary_receipt_history_scan_bounded(root, lock, work.metadata, work.observed,
+						      visit, reserve, context_pointer, work.live);
+		require(work.observed.birth_records_verified == 1 &&
+			work.observed.creation_events_verified ==
+				work.expected.item_events.size() &&
+			work.observed.birth_account_effects_verified ==
+				work.expected.accounts.size() &&
+			work.observed.birth_coin_postings_verified ==
+				work.expected.postings.size() &&
+			lock.matches(root));
+		receipt_bounded_admit(work.live, 0, reserve, context_pointer);
+		static_assert(std::is_nothrow_move_assignable_v<flatfile_accounting_record>);
+		static_assert(std::is_nothrow_copy_assignable_v<
+			      flatfile_ordinary_native_birth_economic_history_counts>);
+		*output = std::move(work.record);
+		*counts = work.observed;
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = work.record_heap;
+		return status::ok;
+	}
+	catch (const failure &value)
+	{
+		return forward.refused ? status::capacity : value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+#endif
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_source_claim_current_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	if (!reserve)
+		return status::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)root;
+	(void)lock;
+	(void)record;
+	(void)context;
+	(void)outer;
+	errno = ENOTSUP;
+	return status::io_error;
+#else
+	ordinary_receipt_forward forward{ reserve, context };
+	try
+	{
+		require(!record.result_code &&
+			record.failure_stage == critical_failure_stage::none &&
+			record.durable_revision == 1 &&
+			record.result.size() == NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES);
+		const size_t frame = sizeof(ordinary_receipt_forward) +
+				     ordinary_receipt_secure_read_source_frames +
+				     ordinary_receipt_result_source_frames + 4 * sizeof(void *) +
+				     sizeof(flatfile_scratch_reserve_fn) + 2 * sizeof(size_t);
+		receipt_bounded_admit(outer, frame, reserve, context);
+		reserve = ordinary_receipt_forward::admit;
+		context = &forward;
+		ordinary_receipt_claim_census_bounded(root, lock, record, reserve, context,
+						      ordinary_receipt_sum(outer, frame));
+		return status::ok;
+	}
+	catch (const failure &value)
+	{
+		return forward.refused ? status::capacity : value.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+#endif
+}

@@ -54,6 +54,12 @@ class flatfile_native_mobile_birth_ordinary_baseline_history_storage final
 				      const critical_native_recovery_envelope &,
 				      flatfile_native_mobile_birth_ordinary_baseline_absence *,
 				      std::string *);
+	// Full original retained catalog, passive same-root lock, strong transfer.
+	static unsigned int
+	read_metadata_locked_bounded(const std::string &, const flatfile_authority_lock &,
+				     flatfile_native_mobile_birth_ordinary_retained_metadata *,
+				     flatfile_scratch_reserve_fn, void *, size_t,
+				     size_t *retained_output_payload_bytes = nullptr) noexcept;
 };
 
 #endif
