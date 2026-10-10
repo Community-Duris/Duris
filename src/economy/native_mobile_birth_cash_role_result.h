@@ -71,4 +71,38 @@ bool native_mobile_birth_cash_role_result_matches_bounded(
 	const economic_accounting_plan &, const native_mobile_birth_cash_role_result &,
 	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
 
+// Full original MBR4 result route, retaining complete canonical plan-pair proof
+// and four original digest inputs. Additive, strong typed outputs. New entries
+// self-own SOURCE/entry objects; old outputs and inputs remain in outer.
+economic_accounting_error native_mobile_birth_cash_role_result_build_fixed_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	native_mobile_birth_cash_role_result *, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_result_build_fixed_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	const economic_accounting_plan &, native_mobile_birth_cash_role_result *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_result_matches_fixed_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	const native_mobile_birth_cash_role_result &, bool *, bool (*)(size_t, void *) noexcept,
+	void *, size_t) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_result_matches_fixed_bounded(
+	const critical_command &, const native_mobile_birth_shared_shop_participant &,
+	const economic_accounting_plan &, const native_mobile_birth_cash_role_result &, bool *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_result_decode_fixed_bounded(
+	std::span<const uint8_t>, native_mobile_birth_cash_role_result *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool native_mobile_birth_cash_role_result_fixed_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_result_fixed_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_cash_role_result_fixed_source_query_frame_bytes() noexcept
+{
+	// Own getter (output/two scalar totals and conditions), actual image lifetime
+	// and recipe lifecycle queries, and two genuine checked-add helpers.
+	return sizeof(size_t *) + 2 * sizeof(size_t) + 3 * sizeof(bool) +
+	       quest_mobile_native_image_lifetime_source_query_frame_bytes() +
+	       native_mobile_birth_recipe_source_query_frame_bytes() +
+	       2 * (sizeof(size_t *) + sizeof(size_t) + sizeof(bool));
+}
+
 #endif

@@ -44,4 +44,32 @@ bool native_mobile_birth_result_matches(const critical_command &, const economic
 					const economic_accounting_plan &,
 					const native_mobile_birth_result &) noexcept;
 
+// Caller retains command/wallet/supplied plan/prior output and their authentic
+// heap in outer_live. These pure companions grant no receipt/SQL/source/ACK
+// authority. A completed semantic mismatch is distinct from admission refusal.
+// Child command/compiler/digest providers retain their own source and private
+// inline supplements; no child private source/workspace belongs in outer_live.
+economic_accounting_error native_mobile_birth_result_build_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	native_mobile_birth_result *, bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error native_mobile_birth_result_matches_bounded(
+	const critical_command &, const economic_account_key &, const economic_accounting_plan &,
+	const native_mobile_birth_result &, bool *, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+economic_accounting_error
+native_mobile_birth_result_decode_bounded(std::span<const uint8_t>, native_mobile_birth_result *,
+					  bool (*)(size_t, void *) noexcept, void *,
+					  size_t) noexcept;
+
+// Strong pure queries for this owner's actual source and early private inline
+// storage. The initial supplement and source are separate, never peak CURRENT.
+// Unsupported selected source configuration returns false without mutation.
+bool native_mobile_birth_result_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_result_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_result_source_query_frame_bytes() noexcept
+{
+	// Getter output parameter + supported-profile bool + getter bool result.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif
