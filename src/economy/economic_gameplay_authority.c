@@ -1762,3 +1762,73 @@ economic_gameplay_authority::prepare_native_mobile_birth_ordinary_wallet_flat(
 		return error::corrupt_evidence;
 	}
 }
+
+economic_accounting_error
+economic_gameplay_authority::prepare_native_mobile_birth_ordinary_wallet_flat_bounded(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const native_mobile_birth_cash_role_recipe &role, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output,
+	const critical_operation_id &expected_lineage, const critical_operation_id &expected_epoch,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	using error = economic_accounting_error;
+	const char *root = persistence_mode_flatfile_root();
+	if (!output || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql() || !root || !*root ||
+	    role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return error::unauthorized;
+	using selected_type = decltype(current.load(std::memory_order_acquire));
+	// Actual whole authority call lives through the nested original builder.
+	constexpr size_t parameters = sizeof(&original) + sizeof(recipes) + sizeof(&role) +
+				      sizeof(original_site) + sizeof(accepted_at_usec) +
+				      sizeof(output) + sizeof(&expected_lineage) +
+				      sizeof(&expected_epoch) + sizeof(reserve) + sizeof(context) +
+				      sizeof(outer_live) + sizeof(error);
+	constexpr size_t atomic_frames =
+		sizeof(const void *) + sizeof(std::memory_order) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(void *) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(uintptr_t) + sizeof(void *) + sizeof(void *) +
+		sizeof(void *) + sizeof(const void *) + sizeof(std::memory_order) +
+		sizeof(const void *) + sizeof(int);
+	size_t live = outer_live;
+	constexpr size_t fixed = parameters + sizeof(root) + sizeof(size_t) +
+				 sizeof(selected_type) + sizeof(selected_type) +
+				 sizeof(economic_operation_metadata) + atomic_frames;
+	if (!reserve || fixed > SIZE_MAX - live || !reserve(live + fixed, context))
+		return error::capacity;
+	live += fixed;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0 ||
+		    selected->lineage.bytes != expected_lineage.bytes ||
+		    selected->epoch.bytes != expected_epoch.bytes)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_cash_role_command_build_bounded(
+			metadata, original, recipes, role, original_site, accepted_at_usec, output,
+			reserve, context, live);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
