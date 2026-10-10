@@ -8736,7 +8736,7 @@ constexpr size_t ordinary_custody_result_frames =
 // temporary outputs, vectors and prospective heap requests separately.
 constexpr size_t ordinary_custody_source_frames =
 	7 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) + sizeof(size_t) +
-	8 * sizeof(economic_accounting_error) + 4 * sizeof(flatfile_item_repository_result) +
+	9 * sizeof(economic_accounting_error) + 4 * sizeof(flatfile_item_repository_result) +
 	2 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) + 8 * sizeof(void *) +
 	5 * sizeof(size_t) + 4 * sizeof(bool);
 struct ordinary_custody_workspace
@@ -8822,9 +8822,14 @@ struct ordinary_custody_live
 	}
 	flatfile_item_repository_result codec(economic_accounting_error value) const noexcept
 	{
-		return refusal(value == economic_accounting_error::capacity ?
-				       flatfile_item_repository_result::io_error :
-				       flatfile_item_repository_result::invalid);
+		if (work.reservation.rejected || value == economic_accounting_error::capacity)
+			return capacity();
+		if (value == economic_accounting_error::unresolved)
+		{
+			errno = ENOTSUP;
+			return flatfile_item_repository_result::io_error;
+		}
+		return flatfile_item_repository_result::invalid;
 	}
 };
 #endif
@@ -8871,9 +8876,11 @@ flatfile_native_mobile_birth_ordinary_custody_storage::read_locked_bounded(
 		ordinary_custody_live live{ fixed, work };
 		auto reserve = custody_initial_stage_reserve;
 		void *reservation = &work.reservation;
-		if (!native_mobile_birth_cash_role_recovery_valid_bounded(original, reserve,
-									  reservation, fixed))
-			return live.refusal(flatfile_item_repository_result::invalid);
+		const auto recovery_validity =
+			native_mobile_birth_cash_role_recovery_validate_bounded(original, reserve,
+										reservation, fixed);
+		if (recovery_validity != economic_accounting_error::ok)
+			return live.codec(recovery_validity);
 		const auto equal = custody_initial_command_equal_bounded(
 			retained.command, original.command, reserve, reservation, fixed);
 		if (equal != flatfile_item_repository_result::ok)
@@ -8883,7 +8890,7 @@ flatfile_native_mobile_birth_ordinary_custody_storage::read_locked_bounded(
 		    retained.durable_revision != 1 ||
 		    retained.result.size() != NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES)
 			return flatfile_item_repository_result::invalid;
-		const auto recovery = native_mobile_birth_cash_role_recovery_decode_bounded(
+		const auto recovery = native_mobile_birth_cash_role_recovery_decode_status_bounded(
 			original.command, original.attachment, &work.recovery, reserve, reservation,
 			fixed, &work.recovery_heap);
 		if (recovery != economic_accounting_error::ok)
