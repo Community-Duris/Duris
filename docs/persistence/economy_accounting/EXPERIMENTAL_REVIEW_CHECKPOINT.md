@@ -3679,3 +3679,18 @@ authenticate. The inherited checksum-provider source gap closes; full container/
 libc/caller/ROOT/global32MiB/native/recovery/R1-R8 qualification remains OPEN.
 Tests deferred major-plan batch; inactive/CLOSED, coverage incomplete, release
 BLOCKED, goal ACTIVE. No major plan or runtime gate completion is claimed.
+
+
+## Bounded running executable digest implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_RUNNING_EXECUTABLE_DIGEST_2026-10-10.md)
+adds fixed SHA/file capture with prospective admission before the one genuine
+shared process cache. Original EVP default, same-FD/ELF/EINTR/extent/tail/stat/
+close/strong-output and cached-failure laws survive. Early resource/profile
+refusal cannot initialize or poison the cache. Independent whole RAW/installed
+source review authenticates58 members/47 predecessor members/45 preserved
+library captures/two inverses/formatting. Fresh reviewer WSL capture unavailable;
+no current binary equivalence inferred. 458 pins/931 unchanged policies/protected
+Plan 5 WIP pass. Caller/emitted/transitive/global32MiB/native/mixed-thread/R1-R8
+qualification remains OPEN; tests deferred major-plan batch. Inactive/CLOSED,
+coverage incomplete, release BLOCKED, goal ACTIVE. No major plan completion.
