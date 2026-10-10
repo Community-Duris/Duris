@@ -1225,3 +1225,425 @@ coin_transfer_accounting_verify_retained(MYSQL *connection, const critical_comma
 	}
 }
 #endif
+
+namespace
+{
+bool coin_accounting_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+template <typename T>
+bool coin_accounting_vector_heap(const std::vector<T> &value, size_t &total) noexcept
+{
+	return value.capacity() <= SIZE_MAX / sizeof(T) &&
+	       coin_accounting_add(total, value.capacity() * sizeof(T));
+}
+constexpr size_t coin_accounting_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t coin_accounting_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t coin_accounting_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t coin_accounting_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t coin_accounting_vector_frames =
+	coin_accounting_allocator_frames + coin_accounting_copy_frames +
+	coin_accounting_relocate_frames + coin_accounting_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t coin_accounting_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + coin_accounting_allocator_frames;
+constexpr size_t coin_accounting_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + coin_accounting_vector_frames;
+constexpr size_t coin_accounting_pile_defaults =
+	// Same actual ten aggregate defaults/destructors, six vector/base/impl/
+	// data defaults, six string/hider/local/NUL defaults in item payload.
+	2 * 10 * sizeof(void *) + 6 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	6 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) + sizeof(char));
+
+constexpr size_t coin_accounting_command_defaults =
+	// Two authentic embedded command aggregate defaults/destructors and
+	// eight actual vector/base/impl/data/default allocator call paths.
+	2 * (2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	     4 * (sizeof(void *) + coin_accounting_allocator_frames));
+constexpr size_t coin_accounting_facts_defaults =
+	// Real admission/metadata/optional source-event defaults/destruction;
+	// actual single facts vector/base/impl/data and allocator call paths.
+	3 * sizeof(void *) + 4 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) +
+	sizeof(std::allocator<uint8_t>) + coin_accounting_allocator_frames;
+constexpr size_t coin_accounting_intent_fixed_calls =
+	// Original nonallocating operation zero/account valid/equal helpers:
+	// actual by-reference arguments, byte/key loop/subscript and returns.
+	5 * sizeof(void *) + 4 * sizeof(bool) + sizeof(uint8_t) +
+	3 * (sizeof(void *) + sizeof(size_t)) +
+	// Actual wallet any_of predicate path: any_of/find_if_not/find_if
+	// wrapper forwarding, fixed four-element find_if unroll/trip_count,
+	// actual empty lambda wrappers, predicate arg int64_t and bool.
+	3 * (3 * sizeof(void *) + sizeof(char) + sizeof(void *)) + 4 * sizeof(void *) +
+	sizeof(std::ptrdiff_t) + sizeof(char) + 3 * (sizeof(void *) + sizeof(char)) +
+	2 * sizeof(void *) + sizeof(int64_t) + sizeof(bool) +
+	// Pointer/account array indexing/range/vector-size/subscript carriers.
+	8 * (sizeof(void *) + sizeof(size_t)) +
+	// Genuine source-event parameters/result plus result DTO, byte loop,
+	// actual array data calls and optional assignment. No allocating call.
+	sizeof(economic_account_kind) + 2 * sizeof(uint64_t) + 2 * sizeof(bool) + sizeof(void *) +
+	sizeof(bool) + sizeof(economic_source_event) + sizeof(size_t) + 4 * (2 * sizeof(void *)) +
+	4 * sizeof(void *) + sizeof(bool) +
+	// Both literal memcpy calls: actual destination/source/size argument
+	// and returned destination; optional construction's copied event refs.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *);
+struct coin_accounting_intent_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const coin_transfer_payload *payload = nullptr;
+	const item_transfer_payload *pile = nullptr;
+	const economic_admission_facts *facts = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 9 * sizeof(void *) + 7 * sizeof(size_t) +
+					       5 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!coin_accounting_add(total, sizeof(*this)) ||
+		    !coin_accounting_add(total, frames) ||
+		    !coin_accounting_add(total, observation) ||
+		    !coin_accounting_add(total, critical_command_copy_frame_bytes()) ||
+		    !coin_accounting_add(total, critical_command_valid_frame_bytes()) ||
+		    !coin_accounting_add(total, item_transfer_payload_copy_frame_bytes()))
+			return false;
+		if (payload && (!coin_accounting_add(total, sizeof(*payload)) ||
+				!coin_transfer_payload_current_heap_bytes(*payload, &heap) ||
+				!coin_accounting_add(total, heap)))
+			return false;
+		if (pile && (!coin_accounting_add(total, sizeof(*pile)) ||
+			     !item_transfer_payload_current_heap_bytes(*pile, &heap) ||
+			     !coin_accounting_add(total, heap)))
+			return false;
+		if (facts && (!coin_accounting_add(total, sizeof(*facts)) ||
+			      !coin_accounting_vector_heap(facts->facts, total)))
+			return false;
+		if (!coin_accounting_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	bool growth(const std::vector<uint8_t> &value, size_t count) const noexcept
+	{
+		size_t request = coin_accounting_vector_frames;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!coin_accounting_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (!coin_accounting_add(request, next))
+				return false;
+		}
+		return coin_accounting_add(request, 2 * sizeof(void *) + 4 * sizeof(size_t) +
+							    sizeof(bool)) &&
+		       peak(request);
+	}
+};
+bool coin_accounting_append_u64_owned(std::vector<uint8_t> *bytes, uint64_t value,
+				      coin_accounting_intent_budget &budget)
+{
+	for (size_t byte = 0; byte < 8; ++byte)
+	{
+		if (!budget.growth(*bytes, 1))
+			return false;
+		bytes->push_back(static_cast<uint8_t>(value >> (byte * 8)));
+	}
+	return true;
+}
+
+economic_accounting_error
+coin_accounting_intent_owned(const critical_command &root, const critical_operation_id &epoch,
+			     const economic_account_key &source_account,
+			     const economic_account_key &destination_account,
+			     std::vector<uint8_t> *encoded, coin_accounting_intent_budget &budget)
+{
+	using error = economic_accounting_error;
+	size_t admission_prefix = 0;
+	if (!encoded || critical_operation_id_is_zero(epoch) ||
+	    !economic_account_key_valid(source_account) ||
+	    !economic_account_key_valid(destination_account) || source_account.context_id ||
+	    destination_account.context_id ||
+	    source_account.lineage.bytes != destination_account.lineage.bytes ||
+	    economic_account_key_equal(source_account, destination_account))
+		return error::invalid_identity;
+	if (!budget.peak(sizeof(coin_transfer_payload) + coin_accounting_command_defaults))
+		return error::capacity;
+	coin_transfer_payload payload;
+	budget.payload = &payload;
+	if (!(budget.prefix(admission_prefix) &&
+	      coin_transfer_command_decode_payload_bounded(root, &payload, budget.reserve,
+							   budget.context, admission_prefix)))
+		return error::unauthorized;
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	const economic_account_key *accounts[] = { &source_account, &destination_account };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		const auto &account = *accounts[index];
+		const auto expected_kind =
+			endpoint.change.type == critical_command_type::account_bank ?
+				economic_account_kind::wallet :
+			endpoint.change.type == critical_command_type::item_transfer ?
+				economic_account_kind::pile :
+				economic_account_kind{};
+		if (account.kind != expected_kind ||
+		    (account.kind != economic_account_kind::wallet &&
+		     account.kind != economic_account_kind::pile))
+			return error::unauthorized;
+		if (endpoint.change.type == critical_command_type::account_bank)
+		{
+			if (!budget.peak(sizeof(currency_command_payload) + 2 * sizeof(void *)))
+				return error::capacity;
+			currency_command_payload change = {};
+			if (!(budget.prefix(admission_prefix, sizeof(change)) &&
+			      currency_command_decode_payload_bounded(
+				      endpoint.change, &change, budget.reserve, budget.context,
+				      admission_prefix)) ||
+			    endpoint.change.keys.size() != 2 ||
+			    endpoint.change.keys[0].type != critical_entity_type::player ||
+			    change.pid != endpoint.change.keys[0].id ||
+			    change.reason != currency_reason_type::coin_transfer ||
+			    endpoint.change.expected_revisions.size() != 2 ||
+			    endpoint.change.expected_revisions[0].revision == UINT64_MAX ||
+			    endpoint.change.expected_revisions[1].revision == UINT64_MAX ||
+			    std::any_of(change.bank_delta.amount.begin(),
+					change.bank_delta.amount.end(),
+					[](int64_t amount) { return amount != 0; }))
+				return error::unauthorized;
+		}
+		else
+		{
+			if (!budget.peak(sizeof(item_transfer_payload) +
+					 coin_accounting_pile_defaults))
+				return error::capacity;
+			item_transfer_payload pile = {};
+			budget.pile = &pile;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_transfer_command_decode_payload_bounded(
+				      endpoint.change, &pile, budget.reserve, budget.context,
+				      admission_prefix)) ||
+			    pile.item_count != 1 ||
+			    pile.selected_item_uid != account.authority_id ||
+			    pile.items[0].item_uid != account.authority_id)
+				return error::unauthorized;
+			budget.pile = nullptr;
+		}
+	}
+	try
+	{
+		if (!budget.peak(sizeof(economic_admission_facts) + coin_accounting_facts_defaults))
+			return error::capacity;
+		economic_admission_facts facts;
+		budget.facts = &facts;
+		facts.metadata.lineage = source_account.lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = source_account.authority_id;
+		facts.metadata.writer_id = ECONOMIC_WRITER_WALLET_COIN_TRANSFER;
+		facts.metadata.reason = economic_reason::coin_transfer;
+		bool source_retired = false;
+		bool destination_created = false;
+		for (size_t index = 0; index < 2; ++index)
+		{
+			const auto *endpoint = endpoints[index];
+			if (endpoint->change.type != critical_command_type::item_transfer)
+				continue;
+			if (!budget.peak(sizeof(item_transfer_payload) +
+					 coin_accounting_pile_defaults))
+				return error::capacity;
+			item_transfer_payload pile = {};
+			budget.pile = &pile;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_transfer_command_decode_payload_bounded(
+				      endpoint->change, &pile, budget.reserve, budget.context,
+				      admission_prefix)) ||
+			    pile.item_count != 1)
+				return error::unauthorized;
+			if (index == 0 && pile.to_owner.type == item_owner_type::destruction)
+				source_retired = true;
+			if (index == 1 && pile.from_owner.type == item_owner_type::system)
+				destination_created = true;
+			budget.pile = nullptr;
+		}
+		economic_source_event source_event = {};
+		uint64_t source_revision = 0;
+		if (payload.source.change.type == critical_command_type::account_bank)
+			source_revision = payload.source.change.expected_revisions[0].revision;
+		else
+		{
+			if (!budget.peak(sizeof(item_transfer_payload) +
+					 coin_accounting_pile_defaults))
+				return error::capacity;
+			item_transfer_payload source_pile = {};
+			budget.pile = &source_pile;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_transfer_command_decode_payload_bounded(
+				      payload.source.change, &source_pile, budget.reserve,
+				      budget.context, admission_prefix)) ||
+			    source_pile.item_count != 1)
+				return error::unauthorized;
+			source_revision = source_pile.items[0].expected_item_revision;
+			budget.pile = nullptr;
+		}
+		if (coin_transfer_accounting_source_event(
+			    source_account.kind, source_account.authority_id, source_revision,
+			    source_retired, destination_created, &source_event))
+			facts.metadata.source_event = source_event;
+		if (!coin_accounting_append_u64_owned(&facts.facts, source_account.authority_id,
+						      budget))
+			return error::capacity;
+		if (!coin_accounting_append_u64_owned(&facts.facts,
+						      destination_account.authority_id, budget))
+			return error::capacity;
+		if (!budget.prefix(admission_prefix))
+			return error::capacity;
+		return economic_intent_freeze_fixed_bounded(root, facts, encoded, budget.reserve,
+							    budget.context, admission_prefix);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+} // namespace
+economic_accounting_error coin_transfer_accounting_intent_bounded(
+	const critical_command &root, const critical_operation_id &epoch,
+	const economic_account_key &source_account, const economic_account_key &destination_account,
+	std::vector<uint8_t> *encoded, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	if (!reserve)
+		return economic_accounting_error::capacity;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Both public and owned signatures including real error return,
+		// true prefix scalar, endpoint/account fixed pointer arrays, loops,
+		// endpoint/account references, expected kind and original booleans.
+		12 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(economic_accounting_error) +
+		4 * sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(void *) +
+		sizeof(economic_account_kind) + 2 * sizeof(bool) +
+		// Source event and revision are real original simultaneously alive
+		// locals; source event helper's distinct result DTO belongs above.
+		sizeof(economic_source_event) + sizeof(uint64_t) + sizeof(void *) +
+		// append_u64 actual arguments/index/return and catch reference.
+		2 * sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+		sizeof(void *) + coin_accounting_intent_fixed_calls;
+	coin_accounting_intent_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return economic_accounting_error::capacity;
+	try
+	{
+		return coin_accounting_intent_owned(root, epoch, source_account,
+						    destination_account, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+	catch (...)
+	{
+		return economic_accounting_error::corrupt_evidence;
+	}
+#else
+	(void)root;
+	(void)epoch;
+	(void)source_account;
+	(void)destination_account;
+	(void)encoded;
+	(void)context;
+	(void)outer_live;
+	return economic_accounting_error::capacity;
+#endif
+}

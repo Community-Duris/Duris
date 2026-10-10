@@ -66,4 +66,13 @@ unsigned int coin_transfer_accounting_verify_retained(
 	const uint8_t *result_payload, size_t result_size,
 	critical_failure_stage failure_stage = critical_failure_stage::none);
 
+// Complete original structural coin intent builder. Full wallet/pile decoder,
+// source lifecycle, facts and canonical fixed-context freeze are retained.
+// Inputs, old output and every sibling owner remain authentic outer state.
+economic_accounting_error
+coin_transfer_accounting_intent_bounded(const critical_command &, const critical_operation_id &,
+					const economic_account_key &, const economic_account_key &,
+					std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+					void *, size_t outer_live) noexcept;
+
 #endif
