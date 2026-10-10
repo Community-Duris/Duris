@@ -251,4 +251,13 @@ bool native_mobile_birth_shared_shop_recovery_terminal_bounded(
 	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
 	size_t outer_live) noexcept;
 
+// Complete original NMB4 shared-shop execution domain predicate. Nonzero
+// revision, full canonical shared recovery decode, and original revision1
+// no-receipt/no-progress proof; it does not impose a phase/terminal gate.
+// Caller outer owns original command/attachment capacities and inline input
+// span. Genuine nested decode owns/prospectively admits all temporary storage.
+bool native_mobile_birth_shared_shop_recovery_execution_valid_bounded(
+	const critical_command &, const std::span<const uint8_t> &, uint64_t revision,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+
 #endif
