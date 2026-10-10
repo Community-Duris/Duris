@@ -1,3 +1,4 @@
+#include "flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_native_mobile_birth_ordinary_initial.h"
 #include "economy/native_mobile_birth_cash_role_command.h"
@@ -2308,4 +2309,26 @@ unsigned int flatfile_native_mobile_birth_ordinary_initial_storage::prepare_lock
 	{
 		return EFAULT;
 	}
+}
+
+unsigned int flatfile_native_mobile_birth_ordinary_baseline_history_storage::read_metadata_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_native_mobile_birth_ordinary_retained_metadata *output, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(output && !root.empty() && lock.matches(root), EINVAL);
+			flatfile_native_mobile_birth_ordinary_retained_metadata candidate;
+			// Actual owning passive decoders, not the recovering public reader.
+			// load_control already authenticates the entire retained catalog;
+			// retain its second full original read as an owned value for the join.
+			candidate.control = load_control(root);
+			candidate.epochs = load_epochs(root, candidate.control);
+			need(lock.matches(root), EINVAL);
+			static_assert(std::is_nothrow_move_assignable_v<
+				      flatfile_native_mobile_birth_ordinary_retained_metadata>);
+			*output = std::move(candidate);
+		},
+		error);
 }
