@@ -788,3 +788,116 @@ critical_command_decode_bounded(const uint8_t *encoded, size_t size, critical_co
 	return critical_command_codec_result::ok;
 #endif
 }
+
+namespace
+{
+constexpr size_t critical_derive_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t critical_derive_sha_c_small_frames =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(const uint8_t *);
+constexpr size_t critical_derive_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+						       11 * sizeof(unsigned int) + 2 * sizeof(int) +
+						       2 * sizeof(void *);
+constexpr size_t critical_derive_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t critical_derive_sha_update_frames = 2 * sizeof(void *) + sizeof(size_t) +
+						     2 * sizeof(void *) + sizeof(unsigned int) +
+						     sizeof(size_t) + sizeof(int);
+constexpr size_t critical_derive_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+						    sizeof(unsigned long) + sizeof(unsigned int) +
+						    sizeof(int);
+[[maybe_unused]] constexpr size_t critical_derive_sha_frames =
+	std::max(critical_derive_sha_assembly_frames,
+		 std::max(critical_derive_sha_c_small_frames,
+			  critical_derive_sha_c_normal_frames)) +
+	std::max(critical_derive_sha_init_frames,
+		 std::max(critical_derive_sha_update_frames, critical_derive_sha_final_frames));
+// Pinned GCC13 raw-pointer std::copy and copy_n closures. The copy_n
+// public/size-to-integer/__copy_n/category carriers coexist with copy.
+// Sum all source declarations; no native/emitted-stack measurement claim.
+[[maybe_unused]] constexpr size_t critical_derive_copy_array_frames =
+	// copy first/last/result/return; __miter_base three calls and return;
+	// __copy_move_a/a1/a2 pointer arguments/results; __niter_base/wrap.
+	4 * sizeof(void *) + 3 * (2 * sizeof(void *)) + 3 * (4 * sizeof(void *)) +
+	3 * (2 * sizeof(void *)) + 3 * sizeof(void *) +
+	// Trivial __copy_m first/last/result/_Num/result and real memmove.
+	4 * sizeof(void *) + sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) +
+	// copy_n first/n/result/__n2/return, size-to-integer param/result,
+	// __copy_n first/n/result/tag/return and category reference/tag.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(size_t) + 3 * sizeof(void *) +
+	sizeof(size_t) + sizeof(std::random_access_iterator_tag) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) +
+	// Genuine array begin/end/data this/result plus size and subscripting.
+	8 * (2 * sizeof(void *)) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	2 * (2 * sizeof(void *) + sizeof(size_t));
+}
+
+bool critical_operation_id_derive_bounded(const critical_operation_id &parent, uint32_t domain,
+					  uint64_t discriminator,
+					  critical_operation_id *operation_id,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept
+{
+	if (!operation_id || !reserve)
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&    \
+	!defined(_GLIBCXX_DEBUG) && defined(OPENSSL_VERSION_MAJOR) &&                             \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	constexpr size_t frames =
+		// Actual function parameter carriers, local live and returned bool;
+		// two byte loop variables, parent/result zero predicate reference,
+		// array-range endpoints/value and result; add/reserve call scopes.
+		4 * sizeof(void *) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(size_t) +
+		sizeof(bool) + sizeof(size_t) + 2 * sizeof(size_t) +
+		2 * (sizeof(void *) + 2 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool)) +
+		2 * sizeof(size_t) + sizeof(void *) + sizeof(bool) + sizeof(size_t) +
+		sizeof(void *) + sizeof(bool);
+	size_t live = outer_live;
+	if (!critical_decode_add(live, frames) || !reserve(live, context))
+		return false;
+	if (critical_operation_id_is_zero(parent) || !domain)
+		return false;
+	if (!critical_decode_add(
+		    live, sizeof(std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(domain) +
+							     sizeof(discriminator)>) +
+				  sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) +
+				  sizeof(SHA256_CTX) + critical_derive_copy_array_frames +
+				  critical_derive_sha_frames) ||
+	    !reserve(live, context))
+		return false;
+	std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(domain) + sizeof(discriminator)>
+		input = {};
+	std::copy(parent.bytes.begin(), parent.bytes.end(), input.begin());
+	for (size_t byte = 0; byte < sizeof(domain); ++byte)
+		input[CRITICAL_COMMAND_ID_BYTES + byte] =
+			static_cast<uint8_t>(domain >> (byte * 8));
+	for (size_t byte = 0; byte < sizeof(discriminator); ++byte)
+		input[CRITICAL_COMMAND_ID_BYTES + sizeof(domain) + byte] =
+			static_cast<uint8_t>(discriminator >> (byte * 8));
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256_CTX digest_context;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	if (SHA256_Init(&digest_context) != 1 ||
+	    SHA256_Update(&digest_context, input.data(), input.size()) != 1 ||
+	    SHA256_Final(digest.data(), &digest_context) != 1)
+		return false;
+#pragma GCC diagnostic pop
+	std::copy_n(digest.begin(), operation_id->bytes.size(), operation_id->bytes.begin());
+	return !critical_operation_id_is_zero(*operation_id);
+#else
+	(void)parent;
+	(void)domain;
+	(void)discriminator;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
