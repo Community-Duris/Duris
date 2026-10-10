@@ -660,6 +660,306 @@ bool decode_catalog_bounded_scratch(const std::vector<uint8_t> &bytes, shopkeepe
 	return true;
 }
 
+// Resource origin is retained explicitly through semantic bool predicates.
+// Legacy decoders/validators below keep their original behavior for all callers.
+enum class shop_resource_status : uint8_t
+{
+	invalid,
+	allocation_failure,
+	capacity_exceeded,
+	unsupported
+};
+struct shop_resource_state
+{
+	shop_resource_status status = shop_resource_status::invalid;
+	bool codec(player_snapshot_codec_result value) noexcept
+	{
+		if (value == player_snapshot_codec_result::ok)
+			return true;
+		if (value == player_snapshot_codec_result::allocation_failure)
+			status = shop_resource_status::allocation_failure;
+		else if (value == player_snapshot_codec_result::limit_exceeded)
+			status = shop_resource_status::capacity_exceeded;
+		// Unknown serialized versions remain semantic corruption.
+		return false;
+	}
+	bool capacity() noexcept
+	{
+		status = shop_resource_status::capacity_exceeded;
+		return false;
+	}
+	bool policy(bool supported) noexcept
+	{
+		if (supported)
+			return true;
+		status = shop_resource_status::unsupported;
+		return false;
+	}
+	flatfile_shopkeeper_result failure() const noexcept
+	{
+		if (status == shop_resource_status::allocation_failure)
+			errno = ENOMEM;
+		else if (status == shop_resource_status::capacity_exceeded)
+			errno = ENOBUFS;
+		else if (status == shop_resource_status::unsupported)
+			errno = ENOTSUP;
+		else
+		{
+			errno = EBADMSG;
+			return flatfile_shopkeeper_result::invalid;
+		}
+		return flatfile_shopkeeper_result::io_error;
+	}
+};
+bool shop_valid_catalog_resource(const shopkeeper_catalog &catalog, size_t expected_item_count,
+				 shop_resource_state &resource)
+{
+	if (!catalog.revision || catalog.records.size() > shopkeeper_maximum ||
+	    !std::is_sorted(catalog.records.begin(), catalog.records.end(), record_less))
+		return false;
+	std::vector<uint64_t> item_uids;
+	item_uids.reserve(expected_item_count);
+	for (size_t index = 0; index < catalog.records.size(); ++index)
+	{
+		const auto &record = catalog.records[index];
+		if (record.mob_vnum <= 0 || record.room_vnum <= 0 || record.saved_at < 0 ||
+		    record.cash < -1 || record.cash > std::numeric_limits<int>::max() ||
+		    !record.revision || record.affects.size() > affect_maximum ||
+		    (index && !record_less(catalog.records[index - 1], record)) ||
+		    !std::is_sorted(record.affects.begin(), record.affects.end(), affect_less))
+			return false;
+		std::vector<uint8_t> encoded;
+		if (!resource.codec(player_item_snapshot_list_encode(record.items, &encoded)))
+			return false;
+		std::array<bool, equipment_slot_maximum + 1> equipment_slots{};
+		for (const auto &item : record.items)
+		{
+			if (!item.object_uid || item.vnum <= 0 || item.equipment_slot < 0 ||
+			    item.equipment_slot > equipment_slot_maximum ||
+			    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+			     item.equipment_slot != 0) ||
+			    (item.equipment_slot > 0 && equipment_slots[item.equipment_slot]) ||
+			    item_uids.size() >= expected_item_count)
+				return false;
+			if (item.equipment_slot > 0)
+				equipment_slots[item.equipment_slot] = true;
+			item_uids.push_back(item.object_uid);
+		}
+	}
+	if (item_uids.size() != expected_item_count)
+		return false;
+	std::sort(item_uids.begin(), item_uids.end());
+	return std::adjacent_find(item_uids.begin(), item_uids.end()) == item_uids.end();
+}
+bool shop_decode_catalog_resource(const std::vector<uint8_t> &bytes, shopkeeper_catalog *catalog,
+				  size_t expected_item_count, shop_resource_state &resource)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	decoder header{ bytes.data() + 8, bytes.size() - 8 };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || (version != 1 && version != catalog_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (!SHA256(payload_bytes, payload_size, digest.data()))
+		return false;
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > shopkeeper_maximum)
+		return false;
+	shopkeeper_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.records.resize(count);
+		for (auto &record : decoded.records)
+		{
+			uint32_t affect_count = 0;
+			uint8_t roaming = 0;
+			if (!payload.number(&record.shop_id) || !payload.number(&record.mob_vnum) ||
+			    !payload.number(&record.room_vnum) ||
+			    !payload.number(&record.saved_at) ||
+			    !payload.number(&record.revision) ||
+			    (version == catalog_version && !payload.number(&record.cash)) ||
+			    (version == catalog_version && !payload.number(&roaming)) ||
+			    roaming > 1 || !payload.number(&affect_count) ||
+			    affect_count > affect_maximum)
+				return false;
+			if (version == 1)
+				record.cash = -1;
+			record.roaming = roaming != 0;
+			record.affects.resize(affect_count);
+			for (auto &affect : record.affects)
+			{
+				if (!payload.number(&affect.type) ||
+				    !payload.number(&affect.duration) ||
+				    !payload.number(&affect.modifier) ||
+				    !payload.number(&affect.location))
+					return false;
+				for (uint64_t &bitvector : affect.bitvectors)
+					if (!payload.number(&bitvector))
+						return false;
+			}
+			uint32_t item_bytes = 0;
+			if (!payload.number(&item_bytes) || !item_bytes ||
+			    item_bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
+			    payload.offset > payload.size ||
+			    item_bytes > payload.size - payload.offset ||
+			    !resource.codec(player_item_snapshot_list_decode(
+				    payload.data + payload.offset, item_bytes, &record.items)))
+				return false;
+			payload.offset += item_bytes;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		resource.status = shop_resource_status::allocation_failure;
+		return false;
+	}
+	if (payload.offset != payload.size ||
+	    !shop_valid_catalog_resource(decoded, expected_item_count, resource))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+bool shop_catalog_preflight_resource(const uint8_t *encoded, size_t encoded_size,
+				     flatfile_shopkeeper_catalog_allocation_profile *output,
+				     shop_resource_state &resource) noexcept
+{
+	if (!encoded || !output ||
+	    encoded_size < initial_checkpoint_header_bytes + sizeof(uint32_t) ||
+	    encoded_size > catalog_maximum_bytes ||
+	    memcmp(encoded, catalog_magic.data(), catalog_magic.size()))
+		return false;
+	decoder header{ encoded + catalog_magic.size(), encoded_size - catalog_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || (version != 1 && version != catalog_version) ||
+	    !header.number(&payload_size) ||
+	    payload_size != encoded_size - initial_checkpoint_header_bytes ||
+	    !header.number(&revision) || !revision)
+		return false;
+	// Sizing only: actual decode_catalog still authenticates the digest.
+	const uint8_t *payload_bytes = encoded + initial_checkpoint_header_bytes;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > shopkeeper_maximum)
+		return false;
+	const auto add = [&resource](size_t &total, size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - total)
+			return resource.capacity();
+		total += amount;
+		return true;
+	};
+	const auto product = [&resource](size_t count_value, size_t width, size_t *result) noexcept
+	{
+		if (!result || (width && count_value > SIZE_MAX / width))
+			return resource.capacity();
+		*result = count_value * width;
+		return true;
+	};
+	flatfile_shopkeeper_catalog_allocation_profile profile;
+	profile.record_count = count;
+	profile.decoded_catalog_payload_bytes = sizeof(shopkeeper_catalog);
+	profile.canonical_catalog_bytes = initial_checkpoint_header_bytes + sizeof(uint32_t);
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI
+	profile.fresh_decode_storage_policy_supported = true;
+#endif
+	size_t row_bytes = 0;
+	if (!product(count, sizeof(flatfile_shopkeeper_record), &row_bytes) ||
+	    !add(profile.decoded_catalog_payload_bytes, row_bytes))
+		return false;
+	for (uint32_t index = 0; index < count; ++index)
+	{
+		uint32_t shop = 0, affect_count = 0, item_bytes = 0;
+		int32_t mobile = 0, room = 0;
+		int64_t saved_at = 0, cash = -1;
+		uint64_t record_revision = 0;
+		uint8_t roaming = 0;
+		if (!payload.number(&shop) || !payload.number(&mobile) || !payload.number(&room) ||
+		    !payload.number(&saved_at) || !payload.number(&record_revision) ||
+		    (version == catalog_version &&
+		     (!payload.number(&cash) || !payload.number(&roaming))) ||
+		    roaming > 1 || !payload.number(&affect_count) || affect_count > affect_maximum)
+			return false;
+		size_t affect_wire_bytes = 0, affect_payload_bytes = 0;
+		if (!product(affect_count, initial_checkpoint_affect_bytes, &affect_wire_bytes) ||
+		    !product(affect_count, sizeof(flatfile_shopkeeper_affect_record),
+			     &affect_payload_bytes) ||
+		    payload.offset > payload.size ||
+		    affect_wire_bytes > payload.size - payload.offset)
+			return false;
+		payload.offset += affect_wire_bytes;
+		if (!payload.number(&item_bytes) || !item_bytes ||
+		    item_bytes > PLAYER_SNAPSHOT_MAX_BYTES || payload.offset > payload.size ||
+		    item_bytes > payload.size - payload.offset)
+			return false;
+		player_item_snapshot_list_allocation_profile items;
+		if (!resource.codec(player_item_snapshot_list_preflight(
+			    payload.data + payload.offset, item_bytes, &items)) ||
+		    items.decoded_payload_bytes < sizeof(std::vector<player_item_snapshot>))
+			return false;
+		if (!resource.policy(items.canonical_encoder_storage_policy_supported))
+			return false;
+		size_t validation = items.canonical_encoded_capacity_bytes;
+		if (!add(validation, items.decoded_payload_bytes) ||
+		    !add(validation, items.relationship_scratch_bytes) ||
+		    !items.item_codec_decoder_object_bytes ||
+		    !add(validation, items.item_codec_decoder_object_bytes) ||
+		    !add(validation, sizeof(std::vector<player_item_snapshot>)))
+			return false;
+		validation = std::max(validation, items.canonical_encoded_reallocation_peak_bytes);
+		if (!add(validation, items.canonical_encoder_object_bytes))
+			return false;
+		profile.largest_item_roundtrip_scratch_bytes =
+			std::max(profile.largest_item_roundtrip_scratch_bytes, validation);
+		// Parent record contains its retained vector head; the decoder's
+		// separate local item vector, decoder object and depth vector coexist.
+		size_t direct_decode = items.relationship_scratch_bytes;
+		if (!add(direct_decode, sizeof(std::vector<player_item_snapshot>)) ||
+		    !add(direct_decode, items.item_codec_decoder_object_bytes))
+			return false;
+		profile.largest_item_decode_scratch_bytes =
+			std::max(profile.largest_item_decode_scratch_bytes, direct_decode);
+		payload.offset += item_bytes;
+		if (!add(profile.item_count, items.item_count) ||
+		    !add(profile.decoded_catalog_payload_bytes, affect_payload_bytes) ||
+		    !add(profile.decoded_catalog_payload_bytes,
+			 items.decoded_payload_bytes - sizeof(std::vector<player_item_snapshot>)) ||
+		    !add(profile.canonical_catalog_bytes, initial_checkpoint_record_bytes) ||
+		    !add(profile.canonical_catalog_bytes, affect_wire_bytes) ||
+		    !add(profile.canonical_catalog_bytes, sizeof(uint32_t)) ||
+		    !add(profile.canonical_catalog_bytes, items.canonical_encoded_bytes))
+			return false;
+		profile.largest_item_blob_bytes =
+			std::max(profile.largest_item_blob_bytes, static_cast<size_t>(item_bytes));
+		profile.largest_item_decode_payload_bytes = std::max(
+			profile.largest_item_decode_payload_bytes, items.decoded_payload_bytes);
+		profile.largest_item_relationship_scratch_bytes =
+			std::max(profile.largest_item_relationship_scratch_bytes,
+				 items.relationship_scratch_bytes);
+		profile.largest_item_canonical_bytes = std::max(
+			profile.largest_item_canonical_bytes, items.canonical_encoded_bytes);
+		profile.fresh_decode_storage_policy_supported =
+			profile.fresh_decode_storage_policy_supported &&
+			items.fresh_decode_storage_policy_supported;
+	}
+	if (payload.offset != payload.size)
+		return false;
+	*output = profile;
+	return true;
+}
+
 bool initial_keeper_budget_add(size_t &total, size_t amount) noexcept
 {
 	if (amount > SIZE_MAX - total)
@@ -1712,6 +2012,7 @@ flatfile_shopkeeper_list_locked_bounded(const std::string &root,
 		errno = EINVAL;
 		return flatfile_shopkeeper_result::invalid;
 	}
+	shop_resource_state resource;
 	const auto add = [](size_t &total, size_t amount) noexcept
 	{
 		if (amount > SIZE_MAX - total)
@@ -1721,7 +2022,9 @@ flatfile_shopkeeper_list_locked_bounded(const std::string &root,
 	};
 	// Explicit fixed storage for both reader and bounded decoder/validator
 	// scopes. The catalog's inline object is already included in its profile.
-	constexpr size_t fixed = 2 * sizeof(std::string) + sizeof(std::vector<uint8_t>) +
+	constexpr size_t fixed = sizeof(shop_resource_state) + 4 * sizeof(shop_resource_state *) +
+				 2 * sizeof(player_snapshot_codec_result) +
+				 2 * sizeof(std::string) + sizeof(std::vector<uint8_t>) +
 				 2 * sizeof(flatfile_shopkeeper_catalog_allocation_profile) +
 				 2 * sizeof(player_item_snapshot_list_allocation_profile) +
 				 sizeof(shopkeeper_catalog) + sizeof(std::vector<uint64_t>) +
@@ -1758,12 +2061,11 @@ flatfile_shopkeeper_list_locked_bounded(const std::string &root,
 		if (read == flatfile_read_result::io_error)
 			return flatfile_shopkeeper_result::io_error;
 		flatfile_shopkeeper_catalog_allocation_profile profile;
-		if (read != flatfile_read_result::ok ||
-		    !flatfile_shopkeeper_catalog_preflight(bytes.data(), bytes.size(), &profile))
-		{
-			errno = EBADMSG;
+		if (read != flatfile_read_result::ok)
 			return flatfile_shopkeeper_result::invalid;
-		}
+		if (!shop_catalog_preflight_resource(bytes.data(), bytes.size(), &profile,
+						     resource))
+			return resource.failure();
 		if (!profile.fresh_decode_storage_policy_supported)
 		{
 			errno = ENOTSUP;
@@ -1786,8 +2088,9 @@ flatfile_shopkeeper_list_locked_bounded(const std::string &root,
 			return flatfile_shopkeeper_result::io_error;
 		}
 		shopkeeper_catalog catalog;
-		if (!decode_catalog_bounded_scratch(bytes, &catalog, profile.item_count) ||
-		    !lock.matches(root))
+		if (!shop_decode_catalog_resource(bytes, &catalog, profile.item_count, resource))
+			return resource.failure();
+		if (!lock.matches(root))
 		{
 			errno = EBADMSG;
 			return flatfile_shopkeeper_result::invalid;
