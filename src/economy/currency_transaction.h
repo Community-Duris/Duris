@@ -167,4 +167,17 @@ bool currency_transaction_restore_bank_replayed_command_bounded(
 // Value observation only; strong output. Genuine caller refreshes every return.
 bool currency_transaction_current_storage_bytes(size_t *output) noexcept;
 
+// Complete original mixed schema/publication/bank ATM/coin passive replay.
+// Genuine startup coordinator/main-thread caller owns pending stability. Outer
+// excludes CURRENT currency owner, complete literal replay pool and private
+// stack scope; includes actual coordinator/journal/input/caller and every
+// OTHER pipeline, worker and execution-guard owner with fresh genuine census.
+// Real private pipeline scope lives across first allocating proof, wallet-only
+// too, and adds its same-lock CURRENT pool once to each absolute request.
+// Reserve must not acquire pipeline/coordinator/journal or mutate replay owners.
+// No native publication, ACK, alternate operation or selected route is granted.
+bool currency_transaction_restore_replayed_command_bounded(const critical_command &,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t outer_live) noexcept;
+
 #endif
