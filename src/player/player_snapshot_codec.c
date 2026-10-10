@@ -2487,3 +2487,168 @@ player_snapshot_codec_result player_item_snapshot_list_decode_bounded(
 	}
 #endif
 }
+
+namespace
+{
+// Source-declared carriers for the actual observer functions below, including
+// range iterator/query scopes and all checked arithmetic calls. No emitted
+// machine-stack or allocator metadata claim is made by this profile.
+constexpr size_t snapshot_clone_observation_frames =
+	13 * sizeof(void *) + 8 * sizeof(size_t) + 6 * sizeof(bool) +
+	8 * (sizeof(void *) + sizeof(size_t)) + 8 * (2 * sizeof(void *));
+// basic_string copy constructor: this/source, allocator select/copy result,
+// allocator hider/local-data, _M_construct forward this/beg/end/tag, dnew,
+// its real one-pointer _Guard and constructor/destructor this parameters;
+// distance/__distance and returned difference, _S_copy_chars arguments.
+// Existing string/allocator profiles own _M_create( n,0 ), data/capacity/
+// set-length, traits copy, runtime memcpy and unwind disposal.
+constexpr size_t snapshot_clone_string_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<char>) + 6 * sizeof(void *) +
+	3 * sizeof(void *) + sizeof(std::forward_iterator_tag) + sizeof(size_t) + sizeof(void *) +
+	3 * sizeof(void *) + 2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) +
+	sizeof(std::random_access_iterator_tag) + 4 * sizeof(void *) + item_list_string_frames;
+// vector copy constructor calls _Vector_base(size,selected_allocator), then
+// __uninitialized_copy_a; the allocated capacity is exactly source.size().
+// Actual constructor/base/impl/data/create-storage/select/query carriers.
+// Existing vector allocator/copy profiles own the trivial-element path.
+constexpr size_t snapshot_clone_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + item_list_vector_frames;
+// Nontrivial description copy reaches __do_uninit_copy: first/last/result,
+// actual __cur, returned iterator, _Construct(location,source), addressof,
+// forward and placement-new carriers. The generated description copy has
+// this/source parameters and copies both strings and its spell vector.
+constexpr size_t snapshot_clone_description_frames =
+	5 * sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + 2 * snapshot_clone_string_constructor_frames +
+	snapshot_clone_vector_constructor_frames;
+// String move assignment/operator and _M_assign path are allocation-free
+// for the standard equal allocator, including the actual _M_is_local tests,
+// old-pointer/old-capacity temporaries, memcpy args and source reset. The
+// existing string profile conservatively also retains all disposal scopes.
+constexpr size_t snapshot_clone_string_move_frames =
+	2 * sizeof(void *) + sizeof(char) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	12 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(char) + item_list_string_frames;
+// The outer generated row copy/move has this/source parameters. Copies of
+// fixed arrays are inline members, not new carriers or requests. Four row
+// string constructors and the dynamic-affect/description vector constructors
+// coexist with at most one description copy. Sum the source scopes rather
+// than rely on spare bytes from a different STL path. All unwind/destructor
+// closures and real vector move __tmp are prospectively retained as well.
+constexpr size_t snapshot_clone_copy_frames =
+	snapshot_clone_observation_frames + 4 * sizeof(void *) +
+	4 * snapshot_clone_string_constructor_frames +
+	2 * snapshot_clone_vector_constructor_frames + snapshot_clone_description_frames +
+	4 * snapshot_clone_string_move_frames + 2 * item_list_move_frames +
+	item_list_nontrivial_frames;
+
+template <typename T>
+bool snapshot_clone_vector_request(const std::vector<T> &value, bool fresh, size_t &bytes) noexcept
+{
+	const size_t count = fresh ? value.size() : value.capacity();
+	return count <= SIZE_MAX / sizeof(T) && item_list_add(bytes, count * sizeof(T));
+}
+bool snapshot_clone_string_request(const std::string &value, bool fresh, size_t &bytes) noexcept
+{
+	const size_t count = fresh ? value.size() : value.capacity();
+	return count <= 15 || (count < SIZE_MAX && item_list_add(bytes, count + 1));
+}
+bool snapshot_clone_row_request(const player_item_snapshot &row, bool fresh, size_t &bytes) noexcept
+{
+	if (!snapshot_clone_string_request(row.name, fresh, bytes) ||
+	    !snapshot_clone_string_request(row.short_description, fresh, bytes) ||
+	    !snapshot_clone_string_request(row.description, fresh, bytes) ||
+	    !snapshot_clone_string_request(row.action_description, fresh, bytes) ||
+	    !snapshot_clone_vector_request(row.dynamic_affects, fresh, bytes) ||
+	    !snapshot_clone_vector_request(row.extra_descriptions, fresh, bytes))
+		return false;
+	for (const auto &description : row.extra_descriptions)
+		if (!snapshot_clone_string_request(description.keyword, fresh, bytes) ||
+		    !snapshot_clone_string_request(description.description, fresh, bytes) ||
+		    !snapshot_clone_vector_request(description.spell_ids, fresh, bytes))
+			return false;
+	return true;
+}
+bool snapshot_clone_policy_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return true;
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool player_item_snapshot_current_heap_bytes(const player_item_snapshot &row,
+					     size_t *output) noexcept
+{
+	if (!output || !snapshot_clone_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!snapshot_clone_row_request(row, false, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+bool player_item_snapshot_fresh_copy_request_bytes(const player_item_snapshot &row,
+						   size_t *output) noexcept
+{
+	if (!output || !snapshot_clone_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!snapshot_clone_row_request(row, true, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+size_t player_item_snapshot_copy_frame_bytes() noexcept
+{
+	return snapshot_clone_copy_frames;
+}
+player_snapshot_codec_result
+player_item_snapshot_clone_bounded(const player_item_snapshot &source, player_item_snapshot *output,
+				   bool (*reserve)(size_t, void *) noexcept, void *context,
+				   size_t outer) noexcept
+{
+	if (!output)
+		return player_snapshot_codec_result::invalid_value;
+	if (!snapshot_clone_policy_supported())
+		return player_snapshot_codec_result::limit_exceeded;
+	// Initial admission owns the genuine prospective private row and all
+	// scalar/function/observation carriers before even profiling requests.
+	constexpr size_t own = sizeof(player_item_snapshot) + 4 * sizeof(void *) +
+			       3 * sizeof(size_t) + sizeof(bool) +
+			       sizeof(player_snapshot_codec_result) +
+			       snapshot_clone_observation_frames;
+	size_t peak = outer;
+	if (!reserve || !item_list_add(peak, own) || !reserve(peak, context))
+		return player_snapshot_codec_result::allocation_failure;
+	size_t request = 0;
+	// The full original generated row copy is closed: fresh strings use
+	// _M_create(size,0), fresh vectors allocate exactly size elements, and
+	// nested descriptions/spells own the same corresponding constructors.
+	// Its entire maximum heap is admitted before the first constructor;
+	// partial-copy failure retains a subset until admitted unwind completes.
+	if (!player_item_snapshot_fresh_copy_request_bytes(source, &request) ||
+	    !item_list_add(peak, request) || !item_list_add(peak, snapshot_clone_copy_frames) ||
+	    !reserve(peak, context))
+		return player_snapshot_codec_result::allocation_failure;
+	try
+	{
+		player_item_snapshot candidate(source);
+		static_assert(std::is_nothrow_move_assignable_v<player_item_snapshot>);
+		// Caller retains the entire prior destination in outer. Heap swapping
+		// of its strings can leave that old storage in candidate; it remains
+		// counted in outer until the preadmitted destructor tail finishes.
+		// No callback/allocation/fallible operation follows this commit.
+		*output = std::move(candidate);
+		return player_snapshot_codec_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+}
