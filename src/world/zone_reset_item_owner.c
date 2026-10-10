@@ -6066,3 +6066,27 @@ bool zone_reset_item_owner::refresh_after_startup(size_t surviving_caller) noexc
 	       warm_scratch_add(live, sizeof(surviving_caller)) &&
 	       quest_mobile_native_birth_owner::charge(live);
 }
+
+// Scalar-only startup handoff. The genuine init owner preadmits surviving
+// P/C/J, worker-vector requests and these fixed carriers with the boot lender
+// before this call, while retaining its original uninterrupted init mutex.
+bool zone_reset_item_owner::startup_budget_guard::handoff_preallowed_while_locked() noexcept
+{
+	if (!global_scope_ || !nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    item_native_quest_coordinator_budget_scope_owner::registered())
+		return false;
+	// Registration authenticates this actual live seven-global guard and stores
+	// only the exact future ROOT observer/reserve pair. It invokes neither.
+	const bool registered = item_native_quest_coordinator_budget_scope_owner::register_observer(
+		this, zone_reset_room_publication_owner::current_coordinator_storage,
+		reserve_warm_command_scratch);
+	// No callback, census, allocation, lock or admission between these scalar
+	// transitions. Failure follows the original finish's actual scope cleanup.
+	if (!item_native_quest_global_budget_scope_owner::end(this))
+		return false;
+	global_scope_ = false;
+	// Never reserve again through this boot guard after outside registration.
+	// Caller unlocks only after the original init sequence; then refreshes fresh
+	// surviving ownership after the guard and replay descriptors actually die.
+	return registered;
+}

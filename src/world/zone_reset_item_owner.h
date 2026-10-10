@@ -7,6 +7,7 @@
 struct obj_data;
 class critical_zone_reset_item_publication_owner;
 class zone_reset_item_owner;
+class critical_room_startup_budget_owner;
 class flatfile_authority_lock;
 class quest_mobile_native_item_stage;
 class quest_mobile_native_flat_factory_scope;
@@ -142,7 +143,6 @@ class zone_reset_item_owner final
 	struct startup_budget_guard final
 	{
 	    public:
-		startup_budget_guard() noexcept = default;
 		~startup_budget_guard() noexcept;
 		startup_budget_guard(const startup_budget_guard &) = delete;
 		startup_budget_guard &operator=(const startup_budget_guard &) = delete;
@@ -162,6 +162,13 @@ class zone_reset_item_owner final
 		bool finish_after_unlock(size_t surviving_caller) noexcept;
 
 	    private:
+		// Outer-class friendship does not authorize construction of this guard.
+		friend class ::critical_room_startup_budget_owner;
+		startup_budget_guard() noexcept = default;
+		// Genuine init owner holds its original mutex and has already admitted
+		// every surviving owner/request/frame through the real boot lender.
+		// Scalar handoff only; no boot reserve may follow outside registration.
+		bool handoff_preallowed_while_locked() noexcept;
 		bool global_scope_ = false;
 	};
 	// Genuine caller invokes only after its actual guard/descriptor lifetimes
