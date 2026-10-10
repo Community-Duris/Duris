@@ -40,6 +40,8 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
 
 extern index_data *mob_index;
 extern index_data *obj_index;
@@ -54,6 +56,138 @@ extern P_obj object_list;
 extern struct shop_data *shop_index;
 extern int number_of_shops;
 extern void apply_zone_modifier(P_char);
+
+struct quest_mobile_native_birth_ordinary_source_pin::implementation
+{
+	const void *producer = nullptr;
+	std::string selected_root;
+	critical_operation_id invocation{}, birth{}, lineage{}, epoch{};
+	uint64_t instance = 0, runtime = 0;
+	uint32_t slot = 0;
+	int zone = -1, room = -1, rnum = -1;
+	std::array<int32_t, 4> original_m_args{};
+};
+quest_mobile_native_birth_ordinary_source_pin::quest_mobile_native_birth_ordinary_source_pin(
+	std::unique_ptr<implementation> state)
+	: state_(std::move(state))
+{
+}
+quest_mobile_native_birth_ordinary_source_pin::~quest_mobile_native_birth_ordinary_source_pin() =
+	default;
+
+namespace
+{
+std::mutex ordinary_birth_request_mutex;
+std::condition_variable ordinary_birth_request_changed;
+quest_mobile_native_birth_ordinary_execution_lease *ordinary_birth_request_head = nullptr;
+}
+
+bool quest_mobile_native_birth_ordinary_execution_lease::request(
+	const critical_ordinary_native_execution_owner &worker) noexcept
+{
+	try
+	{
+		if (nevent_is_game_thread() || !worker.current())
+			return false;
+		std::unique_lock<std::mutex> lock(ordinary_birth_request_mutex);
+		if (phase_ != phase::idle)
+			return false;
+		worker_ = &worker;
+		generation_ = worker.generation();
+		attempt_ = worker.attempt();
+		phase_ = phase::requested;
+		next_ = ordinary_birth_request_head;
+		ordinary_birth_request_head = this;
+		ordinary_birth_request_changed.notify_all();
+		lock.unlock();
+		// Registration races shutdown cancellation: recheck the real worker
+		// outside request mutex so a request registered after cancel cannot wait.
+		if (!worker.current())
+			return false;
+		lock.lock();
+		ordinary_birth_request_changed.wait(
+			lock,
+			[&]() { return phase_ == phase::granted || phase_ == phase::refused; });
+		return phase_ == phase::granted;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+quest_mobile_native_birth_ordinary_execution_lease::
+	~quest_mobile_native_birth_ordinary_execution_lease() noexcept
+{
+	try
+	{
+		std::unique_lock<std::mutex> lock(ordinary_birth_request_mutex);
+		phase_ = phase::released;
+		ordinary_birth_request_changed.notify_all();
+		ordinary_birth_request_changed.wait(lock, [&]() { return !game_holds_request_; });
+		auto **link = &ordinary_birth_request_head;
+		while (*link && *link != this)
+			link = &(*link)->next_;
+		if (*link == this)
+			*link = next_;
+		phase_ = phase::released;
+		ordinary_birth_request_changed.notify_all();
+	}
+	catch (...)
+	{
+		// The genuine game-thread wait must never outlive this worker stack.
+		std::terminate();
+	}
+}
+bool quest_mobile_native_birth_ordinary_execution_lease::current() const noexcept
+{
+	try
+	{
+		const critical_ordinary_native_execution_owner *worker = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(ordinary_birth_request_mutex);
+			bool registered = false;
+			for (auto *item = ordinary_birth_request_head; item; item = item->next_)
+				registered |= item == this;
+			if (!registered || phase_ != phase::granted || !producer_ || !source_ ||
+			    !worker_ || worker_->generation() != generation_ ||
+			    worker_->attempt() != attempt_)
+				return false;
+			worker = worker_;
+		}
+		// Never acquire coordinator_mutex while holding request mutex.
+		return worker->current();
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+const std::string *
+quest_mobile_native_birth_ordinary_execution_lease::selected_root() const noexcept
+{
+	return current() ? &source_->state_->selected_root : nullptr;
+}
+void quest_mobile_native_birth_ordinary_execution_lease::cancel_pending() noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(ordinary_birth_request_mutex);
+		for (auto *item = ordinary_birth_request_head; item; item = item->next_)
+			if (item->phase_ == phase::requested || item->phase_ == phase::inspecting)
+				item->phase_ = phase::refused;
+		// A granted interval remains held until its actual worker RAII release.
+		ordinary_birth_request_changed.notify_all();
+	}
+	catch (...)
+	{
+		std::terminate();
+	}
+}
+size_t quest_mobile_native_birth_ordinary_execution_lease::fixed_storage_bytes() noexcept
+{
+	return sizeof(ordinary_birth_request_mutex) + sizeof(ordinary_birth_request_changed) +
+	       sizeof(ordinary_birth_request_head);
+}
 
 namespace
 {
@@ -353,6 +487,7 @@ struct original_birth
 	std::vector<native_mobile_birth_item_recipe> recipes;
 	quest_mobile_native_constructor_recipe constructor;
 	bool constructor_present = false;
+	std::unique_ptr<quest_mobile_native_birth_ordinary_source_pin> ordinary_flat_source;
 	native_mobile_birth_cash_role_recipe cash_role;
 	bool cash_role_present = false;
 	bool non_alchemist_cut_returned = false;
@@ -1029,7 +1164,8 @@ bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcep
 {
 	try
 	{
-		size_t bytes = 0;
+		size_t bytes =
+			quest_mobile_native_birth_ordinary_execution_lease::fixed_storage_bytes();
 		if (reset_in_progress && !add_bytes(bytes, sizeof(reset_dispatch)))
 			return false;
 		if (reset_in_progress && reset_dispatch.selected_flat_root.capacity() > 15 &&
@@ -1043,6 +1179,18 @@ bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcep
 			if (ptr)
 			{
 				const auto &b = *ptr;
+				if (b.ordinary_flat_source &&
+				    (!b.ordinary_flat_source->state_ ||
+				     !add_bytes(bytes, sizeof(*b.ordinary_flat_source)) ||
+				     !add_bytes(bytes, sizeof(*b.ordinary_flat_source->state_)) ||
+				     (b.ordinary_flat_source->state_->selected_root.capacity() >
+					      15 &&
+				      (b.ordinary_flat_source->state_->selected_root.capacity() ==
+					       SIZE_MAX ||
+				       !add_bytes(bytes, b.ordinary_flat_source->state_
+									 ->selected_root.capacity() +
+								 1)))))
+					return false;
 				if (!add_bytes(bytes, sizeof(b)) ||
 				    !add_bytes(bytes, b.stock.capacity() * sizeof(original_item)) ||
 				    !add_bytes(bytes, b.canonical.capacity()) ||
@@ -2015,6 +2163,12 @@ void quest_mobile_native_birth_owner::seal_mobile() noexcept
 			return;
 		}
 		b.sealed = true;
+		if (b.cash_role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+		    reset_dispatch.flat_backend && !capture_ordinary_flat_source_pin(index))
+		{
+			b.blocked = true;
+			return;
+		}
 		if (b.shared_source_cut)
 			capture_shared_checkpoint(index);
 		if (!charge())
@@ -4170,6 +4324,7 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 {
 	if (!nevent_is_game_thread())
 		return;
+	service_ordinary_flat_execution_requests();
 	try
 	{
 		for (size_t i = 0; i < births.size(); ++i)
@@ -5181,4 +5336,293 @@ bool quest_mobile_native_birth_restore_shared_shop_bounded(
 	       birth_passive_admit(full, 0, reserve, context) &&
 	       quest_mobile_native_birth_owner::restore_shared_shop_bounded(envelope, reserve,
 									    context, full);
+}
+
+bool quest_mobile_native_birth_owner::capture_ordinary_flat_source_pin(size_t index) noexcept
+{
+	if (!nevent_is_game_thread() || index >= births.size() || !births[index] ||
+	    !reset_dispatch_current() || !reset_dispatch.flat_backend ||
+	    reset_dispatch.selected_flat_root.empty())
+		return false;
+	auto &b = *births[index];
+	const auto &source = b.reference.birth_source;
+	if (b.ordinary_flat_source || b.cold || b.submitted || b.blocked || !b.sealed ||
+	    !b.character || b.mobile.character() != b.character ||
+	    b.character->runtime_id != b.runtime_id || !ordinary_cash_role_current(b) ||
+	    b.zone != reset_zone_rnum || b.room < 0 || b.rnum < 0 ||
+	    source.kind != economic_source_kind::npc_generation || source.sequence ||
+	    source.source.bytes != reset_invocation.bytes ||
+	    source.generation.bytes != reset_invocation.bytes ||
+	    critical_operation_id_is_zero(reset_invocation) ||
+	    critical_operation_id_is_zero(b.reference.birth_operation) ||
+	    b.reference.birth_operation.bytes == reset_invocation.bytes ||
+	    !b.reference.mobile_instance_id || b.reference.mobile_instance_id == UINT64_MAX ||
+	    !(source.slot < reset_dispatch.next_slot ||
+	      (reset_dispatch.open && source.slot == reset_dispatch.current_slot)) ||
+	    b.reference.reset_zone_vnum != reset_dispatch.zone_vnum)
+		return false;
+	const auto &m = reset_dispatch.commands[source.slot];
+	if (m.command != 'M' || m.arg1 != b.rnum || m.arg3 != b.room)
+		return false;
+	try
+	{
+		using pin = quest_mobile_native_birth_ordinary_source_pin;
+		auto state = std::make_unique<pin::implementation>();
+		state->producer = &b;
+		state->selected_root = reset_dispatch.selected_flat_root;
+		state->invocation = reset_invocation;
+		state->birth = b.reference.birth_operation;
+		state->lineage = reset_dispatch.flat_lineage;
+		state->epoch = reset_dispatch.flat_epoch;
+		state->instance = b.reference.mobile_instance_id;
+		state->runtime = b.runtime_id;
+		state->slot = source.slot;
+		state->zone = b.zone;
+		state->room = b.room;
+		state->rnum = b.rnum;
+		state->original_m_args = { m.arg1, m.arg2, m.arg3, m.arg4 };
+		std::unique_ptr<pin> retained(new pin(std::move(state)));
+		// Installation belongs only to this original factory; replay cannot mint it.
+		b.ordinary_flat_source = std::move(retained);
+		if (!charge())
+		{
+			b.ordinary_flat_source.reset();
+			charge();
+			return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_execution_source_current(
+	const quest_mobile_native_birth_ordinary_execution_lease &request,
+	const void *candidate) noexcept
+{
+	// Main-game-thread only; no request/coordinator/storage locks held.
+	if (!nevent_is_game_thread() || !request.worker_ || !candidate ||
+	    !request.worker_->borrowed_current() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql())
+		return false;
+	const auto found = std::find_if(births.begin(), births.end(), [&](const auto &entry)
+					{ return entry.get() == candidate; });
+	if (found == births.end() || !*found)
+		return false;
+	auto &b = **found;
+	if (!b.ordinary_flat_source || !b.ordinary_flat_source->state_ || !b.submitted ||
+	    !b.sealed || b.cold || b.blocked || b.completed || b.retired || b.mobile_started ||
+	    b.mobile_consumed || b.runtime_applied || b.physically_proven || !b.character ||
+	    b.mobile.character() != b.character || b.character->runtime_id != b.runtime_id ||
+	    find_character_by_runtime_id(b.runtime_id) || !ordinary_cash_role_current(b) ||
+	    !birth_recovery_valid(b.envelope) ||
+	    b.envelope.phase != critical_native_recovery_phase::execution_pending ||
+	    b.envelope.revision != request.worker_->revision() ||
+	    b.envelope.phase != request.worker_->phase() ||
+	    b.envelope.attachment.size() != request.worker_->attachment().size() ||
+	    !std::equal(b.envelope.attachment.begin(), b.envelope.attachment.end(),
+			request.worker_->attachment().begin()) ||
+	    !critical_command_equal(b.command, request.worker_->command()) ||
+	    !critical_command_equal(b.envelope.command, b.command))
+		return false;
+	const auto &pin = *b.ordinary_flat_source->state_;
+	const auto &source = b.reference.birth_source;
+	const char *configured = persistence_mode_flatfile_root();
+	if (pin.producer != &b || !configured || pin.selected_root != configured ||
+	    pin.runtime != b.runtime_id || pin.instance != b.reference.mobile_instance_id ||
+	    pin.birth.bytes != b.reference.birth_operation.bytes || pin.slot != source.slot ||
+	    pin.zone != b.zone || pin.room != b.room || pin.rnum != b.rnum ||
+	    pin.original_m_args[0] != b.rnum || pin.original_m_args[2] != b.room ||
+	    source.kind != economic_source_kind::npc_generation || source.sequence ||
+	    source.source.bytes != pin.invocation.bytes ||
+	    source.generation.bytes != pin.invocation.bytes)
+		return false;
+	try
+	{
+		uint64_t generation = 0;
+		if (!critical_native_mobile_birth_publication_owner::observe_generation(
+			    b.envelope, &generation) ||
+		    generation != request.generation_ ||
+		    (b.coordinator_generation && b.coordinator_generation != generation))
+			return false;
+		economic_frozen_intent intent;
+		quest_mobile_native_image decoded;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		if (economic_intent_decode(b.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(b.command, intent) !=
+			    economic_accounting_error::ok ||
+		    intent.admission.metadata.lineage.bytes != pin.lineage.bytes ||
+		    intent.admission.metadata.epoch.bytes != pin.epoch.bytes ||
+		    !intent.admission.metadata.source_event.has_value() ||
+		    intent.admission.metadata.source_event->kind != source.kind ||
+		    intent.admission.metadata.source_event->source.bytes != source.source.bytes ||
+		    intent.admission.metadata.source_event->generation.bytes !=
+			    source.generation.bytes ||
+		    intent.admission.metadata.source_event->sequence != source.sequence ||
+		    intent.admission.metadata.source_event->slot != source.slot ||
+		    native_mobile_birth_cash_role_command_decode(b.command, &decoded, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    !same_image(decoded, b.image) || !b.bindings.valid())
+			return false;
+		quest_mobile_native_constructor_digest build{}, procedure{}, tail{};
+		if (!native_mobile_birth_running_artifact_digest(&build) ||
+		    build != b.constructor.build_digest ||
+		    !native_mobile_birth_procedure_capture(b.reference.mobile_vnum, build,
+							   &procedure) ||
+		    procedure != b.constructor.procedure_after ||
+		    !native_mobile_birth_reset_tail_capture(
+			    b.reference.mobile_vnum, b.reference.birthplace_vnum, b.shop, &tail) ||
+		    tail != b.constructor.reset_tail)
+			return false;
+		quest_mobile_native_image actual;
+		if (quest_mobile_native_capture(b.character, b.reference,
+						quest_mobile_lifetime_state::live,
+						b.reference.birth_operation, 1,
+						&actual) != player_snapshot_capture_result::ok ||
+		    !same_image(actual, b.image))
+			return false;
+		// Original publication/cold-adoption corruption and identity exclusions.
+		for (P_char slow = character_list, fast = character_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		for (P_char mob = character_list; mob; mob = mob->next)
+		{
+			if (mob == b.character || mob->runtime_id == b.runtime_id)
+				return false;
+			const auto *bytes = mob->native_mobile_binding.encoded_reference_;
+			if (std::all_of(bytes, bytes + QUEST_MOBILE_NATIVE_REFERENCE_BYTES,
+					[](uint8_t value) { return value == 0; }))
+				continue;
+			quest_mobile_native_reference reference;
+			if (quest_mobile_native_reference_decode(
+				    { bytes, QUEST_MOBILE_NATIVE_REFERENCE_BYTES }, &reference) !=
+				    player_snapshot_codec_result::ok ||
+			    reference.mobile_instance_id == b.reference.mobile_instance_id ||
+			    reference.birth_operation.bytes == b.reference.birth_operation.bytes)
+				return false;
+		}
+		size_t retained_rows = 0;
+		for (const auto &item : b.stock)
+			if (item.stage)
+			{
+				++retained_rows;
+				if (item.published || item.enrolled || !item.object ||
+				    item.stage->object() != item.object ||
+				    item.object->obj_uid != item.uid)
+					return false;
+				for (P_obj obj = object_list; obj; obj = obj->next)
+					if (obj == item.object || obj->obj_uid == item.uid)
+						return false;
+				item_ownership_runtime_entry occupied{};
+				if (item_ownership_runtime_lookup(item.uid, &occupied))
+					return false;
+			}
+		if (retained_rows != b.image.items.size())
+			return false;
+		// All allocating source/world observations precede the final real pin check.
+		return request.worker_->borrowed_current();
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+void quest_mobile_native_birth_owner::service_ordinary_flat_execution_requests() noexcept
+{
+	if (!nevent_is_game_thread())
+		return;
+	for (;;)
+	{
+		quest_mobile_native_birth_ordinary_execution_lease *request = nullptr;
+		try
+		{
+			{
+				std::lock_guard<std::mutex> lock(ordinary_birth_request_mutex);
+				for (auto *item = ordinary_birth_request_head; item;
+				     item = item->next_)
+					if (item->phase_ ==
+					    quest_mobile_native_birth_ordinary_execution_lease::
+						    phase::requested)
+					{
+						request = item;
+						request->game_holds_request_ = true;
+						request->phase_ =
+							quest_mobile_native_birth_ordinary_execution_lease::
+								phase::inspecting;
+						break;
+					}
+			}
+			if (!request)
+				return;
+			original_birth *producer = nullptr;
+			// Exact registry owner plus full body proof; ID matching alone grants nothing.
+			for (const auto &entry : births)
+				if (entry && entry->ordinary_flat_source && request->worker_ &&
+				    entry->reference.birth_operation.bytes ==
+					    request->worker_->command().operation_id.bytes)
+				{
+					if (producer)
+					{
+						producer = nullptr;
+						break;
+					}
+					producer = entry.get();
+				}
+			const bool valid = producer && ordinary_flat_execution_source_current(
+							       *request, producer);
+			std::unique_lock<std::mutex> lock(ordinary_birth_request_mutex);
+			if (valid && request->phase_ ==
+					     quest_mobile_native_birth_ordinary_execution_lease::
+						     phase::inspecting)
+			{
+				request->producer_ = producer;
+				request->source_ = producer->ordinary_flat_source.get();
+				request->phase_ =
+					quest_mobile_native_birth_ordinary_execution_lease::phase::
+						granted;
+				ordinary_birth_request_changed.notify_all();
+				// The bound main game thread performs no world mutation while
+				// waiting; wait releases request mutex. No coordinator/pipeline/
+				// identity/authority/SQL lock is held. Worker reads no live world.
+				ordinary_birth_request_changed.wait(
+					lock,
+					[&]() {
+						return request->phase_ ==
+						       quest_mobile_native_birth_ordinary_execution_lease::
+							       phase::released;
+					});
+			}
+			else if (request->phase_ !=
+				 quest_mobile_native_birth_ordinary_execution_lease::phase::released)
+				request->phase_ =
+					quest_mobile_native_birth_ordinary_execution_lease::phase::
+						refused;
+			request->game_holds_request_ = false;
+			ordinary_birth_request_changed.notify_all();
+		}
+		catch (...)
+		{
+			// Never continue with an unacknowledged cross-thread stack borrow.
+			std::terminate();
+		}
+	}
 }

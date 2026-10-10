@@ -5,6 +5,8 @@
 #include "economy/native_mobile_birth_recovery.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.h"
+#include "flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.h"
+#include "world/quest_mobile_native_birth.h"
 #include "flatfile/flatfile_accounting_zone_reset_item_transaction.h"
 #include "persistence/persistence_mode.h"
 #include "persistence/economic_sql_zone_reset_item_transaction.h"
@@ -205,6 +207,146 @@ class critical_shared_native_flat_execution_owner final
 					return refusal(EBUSY);
 			}
 			else if (!owner.current())
+				result.outcome = critical_apply_outcome::ambiguous_commit;
+			return result;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return refusal(ENOMEM);
+		}
+		catch (...)
+		{
+			return refusal(EIO);
+		}
+	}
+};
+class critical_ordinary_native_flat_execution_owner final
+{
+    public:
+	static critical_apply_result
+	apply(const critical_ordinary_native_execution_owner &owner) noexcept
+	{
+		using transaction = flatfile_accounting_native_mobile_birth_ordinary_transaction;
+		transaction *proposal = nullptr;
+		const auto refusal = [&](unsigned int error) noexcept
+		{
+			return critical_apply_result{
+				proposal && proposal->publication_possible() ?
+					critical_apply_outcome::ambiguous_commit :
+					critical_apply_outcome::retryable_failure,
+				0, error
+			};
+		};
+		try
+		{
+			if (!owner.current() ||
+			    owner.phase() != critical_native_recovery_phase::execution_pending)
+				return refusal(EACCES);
+			proposal = owner.flat_transaction();
+			// A pure proposal can never commit on a later callback's lock.
+			// Release only genuinely not-published heap ownership, then restage
+			// the SAME original carrier after actual locked absent-receipt proof.
+			if (proposal && !proposal->publication_possible())
+			{
+				if (!owner.release_unpublished_flat_transaction(proposal))
+					return refusal(EBUSY);
+				proposal = nullptr;
+			}
+			// Worker requests the original game owner BEFORE any storage lock.
+			// Its RAII lifetime outlives both acquired locks on every exit.
+			quest_mobile_native_birth_ordinary_execution_lease source;
+			if (!source.request(owner))
+				return refusal(EACCES);
+			const auto *owned_root = source.selected_root();
+			const char *configured = persistence_mode_flatfile_root();
+			if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+			    persistence_mode_requires_mysql() || !configured || !*configured ||
+			    !owned_root || *owned_root != configured)
+				return refusal(EACCES);
+			const std::string root(configured);
+			flatfile_identity_lock identity;
+			flatfile_authority_lock lock;
+			// This local lock is acquired and destroyed by this SAME worker.
+			// Recovery precedes every retained/native/custody/epoch read.
+			if (!identity.acquire(root, nullptr) || !lock.acquire(root, nullptr) ||
+			    flatfile_authority_transaction_recover(root, lock, nullptr) !=
+				    flatfile_authority_transaction_result::ok)
+				return refusal(EIO);
+			if (!source.current())
+				return refusal(EACCES);
+			if (proposal)
+			{
+				// Possible publication is irrevocably reconciliation-only. Exact
+				// original bytes stay in the same operation across callbacks.
+				auto result = proposal->reconcile_locked(root, identity, lock);
+				if (!source.current())
+					result.outcome = critical_apply_outcome::ambiguous_commit;
+				return result;
+			}
+			critical_native_recovery_envelope original;
+			original.command = owner.command();
+			original.revision = owner.revision();
+			original.phase = owner.phase();
+			original.attachment.assign(owner.attachment().begin(),
+						   owner.attachment().end());
+			if (!native_mobile_birth_cash_role_recovery_valid(original) ||
+			    !source.current())
+				return refusal(EILSEQ);
+			auto retained =
+				transaction::verify_retained_locked(root, identity, lock, original);
+			if (retained.outcome == critical_apply_outcome::already_applied)
+			{
+				critical_completion receipt{};
+				receipt.operation_id = original.command.operation_id;
+				receipt.outcome = retained.outcome;
+				receipt.durable_revision = retained.durable_revision;
+				receipt.error_code = retained.error_code;
+				receipt.failure_stage = retained.failure_stage;
+				receipt.result_size = retained.result_size;
+				receipt.result_payload = retained.result_payload;
+				flatfile_ordinary_native_birth_projection current;
+				const auto error = transaction::read_current_locked(
+					root, identity, lock, original, receipt, &current);
+				if (error || !source.current())
+				{
+					retained.outcome = critical_apply_outcome::ambiguous_commit;
+					retained.error_code = error ? error : EACCES;
+				}
+				return retained;
+			}
+			if (retained.outcome != critical_apply_outcome::retryable_failure ||
+			    retained.error_code != ENOENT)
+				return retained;
+			std::unique_ptr<transaction> prepared;
+			const auto error = transaction::prepare_locked(root, identity, lock,
+								       original, &prepared);
+			if (error)
+				return refusal(error);
+			size_t retained_bytes = 0;
+			if (!prepared || !prepared->retained_bytes(&retained_bytes))
+				return refusal(EOVERFLOW);
+			auto *prepared_pointer = prepared.get();
+			if (!owner.retain_flat_transaction(prepared, retained_bytes))
+				return refusal(ENOSPC);
+			proposal = prepared_pointer;
+			if (!source.current())
+			{
+				// Cleanup-only release remains tied to this exact executing pin
+				// even when shutdown changes stop/generation before joining us.
+				if (!proposal->publication_possible() &&
+				    owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				return refusal(EACCES);
+			}
+			auto result = proposal->commit_locked(root, identity, lock);
+			if (!proposal->publication_possible())
+			{
+				if (owner.release_unpublished_flat_transaction(proposal))
+					proposal = nullptr;
+				else
+					return refusal(EBUSY);
+			}
+			else if (!source.current())
 				result.outcome = critical_apply_outcome::ambiguous_commit;
 			return result;
 		}
@@ -5014,6 +5156,13 @@ critical_apply_result critical_command_repository_apply_shared_native_flat(
 {
 	(void)context; // Only the selected configured root is execution authority.
 	return critical_shared_native_flat_execution_owner::apply(owner);
+}
+
+critical_apply_result critical_command_repository_apply_ordinary_native_flat(
+	const critical_ordinary_native_execution_owner &owner, void *context)
+{
+	(void)context;
+	return critical_ordinary_native_flat_execution_owner::apply(owner);
 }
 
 critical_apply_result

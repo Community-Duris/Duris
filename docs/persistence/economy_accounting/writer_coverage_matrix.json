@@ -393,17 +393,17 @@
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "d5dfd98fd415e77b916252249a5f596bdd9272ee88bb2f31e27c8e5abf7e5d61",
       "src/mob/studioproclib.h": "7e262e289aec7658cddc97f018814249c38b23a2d917bf5ade9a592fb9eba961",
-      "src/net/comm.c": "c3f25976b728f4df1d6f7e1c088d385e958906785f6bd1ce2f4356a5123d8e33",
+      "src/net/comm.c": "1e74b23b7bc1ad21a3df7be51a5f0f1049dbe979ce9e5240705835b3d1ef127d",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d",
       "src/persistence/critical_command.c": "85b21fac76ef40290d780138c0f286effa2d9ae05288eccca7329b2e2eae8201",
       "src/persistence/critical_command.h": "a27846068b4be84d8eaf8de1f769445f74a000d10a1e55fb82b47df648d29eba",
       "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
-      "src/persistence/critical_command_coordinator.c": "1b228a37186335fed1dc89ee6a69a911aaa48d0db1f99326408687dbf0fc5c5e",
-      "src/persistence/critical_command_coordinator.h": "f855be3692b747d84fdad86ddbd9ce09f4cc4de4e350d251fb8213b1574ddf75",
+      "src/persistence/critical_command_coordinator.c": "a11425a8e017f71faf60124b0e9d76f6e809c0fc4677a0d88eb6b4ef0f5a684e",
+      "src/persistence/critical_command_coordinator.h": "fb2b2cba08d6b4ae9c2bcdafbc76cea8350d8fd75353cc7ccbd403b04504e285",
       "src/persistence/critical_command_journal.c": "07b1ca90db295c01ffb2d7d435572d6c6db68492f9505bc1e10e3f1ac669ab6f",
       "src/persistence/critical_command_journal.h": "9bf8e548a593f4d6fafb94bf7b81b95e3a090b680bb7c7e7019cfe6d8c46857d",
-      "src/persistence/critical_command_repository.c": "d6fed863a38e6254d14e8a893f5a6d7b23b7536dd39397bc37ec078c16630dc3",
-      "src/persistence/critical_command_repository.h": "321ebf1e9e9299079c100fe2c921f2e0c02d06e335499990b7650e82bc1eefef",
+      "src/persistence/critical_command_repository.c": "ab990ffa7854a8beaf002dc26fe8fcddecd4e347f102b5757be0243669f9f38e",
+      "src/persistence/critical_command_repository.h": "5aafc8670b2fa8abb67f7f4f6d436c91cf7a1a342c03d810041e83c6b13c130d",
       "src/persistence/critical_outbox.c": "767038ebacb1892fc0e79c29be0b128fcbf5bc8d694650ca5f0031c83cd6103a",
       "src/persistence/critical_outbox.h": "919243277d54ce2493d60bd9abfdb61afd051292a69b01cbbc4fd6ebef672a85",
       "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "bf8d360313dacfb724c9d03e90963f47ccd689292c081c6ac4a2d500ef14145c",
@@ -513,8 +513,8 @@
       "src/world/quest_mobile_native.h": "49ea690af488d383230b7c84dea4b195d13dea010e184d26594b4fc287b5da60",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
       "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
-      "src/world/quest_mobile_native_birth.c": "38a04a0d355be41cf6dbaf71fa52701b6252810ac183443b774f9b179f747949",
-      "src/world/quest_mobile_native_birth.h": "9aca3329bab0961e7b7920ca65ca69c54837d02fa29b803155ac523d3869da6c",
+      "src/world/quest_mobile_native_birth.c": "e952808e4f1b7062559c9396db9701d638948e33d25f1a88ce5cc8ccc5869584",
+      "src/world/quest_mobile_native_birth.h": "2bb58d6a9b0fe4d3989afc38b2fff97e73033cb611aa7e1681b08807078c2533",
       "src/world/quest_mobile_native_reference.c": "e35b73e7a93b47cf87df6c3a4aea47d4956bb20d587865b3b56de23c6a0b8663",
       "src/world/quest_mobile_native_reference.h": "33737074b17c0becce2db83baf1372d34cc4f6fe10cbd46ec9dbbedfcb8dba27",
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
@@ -11087,7 +11087,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1909
+          2051
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -35959,7 +35959,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5092
+          5241
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "critical_command_repository_verify_ordinary_drop_in_transaction",
@@ -53791,7 +53791,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1572
+          1720
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::prepare_mobile",
@@ -53838,7 +53838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1884
+          2032
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::seal_mobile",
@@ -53895,7 +53895,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4153
+          4307
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::pulse",
@@ -53952,7 +53952,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4096
+          4371
         ],
         "file": "src/persistence/critical_command_coordinator.c",
         "function": "critical_native_mobile_birth_publication_owner::submit",
@@ -54093,7 +54093,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1655
+          1803
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::capture_alchemist_spawn",
@@ -54153,7 +54153,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2803
+          2957
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::recover_cold",
@@ -54213,7 +54213,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2490
+          2644
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::resume_cold_projection",
@@ -54273,7 +54273,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3300
+          3454
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::publish",
