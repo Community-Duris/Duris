@@ -103,4 +103,44 @@ int quest_mobile_native_flatfile_shared_shop_origin_prepare_locked(
 	const std::string &root, const flatfile_authority_lock &,
 	const critical_native_recovery_envelope &, flatfile_authority_operation *) noexcept;
 
+// DISTINCT complete ordinary NMB4 companions in the SAME .qno namespace/QNO1
+// bytes. Historical and shared-shop readers/writers remain unchanged. Every
+// command/intent/recipe/terminal context, native image and canonical byte is
+// validated through genuine bounded providers under the borrowed exact root
+// lock. No schema/selection/recovery/commit/source/wallet/custody/ACK authority.
+// Caller outer includes real live root/lock/envelope/input/prior output heaps;
+// callback admits absolute prospective simultaneously live storage and caller
+// holds the peak through strong output transfer, then restores its aggregate.
+// Retained heap outputs count actual transferred string/vector capacities.
+// Supported GCC13/CXX11/nondebug Linux x86_64 LP64/OpenSSL3.0.13 source policy;
+// otherwise ENOTSUP. ENOBUFS preserves nested capacity/refusal, ENOMEM direct
+// allocation failure, EBADMSG corrupt wire, ESTALE canonical conflict. Resource
+// refusal never establishes absence. Kernel/emitted/native global-cap proof
+// remains an outer qualification requirement, not a claim of these values.
+int quest_mobile_native_flatfile_ordinary_origin_read_locked_bounded(
+	const std::string &, const flatfile_authority_lock &, const quest_mobile_native_reference &,
+	quest_mobile_native_flatfile_origin_row *, flatfile_scratch_reserve_fn, void *,
+	size_t outer_live_scratch, size_t *retained_origin_heap = nullptr) noexcept;
+
+// Stage only ONE original domains WRITE for the actual terminal phase2,
+// revision>1 envelope and complete current born image. Existing origin is
+// accepted only if the full canonical QNO1 bytes/revision match exactly. Caller
+// authenticates receipt/source/wallet/initial custody and commits the original
+// authority bundle while advancement remains gated. No journal retirement.
+int quest_mobile_native_flatfile_ordinary_origin_prepare_locked_bounded(
+	const std::string &, const flatfile_authority_lock &,
+	const critical_native_recovery_envelope &, flatfile_authority_operation *,
+	flatfile_scratch_reserve_fn, void *, size_t outer_live_scratch,
+	size_t *retained_operation_heap = nullptr) noexcept;
+
+// After successful commit, or original bundle recovery following uncertainty,
+// require the PRESENT exact full canonical origin plus complete current born
+// image under the SAME recovered lock. Missing origin refuses ENOENT. This
+// passive check performs no staging/commit/recovery/fence cleanup/retirement and
+// grants no ACK. Genuine caller confirms this before fences/journal retirement.
+int quest_mobile_native_flatfile_ordinary_origin_recheck_locked_bounded(
+	const std::string &, const flatfile_authority_lock &,
+	const critical_native_recovery_envelope &, flatfile_scratch_reserve_fn, void *,
+	size_t outer_live_scratch) noexcept;
+
 #endif
