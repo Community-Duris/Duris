@@ -4117,3 +4117,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Currency decode and account identity source contracts implemented - 2026-10-10
+
+[Source checkpoint](CURRENCY_DECODE_ACCOUNT_SOURCE_TYPED_RESOURCE_CONTRACTS_2026-10-10.md) complete currency decoder/account identity source and typed resource contracts integrated with independent actual formatted review; native and full-host qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

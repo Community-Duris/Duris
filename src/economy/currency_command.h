@@ -134,4 +134,51 @@ bool currency_command_decode_payload_bounded(const critical_command &, currency_
 					     bool (*reserve)(size_t, void *) noexcept,
 					     void *context, size_t outer_live) noexcept;
 
+enum class currency_command_bounded_result : uint8_t
+{
+	ok,
+	invalid,
+	capacity,
+};
+
+// Genuine additive typed counterparts. A denied original admission or bad_alloc
+// is capacity; malformed payload/account identity is invalid. Strong output.
+// Original bool APIs and their behavior remain unchanged.
+currency_command_bounded_result
+currency_account_key_bounded_status(const char *, uint8_t, critical_entity_key *,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer_live) noexcept;
+currency_command_bounded_result
+currency_command_decode_payload_bounded_status(const critical_command &, currency_command_payload *,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept;
+
+// Exact SOURCE union of the existing/typed bounded payload decoders and canonical
+// account-key descendants. No storage observation, locking or admission authority.
+// Admit the fixed query cost before querying; admit full SOURCE + initial inline
+// transiently before entry. Retain ONLY the supplement in the decoder's outer_live:
+// original decoder/account-key admissions own their actual inline/heap/hash terms.
+// Caller input, old output and enclosing objects remain caller-owned; refresh CURRENT
+// after return. Unsupported ordinary-library/OpenSSL profiles leave outputs unchanged.
+bool currency_command_decode_payload_source_frame_bytes(size_t *output) noexcept;
+bool currency_command_decode_payload_source_supplement_frame_bytes(size_t *output) noexcept;
+bool currency_command_decode_payload_initial_inline_bytes(size_t *output) noexcept;
+constexpr size_t currency_command_decode_payload_source_query_frame_bytes() noexcept
+{
+	// Real pure-query output argument and boolean result. All source expressions
+	// are namespace-scope constexpr constants; no runtime query/helper/scanner.
+	return sizeof(size_t *) + sizeof(bool);
+}
+
+// Narrow full original/typed account-key SOURCE, with the same support and
+// strong-output law as the payload profile. Caller transiently admits full SOURCE
+// and initial candidate before entry; only supplement remains in child outer_live.
+// The original account child owns actual string/digest/context/heap/SHA terms.
+bool currency_account_key_source_frame_bytes(size_t *output) noexcept;
+bool currency_account_key_source_supplement_frame_bytes(size_t *output) noexcept;
+bool currency_account_key_initial_inline_bytes(size_t *output) noexcept;
+constexpr size_t currency_account_key_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
 #endif

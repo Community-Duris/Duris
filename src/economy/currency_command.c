@@ -632,3 +632,694 @@ bool currency_command_decode_payload_bounded(const critical_command &command,
 	*payload = decoded;
 	return true;
 }
+
+// This is the complete named SOURCE union of unchanged and additive typed decoder,
+// not a retained-storage baseline, allocator/runtime bound or emitted stack.
+// SOURCE-PINS.json identifies the exact ordinary GNU13/OpenSSL controls.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+constexpr size_t currency_decode_P = sizeof(void *), currency_decode_N = sizeof(size_t),
+		 currency_decode_B = sizeof(bool), currency_decode_C = sizeof(char);
+using currency_decode_iterator = std::string::iterator;
+using currency_decode_predicate =
+	decltype([](int64_t amount) { return amount != std::numeric_limits<int64_t>::min(); });
+using currency_decode_transform =
+	decltype([](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+using currency_decode_iter_pred = __gnu_cxx::__ops::_Iter_pred<currency_decode_predicate>;
+using currency_decode_iter_negate = __gnu_cxx::__ops::_Iter_negate<currency_decode_predicate>;
+
+// _M_data(this,result); _M_local_data -> pointer_to -> addressof -> __addressof.
+constexpr size_t currency_decode_data = 2 * currency_decode_P;
+constexpr size_t currency_decode_local_data = 8 * currency_decode_P;
+constexpr size_t currency_decode_is_local =
+	currency_decode_P + currency_decode_B + currency_decode_data + currency_decode_local_data;
+constexpr size_t currency_decode_capacity =
+	currency_decode_P + currency_decode_N + currency_decode_is_local;
+constexpr size_t currency_decode_string_size = currency_decode_P + currency_decode_N;
+constexpr size_t currency_decode_allocator_ref = 2 * currency_decode_P;
+constexpr size_t currency_decode_string_max = currency_decode_P + currency_decode_N +
+					      currency_decode_allocator_ref + currency_decode_P +
+					      currency_decode_N;
+
+// _S_allocate(a,n,p,result), allocator_traits::allocate, allocator<char>::allocate
+// with the actual constant-evaluation predicate, __new_allocator<char>::allocate
+// (this,n,hint,result), _M_max_size and declared scalar operator new boundary.
+// alignof(char) does not select aligned-new. Constant-evaluation bodies do not run.
+constexpr size_t currency_decode_allocate =
+	(3 * currency_decode_P + currency_decode_N) + (2 * currency_decode_P + currency_decode_N) +
+	(2 * currency_decode_P + currency_decode_N + currency_decode_B) +
+	(3 * currency_decode_P + currency_decode_N) + (currency_decode_P + currency_decode_N) +
+	(currency_decode_N + currency_decode_P);
+// traits/allocator/new_allocator deallocate, real C++20 predicate, sized delete
+// declaration. The scalar char alignment discards aligned-delete at compile time.
+constexpr size_t currency_decode_deallocate =
+	(2 * currency_decode_P + currency_decode_N) +
+	(2 * currency_decode_P + currency_decode_N + currency_decode_B) +
+	(2 * currency_decode_P + currency_decode_N) + (currency_decode_P + currency_decode_N);
+// _S_copy -> char_traits<char>::assign OR copy -> builtin memcpy declaration.
+// Sum of both genuine branches includes their actual consteval predicates.
+constexpr size_t currency_decode_copy =
+	(2 * currency_decode_P + currency_decode_N) + (2 * currency_decode_P + currency_decode_B) +
+	(3 * currency_decode_P + currency_decode_N + currency_decode_B) +
+	(3 * currency_decode_P + currency_decode_N);
+constexpr size_t currency_decode_set_length =
+	(currency_decode_P + currency_decode_N) + (currency_decode_P + currency_decode_N) +
+	currency_decode_data + (2 * currency_decode_P + currency_decode_B) + currency_decode_C;
+// _M_create(this,capacity-ref,old-capacity,result), three max_size calls, allocator
+// reference and full actual allocation chain. The length-error declaration owns
+// its pointer argument; valid <=50-byte account inputs cannot select that error.
+constexpr size_t currency_decode_create =
+	(3 * currency_decode_P + currency_decode_N) + 3 * currency_decode_string_max +
+	currency_decode_allocator_ref + currency_decode_allocate + currency_decode_P;
+constexpr size_t currency_decode_destroy = (currency_decode_P + currency_decode_N) +
+					   currency_decode_allocator_ref + currency_decode_data +
+					   currency_decode_deallocate;
+constexpr size_t currency_decode_dispose =
+	currency_decode_P + currency_decode_is_local + currency_decode_destroy;
+// ~basic_string, dispose, implicit _Alloc_hider/allocator/new_allocator destruction.
+constexpr size_t currency_decode_string_cleanup = 4 * currency_decode_P + currency_decode_dispose;
+
+// Genuine pointer+length+const-allocator constructor, not default-string or row
+// copy. Default allocator object/ctor/base ctor, _Alloc_hider const-copy ctor,
+// allocator/base copy constructors and temporary allocator/base destruction.
+// _M_construct forward path uses pointer std::distance/category/__distance,
+// true forward tag, dnew, guard ctor/dtor, copy_chars, length and buffer setters.
+// Its one-pointer guard OBJECT is already admitted by the original constructor
+// `fixed + constructor_heap + sizeof(void*)`; only its call scopes enter supplement.
+constexpr size_t currency_decode_string_constructor =
+	(3 * currency_decode_P + currency_decode_N) + sizeof(std::allocator<char>) +
+	2 * currency_decode_P + 7 * currency_decode_P + 2 * currency_decode_P +
+	currency_decode_local_data +
+	(3 * currency_decode_P + sizeof(std::forward_iterator_tag) + currency_decode_N) +
+	(2 * currency_decode_P + sizeof(std::ptrdiff_t)) +
+	(currency_decode_P + sizeof(std::random_access_iterator_tag)) +
+	(2 * currency_decode_P + sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag)) +
+	currency_decode_create + 2 * currency_decode_P + (currency_decode_P + currency_decode_N) +
+	(currency_decode_P + currency_decode_B) + 2 * currency_decode_P + currency_decode_P +
+	currency_decode_dispose + 3 * currency_decode_P + currency_decode_copy +
+	currency_decode_data + currency_decode_set_length;
+// push_back(this,char,size), size/capacity, _M_mutate(this,pos,len1,s,len2,
+// how_much,new_capacity,r), its length/capacity/create/copy/dispose/setters,
+// final char assignment and set_length. Actual loop is iterative: no depth/count
+// multiplier. Old/new heap overlap remains in the original prospective requests.
+constexpr size_t currency_decode_string_append =
+	(currency_decode_P + currency_decode_C + currency_decode_N) + currency_decode_string_size +
+	currency_decode_capacity + (3 * currency_decode_P + 5 * currency_decode_N) +
+	2 * currency_decode_string_size + currency_decode_capacity + currency_decode_create +
+	3 * currency_decode_copy + 2 * currency_decode_data + currency_decode_dispose +
+	2 * currency_decode_P + (currency_decode_P + currency_decode_N) +
+	(2 * currency_decode_P + currency_decode_B) + currency_decode_data +
+	currency_decode_set_length;
+// Real string begin/end normal_iterator constructors, ==/two base calls,
+// dereference and two prefix increments, parameter/argument iterator cleanups,
+// lambda copy/cleanup and lambda(char)->tolower(int) result. Fresh glibc ctype.h
+// additionally exposes optimized C++ extern-inline tolower->__ctype_tolower_loc;
+// include its actual zero-argument pointer result as well as the int formal/result.
+constexpr size_t currency_decode_transform_source =
+	4 * sizeof(currency_decode_iterator) + sizeof(currency_decode_transform) +
+	2 * (5 * currency_decode_P + sizeof(currency_decode_iterator)) +
+	(6 * currency_decode_P + currency_decode_N + sizeof(currency_decode_iterator)) +
+	(6 * currency_decode_P + currency_decode_B) + 2 * (2 * currency_decode_P) +
+	2 * (2 * currency_decode_P) + 7 * currency_decode_P + 3 * currency_decode_P +
+	currency_decode_P + sizeof(unsigned char) + sizeof(char) + 2 * sizeof(int) +
+	currency_decode_P;
+// vector_valid->all_of->find_if_not->__find_if_not->__find_if RA. True lambda,
+// iter_pred and iter_negate sizes, their constructors/move/copy/destruction,
+// iterator-category tag/trip_count and actual negate->lambda->limits::min.
+constexpr size_t currency_decode_all_of_source =
+	(currency_decode_P + currency_decode_B) + 4 * currency_decode_P +
+	(2 * currency_decode_P + sizeof(currency_decode_predicate) + currency_decode_B) +
+	(3 * currency_decode_P + sizeof(currency_decode_predicate)) +
+	(sizeof(currency_decode_predicate) + sizeof(currency_decode_iter_pred)) +
+	(currency_decode_P + sizeof(currency_decode_predicate)) + 4 * currency_decode_P +
+	(3 * currency_decode_P + sizeof(currency_decode_iter_pred)) +
+	(sizeof(currency_decode_iter_pred) + sizeof(currency_decode_iter_negate)) +
+	(currency_decode_P + sizeof(currency_decode_predicate)) + 4 * currency_decode_P +
+	(currency_decode_P + sizeof(std::random_access_iterator_tag)) +
+	(3 * currency_decode_P + sizeof(currency_decode_iter_negate) +
+	 sizeof(std::random_access_iterator_tag) + sizeof(std::ptrdiff_t)) +
+	(2 * currency_decode_P + currency_decode_B) +
+	(currency_decode_P + sizeof(int64_t) + currency_decode_B) + sizeof(int64_t) +
+	4 * (2 * currency_decode_P) + 8 * currency_decode_P;
+// Full local/declared scalar helpers: valid_name including strnlen boundary;
+// valid_reason; any_delta and actual fixed-array indexing; get_u16/u32/u64;
+// decode_vector's formals/index/uint64 result plus its admitted vector object.
+constexpr size_t currency_decode_scalar_source =
+	(2 * currency_decode_P + currency_decode_N + currency_decode_B + currency_decode_P +
+	 2 * currency_decode_N) +
+	(sizeof(currency_reason_type) + currency_decode_B) +
+	(currency_decode_P + currency_decode_N + currency_decode_B +
+	 2 * (2 * currency_decode_P + currency_decode_N)) +
+	(currency_decode_P + sizeof(uint16_t)) +
+	(currency_decode_P + 2 * sizeof(uint32_t) + sizeof(unsigned int)) +
+	(currency_decode_P + 2 * sizeof(uint64_t) + sizeof(unsigned int)) +
+	(currency_decode_P + currency_decode_N + 2 * currency_decode_P + currency_decode_N);
+// Original decoder full formals, fixed/name_length/indices/checked_length,
+// completed/padding/refreshed. Original account child full formals, 17 actual
+// size_t declarations, step, completed/appended/hashed/refreshed and identity.
+// Four runtime std::max calls use two const-ref arguments, returned ref, bool.
+constexpr size_t currency_decode_lexical_source =
+	(4 * currency_decode_P + 6 * currency_decode_N + 4 * currency_decode_B) +
+	(4 * currency_decode_P + sizeof(uint8_t) + 18 * currency_decode_N + sizeof(unsigned int) +
+	 5 * currency_decode_B + sizeof(uint64_t)) +
+	4 * (3 * currency_decode_P + currency_decode_B);
+// Admission helper own arguments/result and indirect reserve call boundary.
+// Descendant callback implementation is caller-owned, never copied here.
+constexpr size_t currency_decode_admission_source = 2 * currency_decode_P + 3 * currency_decode_N +
+						    currency_decode_B + currency_decode_P +
+						    currency_decode_N + currency_decode_B;
+// Actual vector size/data/_M_data_ptr/subscript, array data/subscript, generated
+// aggregate assignments and key_equal. Sum one closure per named selected family;
+// iterative/repeated calls have no additional simultaneous source depth.
+constexpr size_t currency_decode_access_source =
+	(currency_decode_P + currency_decode_N) + 5 * currency_decode_P +
+	(2 * currency_decode_P + currency_decode_N) + 2 * currency_decode_P +
+	// Public string data(this,result) -> internal _M_data(this,result).
+	4 * currency_decode_P + (2 * currency_decode_P + currency_decode_N) +
+	// payload, currency_vector, its amount array, name array, entity-key assignments.
+	5 * (2 * currency_decode_P) + sizeof(critical_entity_key) +
+	(2 * currency_decode_P + currency_decode_B) + (3 * currency_decode_P + currency_decode_N);
+// Exact unchanged account child SHA allowance, pinned to the published fixed SHA
+// controls. This term is already retained by its SHA admission, so not supplement.
+constexpr size_t currency_decode_sha_source =
+	std::max(2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) +
+			 2 * sizeof(void *),
+		 std::max(16 * sizeof(SHA_LONG) + 12 * sizeof(unsigned int) + sizeof(SHA_LONG) +
+				  sizeof(int) + sizeof(void *),
+			  16 * sizeof(SHA_LONG) + 11 * sizeof(unsigned int) + 2 * sizeof(int) +
+				  2 * sizeof(void *))) +
+	std::max(sizeof(void *) + sizeof(int),
+		 std::max(4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(SHA_LONG) + sizeof(int),
+			  3 * sizeof(void *) + sizeof(size_t) + sizeof(unsigned long) +
+				  sizeof(unsigned int) + sizeof(int)));
+// Typed counterpart adds two real outcome objects, account_result, two typed
+// return values, two unnamed bad_alloc catch references, and the admission helper
+// (outer/fixed/extra, reserve/context/outcome-reference, allowed/return bool).
+// This union conservatively includes original bool-return carriers too.
+constexpr size_t currency_decode_typed_source = 5 * sizeof(currency_command_bounded_result) +
+						2 * currency_decode_P + 3 * currency_decode_P +
+						3 * currency_decode_N + 2 * currency_decode_B;
+constexpr size_t currency_decode_supplement_source =
+	currency_decode_lexical_source + currency_decode_scalar_source +
+	currency_decode_admission_source + currency_decode_access_source +
+	currency_decode_string_constructor + currency_decode_string_append +
+	currency_decode_transform_source + currency_decode_all_of_source +
+	currency_decode_string_cleanup + currency_decode_typed_source;
+constexpr size_t currency_decode_full_source =
+	currency_decode_supplement_source + currency_decode_sha_source + sizeof(void *);
+#endif
+}
+
+bool currency_command_decode_payload_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = currency_decode_full_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool currency_command_decode_payload_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = currency_decode_supplement_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool currency_command_decode_payload_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = sizeof(currency_command_payload) + 2 * sizeof(critical_entity_key);
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+#include <new>
+namespace
+{
+bool currency_status_codec_admit(size_t outer, size_t fixed, size_t extra,
+				 bool (*reserve)(size_t, void *) noexcept, void *context,
+				 currency_command_bounded_result &outcome) noexcept
+{
+	const bool allowed = currency_codec_admit(outer, fixed, extra, reserve, context);
+	if (!allowed)
+		outcome = currency_command_bounded_result::capacity;
+	return allowed;
+}
+}
+
+// Additive typed resource result; all original bool APIs above remain exact.
+// Outcome records actual arithmetic/reserve denial or std::bad_alloc at its
+// real failing branch; a later successful CURRENT refresh does not erase it.
+currency_command_bounded_result currency_account_key_bounded_status(
+	const char *account_name, uint8_t racewar, critical_entity_key *key,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||  \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || !defined(__linux__) ||             \
+	!defined(__x86_64__) || !defined(OPENSSL_VERSION_MAJOR) || OPENSSL_VERSION_MAJOR != 3 || \
+	!defined(OPENSSL_VERSION_MINOR) || OPENSSL_VERSION_MINOR != 0 ||                         \
+	!defined(OPENSSL_VERSION_PATCH) || OPENSSL_VERSION_PATCH != 13 ||                        \
+	defined(OPENSSL_NO_DEPRECATED_3_0)
+	(void)account_name;
+	(void)racewar;
+	(void)key;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return currency_command_bounded_result::capacity;
+#else
+	if (!key || !reserve)
+		return currency_command_bounded_result::invalid;
+	if (sizeof(void *) != 8 || sizeof(SHA_LONG) != 4)
+		return currency_command_bounded_result::capacity;
+	currency_command_bounded_result outcome = currency_command_bounded_result::invalid;
+	const size_t candidate_frame = sizeof(critical_entity_key);
+	if (!currency_status_codec_admit(outer_live, candidate_frame, 0, reserve, context, outcome))
+		return currency_command_bounded_result::capacity;
+	critical_entity_key candidate{};
+	bool completed = false;
+	try
+	{
+		{
+			size_t length = 0;
+			if (valid_name(account_name, &length))
+			{
+				const size_t fixed =
+					sizeof(std::string) +
+					sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) +
+					sizeof(SHA256_CTX);
+				const size_t constructor_heap = length > 15 ? length + 1 : 0;
+				if (currency_status_codec_admit(outer_live, candidate_frame,
+								fixed + constructor_heap +
+									sizeof(void *),
+								reserve, context, outcome))
+				{
+					std::string canonical(account_name, length);
+					std::transform(
+						canonical.begin(), canonical.end(),
+						canonical.begin(), [](unsigned char ch)
+						{ return static_cast<char>(std::tolower(ch)); });
+					bool appended = true;
+					for (unsigned step = 0; step < 2; ++step)
+					{
+						const size_t current =
+							canonical.capacity() > 15 ?
+								canonical.capacity() + 1 :
+								0;
+						size_t request = 0;
+						if (canonical.size() == canonical.capacity())
+						{
+							// Genuine libstdc++13 _M_create growth, including the
+							// old string heap while its replacement is allocated.
+							const size_t capacity =
+								canonical.capacity();
+							if (capacity > (SIZE_MAX - 1) / 2)
+							{
+								outcome =
+									currency_command_bounded_result::
+										capacity;
+								appended = false;
+								break;
+							}
+							request = 2 * capacity + 1;
+						}
+						if (request > SIZE_MAX - fixed - current ||
+						    !currency_status_codec_admit(
+							    outer_live, candidate_frame,
+							    fixed + current + request, reserve,
+							    context, outcome))
+						{
+							outcome = currency_command_bounded_result::
+								capacity;
+							appended = false;
+							break;
+						}
+						canonical.push_back(
+							step ? static_cast<char>(racewar) : '\0');
+					}
+					if (appended)
+					{
+						std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+						SHA256_CTX digest_context;
+						const size_t current =
+							canonical.capacity() > 15 ?
+								canonical.capacity() + 1 :
+								0;
+						// Pinned OpenSSL3.0.13 combined x86-64 SHA generator:
+						// SHA256 SZ=4/rounds=64; real Linux AVX2 schedule,
+						// metadata, six GPR saves, alignment, saved return and
+						// red-zone pointer. Other dispatch paths are smaller.
+						const size_t assembly_frames =
+							2 * 4 * 64 + 4 * sizeof(void *) +
+							6 * sizeof(uint64_t) + (256 * 4 - 1) +
+							2 * sizeof(void *);
+						const size_t c_small_frames =
+							16 * sizeof(SHA_LONG) +
+							12 * sizeof(unsigned int) +
+							sizeof(SHA_LONG) + sizeof(int) +
+							sizeof(void *);
+						const size_t c_normal_frames =
+							16 * sizeof(SHA_LONG) +
+							11 * sizeof(unsigned int) +
+							2 * sizeof(int) + 2 * sizeof(void *);
+						const size_t c_block_frames =
+							std::max(c_small_frames, c_normal_frames);
+						const size_t block_frames =
+							std::max(assembly_frames, c_block_frames);
+						// md32_common Update/Final and SHA256 HASH_MAKE_STRING
+						// own these fixed scalar locals; the digest block frame
+						// can coexist with Final's p/n. No EVP/provider heap.
+						const size_t init_frames =
+							sizeof(void *) + sizeof(int);
+						const size_t update_frames =
+							(2 * sizeof(void *) + sizeof(size_t)) +
+							(2 * sizeof(void *) + sizeof(SHA_LONG) +
+							 sizeof(size_t)) +
+							sizeof(int);
+						const size_t final_frames =
+							2 * sizeof(void *) + sizeof(void *) +
+							sizeof(size_t) + sizeof(unsigned long) +
+							sizeof(unsigned int) + sizeof(int);
+						const size_t digest_frames =
+							block_frames +
+							std::max(init_frames,
+								 std::max(update_frames,
+									  final_frames));
+						if (currency_status_codec_admit(
+							    outer_live, candidate_frame,
+							    fixed + current + digest_frames,
+							    reserve, context, outcome))
+						{
+							// Preserve the original SHA256 value and
+							// exact canonical lower-name/NUL/racewar byte stream.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+							const bool hashed =
+								SHA256_Init(&digest_context) == 1 &&
+								SHA256_Update(&digest_context,
+									      canonical.data(),
+									      canonical.size()) ==
+									1 &&
+								SHA256_Final(digest.data(),
+									     &digest_context) == 1;
+#pragma GCC diagnostic pop
+							if (hashed)
+							{
+								uint64_t identity =
+									get_u64(digest.data());
+								if (!identity)
+									identity = 1;
+								candidate = {
+									critical_entity_type::account,
+									identity
+								};
+								completed = true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		completed = false;
+		outcome = currency_command_bounded_result::capacity;
+	}
+	catch (...)
+	{
+		completed = false;
+	}
+	// Canonical string/digest have died. Candidate remains an
+	// honest current frames; caller drops them in its post-return rebase.
+	const bool refreshed = currency_status_codec_admit(outer_live, candidate_frame, 0, reserve,
+							   context, outcome);
+	if (!refreshed)
+		return currency_command_bounded_result::capacity;
+	if (!completed)
+		return outcome;
+	*key = candidate;
+	return currency_command_bounded_result::ok;
+#endif
+}
+
+currency_command_bounded_result currency_command_decode_payload_bounded_status(
+	const critical_command &command, currency_command_payload *payload,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!payload || !reserve)
+		return currency_command_bounded_result::invalid;
+	currency_command_bounded_result outcome = currency_command_bounded_result::invalid;
+	const size_t fixed = sizeof(currency_command_payload) + 2 * sizeof(critical_entity_key);
+	if (!currency_status_codec_admit(outer_live, fixed, 0, reserve, context, outcome))
+		return currency_command_bounded_result::capacity;
+	currency_command_payload decoded{};
+	critical_entity_key account_key{};
+	critical_entity_key player_key{ critical_entity_type::player, 0 };
+	bool completed = false;
+	try
+	{
+		do
+		{
+			if (command.type != critical_command_type::account_bank ||
+			    command.payload_version != CURRENCY_COMMAND_PAYLOAD_VERSION ||
+			    command.payload.size() != CURRENCY_COMMAND_PAYLOAD_BYTES ||
+			    !currency_status_codec_admit(outer_live, fixed,
+							 2 * sizeof(currency_vector), reserve,
+							 context, outcome))
+				break;
+			const size_t name_length = command.payload[NAME_LENGTH_OFFSET];
+			if (!name_length || name_length > CURRENCY_ACCOUNT_NAME_MAX_BYTES)
+				break;
+			bool padding = true;
+			for (size_t index = NAME_OFFSET + name_length; index < WALLET_OFFSET;
+			     ++index)
+				if (command.payload[index])
+					padding = false;
+			for (size_t index = BANK_OFFSET + 32; index < command.payload.size();
+			     ++index)
+				if (command.payload[index])
+					padding = false;
+			if (!padding)
+				break;
+			decoded.pid = get_u32(command.payload.data() + PID_OFFSET);
+			decoded.racewar = command.payload[RACEWAR_OFFSET];
+			decoded.reason = static_cast<currency_reason_type>(
+				get_u16(command.payload.data() + REASON_OFFSET));
+			decoded.reason_id = static_cast<int64_t>(
+				get_u64(command.payload.data() + REASON_ID_OFFSET));
+			memcpy(decoded.account_name.data(), command.payload.data() + NAME_OFFSET,
+			       name_length);
+			decoded.wallet_delta =
+				decode_vector(command.payload.data() + WALLET_OFFSET);
+			decoded.bank_delta = decode_vector(command.payload.data() + BANK_OFFSET);
+			size_t checked_length = 0;
+			if (!decoded.pid || !valid_reason(decoded.reason) ||
+			    !valid_name(decoded.account_name.data(), &checked_length) ||
+			    checked_length != name_length || !vector_valid(decoded.wallet_delta) ||
+			    !vector_valid(decoded.bank_delta) ||
+			    (!any_delta(decoded) &&
+			     decoded.reason != currency_reason_type::corpse_lifecycle))
+				break;
+			if (outer_live > SIZE_MAX - fixed)
+			{
+				outcome = currency_command_bounded_result::capacity;
+				break;
+			}
+			const auto account_result = currency_account_key_bounded_status(
+				decoded.account_name.data(), decoded.racewar, &account_key, reserve,
+				context, outer_live + fixed);
+			if (account_result != currency_command_bounded_result::ok)
+			{
+				outcome = account_result;
+				break;
+			}
+			player_key.id = decoded.pid;
+			if (!currency_status_codec_admit(outer_live, fixed, 0, reserve, context,
+							 outcome))
+				break;
+			completed = command.keys.size() == 2 &&
+				    command.expected_revisions.size() == 2 &&
+				    critical_entity_key_equal(command.keys[0], player_key) &&
+				    critical_entity_key_equal(command.keys[1], account_key) &&
+				    critical_entity_key_equal(command.expected_revisions[0].key,
+							      player_key) &&
+				    critical_entity_key_equal(command.expected_revisions[1].key,
+							      account_key);
+		} while (false);
+	}
+	catch (const std::bad_alloc &)
+	{
+		completed = false;
+		outcome = currency_command_bounded_result::capacity;
+	}
+	catch (...)
+	{
+		completed = false;
+	}
+	const bool refreshed =
+		currency_status_codec_admit(outer_live, fixed, 0, reserve, context, outcome);
+	if (!refreshed)
+		return currency_command_bounded_result::capacity;
+	if (!completed)
+		return outcome;
+	*payload = decoded;
+	return currency_command_bounded_result::ok;
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+// sha256.c SHA256_Init memset, md32_common Update memcpy/memset, Final memset
+// and OPENSSL_cleanse are sequential with block calls, not nested in them.
+// mem_clr.c owns ptr/len and the volatile loaded memset function-pointer result,
+// then the actual memset declared arguments/result. Native libc remains separate.
+constexpr size_t currency_sha_memcpy_source = 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t currency_sha_memset_source = 2 * sizeof(void *) + sizeof(int) + sizeof(size_t);
+constexpr size_t currency_sha_cleanse_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(void *) + currency_sha_memset_source;
+constexpr size_t currency_sha_block_source = std::max(
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *),
+	std::max(16 * sizeof(SHA_LONG) + 12 * sizeof(unsigned int) + sizeof(SHA_LONG) +
+			 sizeof(int) + sizeof(void *),
+		 16 * sizeof(SHA_LONG) + 11 * sizeof(unsigned int) + 2 * sizeof(int) +
+			 2 * sizeof(void *)));
+static_assert(currency_sha_block_source >= currency_sha_memcpy_source);
+static_assert(currency_sha_block_source >= currency_sha_memset_source);
+static_assert(currency_sha_block_source >= currency_sha_cleanse_source);
+// Therefore the unchanged original block + max(Init,Update,Final) admission
+// dominates the complete phase graph including these memory leaves. No unrelated
+// spare margin or extra supplement is used; decode21 numerical profiles stay exact.
+
+// Narrow actual account-key closure, derived from its complete original body.
+// No decoder reason/padding/vector/all_of terms enter this account-only export.
+constexpr size_t currency_account_lexical_source =
+	4 * currency_decode_P + sizeof(uint8_t) + 18 * currency_decode_N + sizeof(unsigned int) +
+	5 * currency_decode_B + sizeof(uint64_t) + 4 * (3 * currency_decode_P + currency_decode_B);
+constexpr size_t currency_account_scalar_source =
+	// valid_name(this-name/length, index, bool) -> declared strnlen input/limit/result.
+	2 * currency_decode_P + currency_decode_N + currency_decode_B + currency_decode_P +
+	2 * currency_decode_N +
+	// get_u64 input, value, byte index and returned uint64.
+	currency_decode_P + 2 * sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t currency_account_access_source =
+	// digest array.data, canonical.data -> _M_data, string size/capacity,
+	// entity-key assignment formal refs and its real braced temporary.
+	2 * currency_decode_P + 4 * currency_decode_P + currency_decode_string_size +
+	currency_decode_capacity + 2 * currency_decode_P + sizeof(critical_entity_key);
+constexpr size_t currency_account_typed_source =
+	// outcome and returned enum, bad_alloc reference, typed admit's true args/results.
+	2 * sizeof(currency_command_bounded_result) + currency_decode_P + 3 * currency_decode_P +
+	3 * currency_decode_N + 2 * currency_decode_B;
+constexpr size_t currency_account_supplement_source =
+	currency_account_lexical_source + currency_account_scalar_source +
+	currency_account_access_source + currency_decode_admission_source +
+	currency_decode_string_constructor + currency_decode_string_append +
+	currency_decode_transform_source + currency_decode_string_cleanup +
+	currency_account_typed_source;
+constexpr size_t currency_account_full_source =
+	currency_account_supplement_source + currency_decode_sha_source + sizeof(void *);
+#endif
+}
+
+bool currency_account_key_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = currency_account_full_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool currency_account_key_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = currency_account_supplement_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool currency_account_key_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = sizeof(critical_entity_key);
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
