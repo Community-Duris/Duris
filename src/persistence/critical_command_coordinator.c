@@ -14,6 +14,8 @@
 #include "economy/native_mobile_birth_cash_role_result.h"
 #include "economy/native_mobile_birth_recovery.h"
 #include "flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.h"
+#include "flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.h"
+#include "world/quest_mobile_native_birth.h"
 #include "flatfile/flatfile_accounting_zone_reset_item_transaction.h"
 #include "economy/zone_reset_item_command.h"
 #include "item/item_transfer_command.h"
@@ -43,6 +45,7 @@ class critical_shared_native_execution_dispatch final
 {
     public:
 	static void worker_main();
+	static void cancel_ordinary_waits() noexcept;
 };
 
 // Exact global private friend of the actual shared budget scope. The lender
@@ -168,6 +171,10 @@ struct operation_state
 	bool native_context_uncertain = false;
 	bool native_ack_uncertain = false;
 	bool native_physical_released = false;
+	const critical_ordinary_native_execution_owner *ordinary_execution = nullptr;
+	std::unique_ptr<flatfile_accounting_native_mobile_birth_ordinary_transaction>
+		ordinary_flat_transaction;
+	size_t ordinary_flat_transaction_bytes = 0;
 	const critical_shared_native_execution_owner *shared_execution = nullptr;
 	std::unique_ptr<flatfile_accounting_native_mobile_birth_shared_shop_transaction>
 		flat_transaction;
@@ -473,6 +480,7 @@ std::vector<std::thread> workers;
 std::thread admission_worker;
 critical_apply_fn apply_callback = nullptr;
 critical_shared_native_apply_fn shared_native_apply_callback = nullptr;
+critical_ordinary_native_apply_fn ordinary_native_apply_callback = nullptr;
 critical_zone_reset_item_apply_fn zone_reset_apply_callback = nullptr;
 critical_extension_validator_fn extension_validator_callback = nullptr;
 critical_extension_validator_bounded_fn extension_validator_bounded_callback = nullptr;
@@ -1754,6 +1762,20 @@ bool shared_native_worker_fenced(const critical_command &command) noexcept
 	       std::any_of(command.keys.begin(), command.keys.end(), [](const auto &key)
 			   { return key.type == critical_entity_type::shopkeeper; });
 }
+// Only an installed ordinary callback selects its distinct worker family.
+// Original SQL ordinary commands retain their historical generic callback.
+bool ordinary_native_worker_fenced(const critical_command &command) noexcept
+{
+	return ordinary_native_apply_callback &&
+	       command.type == critical_command_type::native_mobile_birth &&
+	       command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+	       !native_birth_shared_shop_command(command);
+}
+constexpr size_t ORDINARY_NATIVE_EXECUTION_RETAINED_BYTES =
+	sizeof(critical_ordinary_native_execution_owner) +
+	sizeof(const critical_ordinary_native_execution_owner *) +
+	sizeof(quest_mobile_native_birth_ordinary_execution_lease);
+
 constexpr size_t SHARED_NATIVE_EXECUTION_RETAINED_BYTES =
 	sizeof(critical_shared_native_execution_owner) +
 	sizeof(const critical_shared_native_execution_owner *);
@@ -1764,6 +1786,38 @@ bool shared_native_worker_registered(std::thread::id actual) noexcept
 {
 	return std::any_of(workers.begin(), workers.end(), [&](const std::thread &worker)
 			   { return worker.joinable() && worker.get_id() == actual; });
+}
+
+bool ordinary_native_worker_ready(const operation_state &state) noexcept
+{
+	if (!ordinary_native_worker_fenced(state.command))
+		return true;
+	if (!shared_native_worker_registered(std::this_thread::get_id()) || !state.native ||
+	    state.ordinary_execution || state.shared_execution || state.room_execution ||
+	    !state.retain_until_publication || state.publication_checkpointing ||
+	    state.native_context_uncertain || state.native_ack_uncertain ||
+	    state.native_physical_released || !coordinator_generation ||
+	    coordinator_generation_exhausted ||
+	    state.native->phase != critical_native_recovery_phase::execution_pending ||
+	    health.retained_bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+	    ORDINARY_NATIVE_EXECUTION_RETAINED_BYTES >
+		    CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+		return false;
+	try
+	{
+		// Full original owning decoder. Allocating scratch is transient, not a
+		// bounded/native qualification or a substitute for the producer owner.
+		critical_native_recovery_envelope original;
+		original.command = state.command;
+		original.revision = state.native->revision;
+		original.phase = state.native->phase;
+		original.attachment = state.native->attachment;
+		return native_mobile_birth_cash_role_recovery_valid(original);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 bool shared_native_worker_ready(const operation_state &state) noexcept
@@ -1817,6 +1871,167 @@ bool zone_reset_worker_ready(const operation_state &state) noexcept
 		       CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes;
 }
 } // namespace
+
+bool critical_ordinary_native_execution_owner::current_locked() const noexcept
+{
+	return worker_ == std::this_thread::get_id() && borrowed_current_locked();
+}
+
+bool critical_ordinary_native_execution_owner::borrowed_current_locked() const noexcept
+{
+	if (!operation_ || !native_ || !command_ || !generation_ || !attempt_ ||
+	    !health.initialized || !health.running || stop_requested ||
+	    coordinator_generation_exhausted || coordinator_generation != generation_ ||
+	    phase_ != critical_native_recovery_phase::execution_pending ||
+	    !shared_native_worker_registered(worker_))
+		return false;
+	// Membership is the genuine pinned object, never a replacement found by ID.
+	const auto found = std::find_if(operations.begin(), operations.end(), [&](const auto &entry)
+					{ return entry.second.get() == operation_; });
+	if (found == operations.end())
+		return false;
+	const auto &state = *found->second;
+	// Existing replacement/retirement APIs reject executing owners. Thus these
+	// exact borrowed command/attachment bodies remain immutable for this pin.
+	return operation_is_executing(state) && state.ordinary_execution == this &&
+	       state.native.get() == native_ && &state.command == command_ &&
+	       state.attempt == attempt_ && state.retain_until_publication &&
+	       !state.publication_checkpointing && !state.native_context_uncertain &&
+	       !state.native_ack_uncertain && !state.native_physical_released &&
+	       state.native->revision == revision_ && state.native->phase == phase_ &&
+	       state.native->attachment.data() == attachment_.data() &&
+	       state.native->attachment.size() == attachment_.size() &&
+	       state.retained_bytes >= ORDINARY_NATIVE_EXECUTION_RETAINED_BYTES &&
+	       ordinary_native_worker_fenced(state.command);
+}
+
+bool critical_ordinary_native_execution_owner::current() const noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		return current_locked();
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_ordinary_native_execution_owner::borrowed_current() const noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		return borrowed_current_locked();
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+void critical_shared_native_execution_dispatch::cancel_ordinary_waits() noexcept
+{
+	quest_mobile_native_birth_ordinary_execution_lease::cancel_pending();
+}
+
+flatfile_accounting_native_mobile_birth_ordinary_transaction *
+critical_ordinary_native_execution_owner::flat_transaction() const noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (!current_locked())
+			return nullptr;
+		return static_cast<const operation_state *>(operation_)
+			->ordinary_flat_transaction.get();
+	}
+	catch (...)
+	{
+		return nullptr;
+	}
+}
+
+bool critical_ordinary_native_execution_owner::retain_flat_transaction(
+	std::unique_ptr<flatfile_accounting_native_mobile_birth_ordinary_transaction> &proposal,
+	size_t participant_bytes) const noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (!current_locked() || !proposal || participant_bytes < sizeof(*proposal))
+			return false;
+		auto &state = *const_cast<operation_state *>(
+			static_cast<const operation_state *>(operation_));
+		if (state.ordinary_flat_transaction || state.ordinary_flat_transaction_bytes)
+			return false;
+		constexpr size_t slot_bytes = sizeof(state.ordinary_flat_transaction) +
+					      sizeof(state.ordinary_flat_transaction_bytes);
+		if (participant_bytes > CRITICAL_COORDINATOR_MAX_BYTES - slot_bytes)
+			return false;
+		const size_t charged = participant_bytes + slot_bytes;
+		update_depth();
+		if (health.retained_bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+		    state.retained_bytes > CRITICAL_COORDINATOR_MAX_BYTES ||
+		    charged > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes ||
+		    charged > CRITICAL_COORDINATOR_MAX_BYTES - state.retained_bytes)
+			return false;
+		state.ordinary_flat_transaction = std::move(proposal);
+		state.ordinary_flat_transaction_bytes = charged;
+		state.retained_bytes += charged;
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_ordinary_native_execution_owner::release_unpublished_flat_transaction(
+	flatfile_accounting_native_mobile_birth_ordinary_transaction *proposal) const noexcept
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		// Shutdown changes running/stop and generation BEFORE joining this
+		// worker. Pure heap cleanup needs the original still-executing pin,
+		// never renewed execution authority from those active policy flags.
+		if (!proposal || !operation_ || !native_ || !command_ || !generation_ ||
+		    !attempt_ || worker_ != std::this_thread::get_id())
+			return false;
+		const auto found = std::find_if(operations.begin(), operations.end(),
+						[&](const auto &entry)
+						{ return entry.second.get() == operation_; });
+		if (found == operations.end())
+			return false;
+		auto &state = *found->second;
+		if (!operation_is_executing(state) || state.ordinary_execution != this ||
+		    state.native.get() != native_ || &state.command != command_ ||
+		    state.attempt != attempt_ || !state.native ||
+		    state.native->revision != revision_ || state.native->phase != phase_ ||
+		    phase_ != critical_native_recovery_phase::execution_pending ||
+		    state.native->attachment.data() != attachment_.data() ||
+		    state.native->attachment.size() != attachment_.size())
+			return false;
+		if (state.ordinary_flat_transaction.get() != proposal ||
+		    !state.ordinary_flat_transaction_bytes ||
+		    state.retained_bytes < state.ordinary_flat_transaction_bytes)
+			return false;
+		// The sole private flat friend proves genuine not_published before
+		// invoking this pure-proposal release. Possible publication is retained.
+		state.ordinary_flat_transaction.reset();
+		state.retained_bytes -= state.ordinary_flat_transaction_bytes;
+		state.ordinary_flat_transaction_bytes = 0;
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 bool critical_shared_native_execution_owner::current_locked() const noexcept
 {
@@ -2099,6 +2314,9 @@ void critical_shared_native_execution_dispatch::worker_main()
 	{
 		std::string identity;
 		critical_command copied_command;
+		critical_ordinary_native_execution_owner ordinary_owner;
+		critical_ordinary_native_apply_fn ordinary_apply = nullptr;
+		operation_state *ordinary_state = nullptr;
 		critical_shared_native_execution_owner shared_owner;
 		critical_zone_reset_item_execution_owner room_owner;
 		critical_zone_reset_item_apply_fn room_apply = nullptr;
@@ -2124,6 +2342,7 @@ void critical_shared_native_execution_dispatch::worker_main()
 						    operation_is_queued(*found->second) &&
 						    keys_available(candidate,
 								   found->second->command) &&
+						    ordinary_native_worker_ready(*found->second) &&
 						    shared_native_worker_ready(*found->second) &&
 						    zone_reset_worker_ready(*found->second))
 							return true;
@@ -2139,6 +2358,7 @@ void critical_shared_native_execution_dispatch::worker_main()
 				if (found != operations.end() &&
 				    operation_is_queued(*found->second) &&
 				    keys_available(*iterator, found->second->command) &&
+				    ordinary_native_worker_ready(*found->second) &&
 				    shared_native_worker_ready(*found->second) &&
 				    zone_reset_worker_ready(*found->second))
 				{
@@ -2153,7 +2373,25 @@ void critical_shared_native_execution_dispatch::worker_main()
 			operation_state &state = *operations.at(identity);
 			state.phase = critical_operation_phase::executing;
 			acquire_keys(identity, state.command);
-			if (shared_native_worker_fenced(state.command))
+			if (ordinary_native_worker_fenced(state.command))
+			{
+				// The complete source was decoded before dequeue; no new body copy.
+				ordinary_owner.operation_ = &state;
+				ordinary_owner.native_ = state.native.get();
+				ordinary_owner.command_ = &state.command;
+				ordinary_owner.attachment_ = state.native->attachment;
+				ordinary_owner.generation_ = coordinator_generation;
+				ordinary_owner.revision_ = state.native->revision;
+				ordinary_owner.phase_ = state.native->phase;
+				ordinary_owner.attempt_ = state.attempt;
+				ordinary_owner.worker_ = std::this_thread::get_id();
+				state.ordinary_execution = &ordinary_owner;
+				state.retained_bytes += ORDINARY_NATIVE_EXECUTION_RETAINED_BYTES;
+				command_view = &state.command;
+				ordinary_apply = ordinary_native_apply_callback;
+				ordinary_state = &state;
+			}
+			else if (shared_native_worker_fenced(state.command))
 			{
 				// The complete source was decoded before dequeue; no new body copy.
 				shared_owner.operation_ = &state;
@@ -2208,6 +2446,20 @@ void critical_shared_native_execution_dispatch::worker_main()
 			retain_publication = state.retain_until_publication;
 			update_depth();
 		}
+		const auto release_ordinary = [&]() noexcept
+		{
+			if (!ordinary_state)
+				return;
+			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			// Shutdown joins this original worker before erasing operation storage.
+			if (ordinary_state->ordinary_execution == &ordinary_owner)
+			{
+				ordinary_state->ordinary_execution = nullptr;
+				ordinary_state->retained_bytes -=
+					ORDINARY_NATIVE_EXECUTION_RETAINED_BYTES;
+				update_depth();
+			}
+		};
 		const auto release_shared = [&]() noexcept
 		{
 			if (!shared_state)
@@ -2235,11 +2487,13 @@ void critical_shared_native_execution_dispatch::worker_main()
 				update_depth();
 			}
 		};
-		if ((shared_apply && !shared_owner.current()) ||
+		if ((ordinary_apply && !ordinary_owner.current()) ||
+		    (shared_apply && !shared_owner.current()) ||
 		    (room_apply && !room_owner.current()))
 		{
 			// Lost coordinator lifetime before invocation: no fabricated completion
 			// or never-admitted receipt. Original durable state stays owned.
+			release_ordinary();
 			release_shared();
 			release_room();
 			return;
@@ -2253,7 +2507,9 @@ void critical_shared_native_execution_dispatch::worker_main()
 		critical_apply_result applied = {};
 		try
 		{
-			if (shared_apply)
+			if (ordinary_apply)
+				applied = ordinary_apply(ordinary_owner, apply_context);
+			else if (shared_apply)
 				applied = shared_apply(shared_owner, apply_context);
 			else if (room_apply)
 				applied = room_apply(room_owner, apply_context);
@@ -2264,11 +2520,12 @@ void critical_shared_native_execution_dispatch::worker_main()
 		{
 			// The shared callback may have issued SQL before throwing. Preserve
 			// uncertainty; the ordinary callback's historical policy is unchanged.
-			applied = { (shared_apply || room_apply) ?
+			applied = { (ordinary_apply || shared_apply || room_apply) ?
 					    critical_apply_outcome::ambiguous_commit :
 					    critical_apply_outcome::retryable_failure,
 				    0, 0 };
 		}
+		release_ordinary();
 		release_shared();
 		release_room();
 		if (!retain_publication &&
@@ -2359,7 +2616,8 @@ bool critical_command_coordinator_init(
 	critical_shared_native_apply_fn shared_native_apply,
 	critical_zone_reset_item_apply_fn zone_reset_apply,
 	critical_extension_validator_bounded_fn extension_validator_bounded,
-	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded)
+	critical_native_recovery_observer_bounded_fn native_replay_observer_bounded,
+	critical_ordinary_native_apply_fn ordinary_native_apply)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -2394,6 +2652,7 @@ bool critical_command_coordinator_init(
 	health.running = true;
 	apply_callback = apply;
 	shared_native_apply_callback = shared_native_apply;
+	ordinary_native_apply_callback = ordinary_native_apply;
 	zone_reset_apply_callback = zone_reset_apply;
 	extension_validator_callback = extension_validator;
 	extension_validator_bounded_callback = extension_validator_bounded;
@@ -2423,6 +2682,7 @@ bool critical_command_coordinator_init(
 	{
 		health = {};
 		shared_native_apply_callback = nullptr;
+		ordinary_native_apply_callback = nullptr;
 		zone_reset_apply_callback = nullptr;
 		extension_validator_callback = nullptr;
 		extension_validator_bounded_callback = nullptr;
@@ -2449,6 +2709,7 @@ bool critical_command_coordinator_init(
 		work_available.notify_all();
 		admission_available.notify_all();
 		lock.unlock();
+		critical_shared_native_execution_dispatch::cancel_ordinary_waits();
 		if (admission_worker.joinable())
 			admission_worker.join();
 		for (std::thread &worker : workers)
@@ -2459,6 +2720,7 @@ bool critical_command_coordinator_init(
 		admission_worker = {};
 		health = {};
 		shared_native_apply_callback = nullptr;
+		ordinary_native_apply_callback = nullptr;
 		zone_reset_apply_callback = nullptr;
 		extension_validator_callback = nullptr;
 		extension_validator_bounded_callback = nullptr;
@@ -2534,6 +2796,7 @@ bool critical_command_coordinator_shutdown(void)
 		result_available.notify_all();
 		admission_available.notify_all();
 	}
+	critical_shared_native_execution_dispatch::cancel_ordinary_waits();
 	if (admission_worker.joinable())
 		admission_worker.join();
 	for (std::thread &worker : workers)
@@ -2557,6 +2820,7 @@ bool critical_command_coordinator_shutdown(void)
 	health = {};
 	apply_callback = nullptr;
 	shared_native_apply_callback = nullptr;
+	ordinary_native_apply_callback = nullptr;
 	zone_reset_apply_callback = nullptr;
 	extension_validator_callback = nullptr;
 	extension_validator_bounded_callback = nullptr;
@@ -2877,6 +3141,17 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 		     (successor ? !native_auction_validators.successor(expected, prepared) :
 				  !native_auction_validators.terminal(expected))))
 			return false;
+		if (found->second->ordinary_flat_transaction)
+		{
+			const size_t extra = found->second->ordinary_flat_transaction_bytes;
+			if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+			    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+				return false;
+			// Both known-pure CAS refusal and success preserve the full
+			// ordinary proposal charge throughout actor publication/retire.
+			original_retained = found->second->retained_bytes;
+			successor_retained += extra;
+		}
 		if (found->second->flat_transaction)
 		{
 			const size_t extra = found->second->flat_transaction_bytes;
@@ -6327,6 +6602,15 @@ bool critical_zone_reset_item_publication_owner::retire_bounded(
 				return false;
 			// Preserve every original retained proposal/ceiling rule even though
 			// this capability retires only, never constructs a successor.
+			if (found->second->ordinary_flat_transaction)
+			{
+				const size_t extra = found->second->ordinary_flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
 			if (found->second->flat_transaction)
 			{
 				const size_t extra = found->second->flat_transaction_bytes;
@@ -6581,6 +6865,15 @@ bool critical_zone_reset_item_publication_owner::checkpoint_context_bounded(
 				    expected, prepared, room_locked_budget_callback::relay,
 				    &proof_budget, live))
 				return false;
+			if (found->second->ordinary_flat_transaction)
+			{
+				const size_t extra = found->second->ordinary_flat_transaction_bytes;
+				if (!extra || successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+				    extra > CRITICAL_COORDINATOR_MAX_BYTES - successor_retained)
+					return false;
+				original_retained = found->second->retained_bytes;
+				successor_retained += extra;
+			}
 			if (found->second->flat_transaction)
 			{
 				const size_t extra = found->second->flat_transaction_bytes;
@@ -7219,8 +7512,8 @@ bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
 		sizeof(completed_cache) + sizeof(completed_order) + sizeof(completed_cache_bytes) +
 		sizeof(pending_admission_bytes) + sizeof(admission_inflight_bytes) +
 		sizeof(workers) + sizeof(admission_worker) + sizeof(apply_callback) +
-		sizeof(shared_native_apply_callback) + sizeof(zone_reset_apply_callback) +
-		sizeof(extension_validator_callback) +
+		sizeof(shared_native_apply_callback) + sizeof(ordinary_native_apply_callback) +
+		sizeof(zone_reset_apply_callback) + sizeof(extension_validator_callback) +
 		sizeof(extension_validator_bounded_callback) +
 		sizeof(native_replay_observer_callback) +
 		sizeof(native_replay_observer_bounded_callback) +
@@ -7270,6 +7563,17 @@ bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
 		// Real immutable capacity proof captured by the sole flat owner before
 		// transfer. Do not inspect mutable worker-owned participant state here.
 		// Pointer/charge slots are already in sizeof(operation_state), exactly once.
+		if (state.ordinary_flat_transaction)
+		{
+			const size_t slots = sizeof(state.ordinary_flat_transaction) +
+					     sizeof(state.ordinary_flat_transaction_bytes);
+			if (state.ordinary_flat_transaction_bytes <
+				    slots + sizeof(*state.ordinary_flat_transaction) ||
+			    !room_storage_add(total, state.ordinary_flat_transaction_bytes - slots))
+				return false;
+		}
+		else if (state.ordinary_flat_transaction_bytes)
+			return false;
 		if (state.flat_transaction)
 		{
 			const size_t slots = sizeof(state.flat_transaction) +

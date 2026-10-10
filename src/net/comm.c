@@ -1156,6 +1156,7 @@ int run_the_game(int port, int sslport)
 	critical_shared_native_apply_fn shared_native_apply =
 		critical_command_repository_apply_shared_native_from_pool;
 	critical_zone_reset_item_apply_fn zone_reset_apply = nullptr;
+	critical_ordinary_native_apply_fn ordinary_native_apply = nullptr;
 	critical_extension_validator_fn critical_extension_validator =
 		economic_command_admission_supported;
 	critical_extension_validator_bounded_fn critical_extension_validator_bounded =
@@ -1163,6 +1164,7 @@ int run_the_game(int port, int sslport)
 #ifdef __NO_MYSQL__
 	critical_apply = flatfile_accounting_apply_selected;
 	shared_native_apply = critical_command_repository_apply_shared_native_flat;
+	ordinary_native_apply = critical_command_repository_apply_ordinary_native_flat;
 	zone_reset_apply = critical_command_repository_apply_zone_reset_item_flat;
 	critical_extension_validator = economic_flatfile_command_admission_supported;
 	critical_extension_validator_bounded =
@@ -1198,7 +1200,8 @@ int run_the_game(int port, int sslport)
 			  zone_reset_item_recovery_publication_bounded,
 			  zone_reset_item_recovery_initial_bounded },
 			shared_native_apply, zone_reset_apply, critical_extension_validator_bounded,
-			critical_gameplay_restore_room_native_envelope_bounded);
+			critical_gameplay_restore_room_native_envelope_bounded,
+			ordinary_native_apply);
 	quest_mobile_native_birth_replay_ready(critical_commands_ready);
 	zone_reset_room_item_replay_ready(critical_commands_ready);
 	if (!critical_commands_ready)
