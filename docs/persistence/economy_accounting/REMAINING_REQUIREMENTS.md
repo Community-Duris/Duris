@@ -4218,3 +4218,18 @@ four inverse pairs/13 dependencies/32 installed headers/formatting authenticate.
 pass. Image checksum/caller/ROOT/global32MiB/native/recovery/R1-R8 qualification
 remain OPEN; tests deferred to major-plan batch. Inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE; no major-plan completion is claimed.
+
+
+## Native image bounded checksum/reference selection implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_IMAGE_BOUNDED_CHECKSUM_REFERENCE_2026-10-10.md)
+replaces the bounded image route's unbounded reference/one-shot SHA calls with
+real typed bounded reference and fixed SHA providers. Complete v1/v2 framing,
+cash/forest/canonical/strong-output laws and inherited image result categories
+survive. Independent whole RAW and final installed source review, 52-member
+packet/full inverse/explicit comment-only dependency advance/formatting pass.
+458 pins/one existing source update/931 unchanged policies/protected Plan 5 WIP
+authenticate. The inherited checksum-provider source gap closes; full container/
+libc/caller/ROOT/global32MiB/native/recovery/R1-R8 qualification remains OPEN.
+Tests deferred major-plan batch; inactive/CLOSED, coverage incomplete, release
+BLOCKED, goal ACTIVE. No major plan or runtime gate completion is claimed.

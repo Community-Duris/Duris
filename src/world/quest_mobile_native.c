@@ -1046,6 +1046,188 @@ struct native_image_decode_workspace
 };
 }
 
+namespace
+{
+constexpr size_t native_image_fixed_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t native_image_fixed_sha_c_small_frames =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(void *);
+constexpr size_t native_image_fixed_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+							  11 * sizeof(unsigned int) +
+							  2 * sizeof(int) + 2 * sizeof(void *);
+constexpr size_t native_image_fixed_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t native_image_fixed_sha_update_frames = 2 * sizeof(void *) + sizeof(size_t) +
+							2 * sizeof(void *) + sizeof(unsigned int) +
+							sizeof(size_t) + sizeof(int);
+constexpr size_t native_image_fixed_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+						       sizeof(unsigned long) +
+						       sizeof(unsigned int) + sizeof(int);
+// Real SHA256_Init/Update/Final memcpy/memset call arguments and result;
+// OPENSSL_cleanse(buf,len) and the x86_64 leaf's return address. C fallback
+// cleanse's actual ptr/len/pointer-result carriers are included as well.
+constexpr size_t native_image_fixed_sha_memory_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(void *);
+constexpr size_t native_image_fixed_sha_cleanse_frames =
+	// mem_clr.c ptr/len and loaded volatile function pointer remain live
+	// through its authentic indirect memset leaf; asm fallback is smaller.
+	2 * sizeof(void *) + sizeof(size_t) + native_image_fixed_sha_memory_frames;
+constexpr size_t native_image_fixed_sha_block_frames =
+	// C compression ctx/in/num plus its actual typed locals; assembly term
+	// already includes its own real caller return address.
+	std::max(native_image_fixed_sha_assembly_frames,
+		 2 * sizeof(void *) + sizeof(size_t) +
+			 std::max(native_image_fixed_sha_c_small_frames,
+				  native_image_fixed_sha_c_normal_frames));
+constexpr size_t native_image_fixed_sha_frames =
+	std::max(native_image_fixed_sha_init_frames,
+		 std::max(native_image_fixed_sha_update_frames,
+			  native_image_fixed_sha_final_frames)) +
+	std::max(native_image_fixed_sha_block_frames,
+		 std::max(native_image_fixed_sha_memory_frames,
+			  native_image_fixed_sha_cleanse_frames));
+constexpr size_t native_image_fixed_control_frames =
+	// admit outer/request/reserve/context/result; add total/bytes/result;
+	// profile's bool result. Callback-private frames remain callback-owned.
+	3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+	2 * sizeof(bool);
+constexpr size_t native_image_fixed_copy_frames =
+	// copy/copy_move_a/a1/a2/copy_m actual three iterator args and return;
+	// miter/niter/wrap, real length/Num and runtime memcpy/memmove args/result.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// copy_n, actual n conversion, forward copy_n random access tag.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(size_t) +
+	// Array/span begin/end/data/size, _S_ptr and subspan true declarations.
+	8 * (2 * sizeof(void *)) + 4 * (sizeof(void *) + sizeof(size_t)) +
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t) + sizeof(void *);
+constexpr size_t native_image_fixed_equal_frames =
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(bool) + sizeof(size_t) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t native_image_fixed_valid_frames =
+	// nonzero(id), original any_of->none_of->find_if->two __find_if calls:
+	// empty closure params/returned wrapper and real RA trip count/tag.
+	sizeof(void *) + sizeof(bool) + 3 * (2 * sizeof(void *) + sizeof(char) + sizeof(bool)) +
+	2 * (3 * sizeof(void *) + sizeof(char)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// __pred_iter/_Iter_pred source ctor/operator and lambda(this,byte)/result,
+	// real move refs; array pointer begin/end needs no heap.
+	6 * sizeof(void *) + 4 * sizeof(char) + 3 * sizeof(bool) + sizeof(uint8_t) +
+	4 * (2 * sizeof(void *)) +
+	// economic_source_event_valid and actual critical_operation_id_is_zero:
+	// references/results, range begin/end/byte and fixed-array query scopes.
+	2 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(void *) + sizeof(uint8_t) +
+	4 * (2 * sizeof(void *));
+constexpr size_t native_image_fixed_put_get_frames =
+	// Original put/get: bytes/offset refs, largest value/bits, n and returned
+	// integer/bit_cast input/result. These are fixed, allocation-free helpers.
+	4 * sizeof(void *) + 5 * sizeof(uint64_t) + 2 * sizeof(size_t);
+constexpr size_t native_image_fixed_memcmp_frames =
+	// Pinned cpuid.c fallback: in_a/in_b/len/i/a/b/x + int result. Real
+	// x86_64cpuid.pl CRYPTO_memcmp has no pushes/sub/spill or nested call;
+	// only its true caller return address is an explicit assembly stack term.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned char) + sizeof(int) +
+	sizeof(void *);
+// Actual image entry locals/parameters and nested allocation-free operations.
+// The complete sum is retained, rather than assuming helper bodies inline.
+constexpr size_t native_image_encode_entry_frames =
+	// image/output/reserve/context and outer/base/live/hash_live/forest/overhead/offset;
+	4 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+	// candidate reference, amount plus desugared cash range/begin/end;
+	4 * sizeof(void *) + sizeof(int64_t) +
+	// nonzero and cash_valid all_of: reference/result, predicate wrapper,
+	// find_if_not normal-iterator trip/tag and bool result carriers;
+	native_image_fixed_valid_frames + 4 * sizeof(void *) + 3 * sizeof(bool) +
+	4 * (3 * sizeof(void *) + sizeof(char) + sizeof(bool)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(int64_t) +
+	// Actual copy/copy_n, put and checked-admission helper scopes.
+	native_image_fixed_copy_frames + native_image_fixed_put_get_frames +
+	native_image_fixed_control_frames +
+	// forest_valid input/index/item/path cursor, last slot and flags; its
+	// actual set/path objects and dynamic heap remain forest_peak-owned.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(int16_t) + sizeof(bool) +
+	sizeof(player_snapshot_codec_result);
+constexpr size_t native_image_decode_entry_frames =
+	// bytes/output/reserve/context/retained pointer, outer/base/live/offset/
+	// retained/decode_working, length/version/status/checksum status;
+	5 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(uint32_t) + sizeof(uint16_t) +
+	3 * sizeof(player_snapshot_codec_result) +
+	// candidate reference and cash range/begin/end/current element;
+	5 * sizeof(void *) + sizeof(int64_t) + native_image_fixed_equal_frames +
+	native_image_fixed_copy_frames + native_image_fixed_put_get_frames +
+	native_image_fixed_control_frames;
+player_snapshot_codec_result
+native_image_hash_fixed_bounded(const uint8_t *input, size_t length, uint8_t *output,
+				bool (*reserve)(size_t, void *) noexcept, void *context,
+				size_t outer) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!input || !output)
+		return result::invalid_value;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&      \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	constexpr size_t frames = sizeof(SHA256_CTX) + native_image_fixed_sha_frames +
+				  5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+				  sizeof(result) + native_image_fixed_control_frames;
+	if (!reserve || sizeof(SHA_LONG) != 4 || sizeof(unsigned int) != 4 ||
+	    sizeof(unsigned long) != 8 || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return result::allocation_failure;
+	if (frames > SIZE_MAX - outer)
+		return result::limit_exceeded;
+	if (!reserve(outer + frames, context))
+		return result::allocation_failure;
+	SHA256_CTX state;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	const bool hashed = SHA256_Init(&state) == 1 && SHA256_Update(&state, input, length) == 1 &&
+			    SHA256_Final(output, &state) == 1;
+#pragma GCC diagnostic pop
+	return hashed ? result::ok : result::invalid_value;
+#else
+	(void)length;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return result::allocation_failure;
+#endif
+}
+player_snapshot_codec_result
+native_image_checksum_fixed_bounded(std::span<const uint8_t> bytes,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (bytes.size() < SHA256_DIGEST_LENGTH)
+		return result::invalid_value;
+	constexpr size_t frames =
+		sizeof(std::span<const uint8_t>) +
+		sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) + 2 * sizeof(size_t) +
+		3 * sizeof(void *) + 2 * sizeof(result) + native_image_fixed_memcmp_frames +
+		native_image_fixed_copy_frames + native_image_fixed_control_frames;
+	size_t base = outer;
+	if (!native_image_add(base, frames))
+		return result::limit_exceeded;
+	if (!native_image_admit(base, 0, reserve, context))
+		return result::allocation_failure;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	const size_t sealed = bytes.size() - digest.size();
+	const auto code = native_image_hash_fixed_bounded(bytes.data(), sealed, digest.data(),
+							  reserve, context, base);
+	if (code != result::ok)
+		return code;
+	return CRYPTO_memcmp(digest.data(), bytes.data() + sealed, digest.size()) == 0 ?
+		       result::ok :
+		       result::invalid_value;
+}
+// The complete paired capture companion supplies this genuine capacity getter.
+bool native_capture_item_heap(const std::vector<player_item_snapshot> &, size_t *) noexcept;
+}
 player_snapshot_codec_result quest_mobile_native_image_encode_bounded(
 	const quest_mobile_native_image &image, std::vector<uint8_t> *output,
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
@@ -1057,26 +1239,22 @@ player_snapshot_codec_result quest_mobile_native_image_encode_bounded(
 	    (image.state == quest_mobile_lifetime_state::retired && !image.items.empty()))
 		return result::invalid_value;
 #if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
-	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
 	(void)reserve;
 	(void)context;
 	(void)outer_live;
 	return result::unsupported_version;
 #else
 	size_t base = outer_live;
-	if (!native_image_add(base, sizeof(native_image_encode_workspace)) ||
+	if (!native_image_add(base, sizeof(native_image_encode_workspace) +
+					    native_image_encode_entry_frames) ||
 	    !native_image_admit(base, 0, reserve, context))
 		return result::limit_exceeded;
 	try
 	{
 		native_image_encode_workspace work;
-		// Original reference encoder candidate/source plus nested source result.
-		constexpr size_t reference_working =
-			sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
-			2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>);
-		if (!native_image_admit(base, reference_working, reserve, context))
-			return result::limit_exceeded;
-		auto code = quest_mobile_native_reference_encode(image.reference, &work.reference);
+		auto code = quest_mobile_native_reference_encode_bounded(
+			image.reference, &work.reference, reserve, context, base);
 		if (code != result::ok)
 			return code;
 		if (image.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
@@ -1126,9 +1304,16 @@ player_snapshot_codec_result quest_mobile_native_image_encode_bounded(
 		put<uint32_t>(candidate.data(), offset, work.blob.size());
 		std::copy(work.blob.begin(), work.blob.end(), candidate.begin() + offset);
 		offset += work.blob.size();
-		if (offset != candidate.size() - SHA256_DIGEST_LENGTH ||
-		    !SHA256(candidate.data(), offset, candidate.data() + offset))
+		if (offset != candidate.size() - SHA256_DIGEST_LENGTH)
 			return result::invalid_value;
+		size_t hash_live = live;
+		if (!native_image_add(hash_live, candidate.capacity()))
+			return result::limit_exceeded;
+		code = native_image_hash_fixed_bounded(candidate.data(), offset,
+						       candidate.data() + offset, reserve, context,
+						       hash_live);
+		if (code != result::ok)
+			return code;
 		*output = std::move(candidate);
 		return result::ok;
 	}
@@ -1152,7 +1337,7 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 	if (bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
 		return result::limit_exceeded;
 #if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
-	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
 	(void)reserve;
 	(void)context;
 	(void)outer_live;
@@ -1161,13 +1346,15 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 #else
 	if (!std::equal(image_magic.begin(), image_magic.end(), bytes.begin()))
 		return result::invalid_value;
-	if (!native_image_admit(outer_live,
-				sizeof(std::span<const uint8_t>) +
-					sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
-				reserve, context))
+	size_t entry_live = outer_live;
+	if (!native_image_add(entry_live, native_image_decode_entry_frames))
 		return result::limit_exceeded;
-	if (!checksum(bytes))
-		return result::invalid_value;
+	if (!native_image_admit(entry_live, 0, reserve, context))
+		return result::allocation_failure;
+	const auto checksum_code =
+		native_image_checksum_fixed_bounded(bytes, reserve, context, entry_live);
+	if (checksum_code != result::ok)
+		return checksum_code;
 	try
 	{
 		size_t offset = image_magic.size();
@@ -1178,7 +1365,7 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 		if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION &&
 		    bytes.size() < QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD)
 			return result::truncated;
-		size_t base = outer_live;
+		size_t base = entry_live;
 		if (!native_image_add(base, sizeof(native_image_decode_workspace)) ||
 		    !native_image_admit(base, 0, reserve, context))
 			return result::limit_exceeded;
@@ -1192,19 +1379,8 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 		if (!native_image_admit(base, sizeof(std::span<const uint8_t>), reserve, context))
 			return result::limit_exceeded;
 		work.reference = bytes.subspan(offset, QUEST_MOBILE_NATIVE_REFERENCE_BYTES);
-		// Reference candidate survives its nested source decoder. Its earlier
-		// checksum's digest/span die before candidate construction.
-		size_t reference_working =
-			sizeof(std::span<const uint8_t>) +
-			std::max(sizeof(std::span<const uint8_t>) +
-					 sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
-				 sizeof(quest_mobile_native_reference) +
-					 2 * sizeof(std::span<const uint8_t>) +
-					 economic_source_event_decode_object_bytes());
-		if (!native_image_admit(base, reference_working, reserve, context))
-			return result::limit_exceeded;
-		auto code =
-			quest_mobile_native_reference_decode(work.reference, &candidate.reference);
+		auto code = quest_mobile_native_reference_decode_bounded(
+			work.reference, &candidate.reference, reserve, context, base);
 		if (code != result::ok)
 			return code;
 		offset += QUEST_MOBILE_NATIVE_REFERENCE_BYTES;
@@ -1241,8 +1417,9 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 							&candidate.items);
 		if (code != result::ok)
 			return code;
-		const size_t retained = work.items.decoded_payload_bytes -
-					sizeof(std::vector<player_item_snapshot>);
+		size_t retained = 0;
+		if (!native_capture_item_heap(candidate.items, &retained))
+			return result::limit_exceeded;
 		size_t live = base;
 		if (!native_image_add(live, retained))
 			return result::limit_exceeded;

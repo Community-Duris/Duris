@@ -536,7 +536,7 @@
       "src/world/new_events.c": "fcf4a5257d3c3b96a6a753490ef731c884d23b2b29217c7ff95ccd3e5cb37694",
       "src/world/object_template.h": "665368e56fc30b87c2bb291b16879b313eb28c42f2a430b8b38fe8448a9c3fd5",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
-      "src/world/quest_mobile_native.c": "5e74c8d8f4dfc992fa38bde052c6552ee1d5105a32a239b147505d5ce5a11151",
+      "src/world/quest_mobile_native.c": "64e0333a204fb7b02248743d65cb429e8403a28a65204dd589e990311b38135d",
       "src/world/quest_mobile_native.h": "cf0fe1556ecb16233bac16f38d4f1388bb0ba6f3495e2b6edffd7ca6f13be915",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
       "src/world/quest_mobile_native_binding.h": "77c4b60254b6f0642c19000934d083b4fe4f94997c9079504cef312494c76f9d",
