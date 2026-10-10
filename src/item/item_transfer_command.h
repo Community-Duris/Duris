@@ -507,4 +507,12 @@ bool item_transfer_native_recovery_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_recovery_heap_bytes = nullptr) noexcept;
 
+// Complete original native recovery value validator, including full selected
+// item-list and ordered forest/quest-continuation laws.
+// Outer owns authentic input and other caller state; no native authority or route.
+bool item_transfer_native_recovery_valid_bounded(const item_transfer_payload &,
+						 const item_native_mobile_recovery_context &,
+						 uint16_t, bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+
 #endif
