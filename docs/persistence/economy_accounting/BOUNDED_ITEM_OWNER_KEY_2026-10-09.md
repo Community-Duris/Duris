@@ -1,0 +1,7 @@
+# Add complete bounded item owner key encoding - 2026-10-09
+
+The full original item and currency replay path needs owner identity keys. The complete bounded companion preserves the original identity predicate, direct-ID branch, 17-byte owner encoding and little-endian digest projection. Its fixed OpenSSL context uses the authentic supported source profile and private strong output. Original selected methods remain unchanged.
+
+Independent full RAW and final formatted source reviews passed. The exact immutable addition is explicitly reanchored onto the published corpse/collector prerequisite; full source/header and original method inverses, 17 authentic dependencies, actual OpenSSL source carriers, logical tokens/preprocessing and protected work authenticate. Registry authentication retains 425 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/item-owner-key-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
