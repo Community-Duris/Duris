@@ -145,8 +145,14 @@ class quest_mobile_native_birth_ordinary_execution_lease final
 	bool game_holds_request_ = false;
 };
 
+// Pure CURRENT complete birth and warm ownership; includes warm_retained_size once.
+// Genuine existing ROOT literal_pool_owned chooses the native/private partition.
+bool quest_mobile_native_birth_retained_storage_bytes(size_t *) noexcept;
+
 class quest_mobile_native_birth_owner final
 {
+	friend bool quest_mobile_native_birth_retained_storage_bytes(size_t *) noexcept;
+	static bool current_retained_storage_bytes(size_t *) noexcept;
 	friend bool quest_mobile_native_birth_restore_ordinary_bounded(
 		const critical_native_recovery_envelope &, const std::string &,
 		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;

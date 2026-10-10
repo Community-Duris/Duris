@@ -7895,3 +7895,332 @@ bool quest_mobile_native_birth_restore_ordinary_bounded(
 	       quest_mobile_native_birth_owner::restore_ordinary_flat_bounded(
 		       envelope, configured_root, reserve, context, live);
 }
+
+namespace
+{
+// Same original complete owning-value walk, with SIZE_MAX checked totals for a
+// pure measurement. Admission/capacity policy stays with the actual ROOT lender.
+bool birth_current_add(size_t &value, size_t part) noexcept
+{
+	if (part > SIZE_MAX - value)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	value += part;
+	return true;
+}
+
+bool birth_current_rows(size_t &value, size_t count, size_t width) noexcept
+{
+	if (width && count > SIZE_MAX / width)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	return birth_current_add(value, count * width);
+}
+
+bool birth_current_command_heap(size_t &value, const critical_command &command,
+				bool fresh_copy = false) noexcept
+{
+	return birth_current_rows(value, fresh_copy ? command.keys.size() : command.keys.capacity(),
+				  sizeof(critical_entity_key)) &&
+	       birth_current_rows(value,
+				  fresh_copy ? command.expected_revisions.size() :
+					       command.expected_revisions.capacity(),
+				  sizeof(critical_expected_revision)) &&
+	       birth_current_add(value, fresh_copy ? command.payload.size() :
+						     command.payload.capacity()) &&
+	       birth_current_add(value, fresh_copy ? command.accounting_intent.size() :
+						     command.accounting_intent.capacity());
+}
+
+bool birth_current_envelope_heap(size_t &value, const critical_native_recovery_envelope &envelope,
+				 bool fresh_copy = false) noexcept
+{
+	return birth_current_command_heap(value, envelope.command, fresh_copy) &&
+	       birth_current_add(value, fresh_copy ? envelope.attachment.size() :
+						     envelope.attachment.capacity());
+}
+
+bool birth_current_context_heap(size_t &value,
+				const native_mobile_birth_recovery_context &progress) noexcept
+{
+	if (!birth_current_rows(value, progress.items.capacity(),
+				sizeof(native_mobile_birth_recovery_item)))
+		return false;
+	for (const auto &item : progress.items)
+		if (!birth_current_rows(value, item.effects.capacity(),
+					sizeof(native_mobile_birth_recovery_effect)))
+			return false;
+	return true;
+}
+
+bool birth_current_text_heap(size_t &value, const std::string &text) noexcept
+{
+	return text.capacity() <= 15 ||
+	       (text.capacity() != SIZE_MAX && birth_current_add(value, text.capacity() + 1));
+}
+
+bool birth_current_image_heap(size_t &value, const quest_mobile_native_image &image) noexcept
+{
+	if (!birth_current_rows(value, image.items.capacity(), sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &item : image.items)
+	{
+		if (!birth_current_text_heap(value, item.name) ||
+		    !birth_current_text_heap(value, item.short_description) ||
+		    !birth_current_text_heap(value, item.description) ||
+		    !birth_current_text_heap(value, item.action_description) ||
+		    !birth_current_rows(value, item.dynamic_affects.capacity(),
+					sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !birth_current_rows(value, item.extra_descriptions.capacity(),
+					sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : item.extra_descriptions)
+			if (!birth_current_text_heap(value, description.keyword) ||
+			    !birth_current_text_heap(value, description.description) ||
+			    !birth_current_rows(value, description.spell_ids.capacity(),
+						sizeof(int32_t)))
+				return false;
+	}
+	return true;
+}
+
+bool birth_current_recipes_heap(
+	size_t &value, const std::vector<native_mobile_birth_item_recipe> &recipes) noexcept
+{
+	if (!birth_current_rows(value, recipes.capacity(), sizeof(native_mobile_birth_item_recipe)))
+		return false;
+	for (const auto &recipe : recipes)
+		if (!birth_current_rows(value, recipe.libraries.capacity(),
+					sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	return true;
+}
+
+bool birth_current_stock_heap(size_t &value, const std::vector<original_item> &stock) noexcept
+{
+	if (!birth_current_rows(value, stock.capacity(), sizeof(original_item)))
+		return false;
+	for (const auto &item : stock)
+		if (!birth_current_rows(value, item.effects.capacity(),
+					sizeof(quest_mobile_native_item_effect)))
+			return false;
+	return true;
+}
+
+bool birth_current_new_body_heap(size_t &value, const original_birth &body) noexcept
+{
+	return birth_current_add(value, sizeof(body)) &&
+	       birth_current_text_heap(value, body.ordinary_flat_recovery_root) &&
+	       birth_current_image_heap(value, body.image) &&
+	       birth_current_recipes_heap(value, body.recipes) &&
+	       birth_current_command_heap(value, body.command) &&
+	       birth_current_add(value, body.canonical.capacity()) &&
+	       (!body.shared_checkpoint ||
+		(birth_current_add(value, sizeof(*body.shared_checkpoint)) &&
+		 birth_current_add(value, body.shared_checkpoint->capacity()))) &&
+	       birth_current_rows(value, body.current_custody.capacity(),
+				  sizeof(item_ownership_runtime_entry)) &&
+	       birth_current_stock_heap(value, body.stock) &&
+	       birth_current_envelope_heap(value, body.envelope) &&
+	       birth_current_context_heap(value, body.recovery);
+}
+}
+
+bool quest_mobile_native_birth_owner::current_retained_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const int saved_errno = errno;
+	errno = 0;
+	size_t bytes = quest_mobile_native_birth_ordinary_execution_lease::fixed_storage_bytes();
+	// These actual module objects remain resident even when a reset is inactive.
+	// Aliases in actors/locals point to the separately observed actual owner.
+	if (!birth_current_add(bytes, sizeof(births)) ||
+	    !birth_current_add(bytes, sizeof(deferred)) ||
+	    !birth_current_add(bytes, sizeof(reset_invocation)) ||
+	    !birth_current_add(bytes, sizeof(reset_zone_rnum)) ||
+	    !birth_current_add(bytes, sizeof(current_birth)) ||
+	    !birth_current_add(bytes, sizeof(replay_ready) + sizeof(reset_in_progress) +
+					      sizeof(deferred_overflow)) ||
+	    !birth_current_add(bytes, sizeof(reset_dispatch)) ||
+	    !birth_current_text_heap(bytes, reset_dispatch.selected_flat_root) ||
+	    !birth_current_rows(bytes, births.capacity(), sizeof(births[0])) ||
+	    !birth_current_rows(bytes, deferred.capacity(), sizeof(deferred[0])))
+	{
+		if (!errno)
+			errno = EOVERFLOW;
+		return false;
+	}
+	const bool literal_owned =
+		item_native_quest_global_budget_scope_owner::literal_pool_owned();
+	for (const auto &pointer : births)
+		if (pointer)
+		{
+			const auto &body = *pointer;
+			// Complete common owning values, actual row/string capacities and body
+			// inline members. This helper reads values only; no closed-state predicate.
+			if (!birth_current_new_body_heap(bytes, body))
+			{
+				if (!errno)
+					errno = EOVERFLOW;
+				return false;
+			}
+			if (body.npc_flat_factory_scope)
+			{
+				const size_t retained =
+					body.npc_flat_factory_scope->retained_heap_bytes();
+				if (!retained || !birth_current_add(bytes, retained))
+				{
+					if (!errno)
+						errno = EIO;
+					return false;
+				}
+			}
+			if (body.ordinary_flat_source)
+			{
+				if (!body.ordinary_flat_source->state_)
+				{
+					errno = EIO;
+					return false;
+				}
+				if (!birth_current_add(bytes, sizeof(*body.ordinary_flat_source)) ||
+				    !birth_current_add(
+					    bytes, sizeof(*body.ordinary_flat_source->state_)) ||
+				    !birth_current_text_heap(
+					    bytes,
+					    body.ordinary_flat_source->state_->selected_root))
+				{
+					if (!errno)
+						errno = EOVERFLOW;
+					return false;
+				}
+			}
+			if (literal_owned)
+			{
+				size_t actual_affect_heap = 0, mobile_private = 0;
+				if (!body.mobile.shared_shopkeeper_affect_retained_bytes(
+					    &actual_affect_heap) ||
+				    !body.mobile.retained_bytes_excluding_mobile_pool(
+					    &mobile_private) ||
+				    !birth_current_add(bytes, actual_affect_heap) ||
+				    !birth_current_add(bytes, mobile_private))
+				{
+					if (!errno)
+						errno = EIO;
+					return false;
+				}
+			}
+			else
+			{
+				// Preserve the original unpaired native reservation partition. The settled
+				// charge/default behavior is not changed by this additive pure observation.
+				if (!body.mobile.shared_shopkeeper_affect_charge(&bytes) ||
+				    (!body.mobile_consumed &&
+				     !birth_current_add(bytes, body.mobile_bytes)))
+				{
+					if (!errno)
+						errno = EIO;
+					return false;
+				}
+			}
+			const auto writer_heap =
+				[&](const original_birth_checkpoint *writer) noexcept
+			{
+				return !writer ||
+				       (birth_current_add(bytes, sizeof(*writer)) &&
+					birth_current_envelope_heap(bytes, writer->expected) &&
+					birth_current_envelope_heap(bytes, writer->successor) &&
+					birth_current_context_heap(bytes, writer->context));
+			};
+			if ((body.ack_successor &&
+			     (!birth_current_add(bytes, sizeof(*body.ack_successor)) ||
+			      !birth_current_envelope_heap(bytes, *body.ack_successor))) ||
+			    !writer_heap(body.checkpoint.get()))
+			{
+				if (!errno)
+					errno = EOVERFLOW;
+				return false;
+			}
+			for (const auto &writer : body.returned_writers)
+				if (!writer_heap(writer.get()))
+				{
+					if (!errno)
+						errno = EOVERFLOW;
+					return false;
+				}
+			if (body.chosen_context &&
+			    (!birth_current_add(bytes, sizeof(*body.chosen_context)) ||
+			     !birth_current_context_heap(bytes, *body.chosen_context)))
+			{
+				if (!errno)
+					errno = EOVERFLOW;
+				return false;
+			}
+			const size_t bindings = body.bindings.retained_bytes();
+			if (!bindings || bindings < sizeof(body.bindings) ||
+			    !birth_current_add(bytes, bindings - sizeof(body.bindings)))
+			{
+				if (!errno)
+					errno = EIO;
+				return false;
+			}
+			for (const auto &item : body.stock)
+				if (item.stage)
+				{
+					size_t stage = 0;
+					if (literal_owned && item.stage->is_flat_factory())
+					{
+						if (!item.stage
+							     ->retained_bytes_excluding_literal_pools(
+								     &stage))
+						{
+							if (!errno)
+								errno = EIO;
+							return false;
+						}
+					}
+					else
+						stage = item.stage->retained_bytes();
+					if (!stage || !birth_current_add(bytes, stage))
+					{
+						if (!errno)
+							errno = EIO;
+						return false;
+					}
+				}
+		}
+	size_t warm = 0;
+	if (!zone_reset_item_owner::warm_retained_size(&warm) || !birth_current_add(bytes, warm))
+	{
+		if (!errno)
+			errno = EIO;
+		return false;
+	}
+	*output = bytes;
+	errno = saved_errno;
+	return true;
+#endif
+}
+
+bool quest_mobile_native_birth_retained_storage_bytes(size_t *output) noexcept
+{
+	return quest_mobile_native_birth_owner::current_retained_storage_bytes(output);
+}

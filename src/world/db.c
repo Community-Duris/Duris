@@ -16231,3 +16231,40 @@ bool quest_mobile_native_object_catalog_string_storage_bytes(size_t *output) noe
 	*output = bytes;
 	return true;
 }
+
+bool quest_mobile_native_stage::shared_shopkeeper_affect_retained_bytes(
+	size_t *output) const noexcept
+{
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t bytes = 0;
+	const auto add = [&](size_t count, size_t width) noexcept
+	{
+		if (width && count > (SIZE_MAX - bytes) / width)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		bytes += count * width;
+		return true;
+	};
+	if (bool(shared_affect_checkpoint_) != bool(shared_affect_rows_))
+	{
+		errno = EIO;
+		return false;
+	}
+	if ((shared_affect_checkpoint_ &&
+	     (!add(1, sizeof(*shared_affect_checkpoint_)) ||
+	      !add(shared_affect_checkpoint_->capacity(), sizeof(uint8_t)) ||
+	      !add(1, sizeof(*shared_affect_rows_)) ||
+	      !add(shared_affect_rows_->capacity(), sizeof(flatfile_shopkeeper_affect_record)))) ||
+	    !add(shared_affect_installed_.capacity(), sizeof(affected_type *)))
+		return false;
+	// Under the genuine paired ROOT, native AF/event pools belong to G. Historical
+	// row count and future events are not private CURRENT heap in this observer.
+	*output = bytes;
+	return true;
+}
