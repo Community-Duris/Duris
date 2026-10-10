@@ -1,4 +1,6 @@
 #include "flatfile/flatfile_collector_repository.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_physical.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
 
 #include "economy/collector_custody_boundary.h"
 #include "economy/collector_eligibility.h"
@@ -2291,4 +2293,72 @@ try
 catch (const std::bad_alloc &)
 {
 	return ENOMEM;
+}
+
+unsigned int flatfile_native_mobile_birth_ordinary_collector_physical_storage::verify_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_native_mobile_birth_ordinary_catalog_physical_absence *output,
+	std::string *error) noexcept
+{
+	if (root.empty() || !output || !lock.matches(root))
+		return EINVAL;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_valid(original))
+			return EINVAL;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		if (native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event)
+			return EINVAL;
+		std::vector<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			born.push_back(literal.object_uid);
+		std::sort(born.begin(), born.end());
+		if (std::adjacent_find(born.begin(), born.end()) != born.end() ||
+		    (!born.empty() && !born.front()))
+			return EINVAL;
+		collector_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_collector_repository_result::ok &&
+		    loaded != flatfile_collector_repository_result::not_found)
+			return loaded == flatfile_collector_repository_result::io_error ? EIO :
+											  EILSEQ;
+		flatfile_native_mobile_birth_ordinary_catalog_physical_absence observed;
+		observed.present = loaded == flatfile_collector_repository_result::ok;
+		observed.file_revision = catalog.file_revision;
+		observed.catalog_revision = catalog.catalog_revision;
+		observed.listings = catalog.listings.size();
+		for (const auto &listing : catalog.listings)
+		{
+			// Original SQL collector_listings checks every retained listing UID,
+			// including candidates/cancelled rows whose original blob is empty.
+			if (std::binary_search(born.begin(), born.end(), listing.entry.uid))
+				return EEXIST;
+			++observed.item_rows;
+		}
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = observed;
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
 }

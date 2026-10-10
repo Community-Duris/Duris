@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_identity_repository.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_physical.h"
 
 #include "flatfile/flatfile_store.h"
 
@@ -784,4 +785,37 @@ flatfile_identity_prepare_remove(const std::string &root,
 	operation->filename = identity_filename;
 	operation->bytes = std::move(bytes);
 	return flatfile_identity_result::ok;
+}
+
+flatfile_identity_result flatfile_native_mobile_birth_ordinary_identity_storage::read_locked(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock,
+	flatfile_native_mobile_birth_ordinary_identity_current *output, std::string *error) noexcept
+{
+	if (root.empty() || !output || !identity_lock.matches(root) ||
+	    !authority_lock.matches(root))
+		return flatfile_identity_result::invalid;
+	try
+	{
+		identity_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_identity_result::ok &&
+		    loaded != flatfile_identity_result::not_found)
+			return loaded;
+		flatfile_native_mobile_birth_ordinary_identity_current observed;
+		observed.catalog_revision = catalog.revision;
+		observed.records = std::move(catalog.entries);
+		std::sort(observed.records.begin(), observed.records.end(),
+			  [](const auto &left, const auto &right) { return left.pid < right.pid; });
+		if (!identity_lock.matches(root) || !authority_lock.matches(root))
+			return flatfile_identity_result::invalid;
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_native_mobile_birth_ordinary_identity_current>);
+		*output = std::move(observed);
+		return flatfile_identity_result::ok;
+	}
+	catch (...)
+	{
+		return flatfile_identity_result::io_error;
+	}
 }
