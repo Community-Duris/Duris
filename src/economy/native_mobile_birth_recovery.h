@@ -300,4 +300,110 @@ native_mobile_birth_cash_role_recovery_original_command_decode_status_bounded(
 	std::span<const uint8_t>, critical_command *, bool (*)(size_t, void *) noexcept, void *,
 	size_t outer_live, size_t *retained_command_heap_bytes = nullptr) noexcept;
 
+// Complete original historical v2/v3 body/envelope law, including progressed
+// execution, successful receipt and physically-proven continuation. Prior input
+// and output capacities/inline belong to caller outer. Exact child SOURCE and
+// prospective own workspace are retained once by these bounded counterparts;
+// strong output including optional transferred heap scalar. No authority gate.
+economic_accounting_error native_mobile_birth_recovery_decode_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live, size_t *retained_context_heap_bytes = nullptr) noexcept;
+economic_accounting_error
+native_mobile_birth_recovery_validate_bounded(const critical_native_recovery_envelope &,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t outer_live) noexcept;
+bool native_mobile_birth_recovery_valid_bounded(const critical_native_recovery_envelope &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t outer_live) noexcept;
+// Pure owning SOURCE and prospective entry queries; caller preadmits pointer+
+// bool plus accessor size_t return before querying. Strong unsupported refusal.
+bool native_mobile_birth_recovery_historical_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recovery_historical_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_recovery_historical_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+// V4 ordinary and shared preserve their original distinct complete envelopes;
+// shared returns full progress plus original immutable checkpoint. All outputs
+// and optional heap counts are strong. Prior APIs/default routes stay unchanged.
+economic_accounting_error native_mobile_birth_cash_role_recovery_decode_fixed_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_recovery_context *, bool (*)(size_t, void *) noexcept, void *, size_t,
+	size_t *retained_context_heap_bytes = nullptr) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_decode_fixed_bounded(
+	const critical_command &, const std::span<const uint8_t> &,
+	native_mobile_birth_shared_shop_recovery_context *, bool (*)(size_t, void *) noexcept,
+	void *, size_t, size_t *retained_context_heap_bytes = nullptr) noexcept;
+economic_accounting_error native_mobile_birth_cash_role_recovery_validate_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+economic_accounting_error native_mobile_birth_shared_shop_recovery_validate_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_cash_role_recovery_valid_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_shared_shop_recovery_valid_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_cash_role_recovery_fixed_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_fixed_initial_inline_bytes(size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_fixed_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_fixed_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_cash_role_recovery_fixed_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+constexpr size_t native_mobile_birth_shared_shop_recovery_fixed_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
+// Validator and bool-wrapper profiles own genuine context/span, progress,
+// cleanup, and shared checkpoint-vector lifetimes. Transient entry only;
+// actual callee retains its own source and inline once. Getter P+B and
+// accessor size_t return must be admitted before evaluation.
+bool native_mobile_birth_recovery_historical_validate_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recovery_historical_validate_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_recovery_historical_validate_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_recovery_historical_valid_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recovery_historical_valid_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_mobile_birth_recovery_historical_valid_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_cash_role_recovery_fixed_validate_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_fixed_validate_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_cash_role_recovery_fixed_validate_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_cash_role_recovery_fixed_valid_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_fixed_valid_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_cash_role_recovery_fixed_valid_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_shared_shop_recovery_fixed_validate_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_fixed_validate_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_shared_shop_recovery_fixed_validate_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_shared_shop_recovery_fixed_valid_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_fixed_valid_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif
