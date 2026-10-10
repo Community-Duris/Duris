@@ -8718,3 +8718,362 @@ flatfile_item_repository_result flatfile_native_mobile_birth_ordinary_custody_st
 		return flatfile_item_repository_result::io_error;
 	}
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+// Captured MBR4 decode owns its candidate/canonical pair while encode owns
+// its separate array, field/clock arrays and put/get carriers. These explicit
+// source objects do not qualify library, OpenSSL or emitted native frames.
+constexpr size_t ordinary_custody_result_frames =
+	sizeof(std::span<const uint8_t>) + sizeof(void *) +
+	sizeof(native_mobile_birth_cash_role_result) +
+	2 * sizeof(std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>) +
+	11 * sizeof(uint64_t) + 4 * sizeof(size_t) + 6 * sizeof(void *) + 3 * sizeof(uint64_t) +
+	3 * sizeof(bool);
+// Named caller, census and relay carriers; nested providers own their named
+// temporary outputs, vectors and prospective heap requests separately.
+constexpr size_t ordinary_custody_source_frames =
+	7 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) + sizeof(size_t) +
+	8 * sizeof(economic_accounting_error) + 4 * sizeof(flatfile_item_repository_result) +
+	2 * sizeof(void *) + sizeof(flatfile_scratch_reserve_fn) + 8 * sizeof(void *) +
+	5 * sizeof(size_t) + 4 * sizeof(bool);
+struct ordinary_custody_workspace
+{
+	custody_initial_stage_reservation reservation;
+	native_mobile_birth_recovery_context recovery;
+	quest_mobile_native_image image;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	economic_frozen_intent intent;
+	native_mobile_birth_cash_role_result actual, expected;
+	economic_account_key wallet;
+	economic_accounting_plan plan;
+	economic_accounting_plan_allocation_profile plan_profile;
+	std::vector<uint8_t> canonical_plan;
+	std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> canonical_result{};
+	ownership_catalog catalog;
+	flatfile_item_catalog_allocation_profile catalog_profile;
+	item_owner_identity selected{};
+	std::unordered_set<uint64_t> born;
+	flatfile_native_mobile_birth_ordinary_current_custody observed;
+	size_t recovery_heap = 0, image_heap = 0, recipe_heap = 0, plan_heap = 0, catalog_heap = 0;
+	size_t bytes = 0, extra = 0, buckets = 0, nodes = 0, retained = 0;
+};
+struct ordinary_custody_live
+{
+	size_t fixed;
+	ordinary_custody_workspace &work;
+	bool bytes(size_t *out) const noexcept
+	{
+		*out = fixed;
+		size_t rows = 0;
+		if (!custody_budget_add(*out, work.recovery_heap) ||
+		    !custody_budget_add(*out, work.image_heap) ||
+		    !custody_budget_add(*out, work.recipe_heap) ||
+		    !custody_budget_add(*out, work.plan_heap) ||
+		    !custody_budget_add(*out, work.catalog_heap) ||
+		    !custody_budget_add(*out, work.intent.admission.facts.capacity()) ||
+		    !custody_budget_add(*out, work.canonical_plan.capacity()))
+			return false;
+		// The initial single bucket is inline in the admitted set object.
+		if (work.born.bucket_count() > 1 &&
+		    (!custody_budget_product(work.born.bucket_count(),
+					     sizeof(std::__detail::_Hash_node_base *), &rows) ||
+		     !custody_budget_add(*out, rows)))
+			return false;
+		if (!custody_budget_product(
+			    work.born.size(),
+			    sizeof(std::__detail::_Hash_node<
+				    uint64_t,
+				    std::__cache_default<uint64_t, std::hash<uint64_t>>::value>),
+			    &rows) ||
+		    !custody_budget_add(*out, rows) ||
+		    !custody_budget_product(work.observed.rows.capacity(),
+					    sizeof(flatfile_item_ownership_record), &rows) ||
+		    !custody_budget_add(*out, rows))
+			return false;
+		for (const auto &row : work.observed.rows)
+			if (!custody_budget_add(*out, row.coin_payload.capacity()))
+				return false;
+		return true;
+	}
+	flatfile_item_repository_result capacity() const noexcept
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	bool admit(size_t extra) const noexcept
+	{
+		size_t total = 0;
+		if (!bytes(&total) || !custody_budget_add(total, extra) ||
+		    !custody_initial_stage_reserve(total, &work.reservation))
+		{
+			capacity();
+			return false;
+		}
+		return true;
+	}
+	flatfile_item_repository_result
+	refusal(flatfile_item_repository_result value) const noexcept
+	{
+		return work.reservation.rejected ? capacity() : value;
+	}
+	flatfile_item_repository_result codec(economic_accounting_error value) const noexcept
+	{
+		return refusal(value == economic_accounting_error::capacity ?
+				       flatfile_item_repository_result::io_error :
+				       flatfile_item_repository_result::invalid);
+	}
+};
+#endif
+} // namespace
+
+flatfile_item_repository_result
+flatfile_native_mobile_birth_ordinary_custody_storage::read_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	const flatfile_accounting_record &retained,
+	flatfile_native_mobile_birth_ordinary_current_custody *output,
+	flatfile_scratch_reserve_fn reserve_scratch_peak, void *callback_context,
+	size_t outer_live_scratch, size_t *retained_output_payload_bytes) noexcept
+{
+	if (root.empty() || !output || !reserve_scratch_peak || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)retained;
+	(void)callback_context;
+	(void)outer_live_scratch;
+	(void)retained_output_payload_bytes;
+	errno = ENOTSUP;
+	return flatfile_item_repository_result::io_error;
+#else
+	size_t fixed = outer_live_scratch;
+	// Inline outputs and actual stage/lender objects precede their construction.
+	// Nested codec/file providers own their separate temporary objects/requests.
+	if (!custody_budget_add(fixed, sizeof(ordinary_custody_workspace)) ||
+	    !custody_budget_add(fixed, sizeof(ordinary_custody_live)) ||
+	    !custody_budget_add(fixed, ordinary_custody_source_frames) ||
+	    !custody_budget_add(fixed, ordinary_custody_result_frames) ||
+	    !custody_budget_add(fixed, sizeof(std::span<const uint8_t>)) ||
+	    !reserve_scratch_peak(fixed, callback_context))
+	{
+		errno = ENOBUFS;
+		return flatfile_item_repository_result::io_error;
+	}
+	try
+	{
+		ordinary_custody_workspace work;
+		work.reservation = { reserve_scratch_peak, callback_context, false };
+		ordinary_custody_live live{ fixed, work };
+		auto reserve = custody_initial_stage_reserve;
+		void *reservation = &work.reservation;
+		if (!native_mobile_birth_cash_role_recovery_valid_bounded(original, reserve,
+									  reservation, fixed))
+			return live.refusal(flatfile_item_repository_result::invalid);
+		const auto equal = custody_initial_command_equal_bounded(
+			retained.command, original.command, reserve, reservation, fixed);
+		if (equal != flatfile_item_repository_result::ok)
+			return live.refusal(equal);
+		if (retained.result_code ||
+		    retained.failure_stage != critical_failure_stage::none ||
+		    retained.durable_revision != 1 ||
+		    retained.result.size() != NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES)
+			return flatfile_item_repository_result::invalid;
+		const auto recovery = native_mobile_birth_cash_role_recovery_decode_bounded(
+			original.command, original.attachment, &work.recovery, reserve, reservation,
+			fixed, &work.recovery_heap);
+		if (recovery != economic_accounting_error::ok)
+			return live.codec(recovery);
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto decoded = native_mobile_birth_cash_role_command_decode_bounded(
+			original.command, &work.image, &work.recipes, &work.role, reserve,
+			reservation, work.bytes, &work.image_heap, &work.recipe_heap);
+		if (decoded != economic_accounting_error::ok)
+			return live.codec(decoded);
+		if (work.role.role != native_mobile_birth_cash_role::ordinary_wallet)
+			return flatfile_item_repository_result::invalid;
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto intent = economic_intent_decode_bounded(
+			original.command.accounting_intent, &work.intent, reserve, reservation,
+			work.bytes);
+		if (intent != economic_accounting_error::ok)
+			return live.codec(intent);
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto binding = economic_intent_verify_binding_bounded(
+			original.command, work.intent, reserve, reservation, work.bytes);
+		if (binding != economic_accounting_error::ok)
+			return live.codec(binding);
+		if (!work.intent.admission.metadata.source_event ||
+		    !live.admit(sizeof(native_mobile_birth_cash_role_result)) ||
+		    !native_mobile_birth_cash_role_result_decode(retained.result, &work.actual) ||
+		    work.actual.role != native_mobile_birth_cash_role::ordinary_wallet)
+			return live.refusal(flatfile_item_repository_result::invalid);
+		work.wallet = { work.intent.admission.metadata.lineage,
+				economic_account_kind::wallet, work.actual.wallet_mapping_id,
+				ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto compiled = native_mobile_birth_cash_role_accounting_compile_bounded(
+			original.command, work.wallet, &work.plan, reserve, reservation, work.bytes,
+			&work.plan_heap);
+		if (compiled != economic_accounting_error::ok)
+			return live.codec(compiled);
+		if (!live.admit(economic_plan_allocation_preflight_working_bytes()))
+			return live.capacity();
+		const auto profiled =
+			economic_plan_allocation_preflight(work.plan, &work.plan_profile);
+		if (profiled != economic_accounting_error::ok)
+			return live.codec(profiled);
+		if (!work.plan_profile.storage_policy_supported ||
+		    !live.admit(work.plan_profile.encode_working_bytes))
+			return live.capacity();
+		const auto encoded = economic_plan_encode(work.plan, &work.canonical_plan);
+		if (encoded != economic_accounting_error::ok)
+			return live.codec(encoded);
+		if (work.canonical_plan != retained.plan)
+			return flatfile_item_repository_result::invalid;
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto built = native_mobile_birth_cash_role_result_build_bounded(
+			original.command, work.wallet, work.plan, &work.expected, reserve,
+			reservation, work.bytes);
+		if (built != economic_accounting_error::ok)
+			return live.codec(built);
+		if (!live.admit(sizeof(std::span<const uint8_t>)) ||
+		    !native_mobile_birth_cash_role_result_encode(work.expected,
+								 &work.canonical_result) ||
+		    !std::equal(work.canonical_result.begin(), work.canonical_result.end(),
+				retained.result.begin()))
+			return live.refusal(flatfile_item_repository_result::invalid);
+		if (work.recovery.receipt_present)
+		{
+			const auto &receipt = work.recovery.receipt;
+			if ((receipt.outcome != critical_apply_outcome::applied &&
+			     receipt.outcome != critical_apply_outcome::already_applied) ||
+			    receipt.operation_id.bytes != original.command.operation_id.bytes ||
+			    receipt.durable_revision != 1 || receipt.error_code ||
+			    receipt.failure_stage != critical_failure_stage::none ||
+			    receipt.disposition != critical_completion_disposition::execution ||
+			    receipt.result_size != retained.result.size() ||
+			    !std::equal(retained.result.begin(), retained.result.end(),
+					receipt.result_payload.begin()) ||
+			    !std::all_of(receipt.result_payload.begin() + receipt.result_size,
+					 receipt.result_payload.end(),
+					 [](uint8_t byte) { return !byte; }))
+				return flatfile_item_repository_result::invalid;
+		}
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto loaded = custody_initial_load_bounded(root, lock, &work.catalog,
+								 &work.catalog_profile, reserve,
+								 reservation, work.bytes,
+								 &work.catalog_heap);
+		if (loaded != flatfile_item_repository_result::ok)
+			return live.refusal(loaded);
+		if (!live.bytes(&work.bytes))
+			return live.capacity();
+		const auto validated = custody_initial_valid_bounded(work.catalog, reserve,
+								     reservation, work.bytes);
+		if (validated != flatfile_item_repository_result::ok)
+			return live.refusal(validated);
+		work.selected = { item_owner_type::native_mobile,
+				  work.image.reference.mobile_instance_id, 0 };
+		for (const auto &owner : work.catalog.owners)
+			if (owner.owner.type == work.selected.type &&
+			    owner.owner.id == work.selected.id && owner.owner.context_id)
+				return flatfile_item_repository_result::invalid;
+		const auto *owner = find_owner(&work.catalog, work.selected);
+		if (!owner || owner->revision != 1 || work.actual.item_owner_revision != 1 ||
+		    work.actual.item_owner_id != work.selected.id)
+			return flatfile_item_repository_result::invalid;
+		if (!live.admit(sizeof(std::__detail::_Prime_rehash_policy)) ||
+		    !custody_reserved_set_requests<uint64_t, std::hash<uint64_t>>(
+			    work.image.items.size(), &work.buckets, &work.nodes) ||
+		    !live.admit(work.buckets))
+			return live.capacity();
+		work.born.reserve(work.image.items.size());
+		for (const auto &literal : work.image.items)
+		{
+			if (!live.admit(sizeof(std::__detail::_Hash_node<
+					       uint64_t,
+					       std::__cache_default<uint64_t,
+								    std::hash<uint64_t>>::value>)))
+				return live.capacity();
+			if (!work.born.insert(literal.object_uid).second)
+				return flatfile_item_repository_result::invalid;
+		}
+		work.observed.owner_revision = owner->revision;
+		if (!custody_budget_product(work.image.items.size(),
+					    sizeof(flatfile_item_ownership_record), &work.extra) ||
+		    !live.admit(work.extra))
+			return live.capacity();
+		work.observed.rows.reserve(work.image.items.size());
+		for (const auto &row : work.catalog.items)
+		{
+			if (!work.born.contains(row.item_uid))
+			{
+				if (work.born.contains(row.root_item_uid) ||
+				    work.born.contains(row.parent_item_uid) ||
+				    (row.owner.type == work.selected.type &&
+				     row.owner.id == work.selected.id))
+					return flatfile_item_repository_result::invalid;
+				continue;
+			}
+			const auto event = std::find_if(work.plan.item_events.begin(),
+							work.plan.item_events.end(),
+							[&](const auto &e)
+							{ return e.uid == row.item_uid; });
+			const auto literal = std::find_if(work.image.items.begin(),
+							  work.image.items.end(), [&](const auto &i)
+							  { return i.object_uid == row.item_uid; });
+			if (event == work.plan.item_events.end() ||
+			    literal == work.image.items.end() ||
+			    !item_owner_identity_equal(row.owner, work.selected) ||
+			    row.state != item_custody_state::active || row.item_revision != 1 ||
+			    row.root_item_uid != event->after.root_uid ||
+			    row.parent_item_uid != event->after.parent_uid ||
+			    row.item_revision != event->after.revision ||
+			    row.equipment_slot != event->after.equipment_slot ||
+			    row.vnum != literal->vnum || !row.coin_payload.empty())
+				return flatfile_item_repository_result::invalid;
+			if (!custody_initial_vector_growth(
+				    work.observed.rows.size(), work.observed.rows.capacity(),
+				    sizeof(flatfile_item_ownership_record), &work.extra) ||
+			    !custody_budget_add(work.extra, row.coin_payload.size()) ||
+			    !live.admit(work.extra))
+				return live.capacity();
+			work.observed.rows.push_back(row);
+		}
+		if (work.observed.rows.size() != work.image.items.size() || !lock.matches(root))
+			return flatfile_item_repository_result::invalid;
+		if (!custody_budget_product(work.observed.rows.capacity(),
+					    sizeof(flatfile_item_ownership_record), &work.retained))
+			return live.capacity();
+		for (const auto &row : work.observed.rows)
+			if (!custody_budget_add(work.retained, row.coin_payload.capacity()))
+				return live.capacity();
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_native_mobile_birth_ordinary_current_custody>);
+		*output = std::move(work.observed);
+		if (retained_output_payload_bytes)
+			*retained_output_payload_bytes = work.retained;
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_item_repository_result::io_error;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+#endif
+}
