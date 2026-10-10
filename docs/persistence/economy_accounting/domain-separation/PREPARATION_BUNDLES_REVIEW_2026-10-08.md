@@ -2848,6 +2848,126 @@ F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished an
 heartbeat ACTIVE through the continuing broader completion audit.
 
 
+## FD architecture CLOSED; Quest narrow metadata correction selected - 2026-10-10
+
+Architecture original FD independently SOURCE/DESIGN/METADATA PASS
+CLOSED_NO_CORRECTION within finite available FD1-FD4 controls. Full25861-byte
+standalone stdlib/read-only Git verifier,18239 note,11701 ownership map,7540
+blueprints and4787 assessment were read/audited BEFORE root original NEW
+normal default ONCE at unchanged clean selecting2a01b85990b8b98d32c7583247bd21395009605a.
+Root actual1114-byte binary stdout is byte-equal to BOTH actual original author
+stdout and prepared binary,exit0/stderr0,SHA2565896b10626b6ab69b5e5f01921c75551046722b67adf193c201976cfad3ce594.
+Root count1 and author count1 remain distinct; no rerun. Original PENDING-at-seal
+notes/receipts/programs/INDEX/defaults/history and all failures remain immutable.
+
+Independent root fresh metadata auditor authenticates29 whole providers,actual
+TEN publicationpaths/nineM+oneA/nineteen present mode/blob endpoints,seven whole
+transforms/inverses/rawdiffs,four fixed selecting equalities,four precise new-primary
+equalities,two entire original C prefixes,actual1477 added C lines,98 finite cuts,
+72 lexical owner members,32 unchanged original definitions,16 genuine captured
+GNU13 headers/six provenance-package controls/55 finite library sections and all
+authored texts. Strict211 payloads+INDEX/all212 original pre/post/current files
+remain exact. Finite lexical selectors are not general C++/preprocessor proofs.
+Original author execution/binaries/attempt/receipt independently authenticate.
+
+Root read complete original store provider,all required original transaction
+helpers/codecs/lock state/constructors/catches/owners,complete selected headers,
+complete diagnostic store routes/recovery decoder/budget/workspace/acquire/recovery
+and necessary bounded_add/store_suffix/commit_string_request helpers. Four exact
+prior full added-source root readings are reused beside fresh full original/helper
+comparisons. Captured-library union authenticates53 finite ranges: three exact
+prior root reading controls plus146180 additional genuine captured-source bytes
+in ten fully read chunks cover all55 Architecture and52 Quest finite sections.
+Complete available string/vector/allocator/iterator/mutex/unique_lock/unique_ptr/
+tuple/atomic/profile sections retain explicit missing transitive/type/out-of-line/
+emitted/native controls. No live installed provider reread or library evaluation.
+
+Full source/design review of original Quest FD is finite PASS with profile
+dependencies OPEN. Original failed normal default ONCE remains exit1/stdout0/
+stderr587/SHA25655d78cbc8b6b4e56bc1dc1fed096196238c35212361ac3118c988823aee9cd40.
+Canonical FOUR actual files and all92 delivery seals remain exact; RECEIPT.txt
+ABSENT. Predicted894 stdout is prediction only,never actual/pass. Root failed
+original NOT_RUN_WILL_NOT_DISPATCH. Actual title-plus-FD1-FD4 selector has FIVE
+keys versus FOUR; later1478 numstat assertion is false but NOT_REACHED. No original
+rerun/rewrite/reseal/relabel/normalization/invented receipt follows.
+
+One narrow separate private D: Quest correction is selected:
+PUBLISHED_ORIGINAL_FLAT_DIAGNOSTIC_COMPLETION_METADATA_CORRECTION_2026-10-10.txt.
+Concrete output: explicit exactly FD1-FD4 selector distinct from document title,
+actual1477 numstat and correct store/transaction terminal-LF controls,full original
+four principals/actual failed binary evidence/receipt absence,unchanged fixed
+source/design controls and explicit unresolved captured concat/profile finding,
+strict INDEX,new standalone deterministic stdlib/read-only Git verifier and one
+original NEW correction normal default ONCE with actual binary stdout/stderr/exit
+and receipt for independent root review. Future benefit: honest original failure
+preservation and authenticated metadata for genuine FD caller preparation.
+
+Authenticate original four failed canonical files and92 delivery seals unchanged;
+preserve328 historical controls by streaming hashes only. Authenticate actual
+whole F/P publication TEN paths/9M1A/19 objects distinct four selected providers,
+seven original whole transforms/inverses,four exact current equalities,two whole
+original C prefixes,finite source/library controls and genuine captured provenance.
+New explicit FD1-FD4 keys must reject duplicates/title contamination. No old failed
+or CLOSED verifier import/dispatch/exec/eval/compile/dynamic import. Read/audit full
+new standalone verifier/note BEFORE its one new normal default; failure is preserved
+without rerun. Actual receipt follows only actual output; predictions stay distinct.
+Original normal count1 and new correction count1 are separate immutable histories.
+Original fixedF7262/P5bc/selectingS2a01/SPc026 and FD1-FD4 design remain unchanged.
+Additive selecting metadata is not a source repin,algorithm/category repair or
+permission to restart preparation. Architecture remains IDLE; no second A task.
+
+Captured lvalue __str_concat uses a fresh allocator-selected string,reserve and
+two appends; actual domains_directory remains root + "/domains". FD copy/append
+comments/carriers remain unchanged. Explicit owned_root(root) is distinct actual
+copy. Source/profile correspondence remains unresolved; no evaluated bound,
+native defect or blanket conservative equivalence is accepted. Complete missing
+char_traits/move/construct/type/gthr/pthread/OpenSSL/out-of-line/emitted/ABI/
+allocator/libc/fault controls and genuine integrated caller/global/alias/lock/
+profile/full after-every-return survivor census remain dependent requirements.
+FD1-FD4/component/native UNEXECUTED; commands UNAVAILABLE; expressions UNEVALUATED.
+
+New published6c02610fd14ec9751ff7f36ea19767001ee20e47/actualsoleparent5fa55929
+supplies complete bounded native producer and supporting providers. Full46-line
+handoff and all12 complete header diffs read;25 genuine whole source transforms/
+inverses/50 mode/blob endpoints,four precise fixed FD equalities and charter whole
+equality authenticate. Actual31 changed paths/9756 additions/184 removals include
+source replacements; no all-insertion claim. Full semantic/profile/caller/native
+audit QUEUED_NOT_PERFORMED. Private source-freeze/token/preprocessing/registry/
+Plan5 reports remain REPORTED_ONLY. Handoff reports no compiler/executable tests
+and no major completion. Source exists; integrated startup/foreign CURRENT/first
+admission/native32MiB/full-host/producer/publication/drain/recovery/R1-R8 stay OPEN.
+
+Root evidence D:/Dev/Temp/coordinator-original-flat-diagnostic-completion-review-20261010
+contains fresh Architecture source authentication,FD source-design completion,
+exact reading progress/library manifests,original exclusive root attempt/binaries/
+exit/architecture-authentication.json and new producer availability authentication.
+Root-only v1/v2 audit setup and initial authored-path/reuse-index lookup failures
+are preserved separately,never worker/default/native failures. Reused boundary
+helper post-run NOT_RUN/PENDING literal labels remain historical stale metadata;
+actual root RESULT/binaries/architecture-authentication establish count1/PASS.
+Separate additive label disposition preserves both original helper outputs.
+
+Root stays clean2a01; no root fetch/merge/advance. Separate D checkout advanced
+normally gc.auto=0 to6c ONLY AFTER original A root receipt sealed. Publication
+changes exactly three owned coordination docs; full insertion inverse restores
+actual6c. A212 sealed files/Qfour failed files/receipt absence/root/A/Q checkouts/
+Qcurrent three hashes/stash/actual Goal IDs/objectives/BLOCKED timestamps unchanged.
+All AS1936/763,RB2894/965correction/failedQ,RC2821/1045,TC11637/1434/originalQ1036
+completecuts65 UNACCEPTED/rootNOTRUN and all originals/history remain NOT_RERUN.
+
+Only the two authorized existing chats,sole bounded Q correction and no second
+A task/live expansion/repin/CLOSED reopen/adoption wait/restart. Primary owns
+maintained implementation/qualification; Plan5 backend/recovery/release; workers
+private D packets only. Queue later passive/native/forest/critical/producer work
+only after fixed FD correction handoff. Original09a/NMB3/custody/coin/receiver/host/
+save/Smith/applicable restitution/source/origin/history/outbox/ACK/pause32MiB and
+Plan5 SQL0065/schema65/measurement/history/backup/restore/recovery/release persist.
+Broad Plans1-5/R1-R8 audit OPEN; accounting INACTIVE/admission CLOSED/coverage
+INCOMPLETE/release BLOCKED; heartbeat ACTIVE until broad audit/user pause.
+No Goal mutation/private artifact imports/commits/maintained edits/compiler/
+preprocessor/ELF/build/native/product/DB/runtime/lock/IO/deploy/activation/production.
+All Git fetch/merge/commit/push gc.auto=0; no destructive/housekeeping actions.
+
 ## FD metadata findings and preserved original Quest failure - 2026-10-10
 
 This additive correction supersedes ONLY erroneous line-count/newline and
