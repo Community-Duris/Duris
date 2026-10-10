@@ -2074,3 +2074,30 @@ bool native_mobile_birth_shared_shop_recovery_terminal_bounded(
 	return recovery_envelope_valid_bounded(envelope, recovery_policy::shared_shop, 2, reserve,
 					       context, outer_live);
 }
+
+bool native_mobile_birth_shared_shop_recovery_execution_valid_bounded(
+	const critical_command &command, const std::span<const uint8_t> &attachment,
+	uint64_t revision, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	// Full original nonzero revision and shared decode/no-progress proof. This
+	// execution predicate deliberately grants no continuation/terminal phase gate.
+	if (!revision)
+		return false;
+	struct execution_workspace
+	{
+		native_mobile_birth_shared_shop_recovery_context value;
+		std::span<const uint8_t> attachment;
+	};
+	size_t base = outer_live;
+	if (!recovery_add(base, sizeof(execution_workspace)) || !recovery_add(base, sizeof(base)) ||
+	    !recovery_admit(base, 0, reserve, context))
+		return false;
+	execution_workspace work;
+	work.attachment = attachment;
+	return native_mobile_birth_shared_shop_recovery_decode_bounded(
+		       command, work.attachment, &work.value, reserve, context, base) ==
+		       economic_accounting_error::ok &&
+	       (revision != 1 ||
+		(!work.value.progress.receipt_present && no_progress(work.value.progress)));
+}
