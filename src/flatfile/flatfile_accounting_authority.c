@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_ordinary_native_birth_receipt.h"
 #include "flatfile/flatfile_native_mobile_wallet.h"
 #include "flatfile/quest_mobile_native_flatfile.h"
 #include <type_traits>
@@ -2099,4 +2100,79 @@ unsigned int flatfile_native_mobile_wallet_storage::observe_current_locked(
 			*output = std::move(candidate);
 		},
 		nullptr);
+}
+
+// Private historical proof for the authentic ordinary NMB4 financial reader.
+// Receives original compiled wallet/epoch/creator/native identity, not CURRENT
+// DTO authority. Retired lifetimes remain historical; no active epoch required.
+unsigned int flatfile_ordinary_native_birth_history_storage::verify_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const economic_account_key &wallet, const critical_operation_id &birth_epoch,
+	const critical_operation_id &birth_operation, uint64_t native_id, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			flatfile_economic_locator locator;
+			locator.kind = FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR;
+			locator.native_id = native_id;
+			need(!root.empty() && lock.matches(root) &&
+				     economic_account_key_valid(wallet) &&
+				     wallet.authority_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS &&
+				     nonzero(birth_epoch) && nonzero(birth_operation) &&
+				     flatfile_native_mobile_wallet_locator_valid(
+					     wallet.kind, wallet.context_id, locator),
+			     EINVAL);
+			// Complete original authenticated control/epochs loading. No recover()
+			// or active/current selection gate is introduced into historical proof.
+			const auto control = load_control(root);
+			need(control.lineage.bytes == wallet.lineage.bytes, ESTALE);
+			const size_t evidence_bucket = birth_operation.bytes[0];
+			need(control.evidence_initialized[evidence_bucket / 8] &
+				     (1U << (evidence_bucket % 8)),
+			     ENODATA);
+			const auto historical_epochs = load_epochs(root, control);
+			need(std::any_of(historical_epochs.begin(), historical_epochs.end(),
+					 [&](const auto &epoch)
+					 { return epoch.epoch.bytes == birth_epoch.bytes; }),
+			     ENODATA);
+
+			const auto original = mapping_for_key(root, control, wallet);
+			need(original.locator.kind == FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR &&
+				     original.locator.native_id == native_id &&
+				     original.locator.name.empty() &&
+				     original.creating_operation.bytes == birth_operation.bytes,
+			     EILSEQ);
+			// Original SQL retained proof requires ONE locator/native lifetime and
+			// ONE mapping created by this operation. Authenticate all real buckets,
+			// including retired rows; absence is never an empty damaged bucket.
+			size_t native_lifetimes = 0, created_lifetimes = 0;
+			for (size_t bucket = 0; bucket < FLATFILE_ECONOMIC_METADATA_BUCKETS;
+			     ++bucket)
+			{
+				const auto values = load_mappings(root, control, bucket);
+				for (const auto &value : values)
+				{
+					if (value.locator.kind ==
+						    FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR &&
+					    value.locator.native_id == native_id)
+					{
+						++native_lifetimes;
+						need(economic_account_key_equal(value.account,
+										wallet),
+						     EILSEQ);
+					}
+					if (value.creating_operation.bytes == birth_operation.bytes)
+					{
+						++created_lifetimes;
+						need(economic_account_key_equal(value.account,
+										wallet),
+						     EILSEQ);
+					}
+				}
+			}
+			need(native_lifetimes == 1 && created_lifetimes == 1, EILSEQ);
+			need(lock.matches(root), EINVAL);
+		},
+		error);
 }

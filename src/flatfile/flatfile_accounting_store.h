@@ -68,6 +68,7 @@ flatfile_accounting_status flatfile_accounting_check_bucket(const std::string &,
 // actual locked effects with evidence; structural records grant no capability.
 class flatfile_accounting_storage
 {
+	friend class flatfile_ordinary_native_birth_receipt_storage;
 	friend class flatfile_accounting_baseline_storage;
 	friend class flatfile_accounting_bank_transaction;
 	friend class flatfile_accounting_collector_transaction;
