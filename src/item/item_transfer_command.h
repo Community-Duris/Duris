@@ -544,4 +544,14 @@ bool item_transfer_payload_valid_bounded(const item_transfer_payload &, uint16_t
 					 bool (*reserve)(size_t, void *) noexcept, void *context,
 					 size_t outer_live) noexcept;
 
+// Complete original selected-root and entity-vector construction companions.
+// Caller retains authentic payload/prior output/command/all siblings in outer;
+// strong refusal, original identity/revision/key rules, no admission authority.
+bool item_transfer_selected_roots_bounded(const item_transfer_payload &, std::vector<uint64_t> *,
+					  bool (*)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept;
+bool item_transfer_command_entities_bounded(critical_command *, const item_transfer_payload &,
+					    bool (*)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept;
+
 #endif
