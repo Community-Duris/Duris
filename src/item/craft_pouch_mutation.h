@@ -36,4 +36,13 @@ bool craft_pouch_mutation_decode_bounded(std::span<const uint8_t>, craft_pouch_m
 					 bool (*reserve)(size_t, void *) noexcept, void *context,
 					 size_t outer_live) noexcept;
 
+// Complete original pouch continuation proof, including full craft-recipe
+// decode and genuine complete payload copy, map counts and canonical decode.
+// Authentic outer includes input/prior output/all caller live owners. No new
+// authority or native side effects; strong refusal preserves output.
+bool craft_pouch_mutation_from_payload_bounded(const item_transfer_payload &,
+					       craft_pouch_mutation *,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept;
+
 #endif
