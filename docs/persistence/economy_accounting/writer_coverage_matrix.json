@@ -179,7 +179,7 @@
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
       "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
-      "src/core/prototypes.h": "9987a299943e094ab181cd02b4b44b35ae6ae7258ad5b56d098bb98fd8746d52",
+      "src/core/prototypes.h": "081adcce171c2b738172be89fcce38381a02d59e1820ed098ef390c229886e64",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
