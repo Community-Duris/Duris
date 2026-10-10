@@ -186,4 +186,18 @@ spell_component_retirement_save_effect(const critical_operation_id &operation_id
 // Restore durable soulbind publication from the serialized item command.
 bool spell_item_lifecycle_restore_replayed_command(const critical_command &command);
 
+// Complete passive soulbind restore companion. Authentic caller outer excludes
+// item replay pending storage once, includes all foreign owners/command/native
+// inputs; original inactive and player spell paths remain unchanged.
+bool spell_item_lifecycle_restore_replayed_command_bounded(const critical_command &,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t) noexcept;
+// Passive receipt-registry provider. Authentic exclusive outer excludes its
+// actual CURRENT receipt table; caller holds startup/game-thread exclusion.
+bool spell_component_retirement_current_storage_bytes(size_t *) noexcept;
+bool spell_component_retirement_restore_replayed_effect_bounded(const critical_operation_id &,
+								uint32_t, uint32_t, uint32_t,
+								bool (*)(size_t, void *) noexcept,
+								void *, size_t) noexcept;
+
 #endif

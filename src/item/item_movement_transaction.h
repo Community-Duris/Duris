@@ -406,4 +406,20 @@ quest_native_completion_prepare(P_char native_mobile, P_char final_giver, int qu
 				int completion_index,
 				item_native_quest_preparation_token *) noexcept;
 
+// Pure CURRENT replay registration storage. Selecting caller owns other item
+// drivers and foreign domains; this observer owns the actual pending table and
+// health, full payload heaps and distinct original shared command allocations.
+bool item_movement_transaction_replay_current_storage_bytes(size_t *) noexcept;
+size_t item_movement_transaction_replay_observer_frame_bytes() noexcept;
+// Complete passive original restore companions. Authentic caller outer excludes
+// the above owner once and includes all other live owners and command/native
+// inputs. No gameplay, source, execution or publication authority follows.
+bool item_movement_transaction_restore_replayed_publication_bounded(
+	const critical_command &, item_movement_publication_fn, const void *, size_t,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+class player_save_coin_replay_budget_scope_owner;
+bool item_movement_transaction_restore_replayed_command_bounded(
+	const critical_command &, player_save_coin_replay_budget_scope_owner &,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 #endif

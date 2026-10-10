@@ -165,4 +165,14 @@ unsigned int sql_room_item_payload_capture_sources_in_transaction(
 	MYSQL *, const economic_sql_source_limits &, const economic_sql_physical_source_snapshot &,
 	sql_room_item_source_snapshot *, size_t maximum_diagnostics = 512) noexcept;
 
+// Complete original passive ordinary-drop capture under actual prospective
+// requests. Caller owns input/prior output and authentic sibling CURRENT.
+// Strong output; no SQL call, custody, publication, admission or activation.
+bool sql_room_item_payload_capture_bounded(const item_transfer_payload &,
+					   sql_room_item_payload_batch *,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
+bool sql_room_item_payload_batch_current_heap_bytes(const sql_room_item_payload_batch &,
+						    size_t *) noexcept;
+
 #endif

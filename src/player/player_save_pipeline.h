@@ -789,6 +789,12 @@ class player_save_coin_replay_budget_scope_owner final
 {
     private:
 	friend class critical_mixed_startup_replay_owner;
+	friend class player_save_sql_drop_replay_owner;
+	friend bool player_save_pipeline_replay_current_storage_bytes(size_t *) noexcept;
+	friend bool
+	player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_command &,
+								 bool (*)(size_t, void *) noexcept,
+								 void *, size_t) noexcept;
 	friend class currency_transaction_replay_owner;
 	friend bool currency_transaction_restore_replayed_command_bounded(const critical_command &,
 									  bool (*)(size_t,
@@ -855,5 +861,28 @@ class player_save_prepared_startup_lifecycle_owner final
 	}
 	std::unique_lock<std::mutex> lock_;
 };
+
+// Genuine same-scope SQL ordinary-drop bridge for complete mixed startup.
+// ROOT retains real coordinator/lifecycle exclusion and this same pipeline
+// scope; exclusive_outer excludes CURRENT reported by borrowed getter. Every
+// prospective request refreshes scope storage once. No post-hold reservation.
+class player_save_sql_drop_replay_owner final
+{
+    public:
+	static size_t frame_bytes() noexcept;
+	// Includes actual scope inline; fixed observer frames separately admitted.
+	static bool current_storage_bytes(player_save_coin_replay_budget_scope_owner &,
+					  size_t *) noexcept;
+	static bool restore(const critical_command &, player_save_coin_replay_budget_scope_owner &,
+			    size_t exclusive_outer) noexcept;
+};
+// External unheld observer counts retained pipeline/worker owners, excludes
+// transient scope inline. Must not be called while pipeline_mutex is held;
+// use borrowed getter for mixed replay. All getters preserve output on refusal.
+bool player_save_pipeline_replay_current_storage_bytes(size_t *) noexcept;
+bool player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_command &,
+							      bool (*)(size_t, void *) noexcept,
+							      void *,
+							      size_t exclusive_outer) noexcept;
 
 #endif
