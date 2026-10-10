@@ -12,6 +12,11 @@
 #include <new>
 #include <utility>
 
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+#include <bits/cxxabi_tweaks.h>
+#endif
+
 // Private leaf owner for ordinary save execution/checkpoint exclusion only.
 // It does not prove a clean census, authorize critical ACK, or supply a wake.
 // Pipeline registration owns the exact command bytes and commits its matching
@@ -362,6 +367,66 @@ inline bool discard_quiesced_holds() noexcept
 	detail::holds.fill({});
 	detail::registration_open = false;
 	return true;
+}
+// Passive CURRENT storage of this leaf owner. Includes its actual static
+// objects, map node requests, lazy event storage and its ABI initialization
+// guard even before construction, and this caller thread's scope pointer.
+// Excludes borrowed scope_link/authority bodies, other threads' TLS pointers,
+// allocator metadata and observer/lock frames; those remain caller-owned.
+// Never call while already holding detail::mutex. No callback, event access,
+// initialization, hold/permit/epoch mutation or authority is performed.
+inline bool current_storage_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(__cxxabiv1::__guard) != 8)
+		return false;
+	using permit_node = std::_Rb_tree_node<decltype(detail::permits)::value_type>;
+	using owned_node = std::_Rb_tree_node<decltype(detail::owned_pids)::value_type>;
+	using resident_node = std::_Rb_tree_node<decltype(detail::resident_claims)::value_type>;
+	size_t bytes = sizeof(detail::mutex) + sizeof(detail::permits) + sizeof(detail::holds) +
+		       sizeof(detail::next_generation) + sizeof(detail::active_permits) +
+		       sizeof(detail::registration_open) + sizeof(detail::integrity_failed) +
+		       sizeof(detail::owned_pids) + sizeof(detail::resident_claims) +
+		       sizeof(detail::ownership_epoch) + sizeof(detail::next_ownership_epoch) +
+		       sizeof(detail::next_owner_generation) + sizeof(detail::ownership_change) +
+		       // Each dynamically initialized inline map has its own ABI guard.
+		       3 * sizeof(__cxxabiv1::__guard) + sizeof(std::condition_variable) +
+		       sizeof(__cxxabiv1::__guard) + sizeof(detail::current_scope);
+	try
+	{
+		{
+			std::lock_guard<std::mutex> lock(detail::mutex);
+			const auto add_nodes = [&bytes](size_t count, size_t width) noexcept
+			{
+				if (count > SIZE_MAX / width)
+					return false;
+				const size_t request = count * width;
+				if (request > SIZE_MAX - bytes)
+					return false;
+				bytes += request;
+				return true;
+			};
+			// GCC13 map's actual _M_get_node allocates one _Rb_tree_node
+			// per entry; map/header and its cached size are already inline.
+			if (!add_nodes(detail::permits.size(), sizeof(permit_node)) ||
+			    !add_nodes(detail::owned_pids.size(), sizeof(owned_node)) ||
+			    !add_nodes(detail::resident_claims.size(), sizeof(resident_node)))
+				return false;
+		}
+		// Actual leaf lock has been released before output is committed.
+		*output = bytes;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	return false;
+#endif
 }
 }
 #endif

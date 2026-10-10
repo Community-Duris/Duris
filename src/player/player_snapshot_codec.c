@@ -2652,3 +2652,92 @@ player_item_snapshot_clone_bounded(const player_item_snapshot &source, player_it
 		return player_snapshot_codec_result::allocation_failure;
 	}
 }
+
+namespace
+{
+bool snapshot_current_items(const std::vector<player_item_snapshot> &items, size_t &bytes) noexcept
+{
+	if (!snapshot_clone_vector_request(items, false, bytes))
+		return false;
+	for (const auto &row : items)
+		if (!snapshot_clone_row_request(row, false, bytes))
+			return false;
+	return true;
+}
+bool snapshot_current_evidence(const player_death_evidence_table &table, size_t &bytes) noexcept
+{
+	if (!snapshot_clone_vector_request(table.columns, false, bytes) ||
+	    !snapshot_clone_vector_request(table.rows, false, bytes))
+		return false;
+	for (const auto &column : table.columns)
+		if (!snapshot_clone_string_request(column, false, bytes))
+			return false;
+	for (const auto &row : table.rows)
+	{
+		if (!snapshot_clone_vector_request(row, false, bytes))
+			return false;
+		for (const auto &cell : row)
+			if (cell && !snapshot_clone_string_request(*cell, false, bytes))
+				return false;
+	}
+	return true;
+}
+} // namespace
+
+bool player_snapshot_current_heap_bytes(const player_snapshot &snapshot, size_t *output) noexcept
+{
+	if (!output || !snapshot_clone_policy_supported() || sizeof(void *) != 8 ||
+	    sizeof(size_t) != 8 || sizeof(std::string) != 32 || sizeof(std::vector<uint8_t>) != 24)
+		return false;
+	size_t bytes = 0;
+	if (!snapshot_clone_vector_request(snapshot.status_integers, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.status_strings, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.languages, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.introductions, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.timers, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.undead_slots, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.forged_items, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.granted_commands, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.skills, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.affects, false, bytes) ||
+	    !snapshot_current_items(snapshot.items, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.pets, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.shapes, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.trophies, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.quest_xp_receipts, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.spell_effect_receipts, false, bytes) ||
+	    !snapshot_clone_vector_request(snapshot.craft_receipts, false, bytes) ||
+	    !snapshot_clone_string_request(snapshot.output_preferences, false, bytes))
+		return false;
+	for (const auto &status : snapshot.status_strings)
+		if (!snapshot_clone_string_request(status.value, false, bytes))
+			return false;
+	for (const auto &affect : snapshot.affects)
+		if (!snapshot_clone_string_request(affect.wear_off_character, false, bytes) ||
+		    !snapshot_clone_string_request(affect.wear_off_room, false, bytes))
+			return false;
+	for (const auto &pet : snapshot.pets)
+		if (!snapshot_current_items(pet.items, bytes) ||
+		    !snapshot_clone_string_request(pet.restore_state, false, bytes))
+			return false;
+	if (snapshot.death)
+	{
+		const auto &death = *snapshot.death;
+		if (!snapshot_current_items(death.corpse, bytes) ||
+		    !snapshot_clone_vector_request(death.custody, false, bytes) ||
+		    !snapshot_clone_vector_request(death.unresolved_operations, false, bytes))
+			return false;
+		if (death.conflict_evidence)
+		{
+			const auto &evidence = *death.conflict_evidence;
+			if (!snapshot_current_evidence(evidence.player_items, bytes) ||
+			    !snapshot_current_evidence(evidence.player_item_affects, bytes) ||
+			    !snapshot_current_evidence(evidence.player_item_extra_descr, bytes) ||
+			    !snapshot_current_evidence(evidence.item_current_owner, bytes) ||
+			    !snapshot_current_evidence(evidence.item_owner_revision, bytes))
+				return false;
+		}
+	}
+	*output = bytes;
+	return true;
+}
