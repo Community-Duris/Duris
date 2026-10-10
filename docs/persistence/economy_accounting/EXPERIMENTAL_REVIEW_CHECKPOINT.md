@@ -4137,3 +4137,13 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Complete SHOP payload and manifest source contracts implemented - 2026-10-10
+
+[Source checkpoint](SHOP_COMMAND_MANIFEST_SOURCE_CONTRACTS_2026-10-10.md) SHOP decoder and recovery manifest expose complete source contracts, with numerical corrections and actual formatted review passed. Guarded build defects and full qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

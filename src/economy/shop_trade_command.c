@@ -1961,3 +1961,240 @@ bool shop_trade_command_decode_payload_bounded(const critical_command &command,
 		return false;
 	}
 }
+
+// Additive SOURCE contracts for the unchanged complete v1-v8 bounded decoder.
+#include <openssl/opensslv.h>
+namespace
+{
+bool shop_command_source_supported() noexcept
+{
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(std::allocator<uint8_t>) == 1 && sizeof(std::allocator<uint64_t>) == 1 &&
+	       sizeof(std::allocator<critical_entity_key>) == 1 &&
+	       sizeof(std::allocator<critical_expected_revision>) == 1 &&
+	       sizeof(std::vector<uint8_t>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_entity_key>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_expected_revision>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+// SOURCE_CORRECTION_GUARD
+template <typename T> constexpr size_t shop_command_complete_move_source() noexcept
+{
+	// Same genuine selected four-vector movement graph, instantiated using
+	// the actual element T; no unrelated codec/profile is borrowed.
+	return 3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	       sizeof(std::true_type) + sizeof(std::vector<T>) + 7 * sizeof(void *) +
+	       sizeof(std::allocator<T>) + 11 * sizeof(void *) +
+	       2 * (2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(void *) +
+		    3 * (2 * sizeof(void *))) +
+	       2 * (2 * sizeof(void *)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	       3 * sizeof(void *) + 3 * sizeof(void *) + sizeof(void *) +
+	       shop_codec_allocator_frames;
+}
+constexpr size_t shop_command_move_missing =
+	shop_command_complete_move_source<uint8_t>() - shop_codec_move_frames;
+static_assert(shop_command_complete_move_source<uint8_t>() >= shop_codec_move_frames);
+static_assert(shop_command_complete_move_source<uint64_t>() ==
+	      shop_command_complete_move_source<uint8_t>());
+static_assert(shop_command_complete_move_source<critical_entity_key>() ==
+	      shop_command_complete_move_source<uint8_t>());
+static_assert(shop_command_complete_move_source<critical_expected_revision>() ==
+	      shop_command_complete_move_source<uint8_t>());
+
+constexpr size_t shop_command_generated_lifetime =
+	// Genuine generated decode/copy-build/copy-encode/base-build/base-encode
+	// workspace default/destructor receivers. Each nested active workspace is
+	// already inline-owned by its old prospective admission.
+	2 * 5 * sizeof(void *) +
+	// Payload default -> manifest -> binding -> six UID-vector default chains;
+	// payload/manifest/binding generated destruction receivers. Actual route
+	// holds candidate, three build projections and three encode projections.
+	7 * (3 * sizeof(void *) + 6 * 6 * sizeof(void *) + 3 * sizeof(void *)) +
+	// Conservative command default/cleanup source union: four reached families
+	// cover decode/expected and original projection/base command construction.
+	// These are sequential method closures, not a count of live command objects.
+	// Their actual objects stay exclusively in old inline/workspace admissions.
+	4 * (sizeof(void *) + 4 * 6 * sizeof(void *) + sizeof(void *)) +
+	// Encoder/base build byte-vector defaults and cleanup. Original cleanup
+	// runs outside the old growth/move peaks, so its allocator source remains
+	// retained independently of successful allocation requests.
+	8 * 6 * sizeof(void *) + 8 * (4 * sizeof(void *) + shop_codec_allocator_frames) +
+	6 * (4 * sizeof(void *) + shop_codec_allocator_frames) +
+	4 * (4 * sizeof(void *) + shop_codec_allocator_frames) +
+	// Payload/manifest/binding generated move this/source and std::move
+	// reference carriers; four command vectors use the exact correction above.
+	3 * (2 * sizeof(void *)) + 6 * (2 * sizeof(void *) + 2 * sizeof(void *)) +
+	2 * sizeof(void *) + 4 * shop_command_move_missing +
+	// Real generated array/weight copies used by clone_payload, not an
+	// unbounded payload copy: account, item array, blob, digest and weight.
+	5 * (2 * sizeof(void *));
+
+constexpr size_t shop_command_array_methods =
+	// Actual array begin/end->data->_S_ptr, subscript->_S_ref, size.
+	2 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+	2 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t);
+constexpr size_t shop_command_array_span_source =
+	// account chars, item-entry array, blob and clone source/target pointer arrays.
+	5 * shop_command_array_methods +
+	// Real std::span(cursor,count) -> extent constructor; its data/size leaves.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	2 * (sizeof(void *) + sizeof(size_t)) +
+	// span pointer ctor: to_address(ptr,result) -> raw __to_address(ptr,result).
+	2 * sizeof(void *) + 2 * sizeof(void *);
+constexpr size_t shop_command_control_missing =
+	// live_owner constructor this/budget/payload/command/two buffers/bytes,
+	// destructor this; every genuine instantiation has the same six pointers.
+	6 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	// Profile result and max() constexpr returned scalar on real numeric checks.
+	sizeof(bool) + sizeof(size_t) +
+	// Original operation-ID zero range: ref/range/begin/end, uint8 value, bool;
+	// its genuine array methods are outside shop_codec_pure_frames.
+	4 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool) + shop_command_array_methods +
+	// Actual original item_shopkeeper_owner_id formal uint32/result uint64.
+	sizeof(uint32_t) + sizeof(uint64_t) +
+	// Key less/equal originals and revision_less lambda receiver/refs/result.
+	2 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	// bounded clone's six source/target pointer-array access wrappers, plus
+	// real destination weight equality's generated this/other/bool.
+	3 * sizeof(void *) + sizeof(bool) +
+	// Actual valid_name's unsigned-char temporary and caught bad_alloc refs.
+	sizeof(unsigned char) + 2 * sizeof(void *);
+
+using shop_command_key_equal_adapter =
+	__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_equal)>;
+constexpr size_t shop_command_adjacent_source =
+	// Original std::adjacent_find comparator overload and __adjacent_find:
+	// input/result/next iterators, actual comparator/adapter and boolean.
+	3 * sizeof(void *) + sizeof(&critical_entity_key_equal) + 4 * sizeof(void *) +
+	sizeof(shop_command_key_equal_adapter) + sizeof(bool) +
+	// __iter_comp_iter(fn) returned adapter, adapter ctor(this,fn), two move
+	// reference chains and operator(this,left,right,bool).
+	sizeof(&critical_entity_key_equal) + sizeof(shop_command_key_equal_adapter) +
+	sizeof(void *) + sizeof(&critical_entity_key_equal) + 2 * (2 * sizeof(void *)) +
+	3 * sizeof(void *) + sizeof(bool) +
+	// Actual normal-iterator equality, ++, dereference and base chains.
+	4 * (2 * sizeof(void *)) + sizeof(bool) + 2 * (2 * sizeof(void *));
+constexpr size_t shop_command_sort_missing =
+	// The old sort admission covers actual recursion, partition/insertion/heap
+	// scalar/value scopes, but not their move/copy descendants. Real typed
+	// pointer transport graph used by move_backward remains active in sort;
+	// the old vector allocation admission cannot supply that later scope.
+	shop_codec_copy_frames +
+	// Function-pointer and revision-lambda comparison adapters: their real
+	// conversion/ctor/std::move/invocation receiver carriers.
+	2 * (3 * (sizeof(void *) + sizeof(&critical_entity_key_less)) + 6 * (2 * sizeof(void *)) +
+	     3 * (3 * sizeof(void *) + sizeof(bool))) +
+	// iter_swap/swap actual refs and key/revision value temporary branches.
+	2 * (4 * sizeof(void *) + 2 * (2 * sizeof(void *))) + sizeof(critical_entity_key) +
+	sizeof(critical_expected_revision);
+constexpr size_t shop_command_local_supplement =
+	shop_command_generated_lifetime + shop_command_array_span_source +
+	shop_command_control_missing + shop_command_adjacent_source + shop_command_sort_missing;
+
+// Exact named old shop_codec_pure_frames credit for original is_empty's
+// binding arrays, all_of/find_if_not/negated predicate, empty digest/equality.
+// This is a field-by-field existing-source credit, not a guessed heap deduction.
+constexpr size_t shop_command_old_empty_credit =
+	2 * sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>) +
+	3 * (2 * sizeof(void *) + sizeof(char) + sizeof(void *)) +
+	shop_codec_find_frames(sizeof(char)) + sizeof(std::array<uint8_t, 32>) +
+	3 * sizeof(void *) + 2 * sizeof(bool) + shop_codec_equal_frames;
+
+constexpr size_t shop_command_old_selected_source =
+	// Public args/base/result and original decode parameters/read leaves;
+	// body workspaces themselves are separately initial/child-owned.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 9 * sizeof(void *) +
+	2 * sizeof(size_t) + 3 * sizeof(uint8_t) + sizeof(uint32_t) + sizeof(bool) +
+	sizeof(shop_trade_destination_weight) + sizeof(std::span<const uint8_t>) +
+	shop_codec_census_frames + shop_codec_leaf_frames + shop_codec_pure_frames +
+	// Four original build and four encode wrapper signatures are genuine
+	// mutually exclusive/sequential union members, with nested v8 projections.
+	4 * shop_codec_build_parameters + 4 * shop_codec_encode_parameters +
+	shop_codec_move_frames +
+	// Existing sort carrier admission is evaluated for two actual families.
+	// Valid payload bounds item_count<=12; keys/revisions therefore <=12+5.
+	// 2*floor(log2(17))+1=9 source recursion scopes; no new arbitrary cap.
+	2 * (9 * (3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(&critical_entity_key_less)) +
+	     18 * sizeof(void *) + 7 * sizeof(&critical_entity_key_less) +
+	     sizeof(critical_expected_revision) + 16 * sizeof(void *) +
+	     6 * sizeof(&critical_entity_key_less) + 2 * sizeof(critical_expected_revision) +
+	     23 * sizeof(void *) + 11 * sizeof(std::ptrdiff_t) +
+	     7 * sizeof(&critical_entity_key_less) + 4 * sizeof(critical_expected_revision) +
+	     8 * sizeof(void *) + 5 * sizeof(&critical_entity_key_less) + 4 * sizeof(bool) +
+	     2 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(bool));
+
+#endif
+
+bool shop_command_selected_source(size_t *output, bool supplement) noexcept
+{
+	if (!output || !shop_command_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	size_t account = 0, manifest = 0, empty = 0;
+	if (!(supplement ? currency_account_key_source_supplement_frame_bytes(&account) :
+			   currency_account_key_source_frame_bytes(&account)) ||
+	    !(supplement ?
+		      shop_trade_recovery_manifest_codec_source_supplement_frame_bytes(&manifest) :
+		      shop_trade_recovery_manifest_codec_source_frame_bytes(&manifest)) ||
+	    !shop_trade_recovery_manifest_is_empty_source_frame_bytes(&empty) ||
+	    empty < shop_command_old_empty_credit)
+		return false;
+	size_t total = shop_command_local_supplement;
+	if (!shop_codec_add(total, account) || !shop_codec_add(total, manifest) ||
+	    !shop_codec_add(total, supplement ? empty - shop_command_old_empty_credit : empty) ||
+	    (!supplement && !shop_codec_add(total, shop_command_old_selected_source)))
+		return false;
+	*output = total;
+	return true;
+#else
+	(void)supplement;
+	return false;
+#endif
+}
+}
+bool shop_trade_command_decode_payload_source_frame_bytes(size_t *output) noexcept
+{
+	return shop_command_selected_source(output, false);
+}
+bool shop_trade_command_decode_payload_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	return shop_command_selected_source(output, true);
+}
+bool shop_trade_command_decode_payload_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_command_source_supported())
+		return false;
+	// Exact real first budget/decode workspace/linked owner; all nested copies
+	// and allocations remain covered by their unchanged prospective admissions.
+	*output = sizeof(shop_codec_budget) + sizeof(shop_codec_decode_workspace) +
+		  sizeof(shop_codec_live_owner);
+	return true;
+}

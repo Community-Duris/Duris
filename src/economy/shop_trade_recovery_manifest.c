@@ -1293,3 +1293,279 @@ bool shop_trade_recovery_forest_verify_bounded(std::span<const uint8_t> canonica
 		return false;
 	return expected == binding;
 }
+
+// Additive selected SRM8 SOURCE contracts. The original implementations above
+// are retained byte-for-byte. Objects/heaps in their existing admissions are
+// not added to the retained supplement below.
+namespace
+{
+bool shop_manifest_source_supported() noexcept
+{
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(SHA_LONG) == 4 && sizeof(std::allocator<uint64_t>) == 1 &&
+	       sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::vector<uint64_t>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<uint8_t>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+// SOURCE_CORRECTION_GUARD
+template <typename T> constexpr size_t shop_manifest_complete_move_source() noexcept
+{
+	// Actual selected C++20 vector operator=, std::move and _M_move_assign(true).
+	return 3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	       sizeof(std::true_type) + sizeof(std::vector<T>) +
+	       // get_allocator: vector/base/allocator receivers and reference returns,
+	       // allocator const-copy/base-copy; genuine returned allocator temporary.
+	       7 * sizeof(void *) + sizeof(std::allocator<T>) +
+	       // vector(const A&) -> base -> impl -> allocator/base copy -> data default.
+	       11 * sizeof(void *) +
+	       // BOTH _M_swap_data calls; each this/x, 3-pointer data temporary,
+	       // default receiver and three _M_copy_data(this,source) calls.
+	       2 * (2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(void *) +
+		    3 * (2 * sizeof(void *))) +
+	       2 * (2 * sizeof(void *)) +
+	       // Direct C++20 __alloc_on_move (two refs), std::move (two refs),
+	       // generated allocator/base assignments (three refs each).
+	       2 * sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(void *) + shop_manifest_allocator_frames;
+}
+constexpr size_t shop_manifest_move_missing =
+	// Exact named replacement difference: the old admission already carries
+	// shop_manifest_move_frames. No workspace/UID allocation is subtracted.
+	shop_manifest_complete_move_source<uint64_t>() - shop_manifest_move_frames;
+static_assert(shop_manifest_complete_move_source<uint64_t>() >= shop_manifest_move_frames);
+static_assert(shop_manifest_complete_move_source<uint64_t>() ==
+	      shop_manifest_complete_move_source<uint8_t>());
+
+constexpr size_t shop_manifest_value_lifetime_source =
+	// Genuine manifest/binding/workspace generated default/destructor receivers;
+	// six reached UID-vector defaults (vector/base/impl/allocator/base/data).
+	3 * sizeof(void *) + 6 * (sizeof(void *) + 6 * sizeof(void *)) +
+	// Destruction outside the encoder's growth admission: six UID vectors and
+	// the actual canonical/result byte vectors. Each vector/Destroy/base source
+	// plus actual selected allocator deallocation source.
+	8 * (4 * sizeof(void *) + shop_manifest_allocator_frames) +
+	// Manifest generated move(this,source), its six member binding moves,
+	// their generated this/source and std::move argument/reference carriers.
+	2 * sizeof(void *) + 6 * (2 * sizeof(void *) + 2 * sizeof(void *)) +
+	shop_manifest_move_missing +
+	// The byte-vector default (same six-this chain) before first growth.
+	2 * 6 * sizeof(void *);
+
+constexpr size_t shop_manifest_array_methods_source =
+	// Actual array begin/end -> data -> _S_ptr (each receiver/reference/result),
+	// indexing -> _S_ref(receiver,index,result), and size(receiver,result).
+	// One genuine specialization; selected codec reaches mutable/const pointer
+	// arrays, magic4/header11/digest32 and ordered-UID4096 arrays.
+	2 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+	2 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t);
+constexpr size_t shop_manifest_span_methods_source =
+	// Dynamic span pointer/count ctor -> extent-storage ctor; data and
+	// size/extent accessors; actual array-range span ctor for empty_item_list.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	2 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+	// pointer/count constructor calls raw to_address and __to_address.
+	2 * sizeof(void *) + 2 * sizeof(void *);
+constexpr size_t shop_manifest_array_span_source =
+	6 * shop_manifest_array_methods_source + shop_manifest_span_methods_source;
+
+constexpr size_t shop_manifest_scalar_missing =
+	// Existing binding_valid/shape/codec admissions own their working arrays,
+	// read/append scalars, parameters and vector/sort/hash expressions. These
+	// are additional actual helper scopes: bindings overload(ref,return array),
+	// valid_role(arg,bool), binding_empty(ref,bool,zero digest temporary already
+	// present in old shape admission), heap/add/admit and methods this/result.
+	2 * (sizeof(void *) + sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>)) +
+	sizeof(shop_trade_recovery_forest_role) + sizeof(bool) + sizeof(void *) + sizeof(bool) +
+	// shop_manifest_heap: manifest/output, total, binding array, range/begin/end/
+	// current binding, returned boolean; original workspace excludes these.
+	6 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>) +
+	// add(ref,bytes,bool), admit(current,request,reserve,context,bool),
+	// encode admit/growth/append/digest_bytes and decode admit receivers/results.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(size_t) + 2 * sizeof(void *) +
+	sizeof(bool) + 5 * (sizeof(void *) + sizeof(bool)) +
+	// Real UID range-for reference/begin/end/current value in encoder.
+	3 * sizeof(void *) + sizeof(uint64_t) +
+	// Generated default/copy assignment for fixed magic/header/digest arrays.
+	3 * (2 * sizeof(void *)) +
+	// Actual UID vector::empty -> begin/end -> iterator equality/base chain,
+	// and shape's size accessor outside the codec vector operation admission.
+	11 * sizeof(void *) + 2 * sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	// read_le's returned bool is not in old decode method_frames (12P+10N+u64).
+	sizeof(bool) +
+	// The two selected manifest codec catch(const std::bad_alloc&) references.
+	// They are lower scopes, distinct from the shop command/encoder catches.
+	2 * sizeof(void *);
+
+constexpr size_t shop_manifest_sort_missing =
+	// Original old sort leaf already owns sort/partition/insertion/heap/copy
+	// and adjacent_find public/core params. Actual typed comparator adapter
+	// constructors/moves and invocation receiver scopes remain uncovered.
+	// _Iter_less_iter, _Val_less_iter, _Iter_less_val are empty real classes.
+	3 * (sizeof(void *) + sizeof(char)) + 6 * (2 * sizeof(void *)) +
+	3 * (3 * sizeof(void *) + sizeof(bool)) +
+	// Actual scalar iter_swap -> swap: two refs, one uint64 move temporary,
+	// two move reference chains and iter_swap receiver iterators.
+	4 * sizeof(void *) + sizeof(uint64_t) + 2 * (2 * sizeof(void *)) +
+	// Normal-iterator constructor/base/deref/arithmetic/comparison wrappers
+	// used by copy(begin/end) before the raw-pointer sort, plus category.
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag);
+
+constexpr size_t shop_manifest_selected_supplement =
+	shop_manifest_value_lifetime_source + shop_manifest_array_span_source +
+	shop_manifest_scalar_missing + shop_manifest_sort_missing;
+
+// Authentic fixed SHA source has distinct Init/Update/Final memory phases.
+// Their memcpy/memset/OPENSSL_cleanse leaves do not coexist with the block
+// phase. The existing max(block)+max(Init,Update,Final) therefore dominates
+// every reached phase without an extra constant allowance or EVP substitution.
+constexpr size_t shop_manifest_sha_memcpy = 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t shop_manifest_sha_memset = 2 * sizeof(void *) + sizeof(int) + sizeof(size_t);
+constexpr size_t shop_manifest_sha_cleanse =
+	sizeof(void *) + sizeof(size_t) + sizeof(void *) + shop_manifest_sha_memset;
+static_assert(shop_manifest_sha256_assembly_frame >= shop_manifest_sha_memcpy);
+static_assert(shop_manifest_sha256_assembly_frame >= shop_manifest_sha_memset);
+static_assert(shop_manifest_sha256_assembly_frame >= shop_manifest_sha_cleanse);
+
+constexpr size_t shop_manifest_old_shape_source =
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) + 3 * sizeof(void *) +
+	sizeof(size_t) + sizeof(shop_trade_recovery_forest_role) + sizeof(bool) +
+	shop_manifest_equal_frames +
+	// Existing binding proof checks count <=4096 before its original sort.
+	// floor(log2(4096))=12, exact introsort entry+exhausted-child depth25.
+	25 * shop_manifest_sort_recursive_frame + shop_manifest_sort_leaf_frames +
+	sizeof(std::span<const uint8_t>) + sizeof(shop_trade_recovery_forest_role) +
+	sizeof(uint32_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	shop_manifest_sha256_nested_frame;
+constexpr size_t shop_manifest_old_encode_source =
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(uint64_t) +
+	12 * sizeof(void *) + 10 * sizeof(size_t) + 4 * sizeof(bool) + shop_manifest_vector_frames +
+	shop_manifest_move_frames +
+	sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>) + sizeof(void *);
+constexpr size_t shop_manifest_old_decode_source =
+	sizeof(std::span<const uint8_t>) + 4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>) +
+	12 * sizeof(void *) + 10 * sizeof(size_t) + sizeof(uint64_t) + shop_manifest_vector_frames +
+	shop_manifest_equal_frames + shop_manifest_move_frames;
+constexpr size_t shop_manifest_selected_source =
+	shop_manifest_selected_supplement + shop_manifest_old_shape_source +
+	shop_manifest_old_encode_source + shop_manifest_old_decode_source;
+
+// Original is_empty is reached directly by the shop legacy builders. It never
+// reaches original binding_valid/digest/EVP: its actual leaf is binding_empty.
+constexpr size_t shop_manifest_empty_source =
+	sizeof(void *) + sizeof(bool) +
+	2 * sizeof(std::array<const shop_trade_recovery_forest_binding *, 6>) + sizeof(void *) +
+	// all_of -> find_if_not -> __find_if_not -> __find_if(random-access),
+	// actual captureless predicate/negation/predicate adapters, tag/tripcount.
+	4 * (3 * sizeof(void *) + sizeof(char)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 6 * (sizeof(void *) + sizeof(char)) +
+	4 * (2 * sizeof(void *)) + 3 * sizeof(bool) +
+	// Original lambda(this,binding,bool) -> binding_empty(ref,bool,zero digest).
+	3 * sizeof(void *) + 2 * sizeof(bool) + sizeof(std::array<uint8_t, 32>) +
+	// vector::empty(this,bool), begin/end and iterator comparison/base.
+	sizeof(void *) + sizeof(bool) + 5 * (2 * sizeof(void *)) + sizeof(bool) +
+	shop_manifest_equal_frames + 2 * shop_manifest_array_methods_source;
+#endif
+}
+
+bool shop_trade_recovery_manifest_codec_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = shop_manifest_selected_source;
+	return true;
+#else
+	return false;
+#endif
+}
+bool shop_trade_recovery_manifest_codec_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = shop_manifest_selected_supplement;
+	return true;
+#else
+	return false;
+#endif
+}
+bool shop_trade_recovery_manifest_codec_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = sizeof(shop_manifest_decode_workspace) + sizeof(shop_manifest_encode_workspace);
+	return true;
+#else
+	return false;
+#endif
+}
+bool shop_trade_recovery_manifest_is_empty_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = shop_manifest_empty_source;
+	return true;
+#else
+	return false;
+#endif
+}

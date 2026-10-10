@@ -120,4 +120,20 @@ bool shop_trade_recovery_forest_verify_bounded(std::span<const uint8_t>,
 					       bool (*)(size_t, void *) noexcept, void *,
 					       size_t) noexcept;
 
+// Selected SRM8 shape/encode/decode SOURCE union; no standalone forest freeze
+// or original EVP path is selected. Admit SOURCE + initial inline transiently
+// before entry, then retain ONLY supplement through the unchanged bounded
+// children. Their real workspace, capacities, requests and fixed SHA stay
+// child-owned. Unsupported profiles/null outputs preserve the scalar.
+bool shop_trade_recovery_manifest_codec_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_manifest_codec_source_supplement_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_manifest_codec_initial_inline_bytes(size_t *) noexcept;
+// Original allocation-free is_empty leaf, including its real library chain.
+// Direct original callers retain this SOURCE; it grants no authority.
+bool shop_trade_recovery_manifest_is_empty_source_frame_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_recovery_manifest_source_query_frame_bytes() noexcept
+{
+	// Output argument/result and actual source-policy helper's bool result.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
 #endif
