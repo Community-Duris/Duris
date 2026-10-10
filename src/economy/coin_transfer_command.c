@@ -498,3 +498,230 @@ bool coin_transfer_command_decode_stale_result(const coin_transfer_payload &payl
 	*result = decoded;
 	return true;
 }
+
+namespace
+{
+bool coin_value_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+template <typename T>
+bool coin_value_vector_heap(const std::vector<T> &value, size_t &total) noexcept
+{
+	return value.capacity() <= SIZE_MAX / sizeof(T) &&
+	       coin_value_add(total, value.capacity() * sizeof(T));
+}
+struct coin_value_validation_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *pile = nullptr;
+	const std::vector<player_item_snapshot> *snapshots = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 9 * sizeof(void *) + 7 * sizeof(size_t) +
+					       4 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!coin_value_add(total, sizeof(*this)) || !coin_value_add(total, frames) ||
+		    !coin_value_add(total, observation) ||
+		    !coin_value_add(total, item_transfer_payload_copy_frame_bytes()) ||
+		    !coin_value_add(total, player_item_snapshot_copy_frame_bytes()))
+			return false;
+		if (pile && (!coin_value_add(total, sizeof(*pile)) ||
+			     !item_transfer_payload_current_heap_bytes(*pile, &heap) ||
+			     !coin_value_add(total, heap)))
+			return false;
+		if (snapshots)
+		{
+			if (!coin_value_add(total, sizeof(*snapshots)) ||
+			    !coin_value_vector_heap(*snapshots, total))
+				return false;
+			for (const auto &item : *snapshots)
+				if (!player_item_snapshot_current_heap_bytes(item, &heap) ||
+				    !coin_value_add(total, heap))
+					return false;
+		}
+		if (!coin_value_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+constexpr size_t coin_value_fixed_frames =
+	// Actual value(amounts) parameter/result, units[4], total/index, array
+	// query/operator[] and real amount arithmetic. Called sequentially.
+	sizeof(void *) + sizeof(int64_t) + sizeof(int64_t[4]) + sizeof(int64_t) + sizeof(size_t) +
+	3 * (sizeof(void *) + sizeof(size_t)) +
+	// Original fixed owner identity/key equality, three pointer/bool scopes;
+	// genuine array/vector begin/end/size/subscript query carriers.
+	6 * sizeof(void *) + 3 * sizeof(bool) + 8 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t coin_value_payload_default_frames =
+	// Same actual ten aggregate defaults/destructors, six vector/base/impl/
+	// data defaults, six string/hider/local/NUL defaults in item payload.
+	2 * 10 * sizeof(void *) + 6 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	6 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) + sizeof(char));
+bool coin_value_validate_endpoint_owned(const coin_transfer_endpoint &endpoint, bool source,
+					critical_entity_key *identity, const char **error,
+					coin_value_validation_budget &budget)
+{
+	auto reject = [&](const char *reason)
+	{
+		if (error)
+			*error = reason;
+		return false;
+	};
+	size_t admission_prefix = 0;
+	const auto before = value(endpoint.before), after = value(endpoint.after);
+	if (before < 0 || after < 0 || (source ? before <= after : after <= before))
+		return reject("invalid coin amounts");
+	if (endpoint.change.type == critical_command_type::account_bank)
+	{
+		if (!budget.peak(sizeof(currency_command_payload) +
+				 sizeof(currency_command_payload) + 2 * sizeof(void *)))
+			return false;
+		currency_command_payload wallet = {};
+		if (!(budget.prefix(admission_prefix, sizeof(wallet)) &&
+		      currency_command_decode_payload_bounded(endpoint.change, &wallet,
+							      budget.reserve, budget.context,
+							      admission_prefix)) ||
+		    wallet.reason != currency_reason_type::coin_transfer ||
+		    endpoint.change.expected_revisions[0].revision == UINT64_MAX ||
+		    endpoint.change.expected_revisions[1].revision == UINT64_MAX)
+			return reject("invalid wallet endpoint");
+		for (size_t index = 0; index < endpoint.before.size(); ++index)
+			if (wallet.bank_delta.amount[index] ||
+			    wallet.wallet_delta.amount[index] !=
+				    static_cast<int64_t>(endpoint.after[index]) -
+					    endpoint.before[index])
+				return reject("wallet delta does not match amounts");
+		*identity = { critical_entity_type::player, wallet.pid };
+		return true;
+	}
+	if (endpoint.change.type != critical_command_type::item_transfer)
+		return reject("unsupported endpoint type");
+	if (!budget.peak(sizeof(item_transfer_payload) + coin_value_payload_default_frames))
+		return false;
+	item_transfer_payload pile = {};
+	budget.pile = &pile;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_transfer_command_decode_payload_bounded(endpoint.change, &pile, budget.reserve,
+							   budget.context, admission_prefix)) ||
+	    pile.item_count != 1 || pile.multi_root ||
+	    pile.items[0].item_uid != pile.selected_item_uid)
+		return reject("invalid pile identity");
+	const bool creation = pile.from_owner.type == item_owner_type::system;
+	const bool consumed = pile.to_owner.type == item_owner_type::destruction;
+	if (creation ? (source || before != 0 || consumed) :
+		       (!before ||
+			(!consumed && !item_owner_identity_equal(pile.from_owner, pile.to_owner))))
+		return reject("invalid pile ownership transition");
+	if (consumed != (after == 0) ||
+	    (!creation && !consumed &&
+	     (pile.target_root_item_uid != pile.items[0].root_item_uid ||
+	      pile.target_parent_item_uid != pile.items[0].parent_item_uid)))
+		return reject("invalid pile topology");
+	if (!budget.peak(sizeof(std::vector<player_item_snapshot>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<player_item_snapshot>)))
+		return false;
+	std::vector<player_item_snapshot> snapshots;
+	budget.snapshots = &snapshots;
+	if ((!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::invalid_value :
+		     player_item_snapshot_list_decode_bounded(
+			     pile.item_blob.data(), pile.item_blob_size, &snapshots, budget.reserve,
+			     budget.context, admission_prefix, nullptr)) !=
+		    player_snapshot_codec_result::ok ||
+	    snapshots.size() != 1 || snapshots[0].object_uid != pile.selected_item_uid ||
+	    snapshots[0].vnum != pile.items[0].vnum || snapshots[0].type != ITEM_MONEY ||
+	    snapshots[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		return reject("pile snapshot identity or type mismatch");
+	for (size_t index = 0; index < endpoint.before.size(); ++index)
+		if ((source ? endpoint.after[index] > endpoint.before[index] :
+			      endpoint.after[index] < endpoint.before[index]) ||
+		    snapshots[0].values[index] !=
+			    (consumed ? endpoint.before[index] : endpoint.after[index]))
+			return reject("pile snapshot amount mismatch");
+	*identity = { critical_entity_type::item, pile.selected_item_uid };
+	return true;
+}
+
+bool coin_value_validate_payload_owned(const coin_transfer_payload &payload, const char **error,
+				       coin_value_validation_budget &budget)
+{
+	critical_entity_key source = {}, destination = {};
+	size_t admission_prefix = 0;
+	if (!(budget.prefix(admission_prefix) &&
+	      coin_transfer_endpoint_valid_bounded(payload.source, true, &source, error,
+						   budget.reserve, budget.context,
+						   admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      coin_transfer_endpoint_valid_bounded(payload.destination, false, &destination, error,
+						   budget.reserve, budget.context,
+						   admission_prefix)))
+		return false;
+	if (critical_entity_key_equal(source, destination) ||
+	    value(payload.source.before) - value(payload.source.after) !=
+		    value(payload.destination.after) - value(payload.destination.before))
+	{
+		if (error)
+			*error = "duplicate endpoints or nonconserving transfer";
+		return false;
+	}
+	return true;
+}
+} // namespace
+bool coin_transfer_endpoint_valid_bounded(const coin_transfer_endpoint &endpoint, bool source,
+					  critical_entity_key *identity, const char **error,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept
+{
+	if (!identity || !reserve)
+		return false;
+	constexpr size_t frames =
+		10 * sizeof(void *) + 6 * sizeof(size_t) + 6 * sizeof(bool) + 2 * sizeof(int64_t) +
+		// Original reject closure captures error-pointer by reference and real
+		// call this/reason/false return; local before/after, creation/consumed.
+		sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) + coin_value_fixed_frames;
+	coin_value_validation_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return coin_value_validate_endpoint_owned(endpoint, source, identity, error,
+							  budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool coin_transfer_payload_valid_bounded(const coin_transfer_payload &payload, const char **error,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+	constexpr size_t frames = 7 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+				  2 * sizeof(critical_entity_key) + coin_value_fixed_frames;
+	coin_value_validation_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return coin_value_validate_payload_owned(payload, error, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
