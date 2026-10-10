@@ -819,3 +819,383 @@ flatfile_identity_result flatfile_native_mobile_birth_ordinary_identity_storage:
 		return flatfile_identity_result::io_error;
 	}
 }
+
+#include <cerrno>
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__LP64__) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&     \
+	!defined(_GLIBCXX_DEBUG)
+struct ordinary_identity_refusal
+{
+	unsigned int error;
+};
+size_t ordinary_identity_add(size_t a, size_t b)
+{
+	if (b > SIZE_MAX - a)
+		throw ordinary_identity_refusal{ ENOBUFS };
+	return a + b;
+}
+size_t ordinary_identity_product(size_t count, size_t width)
+{
+	if (width && count > SIZE_MAX / width)
+		throw ordinary_identity_refusal{ ENOBUFS };
+	return count * width;
+}
+size_t ordinary_identity_string(const std::string &value)
+{
+	return value.capacity() > 15 ? ordinary_identity_add(value.capacity(), 1) : 0;
+}
+size_t ordinary_identity_heap(const std::vector<flatfile_identity_record> &records)
+{
+	size_t value =
+		ordinary_identity_product(records.capacity(), sizeof(flatfile_identity_record));
+	for (const auto &record : records)
+	{
+		value = ordinary_identity_add(value, ordinary_identity_string(record.name));
+		value = ordinary_identity_add(value, ordinary_identity_string(record.account));
+	}
+	return value;
+}
+// Actual source-declared checked arithmetic/census/callback carrier complement;
+// library, allocator, OpenSSL and emitted native profiles are separate gates.
+constexpr size_t ordinary_identity_callback_frames =
+	sizeof(void *) * 10 + sizeof(size_t) * 10 + sizeof(bool) * 4;
+struct ordinary_identity_budget
+{
+	size_t outer;
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	void admit(size_t local) const
+	{
+		if (!reserve ||
+		    !reserve(ordinary_identity_add(
+				     outer, ordinary_identity_add(
+						    local, ordinary_identity_callback_frames)),
+			     context))
+			throw ordinary_identity_refusal{ ENOBUFS };
+	}
+	ordinary_identity_budget nested(size_t local) const
+	{
+		return { ordinary_identity_add(outer, local), reserve, context };
+	}
+};
+// SHA256 one-shot may own opaque EVP/TLS resources. This distinct companion
+// uses genuine fixed SHA context and preserves full original digest bytes.
+// Pinned OpenSSL3 x86_64 source block/streaming profiles remain unqualified
+// as emitted/native evidence; context and digest are real admitted objects.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+bool ordinary_identity_digest(const uint8_t *bytes, size_t size, const uint8_t *expected,
+			      ordinary_identity_budget budget)
+{
+	const size_t frame = sizeof(SHA256_CTX) + SHA256_DIGEST_LENGTH + sizeof(void *) * 5 +
+			     sizeof(size_t) * 2 + sizeof(int) * 3;
+	if (sizeof(SHA_LONG) != 4 || OPENSSL_VERSION_MAJOR != 3 || OPENSSL_VERSION_MINOR != 0 ||
+	    OPENSSL_VERSION_PATCH != 13)
+		throw ordinary_identity_refusal{ ENOTSUP };
+	budget.admit(ordinary_identity_add(frame, 1631 + 56));
+	SHA256_CTX hash{};
+	unsigned char digest[SHA256_DIGEST_LENGTH]{};
+	return SHA256_Init(&hash) == 1 && SHA256_Update(&hash, bytes, size) == 1 &&
+	       SHA256_Final(digest, &hash) == 1 &&
+	       CRYPTO_memcmp(digest, expected, sizeof(digest)) == 0;
+}
+#pragma GCC diagnostic pop
+
+struct ordinary_identity_validation_workspace
+{
+	std::unordered_set<int32_t> pids;
+	std::unordered_set<std::string> active_names;
+	std::__detail::_Prime_rehash_policy pid_policy, name_policy;
+	std::string name_key, account_key;
+	std::pair<bool, size_t> growth{};
+};
+size_t ordinary_identity_validation_heap(const ordinary_identity_validation_workspace &work)
+{
+	size_t result = ordinary_identity_product(
+		work.pids.size(), sizeof(std::__detail::_Hash_node<int32_t, false>));
+	result = ordinary_identity_add(
+		result,
+		ordinary_identity_product(work.active_names.size(),
+					  sizeof(std::__detail::_Hash_node<std::string, true>)));
+	if (work.pids.bucket_count() > 1)
+		result = ordinary_identity_add(result,
+					       ordinary_identity_product(work.pids.bucket_count(),
+									 sizeof(void *)));
+	if (work.active_names.bucket_count() > 1)
+		result = ordinary_identity_add(
+			result, ordinary_identity_product(work.active_names.bucket_count(),
+							  sizeof(void *)));
+	for (const auto &name : work.active_names)
+		result = ordinary_identity_add(result, ordinary_identity_string(name));
+	return ordinary_identity_add(
+		result, ordinary_identity_add(ordinary_identity_string(work.name_key),
+					      ordinary_identity_string(work.account_key)));
+}
+size_t ordinary_identity_fresh_string(size_t length)
+{
+	// reserve/assign on a fresh C++11-ABI string grows 15 to 30, unlike
+	// its exact-size count or copy constructor. Account the real chosen path.
+	return length > 15 ? ordinary_identity_add(std::max(length, size_t{ 30 }), 1) : 0;
+}
+bool ordinary_identity_validate(const identity_catalog &catalog, ordinary_identity_budget budget)
+{
+	if (catalog.next_pid < 1 ||
+	    catalog.next_pid > static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1 ||
+	    catalog.entries.size() > identity_maximum_entries)
+		return false;
+	const size_t frame = sizeof(ordinary_identity_validation_workspace) + sizeof(std::string) +
+			     sizeof(void *) * 4 + sizeof(size_t) * 5 + sizeof(bool) * 4;
+	budget.admit(frame);
+	ordinary_identity_validation_workspace work;
+	for (const auto &entry : catalog.entries)
+	{
+		// Fresh per-row canonical keys preserve the original validation interval.
+		std::string{}.swap(work.name_key);
+		std::string{}.swap(work.account_key);
+		if (entry.pid <= 0 || entry.pid >= catalog.next_pid)
+			return false;
+		budget.admit(ordinary_identity_add(
+			frame,
+			ordinary_identity_add(ordinary_identity_validation_heap(work),
+					      ordinary_identity_fresh_string(entry.name.size()))));
+		if (!canonical_name(entry.name, &work.name_key))
+			return false;
+		budget.admit(ordinary_identity_add(
+			frame, ordinary_identity_add(
+				       ordinary_identity_validation_heap(work),
+				       ordinary_identity_fresh_string(entry.account.size()))));
+		if (!canonical_name(entry.account, &work.account_key))
+			return false;
+		work.growth = work.pid_policy._M_need_rehash(work.pids.bucket_count(),
+							     work.pids.size(), 1);
+		budget.admit(ordinary_identity_add(
+			frame, ordinary_identity_add(
+				       ordinary_identity_validation_heap(work),
+				       ordinary_identity_add(
+					       sizeof(std::__detail::_Hash_node<int32_t, false>),
+					       work.growth.first ?
+						       ordinary_identity_product(work.growth.second,
+										 sizeof(void *)) :
+						       0))));
+		if (!work.pids.insert(entry.pid).second)
+			return false;
+		if (entry.active)
+		{
+			work.growth = work.name_policy._M_need_rehash(
+				work.active_names.bucket_count(), work.active_names.size(), 1);
+			budget.admit(ordinary_identity_add(
+				frame,
+				ordinary_identity_add(
+					ordinary_identity_validation_heap(work),
+					ordinary_identity_add(
+						sizeof(std::__detail::_Hash_node<std::string, true>),
+						ordinary_identity_add(
+							work.name_key.size() > 15 ?
+								ordinary_identity_add(
+									work.name_key.size(), 1) :
+								0,
+							work.growth.first ?
+								ordinary_identity_product(
+									work.growth.second,
+									sizeof(void *)) :
+								0)))));
+			if (!work.active_names.insert(work.name_key).second)
+				return false;
+		}
+	}
+	return true;
+}
+// Original decoder::string is reused after complete prospective length/request
+// admission. The probe has no output string and cannot change the real cursor.
+bool ordinary_identity_decode_string(decoder &in, std::string &output,
+				     const identity_catalog &catalog, size_t frame,
+				     ordinary_identity_budget budget)
+{
+	decoder probe = in;
+	uint32_t length = 0;
+	if (!probe.number(&length) || !length || length > identity_maximum_name ||
+	    probe.size - probe.offset < length)
+		return in.string(
+			&output); // Exact original scalar/truncation refusal, no allocation.
+	budget.admit(ordinary_identity_add(
+		frame,
+		ordinary_identity_add(
+			sizeof(probe) + sizeof(length) + sizeof(void *) * 5 + sizeof(size_t) * 4,
+			ordinary_identity_add(ordinary_identity_heap(catalog.entries),
+					      ordinary_identity_fresh_string(length)))));
+	return in.string(&output);
+}
+struct ordinary_identity_load_workspace
+{
+	std::string directory, filename;
+	std::vector<uint8_t> bytes;
+	identity_catalog decoded;
+};
+flatfile_identity_result ordinary_identity_load(const std::string &root, identity_catalog *output,
+						ordinary_identity_budget budget)
+{
+	const size_t frame = sizeof(ordinary_identity_load_workspace) + sizeof(decoder) * 2 +
+			     sizeof(void *) * 8 + sizeof(size_t) * 7 + sizeof(uint32_t) * 3 +
+			     sizeof(uint64_t) + sizeof(uint8_t) * 2 + sizeof(flatfile_read_result);
+	const size_t directory_size =
+		ordinary_identity_add(root.size(), sizeof("/identities/names") - 1);
+	budget.admit(ordinary_identity_add(
+		frame, directory_size > 15 ? ordinary_identity_add(directory_size, 1) : 0));
+	ordinary_identity_load_workspace work;
+	{
+		budget.admit(ordinary_identity_add(
+			frame,
+			sizeof(std::string) + (directory_size > 15 ?
+						       ordinary_identity_add(directory_size, 1) :
+						       0)));
+		std::string directory(directory_size, '\0');
+		std::copy(root.begin(), root.end(), directory.begin());
+		std::copy_n("/identities/names", sizeof("/identities/names") - 1,
+			    directory.begin() + root.size());
+		work.directory = std::move(directory);
+	}
+	budget.admit(ordinary_identity_add(
+		frame, ordinary_identity_add(
+			       ordinary_identity_string(work.directory),
+			       ordinary_identity_fresh_string(sizeof("catalog.identity") - 1))));
+	work.filename = identity_filename;
+	const size_t paths = ordinary_identity_add(ordinary_identity_string(work.directory),
+						   ordinary_identity_string(work.filename));
+	const size_t file_live = ordinary_identity_add(frame, paths);
+	errno = 0;
+	const auto loaded = flatfile_read_bounded(work.directory, work.filename,
+						  identity_maximum_bytes, &work.bytes,
+						  budget.reserve, budget.context,
+						  budget.nested(file_live).outer);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_identity_result::not_found;
+	if (loaded == flatfile_read_result::invalid)
+		return flatfile_identity_result::invalid;
+	if (loaded != flatfile_read_result::ok)
+		return flatfile_identity_result::io_error;
+	const size_t live = ordinary_identity_add(file_live, work.bytes.capacity());
+	constexpr size_t header_size = identity_magic.size() + sizeof(uint32_t) * 2 +
+				       sizeof(uint64_t) + SHA256_DIGEST_LENGTH;
+	if (work.bytes.size() < header_size ||
+	    memcmp(work.bytes.data(), identity_magic.data(), identity_magic.size()))
+		return flatfile_identity_result::invalid;
+	decoder header{ work.bytes.data() + identity_magic.size(),
+			work.bytes.size() - identity_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || (version != 1 && version != identity_format_version) ||
+	    !revision || payload_size != work.bytes.size() - header_size)
+		return flatfile_identity_result::invalid;
+	if (!ordinary_identity_digest(work.bytes.data() + header_size, payload_size,
+				      work.bytes.data() + identity_magic.size() +
+					      sizeof(uint32_t) * 2 + sizeof(uint64_t),
+				      budget.nested(live)))
+		return flatfile_identity_result::invalid;
+	decoder in{ work.bytes.data() + header_size, payload_size };
+	uint32_t count = 0;
+	if (!in.number(&work.decoded.next_pid) || !in.number(&count) ||
+	    count > identity_maximum_entries)
+		return flatfile_identity_result::invalid;
+	budget.admit(ordinary_identity_add(
+		live, ordinary_identity_product(count, sizeof(flatfile_identity_record))));
+	work.decoded.entries.resize(count);
+	for (auto &entry : work.decoded.entries)
+	{
+		uint8_t active = 0, blocked = 0;
+		if (!in.number(&entry.pid) || !in.number(&active) || !in.number(&blocked) ||
+		    active > 1 || blocked > 1 ||
+		    !ordinary_identity_decode_string(in, entry.name, work.decoded, live, budget) ||
+		    !ordinary_identity_decode_string(in, entry.account, work.decoded, live, budget))
+			return flatfile_identity_result::invalid;
+		entry.active = active;
+		entry.blocked = blocked;
+		if (version >= 2 &&
+		    (!in.number(&entry.login_count) || !in.number(&entry.last_login) ||
+		     !in.number(&entry.racewar) || !in.number(&entry.level) ||
+		     !in.number(&entry.race) || !in.number(&entry.primary_class) ||
+		     !in.number(&entry.secondary_class) || !in.number(&entry.last_room) ||
+		     !in.number(&entry.last_save)))
+			return flatfile_identity_result::invalid;
+	}
+	if (!in.valid || in.offset != in.size ||
+	    !ordinary_identity_validate(
+		    work.decoded, budget.nested(ordinary_identity_add(
+					  live, ordinary_identity_heap(work.decoded.entries)))))
+		return flatfile_identity_result::invalid;
+	work.decoded.revision = revision;
+	for (auto &entry : work.decoded.entries)
+		entry.catalog_revision = revision;
+	*output = std::move(work.decoded);
+	return flatfile_identity_result::ok;
+}
+#endif
+}
+
+flatfile_identity_result
+flatfile_native_mobile_birth_ordinary_identity_storage::read_locked_bounded(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock,
+	flatfile_native_mobile_birth_ordinary_identity_current *output,
+	flatfile_scratch_reserve_fn reserve, void *context, size_t outer,
+	size_t *retained_identity_heap) noexcept
+{
+	if (root.empty() || !output || !reserve || !identity_lock.matches(root) ||
+	    !authority_lock.matches(root))
+		return flatfile_identity_result::invalid;
+#if !defined(__linux__) || !defined(__x86_64__) || !defined(__LP64__) || \
+	!defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 ||          \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)outer;
+	(void)context;
+	(void)retained_identity_heap;
+	errno = ENOTSUP;
+	return flatfile_identity_result::io_error;
+#else
+	try
+	{
+		const size_t frame =
+			sizeof(identity_catalog) +
+			sizeof(flatfile_native_mobile_birth_ordinary_identity_current) +
+			sizeof(ordinary_identity_budget) + sizeof(void *) * 8 + sizeof(size_t) * 3 +
+			sizeof(flatfile_identity_result);
+		ordinary_identity_budget budget{ outer, reserve, context };
+		budget.admit(frame);
+		identity_catalog catalog;
+		const auto loaded = ordinary_identity_load(root, &catalog, budget.nested(frame));
+		if (loaded != flatfile_identity_result::ok &&
+		    loaded != flatfile_identity_result::not_found)
+			return loaded;
+		flatfile_native_mobile_birth_ordinary_identity_current observed;
+		observed.catalog_revision = catalog.revision;
+		observed.records = std::move(catalog.entries);
+		const size_t heap = ordinary_identity_heap(observed.records);
+		budget.admit(ordinary_identity_add(frame, heap));
+		std::sort(observed.records.begin(), observed.records.end(),
+			  [](const auto &a, const auto &b) { return a.pid < b.pid; });
+		if (!identity_lock.matches(root) || !authority_lock.matches(root))
+			return flatfile_identity_result::invalid;
+		*output = std::move(observed);
+		if (retained_identity_heap)
+			*retained_identity_heap = heap;
+		return flatfile_identity_result::ok;
+	}
+	catch (const ordinary_identity_refusal &failure)
+	{
+		errno = failure.error;
+		return flatfile_identity_result::io_error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return flatfile_identity_result::io_error;
+	}
+	catch (...)
+	{
+		errno = EIO;
+		return flatfile_identity_result::io_error;
+	}
+#endif
+}

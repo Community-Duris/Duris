@@ -22,6 +22,17 @@ class flatfile_native_mobile_birth_ordinary_identity_storage final
 		    const flatfile_authority_lock &,
 		    flatfile_native_mobile_birth_ordinary_identity_current *,
 		    std::string *) noexcept;
+
+	// Distinct complete retained catalog reader. Borrow identity then authority;
+	// true missing FILE remains empty, missing/unsafe directory remains error.
+	// Caller retains root/locks/prior output in outer. Strong full rows and heap
+	// scalar; no diagnostics, new permit, acquisition, recovery or write.
+	static flatfile_identity_result
+	read_locked_bounded(const std::string &, const flatfile_identity_lock &,
+			    const flatfile_authority_lock &,
+			    flatfile_native_mobile_birth_ordinary_identity_current *,
+			    flatfile_scratch_reserve_fn, void *, size_t,
+			    size_t *retained_identity_heap = nullptr) noexcept;
 };
 
 struct flatfile_native_mobile_birth_ordinary_player_physical_absence
@@ -48,6 +59,17 @@ class flatfile_native_mobile_birth_ordinary_player_physical_storage final
 		      const flatfile_authority_lock &, const critical_native_recovery_envelope &,
 		      flatfile_native_mobile_birth_ordinary_player_physical_absence *,
 		      std::string *) noexcept;
+
+	// Complete namespace and every inventory/pet UID under genuine request and
+	// capacity admission. Linux getdents64 uses real admitted storage; unsupported
+	// ABI refuses. No selector/authority follows from these private strong counts.
+	// Full emitted/library/native/enclosing-budget qualification remains separate.
+	static unsigned int
+	verify_locked_bounded(const std::string &, const flatfile_identity_lock &,
+			      const flatfile_authority_lock &,
+			      const critical_native_recovery_envelope &,
+			      flatfile_native_mobile_birth_ordinary_player_physical_absence *,
+			      flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 };
 
 struct flatfile_native_mobile_birth_ordinary_catalog_physical_absence
@@ -68,6 +90,14 @@ class flatfile_native_mobile_birth_ordinary_auction_physical_storage final
 		      const critical_native_recovery_envelope &,
 		      flatfile_native_mobile_birth_ordinary_catalog_physical_absence *,
 		      std::string *) noexcept;
+
+	// Full bounded catalog provider; complete definition is the auction/collector
+	// owner's separate immutable handoff. Aggregate friendship remains sole access.
+	static unsigned int
+	verify_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			      const critical_native_recovery_envelope &,
+			      flatfile_native_mobile_birth_ordinary_catalog_physical_absence *,
+			      flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 };
 
 class flatfile_native_mobile_birth_ordinary_collector_physical_storage final
@@ -81,6 +111,14 @@ class flatfile_native_mobile_birth_ordinary_collector_physical_storage final
 		      const critical_native_recovery_envelope &,
 		      flatfile_native_mobile_birth_ordinary_catalog_physical_absence *,
 		      std::string *) noexcept;
+
+	// Full bounded catalog provider; complete definition is the auction/collector
+	// owner's separate immutable handoff. Aggregate friendship remains sole access.
+	static unsigned int
+	verify_locked_bounded(const std::string &, const flatfile_authority_lock &,
+			      const critical_native_recovery_envelope &,
+			      flatfile_native_mobile_birth_ordinary_catalog_physical_absence *,
+			      flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 };
 
 struct flatfile_native_mobile_birth_ordinary_catalog_namespaces_absence

@@ -66667,7 +66667,7 @@
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
-      "src/flatfile/flatfile_collector_repository.c": "4fc5701f91b302f464968f18d211777c52ccbd19d49ee584ff548a1e859ca0ef",
+      "src/flatfile/flatfile_collector_repository.c": "641741e137a796f9778edec9a3537a3b1b5d9f476d55a7a84f8b7e50e0219247",
       "src/flatfile/flatfile_collector_repository.h": "71add098796afe4add187b2d3fc994310215703f3327d0597497b277d5b14386",
       "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
@@ -66845,10 +66845,10 @@
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "e8c28fb7b7d7b6570e41e4643e46a449d34de2a78771332f9ab484658008a358",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "10c97ecc1a8707dcba2dd85592e6fc94f98ab0018a75ec3e973cce985bde0230",
-      "src/flatfile/flatfile_identity_repository.c": "1997e0a156d18317fb4dad2bc30b494a805d82759e2e4508fc7c781344f141c3",
-      "src/flatfile/flatfile_player_snapshot_file.c": "04186563b9e9a2fab8584c7fa75f8ef8b01aedf2757f1906b4834339649b281b",
-      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.h": "024040638bfc27423e818d02ad4c561d5b6b8ae335305daf3e5a7c166fd81501",
-      "src/flatfile/flatfile_auction_repository.c": "24d9b025930bf3ece5a6e42f982045c805720cc3a72feeff61bc6d781b55706e",
+      "src/flatfile/flatfile_identity_repository.c": "f618e8a35a45897447fd929bd8c8c3941463cf22ee318f219dd250ecf0e795e0",
+      "src/flatfile/flatfile_player_snapshot_file.c": "4517ec17ff95e45b7b8c58eab6aa7959cf060ae1ace4e6f93a063a3887c0f4a9",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.h": "e969c0df9adc6bb31485ae013e9467ac62da323242533bd708ce9eea927dcfac",
+      "src/flatfile/flatfile_auction_repository.c": "bef6b6bf33ad7675f339d79ca24038fff616dd8bec7fa421661472bdebc24e62",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c",
       "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
       "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
@@ -66868,7 +66868,8 @@
       "migrations/migration_manifest.staging_0045_nullable_default_0065.json": "d98c932569cf1751ee3911f8939a13dc2ffaabef6c22638edbae89b32b56d5a9",
       "migrations/migration_manifest.master_0031_nullable_default_0065.json": "5c7b65fa95391b53b2528275e5b4f3873d219761ed5e81bbca6e76487e2b22e5",
       "src/flatfile/flatfile_locker_repository.c": "778b9047b845112d8c60f6a32d929b1ad79ad8c142627110e82721ea8bc43369",
-      "src/flatfile/flatfile_locker_repository.h": "1616e171362b3130c23aeb5446aa58797ccf3e3bf9865d89a89beea18f6285f5"
+      "src/flatfile/flatfile_locker_repository.h": "1616e171362b3130c23aeb5446aa58797ccf3e3bf9865d89a89beea18f6285f5",
+      "src/flatfile/flatfile_player_snapshot_file.h": "53c7611327d78fd883dcd7074d845eaaf6ce7c7559731cc130a722c4d8fd3f06"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
