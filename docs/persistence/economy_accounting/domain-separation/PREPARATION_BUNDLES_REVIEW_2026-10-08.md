@@ -2847,6 +2847,213 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Ordinary custody/reference pair reviewed CLOSED; named physical and retained quarantine pair selected - 2026-10-10
+
+Both original PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_AUTHORITY_BOUNDARY_2026-10-10.txt
+and PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_ACCEPTANCE_DELTA_2026-10-10.txt
+independently SOURCE/DESIGN/METADATA PASS; OC reviews CLOSED without correction at
+fixed custody U1aadfe349b8138d380a0af23fed6e27e9186ed3f / actual parent reference
+R8aaf76850658de29878eb04d3c5928d04bd70082 / actual parent F
+fc405b7eb504cfc592ee62bea182a24705672efb. Original selecting charter Z
+e6946aa7e051ae98e1ed124729e02691745c34d6 / actual parent
+d2995827dc59f74f84627715ad375c0c0bcbd354 remains sealed. Architecture's frozen
+clean Z observation and immutable three-codec assessment differ from quest's
+unavailable-local615 remote observation and actual default clean Z checkout seal.
+Both original default stdout receipts reproduced exactly at clean Z BEFORE root
+source advance; no packet note/PINS/receipt/INDEX/verifier/history rewrite or repin.
+
+Root evidence D:/Dev/Temp/coordinator-ordinary-custody-reference-review-20261010
+independently authenticates strict complete indexes/raw Git providers/whole full
+definitions/catches/declarations/inline methods/real lifetimes/original equalities/
+whole forward-inverses/full diffs/continuities and minimal CLOSED OR/SG principals.
+Both complete verifiers were read/audited as stdlib/read-only Git before execution.
+Architecture:210 whole providers,855 exact cuts,207 original full-definition
+equalities,three new private definitions,214 complete scopes,71 scope equalities,
+four whole inverse pairs/eight full diffs,64 whole continuities,three censuses,
+four minimal principals,one lifetime map and one finite assessment;1082 indexed
+payloads plus INDEX,1083 files. Quest:85 providers,200 full functions,61 complete
+declarations,seven inline methods,47 real lexical lifetimes,59 full equalities,
+four whole inverses/full diffs,six controls,two minimal OR/SG contexts/10 principals
+and four-payload index. Eight quest in-memory sensitivity removals/whitespace control
+authenticate source predicates only. All OC1-OC4 component/native UNEXECUTED;
+genuine commands UNAVAILABLE. Architecture's preserved unsealed sorting correction
+and precreation parser/numstat/heading fixes precede original seal, not product or
+native findings and not a rewrite of any CLOSED packet. Original principal seals:
+- Architecture INDEX.json: 175307/3696c1bfcee8182d506a61b0d4c812b96515821a1eff9360af6191e6c93624bb
+- Architecture PINS.json: 1159677/783a00044c3f64aed062a0eb30459911f207c65b3d55928a9a28f1e8730ca21d
+- Architecture PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_AUTHORITY_BOUNDARY_2026-10-10.txt: 36345/0f621f31c58705a86e179af3cb22a29aff9bb89a6f3544e10cdcedf564d659b8
+- Architecture VERIFICATION.json: 2021/04be19b4177ce512b8e9f0aed2f9817cc6c666607debb6ccb47b65e29c976534
+- Architecture verify.py: 57315/1516b922c8118d7968df7702c3601724b1a8089222c14ef7bc0960b568e27d8e
+- Quest INDEX.json: 685/bd2f09bdf9275456668feabb9d68006ed6f3899f5255c593d1dfadd3cab01229
+- Quest PINS.json: 8934240/13d8bf6afa72586e968e30c5b2554d9f7217f917cef8326ec524775f40e040f7
+- Quest PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_ACCEPTANCE_DELTA_2026-10-10.txt: 23661/aee3f4620da5563b6cdb72394915e403cfd36c7b006493638ec85e231c4efe42
+- Quest VERIFICATION.json: 8758/a56ebb8adb6b98f7b0441508abff15cceef871a3ecc20d0affcde1b4bb0f11b7
+- Quest verify.py: 24740/738770acdc89cbd285a695274c31322487d6d7db58d08b9e764fa8fd3e08b16a
+
+OC preserves actual complete INITIAL versus valid CURRENT, full canonical EAP1/
+independent MBR4, original optional receipt and all full catalog/owner/row/operation
+controls. Present known-zero cash at revision1 is legal; zero stock still creates
+native context0 owner revision1. INITIAL operation/root exclusions differ from
+CURRENT, which has no added failed-transfer-operation-history gate. All256 canonical
+reference files/full66-byte records/shards and both original SQL unique-key sets
+participate; UID/revision is nonunique. Canonical absence is not quarantine or
+physical/creation-ledger absence. Real old outputs/image/recipes/intent/plan/catalog/
+sets/rows/stage and nested scratch coexist; original error maps remain distinct.
+Strong full outputs follow final SAME lock with no later fallible gate. Allocating
+proof supplies no admission callback/32MiB/emitted stack/native/crypto/math/ABI/
+allocator/full aggregate qualification, authority or primary adoption.
+
+Selected successors, assessed separately from original OC closure:
+- Named catalog physical P34105381ecf8293485b52eca345b971479569fc0 / actual parent
+  ec4fc176cc114536b7cbb27fa9bb6156109c845d supplies genuine identity/player/pet,
+  complete retained auction/collector and existing world/locker/SHOP catalog joins.
+  Root prior full handoff/header/new composite/34 identity+175 player+69 auction+
+  70 collector C read, seven whole inverses/one Makefile object inverse authenticate.
+  All retained listing states and empty-blob collector UID remain evidence; retired
+  and unindexed canonical player/pet snapshots are enumerated. Caller borrows real
+  identity THEN recovered authority locks; final both-lock checks precede strong
+  output. Player DIR destructor calls closedir without checking return: preserve
+  actual source, not a full close-failure claim or sealed scanner reinterpretation.
+- Retained quarantine Qe5a07ac7f391964cdd68bfaab0c16be3c068c484 / actual parent P
+  supplies genuine all256 exact .bin.corrupt/full66-byte canonical/shard/born-UID/
+  both-operation exclusions under SAME lock. Root full138 new C/20 header additions
+  and whole inverses read/authenticated. Repeated historical keys are retained
+  evidence copies, not new SQL insertion-uniqueness refusal. Counts are strong and
+  informational about CURRENT retained bytes only. Original repair can overwrite
+  earlier quarantine, truncate unretained trailing bytes and ignore write failure;
+  discarded history cannot be reconstructed by absence. Genuine retained original
+  command/source/creation ledger and repair-retention/SQL parity remain required.
+These P/Q leaves EXIST, private/unselected. Full original writer-freeze/secure IO/
+codec/catalog/repair/SQL parity/request math/crypto/ABI/allocator/native/full aggregate
+qualification NOT PERFORMED; private RAW/review/profile/preprocessor/policy/source
+pin/correction claims REPORTED ONLY. Available source supports this concrete next
+preparation without claiming all-domain physical absence or a selected transaction.
+
+Separate latest published source assessment:66cf37351 shared item-row clone,
+392bfae38 payload clone and169d4f0e5 chaos pouch ledger precede current reference
+C14da733ce7fa7966eab6c3a37af052307423cd29 / actual parent
+169d4f0e53aea1853a0d0e9fab532ba44b1165c2. Root full four handoffs/new public
+declarations/all130 new reference C/19 header additions/receipt substitution read;
+nine whole source forward-inverses,12 whole adjacent controls,three complete original
+OC definitions and all three owned prior doc contents authenticate. New165 clone C/
+270 payload C/724 pouch C full semantic review NOT PERFORMED. Actual new CURRENT
+reference scans all256 canonical shards/every record/both real SQL unique-key sets/
+both root and legacy identities/full expected rows including zero forest. Original
+retained receipt now calls that genuine companion after its original canonical
+command/intent/compiler/result/history proof. This is a changed successor, not an
+unchanged original OR definition, OC header friend list or old proof repin. Current
+reference class adds the exact receipt-owner friend; original Q sole future friend
+remains the selected fixed preparation context. Whole original receipt/sourceclaim/
+SQL parity/crypto/math/ABI/allocator/native/full aggregate qualification NOT PERFORMED.
+Competing immutable creation-event/history/baseline/live-world/atomic/terminal/native
+publication/ACK remain open. Private source review/RAW/profile/token/policy/pins and
+primary handoff Goal ACTIVE are REPORTED ONLY; actual coordinator Goal stays BLOCKED.
+
+Applicable backend boundary: actual docs/reference/CODEBASE.md retires siege runtime;
+docs/reference/DATABASE.md and original baseline_item_ownership.sh retain siege SQL
+tombstones/baseline witnesses, not permission to revive runtime. Actual flat accounting
+dispatcher refuses unsupported restitution envelopes and persistence_mode.c rejects
+mixed fallback/clientful flat selection. Primary C14 reports restitution SQL-only;
+its complete independent backend/native parity qualification is not supplied here.
+Do not manufacture flat siege/restitution stores or treat those names as universally
+missing flat leaves. Preserve all applicable SQL/recovery/original requirements and
+genuine live-world, baseline/history, physical/source/ledger/atomic joins. Historical
+queue wording remains sealed; this source-grounded applicable boundary supersedes
+the obsolete universal missing-store interpretation without weakening controls.
+
+One bounded active delivery per chat selected now, fixed P341/ec4 and Qe5/P341:
+- Architecture: PUBLISHED_ORDINARY_NATIVE_BIRTH_PHYSICAL_QUARANTINE_AUTHORITY_BOUNDARY_2026-10-10.txt
+- Quest: PUBLISHED_ORDINARY_NATIVE_BIRTH_PHYSICAL_QUARANTINE_ACCEPTANCE_DELTA_2026-10-10.txt
+Complete new ordinary physical C/H and actual private identity/player/auction/
+collector owning definitions; complete original lock/identity publisher/player
+writer/secure snapshot/pet/catalog readers and actual existing world/locker/SHOP
+helpers needed by the composite. Complete Q reference C/H quarantine definition,
+original canonical/validator/reader/error/repair-retention controls and real helper
+scopes/lifetimes. Authenticate whole source inverses/one Makefile registration and
+exact private friend edges. Reuse minimal CLOSED OC/SG principals only; no old
+sealed verifier rerun, transitive full inventory, new domain or duplicated math.
+Future benefit: implementation-ready named physical UID exclusion, genuine publication
+freeze and retained-vs-lost history boundaries with legal refusal acceptance feeding
+the real future ordinary atomic join. Source-only P/Q permits useful work despite
+missing native execution inputs. Latest C14/backend context is a separate finite
+assessment, not a selected source/task repin or a second active delivery.
+
+Four PQ legal acceptance cuts only:
+PQ1 Genuine full valid ordinary NMB4/intent/source and actual caller-held identity
+then recovered authority locks with complete authentic publication-freeze owners.
+P's physical predicates use original recovery_valid, not invented INITIAL-only law.
+Keep real original missing-file/directory/security/IO/status distinctions and exact
+friend/access/lender lifetimes. No lock-shaped substitute/new recovery/boot authority.
+PQ2 Full identity catalog including retired rows and canonical unindexed/retired
+player snapshots/all pet items; actual namespace names/secure FD/DIR/stat/errno/
+read/decode/canonical/UID controls. Disappearing enumerated file is real refusal.
+Original unchecked closedir destructor remains; legal close-fault qualification is
+open. Genuine writer freeze/lock order is proved through actual owner source, never
+from comments or snapshot counts. No activity filter or implied live-world exclusion.
+PQ3 All genuine retained auction states/collector UIDs including empty blobs and
+full original world corpse/room/saved, locker chest and SHOP rows. Real complete
+catalog/revision/format/refusal/UID controls, per-family scratch death and simultaneous
+old outputs/full inputs/temporary vectors precede final both-lock strong transfer.
+No held-only/current-active projection, numeric32MiB/emitted stack/admission callback
+or all-domain source/physical/native/ACK authority. Missing applicable live/history/
+baseline/immutable ledger joins remain separate rather than invented flat stores.
+PQ4 Genuine full INITIAL Q/all256 exact retained quarantine files/every66-byte
+canonical shard/UID/both original operation fields; duplicate historical-key copies
+stay legal retained evidence. Strong counts follow final SAME lock. Full original
+repair overwrite/truncation/ignored-write-error lifetimes and outcomes prevent claims
+of complete historical absence when bytes were discarded. Actual retained command/
+source/creation witnesses/repair-retention/full SQL parity/atomic join/legal cold/fault/
+restart/capture remain required. No repair/write/commit/native construction/SQL/RNG/
+UID/journal/terminal/publication/ACK; scratch dies before fresh surviving caller/
+sibling/full aggregate census, persistent journal attempt once outside outer and
+no C/J locking budget reentry. No synthetic owner/lock/pointer/receipt/phase/flags/
+marker, constant observer/accepting stub/copied fixture/hash/financial simulation.
+All PQ1-PQ4 component/native UNEXECUTED; genuine commands UNAVAILABLE. Private D:
+strict INDEX/deterministic audited stdlib/read-only Git verifier/exact saved receipt/
+root independent review. Missing actual ordinary transaction/preadmitted allocator/
+full applicable physical/live-world/history/baseline/immutable creation ledger/atomic
+wallet-native-custody-origin-evidence-sourceclaim/terminal/native publication/original
+owner/legal fault-restart-capture/current ELF/schema/crypto/ABI/allocator/full caller
+aggregate inputs block dependent execution only, not selected available source work.
+
+Evolving queue:
+1. Selected PQ actual map/four legal blueprints only; reassess meaningful successors
+at handoff without expansion/reassignment/repin/CLOSED reopen/adoption wait/busywork.
+2. Genuine retained economic history/baseline UID witnesses/competing creation-event
+uniqueness/live-world/ordinary atomic/terminal/outbox/native publication/ACK and Smith
+original SQL/flat BEFORE/history/season/capture-factory-save-source/participant/guarded
+ACK. Available INITIAL mapping282/sourceclaim8f/OR/OC/P/Q/C14 are separate real leaves,
+not full integration/qualification. SHOP7f/865 and player/continuation/cost/coin/lockpick/
+craft/shared clone/pouch leaves EXIST; full new codec semantic/native review is queued,
+not inferred from metadata. No missing current quarantine/catalog/reference-count leaf.
+3. Complete mixed startup/host ROOM/shared/legacy/currency/applicable restitution and
+fresh surviving siblings, H locked handoff/SG/N402/7f metadata-uncertainty/full selector/
+admission/legal failure/restart/capture. Paired ROOT/publication/NPC pool-slot/four cold
+routes/detach/adopt/enroll/light, financial command/compiler/result/recovery, diagnostics/
+service/scheduler/placement/activity and full native/caller/crypto/ABI/allocator evidence
+remain separate. Primary owns maintained implementation/math/admission/authority/
+contracts/qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release.
+Root publishes only three owned coordination docs; exact inserted-section inverse
+restores primary C14da733ce7fa7966eab6c3a37af052307423cd29. No maintained-source delta/
+private artifact import/commit/compiler/preprocessor/native/product/DB/deploy/activation/
+production mutation or other-chat messages. Preserve all CLOSED OC/OR/RR/BR/SS/SG/PC/
+PD/SC/RK/RF/GG/CG/CK/SAME-lock seals/receipts/history and all original wording corrections:
+SS two sentences/five originals,PC two sentences/244,SC class/five,scanner unchecked-
+close/242,life hydration may allocate preadmitted nodes/no budget callbacks and only
+post-hydration native tail no allocation,CURRENT/warm/constructor declaration-order/141,
+terminal TR UNEXECUTED/factory CURRENT-RETAINED/immutable and all earlier original seals.
+Preserve isolated clean checkouts/live jobs/services/build evidence and quest unpublished
+f4e20219113fdaee7d3ead787418d89683e05590. Historical Oct7 e7c381c7/Pasted text.txt genuine
+newer human provenance pending as observed; actual newer human instructions take priority.
+Prior component PASS/QP04 FAIL/private-ready SQL-flat reports root UNREVIEWED, no current
+ELF/gameplay/SQL capture qualification. No reset/revert/kill/delete/restart/pruning/private
+adoption inference; Git fetch/merge/commit/push gc.auto=0, no housekeeping.
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion. Broad
+Plans1-5/R1-R8/backend/gameplay/persistence/recovery/owner completion audit remains open.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat
+ACTIVE until broad audit/user pause,quiet unchanged/non-actionable state; notify only
+meaningful progress/failure/completion/required user action.
+
 ## Ordinary receipt/history pair reviewed CLOSED; ordinary custody/reference pair selected - 2026-10-10
 
 Both original PUBLISHED_ORDINARY_NATIVE_BIRTH_RECEIPT_HISTORY_AUTHORITY_BOUNDARY_2026-10-10.txt
