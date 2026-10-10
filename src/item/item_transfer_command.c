@@ -3249,3 +3249,502 @@ bool item_transfer_payload_clone_bounded(const item_transfer_payload &source,
 		return false;
 	}
 }
+namespace
+{
+using item_sidecar_reserve_fn = bool (*)(size_t, void *) noexcept;
+// vector(n,a), actual default allocator temporary, _S_check_init_len n/a/return
+// and allocator copy, _Vector_base this/n/a, _Vector_impl this/a/copy,
+// _Vector_impl_data this and _M_create_storage this/n. The existing vector
+// allocator profile owns _S_max_size and allocation scopes.
+constexpr size_t item_sidecar_size_constructor_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<uint8_t>) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(std::allocator<uint8_t>) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) +
+	sizeof(size_t);
+
+// Original collector fill-assign's fresh allocation path is separate from
+// generic reserve/forward-copy profiles. Actual named fill scopes are charged
+// at the genuine owning cut immediately before assign(n,0).
+constexpr size_t item_sidecar_fill_assign_frames =
+	// assign(n,value) and _M_fill_assign(this,n,val), actual vector __tmp;
+	// capacity/get-allocator references and resulting values.
+	2 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(std::vector<uint8_t>) +
+	4 * sizeof(void *) + sizeof(size_t) +
+	// vector(n,val,a) this/n/val/a; _M_fill_initialize this/n/value.
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	// __uninitialized_fill_n_a first/n/value/allocator/return;
+	// uninitialized_fill_n and __uninit_fill_n<true>, real __can_fill.
+	4 * sizeof(void *) + sizeof(size_t) + 2 * (3 * sizeof(void *) + sizeof(size_t)) +
+	sizeof(bool) +
+	// fill_n/__size_to_integer/__fill_n_a/__fill_a/__fill_a1<unsignedchar>:
+	// real first/n/value/return/tag and runtime uchar temporary/memset args.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(size_t) + 2 * (3 * sizeof(void *)) + sizeof(uint8_t) + sizeof(void *) +
+	sizeof(int) + sizeof(size_t) + sizeof(void *) +
+	// Actual _M_swap_data/_M_copy_data temporary with three pointer fields,
+	// source references and destructor's true allocation-free closure.
+	3 * sizeof(void *) + 2 * 2 * sizeof(void *) + payload_clone_move_frames;
+constexpr size_t item_sidecar_pure_frames =
+	// Original fixed get/put32/64/read_u32, byte loops/values/offsets and
+	// std::copy/copy_n/runtime memmove scopes (already profiled in vector).
+	8 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(uint32_t) + 2 * sizeof(uint64_t) +
+	sizeof(int32_t) + sizeof(bool) + payload_clone_copy_frames;
+struct item_sidecar_budget
+{
+	item_sidecar_reserve_fn reserve;
+	void *context;
+	size_t outer, frames;
+	const item_corpse_metadata *corpse = nullptr;
+	const item_collector_death_enrollment *collector = nullptr;
+	const std::vector<uint8_t> *bytes = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		constexpr size_t observation =
+			10 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool);
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (corpse &&
+		     (!payload_clone_string_heap(corpse->owner_name, false, total) ||
+		      !payload_clone_string_heap(corpse->short_description, false, total) ||
+		      !payload_clone_string_heap(corpse->description, false, total) ||
+		      !payload_clone_string_heap(corpse->keywords, false, total))) ||
+		    (collector &&
+		     !payload_clone_vector_heap(collector->eligible_item_uids, false, total)) ||
+		    (bytes && !payload_clone_vector_heap(*bytes, false, total)) ||
+		    !payload_clone_add(total, observation) || !payload_clone_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool fresh(size_t count, size_t extra) const noexcept
+	{
+		constexpr size_t own = sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+		return count <= SIZE_MAX / sizeof(T) &&
+		       payload_clone_add(extra, count * sizeof(T)) &&
+		       payload_clone_add(extra, own) && peak(extra);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count,
+					  size_t caller_frames = 0) const noexcept
+	{
+		constexpr size_t own = 2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+		size_t request = payload_clone_vector_frames;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (value.size() + count > value.capacity())
+		{
+			size_t next = value.size();
+			if (!payload_clone_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !payload_clone_add(request, next * sizeof(T)))
+				return false;
+		}
+		return payload_clone_add(request, own) &&
+		       payload_clone_add(request, caller_frames) && peak(request);
+	}
+	bool text(std::string &value, const char *source, size_t length, size_t caller_frames) const
+	{
+		constexpr size_t own = 3 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
+		size_t request = payload_clone_string_frames;
+		if (length > value.capacity())
+		{
+			const size_t capacity = value.capacity();
+			size_t next = length;
+			if (capacity > SIZE_MAX / 2)
+				return false;
+			if (next < 2 * capacity)
+				next = 2 * capacity;
+			if (next > value.max_size())
+				next = value.max_size();
+			if (next == SIZE_MAX || !payload_clone_add(request, next + 1))
+				return false;
+		}
+		if (!payload_clone_add(request, own) ||
+		    !payload_clone_add(request, caller_frames) || !peak(request))
+			return false;
+		value.assign(source, length);
+		return true;
+	}
+};
+bool item_sidecar_append_u32(item_sidecar_budget &owner, std::vector<uint8_t> *output,
+			     uint32_t value)
+{
+	if (!output)
+		return false;
+	constexpr size_t own =
+		2 * sizeof(void *) + sizeof(uint32_t) + sizeof(size_t) + sizeof(bool);
+	try
+	{
+		const size_t offset = output->size();
+		if (!owner.growth(*output, sizeof(value), own))
+			return false;
+		output->resize(offset + sizeof(value));
+		put_u32(output->data() + offset, value);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+bool item_sidecar_append_text(item_sidecar_budget &owner, std::vector<uint8_t> *output,
+			      const std::string &value)
+{
+	constexpr size_t own = 3 * sizeof(void *) + sizeof(bool);
+	owner.frames += own;
+	// Scalar end restores the genuine frame on every original return.
+	struct frame_end
+	{
+		item_sidecar_budget &owner;
+		size_t bytes;
+		~frame_end() { owner.frames -= bytes; }
+	};
+	owner.frames += sizeof(frame_end) + sizeof(void *);
+	frame_end tail{ owner, own + sizeof(frame_end) + sizeof(void *) };
+	if (!output || value.size() > UINT32_MAX ||
+	    !item_sidecar_append_u32(owner, output, static_cast<uint32_t>(value.size())))
+		return false;
+	try
+	{
+		if (!owner.growth(*output, value.size()))
+			return false;
+		output->insert(output->end(), value.begin(), value.end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+bool item_sidecar_read_text(item_sidecar_budget &owner, const uint8_t *input, size_t size,
+			    size_t *offset, size_t maximum, std::string *value)
+{
+	constexpr size_t own =
+		4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+	uint32_t length = 0;
+	if (!value || !read_u32(input, size, offset, &length) || length > maximum ||
+	    *offset > size || size - *offset < length)
+		return false;
+	try
+	{
+		if (!owner.text(*value, reinterpret_cast<const char *>(input + *offset), length,
+				own))
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*offset += length;
+	return true;
+}
+bool item_sidecar_encode_corpse_context(const item_corpse_metadata &corpse,
+					std::vector<uint8_t> *encoded, item_sidecar_budget &owner)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!corpse.present)
+		return true;
+	if (!item_sidecar_append_u32(owner, encoded, CORPSE_CONTEXT_VERSION) ||
+	    !item_sidecar_append_u32(owner, encoded, static_cast<uint32_t>(corpse.room_vnum)) ||
+	    !item_sidecar_append_u32(owner, encoded, static_cast<uint32_t>(corpse.weight)) ||
+	    !item_sidecar_append_u32(owner, encoded, corpse.actor_racewar))
+		return false;
+	for (int32_t value : corpse.values)
+		if (!item_sidecar_append_u32(owner, encoded, static_cast<uint32_t>(value)))
+			return false;
+	return item_sidecar_append_text(owner, encoded, corpse.owner_name) &&
+	       item_sidecar_append_text(owner, encoded, corpse.short_description) &&
+	       item_sidecar_append_text(owner, encoded, corpse.description) &&
+	       item_sidecar_append_text(owner, encoded, corpse.keywords);
+}
+
+bool item_sidecar_decode_corpse_context(const uint8_t *encoded, size_t size,
+					item_corpse_metadata *corpse, item_sidecar_budget &owner)
+{
+	if (!corpse || (!encoded && size))
+		return false;
+	*corpse = {};
+	if (!size)
+		return true;
+	size_t offset = 0;
+	uint32_t version = 0, room_vnum = 0, weight = 0, actor_racewar = 0;
+	if (!read_u32(encoded, size, &offset, &version) || version != CORPSE_CONTEXT_VERSION ||
+	    !read_u32(encoded, size, &offset, &room_vnum) ||
+	    !read_u32(encoded, size, &offset, &weight) ||
+	    !read_u32(encoded, size, &offset, &actor_racewar) || actor_racewar > UINT8_MAX)
+		return false;
+	corpse->present = true;
+	corpse->room_vnum = static_cast<int32_t>(room_vnum);
+	corpse->weight = static_cast<int32_t>(weight);
+	corpse->actor_racewar = static_cast<uint8_t>(actor_racewar);
+	for (int32_t &value : corpse->values)
+	{
+		uint32_t decoded = 0;
+		if (!read_u32(encoded, size, &offset, &decoded))
+			return false;
+		value = static_cast<int32_t>(decoded);
+	}
+	return item_sidecar_read_text(owner, encoded, size, &offset,
+				      ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES, &corpse->owner_name) &&
+	       item_sidecar_read_text(owner, encoded, size, &offset,
+				      ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES,
+				      &corpse->short_description) &&
+	       item_sidecar_read_text(owner, encoded, size, &offset,
+				      ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES,
+				      &corpse->description) &&
+	       item_sidecar_read_text(owner, encoded, size, &offset,
+				      ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES, &corpse->keywords) &&
+	       offset == size;
+}
+
+bool item_sidecar_encode_collector_context(const item_collector_death_enrollment &collector,
+					   std::vector<uint8_t> *encoded,
+					   item_sidecar_budget &owner)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!collector.present)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (collector.eligible_item_uids.size() > UINT32_MAX ||
+	    collector.eligible_item_uids.size() >
+		    (CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - fixed_size) / sizeof(uint64_t))
+		return false;
+	try
+	{
+		const size_t count =
+			fixed_size + collector.eligible_item_uids.size() * sizeof(uint64_t);
+		if (!owner.fresh<uint8_t>(count, payload_clone_vector_frames +
+							 item_sidecar_size_constructor_frames +
+							 item_sidecar_fill_assign_frames +
+							 sizeof(std::allocator<uint8_t>) +
+							 sizeof(uint8_t)))
+			return false;
+		encoded->assign(fixed_size + collector.eligible_item_uids.size() * sizeof(uint64_t),
+				0);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t offset = 0;
+	put_u32(encoded->data() + offset, COLLECTOR_CONTEXT_VERSION);
+	offset += sizeof(uint32_t);
+	std::copy(collector.death_operation.bytes.begin(), collector.death_operation.bytes.end(),
+		  encoded->begin() + offset);
+	offset += CRITICAL_COMMAND_ID_BYTES;
+	put_u32(encoded->data() + offset, collector.beneficiary_pid);
+	offset += sizeof(uint32_t);
+	put_u64(encoded->data() + offset, collector.death_time);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.collection_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.sale_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.holding_duration);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.price_percent);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.minimum_value);
+	offset += sizeof(uint64_t);
+	put_u32(encoded->data() + offset,
+		static_cast<uint32_t>(collector.eligible_item_uids.size()));
+	offset += sizeof(uint32_t);
+	for (uint64_t uid : collector.eligible_item_uids)
+	{
+		put_u64(encoded->data() + offset, uid);
+		offset += sizeof(uint64_t);
+	}
+	return offset == encoded->size();
+}
+
+bool item_sidecar_decode_collector_context(const uint8_t *encoded, size_t size,
+					   item_collector_death_enrollment *collector,
+					   item_sidecar_budget &owner)
+{
+	if (!collector || (!encoded && size))
+		return false;
+	*collector = {};
+	if (!size)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (size < fixed_size || get_u32(encoded) != COLLECTOR_CONTEXT_VERSION)
+		return false;
+	size_t offset = sizeof(uint32_t);
+	std::copy_n(encoded + offset, collector->death_operation.bytes.size(),
+		    collector->death_operation.bytes.begin());
+	offset += collector->death_operation.bytes.size();
+	collector->beneficiary_pid = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	collector->death_time = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.collection_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.sale_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.holding_duration = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.price_percent = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.minimum_value = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	const uint32_t count = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	if (count > ITEM_TRANSFER_MAX_ITEMS ||
+	    size - offset != static_cast<size_t>(count) * sizeof(uint64_t))
+		return false;
+	try
+	{
+		if (!owner.fresh<uint64_t>(count, payload_clone_vector_frames))
+			return false;
+		collector->eligible_item_uids.reserve(count);
+		for (uint32_t index = 0; index < count; ++index)
+		{
+			if (!owner.growth(collector->eligible_item_uids, 1))
+				return false;
+			collector->eligible_item_uids.push_back(get_u64(encoded + offset));
+			offset += sizeof(uint64_t);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	collector->present = true;
+	return offset == size;
+}
+
+} // namespace
+
+bool item_transfer_corpse_context_encode_bounded(const item_corpse_metadata &corpse,
+						 std::vector<uint8_t> *encoded,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept
+{
+	if (!encoded || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = sizeof(std::vector<uint8_t>) + 7 * sizeof(void *) +
+				  4 * sizeof(size_t) + sizeof(uint64_t) + sizeof(int32_t) +
+				  sizeof(bool) + item_sidecar_pure_frames +
+				  payload_clone_vector_frames + payload_clone_move_frames;
+	item_sidecar_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		owner.bytes = &candidate;
+		if (!item_sidecar_encode_corpse_context(corpse, &candidate, owner) ||
+		    !owner.peak(payload_clone_move_frames))
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_corpse_context_decode_bounded(const uint8_t *encoded, size_t size,
+						 item_corpse_metadata *corpse,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept
+{
+	if (!corpse || (!encoded && size) || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		2 * sizeof(item_corpse_metadata) + 8 * sizeof(void *) + 6 * sizeof(size_t) +
+		5 * sizeof(uint32_t) + sizeof(uint64_t) + sizeof(int32_t) + sizeof(bool) +
+		item_sidecar_pure_frames +
+		4 * (payload_clone_string_constructor_frames + payload_clone_string_move_frames);
+	item_sidecar_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		item_corpse_metadata candidate;
+		owner.corpse = &candidate;
+		if (!item_sidecar_decode_corpse_context(encoded, size, &candidate, owner) ||
+		    !owner.peak())
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_corpse_metadata>);
+		*corpse = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_collector_context_encode_bounded(
+	const item_collector_death_enrollment &collector, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!encoded || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		sizeof(std::vector<uint8_t>) + 7 * sizeof(void *) + 4 * sizeof(size_t) +
+		sizeof(uint64_t) + sizeof(int32_t) + sizeof(bool) + item_sidecar_pure_frames +
+		payload_clone_vector_frames + payload_clone_move_frames + sizeof(size_t);
+	item_sidecar_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		owner.bytes = &candidate;
+		if (!item_sidecar_encode_collector_context(collector, &candidate, owner) ||
+		    !owner.peak(payload_clone_move_frames))
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_collector_context_decode_bounded(const uint8_t *encoded, size_t size,
+						    item_collector_death_enrollment *collector,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept
+{
+	if (!collector || (!encoded && size) || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 2 * sizeof(item_collector_death_enrollment) + 8 * sizeof(void *) +
+				  6 * sizeof(size_t) + 5 * sizeof(uint32_t) + sizeof(uint64_t) +
+				  sizeof(int32_t) + sizeof(bool) + item_sidecar_pure_frames +
+				  payload_clone_vector_frames + payload_clone_move_frames;
+	item_sidecar_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		item_collector_death_enrollment candidate;
+		owner.collector = &candidate;
+		if (!item_sidecar_decode_collector_context(encoded, size, &candidate, owner) ||
+		    !owner.peak())
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_collector_death_enrollment>);
+		*collector = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
