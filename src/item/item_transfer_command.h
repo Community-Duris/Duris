@@ -494,4 +494,17 @@ bool item_owner_key_bounded(const item_owner_identity &, critical_entity_key *,
 			    bool (*reserve)(size_t, void *) noexcept, void *context,
 			    size_t outer_live) noexcept;
 
+// Full original native recovery forests/consumed-root/publication wire codecs.
+// Outer owns authentic input/prior output and other caller state. Private real
+// heaps remain current at every request; outputs/actual retained scalars strong.
+// Pure companions only; original native authority/refusal/dispatch remain required.
+bool item_transfer_native_recovery_encode_bounded(
+	const item_native_mobile_recovery_context &, std::vector<uint8_t> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool item_transfer_native_recovery_decode_bounded(
+	std::span<const uint8_t>, item_native_mobile_recovery_context *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_recovery_heap_bytes = nullptr) noexcept;
+
 #endif
