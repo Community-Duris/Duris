@@ -97,4 +97,28 @@ bool player_death_restitution_runtime_complete(
 	const critical_completion &completion,
 	const player_death_restitution_runtime_callbacks &callbacks, void *context);
 
+// Closed private replay owner: only the genuine game-core adapter may construct
+// its paired callback table. No public caller can supply an unbounded callback
+// and assert that its allocation behavior has been qualified.
+class player_death_restitution_replay_budget_owner;
+class player_death_restitution_runtime_replay_budget_owner
+{
+	friend class player_death_restitution_replay_budget_owner;
+	using reserve_fn = bool (*)(size_t, void *) noexcept;
+	using offline_fn = bool (*)(uint32_t, void *, reserve_fn, void *, size_t) noexcept;
+	using target_fn = bool (*)(uint32_t, uint64_t, void *, reserve_fn, void *, size_t) noexcept;
+	struct callbacks
+	{
+		offline_fn recipient_is_offline;
+		target_fn pending_save_is_empty;
+		target_fn acquire_target_save_login_fence;
+	};
+	static bool command_valid_bounded(const critical_command &, reserve_fn, void *,
+					  size_t) noexcept;
+	static player_death_restitution_runtime_result
+	restore(const critical_command &, const player_death_restitution_runtime_callbacks &,
+		void *, const callbacks &, reserve_fn, void *, size_t,
+		player_death_restitution_runtime_submission *) noexcept;
+};
+
 #endif
