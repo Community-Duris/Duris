@@ -241,6 +241,8 @@
       "src/economy/economic_accounting_types.h": "7ece1fcd2bfe0022dea37abc2329f71f6ae1ef635e0b37ee88c2c7c881c10a67",
       "src/economy/economic_command_admission.c": "7357959763514749caef941e4036a1654c5f1b818cb662713630ec5fc3c53c9b",
       "src/economy/economic_command_admission.h": "3d1336dabf0461511e0be5097cc137e9f08a8ae15a334c7c4dd034270d3793f1",
+      "src/economy/economic_currency_adapter.c": "318279863a7be67d1131229704571f3b6e6efbf0318c7e299565a7d64ae931fd",
+      "src/economy/economic_currency_adapter.h": "09071b1c1d7fc99d5bca587aabc55981981ec2e60b0478202a9d16648208613c",
       "src/economy/economic_gameplay_authority.c": "4806caf3209d51870bde4229e03832a1538a45c14bf52b57d2a8ba8c59138d33",
       "src/economy/economic_gameplay_authority.h": "0e28212e90fab12da0cbc2439b0553cdca64b4dc8c0a2967a222ee19b5f9bacd",
       "src/economy/economic_initialized_world_money_correspondence.c": "4160031165956890992f3cb98f76eb8bdce3d811466806dab3e2e87bffcd0bbb",

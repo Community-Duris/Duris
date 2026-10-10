@@ -66905,7 +66905,9 @@
       "src/economy/auction_settlement_accounting.c": "8bc0b719c4e719c9d2ce72c79a79dca1257aa43ee90b94e45acbf01e0cfed1b8",
       "src/economy/auction_settlement_accounting.h": "dc59b2d9f106e75ceb89b3cb77c8bd2398f2c232ec60537d4613bbe075ebc3db",
       "src/economy/auction_money_claim_accounting.c": "c94dd239f970c4fbaadfe0c10006198240b59e0d43d7e074eea56a2c6f036da2",
-      "src/economy/auction_money_claim_accounting.h": "9d6884069508eba68f010f2c1ff8ceac0e36f83b1bf4d34d00404be9c0486aa5"
+      "src/economy/auction_money_claim_accounting.h": "9d6884069508eba68f010f2c1ff8ceac0e36f83b1bf4d34d00404be9c0486aa5",
+      "src/economy/economic_currency_adapter.c": "318279863a7be67d1131229704571f3b6e6efbf0318c7e299565a7d64ae931fd",
+      "src/economy/economic_currency_adapter.h": "09071b1c1d7fc99d5bca587aabc55981981ec2e60b0478202a9d16648208613c"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
