@@ -18,6 +18,7 @@ struct flatfile_ordinary_native_birth_projection
 };
 
 class critical_ordinary_native_flat_execution_owner;
+class flatfile_native_mobile_birth_ordinary_publication_storage;
 class flatfile_accounting_native_mobile_birth_ordinary_transaction final
 {
     public:
@@ -29,6 +30,7 @@ class flatfile_accounting_native_mobile_birth_ordinary_transaction final
 
     private:
 	friend class critical_ordinary_native_flat_execution_owner;
+	friend class flatfile_native_mobile_birth_ordinary_publication_storage;
 	// Sole genuine executing owner authenticates thread/attempt/generation,
 	// full immutable original source and live-world exclusion BEFORE entry.
 	// It borrows identity THEN authority, recovers original journals BEFORE
@@ -76,6 +78,23 @@ class flatfile_accounting_native_mobile_birth_ordinary_transaction final
 	std::unique_ptr<implementation> state_;
 	explicit flatfile_accounting_native_mobile_birth_ordinary_transaction(
 		std::unique_ptr<implementation>);
+};
+
+// Private game-owner bridge to the complete original CURRENT storage proof.
+// Caller authenticates its original envelope/generation/delivered receipt and
+// actual lifecycle, then borrows same-root identity->authority locks, recovers
+// the authority journal, and consumes the projection under that SAME interval.
+// The projection conveys no world/publication/ACK or execution-lease authority.
+// This facade acquires no locks and performs no preparation or financial write.
+class flatfile_native_mobile_birth_ordinary_publication_storage final
+{
+    private:
+	friend class quest_mobile_native_birth_owner;
+	static unsigned int
+	read_current_locked(const std::string &, const flatfile_identity_lock &,
+			    const flatfile_authority_lock &,
+			    const critical_native_recovery_envelope &, const critical_completion &,
+			    flatfile_ordinary_native_birth_projection *) noexcept;
 };
 
 #endif
