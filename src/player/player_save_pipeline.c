@@ -1406,6 +1406,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 
 bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_resolved_recovery)())
 {
+	std::lock_guard<std::mutex> lifecycle(player_save_pipeline_lifecycle_detail::mutex);
 	if (!journal_directory || journal_directory[0] != '/')
 		return false;
 	{
@@ -1450,6 +1451,7 @@ bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_r
 
 bool player_save_pipeline_start(void)
 {
+	std::lock_guard<std::mutex> lifecycle(player_save_pipeline_lifecycle_detail::mutex);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || execution_started ||
@@ -1505,6 +1507,7 @@ bool player_save_pipeline_init(const char *journal_directory, void (*verify_reso
 /** Join the dispatcher and workers, then release retained pipeline state. */
 void player_save_pipeline_shutdown(void)
 {
+	std::lock_guard<std::mutex> lifecycle(player_save_pipeline_lifecycle_detail::mutex);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		replay_gate.begin_replay();
@@ -5312,6 +5315,7 @@ bool player_save_pipeline_drain_owned(uint64_t timeout_msec)
 
 bool player_save_pipeline_shutdown_owned(void)
 {
+	std::lock_guard<std::mutex> lifecycle(player_save_pipeline_lifecycle_detail::mutex);
 	const auto epoch = player_save_execution_guard::current_ownership_epoch();
 	if (!epoch || !nevent_is_game_thread() ||
 	    !critical_command_coordinator_lifecycle_guard_held_by_current_thread())
@@ -5581,6 +5585,7 @@ bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 void player_save_pipeline_reset_for_tests(void)
 {
 	player_save_pipeline_shutdown();
+	std::lock_guard<std::mutex> lifecycle(player_save_pipeline_lifecycle_detail::mutex);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (shutdown_incomplete)
@@ -10059,7 +10064,8 @@ bool coin_save_other_pipeline_current_locked(size_t *output) noexcept
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
 	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 	using recapture_node = std::_Rb_tree_node<int32_t>;
-	size_t bytes = sizeof(pipeline_mutex) + sizeof(append_available) + sizeof(pending_append) +
+	size_t bytes = sizeof(player_save_pipeline_lifecycle_detail::mutex) +
+		       sizeof(pipeline_mutex) + sizeof(append_available) + sizeof(pending_append) +
 		       sizeof(durable_ready) + sizeof(append_retry) + sizeof(dispatcher) +
 		       sizeof(health) + sizeof(replay_gate) + sizeof(retained_bytes) +
 		       sizeof(stop_requested) + sizeof(accepting) + sizeof(execution_started) +

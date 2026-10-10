@@ -822,4 +822,38 @@ class player_save_coin_replay_budget_scope_owner final
 	void *context_;
 };
 
+// ONE real process-wide lifecycle exclusion. C++20 inline linkage makes the
+// coordinator and pipeline use the same mutex even in minimal link targets.
+// Its retained inline storage is counted once in pipeline OTHER, not CURRENT C.
+namespace player_save_pipeline_lifecycle_detail
+{
+inline std::mutex mutex;
+}
+
+// Genuine creation/join exclusion, acquired BEFORE coordinator/pipeline locks.
+// Only the actual mixed startup owner can construct it. It is an owning lock,
+// not readiness, a byte snapshot, an activation permit or a worker-idle flag.
+class player_save_prepared_startup_lifecycle_owner final
+{
+    public:
+	~player_save_prepared_startup_lifecycle_owner() noexcept = default;
+
+    private:
+	friend class critical_mixed_startup_replay_owner;
+	player_save_prepared_startup_lifecycle_owner()
+		: lock_(player_save_pipeline_lifecycle_detail::mutex)
+	{
+	}
+	player_save_prepared_startup_lifecycle_owner(
+		const player_save_prepared_startup_lifecycle_owner &) = delete;
+	player_save_prepared_startup_lifecycle_owner &
+	operator=(const player_save_prepared_startup_lifecycle_owner &) = delete;
+	bool held() const noexcept
+	{
+		return lock_.mutex() == &player_save_pipeline_lifecycle_detail::mutex &&
+		       lock_.owns_lock();
+	}
+	std::unique_lock<std::mutex> lock_;
+};
+
 #endif

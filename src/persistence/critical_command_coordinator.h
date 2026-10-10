@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <span>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 class economic_sql_lifecycle_guard;
@@ -750,5 +751,62 @@ size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases,
 						  size_t *total, size_t offset = 0);
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
 void critical_command_coordinator_reset_for_tests(void);
+
+class player_save_prepared_startup_lifecycle_owner;
+// Minted only by the real coordinator initializer while its actual unique_lock
+// and earlier-acquired lifecycle owner remain live. Prospective helpers below
+// are unselected: ROOT still owns initial frame/registry/journal admission and
+// all complete bounded family joins. No public claimed-baseline DTO exists.
+class critical_mixed_startup_replay_owner final
+{
+    private:
+	friend class critical_gameplay_startup_owner;
+	friend bool critical_command_coordinator_init(
+		const char *journal_directory_path, critical_apply_fn apply, void *context,
+		unsigned int worker_count, critical_replay_observer_fn replay_observer,
+		void *replay_context, critical_extension_validator_fn extension_validator,
+		critical_native_recovery_observer_fn native_replay_observer,
+		critical_native_recovery_publication_validator_fn native_publication_validator,
+		critical_native_birth_recovery_validators birth_validators,
+		critical_native_recovery_pair_validator_fn quest_pair_validator,
+		critical_native_auction_recovery_validators auction_validators,
+		critical_zone_reset_recovery_validators reset_validators,
+		critical_shared_native_apply_fn shared_native_apply,
+		critical_zone_reset_item_apply_fn zone_reset_apply,
+		critical_extension_validator_bounded_fn extension_validator_bounded,
+		critical_native_recovery_observer_bounded_fn native_replay_observer_bounded,
+		critical_ordinary_native_apply_fn ordinary_native_apply);
+
+	static player_save_prepared_startup_lifecycle_owner acquire_lifecycle();
+	critical_mixed_startup_replay_owner(
+		const std::unique_lock<std::mutex> &,
+		const player_save_prepared_startup_lifecycle_owner &) noexcept;
+	~critical_mixed_startup_replay_owner() noexcept;
+	critical_mixed_startup_replay_owner(const critical_mixed_startup_replay_owner &) = delete;
+	critical_mixed_startup_replay_owner &
+	operator=(const critical_mixed_startup_replay_owner &) = delete;
+	static const critical_mixed_startup_replay_owner *current() noexcept;
+	bool held() const noexcept;
+	// Additional real caller/observer profiles. ROOT already owns the original
+	// init lock/locals, full CURRENT-C observation/lender profile, journal and
+	// every foreign registry/caller profile BEFORE the first retained query.
+	static size_t additional_frame_bytes() noexcept;
+	// Genuine coordinator-only bridge; full pipeline/currency receivers live
+	// in comm.c so minimal original coordinator links gain no new providers.
+	bool reserve_coordinator_cut(bool (*)(size_t, void *) noexcept, void *,
+				     size_t) const noexcept;
+	bool reserve_current_cut(bool (*)(size_t, void *) noexcept, void *, size_t) const noexcept;
+	bool restore_currency(const critical_command &, bool (*)(size_t, void *) noexcept, void *,
+			      size_t) const noexcept;
+	struct budget_bridge
+	{
+		const critical_mixed_startup_replay_owner &owner;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		static bool relay(size_t, void *) noexcept;
+	};
+	const std::unique_lock<std::mutex> &init_lock_;
+	const player_save_prepared_startup_lifecycle_owner &lifecycle_;
+};
 
 #endif

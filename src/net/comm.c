@@ -166,6 +166,8 @@
 #include "world/epic_transaction.h"
 #include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_save_execution_guard.h"
+#include "player/player_retained_deque.h"
 #include "player/player_quarantine_recovery.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_death_restitution_adapter.h"
@@ -6754,4 +6756,196 @@ bool diagnostic_send_to_char_bounded(const char *message, P_char ch,
 		return false;
 	}
 #endif
+}
+
+// Prospective complete mixed owning companion, deliberately UNSELECTED.
+// Original other-family restore algorithms remain complete and unchanged;
+// their owning bounded joins and ROOT's first frame/journal/registry admission
+// must be supplied before this can become a bounded startup selector.
+class critical_gameplay_startup_owner final
+{
+    public:
+	static bool restore_replayed_on_startup_cut(const critical_command &command, void *context,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *budget_context, size_t outer) noexcept
+	{
+		const auto *owner = critical_mixed_startup_replay_owner::current();
+		if (!owner || !reserve)
+			return false;
+		try
+		{
+			return player_death_restitution_runtime_restore_replayed_command(command,
+											 context) &&
+			       owner->restore_currency(command, reserve, budget_context, outer) &&
+			       spell_item_lifecycle_restore_replayed_command(command) &&
+			       item_movement_transaction_restore_replayed_command(command) &&
+			       quest_mobile_native_birth_restore(command) &&
+			       (command.type != critical_command_type::auction ||
+				command.schema_version !=
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+				command.payload_version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION ||
+				!command.publication_required ||
+				auction_native_publication_restore_replayed_command(command)) &&
+			       (command.type != critical_command_type::shop_trade ||
+				command.schema_version !=
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+				!command.publication_required ||
+				shop_trade_transaction_restore_replayed_command(command)) &&
+			       (command.type != critical_command_type::collector ||
+				command.schema_version !=
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+				!command.publication_required ||
+				collector_service_restore_replayed_purchase(command));
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+	static bool restore_native_on_startup_cut(const critical_native_recovery_envelope &envelope,
+						  void *context) noexcept
+	{
+		const auto *owner = critical_mixed_startup_replay_owner::current();
+		if (!owner)
+			return false;
+		try
+		{
+			// All original ROOM/mobile/auction/retirement/item branches remain.
+			// No pipeline scope spans this dispatcher; families can relock it.
+			return critical_gameplay_restore_native_envelope(envelope, context);
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+};
+
+namespace
+{
+// Same complete overflow-checked arithmetic as coordinator's original helper;
+// no provider or retained owner is hidden behind this local computation.
+bool mixed_startup_storage_add(size_t &total, size_t bytes) noexcept
+{
+	if (bytes > SIZE_MAX - total)
+		return false;
+	total += bytes;
+	return true;
+}
+// Real fresh execution-guard observer: this/output/bytes/result, lock_guard and
+// reference-capturing add_nodes closure. Three map sizes are sequential; the
+// live lambda owns count/width/request/result around genuine map/tree queries.
+constexpr size_t mixed_startup_guard_observer_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(std::lock_guard<std::mutex>) +
+	sizeof(void *) +
+	player_retained_observer_source::maximum(player_retained_observer_source::leaf_lock_queries,
+						 sizeof(void *) + 3 * sizeof(size_t) +
+							 sizeof(bool) +
+							 2 * (sizeof(void *) + sizeof(size_t)));
+// Real held/current query chains, including the lifecycle's unique_lock mutex
+// and owns_lock methods. Parent reference objects remain live around queries.
+constexpr size_t mixed_startup_identity_frames =
+	4 * sizeof(void *) + 3 * sizeof(bool) + 2 * (sizeof(void *) + sizeof(bool));
+// Real coordinator-only bridge arguments/return and its repeated held query.
+// This prospective charge precedes entry to the actual bridge and lender.
+constexpr size_t mixed_startup_coordinator_bridge_frames =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + mixed_startup_identity_frames;
+constexpr size_t mixed_startup_bridge_frames =
+	sizeof(size_t) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) +
+	mixed_startup_guard_observer_frames + mixed_startup_identity_frames +
+	mixed_startup_coordinator_bridge_frames;
+} // namespace
+
+size_t critical_mixed_startup_replay_owner::additional_frame_bytes() noexcept
+{
+	// Original init's unique_lock and declared locals remain caller-owned.
+	// These actual new owners/queries coexist with the complete prospective
+	// pipeline/currency profiles. Existing CURRENT-C/journal/foreign frames
+	// stay ROOT-owned; this explicitly grants no first-call budget closure.
+	return sizeof(critical_mixed_startup_replay_owner) +
+	       sizeof(player_save_prepared_startup_lifecycle_owner) + sizeof(budget_bridge) +
+	       7 * sizeof(void *) + 7 * sizeof(size_t) + 3 * sizeof(bool) +
+	       mixed_startup_identity_frames + mixed_startup_bridge_frames +
+	       player_save_coin_replay_budget_scope_owner::observer_frame_bytes() +
+	       currency_transaction_replay_owner::frame_bytes() + 3 * sizeof(size_t);
+}
+
+bool critical_mixed_startup_replay_owner::budget_bridge::relay(size_t exclusive,
+							       void *opaque) noexcept
+{
+	if (!opaque)
+		return false;
+	auto &bridge = *static_cast<budget_bridge *>(opaque);
+	if (!bridge.reserve || !bridge.owner.held())
+		return false;
+	size_t full = exclusive, guard = 0;
+	// Leaf guard lock is released BEFORE CURRENT-C observation or callback.
+	// Fresh map/hold storage is observed again after each real replay mutation.
+	if (!player_save_execution_guard::current_storage_bytes(&guard) ||
+	    !mixed_startup_storage_add(full, guard) ||
+	    !mixed_startup_storage_add(full, mixed_startup_bridge_frames))
+		return false;
+	return bridge.owner.reserve_coordinator_cut(bridge.reserve, bridge.context, full);
+}
+
+bool critical_mixed_startup_replay_owner::reserve_current_cut(
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) const noexcept
+{
+	if (!reserve || !held())
+		return false;
+	try
+	{
+		budget_bridge bridge{ *this, reserve, context };
+		player_save_coin_replay_budget_scope_owner scope(budget_bridge::relay, &bridge);
+		size_t full = outer, pipeline = 0, currency = 0;
+		// ROOT must already own the complete same-cut prospective observation
+		// frames and real journal/foreign registry baselines BEFORE entry.
+		// No exclusive-only pre-reserve or reserve(cap) substitutes for that
+		// currently UNJOINED initial admission. This seam is unselected.
+		if (!scope.bootstrap_storage_bytes(&pipeline) ||
+		    !currency_transaction_current_storage_bytes(&currency) ||
+		    !mixed_startup_storage_add(full, pipeline) ||
+		    !mixed_startup_storage_add(full, currency) ||
+		    !mixed_startup_storage_add(full, sizeof(bridge)) ||
+		    !mixed_startup_storage_add(
+			    full,
+			    player_save_coin_replay_budget_scope_owner::observer_frame_bytes()) ||
+		    !mixed_startup_storage_add(full, 4 * sizeof(void *) + 4 * sizeof(size_t) +
+							     sizeof(bool)))
+			return false;
+		// Scope remains genuinely held until callback and leaf lenders return.
+		return budget_bridge::relay(full, &bridge);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_mixed_startup_replay_owner::restore_currency(const critical_command &command,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer) const noexcept
+{
+	if (!reserve || !held())
+		return false;
+	try
+	{
+		budget_bridge bridge{ *this, reserve, context };
+		player_save_coin_replay_budget_scope_owner scope(budget_bridge::relay, &bridge);
+		size_t full = outer;
+		if (!mixed_startup_storage_add(full, sizeof(bridge)) ||
+		    !mixed_startup_storage_add(full, 4 * sizeof(void *) + 2 * sizeof(size_t) +
+							     sizeof(bool)))
+			return false;
+		// Complete original bank/coin/source/decode/insert/erase/health body.
+		// It borrows this SAME scope; no second pipeline mutex acquisition.
+		return currency_transaction_replay_owner::restore(command, scope, full);
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// Pipeline scope ends before any original other-family callback proceeds;
+	// lifecycle and real coordinator init ownership persist across the replay.
 }
