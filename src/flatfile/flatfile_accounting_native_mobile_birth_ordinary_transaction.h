@@ -74,6 +74,21 @@ class flatfile_accounting_native_mobile_birth_ordinary_transaction final
 						 const flatfile_authority_lock &,
 						 const critical_native_recovery_envelope &,
 						 flatfile_accounting_record *) noexcept;
+	// Complete passive CURRENT companions. Caller holds both same-root locks,
+	// owns authentic envelope, prior/inline outputs and outside state in outer.
+	// Full canonical command/history/completion/receipt proof and final both-lock
+	// check remain mandatory. Strong output/heap; no acquisition/recovery/write.
+	static unsigned int verify_record_locked_bounded(
+		const std::string &, const flatfile_identity_lock &,
+		const flatfile_authority_lock &, const critical_native_recovery_envelope &,
+		flatfile_accounting_record *, flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_record_heap = nullptr) noexcept;
+	static unsigned int read_current_locked_bounded(
+		const std::string &, const flatfile_identity_lock &,
+		const flatfile_authority_lock &, const critical_native_recovery_envelope &,
+		const critical_completion &, flatfile_ordinary_native_birth_projection *,
+		flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_projection_heap = nullptr) noexcept;
 	struct implementation;
 	std::unique_ptr<implementation> state_;
 	explicit flatfile_accounting_native_mobile_birth_ordinary_transaction(
@@ -95,6 +110,15 @@ class flatfile_native_mobile_birth_ordinary_publication_storage final
 			    const flatfile_authority_lock &,
 			    const critical_native_recovery_envelope &, const critical_completion &,
 			    flatfile_ordinary_native_birth_projection *) noexcept;
+	// Genuine private birth-owner bridge to the complete sibling bounded proof;
+	// no selector, execution, recovery, publication or ACK authority is added.
+	// Heap excludes inline projection; both outputs transfer only on success.
+	static unsigned int read_current_locked_bounded(
+		const std::string &, const flatfile_identity_lock &,
+		const flatfile_authority_lock &, const critical_native_recovery_envelope &,
+		const critical_completion &, flatfile_ordinary_native_birth_projection *,
+		flatfile_scratch_reserve_fn, void *, size_t,
+		size_t *retained_projection_heap = nullptr) noexcept;
 };
 
 #endif
