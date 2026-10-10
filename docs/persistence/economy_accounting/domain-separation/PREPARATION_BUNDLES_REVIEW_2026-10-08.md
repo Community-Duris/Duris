@@ -2848,6 +2848,86 @@ F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished an
 heartbeat ACTIVE through the continuing broader completion audit.
 
 
+## FD metadata findings and preserved original Quest failure - 2026-10-10
+
+This additive correction supersedes ONLY erroneous line-count/newline and
+library-path prose in the original FD selecting section. Fixed F/P providers,
+selecting2a01, original sections, packets, defaults, attempts, history and all
+CLOSED seals remain immutable. No source repin, algorithm repair or execution.
+
+Fresh read-only Git reports store C775 additions/0 removals and transaction
+C702 additions/1 removal: actual1477 added C lines. Both entire original C
+byte prefixes remain exact; additive byte suffixes also contain1477 lines.
+Original store C HAS terminal LF. Original transaction C LACKS terminal LF,
+and its additive suffix begins with the separator LF. The earlier selecting
+1478/store-terminal-LF claims were root documentation errors. Preserved root
+flat-diagnostic-selection-v3/authentication.json already records775+702 and
+exact whole prefixes/transforms/inverses. No source/evidence normalization.
+
+Architecture independently identified these metadata errors before its original
+normal default. It preserves failed unsealed range preparations and continues
+the SAME sole fixed FD1-FD4 authority delivery. No second task or live expansion.
+Original selecting2a01 context remains fixed, with this additive disposition.
+
+Quest original FD normal default ONCE FAILED at19:32:55UTC: exit1/stdout0/
+stderr587, SHA25655d78cbc8b6b4e56bc1dc1fed096196238c35212361ac3118c988823aee9cd40.
+Whole13935-byte stdlib/read-only Git verifier and28262-byte authored note read
+and audited by root. Its heading selector includes the document title plus
+FD1-FD4; actual five keys differ from expected four. Root authenticates the
+original binary stdout/stderr/exit/attempt and all92 delivery seals unchanged.
+Canonical FOUR actual files remain; requested fifth receipt ABSENT. Predicted
+894-byte stdout SHA2566f123885543e5d8785746ae680238db060724a524e9aacd9c35a49388dacc61f
+is prediction ONLY, never actual stdout/pass receipt. Root original default
+NOT_RUN_WILL_NOT_DISPATCH; no original rerun/rewrite/reseal/relabel follows.
+A later1478 numstat assertion is independently false but was NOT reached by
+the original failed run. These are metadata findings, not native failures.
+
+Independent root read-only metadata authentication verifies30 fresh whole
+providers/four commit objects/actualTEN publicationpaths/nineM+oneA/nineteen
+mode/blob endpoints/seven whole transforms and inverses/four selected source
+equalities/two original C prefixes/58 finite byte ranges/eighteen captured
+GNU13 headers/version/packageMD5/original provenance and source equality/
+328 historical streaming-only controls. Byte authentication does not establish
+full source semantics. Original note/PINS/verifier/INDEX and failure evidence
+remain unchanged. Whole required source/design review PENDING; no separate
+correction packet/assignment/default selected yet. No failed/CLOSED verifier
+import/dispatch/exec/eval/compile/dynamic import; old controls streamhash only.
+
+Captured GNU13 basic_string.h3525-3541 __str_concat and3604-3615 lvalue
+string-plus-C-string operator delegate use a fresh allocator-selected string,
+reserve and two appends. Actual domains_directory returns root + "/domains".
+Fixed transaction recovery/acquire comments and source carrier expressions
+describe root-copy/append. Root authenticated captured provenance and read
+complete concat/delegate/helper/recovery/acquire source controls. The claimed
+path correspondence remains an explicit source/profile qualification finding,
+not an evaluated bound or native defect. Ordinary owned_root copy remains a
+distinct real allocation. Original carriers/algorithms remain UNEVALUATED and
+unchanged; no model, source-law repair or blanket conservative equivalence.
+
+Root evidence D:/Dev/Temp/coordinator-original-flat-diagnostic-completion-review-20261010
+contains quest-failure-metadata-authentication.json and exact captured/source
+context. Root remains clean selecting2a01 for future original architecture
+receipt; no checkout advance. Status publication changes ONLY three owned
+coordination docs; full insertion inverses restore actual2a01. No private
+artifact import/commit or maintained-source delta. Both original AS root
+1936/763 ONCE and all earlier RB/RC/TC receipts/history stay CLOSED NOT_RERUN.
+
+Sole fixed FD pair persists: Architecture active original preparation; Quest
+failed original delivery under independent review. No second task/live expansion/
+repin/CLOSED reopen/adoption wait/restart. Full native/compiler/preprocessor/
+ELF/build/product/DB/runtime/lock/IO/deploy/activation/production UNEXECUTED.
+Actual root/A/Q Goal IDs/objectives/BLOCKED states remain unchanged; no mutation.
+Worker checkouts/current Quest three hashes/stash/exact old historical copies/
+archives/old+new containers/jobs/services/build/failure evidence preserved.
+Missing genuine integrated caller/lock/global/alias/profile/library/emitted/ABI/
+allocator/libc/OpenSSL/fault/native32MiB/full-host/producer/publication/recovery/
+ACK blocks dependent execution only. Primary maintained qualification/Plan5
+backend/workers private D only. All queued owner-held obligations persist.
+Broad Plans1-5/R1-R8 audit OPEN; accounting INACTIVE/admission CLOSED/coverage
+INCOMPLETE/release BLOCKED. Heartbeat ACTIVE until broad audit/user pause.
+All Git fetch/merge/commit/push gc.auto=0; no destructive/housekeeping actions.
+
+
 ## Original activity and scheduler pair CLOSED; flat diagnostic completion pair selected - 2026-10-10
 
 Both original AS packets independently SOURCE/DESIGN/METADATA PASS CLOSED_NO_CORRECTION
