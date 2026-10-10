@@ -260,4 +260,19 @@ constexpr size_t critical_command_startup_codec_source_query_frame_bytes() noexc
 	return sizeof(size_t *) + sizeof(bool);
 }
 
+// Full source/initial contracts for unchanged critical_operation_id_derive_bounded.
+// Pre-admit complete SOURCE + initial inline with the actual caller carriers.
+// The bounded derivation already owns its original local/copy/SHA admission:
+// pass outer + the retained supplement, never outer + complete SOURCE, into it.
+// Preserve that supplement until the child returns, including early zero checks.
+// Inputs/prior output/callback implementation remain caller-owned. Unsupported
+// ordinary GNU13 LP64 ABI1/OpenSSL3.0.13 policy preserves all profile outputs.
+bool critical_operation_id_derive_source_frame_bytes(size_t *) noexcept;
+bool critical_operation_id_derive_initial_inline_bytes(size_t *) noexcept;
+bool critical_operation_id_derive_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t critical_operation_id_derive_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif
