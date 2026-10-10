@@ -250,6 +250,13 @@ class quest_mobile_native_birth_owner final
 	static void finish_reset_flat() noexcept;
 	static bool ordinary_flat_freeze_source_current(size_t) noexcept;
 	static bool freeze_ordinary_flat_command(size_t, size_t);
+	struct ordinary_flat_envelope_budget;
+	static size_t ordinary_flat_envelope_source_frames() noexcept;
+	static bool reserve_ordinary_flat_envelope(size_t, void *) noexcept;
+	static bool reserve_ordinary_flat_submission(size_t, void *) noexcept;
+	static bool prepare_ordinary_flat_envelope(size_t, size_t);
+	static bool ordinary_flat_submission_role_current(size_t, size_t) noexcept;
+
 	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
 	static bool ordinary_flat_execution_source_current(
 		const quest_mobile_native_birth_ordinary_execution_lease &, const void *) noexcept;

@@ -44,6 +44,8 @@
 #include <unordered_map>
 #include <mutex>
 #include <condition_variable>
+#include <utility>
+#include <type_traits>
 
 extern index_data *mob_index;
 extern index_data *obj_index;
@@ -4409,38 +4411,60 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 
 					if (b.envelope.attachment.empty())
 					{
-						native_mobile_birth_recovery_context context;
-						context.items.reserve(b.stock.size());
-						for (const auto &item : b.stock)
+						if (b.npc_flat_factory_scope)
 						{
-							native_mobile_birth_recovery_item row;
-							row.object_uid = item.uid;
-							row.effects.resize(item.effects.size());
-							context.items.push_back(std::move(row));
+							const size_t envelope_outer =
+								sizeof(prepare_original_resets) +
+								sizeof(recovery_only) + sizeof(i) +
+								sizeof(&b) + sizeof(size_t);
+							if (!prepare_ordinary_flat_envelope(
+								    i, envelope_outer))
+								continue;
 						}
-						critical_native_recovery_envelope envelope;
-						envelope.command = b.command;
-						envelope.revision = 1;
-						envelope.phase = critical_native_recovery_phase::
-							execution_pending;
-						if (birth_recovery_encode(
-							    b.command, context,
-							    &envelope.attachment,
-							    b.shared_checkpoint.get()) !=
-							    economic_accounting_error::ok ||
-						    !birth_recovery_initial(envelope))
-							continue;
-						b.envelope = std::move(envelope);
-						b.recovery = std::move(context);
-						if (!charge())
+						else
 						{
-							b.envelope = {};
-							b.recovery = {};
-							continue;
+							native_mobile_birth_recovery_context context;
+							context.items.reserve(b.stock.size());
+							for (const auto &item : b.stock)
+							{
+								native_mobile_birth_recovery_item
+									row;
+								row.object_uid = item.uid;
+								row.effects.resize(
+									item.effects.size());
+								context.items.push_back(
+									std::move(row));
+							}
+							critical_native_recovery_envelope envelope;
+							envelope.command = b.command;
+							envelope.revision = 1;
+							envelope.phase =
+								critical_native_recovery_phase::
+									execution_pending;
+							if (birth_recovery_encode(
+								    b.command, context,
+								    &envelope.attachment,
+								    b.shared_checkpoint.get()) !=
+								    economic_accounting_error::ok ||
+							    !birth_recovery_initial(envelope))
+								continue;
+							b.envelope = std::move(envelope);
+							b.recovery = std::move(context);
+							if (!charge())
+							{
+								b.envelope = {};
+								b.recovery = {};
+								continue;
+							}
 						}
 					}
 					if (ordinary_wallet_command(b.command) &&
-					    !ordinary_cash_role_current(b))
+					    (b.npc_flat_factory_scope ?
+						     !ordinary_flat_submission_role_current(
+							     i, sizeof(prepare_original_resets) +
+									sizeof(recovery_only) +
+									sizeof(i) + sizeof(&b)) :
+						     !ordinary_cash_role_current(b)))
 						continue;
 					const auto result =
 						critical_native_mobile_birth_publication_owner::
@@ -6857,4 +6881,283 @@ bool quest_mobile_native_birth_owner::freeze_ordinary_flat_command(size_t index,
 		}
 		return true;
 	}
+}
+
+// The actual private bridge owns only its live local carriers. Original input,
+// old destination, canonical command and registry/native heaps stay in charge().
+struct quest_mobile_native_birth_owner::ordinary_flat_envelope_budget
+{
+	size_t index, fixed;
+	const original_birth *owner;
+	const native_mobile_birth_recovery_context *progress;
+	const critical_native_recovery_envelope *candidate;
+	const native_mobile_birth_recovery_item *row;
+};
+
+size_t quest_mobile_native_birth_owner::ordinary_flat_envelope_source_frames() noexcept
+{
+	// Actual pure source capsule observer, binding vectors, chain lookup, and
+	// native scope CURRENT profile. These calls allocate no hidden containers.
+	constexpr size_t source =
+		sizeof(size_t) + sizeof(const original_birth *) +
+		sizeof(const quest_mobile_native_birth_ordinary_source_pin::implementation *) +
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+		sizeof(const economic_source_event *) +
+		sizeof(const quest_mobile_native_reference *) + sizeof(bool) +
+		sizeof(const shop_trade_original_procedure_binding_stage *) + sizeof(const void *) +
+		sizeof(const void *) + sizeof(int) + sizeof(bool) +
+		sizeof(const proclib_recovery_chain_stage *) + sizeof(const void *) + sizeof(int) +
+		sizeof(const void *) + sizeof(void *) + sizeof(bool) +
+		sizeof(decltype(std::declval<const shop_trade_original_procedure_binding_stage &>()
+					.flat_scopes_.cbegin())) +
+		sizeof(decltype(std::declval<const shop_trade_original_procedure_binding_stage &>()
+					.flat_scopes_.cend())) +
+		sizeof(const void *) +
+		sizeof(decltype(std::declval<const shop_trade_original_procedure_binding_stage &>()
+					.bindings_.cbegin())) +
+		sizeof(decltype(std::declval<const shop_trade_original_procedure_binding_stage &>()
+					.bindings_.cend())) +
+		sizeof(const void *) + sizeof(const void *) + sizeof(const void *) +
+		sizeof(void *) + sizeof(int) + sizeof(int) + sizeof(size_t);
+	return source + npc_flat_factory_scope_current_frames();
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_envelope(size_t extra,
+								     void *opaque) noexcept
+{
+	const auto &state = *static_cast<const ordinary_flat_envelope_budget *>(opaque);
+	if (state.index >= births.size() || births[state.index].get() != state.owner ||
+	    !ordinary_flat_freeze_source_current(state.index))
+		return false;
+	size_t live = state.fixed;
+	if ((state.progress && !birth_passive_context_heap(live, *state.progress)) ||
+	    (state.candidate && !birth_passive_envelope_heap(live, *state.candidate)) ||
+	    (state.row && !birth_passive_rows(live, state.row->effects.capacity(),
+					      sizeof(native_mobile_birth_recovery_effect))))
+		return false;
+	constexpr size_t callback_frames =
+		sizeof(extra) + sizeof(opaque) + sizeof(&state) + sizeof(live) + sizeof(bool) +
+		// Actual context/envelope/command/capacity census and checked-add scalars.
+		sizeof(size_t *) + sizeof(const native_mobile_birth_recovery_context *) +
+		sizeof(const native_mobile_birth_recovery_item *) + sizeof(const void *) +
+		sizeof(const void *) + sizeof(bool) + sizeof(size_t *) +
+		sizeof(const critical_native_recovery_envelope *) + sizeof(bool) +
+		sizeof(size_t *) + sizeof(const critical_command *) + sizeof(bool) +
+		sizeof(size_t *) + sizeof(size_t) + sizeof(size_t) + sizeof(bool) +
+		sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
+	return birth_passive_add(live, callback_frames) && birth_passive_add(live, extra) &&
+	       charge(live);
+}
+
+namespace
+{
+// Exact source-carrier profiles for the original fresh default-allocator vectors.
+// Real prospective heap requests are calculated separately from count and width.
+template <typename T> constexpr size_t birth_envelope_vector_reserve_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	constexpr size_t queries = sizeof(const V *) + sizeof(size_t) + sizeof(const V *) +
+				   sizeof(size_t) + sizeof(const V *) + sizeof(size_t) +
+				   sizeof(const A *) + sizeof(size_t) + sizeof(size_t) +
+				   sizeof(size_t);
+	constexpr size_t reserve = sizeof(V *) + sizeof(size_t) + sizeof(size_t) + sizeof(T *);
+	constexpr size_t allocate = sizeof(V *) + sizeof(size_t) + sizeof(T *) + sizeof(A *) +
+				    sizeof(size_t) + sizeof(T *) + sizeof(A *) + sizeof(size_t) +
+				    sizeof(T *) + sizeof(A *) + sizeof(size_t) +
+				    sizeof(const void *) + sizeof(T *) + sizeof(size_t) +
+				    sizeof(void *);
+	constexpr size_t relocate =
+		sizeof(T *) + sizeof(T *) + sizeof(T *) + sizeof(A *) + sizeof(T *) + sizeof(T *) +
+		sizeof(T *) + sizeof(T *) + sizeof(A *) + sizeof(T *) + sizeof(T *) + sizeof(T *) +
+		sizeof(T *) + sizeof(A *) + sizeof(T *) + sizeof(T *) + sizeof(bool);
+	constexpr size_t deallocate = sizeof(V *) + sizeof(T *) + sizeof(size_t) + sizeof(A *) +
+				      sizeof(T *) + sizeof(size_t) + sizeof(A *) + sizeof(T *) +
+				      sizeof(size_t) + sizeof(void *) + sizeof(size_t);
+	return queries + reserve + allocate + relocate + deallocate;
+}
+template <typename T> constexpr size_t birth_envelope_vector_default_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	// resize -> _M_default_append actual fixed scalars and allocator/relocate;
+	// default initialization is __uninitialized_default_n_a -> default_n_1.
+	constexpr size_t append = sizeof(V *) + sizeof(size_t) + sizeof(V *) + sizeof(size_t) +
+				  sizeof(size_t) + sizeof(size_t) + sizeof(T *) + sizeof(T *) +
+				  sizeof(size_t) + sizeof(T *) + sizeof(T *);
+	constexpr size_t length = sizeof(const V *) + sizeof(size_t) + sizeof(const char *) +
+				  sizeof(size_t) + sizeof(size_t) + sizeof(size_t) +
+				  sizeof(size_t) + sizeof(const size_t *) + sizeof(const size_t *);
+	constexpr size_t initialize = sizeof(T *) + sizeof(size_t) + sizeof(A *) + sizeof(T *) +
+				      sizeof(T *) + sizeof(size_t) + sizeof(T *) + sizeof(T *) +
+				      sizeof(size_t) + sizeof(T *) + sizeof(T *) + sizeof(T *) +
+				      sizeof(void *) + sizeof(void *) + sizeof(bool);
+	return append + length + initialize + birth_envelope_vector_reserve_frames<T>();
+}
+template <typename T> constexpr size_t birth_envelope_vector_move_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	// Fitting rvalue push: real argument/forward/allocator construct, original
+	// row's actual vector move constructor/reset and allocator references;
+	// no fictional full-vector or row temporary is introduced here.
+	return sizeof(V *) + sizeof(T *) + sizeof(V *) + sizeof(T *) + sizeof(A *) + sizeof(T *) +
+	       sizeof(T *) + sizeof(T *) + sizeof(T *) + sizeof(T *) + sizeof(T *) + sizeof(T *) +
+	       sizeof(T *) + sizeof(std::vector<native_mobile_birth_recovery_effect> *) +
+	       sizeof(std::vector<native_mobile_birth_recovery_effect> *) +
+	       sizeof(std::allocator<native_mobile_birth_recovery_effect> *) +
+	       sizeof(std::allocator<native_mobile_birth_recovery_effect> *) + sizeof(void *) +
+	       sizeof(void *) + sizeof(void *);
+}
+}
+
+bool quest_mobile_native_birth_owner::prepare_ordinary_flat_envelope(size_t index,
+								     size_t outer_live)
+{
+	if (index >= births.size() || !births[index] || !births[index]->envelope.attachment.empty())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)outer_live;
+	return false;
+#else
+	auto &b = *births[index];
+	size_t fixed = outer_live;
+	constexpr size_t frames = sizeof(index) + sizeof(outer_live) + sizeof(&b) + sizeof(fixed) +
+				  sizeof(native_mobile_birth_recovery_context) +
+				  sizeof(critical_native_recovery_envelope) +
+				  sizeof(ordinary_flat_envelope_budget) + sizeof(bool) +
+				  sizeof(size_t);
+	if (!birth_passive_add(fixed, frames) ||
+	    !birth_passive_add(fixed, ordinary_flat_envelope_source_frames()) || !charge(fixed))
+		return false;
+	native_mobile_birth_recovery_context context;
+	critical_native_recovery_envelope envelope;
+	ordinary_flat_envelope_budget budget{ index, fixed, &b, &context, &envelope, nullptr };
+	size_t request = 0;
+	if (!birth_passive_rows(request, b.stock.size(),
+				sizeof(native_mobile_birth_recovery_item)) ||
+	    !birth_passive_add(
+		    request,
+		    birth_envelope_vector_reserve_frames<native_mobile_birth_recovery_item>()) ||
+	    !reserve_ordinary_flat_envelope(request, &budget))
+		return false;
+	context.items.reserve(b.stock.size());
+	{
+		size_t loop_live = fixed;
+		constexpr size_t loop_frames =
+			sizeof(loop_live) + sizeof(decltype(b.stock.cbegin())) +
+			sizeof(decltype(b.stock.cend())) + sizeof(const original_item *) +
+			sizeof(native_mobile_birth_recovery_item);
+		if (!birth_passive_add(loop_live, loop_frames))
+			return false;
+		budget.fixed = loop_live;
+		for (const auto &item : b.stock)
+		{
+			native_mobile_birth_recovery_item row;
+			budget.row = &row;
+			row.object_uid = item.uid;
+			request = 0;
+			if (!birth_passive_rows(request, item.effects.size(),
+						sizeof(native_mobile_birth_recovery_effect)) ||
+			    !birth_passive_add(request,
+					       birth_envelope_vector_default_frames<
+						       native_mobile_birth_recovery_effect>()) ||
+			    !reserve_ordinary_flat_envelope(request, &budget))
+				return false;
+			row.effects.resize(item.effects.size());
+			if (!reserve_ordinary_flat_envelope(
+				    birth_envelope_vector_move_frames<
+					    native_mobile_birth_recovery_item>(),
+				    &budget))
+				return false;
+			context.items.push_back(std::move(row));
+			budget.row = nullptr;
+		}
+	}
+	budget.fixed = fixed; // Actual row/iterator/loop carriers died; no cached peak.
+	if (!birth_passive_add(fixed, sizeof(critical_command)))
+		return false;
+	budget.fixed = fixed; // Genuine deep-copy carrier now lives through return.
+	request = 0;
+	if (!critical_command_fresh_copy_request_bytes(b.command, &request) ||
+	    !birth_passive_add(request, critical_command_copy_frame_bytes()) ||
+	    !reserve_ordinary_flat_envelope(request, &budget))
+		return false;
+	// The real copy constructor owns the complete original four vector copy
+	// allocations; its inline carrier is already admitted in fixed.
+	auto command_copy = b.command;
+	envelope.command = std::move(command_copy);
+	envelope.revision = 1;
+	envelope.phase = critical_native_recovery_phase::execution_pending;
+	if (native_mobile_birth_cash_role_recovery_encode_bounded(
+		    b.command, context, &envelope.attachment, &reserve_ordinary_flat_envelope,
+		    &budget, 0) != economic_accounting_error::ok ||
+	    !native_mobile_birth_cash_role_recovery_initial_bounded(
+		    envelope, &reserve_ordinary_flat_envelope, &budget, 0))
+		return false;
+	// Admit actual transfer and the original rollback's default temporary
+	// carriers BEFORE either destination changes. Rollback performs no admission.
+	constexpr size_t transition_frames =
+		sizeof(critical_native_recovery_envelope *) +
+		sizeof(critical_native_recovery_envelope *) +
+		sizeof(native_mobile_birth_recovery_context *) +
+		sizeof(native_mobile_birth_recovery_context *) + sizeof(std::vector<uint8_t>) +
+		sizeof(std::allocator<uint8_t>) +
+		sizeof(std::vector<native_mobile_birth_recovery_item>) +
+		sizeof(std::allocator<native_mobile_birth_recovery_item>) + sizeof(void *) +
+		sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(void *) +
+		sizeof(critical_native_recovery_envelope) +
+		sizeof(native_mobile_birth_recovery_context);
+	request = transition_frames;
+	if (!birth_passive_add(request, critical_command_copy_frame_bytes()) ||
+	    !reserve_ordinary_flat_envelope(request, &budget))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<critical_native_recovery_envelope>);
+	static_assert(std::is_nothrow_move_assignable_v<native_mobile_birth_recovery_context>);
+	b.envelope = std::move(envelope);
+	b.recovery = std::move(context);
+	if (!charge(fixed))
+	{
+		b.envelope = {};
+		b.recovery = {};
+		return false;
+	}
+	return true;
+#endif
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_submission_role_current(
+	size_t index, size_t outer_live) noexcept
+{
+	if (index >= births.size() || !births[index])
+		return false;
+	const auto &b = *births[index];
+	size_t fixed = outer_live;
+	constexpr size_t frames = sizeof(index) + sizeof(outer_live) + sizeof(&b) + sizeof(fixed) +
+				  sizeof(ordinary_flat_envelope_budget) + sizeof(bool);
+	if (!birth_passive_add(fixed, frames) ||
+	    !birth_passive_add(fixed, ordinary_flat_envelope_source_frames()) || !charge(fixed))
+		return false;
+	ordinary_flat_envelope_budget budget{ index, fixed, &b, nullptr, nullptr, nullptr };
+	return reserve_ordinary_flat_envelope(0, &budget) &&
+	       birth_ordinary_flat_cash_role_current_bounded(b, &reserve_ordinary_flat_envelope,
+							     &budget, 0);
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_submission(size_t full,
+								       void *opaque) noexcept
+{
+	const auto &state = *static_cast<const ordinary_flat_envelope_budget *>(opaque);
+	if (state.index >= births.size() || births[state.index].get() != state.owner ||
+	    !ordinary_flat_freeze_source_current(state.index))
+		return false;
+	// The authentic future ROOT dispatcher supplies the complete exclusive
+	// prefix. Caller/ROOT/current-storage terms must not be added here again;
+	// this leaf owns only its actual callback and pure source observer frames.
+	size_t live = full;
+	constexpr size_t frames = sizeof(full) + sizeof(opaque) + sizeof(&state) + sizeof(live) +
+				  sizeof(bool) + sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
+	return birth_passive_add(live, frames) &&
+	       birth_passive_add(live, ordinary_flat_envelope_source_frames()) && charge(live);
 }
