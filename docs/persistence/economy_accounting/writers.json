@@ -66866,7 +66866,9 @@
       "migrations/immutable/0065_zone_reset_item_birth_origin_nullable_default.sh": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
       "migrations/migration_manifest.nullable_default_0065.json": "3f0454e01eae96d673b902fdf7a8aa7a714a7c354c2e83462900f5253a174a6f",
       "migrations/migration_manifest.staging_0045_nullable_default_0065.json": "d98c932569cf1751ee3911f8939a13dc2ffaabef6c22638edbae89b32b56d5a9",
-      "migrations/migration_manifest.master_0031_nullable_default_0065.json": "5c7b65fa95391b53b2528275e5b4f3873d219761ed5e81bbca6e76487e2b22e5"
+      "migrations/migration_manifest.master_0031_nullable_default_0065.json": "5c7b65fa95391b53b2528275e5b4f3873d219761ed5e81bbca6e76487e2b22e5",
+      "src/flatfile/flatfile_locker_repository.c": "778b9047b845112d8c60f6a32d929b1ad79ad8c142627110e82721ea8bc43369",
+      "src/flatfile/flatfile_locker_repository.h": "1616e171362b3130c23aeb5446aa58797ccf3e3bf9865d89a89beea18f6285f5"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
