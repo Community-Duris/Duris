@@ -6750,3 +6750,368 @@ bool item_transfer_native_money_shape_valid_bounded(const item_transfer_payload 
 		return false;
 	}
 }
+
+namespace
+{
+struct item_native_wire_encode_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *first = nullptr, *second = nullptr, *value = nullptr;
+	const item_transfer_payload *original = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation =
+			11 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool) +
+			4 * (sizeof(void *) + sizeof(size_t)) + payload_clone_observation_frames;
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observation) ||
+		    (first && (!payload_clone_add(total, sizeof(*first)) ||
+			       !payload_clone_vector_heap(*first, false, total))) ||
+		    (second && (!payload_clone_add(total, sizeof(*second)) ||
+				!payload_clone_vector_heap(*second, false, total))) ||
+		    (value && (!payload_clone_add(total, sizeof(*value)) ||
+			       !payload_clone_vector_heap(*value, false, total))) ||
+		    (original && (!payload_clone_add(total, sizeof(*original)) ||
+				  !payload_clone_heap(*original, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	bool growth(const std::vector<uint8_t> &bytes, size_t count) const noexcept
+	{
+		constexpr size_t own = 2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+		size_t request = payload_clone_vector_frames;
+		if (count > bytes.max_size() - bytes.size())
+			return false;
+		if (count > bytes.capacity() - bytes.size())
+		{
+			size_t next = bytes.size();
+			if (!payload_clone_add(next, std::max(bytes.size(), count)) ||
+			    next > bytes.max_size())
+				next = bytes.max_size();
+			if (!payload_clone_add(request, next))
+				return false;
+		}
+		return payload_clone_add(request, own) && peak(request);
+	}
+	bool clone_payload(const item_transfer_payload &source) const noexcept
+	{
+		size_t request = 0;
+		return item_transfer_payload_fresh_copy_request_bytes(source, &request) &&
+		       payload_clone_add(request, sizeof(item_transfer_payload)) &&
+		       payload_clone_add(request, payload_clone_frames + 2 * sizeof(void *) +
+							  2 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+};
+bool item_encode_native_fee_owned(const item_transfer_payload &payload, bool acknowledged,
+				  std::vector<uint8_t> *output,
+				  item_native_wire_encode_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!output ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_transfer_native_fee_shape_valid_bounded(payload, acknowledged, budget.reserve,
+							   budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>) +
+			 2 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))))
+		return false;
+	std::vector<uint8_t> cost, recovery;
+	budget.first = &cost;
+	budget.second = &recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (native_quest_cost_projection_encode_bounded(
+		    payload.native_cost.projection, &cost, budget.reserve, budget.context,
+		    admission_prefix) != native_quest_cost_projection_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::invalid_value :
+		     quest_mobile_native_reference_encode_bounded(
+			     payload.native_mobile.reference, &reference, budget.reserve,
+			     budget.context, admission_prefix)) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !(budget.prefix(admission_prefix) &&
+			       item_transfer_native_recovery_encode_bounded(
+				       payload.native_recovery, &recovery, budget.reserve,
+				       budget.context, admission_prefix, nullptr))))
+		return false;
+	const size_t bytes = native_fee_header_bytes + reference.size() + cost.size() +
+			     payload.continuation.data.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + native_fee_header_bytes +
+			 item_native_recovery_fill_constructor_frames))
+		return false;
+	std::vector<uint8_t> value(native_fee_header_bytes, 0);
+	budget.value = &value;
+	value[0] = 'N';
+	value[1] = 'Q';
+	value[2] = 'F';
+	value[3] = '2';
+	put_u16(value.data() + 4, 1);
+	put_u16(value.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION);
+	put_u32(value.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(value.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u32(value.data() + 16, static_cast<uint32_t>(payload.continuation.data.size()));
+	put_u32(value.data() + 20, static_cast<uint32_t>(recovery.size()));
+	put_u32(value.data() + 24, payload.native_mobile.final_giver_pid);
+	put_u32(value.data() + 28, payload.native_cost.completion_slot);
+	put_u64(value.data() + 32, payload.expected_from_revision);
+	put_u64(value.data() + 40, payload.expected_to_revision);
+	put_u64(value.data() + 48, payload.native_cost.wallet_mapping_id);
+	put_u16(value.data() + 56, static_cast<uint16_t>(payload.continuation.kind));
+	if (!budget.growth(value, reference.size()))
+		return false;
+	value.insert(value.end(), reference.begin(), reference.end());
+	if (!budget.growth(value, cost.size()))
+		return false;
+	value.insert(value.end(), cost.begin(), cost.end());
+	if (!budget.growth(value, payload.continuation.data.size()))
+		return false;
+	value.insert(value.end(), payload.continuation.data.begin(),
+		     payload.continuation.data.end());
+	if (!budget.growth(value, recovery.size()))
+		return false;
+	value.insert(value.end(), recovery.begin(), recovery.end());
+	if (!budget.peak(payload_clone_move_frames))
+		return false;
+	*output = std::move(value);
+	return true;
+}
+
+bool item_encode_native_money_owned(const item_transfer_payload &payload, bool acknowledged,
+				    std::vector<uint8_t> *output,
+				    item_native_wire_encode_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!output ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_transfer_native_money_shape_valid_bounded(payload, acknowledged, budget.reserve,
+							     budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>) +
+			 2 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))))
+		return false;
+	std::vector<uint8_t> money, recovery;
+	budget.first = &money;
+	budget.second = &recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (native_quest_coin_give_encode_bounded(
+		    payload.native_money.projection, &money, budget.reserve, budget.context,
+		    admission_prefix) != native_quest_coin_give_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::invalid_value :
+		     quest_mobile_native_reference_encode_bounded(
+			     payload.native_mobile.reference, &reference, budget.reserve,
+			     budget.context, admission_prefix)) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !(budget.prefix(admission_prefix) &&
+			       item_transfer_native_recovery_encode_bounded(
+				       payload.native_recovery, &recovery, budget.reserve,
+				       budget.context, admission_prefix, nullptr))))
+		return false;
+	const size_t bytes = ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES + reference.size() +
+			     money.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) +
+			 ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES +
+			 item_native_recovery_fill_constructor_frames))
+		return false;
+	std::vector<uint8_t> result(ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES, 0);
+	budget.value = &result;
+	result[0] = 'N';
+	result[1] = 'Q';
+	result[2] = 'M';
+	result[3] = '1';
+	put_u16(result.data() + 4, 1);
+	put_u16(result.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION);
+	put_u32(result.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(result.data() + 12, static_cast<uint32_t>(recovery.size()));
+	put_u32(result.data() + 16, payload.native_mobile.final_giver_pid);
+	put_u32(result.data() + 20, static_cast<uint32_t>(payload.native_money.original_room_vnum));
+	put_u64(result.data() + 24, payload.expected_from_revision);
+	put_u64(result.data() + 32, payload.expected_to_revision);
+	put_u64(result.data() + 40, payload.native_money.player_wallet_mapping_id);
+	put_u64(result.data() + 48, payload.native_money.mobile_wallet_mapping_id);
+	if (!budget.growth(result, reference.size()))
+		return false;
+	result.insert(result.end(), reference.begin(), reference.end());
+	if (!budget.growth(result, money.size()))
+		return false;
+	result.insert(result.end(), money.begin(), money.end());
+	if (!budget.growth(result, recovery.size()))
+		return false;
+	result.insert(result.end(), recovery.begin(), recovery.end());
+	if (!budget.peak(payload_clone_move_frames))
+		return false;
+	*output = std::move(result);
+	return true;
+}
+
+bool item_encode_native_cost_owned(const item_transfer_payload &payload, bool recovery,
+				   std::vector<uint8_t> *encoded,
+				   item_native_wire_encode_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!encoded || !(budget.prefix(admission_prefix) &&
+			  item_transfer_native_cost_value_valid_bounded(
+				  payload, budget.reserve, budget.context, admission_prefix)))
+		return false;
+	if (payload.native_cost.fee_only)
+		return (budget.prefix(admission_prefix) &&
+			item_transfer_native_fee_encode_bounded(payload, recovery, encoded,
+								budget.reserve, budget.context,
+								admission_prefix));
+	if (payload.native_cost.completion_slot)
+		return false;
+	if (!budget.clone_payload(payload))
+		return false;
+	auto original = payload;
+	budget.original = &original;
+	if (!budget.peak(sizeof(item_native_mobile_cost_context) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<native_quest_cost_attempt>) +
+			 payload_clone_move_frames))
+		return false;
+	original.native_cost = {};
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>) +
+			 2 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))))
+		return false;
+	std::vector<uint8_t> body, cost;
+	budget.first = &body;
+	budget.second = &cost;
+	const uint16_t original_version =
+		recovery ? ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION :
+			   ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_transfer_payload_encode_version_bounded(original, original_version, &body,
+							   budget.reserve, budget.context,
+							   admission_prefix, nullptr)) ||
+	    (!budget.prefix(admission_prefix) ?
+		     native_quest_cost_projection_result::invalid :
+		     native_quest_cost_projection_encode_bounded(
+			     payload.native_cost.projection, &cost, budget.reserve, budget.context,
+			     admission_prefix)) != native_quest_cost_projection_result::ok ||
+	    body.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES ||
+	    cost.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES - body.size())
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) +
+			 ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size() + cost.size() +
+			 item_sidecar_size_constructor_frames + payload_clone_vector_frames))
+		return false;
+	std::vector<uint8_t> exact(ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size() +
+				   cost.size());
+	budget.value = &exact;
+	exact[0] = 'N';
+	exact[1] = 'Q';
+	exact[2] = 'F';
+	exact[3] = '1';
+	put_u16(exact.data() + 4, 1);
+	put_u16(exact.data() + 6, original_version);
+	put_u32(exact.data() + 8, static_cast<uint32_t>(body.size()));
+	put_u32(exact.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u64(exact.data() + 16, payload.native_cost.wallet_mapping_id);
+	std::copy(body.begin(), body.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES);
+	std::copy(cost.begin(), cost.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size());
+	if (!budget.peak(payload_clone_move_frames))
+		return false;
+	*encoded = std::move(exact);
+	return true;
+}
+} // namespace
+
+bool item_transfer_native_fee_encode_bounded(const item_transfer_payload &payload,
+					     bool acknowledged, std::vector<uint8_t> *encoded,
+					     bool (*reserve)(size_t, void *) noexcept,
+					     void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 10 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(bool) +
+				  2 * sizeof(uint16_t) +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_sidecar_pure_frames + payload_clone_copy_frames +
+				  payload_clone_allocator_frames;
+	item_native_wire_encode_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_fee_owned(payload, acknowledged, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_native_money_encode_bounded(const item_transfer_payload &payload,
+					       bool acknowledged, std::vector<uint8_t> *encoded,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 10 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(bool) +
+				  2 * sizeof(uint16_t) +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_sidecar_pure_frames + payload_clone_copy_frames +
+				  payload_clone_allocator_frames;
+	item_native_wire_encode_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_money_owned(payload, acknowledged, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_native_cost_encode_bounded(const item_transfer_payload &payload,
+					      bool acknowledged, std::vector<uint8_t> *encoded,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 10 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(bool) +
+				  2 * sizeof(uint16_t) +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_sidecar_pure_frames + payload_clone_copy_frames +
+				  payload_clone_allocator_frames;
+	item_native_wire_encode_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_cost_owned(payload, acknowledged, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}

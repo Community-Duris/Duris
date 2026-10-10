@@ -587,4 +587,20 @@ bool item_transfer_native_money_shape_valid_bounded(const item_transfer_payload 
 						    bool (*)(size_t, void *) noexcept,
 						    void *context, size_t outer_live) noexcept;
 
+// Complete original native NQF2 fee / NQM1 money / NQF1 cost wire encoders,
+// preserving full original shapes, actual copy/sidecars and acknowledged tails.
+// Pure strong-output prerequisites; public dispatcher/build remains separate.
+bool item_transfer_native_fee_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					     std::vector<uint8_t> *,
+					     bool (*)(size_t, void *) noexcept, void *context,
+					     size_t outer_live) noexcept;
+bool item_transfer_native_money_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					       std::vector<uint8_t> *,
+					       bool (*)(size_t, void *) noexcept, void *context,
+					       size_t outer_live) noexcept;
+bool item_transfer_native_cost_encode_bounded(const item_transfer_payload &, bool acknowledged,
+					      std::vector<uint8_t> *,
+					      bool (*)(size_t, void *) noexcept, void *context,
+					      size_t outer_live) noexcept;
+
 #endif
