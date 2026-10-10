@@ -45,6 +45,7 @@ bool critical_command_coordinator_cancel_auction_publication(
 class critical_command_coordinator_owner final
 {
 	friend class sql_economic_runtime_boot_owner;
+	friend class flatfile_initialized_world_owner;
 	// Exact original journal/operation/fence cut while this boot thread owns
 	// the real lifecycle reservation. A diagnostic health copy is insufficient.
 	static bool boot_recovery_ready();

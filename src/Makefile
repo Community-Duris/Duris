@@ -395,6 +395,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.o \
 				 flatfile/flatfile_accounting_zone_reset_item_transaction.o \
 				 flatfile/flatfile_economic_runtime.o \
+				 flatfile/flatfile_initialized_world_owner.o \
 				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
