@@ -3142,3 +3142,35 @@ Raw evidence `D:/Dev/Tests/Duris/accounting-plan5/native-wallet-reader-20261009-
 seal `3496fa5cb9db885dbd1ac7047f37efb56e31c02ac88d4f4c5b4d7f36cdfdc078`; post-push delivery binds result/remote and all sealed files.
 All7 historical tips preserved. Notebook nonblocking; curator/import/application/
 adoption/ack unclaimed. Accounting inactive and original full goal unfinished.
+
+## Ordinary native-birth participant: current source qualification - 2026-10-09
+
+Owned base `2b7c1fe85df5f260b7788304cec7cd0d31edfd16`; sole local/remote `codex/accounting-plan5`.
+[Current exact-source qualification](PLAN5_ORDINARY_PARTICIPANT_SOURCE_QUALIFICATION_2026-10-09.md) freezes primary
+`65ecb86b8f08b703db7062be8e9c85937eb31db9`, native `355602128bd610901f08b77df487e20541ecb4e2`,
+unchanged canonical65 migration `a22d54a28286200f09d91d11cb0cbd8c782b0b82` and all28 owned overlays.
+New private participant/codec additions are unselected; scripts/tests/migrations
+are unchanged. Native/build/gameplay/persistence/recovery execution stays deferred.
+No new behavior or shared API/schema/wire change is installed. The owned wallet
+locator remains SOURCE_CORRECTED/NATIVE_ACCEPTANCE_PENDING; original shared
+fixture acceptance request stays pending, no birth CURRENT shortcut to holdings.
+
+Published427 raw pins all match, composition420 matches; the same7 substitutions
+and2 backup coordinates require reviewed adoption and exact metadata refresh.
+Original57-method published module55 pass/1 fail/1 error; composition54 pass/
+2 fail/1 error;0 skips. ROOM/bandage original-test requests reproduce without
+owned substitution and remain primary-owned. Defaults pass; release refuses
+missing executable evidence; published matrix passes, composed drift is retained.
+No old CRLF/stale-pin or retired missing-API claim is revived. Existing17 reader
+modules/native historical passes are not rerun or relabeled for this source.
+
+Raw evidence `D:/Dev/Tests/Duris/accounting-plan5/ordinary-participant-source-20261009-65ecb86`;
+seal `8bb7fc25b739ea7bb0fe55a5983582d6b4d5e220aa284a87f70cb1a7be404691`. Post-push delivery binds exact result/remote,28 preserved bodies,
+all7 ancestor tips, terminal containers and every sealed file rehash. Only this
+additive follow-up/new report change; no native/shared/registry/migration patch.
+931-route census,791 release blockers, canonical65 SQL prerequisites, durable
+six-source erasure, budgets and original real native/recovery/gameplay remain.
+Notebook nonblocking; curator import/application/adoption/ack unclaimed.
+Inactive behavior, wallet-root ITEM_MONEY exclusions and declined inactive spell
+change stay. No branch switch, primary push, activation, production mutation,
+audit correction, deployment, merge or cross-chat message. Full goal stays active.
