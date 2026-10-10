@@ -46,6 +46,19 @@ class flatfile_native_mobile_birth_ordinary_reference_history_storage final
 		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
 		std::span<const economic_accounting_item_reference>,
 		flatfile_native_mobile_birth_ordinary_reference_current *, std::string *) noexcept;
+
+	// DISTINCT full CURRENT correspondence with allocation admission. Same
+	// all256 canonical shards, both original identities and global unique keys,
+	// exact complete expected rows, borrowed recovered lock and strong counts.
+	// Caller retains actual root/lock/expected backing in outer. No diagnostics,
+	// recovery, writes, native publication, or authority follows from counts.
+	// Explicit requests/source carriers under pinned libstdc++13 LP64 only;
+	// native/library/emitted and complete enclosing budget qualification is open.
+	static flatfile_item_accounting_status verify_current_operation_locked_bounded(
+		const std::string &, const flatfile_authority_lock &, const critical_operation_id &,
+		std::span<const economic_accounting_item_reference>,
+		flatfile_native_mobile_birth_ordinary_reference_current *,
+		flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 	// Complete canonical ordinary INITIAL and ALL 256 original reference files.
 	// All histories participate regardless retirement, identity or current state.
 	// Caller owns original recovery/namespace establishment before this passive
