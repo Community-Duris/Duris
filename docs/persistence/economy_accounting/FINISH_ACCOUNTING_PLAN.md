@@ -18361,3 +18361,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Native birth constructor and cash role recipe source contracts implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_BIRTH_CONSTRUCTOR_CASH_ROLE_RECIPE_SOURCE_CONTRACTS_2026-10-10.md) adds complete constructor/cash-role recipe source and bounded ownership contracts with the duplicate inline accounting corrected.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
