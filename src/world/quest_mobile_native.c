@@ -1832,3 +1832,373 @@ quest_mobile_native_capture_bounded(P_char mob, const quest_mobile_native_refere
 		return player_snapshot_capture_result::retryable_allocation_failure;
 	}
 }
+
+#include <initializer_list>
+namespace
+{
+constexpr size_t native_stock_hash_frames =
+	// Actual empty unordered_set constructor, _Hashtable base/impl/policy;
+	// insert->emplace node allocator/construct guard/insert_unique, hash code,
+	// _M_find_before_node/_M_equals/_M_insert_unique_node and prime policy.
+	26 * sizeof(void *) + 16 * sizeof(size_t) + 10 * sizeof(bool) +
+	sizeof(std::pair<std::unordered_set<uint64_t>::iterator, bool>) +
+	2 * sizeof(std::pair<bool, size_t>) + 3 * sizeof(uint64_t) +
+	// find/count/begin/end, hash/equal functor arguments/results; _M_rehash_aux
+	// real bucket/node/pointer/next locals and typed bucket allocation/cleanup.
+	24 * sizeof(void *) + 12 * sizeof(size_t) + 6 * sizeof(bool) +
+	2 * sizeof(std::unordered_set<uint64_t>::iterator) +
+	// Node/bucket allocator allocate/deallocate/traits/construct/destroy chains.
+	12 * (3 * sizeof(void *) + sizeof(size_t));
+constexpr size_t native_stock_frames =
+	5 * sizeof(std::vector<player_item_snapshot>) + 3 * sizeof(std::vector<uint8_t>) +
+	2 * sizeof(std::vector<int32_t>) + sizeof(std::unordered_set<uint64_t>) +
+	sizeof(player_item_snapshot) + 2 * QUEST_MOBILE_NATIVE_REFERENCE_BYTES +
+	20 * sizeof(void *) + 20 * sizeof(size_t) + 6 * sizeof(int32_t) + 12 * sizeof(bool) +
+	4 * sizeof(player_snapshot_codec_result) + native_stock_hash_frames +
+	native_image_fixed_equal_frames +
+	// Original count_if: public first/last/pred/result, adapter ctor/move,
+	// __count_if first/last/pred/real n/result and iterator increment/deref;
+	// original any_of/none_of/find_if and real RA __find_if trip_count/tag.
+	2 * (2 * sizeof(void *) + sizeof(char) + sizeof(std::ptrdiff_t)) +
+	4 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *) + sizeof(void *) + sizeof(bool)) +
+	2 * (3 * sizeof(void *) + sizeof(void *)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// Live [item&] predicate, iter-predicate wrapper and lambda this/old/result.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) +
+	// Actual pure observer/prefix loop lists: three initializer_list objects
+	// and their genuine 5/3/2 pointer arrays, row range iterator/reference.
+	3 * sizeof(std::initializer_list<const void *>) + 10 * sizeof(void *) +
+	3 * (sizeof(void *) + sizeof(size_t)) +
+	sizeof(std::vector<player_item_snapshot>::const_iterator);
+struct native_stock_budget
+{
+	native_image_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	const std::vector<player_item_snapshot> *before = nullptr, *selected = nullptr,
+						*candidate = nullptr, *observed = nullptr,
+						*retained = nullptr;
+	const std::vector<uint8_t> *encoded = nullptr, *observed_bytes = nullptr,
+				   *selected_bytes = nullptr;
+	const std::vector<int32_t> *selected_index = nullptr, *retained_index = nullptr;
+	const player_item_snapshot *row = nullptr;
+	size_t removed_heap = 0;
+	bool prefix(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		bytes = outer;
+		size_t heap = 0;
+		if (!native_image_add(bytes, sizeof(*this)) ||
+		    !native_image_add(bytes, native_stock_frames) ||
+		    !native_image_add(bytes, player_item_snapshot_vector_operation_frame_bytes()) ||
+		    !native_image_add(bytes, player_item_snapshot_copy_frame_bytes()) ||
+		    !native_image_add(bytes, removed_heap) || !native_image_add(bytes, extra))
+			return false;
+		for (const auto *value : { before, selected, candidate, observed, retained })
+			if (value && (!native_capture_item_heap(*value, &heap) ||
+				      !native_image_add(bytes, heap)))
+				return false;
+		for (const auto *value : { encoded, observed_bytes, selected_bytes })
+			if (value && !native_image_add(bytes, value->capacity()))
+				return false;
+		for (const auto *value : { selected_index, retained_index })
+			if (value &&
+			    (value->capacity() > SIZE_MAX / sizeof(int32_t) ||
+			     !native_image_add(bytes, value->capacity() * sizeof(int32_t))))
+				return false;
+		return !row || (player_item_snapshot_current_heap_bytes(*row, &heap) &&
+				native_image_add(bytes, heap));
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return prefix(bytes, extra) && reserve && reserve(bytes, context);
+	}
+	bool copy(std::span<const player_item_snapshot> src,
+		  std::vector<player_item_snapshot> &dst) const
+	{
+		size_t heap = 0, request = 0;
+		if (src.size() > SIZE_MAX / sizeof(player_item_snapshot))
+			return false;
+		request = src.size() * sizeof(player_item_snapshot);
+		for (const auto &r : src)
+			if (!player_item_snapshot_fresh_copy_request_bytes(r, &heap) ||
+			    !native_image_add(request, heap))
+				return false;
+		if (!peak(request))
+			return false;
+		dst.assign(src.begin(), src.end());
+		return true;
+	}
+	bool grow(const std::vector<player_item_snapshot> &dst) const noexcept
+	{
+		if (dst.size() < dst.capacity())
+			return peak();
+		if (dst.size() > SIZE_MAX / 2)
+			return false;
+		size_t cap = dst.empty() ? 1 : dst.size() * 2;
+		return cap <= SIZE_MAX / sizeof(player_item_snapshot) &&
+		       peak(cap * sizeof(player_item_snapshot));
+	}
+	player_snapshot_codec_result valid(const std::vector<player_item_snapshot> &value) const
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		size_t extra = 0;
+		if (!native_image_forest_peak(value.size(), extra) || !peak(extra))
+			return player_snapshot_codec_result::allocation_failure;
+		return forest_valid(value);
+#else
+		(void)value;
+		return player_snapshot_codec_result::unsupported_version;
+#endif
+	}
+};
+}
+size_t quest_mobile_native_items_transition_frame_bytes() noexcept
+{
+	return sizeof(native_stock_budget) + native_stock_frames +
+	       player_item_snapshot_vector_operation_frame_bytes() +
+	       player_item_snapshot_copy_frame_bytes();
+}
+
+player_snapshot_codec_result quest_mobile_native_items_transition_bounded(
+	std::span<const player_item_snapshot> original_items,
+	const quest_mobile_native_reference &original_reference,
+	const item_transfer_payload &payload, std::vector<player_item_snapshot> *after,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!after || original_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !payload.native_mobile.present ||
+	    (payload.native_mobile.action != item_native_mobile_action::acceptance &&
+	     payload.native_mobile.action != item_native_mobile_action::consumption) ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    original_reference.mobile_revision == UINT64_MAX ||
+	    original_reference.stock_revision == UINT64_MAX)
+		return player_snapshot_codec_result::invalid_value;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return player_snapshot_codec_result::unsupported_version;
+#else
+	native_stock_budget budget{ reserve, context, outer_live };
+	if (!budget.peak())
+		return player_snapshot_codec_result::allocation_failure;
+	try
+	{
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> expected{}, actual{};
+		size_t reference_outer = 0;
+		if (!budget.prefix(reference_outer))
+			return player_snapshot_codec_result::allocation_failure;
+		auto reference_code = quest_mobile_native_reference_encode_bounded(
+			original_reference, &actual, reserve, context, reference_outer);
+		if (reference_code != player_snapshot_codec_result::ok)
+			return reference_code;
+		reference_code = quest_mobile_native_reference_encode_bounded(
+			payload.native_mobile.reference, &expected, reserve, context,
+			reference_outer);
+		if (reference_code != player_snapshot_codec_result::ok)
+			return reference_code;
+		if (actual != expected)
+			return player_snapshot_codec_result::invalid_value;
+		std::vector<player_item_snapshot> before;
+		budget.before = &before;
+		if (!budget.copy(original_items, before))
+			return player_snapshot_codec_result::allocation_failure;
+		auto code = budget.valid(before);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		size_t nested = 0;
+		if (!budget.prefix(nested))
+			return player_snapshot_codec_result::allocation_failure;
+		code = player_item_snapshot_list_encode_bounded(before, &encoded, reserve, context,
+								nested);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		std::vector<player_item_snapshot> selected;
+		budget.selected = &selected;
+		if (!budget.prefix(nested))
+			return player_snapshot_codec_result::allocation_failure;
+		code = player_item_snapshot_list_decode_bounded(payload.item_blob.data(),
+								payload.item_blob_size, &selected,
+								reserve, context, nested);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		if (selected.empty() || selected.size() != payload.item_count)
+			return player_snapshot_codec_result::invalid_value;
+		code = budget.valid(selected);
+		if (code == player_snapshot_codec_result::allocation_failure)
+			return code;
+		if (code != player_snapshot_codec_result::ok)
+			return player_snapshot_codec_result::invalid_value;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance &&
+		    std::count_if(selected.begin(), selected.end(), [](const auto &item)
+				  { return item.parent_index == PLAYER_SNAPSHOT_NO_PARENT; }) != 1)
+			return player_snapshot_codec_result::invalid_value;
+		std::vector<player_item_snapshot> candidate;
+		budget.candidate = &candidate;
+		if (!budget.copy(before, candidate))
+			return player_snapshot_codec_result::allocation_failure;
+		const bool acceptance = payload.native_mobile.action ==
+					item_native_mobile_action::acceptance;
+		if (acceptance)
+		{
+			if (selected.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - before.size())
+				return player_snapshot_codec_result::limit_exceeded;
+			for (const auto &item : selected)
+				if (std::any_of(before.begin(), before.end(), [&](const auto &old)
+						{ return old.object_uid == item.object_uid; }))
+					return player_snapshot_codec_result::invalid_value;
+			// obj_to_char_checked inserts before the first carried root of the same
+			// prototype, or at the carried head if none. Never group equipment roots.
+			size_t inventory = before.size();
+			size_t insertion = before.size();
+			for (size_t i = 0; i < before.size(); ++i)
+				if (before[i].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    !before[i].equipment_slot)
+				{
+					if (inventory == before.size())
+						inventory = i;
+					if (before[i].vnum == selected[0].vnum)
+					{
+						insertion = i;
+						break;
+					}
+				}
+			if (insertion == before.size())
+				insertion = inventory;
+			for (auto &item : candidate)
+				if (item.parent_index >= static_cast<int32_t>(insertion))
+					item.parent_index += static_cast<int32_t>(selected.size());
+			selected[0].equipment_slot = 0;
+			for (auto &item : selected)
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += static_cast<int32_t>(insertion);
+			// The copied candidate has capacity=size. Original forward-range insert
+			// therefore allocates size+max(size,count) row slots, moves old rows,
+			// and copy-constructs every selected row with size-based nested requests.
+			size_t request = before.size(), heap = 0;
+			if (!native_image_add(request, std::max(before.size(), selected.size())) ||
+			    request > SIZE_MAX / sizeof(player_item_snapshot))
+				return player_snapshot_codec_result::allocation_failure;
+			request *= sizeof(player_item_snapshot);
+			for (const auto &r : selected)
+				if (!player_item_snapshot_fresh_copy_request_bytes(r, &heap) ||
+				    !native_image_add(request, heap))
+					return player_snapshot_codec_result::allocation_failure;
+			if (!budget.peak(request))
+				return player_snapshot_codec_result::allocation_failure;
+			candidate.insert(candidate.begin() + insertion, selected.begin(),
+					 selected.end());
+		}
+		else
+		{
+			std::unordered_set<uint64_t> removed;
+			for (const auto &item : selected)
+			{
+				// Empty/default set follows the same pinned prime rehash policy;
+				// the prospective prefix includes its old and new bucket overlap.
+				size_t set_peak = 0;
+				if (!native_image_forest_peak(removed.size() + 1, set_peak) ||
+				    !budget.peak(set_peak))
+					return player_snapshot_codec_result::allocation_failure;
+				removed.insert(item.object_uid);
+				using node = std::__detail::_Hash_node<
+					uint64_t,
+					std::__cache_default<uint64_t, std::hash<uint64_t>>::value>;
+				budget.removed_heap =
+					removed.size() * sizeof(node) +
+					(removed.bucket_count() > 1 ?
+						 removed.bucket_count() *
+							 sizeof(std::__detail::_Hash_node_base *) :
+						 0);
+			}
+			std::vector<player_item_snapshot> observed, retained;
+			budget.observed = &observed;
+			budget.retained = &retained;
+			if (before.size() > SIZE_MAX / sizeof(int32_t) ||
+			    !budget.peak(before.size() * sizeof(int32_t)))
+				return player_snapshot_codec_result::allocation_failure;
+			std::vector<int32_t> selected_index(before.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			budget.selected_index = &selected_index;
+			if (!budget.peak(before.size() * sizeof(int32_t)))
+				return player_snapshot_codec_result::allocation_failure;
+			std::vector<int32_t> retained_index(before.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			budget.retained_index = &retained_index;
+			for (size_t i = 0; i < before.size(); ++i)
+			{
+				player_item_snapshot item;
+				if (!budget.prefix(nested))
+					return player_snapshot_codec_result::allocation_failure;
+				auto copied = player_item_snapshot_clone_bounded(
+					before[i], &item, reserve, context, nested);
+				if (copied != player_snapshot_codec_result::ok)
+					return copied;
+				budget.row = &item;
+				const bool erase = removed.count(item.object_uid) != 0;
+				const auto parent = item.parent_index;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT &&
+				    (removed.count(before[parent].object_uid) != 0) != erase)
+					return player_snapshot_codec_result::
+						invalid_value; // No partial subtree retirement.
+				auto &indexes = erase ? selected_index : retained_index;
+				auto &items = erase ? observed : retained;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index = indexes[parent];
+				indexes[i] = static_cast<int32_t>(items.size());
+				if (!budget.grow(items))
+					return player_snapshot_codec_result::allocation_failure;
+				items.push_back(std::move(item));
+				budget.row = nullptr;
+			}
+			std::vector<uint8_t> observed_bytes, selected_bytes;
+			budget.observed_bytes = &observed_bytes;
+			budget.selected_bytes = &selected_bytes;
+			if (!budget.prefix(nested))
+				return player_snapshot_codec_result::allocation_failure;
+			code = player_item_snapshot_list_encode_bounded(observed, &observed_bytes,
+									reserve, context, nested);
+			if (code == player_snapshot_codec_result::ok)
+			{
+				if (!budget.prefix(nested))
+					return player_snapshot_codec_result::allocation_failure;
+				code = player_item_snapshot_list_encode_bounded(
+					selected, &selected_bytes, reserve, context, nested);
+			}
+			if (code != player_snapshot_codec_result::ok)
+				return code;
+			if (observed_bytes != selected_bytes)
+				return player_snapshot_codec_result::invalid_value;
+			if (!budget.peak())
+				return player_snapshot_codec_result::allocation_failure;
+			candidate = std::move(retained);
+			budget.observed = nullptr;
+			budget.retained = nullptr;
+			budget.observed_bytes = nullptr;
+			budget.selected_bytes = nullptr;
+			budget.selected_index = nullptr;
+			budget.retained_index = nullptr;
+			budget.removed_heap = 0;
+		}
+
+		code = budget.valid(candidate);
+		if (code == player_snapshot_codec_result::ok)
+		{
+			if (!budget.prefix(nested))
+				return player_snapshot_codec_result::allocation_failure;
+			code = player_item_snapshot_list_encode_bounded(candidate, &encoded,
+									reserve, context, nested);
+		}
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		*after = std::move(candidate);
+		return player_snapshot_codec_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+#endif
+}

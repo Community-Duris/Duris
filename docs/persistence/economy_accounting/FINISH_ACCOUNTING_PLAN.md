@@ -17631,3 +17631,18 @@ protected Plan5 work. Full selecting host/foreign ownership/producer/publication
 running drain/native32MiB/gameplay/persistence/recovery/R1-R8 remain OPEN. Tests
 deferred to major-plan batch; inactive/CLOSED, incomplete coverage, release
 BLOCKED and goal ACTIVE. No major plan is declared complete.
+
+
+## Complete native transformation and forest recovery codecs - 2026-10-10
+
+[Source checkpoint](COMPLETE_NATIVE_TRANSFORM_FOREST_RECOVERY_CODECS_2026-10-10.md)
+adds the complete original bounded stock transform, full forest extraction,
+schema1 accounting reconstruction and canonical SHOP freeze/verification.
+Original default/inactive bodies and mobile money/cost/version12 checks survive.
+Independent owner178/root32,75 current dependencies,22 installed headers and
+actual formatted-source review passed; all ten inverses and five C prefixes
+authenticate. Registry467/931 policies/2853 sites and protected Plan5 work persist.
+Full selecting host, foreign CURRENT, producer/publication/running drain,
+native32MiB/gameplay/persistence/recovery/R1–R8/release remain OPEN. Tests stay
+deferred to major-plan readiness; inactive/CLOSED, incomplete coverage, release
+BLOCKED and goal ACTIVE. No major-plan completion is claimed.

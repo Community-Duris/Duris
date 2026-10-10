@@ -105,4 +105,19 @@ bool shop_trade_recovery_forest_decode_bounded(
 	shop_trade_recovery_forest_binding *, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer_live, size_t *retained_forest_heap_bytes = nullptr) noexcept;
 
+// Genuine complete decoded/re-encoded canonical forest binding, including the
+// original DFS/order/UID/digest checks. Strong output; private allocation and
+// typed source scopes are admitted before use. No authority or route selection.
+size_t shop_trade_recovery_forest_freeze_frame_bytes() noexcept;
+bool shop_trade_recovery_forest_freeze_bounded(std::span<const uint8_t>,
+					       shop_trade_recovery_forest_role,
+					       shop_trade_recovery_forest_binding *,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
+bool shop_trade_recovery_forest_verify_bounded(std::span<const uint8_t>,
+					       shop_trade_recovery_forest_role,
+					       const shop_trade_recovery_forest_binding &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
+
 #endif

@@ -75,4 +75,11 @@ bool item_transfer_accounting_command_supported_bounded(const critical_command &
 							bool (*)(size_t, void *) noexcept, void *,
 							size_t) noexcept;
 
+// Complete original native structural freeze with bounded payload decode and
+// canonical fixed-facts freeze. No acceptance, source, lifetime or backend authority.
+economic_accounting_error item_native_mobile_accounting_intent_bounded(
+	const critical_command &, const critical_operation_id &, const critical_operation_id &,
+	uint32_t, const economic_source_event *, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 #endif

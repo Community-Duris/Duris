@@ -3735,3 +3735,338 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 	}
 	return player_snapshot_codec_result::ok;
 }
+
+namespace
+{
+// These source scopes augment the settled typed vector/string/row closures.
+// No machine-stack, heap metadata or replacement gameplay rule is assumed.
+constexpr size_t subtree_bit_frames =
+	// vector(n,value,a): this+n+value/a references, default bool allocator;
+	// _Bvector_base(a), conversion bool->word allocator, impl(a), data ctor.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<bool>) + 2 * sizeof(void *) +
+	sizeof(std::allocator<unsigned long>) + 2 * sizeof(void *) + sizeof(void *) +
+	// _M_initialize: this/n, real q/start. _M_allocate: this/n/p/return;
+	// _S_nword: n/result; runtime is_constant_evaluated result (loop inactive).
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(std::vector<bool>::iterator) +
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(size_t) + sizeof(bool) +
+	// __addressof(reference): arg/result. _M_initialize_value: this/x/p;
+	// _M_end_addr: this/result+__addressof arg/result. Actual fill_n calls
+	// __builtin_memset directly at runtime (no iterator fill loop).
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) +
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(int) +
+	sizeof(size_t) +
+	// vector[]: this/n/ref return, begin: this/iterator return; iterator[]
+	// this/i/ref return, + reference/n/real tmp/returned iterator, +=,
+	// _M_incr this/i/real n, unary* this/returned reference;
+	// ref ctor this/x/mask; bool conversion and both actual assignment overloads.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(std::vector<bool>::reference) +
+	sizeof(void *) + sizeof(std::vector<bool>::iterator) + sizeof(void *) +
+	sizeof(std::ptrdiff_t) + sizeof(std::vector<bool>::reference) + sizeof(void *) +
+	sizeof(std::ptrdiff_t) + 2 * sizeof(std::vector<bool>::iterator) + 2 * sizeof(void *) +
+	sizeof(std::ptrdiff_t) + sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::vector<bool>::reference) + 2 * sizeof(void *) + sizeof(unsigned long) +
+	sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) + sizeof(bool) +
+	// Actual iterator/base constructors and generated copies at start/finish:
+	// this+x+offset, base same; three real constructor uses summed, not max.
+	3 * (4 * sizeof(void *) + 2 * sizeof(unsigned int)) +
+	// ~vector/~base/_M_deallocate this scopes, real n, allocatorref/p/n;
+	// reset constructs real impl-data temporary with two default iterators.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::vector<bool>) + 5 * sizeof(void *) +
+	2 * (3 * sizeof(void *) + sizeof(unsigned int)) + item_list_allocator_frames;
+constexpr size_t subtree_frames =
+	6 * sizeof(std::vector<player_item_snapshot>) + sizeof(std::vector<bool>) +
+	2 * sizeof(std::vector<int32_t>) + sizeof(player_item_snapshot) + 14 * sizeof(void *) +
+	15 * sizeof(size_t) + 4 * sizeof(int32_t) + 8 * sizeof(bool) + sizeof(uint64_t) +
+	3 * sizeof(player_snapshot_codec_result) +
+	6 * sizeof(std::vector<player_item_snapshot>::const_iterator) + subtree_bit_frames +
+	item_list_size_constructor_frames + snapshot_clone_copy_frames + item_list_vector_frames +
+	item_list_move_frames + item_list_nontrivial_frames;
+struct subtree_budget
+{
+	item_list_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	const std::vector<player_item_snapshot> *a = nullptr, *b = nullptr, *c = nullptr,
+						*d = nullptr;
+	const player_item_snapshot *row = nullptr;
+	size_t auxiliary = 0;
+	bool prefix(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		bytes = outer;
+		if (!item_list_add(bytes, sizeof(*this)) || !item_list_add(bytes, subtree_frames) ||
+		    !item_list_add(bytes, auxiliary) || !item_list_add(bytes, extra))
+			return false;
+		for (const auto *value : { a, b, c, d })
+			if (value && !item_list_heap(*value, bytes))
+				return false;
+		return !row || snapshot_clone_row_request(*row, false, bytes);
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return prefix(bytes, extra) && reserve && reserve(bytes, context);
+	}
+	bool copy_rows(std::span<const player_item_snapshot> src,
+		       std::vector<player_item_snapshot> &dst) const
+	{
+		size_t request = 0;
+		if (src.size() > SIZE_MAX / sizeof(player_item_snapshot))
+			return false;
+		request = src.size() * sizeof(player_item_snapshot);
+		for (const auto &r : src)
+			if (!snapshot_clone_row_request(r, true, request))
+				return false;
+		if (!item_list_add(request, snapshot_clone_copy_frames) || !peak(request))
+			return false;
+		dst.assign(src.begin(), src.end());
+		return true;
+	}
+	bool grow(std::vector<player_item_snapshot> &dst) const noexcept
+	{
+		if (dst.size() < dst.capacity())
+			return peak();
+		const size_t n = dst.size();
+		if (n > SIZE_MAX / 2)
+			return false;
+		const size_t capacity = n ? n * 2 : 1;
+		return capacity <= SIZE_MAX / sizeof(player_item_snapshot) &&
+		       peak(capacity * sizeof(player_item_snapshot));
+	}
+};
+}
+size_t player_item_snapshot_extract_frame_bytes() noexcept
+{
+	return sizeof(subtree_budget) + subtree_frames;
+}
+bool player_item_snapshot_list_current_heap_bytes(const std::vector<player_item_snapshot> &value,
+						  size_t *out) noexcept
+{
+	if (!out || !snapshot_clone_policy_supported())
+		return false;
+	size_t bytes = 0;
+	if (!item_list_heap(value, bytes))
+		return false;
+	*out = bytes;
+	return true;
+}
+
+player_snapshot_codec_result player_item_snapshot_extract_subtree_bounded(
+	const std::vector<player_item_snapshot> &items, uint64_t selected_uid,
+	std::vector<player_item_snapshot> *selected_out,
+	std::vector<player_item_snapshot> *remaining_out, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!selected_uid || !selected_out || !remaining_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (!snapshot_clone_policy_supported())
+		return player_snapshot_codec_result::unsupported_version;
+	subtree_budget budget{ reserve, context, outer_live };
+	if (!budget.peak())
+		return player_snapshot_codec_result::allocation_failure;
+	try
+	{
+		if (items.size() > SIZE_MAX / sizeof(size_t) ||
+		    !budget.peak(items.size() * sizeof(size_t)))
+			return player_snapshot_codec_result::allocation_failure;
+		if (!valid_item_relationships(items))
+			return player_snapshot_codec_result::invalid_value;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	size_t selected_index = items.size();
+	for (size_t index = 0; index < items.size(); ++index)
+		if (items[index].object_uid == selected_uid)
+		{
+			selected_index = index;
+			break;
+		}
+	if (selected_index == items.size())
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		std::vector<player_item_snapshot> selected;
+		std::vector<player_item_snapshot> remaining;
+		budget.a = &selected;
+		budget.b = &remaining;
+		constexpr size_t word_bits = std::numeric_limits<unsigned long>::digits;
+		const size_t words = items.size() / word_bits + (items.size() % word_bits != 0);
+		if (words > SIZE_MAX / sizeof(unsigned long) ||
+		    items.size() > SIZE_MAX / (2 * sizeof(int32_t)))
+			return player_snapshot_codec_result::allocation_failure;
+		budget.auxiliary = words * sizeof(unsigned long);
+		if (!item_list_add(budget.auxiliary, 2 * items.size() * sizeof(int32_t)))
+			return player_snapshot_codec_result::allocation_failure;
+		if (!budget.peak())
+			return player_snapshot_codec_result::allocation_failure;
+		std::vector<bool> included(items.size(), false);
+		std::vector<int32_t> selected_positions(items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		std::vector<int32_t> remaining_positions(items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		if (items.size() > SIZE_MAX / sizeof(player_item_snapshot) ||
+		    !budget.peak(items.size() * sizeof(player_item_snapshot)))
+			return player_snapshot_codec_result::allocation_failure;
+		selected.reserve(items.size());
+		if (!budget.peak(items.size() * sizeof(player_item_snapshot)))
+			return player_snapshot_codec_result::allocation_failure;
+		remaining.reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			if (index == selected_index)
+				included[index] = true;
+			else if (items[index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				included[index] =
+					included[static_cast<size_t>(items[index].parent_index)];
+			if (included[index])
+			{
+				selected_positions[index] = static_cast<int32_t>(selected.size());
+				player_item_snapshot item;
+				size_t nested = 0;
+				if (!budget.prefix(nested))
+					return player_snapshot_codec_result::allocation_failure;
+				auto copy_code = player_item_snapshot_clone_bounded(
+					items[index], &item, reserve, context, nested);
+				if (copy_code != player_snapshot_codec_result::ok)
+					return copy_code;
+				budget.row = &item;
+				item.parent_index = index == selected_index ?
+							    PLAYER_SNAPSHOT_NO_PARENT :
+							    selected_positions[static_cast<size_t>(
+								    items[index].parent_index)];
+				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    index != selected_index)
+					return player_snapshot_codec_result::invalid_value;
+				if (!budget.peak())
+					return player_snapshot_codec_result::allocation_failure;
+				selected.push_back(std::move(item));
+				budget.row = nullptr;
+			}
+			else
+			{
+				remaining_positions[index] = static_cast<int32_t>(remaining.size());
+				player_item_snapshot item;
+				size_t nested = 0;
+				if (!budget.prefix(nested))
+					return player_snapshot_codec_result::allocation_failure;
+				auto copy_code = player_item_snapshot_clone_bounded(
+					items[index], &item, reserve, context, nested);
+				if (copy_code != player_snapshot_codec_result::ok)
+					return copy_code;
+				budget.row = &item;
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					item.parent_index = remaining_positions[static_cast<size_t>(
+						items[index].parent_index)];
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+						return player_snapshot_codec_result::invalid_value;
+				}
+				if (!budget.peak())
+					return player_snapshot_codec_result::allocation_failure;
+				remaining.push_back(std::move(item));
+				budget.row = nullptr;
+			}
+		}
+		*selected_out = std::move(selected);
+		*remaining_out = std::move(remaining);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_snapshot_extract_forest_bounded(const std::vector<player_item_snapshot> &items,
+					    const std::vector<uint64_t> &selected_root_uids,
+					    std::vector<player_item_snapshot> *selected_out,
+					    std::vector<player_item_snapshot> *remaining_out,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	if (selected_root_uids.empty() || !selected_out || !remaining_out ||
+	    std::any_of(selected_root_uids.begin(), selected_root_uids.end(),
+			[](uint64_t uid) { return uid == 0; }) ||
+	    std::adjacent_find(selected_root_uids.begin(), selected_root_uids.end(),
+			       [](uint64_t left, uint64_t right)
+			       { return left >= right; }) != selected_root_uids.end())
+		return player_snapshot_codec_result::invalid_value;
+	if (!snapshot_clone_policy_supported())
+		return player_snapshot_codec_result::unsupported_version;
+	subtree_budget budget{ reserve, context, outer_live };
+	if (!budget.peak())
+		return player_snapshot_codec_result::allocation_failure;
+	try
+	{
+		std::vector<player_item_snapshot> selected;
+		std::vector<player_item_snapshot> remaining;
+		budget.a = &selected;
+		budget.b = &remaining;
+		if (!budget.copy_rows(items, remaining))
+			return player_snapshot_codec_result::allocation_failure;
+		for (uint64_t selected_root_uid : selected_root_uids)
+		{
+			std::vector<player_item_snapshot> tree;
+			std::vector<player_item_snapshot> next_remaining;
+			budget.c = &tree;
+			budget.d = &next_remaining;
+			size_t nested = 0;
+			if (!budget.prefix(nested))
+				return player_snapshot_codec_result::allocation_failure;
+			const auto extracted = player_item_snapshot_extract_subtree_bounded(
+				remaining, selected_root_uid, &tree, &next_remaining, reserve,
+				context, nested);
+			if (extracted != player_snapshot_codec_result::ok)
+				return extracted;
+			const int32_t offset = static_cast<int32_t>(selected.size());
+			for (auto &item : tree)
+			{
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += offset;
+				if (!budget.grow(selected))
+					return player_snapshot_codec_result::allocation_failure;
+				selected.push_back(std::move(item));
+			}
+			if (!budget.peak())
+				return player_snapshot_codec_result::allocation_failure;
+			remaining = std::move(next_remaining);
+			budget.c = nullptr;
+			budget.d = nullptr;
+		}
+		*selected_out = std::move(selected);
+		*remaining_out = std::move(remaining);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+size_t player_item_snapshot_current_heap_observer_frame_bytes() noexcept
+{
+	// Actual shared observer public/helper/range/query scopes are owned by the
+	// settled observation inventory, not by allocating copy constructors.
+	// capacity()'s declared this/result is already one query in that inventory.
+	// Its genuine const path reaches _M_is_local -> _M_data + _M_local_data ->
+	// pointer_traits<const char*>::pointer_to -> addressof -> __addressof:
+	// (this+bool)+(this+ptr)+(this+ptr)+(reference+ptr)*3 = 11P+B.
+	// Extra public CURRENT params/value/policy/strong-result + profile return.
+	return snapshot_clone_observation_frames + 11 * sizeof(void *) + sizeof(bool) +
+	       2 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool);
+}
+
+size_t player_item_snapshot_vector_operation_frame_bytes() noexcept
+{
+	// Only the actual outer vector source paths selected by native stock:
+	// range construction/assign, reserve and full-capacity forward insert,
+	// grow/push with nonthrowing row relocation, size/value index construction,
+	// equal-allocator move assignment and nontrivial cleanup. Row/nested member
+	// copies and CURRENT observers retain their separate profiles. This owns
+	// neither subtree bit masks nor any unrelated inline output workspace.
+	static_assert(std::is_nothrow_move_constructible_v<player_item_snapshot>);
+	static_assert(std::is_nothrow_move_assignable_v<player_item_snapshot>);
+	return item_list_vector_frames + item_list_move_frames + item_list_size_constructor_frames +
+	       item_list_nontrivial_frames + snapshot_clone_vector_constructor_frames +
+	       sizeof(size_t);
+}

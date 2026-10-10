@@ -647,4 +647,13 @@ bool item_transfer_command_build_native_mobile_recovery_bounded(
 	critical_source_site, critical_deadline_class, bool (*)(size_t, void *) noexcept,
 	void *context, size_t outer_live) noexcept;
 
+// Exact original money/cost/generic native recovery-shape branches under actual
+// caller storage admission. Pure predicate, no recovery/native/admission authority.
+bool item_transfer_native_mobile_recovery_shape_valid_bounded(const item_transfer_payload &,
+							      bool (*)(size_t, void *) noexcept,
+							      void *, size_t) noexcept;
+
+// Pure source-declared CURRENT observer scopes; excludes heap and copy/codec requests.
+size_t item_transfer_payload_current_heap_observer_frame_bytes() noexcept;
+
 #endif

@@ -173,4 +173,25 @@ player_snapshot_codec_result player_snapshot_decode_bounded(
 	const uint8_t *, size_t, player_snapshot *, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer_live, size_t *retained_snapshot_heap = nullptr) noexcept;
 
+// Full original subtree/forest transforms. Inputs and prior outputs are outer-owned;
+// private vectors, row copies, source scopes and all allocation requests are callee-owned.
+// Strong outputs; source-only companions supply no execution or native authority.
+size_t player_item_snapshot_extract_frame_bytes() noexcept;
+bool player_item_snapshot_list_current_heap_bytes(const std::vector<player_item_snapshot> &,
+						  size_t *) noexcept;
+player_snapshot_codec_result player_item_snapshot_extract_subtree_bounded(
+	const std::vector<player_item_snapshot> &, uint64_t, std::vector<player_item_snapshot> *,
+	std::vector<player_item_snapshot> *, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+player_snapshot_codec_result player_item_snapshot_extract_forest_bounded(
+	const std::vector<player_item_snapshot> &, const std::vector<uint64_t> &,
+	std::vector<player_item_snapshot> *, std::vector<player_item_snapshot> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
+// Pure source-declared CURRENT observer scopes; excludes heap and copy/codec requests.
+size_t player_item_snapshot_current_heap_observer_frame_bytes() noexcept;
+
+// Pure selected outer-vector source scopes; excludes heap, row copies and subtree workspaces.
+size_t player_item_snapshot_vector_operation_frame_bytes() noexcept;
+
 #endif

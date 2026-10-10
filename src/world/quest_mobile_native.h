@@ -171,4 +171,13 @@ quest_mobile_native_capture_bounded(P_char, const quest_mobile_native_reference 
 				    bool (*)(size_t, void *) noexcept, void *, size_t,
 				    size_t *retained_image_heap = nullptr) noexcept;
 
+// Complete acceptance/consumption transform; original validation and DFS/UID/order
+// policy remain authoritative. Outer owns caller inputs/prior output; the callee
+// owns actual private copies, codecs, growth and hash/forest validation lifetimes.
+size_t quest_mobile_native_items_transition_frame_bytes() noexcept;
+player_snapshot_codec_result quest_mobile_native_items_transition_bounded(
+	std::span<const player_item_snapshot>, const quest_mobile_native_reference &,
+	const item_transfer_payload &, std::vector<player_item_snapshot> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 #endif
