@@ -2362,3 +2362,599 @@ unsigned int flatfile_native_mobile_birth_ordinary_collector_physical_storage::v
 		return EIO;
 	}
 }
+
+// Private prospective CURRENT catalog proof beside the original allocating
+// readers. This is explicit C++ request accounting, not native stack/library
+// allocator/OpenSSL/system or whole-process 32MiB qualification.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+struct physical_failure
+{
+	unsigned int code;
+};
+size_t physical_sum(size_t a, size_t b)
+{
+	if (b > SIZE_MAX - a)
+		throw physical_failure{ ENOBUFS };
+	return a + b;
+}
+size_t physical_product(size_t a, size_t b)
+{
+	if (b && a > SIZE_MAX / b)
+		throw physical_failure{ ENOBUFS };
+	return a * b;
+}
+struct physical_reservation
+{
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	bool refused = false;
+	static bool callback(size_t bytes, void *context) noexcept
+	{
+		auto &owner = *static_cast<physical_reservation *>(context);
+		const bool accepted = owner.reserve(bytes, owner.context);
+		if (!accepted)
+			owner.refused = true;
+		return accepted;
+	}
+};
+// Pure status mapping; caller prospectively owns these actual source frames.
+constexpr size_t physical_codec_status_frames = sizeof(economic_accounting_error) + sizeof(void *) +
+						sizeof(unsigned int) + sizeof(bool) * 4;
+unsigned int physical_codec_status(economic_accounting_error code,
+				   const physical_reservation &reservation) noexcept
+{
+	if (reservation.refused || code == economic_accounting_error::capacity ||
+	    code == economic_accounting_error::overflow)
+		return ENOBUFS;
+	if (code == economic_accounting_error::unresolved)
+		return ENOTSUP;
+	return code == economic_accounting_error::ok ? 0 : EINVAL;
+}
+struct physical_scope
+{
+	physical_reservation *owner;
+	size_t outer;
+	void admit(size_t request) const
+	{
+		if (!physical_reservation::callback(physical_sum(outer, request), owner))
+			throw physical_failure{ ENOBUFS };
+	}
+	physical_scope nested(size_t request) const
+	{
+		return { owner, physical_sum(outer, request) };
+	}
+};
+constexpr size_t physical_callback_frames = sizeof(physical_reservation) +
+					    sizeof(physical_scope) * 2 + sizeof(void *) * 4 +
+					    sizeof(size_t) * 10 + sizeof(bool) * 3;
+size_t physical_string_heap(const std::string &value)
+{
+	return value.capacity() > 15 ? physical_sum(value.capacity(), 1) : 0;
+}
+template <class Set> size_t physical_hash_heap(const Set &values)
+{
+	using node = std::__detail::_Hash_node<
+		typename Set::value_type,
+		std::__cache_default<typename Set::key_type, typename Set::hasher>::value>;
+	size_t total = physical_product(values.size(), sizeof(node));
+	if (values.bucket_count() != 1)
+		total = physical_sum(total,
+				     physical_product(values.bucket_count(),
+						      sizeof(std::__detail::_Hash_node_base *)));
+	return total;
+}
+template <class Set>
+void physical_hash_reserve(Set &values, size_t count, physical_scope scope, size_t live)
+{
+	struct work_frame
+	{
+		std::__detail::_Prime_rehash_policy policy;
+		size_t buckets;
+	};
+	scope.admit(physical_sum(live, sizeof(work_frame)));
+	work_frame work{};
+	work.buckets = work.policy._M_next_bkt(work.policy._M_bkt_for_elements(count));
+	scope.admit(physical_sum(physical_sum(live, sizeof(work_frame)),
+				 physical_product(work.buckets,
+						  sizeof(std::__detail::_Hash_node_base *))));
+	values.reserve(count);
+}
+template <class Set>
+void physical_hash_insert_admit(const Set &values, physical_scope scope, size_t live)
+{
+	using node = std::__detail::_Hash_node<
+		typename Set::value_type,
+		std::__cache_default<typename Set::key_type, typename Set::hasher>::value>;
+	// All these new local sets reserved their full count before insertion.
+	// The pinned default-load-factor-one bucket table therefore never grows.
+	scope.admit(physical_sum(live, sizeof(node)));
+}
+size_t physical_catalog_heap(const collector_catalog &catalog)
+{
+	size_t total = 0;
+	total = physical_sum(total,
+			     physical_product(catalog.deaths.capacity(), sizeof(death_state)));
+	total = physical_sum(total,
+			     physical_product(catalog.listings.capacity(), sizeof(listing_state)));
+	total = physical_sum(total, physical_product(catalog.operations.capacity(),
+						     sizeof(operation_state)));
+	for (const auto &listing : catalog.listings)
+		total = physical_sum(total, listing.item_blob.capacity());
+	return total;
+}
+
+struct physical_decoder : decoder
+{
+	physical_scope scope;
+	size_t *retained_heap;
+	physical_decoder(const uint8_t *data, size_t size, physical_scope scope,
+			 size_t *retained_heap)
+		: decoder{ data, size }
+		, scope(scope)
+		, retained_heap(retained_heap)
+	{
+	}
+	bool string(std::string *value, size_t maximum)
+	{
+		uint32_t count = 0;
+		if (!value || !number(&count) || count > maximum || offset > size ||
+		    size - offset < count)
+			return false;
+		const size_t inline_frame = sizeof(std::string) + sizeof(uint32_t) +
+					    sizeof(size_t) * 2 + sizeof(void *) * 3 +
+					    physical_callback_frames;
+		const size_t live = physical_sum(inline_frame, *retained_heap);
+		scope.admit(physical_sum(live, count > 15 ? physical_sum(count, 1) : 0));
+		std::string candidate(count, '\0');
+		scope.admit(physical_sum(live, physical_string_heap(candidate)));
+		std::copy_n(reinterpret_cast<const char *>(data + offset), count,
+			    candidate.begin());
+		const size_t previous_heap = physical_string_heap(*value);
+		value->swap(candidate);
+		if (previous_heap > *retained_heap)
+			throw physical_failure{ ENOBUFS };
+		*retained_heap =
+			physical_sum(*retained_heap - previous_heap, physical_string_heap(*value));
+		offset += count;
+		return value->find('\0') == std::string::npos;
+	}
+};
+bool physical_valid_blob(const listing_state &listing, physical_scope scope)
+{
+	if (listing.item_blob.empty())
+		return listing.entry.status == collector::state::candidate ||
+		       (listing.entry.status == collector::state::cancelled &&
+			listing.entry.closed_reason != collector::reason::holding_elapsed);
+	if (listing.item_blob.size() > COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES)
+		return false;
+	const size_t frame = sizeof(std::vector<player_item_snapshot>) + sizeof(void *) * 2 +
+			     sizeof(size_t) * 2 + sizeof(player_snapshot_codec_result) +
+			     sizeof(bool) * 3 + physical_callback_frames;
+	scope.admit(frame);
+	std::vector<player_item_snapshot> items;
+	const auto decoded = player_item_snapshot_list_decode_bounded(
+		listing.item_blob.data(), listing.item_blob.size(), &items,
+		physical_reservation::callback, scope.owner, scope.nested(frame).outer);
+	if (scope.owner->refused)
+		throw physical_failure{ ENOBUFS };
+	if (decoded == player_snapshot_codec_result::allocation_failure ||
+	    decoded == player_snapshot_codec_result::limit_exceeded)
+		throw physical_failure{ ENOBUFS };
+	return decoded == player_snapshot_codec_result::ok && items.size() == 1 &&
+	       items[0].object_uid == listing.entry.uid &&
+	       items[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT && items[0].equipment_slot == 0;
+}
+
+bool physical_valid_catalog(const collector_catalog &catalog, physical_scope scope)
+{
+	using identities = std::set<std::pair<uint32_t, uint64_t>>;
+	using death_keys = std::set<std::pair<collector::death_operation_id, uint64_t>>;
+	using operation_keys = std::unordered_set<std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES>,
+						  operation_id_hash>;
+	const size_t frame = sizeof(identities) + sizeof(death_keys) + sizeof(operation_keys) +
+			     sizeof(std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES>) +
+			     sizeof(size_t) * 4 + sizeof(void *) * 6 + physical_callback_frames;
+	scope.admit(frame);
+
+	if (!catalog.next_listing || catalog.deaths.size() > collector::catalog_max_records ||
+	    catalog.listings.size() > collector::catalog_max_records ||
+	    catalog.operations.size() > catalog_maximum_operations ||
+	    !std::is_sorted(catalog.deaths.begin(), catalog.deaths.end(), death_less) ||
+	    !std::is_sorted(catalog.listings.begin(), catalog.listings.end(),
+			    [](const listing_state &left, const listing_state &right)
+			    { return left.entry.listing < right.entry.listing; }))
+		return false;
+	for (size_t index = 0; index < catalog.deaths.size(); ++index)
+	{
+		const death_state &death = catalog.deaths[index];
+		if (!death.beneficiary || !death.death_time || !death.policy.enabled ||
+		    !collector::valid_rules(death.policy) ||
+		    death.hint_state > COLLECTOR_HINT_DELIVERED ||
+		    (death.hint_state == COLLECTOR_HINT_NONE && death.hint_revision) ||
+		    (death.hint_state != COLLECTOR_HINT_NONE && !death.hint_revision) ||
+		    (index && death_equal(catalog.deaths[index - 1].operation, death.operation)))
+			return false;
+	}
+	std::set<std::pair<uint32_t, uint64_t>> death_identities;
+	for (const death_state &death : catalog.deaths)
+	{
+		scope.admit(physical_sum(
+			frame,
+			physical_product(death_identities.size() + 1,
+					 sizeof(std::_Rb_tree_node<identities::value_type>))));
+		if (!death_identities.emplace(death.beneficiary, death.death_time).second)
+			return false;
+	}
+	std::set<std::pair<collector::death_operation_id, uint64_t>> death_items;
+	try
+	{
+		for (size_t index = 0; index < catalog.listings.size(); ++index)
+		{
+			const listing_state &listing = catalog.listings[index];
+			const death_state *death =
+				find_death(catalog, listing.entry.death_operation);
+			const size_t sets_live = physical_sum(
+				frame,
+				physical_sum(
+					physical_product(
+						death_identities.size(),
+						sizeof(std::_Rb_tree_node<identities::value_type>)),
+					physical_product(
+						death_items.size(),
+						sizeof(std::_Rb_tree_node<death_keys::value_type>))));
+			scope.admit(physical_sum(
+				sets_live, sizeof(std::_Rb_tree_node<death_keys::value_type>)));
+			if (!collector::valid_record(listing.entry) ||
+			    !physical_valid_blob(listing, scope.nested(sets_live)) ||
+			    listing.entry.listing >= catalog.next_listing ||
+			    (index &&
+			     catalog.listings[index - 1].entry.listing == listing.entry.listing) ||
+			    !((scope.admit(physical_sum(
+				      sets_live,
+				      sizeof(std::_Rb_tree_node<death_keys::value_type>)))),
+			      death_items.emplace(listing.entry.death_operation, listing.entry.uid)
+				      .second) ||
+			    !death || death->beneficiary != listing.entry.beneficiary ||
+			    death->death_time != listing.entry.death_time ||
+			    !same_rules(death->policy, listing.entry.policy))
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		throw;
+	}
+	std::unordered_set<std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES>, operation_id_hash>
+		operation_ids;
+	try
+	{
+		const size_t sets_live = physical_sum(
+			frame,
+			physical_sum(physical_product(
+					     death_identities.size(),
+					     sizeof(std::_Rb_tree_node<identities::value_type>)),
+				     physical_product(
+					     death_items.size(),
+					     sizeof(std::_Rb_tree_node<death_keys::value_type>))));
+		physical_hash_reserve(operation_ids, catalog.operations.size(), scope, sets_live);
+		for (const operation_state &operation : catalog.operations)
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			physical_hash_insert_admit(operation_ids, scope,
+						   physical_sum(sets_live,
+								physical_hash_heap(operation_ids)));
+			if (critical_operation_id_is_zero(operation.operation_id) ||
+			    !collector_command_encode_result(operation.result, &encoded) ||
+			    !operation_ids.insert(operation.operation_id.bytes).second)
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		throw;
+	}
+	return true;
+}
+
+bool physical_decode_catalog(const std::vector<uint8_t> &bytes, collector_catalog *catalog,
+			     physical_scope scope)
+{
+	using operation_keys = std::unordered_set<std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES>,
+						  operation_id_hash>;
+	const size_t frame =
+		sizeof(collector_catalog) + sizeof(decoder) + sizeof(physical_decoder) +
+		sizeof(operation_keys) + sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>) +
+		sizeof(std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES>) + sizeof(std::string) +
+		sizeof(uint64_t) + sizeof(uint32_t) * 6 + sizeof(uint16_t) + sizeof(uint8_t) * 2 +
+		sizeof(size_t) * 6 + sizeof(void *) * 8 + physical_callback_frames;
+	scope.admit(frame);
+
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size || bytes.size() > catalog_maximum_bytes ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	decoder header{ bytes.data() + catalog_magic.size(), bytes.size() - catalog_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t file_revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&file_revision) || (version != 1 && version != catalog_version) ||
+	    !file_revision || payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	collector_catalog decoded;
+	size_t decoded_heap = 0;
+	physical_decoder payload{ payload_bytes, payload_size, scope.nested(frame), &decoded_heap };
+	decoded.file_revision = file_revision;
+	uint32_t death_count = 0, listing_count = 0, operation_count = 0;
+	if (!payload.number(&decoded.catalog_revision) || !payload.number(&decoded.next_listing) ||
+	    !payload.number(&death_count) || death_count > collector::catalog_max_records)
+		return false;
+	try
+	{
+		scope.admit(physical_sum(physical_sum(frame, decoded_heap),
+					 physical_product(death_count, sizeof(death_state))));
+		decoded.deaths.resize(death_count);
+		decoded_heap =
+			physical_sum(decoded_heap, physical_product(decoded.deaths.capacity(),
+								    sizeof(death_state)));
+		scope.admit(physical_sum(frame, decoded_heap));
+		for (death_state &death : decoded.deaths)
+			if (!decode_operation_id(&payload, &death.operation) ||
+			    !payload.number(&death.beneficiary) ||
+			    !payload.number(&death.death_time) ||
+			    !decode_rules(&payload, &death.policy) ||
+			    (version == catalog_version && !payload.number(&death.hint_state)) ||
+			    (version == catalog_version && !payload.number(&death.hint_revision)))
+				return false;
+		if (!payload.number(&listing_count) ||
+		    listing_count > collector::catalog_max_records)
+			return false;
+		scope.admit(physical_sum(physical_sum(frame, decoded_heap),
+					 physical_product(listing_count, sizeof(listing_state))));
+		decoded.listings.resize(listing_count);
+		decoded_heap =
+			physical_sum(decoded_heap, physical_product(decoded.listings.capacity(),
+								    sizeof(listing_state)));
+		scope.admit(physical_sum(frame, decoded_heap));
+		for (listing_state &listing : decoded.listings)
+		{
+			std::array<uint8_t, collector::encoded_record_bytes> record = {};
+			uint32_t blob_size = 0;
+			if (!payload.raw(record.data(), record.size()) ||
+			    collector::record_decode(record.data(), record.size(),
+						     &listing.entry) !=
+				    collector::codec_result::ok ||
+			    !payload.number(&blob_size) ||
+			    blob_size > COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES ||
+			    payload.offset > payload.size ||
+			    payload.size - payload.offset < blob_size)
+				return false;
+			scope.admit(physical_sum(physical_sum(frame, decoded_heap),
+						 physical_product(blob_size, sizeof(uint8_t))));
+			listing.item_blob.resize(blob_size);
+			decoded_heap = physical_sum(decoded_heap,
+						    physical_product(listing.item_blob.capacity(),
+								     sizeof(uint8_t)));
+			scope.admit(physical_sum(frame, decoded_heap));
+			if (!payload.raw(listing.item_blob.data(), listing.item_blob.size()))
+				return false;
+		}
+		if (!payload.number(&operation_count) ||
+		    operation_count > catalog_maximum_operations)
+			return false;
+		scope.admit(
+			physical_sum(physical_sum(frame, decoded_heap),
+				     physical_product(operation_count, sizeof(operation_state))));
+		decoded.operations.resize(operation_count);
+		decoded_heap =
+			physical_sum(decoded_heap, physical_product(decoded.operations.capacity(),
+								    sizeof(operation_state)));
+		scope.admit(physical_sum(frame, decoded_heap));
+		for (operation_state &operation : decoded.operations)
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> result = {};
+			if (!payload.raw(operation.operation_id.bytes.data(),
+					 operation.operation_id.bytes.size()) ||
+			    !payload.raw(operation.command_digest.data(),
+					 operation.command_digest.size()) ||
+			    !payload.number(&operation.result_code) ||
+			    !payload.raw(result.data(), result.size()) ||
+			    !collector_command_decode_result(result.data(), result.size(),
+							     &operation.result))
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		throw;
+	}
+	if (payload.offset != payload.size ||
+	    !physical_valid_catalog(decoded, scope.nested(physical_sum(frame, decoded_heap))))
+		return false;
+	if (physical_catalog_heap(decoded) != decoded_heap)
+		throw physical_failure{ ENOBUFS };
+	scope.admit(physical_sum(frame, decoded_heap));
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flatfile_read_result physical_load_catalog(const std::string &root, collector_catalog *catalog,
+					   physical_scope scope)
+{
+	const size_t frame = sizeof(std::string) * 2 + sizeof(std::vector<uint8_t>) +
+			     sizeof(size_t) * 3 + sizeof(flatfile_read_result) + sizeof(int) +
+			     sizeof(void *) * 2 + physical_callback_frames;
+	const size_t length = physical_sum(root.size(), sizeof("/domains") - 1);
+	const size_t name_length = std::strlen(catalog_filename);
+	size_t request = frame;
+	if (length > 15)
+		request = physical_sum(request, physical_sum(length, 1));
+	if (name_length > 15)
+		request = physical_sum(request, physical_sum(name_length, 1));
+	scope.admit(request);
+	std::string directory(length, '\0'), name(catalog_filename);
+	std::copy(root.begin(), root.end(), directory.begin());
+	std::copy_n("/domains", sizeof("/domains") - 1, directory.begin() + root.size());
+	std::vector<uint8_t> bytes;
+	const size_t live = physical_sum(frame, physical_sum(physical_string_heap(directory),
+							     physical_string_heap(name)));
+	scope.admit(live);
+	errno = 0;
+	const auto result = flatfile_read_bounded(directory, name, catalog_maximum_bytes, &bytes,
+						  physical_reservation::callback, scope.owner,
+						  scope.nested(live).outer);
+	const int read_error = errno;
+	if (result != flatfile_read_result::ok && result != flatfile_read_result::not_found)
+	{
+		if (read_error == ENOBUFS || read_error == EOVERFLOW || read_error == ENOSPC)
+			throw physical_failure{ ENOBUFS };
+		if (read_error == ENOMEM)
+			throw physical_failure{ ENOMEM };
+		if (read_error == ENOTSUP)
+			throw physical_failure{ ENOTSUP };
+	}
+	if (scope.owner->refused)
+		throw physical_failure{ ENOBUFS };
+	if (result == flatfile_read_result::not_found)
+	{
+		*catalog = {};
+		return result;
+	}
+	if (result != flatfile_read_result::ok)
+		return result;
+	scope.admit(physical_sum(live, bytes.capacity()));
+	return physical_decode_catalog(bytes, catalog,
+				       scope.nested(physical_sum(live, bytes.capacity()))) ?
+		       flatfile_read_result::ok :
+		       flatfile_read_result::invalid;
+}
+#endif
+}
+
+unsigned int
+flatfile_native_mobile_birth_ordinary_collector_physical_storage::verify_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_native_mobile_birth_ordinary_catalog_physical_absence *output,
+	flatfile_scratch_reserve_fn reserve, void *context, size_t outer) noexcept
+{
+	if (root.empty() || !output || !reserve || !lock.matches(root))
+		return EINVAL;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)original;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#else
+	physical_reservation reservation{ reserve, context };
+	physical_scope scope{ &reservation, outer };
+	try
+	{
+		const size_t frame =
+			sizeof(quest_mobile_native_image) +
+			sizeof(std::vector<native_mobile_birth_item_recipe>) +
+			sizeof(native_mobile_birth_cash_role_recipe) +
+			sizeof(economic_frozen_intent) + sizeof(std::vector<uint64_t>) +
+			sizeof(collector_catalog) +
+			sizeof(flatfile_native_mobile_birth_ordinary_catalog_physical_absence) +
+			sizeof(std::span<const uint8_t>) + sizeof(size_t) * 7 + sizeof(void *) * 6 +
+			sizeof(economic_accounting_error) * 4 + sizeof(unsigned int) * 4 +
+			sizeof(flatfile_read_result) + physical_callback_frames +
+			physical_codec_status_frames;
+		scope.admit(frame);
+		const auto recovery_code = native_mobile_birth_cash_role_recovery_validate_bounded(
+			original, physical_reservation::callback, &reservation,
+			scope.nested(frame).outer);
+		const auto recovery_status = physical_codec_status(recovery_code, reservation);
+		if (recovery_status)
+			return recovery_status;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		size_t image_heap = 0, recipe_heap = 0;
+		const auto decoded = native_mobile_birth_cash_role_command_decode_bounded(
+			original.command, &image, &recipes, &role, physical_reservation::callback,
+			&reservation, scope.nested(frame).outer, &image_heap, &recipe_heap);
+		const auto command_status = physical_codec_status(decoded, reservation);
+		if (command_status)
+			return command_status;
+		if (role.role != native_mobile_birth_cash_role::ordinary_wallet)
+			return EINVAL;
+		size_t retained = physical_sum(frame, physical_sum(image_heap, recipe_heap));
+		scope.admit(retained);
+		const std::span<const uint8_t> intent_wire{ original.command.accounting_intent };
+		const auto intent_code = economic_intent_decode_bounded(
+			intent_wire, &intent, physical_reservation::callback, &reservation,
+			scope.nested(retained).outer);
+		const auto intent_status = physical_codec_status(intent_code, reservation);
+		if (intent_status)
+			return intent_status;
+		retained = physical_sum(retained, intent.admission.facts.capacity());
+		scope.admit(retained);
+		const auto binding_code = economic_intent_verify_binding_bounded(
+			original.command, intent, physical_reservation::callback, &reservation,
+			scope.nested(retained).outer);
+		const auto binding_status = physical_codec_status(binding_code, reservation);
+		if (binding_status)
+			return binding_status;
+		if (!intent.admission.metadata.source_event)
+			return EINVAL;
+		std::vector<uint64_t> born;
+		scope.admit(physical_sum(retained,
+					 physical_product(image.items.size(), sizeof(uint64_t))));
+		born.reserve(image.items.size());
+		retained =
+			physical_sum(retained, physical_product(born.capacity(), sizeof(uint64_t)));
+		scope.admit(retained);
+		for (const auto &literal : image.items)
+			born.push_back(literal.object_uid);
+		std::sort(born.begin(), born.end());
+		if (std::adjacent_find(born.begin(), born.end()) != born.end() ||
+		    (!born.empty() && !born.front()))
+			return EINVAL;
+		collector_catalog catalog;
+		const auto loaded = physical_load_catalog(root, &catalog, scope.nested(retained));
+		scope.admit(physical_sum(retained, physical_catalog_heap(catalog)));
+		if (loaded != flatfile_read_result::ok && loaded != flatfile_read_result::not_found)
+			return loaded == flatfile_read_result::io_error ? EIO : EILSEQ;
+		flatfile_native_mobile_birth_ordinary_catalog_physical_absence observed;
+		observed.present = loaded == flatfile_read_result::ok;
+		observed.file_revision = catalog.file_revision;
+		observed.catalog_revision = catalog.catalog_revision;
+		observed.listings = catalog.listings.size();
+		for (const auto &listing : catalog.listings)
+		{
+			// Original SQL collector_listings checks every retained listing UID,
+			// including candidates/cancelled rows whose original blob is empty.
+			if (std::binary_search(born.begin(), born.end(), listing.entry.uid))
+				return EEXIST;
+			++observed.item_rows;
+		}
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = observed;
+		return 0;
+	}
+	catch (const physical_failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}

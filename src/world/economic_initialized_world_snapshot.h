@@ -106,4 +106,16 @@ unsigned int
 economic_initialized_world_snapshot_capture(const economic_sql_source_limits &,
 					    economic_initialized_world_snapshot *) noexcept;
 
+// Distinct full capture with prospective explicit C++ request admission. Caller
+// owns old output/context storage in outer_live; strong snapshot and heap scalar
+// on every refusal. Complete original closure/cash/bank/item semantics apply.
+// Pinned GCC13 C++11 ABI policy; allocator/RSS/system internals are excluded.
+unsigned int economic_initialized_world_snapshot_capture_bounded(
+	const economic_sql_source_limits &, economic_initialized_world_snapshot *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_heap = nullptr) noexcept;
+// Passive complete retained DTO heap, excluding the inline snapshot object.
+bool economic_initialized_world_snapshot_current_heap_bytes(
+	const economic_initialized_world_snapshot &, size_t *) noexcept;
+
 #endif

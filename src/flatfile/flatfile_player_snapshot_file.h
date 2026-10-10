@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_PLAYER_SNAPSHOT_FILE_H
 #define DURIS_FLATFILE_PLAYER_SNAPSHOT_FILE_H
 
+#include "flatfile/flatfile_store.h"
 #include "player/player_snapshot.h"
 
 enum class flatfile_player_load_result
@@ -33,6 +34,17 @@ flatfile_player_load_result flatfile_player_snapshot_read(const std::string &roo
 flatfile_player_load_result
 flatfile_player_snapshot_read_file(const std::string &directory, const std::string &filename,
 				   int32_t pid, player_snapshot *snapshot, std::string *error);
+// Distinct complete reader; the original file format and decoder remain intact.
+// Caller accounts actual paths/input/prior output and other owners in outer.
+// Requires the full player_snapshot_decode_bounded companion. Strong snapshot
+// and heap scalar, which excludes inline snapshot but includes all nested storage.
+// No player lock, recovery, authority, publication or runtime selection.
+flatfile_player_load_result
+flatfile_player_snapshot_read_file_bounded(const std::string &, const std::string &, int32_t,
+					   player_snapshot *, flatfile_scratch_reserve_fn, void *,
+					   size_t,
+					   size_t *retained_snapshot_heap = nullptr) noexcept;
+
 // Prepare a complete checksummed file without publishing it. Authority owners
 // can stage a small immutable receipt with the same reader as player snapshots.
 bool flatfile_player_snapshot_encode_file(const player_snapshot &snapshot,

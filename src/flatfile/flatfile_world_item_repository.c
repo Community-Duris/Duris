@@ -736,6 +736,598 @@ struct world_bounded_read_workspace
 };
 #endif
 
+// Resource origin is retained explicitly through semantic bool predicates.
+// Legacy decoders/validators below keep their original behavior for all callers.
+enum class world_resource_status : uint8_t
+{
+	invalid,
+	allocation_failure,
+	capacity_exceeded,
+	unsupported
+};
+struct world_resource_state
+{
+	world_resource_status status = world_resource_status::invalid;
+	bool codec(player_snapshot_codec_result value) noexcept
+	{
+		if (value == player_snapshot_codec_result::ok)
+			return true;
+		if (value == player_snapshot_codec_result::allocation_failure)
+			status = world_resource_status::allocation_failure;
+		else if (value == player_snapshot_codec_result::limit_exceeded)
+			status = world_resource_status::capacity_exceeded;
+		// Unknown serialized versions remain semantic corruption.
+		return false;
+	}
+	bool capacity() noexcept
+	{
+		status = world_resource_status::capacity_exceeded;
+		return false;
+	}
+	bool policy(bool supported) noexcept
+	{
+		if (supported)
+			return true;
+		status = world_resource_status::unsupported;
+		return false;
+	}
+	flatfile_world_item_result failure() const noexcept
+	{
+		if (status == world_resource_status::allocation_failure)
+			errno = ENOMEM;
+		else if (status == world_resource_status::capacity_exceeded)
+			errno = ENOBUFS;
+		else if (status == world_resource_status::unsupported)
+			errno = ENOTSUP;
+		else
+		{
+			errno = EBADMSG;
+			return flatfile_world_item_result::invalid;
+		}
+		return flatfile_world_item_result::io_error;
+	}
+};
+struct world_resource_decoder
+{
+	const uint8_t *data;
+	size_t size;
+	size_t offset = 0;
+	world_resource_state *resource;
+	world_resource_decoder(const uint8_t *input, size_t length, world_resource_state &state)
+		: data(input)
+		, size(length)
+		, resource(&state)
+	{
+	}
+
+	template <typename T> bool number(T *value)
+	{
+		if (!value || offset > size || size - offset < sizeof(T))
+			return false;
+		using U = std::make_unsigned_t<T>;
+		U bits = 0;
+		for (size_t index = 0; index < sizeof(T); ++index)
+			bits |= static_cast<U>(data[offset++]) << (index * 8);
+		*value = static_cast<T>(bits);
+		return true;
+	}
+
+	bool text(std::string *value, size_t maximum)
+	{
+		uint32_t length = 0;
+		if (!value || !number(&length) || length > maximum || offset > size ||
+		    size - offset < length)
+			return false;
+		try
+		{
+			value->assign(reinterpret_cast<const char *>(data + offset), length);
+		}
+		catch (const std::bad_alloc &)
+		{
+			resource->status = world_resource_status::allocation_failure;
+			return false;
+		}
+		offset += length;
+		return true;
+	}
+
+	bool byte_vector(std::vector<uint8_t> *value, size_t maximum)
+	{
+		uint32_t length = 0;
+		if (!value || !number(&length) || !length || length > maximum || offset > size ||
+		    size - offset < length)
+			return false;
+		try
+		{
+			value->assign(data + offset, data + offset + length);
+		}
+		catch (const std::bad_alloc &)
+		{
+			resource->status = world_resource_status::allocation_failure;
+			return false;
+		}
+		offset += length;
+		return true;
+	}
+};
+bool world_valid_item_list_resource(const std::vector<player_item_snapshot> &items,
+				    bool require_one_root, std::unordered_set<uint64_t> *item_uids,
+				    bool allow_room_zero, world_resource_state &resource)
+{
+	std::vector<uint8_t> encoded;
+	if (!item_uids || !resource.codec(player_item_snapshot_list_encode(items, &encoded)))
+		return false;
+	size_t roots = 0;
+	for (const auto &item : items)
+	{
+		roots += item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ? 1 : 0;
+		if (!item.object_uid || item.vnum < 0 || (!allow_room_zero && !item.vnum) ||
+		    item.equipment_slot != -1 || !item_uids->insert(item.object_uid).second)
+			return false;
+	}
+	return !require_one_root || roots == 1;
+}
+bool world_valid_catalog_resource(const world_item_catalog &catalog, world_resource_state &resource)
+{
+	if (!catalog.revision || catalog.corpses.size() > corpse_maximum ||
+	    catalog.saved_items.size() > saved_item_maximum ||
+	    catalog.rooms.size() > room_maximum ||
+	    !std::is_sorted(catalog.corpses.begin(), catalog.corpses.end(), corpse_less) ||
+	    !std::is_sorted(catalog.saved_items.begin(), catalog.saved_items.end(),
+			    saved_item_less) ||
+	    !std::is_sorted(catalog.rooms.begin(), catalog.rooms.end(), room_less))
+		return false;
+	std::unordered_set<std::string> owner_names;
+	std::unordered_set<std::string> item_keys;
+	std::unordered_set<uint64_t> item_uids;
+	try
+	{
+		owner_names.reserve(catalog.corpses.size());
+		item_keys.reserve(catalog.saved_items.size());
+		for (size_t index = 0; index < catalog.corpses.size(); ++index)
+		{
+			const auto &corpse = catalog.corpses[index];
+			const bool same_owner = index && catalog.corpses[index - 1].owner_pid ==
+								 corpse.owner_pid;
+			if (!corpse.owner_pid || !corpse.save_id || !corpse.revision ||
+			    corpse.room_vnum < 0 ||
+			    !std::all_of(corpse.money.begin(), corpse.money.end(),
+					 [](int32_t value) { return value >= 0; }) ||
+			    !valid_printable(corpse.owner_name, name_maximum, true) ||
+			    corpse.owner_name != canonical_name(corpse.owner_name) ||
+			    !valid_printable(corpse.short_description, short_description_maximum,
+					     false) ||
+			    !valid_printable(corpse.description, description_maximum, false) ||
+			    !valid_printable(corpse.keywords, keywords_maximum, false) ||
+			    (index && !corpse_less(catalog.corpses[index - 1], corpse)) ||
+			    (same_owner &&
+			     catalog.corpses[index - 1].owner_name != corpse.owner_name) ||
+			    (!same_owner && !owner_names.insert(corpse.owner_name).second) ||
+			    !world_valid_item_list_resource(corpse.items, false, &item_uids, false,
+							    resource))
+				return false;
+		}
+		for (size_t index = 0; index < catalog.saved_items.size(); ++index)
+		{
+			const auto &saved = catalog.saved_items[index];
+			if (!saved.revision || saved.room_vnum <= 0 ||
+			    !valid_printable(saved.item_key, key_maximum, true) ||
+			    saved.items.empty() ||
+			    (index && !saved_item_less(catalog.saved_items[index - 1], saved)) ||
+			    !item_keys.insert(saved.item_key).second ||
+			    !world_valid_item_list_resource(saved.items, false, &item_uids, false,
+							    resource))
+				return false;
+		}
+		for (size_t index = 0; index < catalog.rooms.size(); ++index)
+		{
+			const auto &room = catalog.rooms[index];
+			if (room.room_vnum <= 0 || !room.revision ||
+			    (index && !room_less(catalog.rooms[index - 1], room)) ||
+			    !std::all_of(room.money.begin(), room.money.end(),
+					 [](int32_t value) { return value >= 0; }) ||
+			    !world_valid_item_list_resource(room.items, false, &item_uids, true,
+							    resource))
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		resource.status = world_resource_status::allocation_failure;
+		return false;
+	}
+	return true;
+}
+bool world_decode_items_resource(world_resource_decoder &in,
+				 std::vector<player_item_snapshot> *items)
+{
+	std::vector<uint8_t> encoded;
+	return in.byte_vector(&encoded, PLAYER_SNAPSHOT_MAX_BYTES) &&
+	       in.resource->codec(
+		       player_item_snapshot_list_decode(encoded.data(), encoded.size(), items));
+}
+bool world_decode_catalog_resource(const std::vector<uint8_t> &bytes, world_item_catalog *catalog,
+				   world_resource_state &resource)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	world_resource_decoder header{ bytes.data() + 8, bytes.size() - 8, resource };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) ||
+	    (version != catalog_version && version != catalog_money_version &&
+	     version != catalog_legacy_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	world_resource_decoder payload{ payload_bytes, payload_size, resource };
+	uint32_t corpse_count = 0, saved_count = 0, room_count = 0;
+	if (!payload.number(&corpse_count) || !payload.number(&saved_count) ||
+	    (version >= catalog_version && !payload.number(&room_count)) ||
+	    corpse_count > corpse_maximum || saved_count > saved_item_maximum ||
+	    room_count > room_maximum)
+		return false;
+	world_item_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.corpses.resize(corpse_count);
+		for (auto &corpse : decoded.corpses)
+		{
+			if (!payload.number(&corpse.owner_pid) ||
+			    !payload.text(&corpse.owner_name, name_maximum) ||
+			    !payload.number(&corpse.save_id) ||
+			    !payload.number(&corpse.room_vnum) ||
+			    !payload.text(&corpse.short_description, short_description_maximum) ||
+			    !payload.text(&corpse.description, description_maximum) ||
+			    !payload.text(&corpse.keywords, keywords_maximum) ||
+			    !payload.number(&corpse.weight))
+				return false;
+			for (int32_t &value : corpse.values)
+				if (!payload.number(&value))
+					return false;
+			if (version >= catalog_money_version)
+				for (int32_t &value : corpse.money)
+					if (!payload.number(&value))
+						return false;
+			if (!payload.number(&corpse.revision) ||
+			    !world_decode_items_resource(payload, &corpse.items))
+				return false;
+		}
+		decoded.saved_items.resize(saved_count);
+		for (auto &saved : decoded.saved_items)
+			if (!payload.text(&saved.item_key, key_maximum) ||
+			    !payload.number(&saved.room_vnum) || !payload.number(&saved.revision) ||
+			    !world_decode_items_resource(payload, &saved.items))
+				return false;
+		decoded.rooms.resize(room_count);
+		for (auto &room : decoded.rooms)
+		{
+			if (!payload.number(&room.room_vnum) || !payload.number(&room.revision))
+				return false;
+			for (int32_t &value : room.money)
+				if (!payload.number(&value))
+					return false;
+			if (!world_decode_items_resource(payload, &room.items))
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		resource.status = world_resource_status::allocation_failure;
+		return false;
+	}
+	if (payload.offset != payload.size || !world_valid_catalog_resource(decoded, resource))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+bool world_resource_add(size_t left, size_t right, size_t *out,
+			world_resource_state &resource) noexcept
+{
+	if (!out || right > SIZE_MAX - left)
+		return resource.capacity();
+	*out = left + right;
+	return true;
+}
+bool world_resource_product(size_t count, size_t width, size_t *out,
+			    world_resource_state &resource) noexcept
+{
+	if (!out || (width && count > SIZE_MAX / width))
+		return resource.capacity();
+	*out = count * width;
+	return true;
+}
+bool world_resource_encoder_working(const player_item_snapshot_list_allocation_profile &profile,
+				    size_t *bytes, world_resource_state &resource) noexcept
+{
+	return player_item_snapshot_list_encoder_working_bytes(profile, bytes) ||
+	       resource.capacity();
+}
+bool world_resource_string_buckets(size_t count, size_t *bytes,
+				   world_resource_state &resource) noexcept
+{
+	std::__detail::_Prime_rehash_policy policy;
+	const size_t buckets = policy._M_next_bkt(
+		std::max(policy._M_bkt_for_elements(count), policy._M_bkt_for_elements(1)));
+	return world_resource_product(buckets, sizeof(std::__detail::_Hash_node_base *), bytes,
+				      resource);
+}
+bool world_catalog_storage_preflight_resource(const std::vector<uint8_t> &bytes,
+					      world_catalog_storage_profile *output,
+					      world_resource_state &resource) noexcept
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!output || bytes.size() < header_size ||
+	    memcmp(bytes.data(), catalog_magic.data(), catalog_magic.size()))
+		return false;
+	world_catalog_storage_scan scan;
+	scan.header = decoder{ bytes.data() + 8, bytes.size() - 8 };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!scan.header.number(&version) || !scan.header.number(&payload_size) ||
+	    !scan.header.number(&revision) || !revision ||
+	    (version != catalog_version && version != catalog_money_version &&
+	     version != catalog_legacy_version) ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	SHA256(bytes.data() + header_size, payload_size, scan.digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, scan.digest.data(), scan.digest.size()))
+		return false;
+	// First pass models the decoder's actual prefix; second pass models the
+	// catalog validator while the complete decoded catalog remains live.
+	for (unsigned int pass = 0; pass != 2; ++pass)
+	{
+		scan.payload = decoder{ bytes.data() + header_size, payload_size };
+		uint32_t corpse_count = 0, saved_count = 0, room_count = 0;
+		if (!scan.payload.number(&corpse_count) || !scan.payload.number(&saved_count) ||
+		    (version >= catalog_version && !scan.payload.number(&room_count)) ||
+		    corpse_count > corpse_maximum || saved_count > saved_item_maximum ||
+		    room_count > room_maximum)
+			return false;
+		size_t retained = 0, validator = 0, owner_buckets = 0, key_buckets = 0;
+		size_t uid_count = 0, uid_buckets = 1, uid_bucket_bytes = 0;
+		uint32_t previous_owner = 0;
+		if (pass &&
+		    (!world_resource_string_buckets(corpse_count, &owner_buckets, resource) ||
+		     !world_resource_string_buckets(saved_count, &key_buckets, resource) ||
+		     !world_resource_add(2 * sizeof(std::unordered_set<std::string>) +
+						 sizeof(std::unordered_set<uint64_t>),
+					 owner_buckets, &validator, resource) ||
+		     !world_resource_add(validator, key_buckets, &validator, resource)))
+			return false;
+		if (pass)
+		{
+			scan.result.validation_peak = validator;
+		}
+		for (unsigned int group = 0; group != 3; ++group)
+		{
+			const size_t count = group == 0 ? corpse_count :
+					     group == 1 ? saved_count :
+							  room_count;
+			const size_t row_width =
+				group == 0 ? sizeof(flatfile_corpse_record) :
+				group == 1 ? sizeof(flatfile_saved_world_item_record) :
+					     sizeof(flatfile_room_item_record);
+			size_t rows = 0;
+			if (!pass && (!world_resource_product(count, row_width, &rows, resource) ||
+				      !world_resource_add(retained, rows, &retained, resource)))
+				return false;
+			if (!pass)
+				scan.result.decode_prefix_peak =
+					std::max(scan.result.decode_prefix_peak, retained);
+			for (size_t index = 0; index != count; ++index)
+			{
+				size_t name_length = 0, text_length = 0, canonical_live = 0;
+				uint32_t owner = 0;
+				if (group == 0)
+				{
+					if (!scan.payload.number(&owner) ||
+					    !world_text_length(scan.payload, name_maximum,
+							       &name_length) ||
+					    !world_skip(scan.payload,
+							sizeof(uint32_t) + sizeof(int32_t)))
+						return false;
+					if (!pass &&
+					    !world_resource_add(
+						    retained,
+						    world_assigned_text_request(name_length),
+						    &retained, resource))
+						return false;
+					for (unsigned int text = 0; text != 3; ++text)
+					{
+						const size_t maximum =
+							text == 0 ? short_description_maximum :
+							text == 1 ? description_maximum :
+								    keywords_maximum;
+						if (!world_text_length(scan.payload, maximum,
+								       &text_length) ||
+						    (!pass && !world_resource_add(
+								      retained,
+								      world_assigned_text_request(
+									      text_length),
+								      &retained, resource)))
+							return false;
+					}
+					if (!world_skip(scan.payload,
+							9 * sizeof(int32_t) +
+								(version >= catalog_money_version ?
+									 4 * sizeof(int32_t) :
+									 0) +
+								sizeof(uint64_t)))
+						return false;
+					if (pass)
+					{
+						canonical_live =
+							sizeof(std::string) +
+							world_copied_text_request(name_length);
+						size_t comparison = 0;
+						if (!world_resource_add(validator, canonical_live,
+									&comparison, resource) ||
+						    !world_resource_add(comparison,
+									sizeof(std::string),
+									&comparison, resource))
+							return false;
+						scan.result.validation_peak = std::max(
+							scan.result.validation_peak, comparison);
+						if ((!index || previous_owner != owner) &&
+						    (!world_resource_add(validator,
+									 world_string_node_bytes,
+									 &validator, resource) ||
+						     !world_resource_add(
+							     validator,
+							     world_copied_text_request(name_length),
+							     &validator, resource)))
+							return false;
+					}
+					previous_owner = owner;
+				}
+				else if (group == 1)
+				{
+					if (!world_text_length(scan.payload, key_maximum,
+							       &name_length) ||
+					    !world_skip(scan.payload,
+							sizeof(int32_t) + sizeof(uint64_t)))
+						return false;
+					if (!pass &&
+					    !world_resource_add(
+						    retained,
+						    world_assigned_text_request(name_length),
+						    &retained, resource))
+						return false;
+					if (pass &&
+					    (!world_resource_add(validator, world_string_node_bytes,
+								 &validator, resource) ||
+					     !world_resource_add(
+						     validator,
+						     world_copied_text_request(name_length),
+						     &validator, resource)))
+						return false;
+				}
+				else if (!world_skip(scan.payload, sizeof(int32_t) +
+									   sizeof(uint64_t) +
+									   4 * sizeof(int32_t)))
+					return false;
+				uint32_t wire_length = 0;
+				if (!scan.payload.number(&wire_length) || !wire_length ||
+				    wire_length > PLAYER_SNAPSHOT_MAX_BYTES ||
+				    scan.payload.offset > scan.payload.size ||
+				    wire_length > scan.payload.size - scan.payload.offset ||
+				    !resource.codec(player_item_snapshot_list_preflight(
+					    scan.payload.data + scan.payload.offset, wire_length,
+					    &scan.items)) ||
+				    !resource.policy(
+					    scan.items.fresh_decode_storage_policy_supported) ||
+				    !resource.policy(
+					    scan.items.canonical_encoder_storage_policy_supported) ||
+				    !world_skip(scan.payload, wire_length))
+					return false;
+				size_t peak = 0;
+				if (!pass)
+				{
+					if (scan.items.decoded_payload_bytes <
+						    sizeof(std::vector<player_item_snapshot>) ||
+					    !world_resource_add(retained,
+								sizeof(std::vector<uint8_t>), &peak,
+								resource) ||
+					    !world_resource_add(peak, wire_length, &peak,
+								resource) ||
+					    !world_resource_add(
+						    peak,
+						    scan.items.item_codec_decoder_object_bytes,
+						    &peak, resource) ||
+					    !world_resource_add(peak,
+								scan.items.decoded_payload_bytes,
+								&peak, resource) ||
+					    !world_resource_add(
+						    peak, scan.items.relationship_scratch_bytes,
+						    &peak, resource) ||
+					    !world_resource_add(
+						    retained,
+						    scan.items.decoded_payload_bytes -
+							    sizeof(std::vector<player_item_snapshot>),
+						    &retained, resource))
+						return false;
+					scan.result.decode_prefix_peak =
+						std::max(scan.result.decode_prefix_peak, peak);
+				}
+				else
+				{
+					size_t encoding = 0, forest_live = 0;
+					if (!world_resource_encoder_working(scan.items, &encoding,
+									    resource) ||
+					    !world_resource_add(validator, canonical_live, &peak,
+								resource) ||
+					    !world_resource_add(peak, sizeof(std::vector<uint8_t>),
+								&peak, resource) ||
+					    !world_resource_add(peak, encoding, &peak, resource) ||
+					    !world_resource_add(canonical_live,
+								sizeof(std::vector<uint8_t>),
+								&forest_live, resource) ||
+					    !world_resource_add(
+						    forest_live,
+						    scan.items.canonical_encoded_capacity_bytes,
+						    &forest_live, resource))
+						return false;
+					scan.result.validation_peak =
+						std::max(scan.result.validation_peak, peak);
+					for (size_t item = 0; item != scan.items.item_count; ++item)
+					{
+						if (!world_resource_add(validator,
+									world_uid_node_bytes,
+									&validator, resource))
+							return false;
+						scan.uid_growth = scan.uid_policy._M_need_rehash(
+							uid_buckets, uid_count, 1);
+						size_t new_buckets = 0;
+						if (scan.uid_growth.first &&
+						    !world_resource_product(
+							    scan.uid_growth.second,
+							    sizeof(std::__detail::_Hash_node_base *),
+							    &new_buckets, resource))
+							return false;
+						if (!world_resource_add(validator, forest_live,
+									&peak, resource) ||
+						    !world_resource_add(peak, new_buckets, &peak,
+									resource))
+							return false;
+						scan.result.validation_peak =
+							std::max(scan.result.validation_peak, peak);
+						if (scan.uid_growth.first)
+						{
+							validator -= uid_bucket_bytes;
+							if (!world_resource_add(
+								    validator, new_buckets,
+								    &validator, resource))
+								return false;
+							uid_bucket_bytes = new_buckets;
+							uid_buckets = scan.uid_growth.second;
+						}
+						++uid_count;
+					}
+				}
+			}
+		}
+		if (scan.payload.offset != scan.payload.size)
+			return false;
+		if (!pass)
+			scan.result.retained_payload_bytes = retained;
+	}
+	*output = scan.result;
+	return true;
+}
+#endif
+
 flatfile_world_item_result recover(const std::string &root, const flatfile_authority_lock &lock,
 				   std::string *error)
 {
@@ -1132,15 +1724,21 @@ flatfile_world_item_result flatfile_world_item_recovery_list_all_locked_bounded(
 	errno = ENOTSUP;
 	return flatfile_world_item_result::io_error;
 #else
+	world_resource_state resource;
 	size_t directory_size = 0, live = 0;
 	// The workspace constructor builds fresh count-character and copied-name
 	// strings directly, avoiding an unmodeled root-copy/append growth phase.
 	if (!world_storage_add(root.size(), sizeof("/domains") - 1, &directory_size) ||
 	    directory_size == SIZE_MAX ||
-	    !world_storage_add(outer_live_scratch, sizeof(world_bounded_read_workspace), &live) ||
+	    !world_storage_add(outer_live_scratch,
+			       sizeof(world_bounded_read_workspace) + sizeof(world_resource_state) +
+				       5 * sizeof(world_resource_state *) +
+				       sizeof(player_snapshot_codec_result),
+			       &live) ||
 	    !world_storage_add(live, directory_size <= 15 ? 0 : directory_size + 1, &live) ||
 	    !world_storage_add(live, world_copied_text_request(sizeof("world_item_catalog") - 1),
-			       &live) || !reserve_scratch_peak(live, context))
+			       &live) ||
+	    !reserve_scratch_peak(live, context))
 	{
 		errno = ENOBUFS;
 		return flatfile_world_item_result::io_error;
@@ -1169,24 +1767,28 @@ flatfile_world_item_result flatfile_world_item_recovery_list_all_locked_bounded(
 			errno = ENOBUFS;
 			return flatfile_world_item_result::io_error;
 		}
-		errno = 0;
-		if (!world_catalog_storage_preflight(work.bytes, &work.profile))
-			return errno == ENOBUFS ? flatfile_world_item_result::io_error :
-						flatfile_world_item_result::invalid;
+		if (!world_catalog_storage_preflight_resource(work.bytes, &work.profile, resource))
+			return resource.failure();
 		size_t validation = 0, peak = 0;
 		if (!world_storage_add(work.profile.retained_payload_bytes,
-			work.profile.validation_peak, &validation) ||
-		    !world_storage_add(live, sizeof(world_item_catalog) + 2 * sizeof(decoder) +
-					 sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>), &peak) ||
-		    !world_storage_add(peak, std::max(work.profile.decode_prefix_peak, validation), &peak) ||
+				       work.profile.validation_peak, &validation) ||
+		    !world_storage_add(live,
+				       sizeof(world_item_catalog) +
+					       2 * sizeof(world_resource_decoder) +
+					       sizeof(std::array<uint8_t, SHA256_DIGEST_LENGTH>),
+				       &peak) ||
+		    !world_storage_add(peak, std::max(work.profile.decode_prefix_peak, validation),
+				       &peak) ||
 		    !reserve_scratch_peak(peak, context))
 		{
 			errno = ENOBUFS;
 			return flatfile_world_item_result::io_error;
 		}
-		// The original semantic decoder remains authoritative for every field,
-		// ordering rule, topology, UID, money value and canonical item encoding.
-		if (!decode_catalog(work.bytes, &work.catalog))
+		// Full original semantic laws, with resource origin retained through
+		// every text, item decode, item encode, and catalog validator cut.
+		if (!world_decode_catalog_resource(work.bytes, &work.catalog, resource))
+			return resource.failure();
+		if (!lock.matches(root))
 			return flatfile_world_item_result::invalid;
 		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_corpse_record>>);
 		static_assert(std::is_nothrow_move_assignable_v<std::vector<flatfile_room_item_record>>);
