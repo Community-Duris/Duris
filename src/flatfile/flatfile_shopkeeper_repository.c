@@ -2186,8 +2186,11 @@ constexpr size_t initial_keeper_fixed_memcmp_source =
 bool initial_keeper_fixed_hash(const uint8_t *data, size_t length, uint8_t *digest) noexcept
 {
 	SHA256_CTX ctx{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	return SHA256_Init(&ctx) == 1 && SHA256_Update(&ctx, data, length) == 1 &&
 	       SHA256_Final(digest, &ctx) == 1;
+#pragma GCC diagnostic pop
 }
 #endif
 
@@ -2243,7 +2246,7 @@ template <class T> constexpr size_t initial_keeper_fixed_move_constructor_source
 }
 template <class T> constexpr size_t initial_keeper_fixed_move_assignment_source() noexcept
 {
-	constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+	[[maybe_unused]] constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
 	using A = std::allocator<T>;
 	// operator=(this,source,returned ref), genuine __move_storage bool,
 	// std::move(source,returned ref), true_type argument, _M_move_assign
