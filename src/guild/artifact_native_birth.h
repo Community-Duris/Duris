@@ -13,4 +13,10 @@ int artifact_native_birth_location_bounded(const std::string &, const flatfile_a
 					   obj_data *, char_data *, bool *, bool *,
 					   bool (*)(size_t, void *) noexcept, void *,
 					   size_t) noexcept;
+// Distinct native-flat companion for the actual shell extractor. Full original
+// bool service result stays separate from the real completion witness.
+int artifact_native_birth_shell_remove_owned_bounded(obj_data *, int, bool *, bool *,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t) noexcept;
+
 #endif

@@ -4273,3 +4273,191 @@ bool nevent_native_reschedule_flush_source_frame_bytes(size_t *output) noexcept
 	return true;
 #endif
 }
+
+// Original object-event cancellation for the real newborn shell's constructor
+// events. No callback is invoked by cancellation: constructor events have NULL
+// data, and their scheduled function is cleared by the original nevent_cancel.
+// An arbitrary owned payload destructor has no bounded contract here.
+bool disarm_obj_nevents_native_birth_shell_bounded(
+	P_obj obj, bool *returned, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)obj;
+	(void)returned;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!obj || !obj->obj_uid || !returned || *returned || !current_global || !reserve ||
+	    !nevent_is_game_thread())
+		return false;
+	struct relay
+	{
+		bool (*current)(size_t *, void *) noexcept;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		size_t outer;
+		bool admit(size_t extra) const noexcept
+		{
+			size_t global = 0;
+			if (!current(&global, context) || global > SIZE_MAX - outer ||
+			    extra > SIZE_MAX - outer - global)
+				return false;
+			return reserve(outer + global + extra, context);
+		}
+		bool observe() const noexcept
+		{
+			size_t global = 0;
+			return current(&global, context);
+		}
+	};
+	// Caller outer excludes G (pool, actual cancellation vector/map retention),
+	// includes probe private allocations and every real caller/foreign value.
+	// G is refreshed before every prospective allocation and after each original
+	// cancellation, including exceptions. The original declared frames remain
+	// live under this fixed source allowance while no scheduled func executes.
+	constexpr size_t own_frames =
+		sizeof(relay) + 6 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(P_nevent) +
+		sizeof(nevent_handle) + sizeof(nevent_cancel_result) + 16 * sizeof(size_t) +
+		sizeof(bool) +
+		// relay admit/observe: actual this/output/extra, result and callback args.
+		5 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool);
+	// Full original handle/cancel/destroy/detach/unlink/deferred/pool source scopes.
+	// In the authentic born-shell domain there are no character links or payload
+	// destructor callbacks; all original object links and schedule nodes remain.
+	using pending_map = decltype(nevent_pending_reschedules);
+	using pending_iterator = pending_map::iterator;
+	using pending_const_iterator = pending_map::const_iterator;
+	using pending_node = std::_Rb_tree_node<pending_map::value_type>;
+	using due_map = decltype(nevent_deferred_due_counts);
+	using due_iterator = due_map::iterator;
+	using due_const_iterator = due_map::const_iterator;
+	using due_node = std::_Rb_tree_node<due_map::value_type>;
+	using cancellation_iterator = decltype(nevent_pending_cancellations)::iterator;
+	using cancellation_difference = decltype(nevent_pending_cancellations)::difference_type;
+	static_assert(
+		std::is_trivial_v<nevent_handle> &&
+		std::is_same_v<decltype(nevent_pending_cancellations), std::vector<nevent_handle>>);
+	// Genuine unique map erase(key): map/tree receivers and key references,
+	// equal_range's x/y/xu/yu, lower/upper-bound receiver/x/y/key, actual iterator
+	// pair, old_size, range erasure's receiver/first/last and increment operands.
+	// Equal-range searches are iterative. clear() is selected only when this
+	// unique-key range equals the full one-node map: its _M_erase chain has the
+	// actual node frame plus the null right child, independent of other stale
+	// requests in the full map. No unbounded full-map clear is hidden here.
+	constexpr size_t pending_erase =
+		12 * sizeof(void *) + 4 * sizeof(pending_node *) +
+		4 * sizeof(std::_Rb_tree_node_base *) +
+		sizeof(std::pair<pending_iterator, pending_iterator>) + sizeof(size_t) +
+		7 * sizeof(pending_iterator) + 5 * sizeof(pending_const_iterator) +
+		2 * (sizeof(void *) + 2 * sizeof(pending_node *)) +
+		// Iterator construction/increment/equality, key/value/less/pair access.
+		16 * sizeof(void *) + 6 * sizeof(pending_iterator) + 4 * sizeof(bool);
+	// Real node disposal: rebalance interface and y, drop/destroy/value pointer,
+	// allocator-aware destroy_at/addressof, put-node/deallocate/allocator/delete.
+	// Rebalance's separately compiled native implementation remains an emitted
+	// qualification gate; its actual header interface is included here.
+	constexpr size_t pending_dispose = 14 * sizeof(void *) + 6 * sizeof(pending_node *) +
+					   2 * sizeof(pending_map::value_type *) +
+					   4 * sizeof(size_t);
+	// Full original deferred find plus erase(iterator), including lower_bound,
+	// iterator/end/less/value helpers and the same real node-disposal chain.
+	constexpr size_t due_erase =
+		12 * sizeof(void *) + 4 * sizeof(due_node *) +
+		2 * sizeof(std::_Rb_tree_node_base *) + 5 * sizeof(due_iterator) +
+		3 * sizeof(due_const_iterator) + 14 * sizeof(void *) + 6 * sizeof(due_node *) +
+		2 * sizeof(due_map::value_type *) + 4 * sizeof(size_t) + 3 * sizeof(bool);
+	// Actual original vector<nevent_handle>::push_back(const value_type&) has
+	// allocation-free construct and growth alternatives. Retain all finite
+	// declared source scopes conservatively; old/new heap requests stay separate.
+	constexpr size_t vector_growth =
+		// push_back this/value; realloc_insert this/position/args/len/elements-
+		// before/old_start/old_finish/new_start/new_finish.
+		4 * sizeof(void *) + sizeof(cancellation_iterator) + 2 * sizeof(size_t) +
+		4 * sizeof(nevent_handle *) +
+		// _M_check_len/max_size/_S_max_size/size/end/min/max and difference.
+		7 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(cancellation_difference) +
+		sizeof(cancellation_iterator) +
+		// _M_allocate/alloc_traits/allocator/new_allocator/operator-new args.
+		5 * sizeof(void *) + 8 * sizeof(size_t) +
+		// alloc_traits/construct_at/forward/addressof/placement source scopes.
+		9 * sizeof(void *) +
+		// _S_relocate/__relocate_a/bitwise __relocate_a_1 and runtime memmove:
+		// this is the actual trivial aggregate, not a nontrivial callback.
+		12 * sizeof(void *) + sizeof(cancellation_difference) +
+		3 * (sizeof(nevent_handle *) + sizeof(void *)) + 2 * sizeof(void *) +
+		sizeof(size_t) +
+		// Allocation/relocation exception cleanup ranges and deallocation.
+		8 * sizeof(void *) + 4 * sizeof(nevent_handle *) +
+		2 * sizeof(cancellation_iterator) + 3 * sizeof(size_t) + 8 * sizeof(void *) +
+		5 * sizeof(size_t);
+	constexpr size_t original_game =
+		// handle_from_event/event/result; cancel's handle/event; destroy(event);
+		// detach_owners(event), detach_object(event,obj), detach_character's
+		// event/ch (the actual early-null branch), unlink event/element,
+		// complete_deferred(event,due), assert(operation), mm_release(mmds,mem)
+		// and both real mm_set_next(mem,offset,next) calls.
+		2 * sizeof(nevent_handle) + sizeof(nevent_cancel_result) + 8 * sizeof(P_nevent) +
+		sizeof(P_obj) + sizeof(P_char) + sizeof(unsigned int) + sizeof(due_iterator) +
+		9 * sizeof(void *) + 2 * sizeof(size_t) +
+		// Actual game-thread require operation, get_id/id-constructor/equality
+		// operands; false-thread diagnostics are unreachable under genuine ROOT.
+		5 * sizeof(std::thread::id) + 4 * sizeof(void *) + sizeof(bool);
+	constexpr size_t original_frames =
+		original_game + pending_erase + pending_dispose + due_erase + vector_growth;
+	if (own_frames > SIZE_MAX - original_frames ||
+	    own_frames + original_frames > SIZE_MAX - outer_live)
+		return false;
+	relay budget{ current_global, reserve, context, outer_live + own_frames + original_frames };
+	if (!budget.admit(0))
+		return false;
+	// Preflight all genuine constructor-owned nodes before the first mutation.
+	// The object constructor schedules three no-payload callback kinds; arbitrary
+	// payload/character binding would require a separate real lower provider.
+	for (P_nevent event = obj->nevents; event; event = event->next_obj_nev)
+		if (event->obj != obj || event->ch || event->victim || event->cld || event->data)
+			return false;
+	P_nevent event, next;
+	for (event = obj->nevents; event; event = next)
+	{
+		next = event->next_obj_nev;
+		size_t prospective = 0;
+		if (event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE && current_nevent &&
+		    nevent_pending_cancellations.size() == nevent_pending_cancellations.capacity())
+		{
+			const size_t size = nevent_pending_cancellations.size();
+			if (size > SIZE_MAX - std::max(size, size_t(1)))
+				return false;
+			const size_t next_capacity = size + std::max(size, size_t(1));
+			if (next_capacity > SIZE_MAX / sizeof(nevent_handle))
+				return false;
+			prospective = next_capacity * sizeof(nevent_handle);
+		}
+		if (!budget.admit(prospective))
+			return false;
+		try
+		{
+			// Preserve handle validation, stale/already-inactive outcomes, pending
+			// reschedule erasure, current-dispatch deferral and original destroy.
+			const nevent_cancel_result result =
+				nevent_cancel(nevent_handle_from_event(event));
+			(void)result;
+		}
+		catch (...)
+		{
+			(void)budget.observe();
+			return false; // Keep genuine original partial cancellation; never retry.
+		}
+		if (!budget.observe())
+			return false;
+	}
+	*returned = true;
+	// The original full disarm returned before this pure outcome recensus. It
+	// cannot be repeated if the outcome observer now reports a resource problem.
+	return budget.observe();
+#endif
+}

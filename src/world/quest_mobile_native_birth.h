@@ -43,6 +43,8 @@ bool quest_mobile_native_birth_lifecycle_ready() noexcept;
 
 struct native_mobile_birth_recovery_context;
 struct native_mobile_birth_recovery_effect;
+enum class economic_accounting_error : uint8_t;
+struct flatfile_ordinary_native_birth_projection;
 struct quest_mobile_native_image;
 struct native_mobile_wallet_origin;
 struct quest_mobile_native_constructor_recipe;
@@ -148,9 +150,89 @@ class quest_mobile_native_birth_ordinary_execution_lease final
 // Pure CURRENT complete birth and warm ownership; includes warm_retained_size once.
 // Genuine existing ROOT literal_pool_owned chooses the native/private partition.
 bool quest_mobile_native_birth_retained_storage_bytes(size_t *) noexcept;
+// Pure fixed named-source scratch; does not scan, register or grant authority.
+bool quest_mobile_native_birth_current_source_frames(size_t *) noexcept;
 
 class quest_mobile_native_birth_owner final
 {
+	struct ordinary_flat_factory_budget;
+	struct ordinary_flat_item_factory_budget;
+	struct ordinary_flat_publication_budget;
+	static bool ordinary_flat_factory_globals(size_t *output, void *) noexcept;
+	static bool reserve_ordinary_flat_factory_root(size_t full, void *opaque) noexcept;
+	static bool reserve_ordinary_flat_factory_globals(size_t full, void *opaque) noexcept;
+	static bool ordinary_flat_mobile_factory_selected(int rnum, int room, uint32_t slot,
+							  int shop, size_t outer_live,
+							  bool *refused) noexcept;
+	static P_char prepare_mobile_ordinary_flat(int rnum, int room, uint32_t slot,
+						   int shop) noexcept;
+	static bool ordinary_flat_item_factory_selected(size_t index, size_t outer_live,
+							bool *refused) noexcept;
+	static bool reserve_ordinary_flat_item_factory_root(size_t full, void *opaque) noexcept;
+	static bool reserve_ordinary_flat_item_factory_globals(size_t full, void *opaque) noexcept;
+	static P_obj prepare_item_ordinary_flat(int rnum, size_t outer_live) noexcept;
+	// Full original reducing-P native geometry and real listed shell capture.
+	// The genuine shared dispatcher selects this only after its complete startup
+	// capability is established; these existing domain predicates grant none.
+	static bool nest_ordinary_flat(P_obj, P_obj, P_char, size_t outer_live) noexcept;
+	static bool
+	capture_ordinary_flat_source_pin_bounded(size_t index,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+	static void seal_mobile_ordinary_flat(size_t outer_live) noexcept;
+	static bool ordinary_flat_publication_source_current(size_t index) noexcept;
+	static bool reserve_ordinary_flat_publication_root(size_t full, void *opaque) noexcept;
+	static bool reserve_ordinary_flat_publication(size_t full, void *opaque) noexcept;
+	static bool reserve_ordinary_flat_publication_globals(size_t full, void *opaque) noexcept;
+	static bool ordinary_flat_service_live(size_t exclusive, size_t *output) noexcept;
+	static bool observe_ordinary_flat_globals(size_t *output, void *opaque) noexcept;
+	static bool settle_ordinary_flat_checkpoint(size_t index,
+						    ordinary_flat_publication_budget &budget,
+						    size_t outer) noexcept;
+	static economic_accounting_error
+	make_ordinary_flat_writer(size_t index, const critical_native_recovery_envelope &expected,
+				  const native_mobile_birth_recovery_context &next,
+				  void *writer_slot, ordinary_flat_publication_budget &budget,
+				  size_t outer) noexcept;
+	static bool checkpoint_ordinary_flat(size_t index,
+					     const native_mobile_birth_recovery_context &next,
+					     ordinary_flat_publication_budget &budget,
+					     size_t outer) noexcept;
+	static int prepare_ordinary_flat_action(size_t index, uint8_t kind, size_t row, size_t step,
+						ordinary_flat_publication_budget &budget,
+						size_t outer) noexcept;
+	static bool finish_ordinary_flat_action(size_t index,
+						const native_mobile_birth_recovery_effect &actual,
+						ordinary_flat_publication_budget &budget,
+						size_t outer) noexcept;
+
+	static bool install_ordinary_flat_cash_metadata(
+		size_t index, const flatfile_ordinary_native_birth_projection &current,
+		ordinary_flat_publication_budget &budget, size_t outer) noexcept;
+	static bool cleanup_ordinary_flat_refusal(const critical_command &command,
+						  const critical_completion &completion,
+						  void *opaque,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer) noexcept;
+	static bool ordinary_flat_projection_matches(
+		size_t index, const flatfile_ordinary_native_birth_projection &current,
+		ordinary_flat_publication_budget &budget, size_t outer, bool copy_custody) noexcept;
+	static bool ordinary_flat_runtime_proof(
+		size_t index, const flatfile_ordinary_native_birth_projection &current,
+		ordinary_flat_publication_budget &budget, size_t outer) noexcept;
+	static bool retain_ordinary_flat_origin(const critical_native_recovery_envelope &terminal,
+						void *opaque,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept;
+	static bool resume_ordinary_flat_cold_projection(size_t index,
+							 ordinary_flat_publication_budget &budget,
+							 size_t outer) noexcept;
+	static bool recover_ordinary_flat_cold(size_t index, bool allow_reconstruction,
+					       ordinary_flat_publication_budget &budget,
+					       size_t outer) noexcept;
+	static bool publish_ordinary_flat(size_t index, bool allow_reconstruction,
+					  size_t outer_live) noexcept;
+
 	friend bool quest_mobile_native_birth_retained_storage_bytes(size_t *) noexcept;
 	static bool current_retained_storage_bytes(size_t *) noexcept;
 	friend bool quest_mobile_native_birth_restore_ordinary_bounded(

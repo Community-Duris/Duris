@@ -160,4 +160,13 @@ int flatfile_artifact_gameplay_update_bounded(const std::string &, const flatfil
 					      int64_t, bool *, bool *, flatfile_scratch_reserve_fn,
 					      void *, size_t) noexcept;
 
+// Complete original native-flat remove-owned catalog mutation and concrete
+// diagnostic channel. Actual lock is genuinely acquired by the paired artifact
+// wrapper. Caller outer includes real error capacity once; children refresh it.
+int flatfile_artifact_remove_owned_with_error_bounded(const std::string &,
+						      const flatfile_authority_lock &, int32_t,
+						      int32_t, int32_t, int64_t, std::string *,
+						      bool *, bool *, flatfile_scratch_reserve_fn,
+						      void *, size_t) noexcept;
+
 #endif

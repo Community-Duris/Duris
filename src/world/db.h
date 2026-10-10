@@ -262,6 +262,12 @@ class quest_mobile_native_stage
 	std::array<uint8_t, 4> restoration_choices_{};
 	std::array<int32_t, 4> restoration_delays_{};
 	std::array<bool, 4> restoration_events_{};
+	bool choose_publication_step_bounded(size_t, struct char_data *,
+					     const native_mobile_birth_recovery_effect &,
+					     native_mobile_birth_recovery_choice *, bool *,
+					     bool (*)(size_t *, void *) noexcept,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
 	bool choose_publication_step(size_t, struct char_data *,
 				     const native_mobile_birth_recovery_effect &,
 				     native_mobile_birth_recovery_choice *) noexcept;
@@ -270,6 +276,25 @@ class quest_mobile_native_stage
 			      native_mobile_birth_recovery_effect &, struct char_data **) noexcept;
 	// Existing published body only, after the owner's genuine fresh SQL/world
 	// cut and confirmed rollback. No callbacks, events or identity issuance.
+
+	// Full ordinary flat companions; caller retains original stage and ROOT
+	// storage through every actual received relay request. No shared selection.
+	bool publication_step_bounded(size_t, int, struct char_data *,
+				      const native_mobile_birth_recovery_choice &,
+				      native_mobile_birth_recovery_effect &, struct char_data **,
+				      bool (*)(size_t *, void *) noexcept,
+				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	bool restore_published_bounded(int, std::span<const native_mobile_birth_recovery_effect>,
+				       std::span<const native_mobile_birth_recovery_choice>,
+				       struct char_data **, bool (*)(size_t *, void *) noexcept,
+				       bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	bool adopt_published_bounded(struct char_data *, uint64_t, int,
+				     const quest_mobile_native_image &,
+				     const native_mobile_birth_recovery_context &,
+				     bool (*current_global)(size_t *, void *) noexcept,
+				     bool (*reserve)(size_t, void *) noexcept, void *,
+				     size_t) noexcept;
+
 	bool adopt_published(struct char_data *actual, uint64_t actual_runtime_id, int room_rnum,
 			     const quest_mobile_native_image &original,
 			     const native_mobile_birth_recovery_context &) noexcept;
@@ -504,6 +529,20 @@ class quest_mobile_native_item_stage
 	// Private constructor-local census/parser types; no public allocation or source capability.
 	struct ordinary_item_constructor_budget;
 	struct ordinary_item_template_reader;
+
+	// Genuine listed original read/weight/extract. Outer includes CURRENT G once,
+	// excludes probe-private during exact helper ownership; actual survivors stay
+	// private on refusal. A started shell attempt is never rerun.
+	bool read_original_shell_bounded(bool *, bool (*)(size_t *, void *) noexcept,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
+	static bool
+	schedule_original_shell_event_bounded(P_obj, event_func_type, int,
+					      ordinary_item_constructor_budget &) noexcept;
+	bool capture_container_shell_bounded(quest_mobile_native_container_shell *,
+					     bool (*)(size_t *, void *) noexcept,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
 	static object_template
 	parse_ordinary_item_template_bounded(int, ordinary_item_template_reader &);
 	// Actual original accepting NPC-item constructor only; real factory source required.
@@ -607,6 +646,15 @@ class quest_mobile_native_item_stage
 	// Body leaves private allowance only at original full successful publication.
 	// Strong scalar output; original retained_bytes observation remains unchanged.
 	bool retained_bytes_excluding_literal_pools(size_t *) const noexcept;
+
+	static bool restore_ordinary_bounded(const player_item_snapshot &,
+					     const native_mobile_birth_item_recipe &,
+					     quest_mobile_native_item_stage *,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
+	bool capture_recipe_bounded(const player_item_snapshot &, native_mobile_birth_item_recipe *,
+				    bool (*)(size_t, void *) noexcept, void *,
+				    size_t) const noexcept;
 
 	bool capture_recipe(const player_item_snapshot &,
 			    native_mobile_birth_item_recipe *) const noexcept;
@@ -731,5 +779,15 @@ bool quest_mobile_native_published_npc_storage_bytes(size_t *) noexcept;
 // Whole ROOT literal_pool_owned census selects this exactly once alongside
 // the genuine warm item constructor; strong output, game-thread observation.
 bool quest_mobile_native_object_catalog_string_storage_bytes(size_t *) noexcept;
+
+// Actual owned shell-private requests, distinct from object/affect pool/catalog G.
+// Caller establishes actual probe ownership; strong output on invalid metadata.
+bool obj_native_birth_shell_private_storage_bytes(P_obj, size_t *) noexcept;
+size_t obj_native_birth_shell_private_storage_observer_frame_bytes() noexcept;
+// Outer excludes private probe requests and G, both refreshed by the actual helper.
+// Returned records real pool release before any fallible final observation.
+bool free_obj_native_birth_shell_bounded(P_obj, bool *, bool (*)(size_t *, void *) noexcept,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
 
 #endif /* #ifndef _SOJ_DB_H_ */
