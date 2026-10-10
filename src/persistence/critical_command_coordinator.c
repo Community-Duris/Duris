@@ -8187,3 +8187,197 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 #endif
 }
 } // namespace: complete private bounded legacy passive replay insertion
+
+namespace
+{
+// Complete private accepted shared NMB4 passive replay insertion only. The
+// original mixed initializer, replay callbacks, other families and selectors
+// remain unchanged. Existing family-neutral ROOM-named owning helpers below
+// retain their real state/lock/current census; no authority follows from names.
+// Caller owns original envelope, replay context, held coordinator unique_lock,
+// full journal frame/metadata and ROOT prefix in exclusive_outer, excluding
+// CURRENT coordinator (the authentic same-lock lender adds that exactly once).
+// Root must install the actual paired host observer whose shared branch invokes
+// quest_mobile_native_birth_restore_shared_shop_bounded. Registration and actual
+// initializer selection are separate; this helper remains unselected.
+[[maybe_unused]] bool
+enqueue_shared_shop_native_replayed_bounded(const critical_native_recovery_envelope &original,
+					    const replay_observer_context &replay,
+					    const std::unique_lock<std::mutex> &actual_init_lock,
+					    bool (*reserve)(size_t, void *) noexcept,
+					    void *budget_context, size_t exclusive_outer) noexcept
+{
+	if (!reserve || !replay.native_observer || !replay.native_bounded_observer ||
+	    !native_birth_shared_shop_command(original.command) ||
+	    actual_init_lock.mutex() != &coordinator_mutex || !actual_init_lock.owns_lock())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	room_replay_workspace work(actual_init_lock, reserve, budget_context, exclusive_outer);
+	// Genuine still-live value carriers coexist with the real workspace through
+	// each owning provider. Referred envelope/context/lock storage stays caller-owned.
+	if (!room_storage_add(work.outer,
+			      sizeof(reserve) + sizeof(budget_context) + sizeof(exclusive_outer)))
+		return false;
+	try
+	{
+		if (!room_replay_admit(work))
+			return false;
+		// Exact original shared native-envelope execution branch: the genuine
+		// shared executor must be installed and full original shared recovery
+		// validity passes. This original branch bypasses selected extension
+		// predicates; no new extension support or command-domain shortcut is added.
+		if (!room_replay_local_prefix(work) || !shared_native_apply_callback ||
+		    !native_mobile_birth_shared_shop_recovery_valid_bounded(
+			    original, room_replay_reserve_locked, &work, work.partial))
+			return false;
+		if (!room_replay_admit(work) ||
+		    !room_checkpoint_size_bounded(original, &work.retained,
+						  room_replay_reserve_locked, &work, work.partial))
+			return false;
+		// Preserve the second original typed-birth proof and all five registered
+		// historical validator readiness requirements. Shared NMB4 selects the
+		// genuine shared valid codec, exactly as native_birth_recovery_valid.
+		// Full phase/revision/receipt/progress/terminal validity accepts both
+		// execution and continuation; initial-only validation is not substituted.
+		if (!room_replay_admit(work) || !native_birth_validators_ready() ||
+		    !native_mobile_birth_shared_shop_recovery_valid_bounded(
+			    original, room_replay_reserve_locked, &work, work.partial))
+			return false;
+		if (!room_replay_admit(work))
+			return false;
+		// Original operation_key return/local coexistence. Its actual 16-byte
+		// GCC13 string requests 17 bytes; assignment consumes the returned string.
+		work.extra = sizeof(std::string);
+		if (!room_storage_add(work.extra, original.command.operation_id.bytes.size() + 1) ||
+		    !room_replay_admit(work, work.extra))
+			return false;
+		work.identity = operation_key(original.command.operation_id);
+		if (!room_replay_admit(work))
+			return false;
+		if (operations.find(work.identity) != operations.end() ||
+		    operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
+		    work.retained > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+			return false;
+		work.continuation = original.phase ==
+				    critical_native_recovery_phase::continuation_pending;
+		work.holds_fences = !work.continuation ||
+				    native_birth_origin_command(original.command) ||
+				    zone_reset_typed_command(original.command);
+		if (!room_replay_admit(work, sizeof(operation_state) +
+						     sizeof(std::unique_ptr<operation_state>)))
+			return room_replay_rollback(work);
+		work.state = std::make_unique<operation_state>();
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		// Fresh default state owns no vector capacity. This genuine source profile
+		// reserves ALL command/attachment copy requests and the original native
+		// allocation before that complete original copy sequence. There is no
+		// callback inside the sequence, and its resulting private state is censused
+		// at the next cut using actual vector capacities, not encoded byte length.
+		work.fresh = 0;
+		if (!room_checkpoint_heap(original, true, work.fresh) ||
+		    !room_storage_add(work.fresh, sizeof(native_operation_context)) ||
+		    !room_storage_add(work.fresh,
+				      sizeof(std::unique_ptr<native_operation_context>)) ||
+		    !room_replay_admit(work, work.fresh))
+			return room_replay_rollback(work);
+		work.state->command = original.command;
+		work.state->native = std::make_unique<native_operation_context>();
+		work.state->native->revision = original.revision;
+		work.state->native->phase = original.phase;
+		work.state->native->attachment = original.attachment;
+		work.state->retained_bytes = work.retained;
+		work.state->queued_at_usec = now_usec();
+		work.state->attempt = 1;
+		work.state->attachments = 0;
+		work.state->phase = work.continuation ?
+					    critical_operation_phase::native_continuation_pending :
+					    critical_operation_phase::queued;
+		work.state->retain_until_publication = true;
+		work.state->admission_failure_queued = false;
+		work.state->native_physical_released = work.continuation;
+		work.rollback_cleanup_reserved = true;
+		if (!operations.next_unique_insert_extra_peak(work.identity, 0, &work.extra) ||
+		    !room_replay_admit(work, work.extra))
+			return room_replay_rollback(work);
+		operations.emplace(work.identity, std::move(work.state));
+		work.inserted = true;
+		// state is now genuinely owned by CURRENT C; the moved-from pointer is
+		// excluded from private scratch before any pending/fence request.
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		if (!work.continuation)
+		{
+			if (!pending.push_back_extra_peak(work.identity, &work.extra) ||
+			    !room_replay_admit(work, work.extra))
+				return room_replay_rollback(work);
+			pending.push_back(work.identity);
+			if (!room_replay_admit(work))
+				return room_replay_rollback(work);
+		}
+		if (work.holds_fences)
+		{
+			work.found = operations.find(work.identity);
+			for (work.key_index = 0;
+			     work.key_index < work.found->second->command.keys.size();
+			     ++work.key_index)
+			{
+				if (!room_replay_admit(work,
+						       sizeof(std::string) +
+							       2 * sizeof(std::array<char, 9>)))
+					return room_replay_rollback(work);
+				work.fence_key = entity_key(
+					work.found->second->command.keys[work.key_index]);
+				work.fence_found = fences.find(work.fence_key);
+				if (work.fence_found == fences.end())
+				{
+					if (!native_identity_queue::initial_heap_bytes(
+						    &work.fresh) ||
+					    !fences.next_unique_insert_extra_peak(
+						    work.fence_key, work.fresh, &work.extra) ||
+					    !room_replay_admit(work, work.extra))
+						return room_replay_rollback(work);
+					work.fence_queue = &fences[std::move(work.fence_key)];
+					if (!room_replay_admit(work))
+						return room_replay_rollback(work);
+				}
+				else
+					work.fence_queue = &work.fence_found->second;
+				if (!work.fence_queue->push_back_extra_peak(work.identity,
+									    &work.extra) ||
+				    !room_replay_admit(work, work.extra))
+					return room_replay_rollback(work);
+				work.fence_queue->push_back(work.identity);
+				if (!room_replay_admit(work))
+					return room_replay_rollback(work);
+			}
+			health.fenced_keys = fences.size();
+		}
+		// The actual paired shared NMB4 host observer forwards this full prefix
+		// and authentic reserve/context to the genuine passive birth owner.
+		// Original mandatory observer remains installed. The reviewed birth
+		// companion owns exact duplicate/new-attachment rollback and current
+		// census; no unbounded domain/observer fallback runs on this capability.
+		if (!room_replay_local_prefix(work) ||
+		    !replay.native_bounded_observer(original, replay.context,
+						    room_replay_reserve_locked, &work,
+						    work.partial))
+			return room_replay_rollback(work);
+		// No fallible callback after successful actual birth registry attachment.
+		// Exact original successful tail is nonallocating.
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		// Genuine allocation exceptions only; actual init lock remains owned.
+		// Partially copied private state and actual inserted nodes are removed,
+		// while real surviving bucket/deque capacity stays in CURRENT C.
+		return room_replay_rollback(work);
+	}
+#endif
+}
+} // namespace: complete private bounded shared NMB4 passive replay insertion
