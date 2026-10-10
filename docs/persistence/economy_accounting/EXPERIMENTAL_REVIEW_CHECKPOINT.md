@@ -3758,3 +3758,19 @@ source-proven coordinates/2853mapped sites/protected Plan5 WIP pass. Complete
 caller/item/factory/publication/adoption/startup/transitive/emitted/native32MiB/
 recovery/R1-R8 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED,
 coverage incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
+
+
+## Ordinary native admission and passive replay implemented - 2026-10-10
+
+[Source checkpoint](ORDINARY_NATIVE_ADMISSION_PASSIVE_REPLAY_2026-10-10.md)
+adds the complete ordinary NMB4 admission decoder and passive coordinator
+insertion with original phases/readiness/execution decisions, real init mutex,
+CURRENT-C lending, queue/fence ownership and rollback. Actual reference/return
+carriers now enter the new entry's prospective sum before first admission.
+Original shared/selected/default/flat-allowlist/startup behavior remains intact.
+Independent RAW/installed source review authenticates25+25members/three inverses/
+13deps/formatting/460existingpins/931policies/2853mapped/protected Plan5 WIP.
+Configured-root passive host, full mixed startup and actual accepting/native/
+global32MiB/recovery/R1-R8 qualification remain OPEN. Tests deferred major-plan
+batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+No major-plan completion is claimed.

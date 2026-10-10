@@ -25,4 +25,13 @@ bool economic_flatfile_room_command_admission_supported_bounded(
 	const critical_command &, bool (*reserve)(size_t, void *) noexcept, void *context,
 	size_t outer_live) noexcept;
 
+// Complete original NMB4 ordinary immutable admission projection only. The
+// actual selected backend allowlist remains authoritative; this proof does not
+// register a route, grant a source, construct a mobile or confer activation.
+// Caller owns command and prior capacities; the full prospective decoder owns
+// its actual image/recipe/role and canonical temporary allocations.
+bool economic_ordinary_native_command_admission_supported_bounded(
+	const critical_command &, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+
 #endif
