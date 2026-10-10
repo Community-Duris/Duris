@@ -6456,3 +6456,297 @@ bool item_transfer_payload_decode_generic_bounded(const critical_command &comman
 		return false;
 	}
 }
+
+namespace
+{
+struct item_native_shape_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *exact = nullptr;
+	const quest_reward_continuation *terms = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 8 * sizeof(void *) + 6 * sizeof(size_t) +
+					       3 * sizeof(bool) +
+					       3 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observation) ||
+		    (exact && (!payload_clone_add(total, sizeof(*exact)) ||
+			       !payload_clone_vector_heap(*exact, false, total))) ||
+		    (terms && (!payload_clone_add(total, sizeof(*terms)) ||
+			       !payload_clone_string_heap(terms->character_name, false, total) ||
+			       !payload_clone_string_heap(terms->definition_id, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+constexpr size_t item_native_shape_fixed_frames =
+	// Original pure collector/publication/owner/key/reference/cash equality
+	// queries; genuine empty projections and absent forest temporaries.
+	item_payload_validation_pure_frames + item_native_validation_equal_frames +
+	2 * sizeof(shop_trade_recovery_forest_binding) + sizeof(native_quest_cost_projection) +
+	sizeof(native_quest_coin_give_projection) +
+	2 * (4 * sizeof(void *) + sizeof(std::allocator<uint64_t>)) +
+	4 * (sizeof(void *) + sizeof(size_t)) + payload_clone_allocator_frames;
+// Original native_quest_coin_give_project and native_counts are proved
+// allocation-free from their complete installed source. Its real parameters,
+// fixed candidate/units array and scalar/loop temporaries coexist with caller
+// projected, which is separately charged in the money method frame below.
+constexpr size_t item_native_shape_coin_project_frames =
+	3 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint8_t) + sizeof(int32_t) +
+	sizeof(native_quest_coin_give_result) + sizeof(native_quest_coin_give_projection) +
+	sizeof(std::array<int64_t, 4>) + 2 * sizeof(int64_t) + sizeof(size_t) + sizeof(void *) +
+	sizeof(int64_t) + sizeof(bool) + 8 * (sizeof(void *) + sizeof(size_t)) +
+	sizeof(std::array<int64_t, 4>);
+bool item_native_cost_value_valid_owned(const item_transfer_payload &payload,
+					item_native_shape_budget &budget)
+{
+	if (!payload.native_cost.present || !payload.native_cost.wallet_mapping_id ||
+	    payload.native_mobile.action != item_native_mobile_action::consumption ||
+	    payload.native_cost.projection.attempts.empty())
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<uint8_t>)))
+		return false;
+	std::vector<uint8_t> exact;
+	budget.exact = &exact;
+	size_t admission_prefix = 0;
+	if (!budget.prefix(admission_prefix))
+		return false;
+	return native_quest_cost_projection_encode_bounded(payload.native_cost.projection, &exact,
+							   budget.reserve, budget.context,
+							   admission_prefix) ==
+	       native_quest_cost_projection_result::ok;
+}
+
+bool item_native_fee_shape_owned(const item_transfer_payload &payload, bool acknowledged,
+				 item_native_shape_budget &budget)
+{
+	const auto &fee = payload.native_cost;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	size_t admission_prefix = 0;
+	if (!fee.fee_only ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_transfer_native_cost_value_valid_bounded(payload, budget.reserve, budget.context,
+							    admission_prefix)) ||
+	    !native.present || native.action != item_native_mobile_action::consumption ||
+	    !native.final_giver_pid || native.final_giver_pid > INT32_MAX ||
+	    native.reference.mobile_revision == UINT64_MAX ||
+	    payload.from_owner.type != item_owner_type::native_mobile ||
+	    payload.from_owner.id != native.reference.mobile_instance_id ||
+	    payload.from_owner.context_id || payload.to_owner.type != item_owner_type::player ||
+	    payload.to_owner.id != native.final_giver_pid || payload.to_owner.context_id ||
+	    payload.reason != item_transfer_reason::quest_turnin ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION) ||
+	    payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{} ||
+	    payload.expected_from_revision != native.reference.stock_revision ||
+	    payload.expected_to_revision == UINT64_MAX || !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (quest_mobile_native_reference_encode_bounded(
+		    native.reference, &reference, budget.reserve, budget.context,
+		    admission_prefix) != player_snapshot_codec_result::ok)
+		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::quest_offering)
+	{
+		if (!budget.peak(sizeof(quest_reward_continuation) +
+				 duris_quest_continuation_bounded_detail::string_lifetime_frames +
+				 sizeof(void *)))
+			return false;
+		quest_reward_continuation terms;
+		budget.terms = &terms;
+		if (!budget.prefix(admission_prefix))
+			return false;
+		if (!quest_fee_reward_continuation_decode_bounded(
+			    payload.continuation.data.data(), payload.continuation.data.size(),
+			    &terms, budget.reserve, budget.context, admission_prefix) ||
+		    terms.player_pid != native.final_giver_pid ||
+		    terms.mobile_vnum != static_cast<uint32_t>(native.reference.mobile_vnum) ||
+		    terms.action_mobile_instance_id != native.reference.mobile_instance_id ||
+		    terms.completion_index != fee.completion_slot ||
+		    terms.action_source.generation.bytes !=
+			    native.reference.birth_source.generation.bytes ||
+		    terms.action_source.sequence != native.reference.mobile_revision)
+			return false;
+		budget.terms = nullptr;
+	}
+	else if (payload.continuation.kind != item_transfer_continuation_kind::none ||
+		 !payload.continuation.data.empty())
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{} &&
+		       native_publication_terms_empty(recovery.publication_terms);
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision &&
+	       native_publication_terms_valid(recovery.publication_terms) &&
+	       !recovery.publication_terms.disappear &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       (budget.prefix(admission_prefix) &&
+		shop_trade_recovery_forest_shape_valid_bounded(
+			recovery.player_before, shop_trade_recovery_forest_role::player_before,
+			budget.reserve, budget.context, admission_prefix)) &&
+	       (budget.prefix(admission_prefix) &&
+		shop_trade_recovery_forest_shape_valid_bounded(
+			recovery.player_after, shop_trade_recovery_forest_role::player_after,
+			budget.reserve, budget.context, admission_prefix));
+}
+
+bool item_native_money_shape_owned(const item_transfer_payload &payload, bool acknowledged,
+				   item_native_shape_budget &budget)
+{
+	const auto &money = payload.native_money;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	size_t admission_prefix = 0;
+	if (!money.present || money.original_room_vnum < 0 || !money.player_wallet_mapping_id ||
+	    !money.mobile_wallet_mapping_id ||
+	    money.player_wallet_mapping_id == money.mobile_wallet_mapping_id ||
+	    payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{} || !native.present ||
+	    native.action != item_native_mobile_action::acceptance || !native.final_giver_pid ||
+	    native.final_giver_pid > INT32_MAX ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != native.final_giver_pid || payload.from_owner.context_id ||
+	    payload.to_owner.type != item_owner_type::native_mobile ||
+	    payload.to_owner.id != native.reference.mobile_instance_id ||
+	    payload.to_owner.context_id || payload.reason != item_transfer_reason::player_give ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION) ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    !payload.continuation.data.empty() || payload.expected_from_revision == UINT64_MAX ||
+	    payload.expected_to_revision != native.reference.stock_revision ||
+	    !native_publication_terms_empty(recovery.publication_terms) ||
+	    !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> encoded{};
+	native_quest_coin_give_projection projected;
+	if (!budget.prefix(admission_prefix) || !budget.peak(item_native_shape_coin_project_frames))
+		return false;
+	if (quest_mobile_native_reference_encode_bounded(native.reference, &encoded, budget.reserve,
+							 budget.context, admission_prefix) !=
+		    player_snapshot_codec_result::ok ||
+	    native.reference.mobile_revision == UINT64_MAX ||
+	    native_quest_coin_give_project(
+		    money.projection.player_before, money.projection.player_before_revision,
+		    money.projection.mobile_before, money.projection.mobile_before_revision,
+		    money.projection.denomination, money.projection.quantity,
+		    &projected) != native_quest_coin_give_result::ok ||
+	    projected != money.projection)
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{};
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision && recovery.player_before.present &&
+	       recovery.player_after.present &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       (budget.prefix(admission_prefix) &&
+		shop_trade_recovery_forest_shape_valid_bounded(
+			recovery.player_before, shop_trade_recovery_forest_role::player_before,
+			budget.reserve, budget.context, admission_prefix)) &&
+	       (budget.prefix(admission_prefix) &&
+		shop_trade_recovery_forest_shape_valid_bounded(
+			recovery.player_after, shop_trade_recovery_forest_role::player_after,
+			budget.reserve, budget.context, admission_prefix));
+}
+} // namespace
+bool item_transfer_native_cost_value_valid_bounded(const item_transfer_payload &payload,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 7 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+				  payload_clone_vector_frames;
+	item_native_shape_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_cost_value_valid_owned(payload, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_fee_shape_valid_bounded(const item_transfer_payload &payload,
+						  bool acknowledged,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 10 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_native_shape_fixed_frames;
+	item_native_shape_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_fee_shape_owned(payload, acknowledged, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_money_shape_valid_bounded(const item_transfer_payload &payload,
+						    bool acknowledged,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 10 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  sizeof(native_quest_coin_give_projection) +
+				  item_native_shape_fixed_frames;
+	item_native_shape_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_money_shape_owned(payload, acknowledged, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
