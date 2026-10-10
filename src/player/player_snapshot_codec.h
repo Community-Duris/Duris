@@ -138,4 +138,21 @@ player_snapshot_codec_result player_item_snapshot_list_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_item_heap_bytes = nullptr) noexcept;
 
+// Passive source/copy storage observations for the supported libstdc++13
+// C++11 ABI. Values exclude the row inline object and allocator metadata.
+// Current uses genuine capacities; a fresh copy uses size-based requests.
+// No validation, custody, replay or native authority; strong scalar output.
+bool player_item_snapshot_current_heap_bytes(const player_item_snapshot &, size_t *) noexcept;
+bool player_item_snapshot_fresh_copy_request_bytes(const player_item_snapshot &, size_t *) noexcept;
+// Source-declared copy/move/destruction and observer frames, not emitted stack.
+// Caller construction of an outer vector/initializer-list is separately owned.
+size_t player_item_snapshot_copy_frame_bytes() noexcept;
+// Genuine complete private row copy then nonthrowing strong-output move. Outer
+// includes actual source, prior destination and every other live caller owner;
+// excludes this callee's prospective private row/frame. No runtime selection.
+player_snapshot_codec_result
+player_item_snapshot_clone_bounded(const player_item_snapshot &, player_item_snapshot *,
+				   bool (*reserve)(size_t, void *) noexcept, void *context,
+				   size_t outer_live) noexcept;
+
 #endif
