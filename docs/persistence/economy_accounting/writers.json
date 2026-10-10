@@ -66853,8 +66853,8 @@
       "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
       "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h": "bf9936db6fd062b65e186446ac52f0152bb36afc1e7ef5d2fb4ad09f1dce5e18",
-      "src/item/craft_pouch_mutation.c": "d16d5b1e196bdda9d7f4d7abd0cd626118eea4192a0c6a45eee76950d71ba5af",
-      "src/item/craft_pouch_mutation.h": "bb74a926ac0d00a2fcde3312186abd14b5f93abd8eec5b4b50821a529ca92436"
+      "src/item/craft_pouch_mutation.c": "2c610e9b173bc1677e299b0c5a2ec0b10cbef9a05a8b3e6ea1f6e52292d22bb4",
+      "src/item/craft_pouch_mutation.h": "5b5cf9a2f17e637a5f783ce986694e3b8ef810ed1fb6ae86c6b321b25f13f4d5"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
