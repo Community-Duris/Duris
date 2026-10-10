@@ -401,6 +401,21 @@ class quest_mobile_native_birth_owner final
 	static size_t pending_items(int rnum) noexcept;
 	static bool pending_shop(int rnum, int room, int shop) noexcept;
 	static bool restore(const critical_command &) noexcept;
+	friend bool quest_mobile_native_birth_restore_historical_bounded(const critical_command &,
+									 bool (*)(size_t,
+										  void *) noexcept,
+									 void *, size_t) noexcept;
+	friend bool quest_mobile_native_birth_restore_historical_bounded(
+		const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept,
+		void *, size_t) noexcept;
+	static bool restore_historical_command_bounded(const critical_command &,
+						       const std::vector<uint8_t> *,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
+	static bool restore_historical_bounded(const critical_native_recovery_envelope &,
+					       bool (*)(size_t, void *) noexcept, void *,
+					       size_t) noexcept;
+
 	static bool restore_command(const critical_command &,
 				    const std::vector<uint8_t> *) noexcept;
 	static void completions(const critical_completion *, size_t) noexcept;
@@ -423,4 +438,33 @@ class quest_mobile_native_birth_owner final
 	static bool cleanup_refusal(const critical_command &, const critical_completion &,
 				    void *) noexcept;
 };
+// Complete original historical passive restore acceptance. Bare non-birth
+// commands retain original true behavior; envelopes require original complete
+// family validity. No configured-flat domain, progression or readiness grant.
+// Caller owns inputs and fresh SAME registry CURRENT through every callback.
+// Callee owns private workspace/body until actual transfer; ROOT then owns it.
+bool quest_mobile_native_birth_restore_historical_bounded(const critical_command &,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t) noexcept;
+bool quest_mobile_native_birth_restore_historical_bounded(const critical_native_recovery_envelope &,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t) noexcept;
+
+// Genuine owning upper source includes the original keeper call SOURCE once;
+// lower birth codecs own their child SOURCE. Actual ROOT callback targets remain
+// caller-owned, with no foreign registry or keeper physical bytes substituted.
+// Both query outputs remain unchanged on unsupported ordinary GNU13 source.
+bool quest_mobile_native_birth_historical_restore_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_birth_historical_restore_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t quest_mobile_native_birth_historical_restore_source_query_frame_bytes() noexcept
+{
+	// Own output and checked codec/keeper output formals; codec/keeper/bytes/
+	// copy locals, copy return and five genuine keeper query size_t carriers;
+	// own/support/codec/keeper bool results. Caller accessor return is extra N.
+	return 3 * sizeof(void *) + 10 * sizeof(size_t) + 4 * sizeof(bool);
+}
+constexpr size_t quest_mobile_native_birth_historical_restore_initial_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool) + sizeof(bool);
+}
 #endif
