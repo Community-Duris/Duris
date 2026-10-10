@@ -66434,7 +66434,7 @@
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "src/Makefile": "f215c0db03f0f3e923ac061e97e9e6c9e192a1de8f6d7cbcee36d06f7286d7d7",
+      "src/Makefile": "63127298d309dc484b9119581f791edb242b9c89154ee925872f90cdff458b40",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
@@ -66831,7 +66831,9 @@
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
       "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
       "src/persistence/player_death_restitution_command.c": "3e72ed565b81f86b8e4d4ee9d5957607ed23835d7ffe25e7368e68c4eaebde0b",
-      "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d"
+      "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d",
+      "src/item/smith_native_compound_owner.c": "f13474af8470ed96f92e5980722b4f6201fec89fa54d87c94acfae7b344964f5",
+      "src/item/smith_native_compound_owner.h": "58cfd00d0c80d667dd80c61710a5671a4cf48c94ac15bbf86a390937f4733fd0"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
