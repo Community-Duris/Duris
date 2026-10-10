@@ -92,6 +92,8 @@ class flatfile_authority_lock
 	flatfile_authority_lock &operator=(const flatfile_authority_lock &) = delete;
 
 	bool acquire(const std::string &root, std::string *error);
+	bool acquire_with_error_bounded(const std::string &, std::string *, bool *returned,
+					flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 	bool matches(const std::string &root) const;
 
     private:
@@ -158,5 +160,13 @@ flatfile_authority_transaction_commit_operations_with_outcome_bounded(
 	const std::string &, const flatfile_authority_lock &,
 	const std::vector<flatfile_authority_operation> &, flatfile_authority_commit_outcome *,
 	flatfile_scratch_reserve_fn, void *, size_t outer_live_scratch) noexcept;
+
+// Original concrete diagnostic-output bounded recovery, borrowing the actual
+// same-root authority lock. started latches before original first apply/removal;
+// returned records original completion, not a capacity refusal. A started but
+// incomplete attempt must be handled as partial recovery, never blindly rerun.
+flatfile_authority_transaction_result flatfile_authority_transaction_recover_with_error_bounded(
+	const std::string &, const flatfile_authority_lock &, std::string *, bool *started,
+	bool *returned, flatfile_scratch_reserve_fn, void *, size_t) noexcept;
 
 #endif
