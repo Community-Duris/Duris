@@ -1,3 +1,4 @@
+#include <cstddef>
 #ifndef NATIVE_MOBILE_BIRTH_RESET_TAIL_H
 #define NATIVE_MOBILE_BIRTH_RESET_TAIL_H
 
@@ -24,5 +25,13 @@ struct shop_native_mobile_birth_reset_selection
 bool native_mobile_birth_reset_tail_capture(int32_t mobile_vnum, int32_t destination_room_vnum,
 					    int configured_shop,
 					    native_mobile_birth_reset_tail_digest *output) noexcept;
+
+// Full original NMT1 policy/bytes; prospective fixed SHA/carrier admission.
+// Original cached dial, reached properties and actual shop selection retained.
+// Strong output, no constructor/reset/shop/source authority.
+bool native_mobile_birth_reset_tail_capture_bounded(int32_t, int32_t, int,
+						    native_mobile_birth_reset_tail_digest *,
+						    bool (*)(size_t, void *) noexcept, void *,
+						    size_t) noexcept;
 
 #endif

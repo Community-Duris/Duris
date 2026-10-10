@@ -46,6 +46,11 @@ class quest_mobile_native_zombie_stage
 	mob_proc_type original_mob_proc_ = nullptr;
 	uint64_t item_uid_ = 0;
 	static bool prepare(P_obj, quest_mobile_native_zombie_stage &) noexcept;
+	// Complete original warm constructor; outer excludes genuine CURRENT G.
+	// Recount actual registry/private stage on EVERY outcome, including failure.
+	static bool prepare_bounded(P_obj, quest_mobile_native_zombie_stage &,
+				    bool (*)(size_t *, void *) noexcept,
+				    bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	static bool restore(P_obj, quest_mobile_native_zombie_stage &) noexcept;
 	// Complete original frozen off-state restoration, without new ID issuance.
 	// Outer retains actual CURRENT registry once; recount registry/private stage

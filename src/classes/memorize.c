@@ -2982,3 +2982,186 @@ void bad_spell_check(P_char ch)
 		}
 	}
 }
+
+#include <cerrno>
+// Complete native-only counterpart of FillMasterSpellBook. Default/player
+// scribing remains at the unchanged original entry points. Outer excludes G
+// and includes every existing private object/input/description allocation.
+bool native_mobile_birth_fill_master_spellbook_bounded(
+	P_obj obj, int *pages_output, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(__linux__) || !defined(__LP64__)
+	(void)obj;
+	(void)pages_output;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	struct frame
+	{
+		extra_descr_data *description = nullptr;
+		extra_descr_data *pending = nullptr;
+		size_t global = 0, extra = 0, prospective = 0, live = 0, locals = 0;
+		int spl = 0, circle = 0, pages = 0, failure = 0, saved_errno = errno;
+	} work;
+	if (!pages_output || !current_global || !reserve || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	// The original allocator requests have the exact same MEMCHK headers.
+	constexpr size_t header =
+#ifdef MEMCHK
+		sizeof(ALLOCATION_HEADER);
+#else
+		0;
+#endif
+	constexpr size_t bitmap_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	constexpr size_t descriptor_request = sizeof(extra_descr_data) + header;
+	constexpr size_t keyword_request = 4 + header;
+	constexpr size_t bitmap_request = bitmap_bytes + header;
+	// Account the actual loop helpers' named primitive carriers as well as this
+	// frame, callback closure and observe-call scalars. No container is created.
+	constexpr size_t helper_locals = sizeof(int) * 4 + sizeof(extra_descr_data *);
+	auto observe = [&](size_t pending) noexcept -> bool
+	{
+		errno = 0;
+		if (!current_global(&work.global, context))
+		{
+			if (!work.failure)
+				work.failure = EIO;
+			return false;
+		}
+		if (work.locals > SIZE_MAX - outer_live ||
+		    work.extra > SIZE_MAX - outer_live - work.locals ||
+		    pending > SIZE_MAX - outer_live - work.locals - work.extra ||
+		    work.global > SIZE_MAX - outer_live - work.locals - work.extra - pending)
+		{
+			if (!work.failure)
+				work.failure = EOVERFLOW;
+			return false;
+		}
+		work.live = outer_live + work.locals + work.extra + pending + work.global;
+		errno = 0;
+		if (!reserve(work.live, context))
+		{
+			if (!work.failure)
+				work.failure = errno ? errno : ENOBUFS;
+			return false;
+		}
+		return true;
+	};
+	work.locals = sizeof(work) + sizeof(observe) + sizeof(size_t) + helper_locals +
+		      sizeof(obj) + sizeof(pages_output) + sizeof(current_global) +
+		      sizeof(reserve) + sizeof(context) + sizeof(outer_live);
+	if (!observe(0))
+	{
+		errno = work.failure;
+		return false;
+	}
+	if (!obj || obj->type != ITEM_SPELLBOOK)
+	{
+		// The original FillMasterSpellBook returns zero for these inputs.
+		*pages_output = 0;
+		errno = work.saved_errno;
+		return true;
+	}
+	obj->value[0] = TONGUE_MAGIC;
+	obj->value[1] = BOOK_CLASSES;
+	for (work.spl = FIRST_SPELL; work.spl <= LAST_SPELL; ++work.spl)
+	{
+		work.circle = book_class_spell_circle(work.spl);
+		if (!work.circle)
+			continue;
+		// AddSpellToSpellBook rejects an out-of-range skill before allocating.
+		if (work.spl < 0 || work.spl >= MAX_SKILLS)
+			continue;
+		work.description = find_spell_description(obj);
+		if (!work.description)
+		{
+			work.prospective = descriptor_request + keyword_request + bitmap_request;
+			if (!observe(work.prospective))
+				break;
+			errno = 0;
+			work.pending = static_cast<extra_descr_data *>(__try_malloc(
+				sizeof(extra_descr_data), MEM_TAG_EXDESCD, __FILE__, __LINE__));
+			if (!work.pending)
+			{
+				work.failure = errno ? errno : ENOMEM;
+				break;
+			}
+			memset(work.pending, 0, sizeof(*work.pending));
+			work.extra = descriptor_request;
+			// Match the original snprintf/str_dup source and exact four-byte
+			// string request. Incomplete allocation remains private until the
+			// complete descriptor is discoverable by find_spell_description.
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%c%c%c", (char)3, (char)1, (char)3);
+			if (!observe(keyword_request + bitmap_request))
+				break;
+			errno = 0;
+			work.pending->keyword = static_cast<char *>(
+				__try_malloc(4, MEM_TAG_STRING, __FILE__, __LINE__));
+			if (!work.pending->keyword)
+			{
+				work.failure = errno ? errno : ENOMEM;
+				break;
+			}
+			strcpy(work.pending->keyword, Gbuf1);
+			work.extra += keyword_request;
+			if (!observe(bitmap_request))
+				break;
+			errno = 0;
+			work.pending->description = static_cast<char *>(
+				__try_malloc(bitmap_bytes, MEM_TAG_BUFFER, __FILE__, __LINE__));
+			if (!work.pending->description)
+			{
+				work.failure = errno ? errno : ENOMEM;
+				break;
+			}
+			memset(work.pending->description, 0, bitmap_bytes);
+			work.extra += bitmap_request;
+			work.pending->next = obj->ex_description;
+			obj->ex_description = work.pending;
+			work.description = work.pending;
+			work.pending = nullptr;
+		}
+		SET_BIT(obj->str_mask, STRUNG_EDESC);
+		if (SpellInThisSpellBook(work.description, work.spl))
+			continue;
+		if (!obj->value[1])
+			obj->value[1] = 0;
+		if (!obj->value[0])
+			obj->value[0] = TONGUE_MAGIC;
+		work.description->description[work.spl / 8] = static_cast<char>(
+			static_cast<unsigned char>(work.description->description[work.spl / 8]) |
+			static_cast<unsigned char>(1U << (work.spl % 8)));
+		work.pages += work.circle;
+	}
+	if (work.pending)
+	{
+		if (work.pending->keyword)
+			str_free(work.pending->keyword);
+		if (work.pending->description)
+			str_free(work.pending->description);
+		__free(work.pending, __FILE__, __LINE__);
+		work.pending = nullptr;
+		work.extra = 0;
+	}
+	// A complete linked description remains in the candidate even on refusal.
+	// The caller must refresh find_spell_description and its full private census
+	// on EVERY outcome. A pre-existing failure survives this final G observation.
+	if (!observe(0) || work.failure)
+	{
+		errno = work.failure;
+		return false;
+	}
+	obj->value[3] = work.pages;
+	*pages_output = work.pages;
+	errno = work.saved_errno;
+	return true;
+#endif
+}

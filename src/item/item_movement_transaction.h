@@ -275,8 +275,10 @@ class item_native_quest_global_budget_scope_owner final
 	friend class zone_reset_item_owner;
 	friend class zone_reset_room_publication_owner;
 	friend class quest_mobile_native_birth_owner;
-	// True only when the actual registered observer owns whole literal pools.
-	// The selecting ROOT must join all paired private consumers at this cut.
+	// True only when the actual registered observer owns whole object/affect
+	// and mobile pools, cached mobile strings and published NPC-only storage.
+	// Detached NPC-only storage remains in its actual birth owner until list
+	// consumption. The selecting ROOT joins all paired private consumers.
 	static bool begin(const void *actual_guard, bool (*current_storage)(size_t *) noexcept,
 			  bool includes_literal_pool = false) noexcept;
 	static bool end(const void *actual_guard) noexcept;

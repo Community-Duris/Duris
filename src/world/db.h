@@ -277,6 +277,25 @@ class quest_mobile_native_stage
 			       std::span<const native_mobile_birth_recovery_choice>,
 			       struct char_data **live_after) noexcept;
 	bool prepare(int nr, int type, bool apply_mob_gold);
+
+	// Complete original NBC2/3 constructor and fixed local RNG/time witnesses.
+	// Actual configured pool, NPC-only malloc and tilde strings are admitted.
+	// Whole G includes the genuine mobile pool/catalog/source once; detached
+	// NPC-only remains stage/capsule-owned. All transfer outputs are strong.
+	// Pure profile/missing-callback/checked-add/admission refusals retain
+	// ENOTSUP/EINVAL/EOVERFLOW/ENOBUFS (or the actual callback error).
+	// Actual native allocation refusal preserves ENOMEM/underlying error;
+	// cleanup cannot erase a latched resource error. Outputs stay unchanged.
+	bool prepare_captured_bounded(int, int, bool,
+				      const quest_mobile_native_constructor_digest &, int32_t, int,
+				      quest_mobile_native_constructor_recipe *,
+				      bool (*)(size_t *, void *) noexcept,
+				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	bool restore_constructor_bounded(const quest_mobile_native_constructor_recipe &,
+					 const quest_mobile_native_constructor_digest &,
+					 bool (*)(size_t *, void *) noexcept,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
 	bool prepare_captured(int nr, int type, bool apply_mob_gold,
 			      const quest_mobile_native_constructor_digest &current_build,
 			      quest_mobile_native_constructor_recipe *) noexcept;
@@ -292,6 +311,7 @@ class quest_mobile_native_stage
 	bool
 	restore_constructor(const quest_mobile_native_constructor_recipe &,
 			    const quest_mobile_native_constructor_digest &current_build) noexcept;
+	bool retained_bytes_excluding_mobile_pool(size_t *) const noexcept;
 	struct char_data *character() const noexcept { return character_; }
 	// Original detached shared keeper only. These passive observations neither
 	// authenticate the caller's reset/source cut nor permit publication or ACK.
@@ -674,5 +694,16 @@ void quest_mobile_native_item_observe_native_prepend(struct obj_data *) noexcept
 // Nonallocating observation at the original extraction cut; grants no authority.
 void quest_mobile_native_item_observe_extraction(struct obj_data *) noexcept;
 void free_world();
+
+// Disjoint genuine native storage partitions for the common ROOT census.
+// Whole char_data pool descriptors/list node/MEMCHK headers/mapped pages;
+// four exclusively owned mob_index cached string columns plus the actual
+// mob_f fopen object/libc buffer allocation extents; and actual published
+// NPC only.npc allocations (including MEMCHK header). Detached only.npc remains
+// birth-owned until actual list consumption. Refresh every return, including
+// refusal. These allocation-free strong outputs confer no native authority.
+bool quest_mobile_native_mobile_pool_storage_bytes(size_t *) noexcept;
+bool quest_mobile_native_mobile_catalog_string_storage_bytes(size_t *) noexcept;
+bool quest_mobile_native_published_npc_storage_bytes(size_t *) noexcept;
 
 #endif /* #ifndef _SOJ_DB_H_ */
