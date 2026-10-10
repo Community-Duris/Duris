@@ -4592,3 +4592,593 @@ bool quest_mobile_native_birth_owner::capture_reset_flat_projection(
 	*epoch = reset_dispatch.flat_epoch;
 	return true;
 }
+
+namespace
+{
+bool birth_passive_add(size_t &value, size_t extra) noexcept
+{
+	if (value > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    extra > PLAYER_SAVE_PIPELINE_MAX_BYTES - value)
+		return false;
+	value += extra;
+	return true;
+}
+bool birth_passive_rows(size_t &value, size_t count, size_t width) noexcept
+{
+	return (!width || count <= PLAYER_SAVE_PIPELINE_MAX_BYTES / width) &&
+	       birth_passive_add(value, count * width);
+}
+bool birth_passive_admit(size_t current, size_t request, bool (*reserve)(size_t, void *) noexcept,
+			 void *context) noexcept
+{
+	// Actual value carriers remain alive during the genuine callback. These
+	// explicit object bytes are separate from the caller's live workspace.
+	return reserve && birth_passive_add(current, request) &&
+	       birth_passive_add(current, sizeof(current) + sizeof(request) + sizeof(reserve) +
+						  sizeof(context)) &&
+	       reserve(current, context);
+}
+bool birth_passive_command_heap(size_t &value, const critical_command &command,
+				bool fresh_copy = false) noexcept
+{
+	return birth_passive_rows(value, fresh_copy ? command.keys.size() : command.keys.capacity(),
+				  sizeof(critical_entity_key)) &&
+	       birth_passive_rows(value,
+				  fresh_copy ? command.expected_revisions.size() :
+					       command.expected_revisions.capacity(),
+				  sizeof(critical_expected_revision)) &&
+	       birth_passive_add(value, fresh_copy ? command.payload.size() :
+						     command.payload.capacity()) &&
+	       birth_passive_add(value, fresh_copy ? command.accounting_intent.size() :
+						     command.accounting_intent.capacity());
+}
+bool birth_passive_envelope_heap(size_t &value, const critical_native_recovery_envelope &envelope,
+				 bool fresh_copy = false) noexcept
+{
+	return birth_passive_command_heap(value, envelope.command, fresh_copy) &&
+	       birth_passive_add(value, fresh_copy ? envelope.attachment.size() :
+						     envelope.attachment.capacity());
+}
+bool birth_passive_context_heap(size_t &value,
+				const native_mobile_birth_recovery_context &progress) noexcept
+{
+	if (!birth_passive_rows(value, progress.items.capacity(),
+				sizeof(native_mobile_birth_recovery_item)))
+		return false;
+	for (const auto &item : progress.items)
+		if (!birth_passive_rows(value, item.effects.capacity(),
+					sizeof(native_mobile_birth_recovery_effect)))
+			return false;
+	return true;
+}
+bool birth_passive_text_heap(size_t &value, const std::string &text) noexcept
+{
+	return text.capacity() <= 15 ||
+	       (text.capacity() != SIZE_MAX && birth_passive_add(value, text.capacity() + 1));
+}
+bool birth_passive_image_heap(size_t &value, const quest_mobile_native_image &image) noexcept
+{
+	if (!birth_passive_rows(value, image.items.capacity(), sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &item : image.items)
+	{
+		if (!birth_passive_text_heap(value, item.name) ||
+		    !birth_passive_text_heap(value, item.short_description) ||
+		    !birth_passive_text_heap(value, item.description) ||
+		    !birth_passive_text_heap(value, item.action_description) ||
+		    !birth_passive_rows(value, item.dynamic_affects.capacity(),
+					sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !birth_passive_rows(value, item.extra_descriptions.capacity(),
+					sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &description : item.extra_descriptions)
+			if (!birth_passive_text_heap(value, description.keyword) ||
+			    !birth_passive_text_heap(value, description.description) ||
+			    !birth_passive_rows(value, description.spell_ids.capacity(),
+						sizeof(int32_t)))
+				return false;
+	}
+	return true;
+}
+bool birth_passive_recipes_heap(
+	size_t &value, const std::vector<native_mobile_birth_item_recipe> &recipes) noexcept
+{
+	if (!birth_passive_rows(value, recipes.capacity(), sizeof(native_mobile_birth_item_recipe)))
+		return false;
+	for (const auto &recipe : recipes)
+		if (!birth_passive_rows(value, recipe.libraries.capacity(),
+					sizeof(native_mobile_birth_library_recipe)))
+			return false;
+	return true;
+}
+bool birth_passive_stock_heap(size_t &value, const std::vector<original_item> &stock) noexcept
+{
+	if (!birth_passive_rows(value, stock.capacity(), sizeof(original_item)))
+		return false;
+	for (const auto &item : stock)
+		if (!birth_passive_rows(value, item.effects.capacity(),
+					sizeof(quest_mobile_native_item_effect)))
+			return false;
+	return true;
+}
+// Closed owning state: only the new passive original_birth constructed below,
+// before registry transfer. No factory, binding, affect/checkpoint writer or
+// native stage is initialized; those original default members own no heap.
+bool birth_passive_new_body_heap(size_t &value, const original_birth &body) noexcept
+{
+	return birth_passive_add(value, sizeof(body)) &&
+	       birth_passive_image_heap(value, body.image) &&
+	       birth_passive_recipes_heap(value, body.recipes) &&
+	       birth_passive_command_heap(value, body.command) &&
+	       birth_passive_add(value, body.canonical.capacity()) &&
+	       (!body.shared_checkpoint ||
+		(birth_passive_add(value, sizeof(*body.shared_checkpoint)) &&
+		 birth_passive_add(value, body.shared_checkpoint->capacity()))) &&
+	       birth_passive_rows(value, body.current_custody.capacity(),
+				  sizeof(item_ownership_runtime_entry)) &&
+	       birth_passive_stock_heap(value, body.stock) &&
+	       birth_passive_envelope_heap(value, body.envelope) &&
+	       birth_passive_context_heap(value, body.recovery);
+}
+template <typename T>
+bool birth_passive_push_request(const std::vector<T> &values, size_t *request) noexcept
+{
+	if (!request || values.size() > values.capacity())
+		return false;
+	if (values.size() < values.capacity())
+	{
+		*request = 0;
+		return true;
+	}
+	// Actual supported GCC13 _M_check_len(1): size+max(size,1), limited by
+	// this real default-allocator vector's own max_size. Current old heap remains.
+	if (values.size() == values.max_size())
+		return false;
+	const size_t increment = std::max(values.size(), size_t{ 1 });
+	const size_t capacity = increment > values.max_size() - values.size() ?
+					values.max_size() :
+					values.size() + increment;
+	size_t bytes = 0;
+	if (!birth_passive_rows(bytes, capacity, sizeof(T)))
+		return false;
+	*request = bytes;
+	return true;
+}
+bool birth_passive_same_image(const quest_mobile_native_image &left,
+			      const quest_mobile_native_image &right,
+			      bool (*reserve)(size_t, void *) noexcept, void *context,
+			      size_t outer) noexcept
+{
+	struct image_comparison_workspace
+	{
+		std::vector<uint8_t> left, right;
+		size_t current;
+	};
+	size_t base = outer;
+	if (!birth_passive_add(base, sizeof(image_comparison_workspace)) ||
+	    !birth_passive_add(base, sizeof(base)) ||
+	    !birth_passive_add(base, sizeof(reserve) + sizeof(context) + sizeof(outer)) ||
+	    !birth_passive_admit(base, 0, reserve, context))
+		return false;
+	image_comparison_workspace work;
+	if (quest_mobile_native_image_encode_bounded(left, &work.left, reserve, context, base) !=
+	    player_snapshot_codec_result::ok)
+		return false;
+	work.current = base;
+	return birth_passive_add(work.current, work.left.capacity()) &&
+	       quest_mobile_native_image_encode_bounded(right, &work.right, reserve, context,
+							work.current) ==
+		       player_snapshot_codec_result::ok &&
+	       work.left == work.right;
+}
+struct birth_passive_command_workspace
+{
+	quest_mobile_native_image image;
+	std::vector<native_mobile_birth_item_recipe> recipes;
+	native_mobile_birth_cash_role_recipe role;
+	quest_mobile_native_constructor_recipe constructor;
+	std::vector<uint8_t> canonical;
+	std::unique_ptr<original_birth> body;
+	original_item row;
+	size_t base, current, request, available, scan, item_scan, old_scan;
+};
+bool birth_passive_command_current(const birth_passive_command_workspace &work,
+				   size_t *output) noexcept
+{
+	size_t current = work.base;
+	if (!output || !birth_passive_image_heap(current, work.image) ||
+	    !birth_passive_recipes_heap(current, work.recipes) ||
+	    !birth_passive_add(current, work.canonical.capacity()) ||
+	    !birth_passive_rows(current, work.row.effects.capacity(),
+				sizeof(quest_mobile_native_item_effect)) ||
+	    (work.body && !birth_passive_new_body_heap(current, *work.body)))
+		return false;
+	*output = current;
+	return true;
+}
+} // genuine passive allocations only
+
+struct quest_mobile_native_birth_owner::shared_shop_restore_attachment
+{
+	original_birth *identity = nullptr;
+	size_t slot = SIZE_MAX;
+	bool newly_attached = false;
+};
+
+bool quest_mobile_native_birth_owner::restore_shared_shop_command_bounded(
+	const critical_command &command, const std::vector<uint8_t> &checkpoint,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	shared_shop_restore_attachment *attached) noexcept
+{
+	if (command.type != critical_command_type::native_mobile_birth ||
+	    !shared_shop_command(command) || checkpoint.empty() || !attached)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	size_t base = outer;
+	if (!birth_passive_add(base, sizeof(birth_passive_command_workspace)) ||
+	    !birth_passive_add(base, sizeof(base)) ||
+	    !birth_passive_add(base, sizeof(reserve) + sizeof(context) + sizeof(outer) +
+					     sizeof(attached)) ||
+	    !birth_passive_admit(base, 0, reserve, context))
+		return false;
+	birth_passive_command_workspace work;
+	work.base = base;
+	try
+	{
+		if (native_mobile_birth_cash_role_command_decode_bounded(
+			    command, &work.image, &work.recipes, &work.role, reserve, context,
+			    work.base) != economic_accounting_error::ok ||
+		    work.role.role != native_mobile_birth_cash_role::shared_shopkeeper)
+			return false;
+		work.constructor = work.role.original;
+		if (!birth_passive_command_current(work, &work.current) ||
+		    critical_command_encode_bounded(command, &work.canonical, reserve, context,
+						    work.current) !=
+			    critical_command_codec_result::ok)
+			return false;
+		for (work.scan = 0; work.scan < births.size(); ++work.scan)
+			if (births[work.scan] &&
+			    births[work.scan]->reference.birth_operation.bytes ==
+				    command.operation_id.bytes)
+			{
+				const auto &previous = *births[work.scan];
+				return previous.canonical == work.canonical &&
+				       birth_passive_command_current(work, &work.current) &&
+				       birth_passive_same_image(previous.image, work.image, reserve,
+								context, work.current) &&
+				       previous.shared_checkpoint &&
+				       *previous.shared_checkpoint == checkpoint;
+			}
+		for (work.scan = 0; work.scan < births.size(); ++work.scan)
+			if (births[work.scan])
+			{
+				const auto &previous = *births[work.scan];
+				const auto &left = previous.reference.birth_source;
+				const auto &right = work.image.reference.birth_source;
+				if (previous.reference.mobile_instance_id ==
+					    work.image.reference.mobile_instance_id ||
+				    (left.kind == right.kind &&
+				     left.source.bytes == right.source.bytes &&
+				     left.generation.bytes == right.generation.bytes &&
+				     left.sequence == right.sequence && left.slot == right.slot))
+					return false;
+				for (work.item_scan = 0; work.item_scan < work.image.items.size();
+				     ++work.item_scan)
+					for (work.old_scan = 0;
+					     work.old_scan < previous.image.items.size();
+					     ++work.old_scan)
+						if (work.image.items[work.item_scan].object_uid ==
+						    previous.image.items[work.old_scan].object_uid)
+							return false;
+			}
+		work.available = 0;
+		while (work.available < births.size() && births[work.available])
+			++work.available;
+		if (work.available == births.size() &&
+		    births.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS)
+			return false;
+		if (!birth_passive_command_current(work, &work.current) ||
+		    !birth_passive_admit(work.current,
+					 sizeof(original_birth) +
+						 sizeof(std::unique_ptr<original_birth>),
+					 reserve, context))
+			return false;
+		work.body = std::make_unique<original_birth>();
+		static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_image>);
+		static_assert(std::is_nothrow_move_assignable_v<
+			      std::vector<native_mobile_birth_item_recipe>>);
+		static_assert(std::is_nothrow_move_constructible_v<original_item>);
+		work.body->reference = work.image.reference;
+		work.body->image = std::move(work.image);
+		work.body->recipes = std::move(work.recipes);
+		work.body->constructor = work.constructor;
+		work.body->constructor_present = true;
+		work.body->cash_role = work.role;
+		work.body->cash_role_present = true;
+		work.request = sizeof(std::vector<uint8_t>) +
+			       sizeof(std::unique_ptr<const std::vector<uint8_t>>);
+		if (!birth_passive_add(work.request, checkpoint.size()) ||
+		    !birth_passive_command_current(work, &work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.body->shared_checkpoint =
+			std::make_unique<const std::vector<uint8_t>>(checkpoint);
+		if (work.constructor.wire_version ==
+			    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION ||
+		    work.constructor.wire_version ==
+			    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION)
+		{
+			if (work.constructor.reset_room_vnum !=
+			    work.body->reference.birthplace_vnum)
+				return false;
+			work.body->shop = work.constructor.reset_shop_index;
+		}
+		work.request = 0;
+		if (!birth_passive_command_heap(work.request, command, true) ||
+		    !birth_passive_command_current(work, &work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.body->command = command;
+		work.body->canonical = std::move(work.canonical);
+		work.body->rnum = real_mobile(work.body->reference.mobile_vnum);
+		work.body->zone = real_zone(work.body->reference.reset_zone_vnum);
+		work.body->room = real_room0(work.body->reference.birthplace_vnum);
+		if (work.body->rnum < 0 || work.body->zone < 0 || work.body->room < 0)
+			return false;
+		work.body->cold = true;
+		work.body->cold_replay_enrolled = true;
+		work.body->sealed = true;
+		work.body->submitted = true;
+		work.request = 0;
+		if (!birth_passive_rows(work.request, work.body->image.items.size(),
+					sizeof(item_ownership_runtime_entry)) ||
+		    !birth_passive_command_current(work, &work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.body->current_custody.resize(work.body->image.items.size());
+		for (work.item_scan = 0; work.item_scan < work.body->image.items.size();
+		     ++work.item_scan)
+		{
+			work.row.uid = work.body->image.items[work.item_scan].object_uid;
+			work.row.rnum = real_object(work.body->image.items[work.item_scan].vnum);
+			if (work.row.rnum < 0)
+				return false;
+			if (!birth_passive_push_request(work.body->stock, &work.request) ||
+			    !birth_passive_command_current(work, &work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			work.body->stock.push_back(std::move(work.row));
+		}
+		if (work.available == births.size())
+		{
+			if (!birth_passive_push_request(births, &work.request) ||
+			    !birth_passive_command_current(work, &work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			births.push_back(std::move(work.body));
+		}
+		else
+			births[work.available] = std::move(work.body);
+		// Body heaps transferred once to genuine retained birth ownership. Current
+		// provider now excludes that body; registry capacity is observed by charge.
+		if (!birth_passive_command_current(work, &work.current) ||
+		    !birth_passive_admit(work.current, 0, reserve, context))
+		{
+			births[work.available].reset();
+			if (birth_passive_command_current(work, &work.current))
+				(void)birth_passive_admit(work.current, 0, reserve, context);
+			return false;
+		}
+		attached->identity = births[work.available].get();
+		attached->slot = work.available;
+		attached->newly_attached = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_birth_owner::restore_shared_shop_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer) noexcept
+{
+	if (envelope.command.type != critical_command_type::native_mobile_birth ||
+	    !shared_shop_command(envelope.command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return false;
+#else
+	struct restore_workspace
+	{
+		native_mobile_birth_shared_shop_recovery_context shared;
+		std::span<const uint8_t> attachment;
+		critical_native_recovery_envelope retained;
+		quest_mobile_native_image image;
+		std::vector<uint8_t> canonical;
+		std::vector<original_item> stock;
+		original_item row;
+		shared_shop_restore_attachment attached;
+		size_t base, current, request, scan, row_scan, image_scan;
+		bool current_bytes(size_t *output) const noexcept
+		{
+			size_t live = base;
+			if (!output || !birth_passive_context_heap(live, shared.progress) ||
+			    !birth_passive_add(live, shared.original_checkpoint.capacity()) ||
+			    !birth_passive_envelope_heap(live, retained) ||
+			    !birth_passive_image_heap(live, image) ||
+			    !birth_passive_add(live, canonical.capacity()) ||
+			    !birth_passive_stock_heap(live, stock) ||
+			    !birth_passive_rows(live, row.effects.capacity(),
+						sizeof(quest_mobile_native_item_effect)))
+				return false;
+			*output = live;
+			return true;
+		}
+	};
+	size_t base = outer;
+	if (!birth_passive_add(base, sizeof(restore_workspace)) ||
+	    !birth_passive_add(base, sizeof(base)) ||
+	    !birth_passive_add(base, sizeof(reserve) + sizeof(context) + sizeof(outer)) ||
+	    !birth_passive_admit(base, 0, reserve, context))
+		return false;
+	restore_workspace work;
+	work.base = base;
+	work.attachment = envelope.attachment;
+	try
+	{
+		if (!native_mobile_birth_shared_shop_recovery_valid_bounded(envelope, reserve,
+									    context, work.base) ||
+		    native_mobile_birth_shared_shop_recovery_decode_bounded(
+			    envelope.command, work.attachment, &work.shared, reserve, context,
+			    work.base) != economic_accounting_error::ok)
+			return false;
+		work.request = 0;
+		if (!birth_passive_envelope_heap(work.request, envelope, true) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.retained = envelope; // Exact original authenticated copy.
+		for (work.scan = 0; work.scan < births.size(); ++work.scan)
+			if (births[work.scan] &&
+			    births[work.scan]->reference.birth_operation.bytes ==
+				    envelope.command.operation_id.bytes)
+			{
+				const auto &entry = *births[work.scan];
+				if (!entry.shared_checkpoint ||
+				    *entry.shared_checkpoint != work.shared.original_checkpoint ||
+				    entry.envelope.revision != envelope.revision ||
+				    entry.envelope.phase != envelope.phase ||
+				    entry.envelope.attachment != envelope.attachment)
+					return false;
+				return work.current_bytes(&work.current) &&
+				       critical_command_encode_bounded(envelope.command,
+								       &work.canonical, reserve,
+								       context, work.current) ==
+					       critical_command_codec_result::ok &&
+				       entry.canonical == work.canonical;
+			}
+		{
+			// The original nested recipes/role scope ends before stock construction.
+			// This real output frame is admitted before construction and owns its
+			// decoded library heaps until the complete codec returns.
+			struct outer_decode_workspace
+			{
+				std::vector<native_mobile_birth_item_recipe> recipes;
+				native_mobile_birth_cash_role_recipe role;
+			};
+			if (!work.current_bytes(&work.current) ||
+			    !birth_passive_add(work.current, sizeof(outer_decode_workspace)) ||
+			    !birth_passive_admit(work.current, 0, reserve, context))
+				return false;
+			outer_decode_workspace decoded;
+			if (native_mobile_birth_cash_role_command_decode_bounded(
+				    envelope.command, &work.image, &decoded.recipes, &decoded.role,
+				    reserve, context,
+				    work.current) != economic_accounting_error::ok ||
+			    decoded.role.role != native_mobile_birth_cash_role::shared_shopkeeper)
+				return false;
+		}
+		work.request = 0;
+		if (!birth_passive_rows(work.request, work.shared.progress.items.size(),
+					sizeof(original_item)) ||
+		    !work.current_bytes(&work.current) ||
+		    !birth_passive_admit(work.current, work.request, reserve, context))
+			return false;
+		work.stock.reserve(work.shared.progress.items.size());
+		for (work.row_scan = 0; work.row_scan < work.shared.progress.items.size();
+		     ++work.row_scan)
+		{
+			work.image_scan = 0;
+			while (work.image_scan < work.image.items.size() &&
+			       work.image.items[work.image_scan].object_uid !=
+				       work.shared.progress.items[work.row_scan].object_uid)
+				++work.image_scan;
+			if (work.image_scan == work.image.items.size())
+				return false;
+			work.row.uid = work.image.items[work.image_scan].object_uid;
+			work.row.rnum = real_object(work.image.items[work.image_scan].vnum);
+			if (work.row.rnum < 0)
+				return false;
+			if (!birth_passive_push_request(work.stock, &work.request) ||
+			    !work.current_bytes(&work.current) ||
+			    !birth_passive_admit(work.current, work.request, reserve, context))
+				return false;
+			work.stock.push_back(std::move(work.row));
+		}
+		if (!work.current_bytes(&work.current) ||
+		    !restore_shared_shop_command_bounded(envelope.command,
+							 work.shared.original_checkpoint, reserve,
+							 context, work.current, &work.attached))
+			return false;
+		for (work.scan = 0; work.scan < births.size(); ++work.scan)
+			if (births[work.scan] &&
+			    births[work.scan]->reference.birth_operation.bytes ==
+				    envelope.command.operation_id.bytes)
+			{
+				auto &entry = births[work.scan];
+				static_assert(std::is_nothrow_move_assignable_v<
+					      std::vector<original_item>>);
+				static_assert(std::is_nothrow_move_assignable_v<
+					      critical_native_recovery_envelope>);
+				static_assert(std::is_nothrow_move_assignable_v<
+					      native_mobile_birth_recovery_context>);
+				entry->stock = std::move(work.stock);
+				entry->envelope = std::move(work.retained);
+				entry->recovery = std::move(work.shared.progress);
+				if (!work.current_bytes(&work.current) ||
+				    !birth_passive_admit(work.current, 0, reserve, context))
+				{
+					// An original duplicate returns before this attachment path.
+					// Remove only the authentic body newly attached by this owner.
+					if (work.attached.newly_attached &&
+					    work.attached.slot == work.scan &&
+					    work.attached.identity == entry.get())
+						entry.reset();
+					if (work.current_bytes(&work.current))
+						(void)birth_passive_admit(work.current, 0, reserve,
+									  context);
+					return false;
+				}
+				return true; // Passive values only; native cold services remain gated.
+			}
+		if (work.attached.newly_attached && work.attached.slot < births.size() &&
+		    births[work.attached.slot].get() == work.attached.identity)
+		{
+			births[work.attached.slot].reset();
+			if (work.current_bytes(&work.current))
+				(void)birth_passive_admit(work.current, 0, reserve, context);
+		}
+		return false;
+	}
+	catch (...)
+	{
+		if (work.attached.newly_attached && work.attached.slot < births.size() &&
+		    births[work.attached.slot].get() == work.attached.identity)
+		{
+			births[work.attached.slot].reset();
+			if (work.current_bytes(&work.current))
+				(void)birth_passive_admit(work.current, 0, reserve, context);
+		}
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_birth_restore_shared_shop_bounded(
+	const critical_native_recovery_envelope &envelope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	size_t full = outer_live;
+	return birth_passive_add(full, sizeof(full) + sizeof(reserve) + sizeof(context) +
+					       sizeof(outer_live)) &&
+	       birth_passive_admit(full, 0, reserve, context) &&
+	       quest_mobile_native_birth_owner::restore_shared_shop_bounded(envelope, reserve,
+									    context, full);
+}

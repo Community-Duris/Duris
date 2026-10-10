@@ -9,6 +9,16 @@
 // these observations authorize a native birth, SQL mutation or publication ACK.
 bool quest_mobile_native_birth_restore(const critical_command &) noexcept;
 bool quest_mobile_native_birth_restore(const critical_native_recovery_envelope &) noexcept;
+// Complete passive NMB4 shared SHOP restoration only. Original mixed dispatcher
+// selects its real family; other birth versions retain their original routes.
+// Full caller prefix owns inputs/inline outputs and CURRENT coordinator via its
+// actual mutex-owning lender; the authentic budget owns existing birth registry
+// retention separately. No native constructor, RNG, UID, SQL, world mutation,
+// publication, retry, source admission or ACK follows from passive values.
+bool quest_mobile_native_birth_restore_shared_shop_bounded(const critical_native_recovery_envelope &,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t outer_live) noexcept;
+
 void quest_mobile_native_birth_replay_ready(bool) noexcept;
 void quest_mobile_native_birth_completions(const critical_completion *, size_t) noexcept;
 void quest_mobile_native_birth_pulse(bool prepare_original_resets) noexcept;
@@ -99,6 +109,19 @@ class quest_mobile_native_birth_owner final
 	friend bool quest_mobile_native_birth_restore(const critical_command &) noexcept;
 	friend bool
 	quest_mobile_native_birth_restore(const critical_native_recovery_envelope &) noexcept;
+	friend bool quest_mobile_native_birth_restore_shared_shop_bounded(
+		const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept,
+		void *, size_t) noexcept;
+	struct shared_shop_restore_attachment;
+	static bool restore_shared_shop_command_bounded(const critical_command &,
+							const std::vector<uint8_t> &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t,
+							shared_shop_restore_attachment *) noexcept;
+	static bool restore_shared_shop_bounded(const critical_native_recovery_envelope &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept;
+
 	friend void quest_mobile_native_birth_completions(const critical_completion *,
 							  size_t) noexcept;
 	friend void quest_mobile_native_birth_pulse(bool) noexcept;
