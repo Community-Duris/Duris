@@ -75,4 +75,13 @@ economic_accounting_error economic_intent_freeze_bounded(const critical_command 
 							 bool (*)(size_t, void *) noexcept, void *,
 							 size_t outer_live) noexcept;
 
+// Full original freeze/domain-tagged digest/encode closure with genuine fixed
+// SHA context and actual vector COPY/front-insert/constructor request ownership.
+// Prior bounded/original methods stay byte exact. Caller owns authentic inputs,
+// prior encoded output and all sibling state. Strong output; no authority gate.
+economic_accounting_error
+economic_intent_freeze_fixed_bounded(const critical_command &, const economic_admission_facts &,
+				     std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+				     void *context, size_t outer_live) noexcept;
+
 #endif
