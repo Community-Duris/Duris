@@ -1982,3 +1982,508 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 	}
 	return player_snapshot_codec_result::ok;
 }
+
+namespace
+{
+using item_list_reserve_fn = bool (*)(size_t, void *) noexcept;
+bool item_list_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+template <typename T>
+bool item_list_vector_heap(const std::vector<T> &value, size_t &bytes) noexcept
+{
+	return value.capacity() <= SIZE_MAX / sizeof(T) &&
+	       item_list_add(bytes, value.capacity() * sizeof(T));
+}
+bool item_list_string_heap(const std::string &value, size_t &bytes) noexcept
+{
+	return value.capacity() <= 15 ||
+	       (value.capacity() < SIZE_MAX && item_list_add(bytes, value.capacity() + 1));
+}
+bool item_list_heap(const std::vector<player_item_snapshot> &items, size_t &bytes) noexcept
+{
+	if (!item_list_vector_heap(items, bytes))
+		return false;
+	for (const auto &row : items)
+	{
+		if (!item_list_string_heap(row.name, bytes) ||
+		    !item_list_string_heap(row.short_description, bytes) ||
+		    !item_list_string_heap(row.description, bytes) ||
+		    !item_list_string_heap(row.action_description, bytes) ||
+		    !item_list_vector_heap(row.dynamic_affects, bytes) ||
+		    !item_list_vector_heap(row.extra_descriptions, bytes))
+			return false;
+		for (const auto &description : row.extra_descriptions)
+			if (!item_list_string_heap(description.keyword, bytes) ||
+			    !item_list_string_heap(description.description, bytes) ||
+			    !item_list_vector_heap(description.spell_ids, bytes))
+				return false;
+	}
+	return true;
+}
+constexpr size_t item_list_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t item_list_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t item_list_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_list_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t item_list_vector_frames =
+	item_list_allocator_frames + item_list_copy_frames + item_list_relocate_frames +
+	item_list_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t item_list_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + item_list_allocator_frames;
+
+// Nontrivial row/description construction and destruction are source scopes,
+// not heap metadata. The nested member objects already live in sizeof(row).
+constexpr size_t item_list_nontrivial_frames =
+	// default_n_1<false>: first/n/cur/return; _Construct/addressof/placement.
+	3 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(void *) + sizeof(size_t) +
+	// Actual aggregate row and description this, four row strings and two
+	// description strings: string()/allocator hider/use-local-data/set-length.
+	2 * sizeof(void *) +
+	6 * (6 * sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(std::allocator<char>)) +
+	// row/description nested vector()/Vector_base()/Vector_impl()/data() and
+	// allocator return carriers. Three source member vector types.
+	3 * (5 * sizeof(void *) + sizeof(std::allocator<int32_t>)) +
+	// Nontrivial _Destroy range/aux::__destroy/destroy_at/__addressof; actual
+	// row/description destructor this then six string destructors/dispose/
+	// _M_is_local/_M_destroy and three nested vector destroy/deallocate scopes.
+	8 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) +
+	6 * (5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	3 * item_list_allocator_frames;
+// Fitting _M_replace calls _M_disjunct(this,s). Both actual less pointer
+// temporaries can coexist through the full || expression; their operator()
+// has this/x/y/result and is_constant_evaluated result. Data/size queries.
+constexpr size_t item_list_disjunct_frames =
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(std::less<const char *>) +
+	2 * (3 * sizeof(void *) + 2 * sizeof(bool)) + 2 * (2 * sizeof(void *)) + sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t item_list_string_frames =
+	item_list_disjunct_frames +
+	// assign(s,n): this/s/n/ref-return; _M_replace(this,pos,len1,s,len2),
+	// old_size/new_size/p/how_much/ref-return, actual length checks/queries.
+	3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + 5 * sizeof(size_t) +
+	6 * (sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+	// _M_mutate(this,pos,len1,s,len2), how_much/new_capacity/r;
+	// _M_create(this,capacityref,oldcapacity), max_size, allocation return.
+	3 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	item_list_allocator_frames +
+	// _S_copy(d,s,n), traits::copy(s1,s2,n) returned pointer and memcopy
+	// argument/result carriers; one-character assign reference/char scopes.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(char) +
+	// old block dispose/destroy plus data/capacity/set-length and final NUL.
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + sizeof(char);
+// Genuine vector(n,value,allocator) constructor scopes, before fill:
+// vector this/n/value-reference/allocator-reference and default allocator;
+// _S_check_init_len n/a/result and its _Tp allocator copy; _Vector_base
+// this/n/a, _Vector_impl this/a and allocator copy, _Vector_impl_data this;
+// _M_create_storage this/n. Existing allocator profile owns _S_max_size.
+constexpr size_t item_list_size_constructor_frames =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<size_t>) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(std::allocator<size_t>) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) +
+	sizeof(size_t);
+struct item_list_decode_workspace;
+struct item_list_live_frame
+{
+	item_list_decode_workspace &owner;
+	item_list_live_frame *previous;
+	size_t bytes;
+	item_list_live_frame(item_list_decode_workspace &, size_t) noexcept;
+	~item_list_live_frame();
+};
+struct item_list_decode_workspace
+{
+	decoder in;
+	std::vector<player_item_snapshot> items;
+	std::vector<size_t> depths;
+	item_list_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	size_t transferred_heap = 0;
+	item_list_live_frame *frames = nullptr;
+	bool peak(size_t extra) noexcept
+	{
+		size_t bytes = outer;
+		if (!item_list_add(bytes, sizeof(*this)) || !item_list_heap(items, bytes) ||
+		    !item_list_vector_heap(depths, bytes))
+			return false;
+		for (auto *frame = frames; frame; frame = frame->previous)
+			if (!item_list_add(bytes, frame->bytes))
+				return false;
+		// Actual peak/current-heap observer parameter/return/iteration scopes.
+		constexpr size_t observation =
+			7 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+			3 * (sizeof(void *) + sizeof(size_t)) + 4 * (2 * sizeof(void *));
+		return item_list_add(bytes, observation) && item_list_add(bytes, extra) &&
+		       reserve && reserve(bytes, context);
+	}
+};
+item_list_live_frame::item_list_live_frame(item_list_decode_workspace &value, size_t count) noexcept
+	: owner(value)
+	, previous(value.frames)
+	, bytes(count)
+{
+	owner.frames = this;
+}
+item_list_live_frame::~item_list_live_frame()
+{
+	owner.frames = previous;
+}
+struct item_list_bounded_decoder
+{
+	item_list_decode_workspace &owner;
+	template <typename T> bool number(T &value) { return owner.in.number(value); }
+	bool boolean(bool &value) { return owner.in.boolean(value); }
+	bool string(std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+	{
+		constexpr size_t own = sizeof(item_list_live_frame) + 3 * sizeof(void *) +
+				       4 * sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+		if (!owner.peak(own))
+		{
+			owner.in.result = player_snapshot_codec_result::allocation_failure;
+			return false;
+		}
+		item_list_live_frame frame(owner, own);
+		uint32_t length = 0;
+		if (!number(length))
+			return false;
+		if (length > maximum)
+		{
+			owner.in.result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		if (owner.in.size - owner.in.offset < length)
+		{
+			owner.in.result = player_snapshot_codec_result::truncated;
+			return false;
+		}
+		size_t request = 0;
+		if (length > value.capacity())
+		{
+			// GCC13 _M_create(capacity,oldcapacity), actual doubling/clipping.
+			size_t next = length;
+			if (next < 2 * value.capacity())
+				next = 2 * value.capacity();
+			if (next > value.max_size())
+				next = value.max_size();
+			if (next == SIZE_MAX)
+			{
+				owner.in.result = player_snapshot_codec_result::limit_exceeded;
+				return false;
+			}
+			request = next + 1;
+		}
+		if (!item_list_add(request, item_list_string_frames) || !owner.peak(request))
+		{
+			owner.in.result = player_snapshot_codec_result::allocation_failure;
+			return false;
+		}
+		value.assign(reinterpret_cast<const char *>(owner.in.data + owner.in.offset),
+			     length);
+		owner.in.offset += length;
+		return true;
+	}
+	template <typename T, typename Read>
+	bool vector(std::vector<T> &values, Read read, bool object_rows = false)
+	{
+		constexpr size_t own = sizeof(item_list_live_frame) + 4 * sizeof(void *) +
+				       2 * sizeof(Read) + sizeof(uint32_t) + sizeof(bool) +
+				       2 * sizeof(size_t);
+		if (!owner.peak(own))
+		{
+			owner.in.result = player_snapshot_codec_result::allocation_failure;
+			return false;
+		}
+		item_list_live_frame frame(owner, own);
+		uint32_t count = 0;
+		if (!number(count))
+			return false;
+		if (count > PLAYER_SNAPSHOT_MAX_ROWS ||
+		    owner.in.rows > PLAYER_SNAPSHOT_MAX_ROWS - count ||
+		    (object_rows && (count > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+				     owner.in.objects > PLAYER_SNAPSHOT_MAX_OBJECTS - count)))
+		{
+			owner.in.result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		owner.in.rows += count;
+		if (object_rows)
+			owner.in.objects += count;
+		size_t request = item_list_vector_frames + item_list_nontrivial_frames;
+		if (count > values.capacity())
+		{
+			const size_t added = count - values.size();
+			size_t next = values.size();
+			if (!item_list_add(next, std::max(values.size(), added)) ||
+			    next > values.max_size())
+				next = values.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !item_list_add(request, next * sizeof(T)))
+			{
+				owner.in.result = player_snapshot_codec_result::limit_exceeded;
+				return false;
+			}
+		}
+		if (!owner.peak(request))
+		{
+			owner.in.result = player_snapshot_codec_result::allocation_failure;
+			return false;
+		}
+		values.resize(count);
+		for (T &value : values)
+			if (!read(value))
+				return false;
+		return true;
+	}
+};
+
+bool item_list_decode_items(item_list_bounded_decoder &in, std::vector<player_item_snapshot> &items)
+{
+	constexpr size_t own = sizeof(item_list_live_frame) + 3 * sizeof(void *) +
+			       2 * sizeof(void *) + sizeof(int32_t *) + sizeof(int64_t *) +
+			       sizeof(uint64_t *) + sizeof(std::array<int16_t, 2> *) +
+			       sizeof(int16_t *) + sizeof(bool);
+	if (!in.owner.peak(own))
+	{
+		in.owner.in.result = player_snapshot_codec_result::allocation_failure;
+		return false;
+	}
+	item_list_live_frame frame(in.owner, own);
+	return in.vector(
+		items,
+		[&](player_item_snapshot &row)
+		{
+			if (!in.number(row.parent_index) || !in.number(row.equipment_slot) ||
+			    !in.number(row.object_uid) || !in.number(row.generated_key) ||
+			    !in.number(row.vnum) || !in.number(row.type) ||
+			    !in.number(row.string_mask) || !in.string(row.name) ||
+			    !in.string(row.short_description) || !in.string(row.description) ||
+			    !in.string(row.action_description))
+				return false;
+			for (int32_t &value : row.values)
+				if (!in.number(value))
+					return false;
+			for (int64_t &timer : row.timers)
+				if (!in.number(timer))
+					return false;
+			if (!in.number(row.wear_flags) || !in.number(row.extra_flags) ||
+			    !in.number(row.anti_flags) || !in.number(row.anti2_flags) ||
+			    !in.number(row.extra2_flags) || !in.number(row.weight) ||
+			    !in.number(row.material) || !in.number(row.cost) ||
+			    !in.number(row.condition) || !in.number(row.craftsmanship))
+				return false;
+			for (uint64_t &bitvector : row.bitvectors)
+				if (!in.number(bitvector))
+					return false;
+			for (auto &affect : row.affects)
+				for (int16_t &value : affect)
+					if (!in.number(value))
+						return false;
+			if (!in.vector(row.dynamic_affects,
+				       [&](auto &affect) {
+					       return in.number(affect.type) &&
+						      in.number(affect.data) &&
+						      in.number(affect.extra2);
+				       }))
+				return false;
+			return in.vector(row.extra_descriptions,
+					 [&](auto &description)
+					 {
+						 return in.string(description.keyword) &&
+							in.string(description.description) &&
+							in.boolean(description.spellbook) &&
+							in.vector(description.spell_ids,
+								  [&](int32_t &skill_id)
+								  { return in.number(skill_id); });
+					 });
+		},
+		true);
+}
+bool item_list_relationships(item_list_decode_workspace &owner)
+{
+	const auto &items = owner.items;
+	constexpr size_t own = sizeof(item_list_live_frame) + 3 * sizeof(void *) + sizeof(size_t) +
+			       sizeof(int32_t) + sizeof(bool);
+	if (!owner.peak(own))
+	{
+		owner.in.result = player_snapshot_codec_result::allocation_failure;
+		return false;
+	}
+	item_list_live_frame frame(owner, own);
+	size_t request = item_list_vector_frames + item_list_move_frames +
+			 item_list_size_constructor_frames +
+			 // Actual returned vector carrier for the fill constructor and
+			 // _Fill_initialize/uninit_fill_n_a/uninit_fill_n<true>, first/n/value,
+			 // val-copy, return iterator, tag and real fill_n source scopes.
+			 sizeof(std::vector<size_t>) + sizeof(size_t) +
+			 4 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(size_t) + sizeof(bool) +
+			 sizeof(char);
+	if (items.size() > SIZE_MAX / sizeof(size_t) ||
+	    !item_list_add(request, items.size() * sizeof(size_t)) || !owner.peak(request))
+	{
+		owner.in.result = player_snapshot_codec_result::allocation_failure;
+		return false;
+	}
+	owner.depths = std::vector<size_t>(items.size(), 1);
+	auto &depths = owner.depths;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const int32_t parent = items[index].parent_index;
+		if (parent < PLAYER_SNAPSHOT_NO_PARENT || parent >= static_cast<int32_t>(index))
+			return false;
+		if (parent >= 0)
+		{
+			depths[index] = depths[parent] + 1;
+			if (depths[index] > PLAYER_SNAPSHOT_MAX_DEPTH)
+				return false;
+		}
+	}
+	return true;
+}
+
+} // namespace
+
+// Complete original item-list wire decoder and relationship validation. The
+// authentic caller outer owns input, prior output and all other live owners;
+// this leaf owns each prospective request and all real simultaneous capacities.
+player_snapshot_codec_result player_item_snapshot_list_decode_bounded(
+	const uint8_t *encoded, size_t encoded_size, std::vector<player_item_snapshot> *items_out,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_item_heap_bytes) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)encoded;
+	(void)encoded_size;
+	(void)items_out;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	(void)retained_item_heap_bytes;
+	return player_snapshot_codec_result::limit_exceeded;
+#else
+	if (!encoded || !encoded_size || !items_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (encoded_size > PLAYER_SNAPSHOT_MAX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	constexpr size_t own = sizeof(item_list_live_frame) + sizeof(item_list_bounded_decoder) +
+			       5 * sizeof(void *) + 3 * sizeof(size_t) +
+			       sizeof(player_snapshot_codec_result) + sizeof(bool);
+	size_t initial = outer_live;
+	if (!reserve || !item_list_add(initial, sizeof(item_list_decode_workspace)) ||
+	    !item_list_add(initial, own) || !item_list_add(initial, item_list_nontrivial_frames) ||
+	    !reserve(initial, context))
+		return player_snapshot_codec_result::allocation_failure;
+	try
+	{
+		item_list_decode_workspace work{
+			{ encoded, encoded_size }, {}, {}, reserve, context, outer_live
+		};
+		item_list_live_frame frame(work, own);
+		item_list_bounded_decoder in{ work };
+		if (!item_list_decode_items(in, work.items))
+			return work.in.result;
+		if (work.in.offset != work.in.size)
+			return player_snapshot_codec_result::invalid_value;
+		if (!item_list_relationships(work))
+			return work.in.result == player_snapshot_codec_result::ok ?
+				       player_snapshot_codec_result::invalid_value :
+				       work.in.result;
+		if (!item_list_heap(work.items, work.transferred_heap) ||
+		    !work.peak(item_list_move_frames + item_list_nontrivial_frames))
+			return player_snapshot_codec_result::allocation_failure;
+		// Final genuine constant-time vector transfer is nonthrowing. No
+		// callback or allocation follows this strong-output commit.
+		*items_out = std::move(work.items);
+		if (retained_item_heap_bytes)
+			*retained_item_heap_bytes = work.transferred_heap;
+		return player_snapshot_codec_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+#endif
+}
