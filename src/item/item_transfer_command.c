@@ -5491,3 +5491,352 @@ bool item_transfer_payload_valid_bounded(const item_transfer_payload &payload, u
 		return false;
 	}
 }
+
+namespace
+{
+template <typename T, typename Comparator> constexpr size_t item_entity_sort_leaf_frames()
+{
+	// Same real GCC13 sort/partition/insertion/heap/copy/adjacent call scopes
+	// as UID sorting. Values and comparator carriers use their genuine types.
+	// Original key less/equal this-free argument/result scopes and revision
+	// lambda this/left/right/result plus its nested key less call.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+struct item_entity_construction_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *command = nullptr;
+	const std::vector<uint64_t> *roots = nullptr;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 10 * sizeof(void *) + 7 * sizeof(size_t) +
+					       4 * sizeof(bool) +
+					       5 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observation) ||
+		    !payload_clone_add(total, player_item_snapshot_copy_frame_bytes()))
+			return false;
+		if (command &&
+		    (!payload_clone_add(total, sizeof(*command)) ||
+		     !payload_clone_vector_heap(command->keys, false, total) ||
+		     !payload_clone_vector_heap(command->expected_revisions, false, total) ||
+		     !payload_clone_vector_heap(command->payload, false, total) ||
+		     !payload_clone_vector_heap(command->accounting_intent, false, total)))
+			return false;
+		if (roots && (!payload_clone_add(total, sizeof(*roots)) ||
+			      !payload_clone_vector_heap(*roots, false, total)))
+			return false;
+		if (outputs)
+		{
+			if (!payload_clone_add(total, sizeof(*outputs)) ||
+			    !payload_clone_vector_heap(*outputs, false, total))
+				return false;
+			for (const auto &item : *outputs)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if (!payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count) const noexcept
+	{
+		constexpr size_t own = 2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+		size_t request = payload_clone_vector_frames;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!payload_clone_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !payload_clone_add(request, next * sizeof(T)))
+				return false;
+		}
+		return payload_clone_add(request, own) && peak(request);
+	}
+	template <typename T> bool fresh(size_t count, size_t extra = 0) const noexcept
+	{
+		size_t request = payload_clone_vector_frames;
+		return count <= SIZE_MAX / sizeof(T) &&
+		       payload_clone_add(request, count * sizeof(T)) &&
+		       payload_clone_add(request, extra) &&
+		       payload_clone_add(request,
+					 sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		size_t levels = 0, remaining = count,
+		       request = item_entity_sort_leaf_frames<T, Comparator>();
+		while (remaining > 1)
+		{
+			remaining >>= 1;
+			++levels;
+		}
+		const size_t recursive =
+			3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator);
+		return 2 * levels + 1 <= SIZE_MAX / recursive &&
+		       payload_clone_add(request, (2 * levels + 1) * recursive) &&
+		       payload_clone_add(request,
+					 sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+};
+// unique/__unique first,last,comp,result plus __dest,++first; equality
+// wrapper and iterator/move assignment. erase/_M_erase and _M_erase_at_end
+// reference/iterator/return/count/destructor scopes, with genuine copy closure.
+constexpr size_t item_entity_unique_erase_frames =
+	14 * sizeof(void *) + 2 * sizeof(char) + 3 * sizeof(bool) + sizeof(std::ptrdiff_t) +
+	payload_clone_copy_frames + payload_clone_allocator_frames;
+bool item_entity_selected_roots_owned(const item_transfer_payload &payload,
+				      std::vector<uint64_t> *roots,
+				      item_entity_construction_budget &budget)
+{
+	if (!roots)
+		return false;
+	try
+	{
+		roots->clear();
+		if (!budget.fresh<uint64_t>(payload.item_count))
+			return false;
+		roots->reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			if (selected_root_for(payload, payload.items[index].item_uid) ==
+			    payload.items[index].item_uid)
+			{
+				if (!budget.growth(*roots, 1))
+					return false;
+				roots->push_back(payload.items[index].item_uid);
+			}
+		if (!budget.sort_frame<uint64_t, char>(roots->size()))
+			return false;
+		std::sort(roots->begin(), roots->end());
+		if (!budget.peak(item_entity_unique_erase_frames))
+			return false;
+		roots->erase(std::unique(roots->begin(), roots->end()), roots->end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !roots->empty();
+}
+
+bool item_entity_populate_owned(critical_command *command, const item_transfer_payload &payload,
+				item_entity_construction_budget &budget)
+{
+	critical_entity_key from_key = {}, to_key = {};
+	size_t admission_prefix = 0;
+	if (!command ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_owner_key_bounded(payload.from_owner, &from_key, budget.reserve, budget.context,
+				     admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_owner_key_bounded(payload.to_owner, &to_key, budget.reserve, budget.context,
+				     admission_prefix)))
+		return false;
+	if (!budget.fresh<critical_entity_key>(
+		    2, 2 * sizeof(critical_entity_key) +
+			       sizeof(std::initializer_list<critical_entity_key>) +
+			       2 * sizeof(void *)))
+		return false;
+	command->keys = { from_key, to_key };
+	if (!budget.fresh<critical_expected_revision>(
+		    2, 2 * sizeof(critical_expected_revision) +
+			       sizeof(std::initializer_list<critical_expected_revision>) +
+			       2 * sizeof(void *)))
+		return false;
+	command->expected_revisions = { { from_key, payload.expected_from_revision },
+					{ to_key, payload.expected_to_revision } };
+	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
+	{
+		if (payload.expected_from_revision != payload.expected_to_revision)
+			return false;
+		command->keys.pop_back();
+		command->expected_revisions.pop_back();
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		critical_entity_key item_key = { critical_entity_type::item,
+						 payload.items[index].item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(item_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ item_key, payload.items[index].expected_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		critical_entity_key parent_key = { critical_entity_type::item,
+						   payload.target_parent_item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(parent_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ parent_key, payload.expected_target_parent_revision });
+	}
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>) + 4 * sizeof(void *) +
+				 sizeof(std::allocator<player_item_snapshot>)))
+			return false;
+		std::vector<player_item_snapshot> outputs;
+		budget.outputs = &outputs;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_craft_outputs_decode_bounded(payload, &outputs, budget.reserve,
+								 budget.context, admission_prefix,
+								 nullptr)))
+			return false;
+		for (const player_item_snapshot &output : outputs)
+		{
+			const critical_entity_key output_key = { critical_entity_type::item,
+								 output.object_uid };
+			if (!budget.growth(command->keys, 1))
+				return false;
+			command->keys.push_back(output_key);
+			if (!budget.growth(command->expected_revisions, 1))
+				return false;
+			command->expected_revisions.push_back(
+				{ output_key, ITEM_TRANSFER_ABSENT_REVISION });
+		}
+		budget.outputs = nullptr;
+	}
+	if (payload.collector.present)
+	{
+		const critical_entity_key catalog_key = { critical_entity_type::collector,
+							  COLLECTOR_CATALOG_KEY };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(catalog_key);
+		// The SQL repository takes the current catalog row lock before any item
+		// lock; zero is a serialization key, not an optimistic catalog fence.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ catalog_key, 0 });
+	}
+	if (payload.native_recovery.present &&
+	    payload.native_mobile.action == item_native_mobile_action::consumption &&
+	    !payload.native_cost.fee_only)
+	{
+		const critical_entity_key giver_key = { critical_entity_type::player,
+							payload.native_recovery.player_pid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(giver_key);
+		// A serialization key only; the acknowledged save fence remains distinct
+		// from a player custody-owner revision and is checked by the original root.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ giver_key, 0 });
+	}
+	if (payload.native_recovery.present && command->keys.size() > CRITICAL_COMMAND_MAX_KEYS)
+		return false;
+	if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+		    command->keys.size()))
+		return false;
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
+			       critical_entity_key_equal) != command->keys.end())
+		return false;
+	if (!budget.sort_frame<critical_expected_revision, char>(
+		    command->expected_revisions.size()))
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  [](const critical_expected_revision &left,
+		     const critical_expected_revision &right)
+		  { return critical_entity_key_less(left.key, right.key); });
+	return true;
+}
+} // namespace
+bool item_transfer_selected_roots_bounded(const item_transfer_payload &payload,
+					  std::vector<uint64_t> *roots,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept
+{
+	if (!roots || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = 8 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(bool) +
+				  item_payload_validation_pure_frames +
+				  item_continuation_lower_bound_frames +
+				  payload_clone_vector_frames + payload_clone_move_frames;
+	item_entity_construction_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(std::vector<uint64_t>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<uint64_t>)))
+		return false;
+	try
+	{
+		std::vector<uint64_t> candidate;
+		budget.roots = &candidate;
+		if (!item_entity_selected_roots_owned(payload, &candidate, budget) ||
+		    !budget.peak(payload_clone_move_frames))
+			return false;
+		*roots = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_command_entities_bounded(critical_command *command,
+					    const item_transfer_payload &payload,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		8 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+		// Original from/to/item/parent/output/catalog/giver key declarations,
+		// actual expected-revision aggregate argument temporary and loop refs.
+		7 * sizeof(critical_entity_key) + sizeof(critical_expected_revision) +
+		4 * sizeof(void *) + sizeof(size_t) + item_payload_validation_pure_frames +
+		payload_clone_vector_frames + 2 * payload_clone_move_frames;
+	item_entity_construction_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command) +
+			 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))))
+		return false;
+	try
+	{
+		// Only original entity vectors are populated; authentic existing command
+		// payload/accounting/scalars stay untouched and caller-owned throughout.
+		critical_command candidate = {};
+		budget.command = &candidate;
+		if (!item_entity_populate_owned(&candidate, payload, budget) ||
+		    !budget.peak(2 * payload_clone_move_frames))
+			return false;
+		command->keys = std::move(candidate.keys);
+		command->expected_revisions = std::move(candidate.expected_revisions);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
