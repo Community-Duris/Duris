@@ -61,4 +61,19 @@ bool auction_recovery_successor_valid(const critical_native_recovery_envelope &,
 bool auction_recovery_publication_context_valid(const critical_native_recovery_envelope &,
 						const critical_completion &) noexcept;
 bool auction_recovery_terminal_valid(const critical_native_recovery_envelope &) noexcept;
+
+size_t auction_recovery_shape_source_frame_bytes() noexcept;
+size_t auction_recovery_wire_source_frame_bytes() noexcept;
+player_snapshot_codec_result
+auction_recovery_context_encode_bounded(const critical_command &, const auction_recovery_context &,
+					std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+					void *, size_t) noexcept;
+player_snapshot_codec_result
+auction_recovery_context_decode_bounded(const critical_command &, std::span<const uint8_t>,
+					auction_recovery_context *,
+					bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool auction_recovery_envelope_valid_bounded(const critical_native_recovery_envelope &,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
+
 #endif

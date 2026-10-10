@@ -42,6 +42,7 @@
 #include "magic/spells.h"
 
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <cerrno>
 #include <chrono>
@@ -51,6 +52,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -9647,4 +9649,1596 @@ bool item_movement_transaction_restore_replayed_command_bounded(
 		budget.peak();
 	(void)current;
 	return completed;
+}
+
+// Additive pure native-quest ownership census. No budget hook, decoder, reserve,
+// pipeline lock or authority predicate is called; game-thread exclusion is real.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+
+bool nq_item_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	bytes += extra;
+	return true;
+}
+bool nq_item_rows(size_t &bytes, size_t count, size_t width) noexcept
+{
+	if (width && count > SIZE_MAX / width)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	return nq_item_add(bytes, count * width);
+}
+bool nq_item_text(size_t &bytes, const std::string &value) noexcept
+{
+	// GNU13 C++11 ABI basic_string keeps capacities <=15 in its inline buffer.
+	if (value.capacity() == SIZE_MAX)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	return value.capacity() <= 15 || nq_item_add(bytes, value.capacity() + 1);
+}
+bool nq_item_command(size_t &bytes, const critical_command &value) noexcept
+{
+	size_t heap = 0;
+	return critical_command_current_heap_bytes(value, &heap) && nq_item_add(bytes, heap);
+}
+bool nq_item_envelope(size_t &bytes, const critical_native_recovery_envelope *value) noexcept
+{
+	return !value ||
+	       (nq_item_add(bytes, sizeof(*value)) && nq_item_command(bytes, value->command) &&
+		nq_item_rows(bytes, value->attachment.capacity(), sizeof(uint8_t)));
+}
+template <class Table> bool nq_item_table(size_t &bytes, const Table &table) noexcept
+{
+	// Actual default GNU13 unordered_map node type: its hash cache policy is
+	// selected by the real key/hash instantiation, not a guessed node overhead.
+	using node = std::__detail::_Hash_node<
+		typename Table::value_type,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	// These original tables use default allocators. GNU13's sole bucket is
+	// inline; a real allocated bucket array has at least two prime-policy buckets.
+	if (!table.bucket_count())
+	{
+		errno = EIO;
+		return false;
+	}
+	return nq_item_add(bytes, sizeof(table)) &&
+	       (table.bucket_count() <= 1 ||
+		nq_item_rows(bytes, table.bucket_count(),
+			     sizeof(std::__detail::_Hash_node_base *))) &&
+	       nq_item_rows(bytes, table.size(), sizeof(node));
+}
+#ifndef __NO_MYSQL__
+bool nq_item_terms(size_t &bytes, const quest_reward_continuation &terms) noexcept
+{
+	// All other continuation fields are fixed members of the owning object.
+	return nq_item_text(bytes, terms.character_name) &&
+	       nq_item_text(bytes, terms.definition_id);
+}
+#endif
+
+bool nq_item_pending_command(const critical_command *command) noexcept
+{
+	for (const auto &[key, value] : pending)
+		if (value.live_drop_command.get() == command || value.held_command.get() == command)
+			return true;
+	return false;
+}
+bool nq_item_command_seen(const critical_command *command,
+			  const native_quest_acceptance_preparation &current,
+			  bool publication_command) noexcept
+{
+	if (nq_item_pending_command(command))
+		return true;
+	for (const auto &[key, entry] : native_quest_acceptances)
+	{
+		if (&entry == &current)
+			return publication_command && entry.command.get() == command;
+		if (entry.command.get() == command)
+			return true;
+		if (entry.publication)
+		{
+			if (entry.publication->command.get() == command)
+				return true;
+		}
+	}
+	return false;
+}
+bool nq_item_shared_command(size_t &bytes, const std::shared_ptr<const critical_command> &command,
+			    const native_quest_acceptance_preparation &current,
+			    bool publication_command) noexcept
+{
+	return !command || nq_item_command_seen(command.get(), current, publication_command) ||
+	       (nq_item_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+								       std::allocator<void>,
+								       __gnu_cxx::_S_atomic>)) &&
+		nq_item_command(bytes, *command));
+}
+bool nq_item_forest(size_t &bytes, const std::vector<player_item_snapshot> &forest) noexcept
+{
+	if (!nq_item_rows(bytes, forest.capacity(), sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &row : forest)
+	{
+		size_t heap = 0;
+		if (!player_item_snapshot_current_heap_bytes(row, &heap) ||
+		    !nq_item_add(bytes, heap))
+			return false;
+	}
+	return true;
+}
+bool nq_item_publication(size_t &bytes, const native_quest_publication_state &state) noexcept
+{
+	size_t heap = 0;
+	if (!nq_item_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<native_quest_publication_state,
+								    std::allocator<void>,
+								    __gnu_cxx::_S_atomic>)) ||
+	    !item_transfer_payload_current_heap_bytes(state.payload, &heap) ||
+	    !nq_item_add(bytes, heap) || !nq_item_text(bytes, state.recovery_key) ||
+	    !nq_item_rows(bytes, state.root_stages.capacity(), sizeof(uint8_t)) ||
+	    !nq_item_forest(bytes, state.native_before) ||
+	    !nq_item_forest(bytes, state.native_after) ||
+	    !nq_item_forest(bytes, state.player_before) ||
+	    !nq_item_forest(bytes, state.player_after) || !nq_item_forest(bytes, state.selected) ||
+	    !nq_item_envelope(bytes, state.recovery.get()) ||
+	    !nq_item_envelope(bytes, state.recovery_pending.get()) ||
+	    !nq_item_envelope(bytes, state.recovery_return.get()))
+		return false;
+#ifndef __NO_MYSQL__
+	if (state.reward &&
+	    (!nq_item_rows(bytes, state.reward->continuation.capacity(), sizeof(uint8_t)) ||
+	     !nq_item_terms(bytes, state.reward->terms)))
+		return false;
+#endif
+	return true;
+}
+bool nq_item_capture(size_t &bytes, const quest_native_consumption_capture &capture) noexcept
+{
+	// quest.c constructs this exact shared_ptr from new capture, with a
+	// separately allocated _Sp_counted_ptr control block (not make_shared).
+	return nq_item_add(bytes, sizeof(capture)) &&
+	       nq_item_add(bytes, sizeof(std::_Sp_counted_ptr<quest_native_consumption_capture *,
+							      __gnu_cxx::_S_atomic>)) &&
+	       nq_item_command(bytes, capture.original_command()) &&
+	       nq_item_rows(bytes, capture.consumed_root_order().capacity(), sizeof(uint64_t)) &&
+	       nq_item_text(bytes, capture.publication_terms().message) &&
+	       nq_item_text(bytes, capture.publication_terms().disappear_message);
+}
+#endif
+}
+
+bool item_native_quest_retained_command_allocation_owned(const critical_command *command,
+							 bool *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)command;
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (__gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	bool owned = false;
+	if (command)
+	{
+		owned = nq_item_pending_command(command);
+		for (const auto &[key, entry] : native_quest_acceptances)
+			owned = owned || entry.command.get() == command ||
+				(entry.publication && entry.publication->command.get() == command);
+	}
+	*output = owned;
+	return true;
+#endif
+}
+
+bool item_native_quest_retained_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (__gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const int saved_errno = errno;
+	errno = 0;
+	size_t bytes =
+		sizeof(native_quest_preparation_generation) +
+		sizeof(native_quest_gameplay_retained_bytes) +
+		sizeof(native_quest_birth_retained_bytes) +
+		sizeof(native_quest_flat_global_observer) + sizeof(native_quest_flat_global_scope) +
+		sizeof(native_quest_flat_literal_pool_owned) +
+		sizeof(native_quest_coordinator_observer) +
+		sizeof(native_quest_coordinator_reserve) + sizeof(native_quest_coordinator_lender) +
+		sizeof(native_quest_coordinator_guard) +
+		sizeof(native_quest_coordinator_borrowed_bytes);
+	if (!nq_item_table(bytes, native_quest_acceptances))
+		return false;
+	for (const auto &[key, entry] : native_quest_acceptances)
+	{
+		if (!nq_item_text(bytes, key) ||
+		    !nq_item_rows(bytes, entry.native_before.capacity(), sizeof(uint8_t)) ||
+		    !nq_item_envelope(bytes, entry.restored_original.get()) ||
+		    !nq_item_shared_command(bytes, entry.command, entry, false) ||
+		    (entry.publication &&
+		     !nq_item_shared_command(bytes, entry.publication->command, entry, true)))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+		bool capture_seen = false, publication_seen = false;
+		for (const auto &[prior_key, prior] : native_quest_acceptances)
+		{
+			if (&prior == &entry)
+				break;
+			capture_seen = capture_seen ||
+				       prior.consumption.get() == entry.consumption.get();
+			publication_seen = publication_seen ||
+					   prior.publication.get() == entry.publication.get();
+		}
+		if ((entry.consumption && !capture_seen &&
+		     !nq_item_capture(bytes, *entry.consumption)) ||
+		    (entry.publication && !publication_seen &&
+		     !nq_item_publication(bytes, *entry.publication)))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+	}
+	*output = bytes;
+	errno = saved_errno;
+	return true;
+#endif
+}
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(__NO_MYSQL__)
+namespace
+{
+struct held_native_item_replay_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	player_save_coin_replay_budget_scope_owner *scope;
+	size_t outer, frames;
+	bool held;
+	const item_transfer_payload *payload = nullptr;
+	const pending_movement *entry = nullptr;
+	const held_retirement_recovery *held_context = nullptr;
+	const std::string *key = nullptr;
+	const std::vector<uint8_t> *wire[2]{};
+	const native_quest_publication_state *native_state = nullptr;
+	const native_quest_acceptance_preparation *native_entry = nullptr;
+	const native_quest_recovery_context *native_context = nullptr;
+	bool current(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		size_t owner = 0, heap = 0;
+		bytes = outer;
+		if (!(held ? item_movement_transaction_replay_current_storage_bytes(&owner) :
+			     item_native_quest_retained_storage_bytes(&owner)) ||
+		    !item_replay_add(bytes, owner) ||
+		    !player_save_native_recovery_replay_owner::current_storage_bytes(*scope,
+										     &owner) ||
+		    !item_replay_add(bytes, owner) || !item_replay_add(bytes, frames) ||
+		    !item_replay_add(bytes, extra))
+			return false;
+		for (const auto *value : { payload, entry ? &entry->payload : nullptr })
+			if (value && (!item_transfer_payload_current_heap_bytes(*value, &heap) ||
+				      !item_replay_add(bytes, heap)))
+				return false;
+		if (held_context && (!nq_item_forest(bytes, held_context->before) ||
+				     !nq_item_forest(bytes, held_context->after)))
+			return false;
+		if (key && !nq_item_text(bytes, *key))
+			return false;
+		if (entry && entry->held_command &&
+		    (!item_replay_add(bytes,
+				      sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+									  std::allocator<void>,
+									  __gnu_cxx::_S_atomic>)) ||
+		     !item_replay_command_heap(*entry->held_command, bytes)))
+			return false;
+		if (native_context &&
+		    (!native_quest_recovery_context_current_heap_bytes(*native_context, &heap) ||
+		     !item_replay_add(bytes, heap)))
+			return false;
+		if (native_state &&
+		    (!nq_item_publication(bytes, *native_state) ||
+		     (native_state->command &&
+		      (!item_replay_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<
+						       const critical_command, std::allocator<void>,
+						       __gnu_cxx::_S_atomic>)) ||
+		       !item_replay_command_heap(*native_state->command, bytes)))))
+			return false;
+		if (native_entry &&
+		    (!nq_item_envelope(bytes, native_entry->restored_original.get()) ||
+		     !item_replay_add(bytes, native_entry->native_before.capacity())))
+			return false;
+		for (const auto *value : wire)
+			if (value && !item_replay_add(bytes, value->capacity()))
+				return false;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return reserve && current(bytes, extra) && reserve(bytes, context);
+	}
+	bool request(size_t bytes, size_t source) const noexcept
+	{
+		return item_replay_add(bytes, source) && peak(bytes);
+	}
+
+	// Admit the genuine codec query before querying it, then only prospective
+	// initial physical objects plus the returned source before entering it.
+	// The child CURRENT census owns actual inline objects after entry; these
+	// requests are transient and never become an additional retained baseline.
+	bool held_codec_entry() const noexcept
+	{
+		constexpr size_t query = held_retirement_codec_source_profile_query_frames();
+		size_t source = 0, entry = 0;
+		if (!peak(query))
+			return false;
+		source = held_retirement_codec_source_frame_bytes();
+		entry = held_retirement_codec_entry_inline_bytes();
+		return source && source != SIZE_MAX && entry && entry != SIZE_MAX &&
+		       request(entry, source);
+	}
+	bool native_codec_entry() const noexcept
+	{
+		constexpr size_t query = native_quest_recovery_codec_source_profile_query_frames();
+		size_t source = 0, entry = 0;
+		if (!peak(query))
+			return false;
+		source = native_quest_recovery_codec_source_frame_bytes();
+		entry = native_quest_recovery_codec_entry_inline_bytes();
+		return source && source != SIZE_MAX && entry && entry != SIZE_MAX &&
+		       request(entry, source);
+	}
+	static bool child(size_t extra, void *opaque) noexcept
+	{
+		return static_cast<held_native_item_replay_budget *>(opaque)->peak(extra);
+	}
+};
+}
+
+#endif
+bool item_native_recovery_replay_owner::restore_held(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *reserve_context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || defined(__NO_MYSQL__)
+	(void)envelope;
+	(void)scope;
+	(void)reserve;
+	(void)reserve_context;
+	(void)outer_live;
+	return false;
+#else
+	size_t frames = 0;
+	if (!restore_held_source_frames(&frames))
+		return false;
+	held_native_item_replay_budget budget{ reserve,	   reserve_context, &scope,
+					       outer_live, frames,	    true };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		lockpick_retirement_terms terms;
+		item_transfer_payload payload;
+		held_retirement_recovery context;
+		std::string key;
+		pending_movement entry{};
+		std::vector<uint8_t> before, after;
+		budget.payload = &payload;
+		budget.held_context = &context;
+		budget.key = &key;
+		budget.entry = &entry;
+		budget.wire[0] = &before;
+		budget.wire[1] = &after;
+		if (!envelope.revision ||
+		    envelope.phase != critical_native_recovery_phase::execution_pending ||
+		    !budget.held_codec_entry() ||
+		    !held_retirement_command_identity_bounded(envelope.command, &payload, &terms,
+							      held_native_item_replay_budget::child,
+							      &budget, 0) ||
+		    !budget.held_codec_entry() ||
+		    !held_retirement_recovery_decode_bounded(
+			    envelope.command, envelope.attachment, &context,
+			    held_native_item_replay_budget::child, &budget, 0) ||
+		    !budget.peak(envelope.command.operation_id.bytes.size() + 1 +
+				 item_replay_operation_key_frames))
+			return false;
+		key = operation_key(envelope.command.operation_id);
+		auto existing = pending.find(key);
+		if (existing != pending.end())
+		{
+			if (!existing->second.held_command ||
+			    critical_command_encode_bounded(*existing->second.held_command, &before,
+							    held_native_item_replay_budget::child,
+							    &budget, 0) !=
+				    critical_command_codec_result::ok ||
+			    critical_command_encode_bounded(
+				    envelope.command, &after, held_native_item_replay_budget::child,
+				    &budget, 0) != critical_command_codec_result::ok ||
+			    before != after)
+				return false;
+			return player_save_native_recovery_replay_owner::restore_held_checkpoint(
+				envelope, scope, held_native_item_replay_budget::child, &budget, 0);
+		}
+		if (pending.size() + native_quest_pending_count() >= ITEM_MOVEMENT_PENDING_MAX)
+			return false;
+		entry.actor_pid = terms.actor_pid;
+		size_t request = 0;
+		if (!item_transfer_payload_fresh_copy_request_bytes(payload, &request) ||
+		    !budget.peak(request))
+			return false;
+		entry.payload = payload;
+		entry.requested_to_owner = payload.to_owner;
+		entry.requested_reason = payload.reason;
+		entry.requested_reason_id = payload.reason_id;
+		entry.publication = lockpick_retirement_publication;
+		entry.context_size = payload.continuation.data.size();
+		std::copy(payload.continuation.data.begin(), payload.continuation.data.end(),
+			  entry.context.begin());
+		entry.publication_status = publication_state::ready;
+		entry.recovered_publication = true;
+		if (!critical_command_fresh_copy_request_bytes(envelope.command, &request) ||
+		    !item_replay_add(request,
+				     sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+									 std::allocator<void>,
+									 __gnu_cxx::_S_atomic>)) ||
+		    !budget.request(request, critical_command_copy_frame_bytes() +
+						     item_replay_allocator_frames))
+			return false;
+		entry.held_command = std::make_shared<const critical_command>(envelope.command);
+		size_t extra = 0;
+		if (!budget.peak(sizeof(std::__detail::_Prime_rehash_policy) +
+				 2 * sizeof(std::pair<bool, size_t>)) ||
+		    !pending.next_replay_insert_extra_peak(key, &extra) ||
+		    !item_replay_add(extra, item_replay_allocator_frames +
+						    item_replay_operation_key_frames +
+						    item_transfer_payload_copy_frame_bytes() +
+						    34 * sizeof(void *) + 19 * sizeof(size_t) +
+						    5 * sizeof(bool)) ||
+		    !budget.peak(extra))
+			return false;
+		const auto inserted = pending.emplace(key, std::move(entry));
+		if (!inserted.second)
+			return false;
+		// Ownership really transferred into CURRENT. The relay must not keep the
+		// moved candidate's resources in a second retained partition.
+		budget.entry = nullptr;
+		if (!player_save_native_recovery_replay_owner::restore_held_checkpoint(
+			    envelope, scope, held_native_item_replay_budget::child, &budget, 0))
+		{
+			pending.erase(inserted.first);
+			return false;
+		}
+		account_health();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(__NO_MYSQL__)
+namespace
+{
+bool native_item_forest_copy_bounded(const std::vector<player_item_snapshot> &source,
+				     std::vector<player_item_snapshot> *destination,
+				     held_native_item_replay_budget &budget)
+{
+	size_t request = 0, heap = 0;
+	if (source.size() > SIZE_MAX / sizeof(player_item_snapshot) ||
+	    !item_replay_add(request, source.size() * sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &row : source)
+		if (!player_item_snapshot_fresh_copy_request_bytes(row, &heap) ||
+		    !item_replay_add(request, heap))
+			return false;
+	if (!budget.request(request,
+			    player_item_snapshot_copy_frame_bytes() + item_replay_allocator_frames))
+		return false;
+	*destination = source;
+	return true;
+}
+bool native_item_envelope_copy_request(const critical_native_recovery_envelope &envelope,
+				       size_t &bytes) noexcept
+{
+	return critical_command_fresh_copy_request_bytes(envelope.command, &bytes) &&
+	       item_replay_add(bytes, sizeof(envelope)) &&
+	       item_replay_add(bytes, envelope.attachment.size());
+}
+bool native_item_envelope_equal_bounded(const critical_native_recovery_envelope &a,
+					const critical_native_recovery_envelope &b,
+					held_native_item_replay_budget &budget)
+{
+	if (a.revision != b.revision || a.phase != b.phase || a.attachment != b.attachment)
+		return false;
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>) + 10 * sizeof(void *) +
+			 5 * sizeof(size_t) + 3 * sizeof(bool)))
+		return false;
+	// Parent budget's two wire buffers own the same original comparison
+	// outputs. No canonical shortcut drops any command wire field.
+	std::vector<uint8_t> left, right;
+	struct relay
+	{
+		held_native_item_replay_budget *budget;
+		const std::vector<uint8_t> *left, *right;
+		static bool child(size_t extra, void *opaque) noexcept
+		{
+			const auto &self = *static_cast<relay *>(opaque);
+			size_t bytes = extra;
+			return item_replay_add(bytes, self.left->capacity()) &&
+			       item_replay_add(bytes, self.right->capacity()) &&
+			       self.budget->request(
+				       bytes, sizeof(relay) + 2 * sizeof(std::vector<uint8_t>) +
+						      7 * sizeof(void *) + 5 * sizeof(size_t) +
+						      3 * sizeof(bool));
+		}
+	} state{ &budget, &left, &right };
+	return critical_command_encode_bounded(a.command, &left, relay::child, &state, 0) ==
+		       critical_command_codec_result::ok &&
+	       critical_command_encode_bounded(b.command, &right, relay::child, &state, 0) ==
+		       critical_command_codec_result::ok &&
+	       left == right;
+}
+}
+#endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(__NO_MYSQL__)
+namespace
+{
+struct native_item_same_items_replay_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<player_item_snapshot> *copy;
+	const std::vector<uint8_t> *a, *b;
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = outer;
+		if (!item_replay_add(bytes, frames) || !item_replay_add(bytes, extra))
+			return false;
+		if (copy && !nq_item_forest(bytes, *copy))
+			return false;
+		if (a && !item_replay_add(bytes, a->capacity()))
+			return false;
+		if (b && !item_replay_add(bytes, b->capacity()))
+			return false;
+		return reserve && reserve(bytes, context);
+	}
+	static bool child(size_t extra, void *opaque) noexcept
+	{
+		return static_cast<native_item_same_items_replay_budget *>(opaque)->peak(extra);
+	}
+};
+bool native_item_same_items_bounded(const std::vector<player_item_snapshot> &actual,
+				    std::span<const player_item_snapshot> expected,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer_live)
+{
+	native_item_same_items_replay_budget state{
+		reserve,
+		context,
+		outer_live,
+		sizeof(native_item_same_items_replay_budget) +
+			sizeof(std::vector<player_item_snapshot>) +
+			2 * sizeof(std::vector<uint8_t>) + sizeof(expected) + 10 * sizeof(void *) +
+			8 * sizeof(size_t) + 5 * sizeof(bool) +
+			2 * sizeof(player_snapshot_codec_result) +
+			player_item_snapshot_copy_frame_bytes() + item_replay_allocator_frames,
+		nullptr,
+		nullptr,
+		nullptr
+	};
+	if (!state.peak())
+		return false;
+	size_t request = 0, heap = 0;
+	if (expected.size() > SIZE_MAX / sizeof(player_item_snapshot) ||
+	    !item_replay_add(request, expected.size() * sizeof(player_item_snapshot)))
+		return false;
+	for (const auto &row : expected)
+		if (!player_item_snapshot_fresh_copy_request_bytes(row, &heap) ||
+		    !item_replay_add(request, heap))
+			return false;
+	if (!state.peak(request))
+		return false;
+	// Keep the complete original contiguous COPY, two full encoders and byte
+	// equality. Scalar/pointer comparison is not a substitute for this proof.
+	std::vector<player_item_snapshot> copy(expected.begin(), expected.end());
+	std::vector<uint8_t> a, b;
+	state.copy = &copy;
+	state.a = &a;
+	state.b = &b;
+	return player_item_snapshot_list_encode_bounded(
+		       actual, &a, native_item_same_items_replay_budget::child, &state, 0) ==
+		       player_snapshot_codec_result::ok &&
+	       player_item_snapshot_list_encode_bounded(
+		       copy, &b, native_item_same_items_replay_budget::child, &state, 0) ==
+		       player_snapshot_codec_result::ok &&
+	       a == b;
+}
+}
+#endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(__NO_MYSQL__)
+namespace
+{
+bool native_quest_restore_values_bounded(native_quest_publication_state &state,
+					 const critical_native_recovery_envelope &envelope,
+					 native_quest_recovery_context &context,
+					 held_native_item_replay_budget &budget)
+{
+	if (!envelope.revision ||
+	    !item_transfer_command_decode_payload_bounded(envelope.command, &state.payload,
+							  held_native_item_replay_budget::child,
+							  &budget, 0) ||
+	    !item_transfer_native_mobile_recovery_shape_valid_bounded(
+		    state.payload, held_native_item_replay_budget::child, &budget, 0) ||
+	    !budget.native_codec_entry() ||
+	    native_quest_recovery_context_decode_bounded(
+		    envelope.command, envelope.attachment, &context,
+		    held_native_item_replay_budget::child, &budget,
+		    0) != player_snapshot_codec_result::ok ||
+	    (!state.payload.native_money.present && !state.payload.native_cost.fee_only &&
+	     player_item_snapshot_list_decode_bounded(
+		     state.payload.item_blob.data(), state.payload.item_blob_size, &state.selected,
+		     held_native_item_replay_budget::child, &budget,
+		     0) != player_snapshot_codec_result::ok))
+		return false;
+	if (!native_item_forest_copy_bounded(context.native_before, &state.native_before, budget))
+		return false;
+	if (!native_item_forest_copy_bounded(context.player_before, &state.player_before, budget))
+		return false;
+	if (state.payload.native_money.present || state.payload.native_cost.fee_only)
+	{
+		if (!native_item_forest_copy_bounded(state.native_before, &state.native_after,
+						     budget))
+			return false;
+		if (!native_item_forest_copy_bounded(state.player_before, &state.player_after,
+						     budget))
+			return false;
+	}
+	else if (quest_mobile_native_items_transition_bounded(
+			 state.native_before, state.payload.native_mobile.reference, state.payload,
+			 &state.native_after, held_native_item_replay_budget::child, &budget,
+			 0) != player_snapshot_codec_result::ok)
+		return false;
+	if (!state.payload.native_money.present && !state.payload.native_cost.fee_only &&
+	    state.payload.native_mobile.action == item_native_mobile_action::acceptance)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>) +
+				 player_item_snapshot_copy_frame_bytes()))
+			return false;
+		std::vector<player_item_snapshot> selected;
+		struct selected_relay
+		{
+			held_native_item_replay_budget *budget;
+			const std::vector<player_item_snapshot> *selected;
+			static bool child(size_t extra, void *opaque) noexcept
+			{
+				auto &self = *static_cast<selected_relay *>(opaque);
+				size_t bytes = extra;
+				return nq_item_forest(bytes, *self.selected) &&
+				       self.budget->request(
+					       bytes,
+					       sizeof(selected_relay) +
+						       sizeof(std::vector<player_item_snapshot>) +
+						       5 * sizeof(void *) + 3 * sizeof(size_t) +
+						       2 * sizeof(bool));
+			}
+		} relay{ &budget, &selected };
+		if (player_item_snapshot_extract_subtree_bounded(
+			    state.player_before, item_transfer_result_root(state.payload),
+			    &selected, &state.player_after, selected_relay::child, &relay,
+			    0) != player_snapshot_codec_result::ok ||
+		    !native_item_same_items_bounded(selected, state.selected, selected_relay::child,
+						    &relay, 0))
+			return false;
+	}
+	else if (!native_item_forest_copy_bounded(state.player_before, &state.player_after, budget))
+		return false;
+	state.player_pid = state.payload.native_recovery.player_pid;
+	if (!budget.request(context.consumed_root_steps.size(), item_replay_allocator_frames))
+		return false;
+	state.root_stages = context.consumed_root_steps;
+	state.give_messages = context.give_messages;
+	state.detach_started = context.publication_steps[0] != 0;
+	state.detach_returned = context.publication_steps[0] == 2;
+	state.place_started = context.publication_steps[1] != 0;
+	state.place_returned = context.publication_steps[1] == 2;
+	state.registry_started = context.publication_steps[2] != 0;
+	state.registry_returned = context.publication_steps[2] == 2;
+	state.binding_started = context.publication_steps[3] != 0;
+	state.binding_returned = context.publication_steps[3] == 2;
+	state.message_started = context.publication_steps[4] != 0;
+	state.message_returned = context.publication_steps[4] == 2;
+	state.recovery_receipt_durable = context.receipt.present &&
+					 context.publication_stage !=
+						 native_quest_recovery_publication_stage::captured;
+	state.recovery_physically_proven =
+		context.publication_stage ==
+		native_quest_recovery_publication_stage::physically_proven;
+	return true;
+}
+}
+#endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(__NO_MYSQL__)
+namespace
+{
+bool native_item_next_registry_peak(const std::string &key, size_t *output) noexcept
+{
+	if (!output || native_quest_acceptances.size() == SIZE_MAX || key.size() == SIZE_MAX)
+		return false;
+	using table_type = decltype(native_quest_acceptances);
+	using node =
+		std::__detail::_Hash_node<typename table_type::value_type,
+					  std::__cache_default<typename table_type::key_type,
+							       typename table_type::hasher>::value>;
+	const float load = native_quest_acceptances.max_load_factor();
+	if (!(load > 0))
+		return false;
+	std::__detail::_Prime_rehash_policy policy(load);
+	const size_t goal = policy._M_bkt_for_elements(native_quest_acceptances.size() + 1);
+	const size_t buckets = policy._M_next_bkt(goal);
+	size_t bytes = sizeof(node);
+	if (key.size() > 15 && !item_replay_add(bytes, key.size() + 1))
+		return false;
+	// Same default allocator and prime policy as actual reserve(n). Price its
+	// fresh bucket request only when rehash really changes the bucket count.
+	// CURRENT still retains the old allocation until original reserve frees it.
+	if (buckets != native_quest_acceptances.bucket_count() &&
+	    (buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+	     !item_replay_add(bytes, buckets * sizeof(std::__detail::_Hash_node_base *))))
+		return false;
+	if (!item_replay_add(
+		    bytes, sizeof(policy) + sizeof(float) + 8 * sizeof(size_t) +
+				   9 * sizeof(void *) + 4 * sizeof(bool) +
+				   item_replay_allocator_frames + item_replay_operation_key_frames +
+				   critical_command_copy_frame_bytes() + 34 * sizeof(void *) +
+				   19 * sizeof(size_t) + 5 * sizeof(bool)))
+		return false;
+	*output = bytes;
+	return true;
+}
+}
+#endif
+
+bool item_native_recovery_replay_owner::restore_execution(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *reserve_context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || defined(__NO_MYSQL__)
+	(void)envelope;
+	(void)scope;
+	(void)reserve;
+	(void)reserve_context;
+	(void)outer_live;
+	return false;
+#else
+	size_t frames = 0;
+	if (!restore_execution_source_frames(&frames))
+		return false;
+	held_native_item_replay_budget budget{ reserve,	   reserve_context, &scope,
+					       outer_live, frames,	    false };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		if (envelope.phase != critical_native_recovery_phase::execution_pending ||
+		    !envelope.revision)
+			return false;
+		if (!budget.peak(envelope.command.operation_id.bytes.size() + 1 +
+				 item_replay_operation_key_frames))
+			return false;
+		const std::string key = operation_key(envelope.command.operation_id);
+		budget.key = &key;
+		auto found = native_quest_acceptances.find(key);
+		if (found != native_quest_acceptances.end())
+			return found->second.restored_original &&
+			       native_item_envelope_equal_bounded(*found->second.restored_original,
+								  envelope, budget);
+		if (native_quest_preparation_generation == UINT64_MAX ||
+		    native_quest_pending_count() + pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+			return false;
+		if (!budget.peak(sizeof(std::_Sp_counted_ptr_inplace<native_quest_publication_state,
+								     std::allocator<void>,
+								     __gnu_cxx::_S_atomic>) +
+				 item_replay_allocator_frames))
+			return false;
+		auto state = std::make_shared<native_quest_publication_state>();
+		budget.native_state = state.get();
+		size_t request = 0;
+		if (!critical_command_fresh_copy_request_bytes(envelope.command, &request) ||
+		    !item_replay_add(request,
+				     sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+									 std::allocator<void>,
+									 __gnu_cxx::_S_atomic>)) ||
+		    !budget.request(request, critical_command_copy_frame_bytes() +
+						     item_replay_allocator_frames))
+			return false;
+		state->command = std::make_shared<const critical_command>(envelope.command);
+		if (!budget.peak((key.size() > 15 ? key.size() + 1 : 0) +
+				 item_replay_operation_key_frames))
+			return false;
+		state->recovery_key = key;
+		native_quest_recovery_context context;
+		budget.native_context = &context;
+		if (!native_quest_restore_values_bounded(*state, envelope, context, budget))
+			return false;
+		state->restored = true;
+		state->prepared = true;
+		if (!native_item_envelope_copy_request(envelope, request) ||
+		    !budget.request(request, critical_command_copy_frame_bytes() +
+						     item_replay_allocator_frames))
+			return false;
+		state->recovery = std::make_unique<critical_native_recovery_envelope>(envelope);
+		state->recovery_bytes = sizeof(envelope) + CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+					state->recovery->attachment.capacity();
+		native_quest_acceptance_preparation entry;
+		budget.native_entry = &entry;
+		entry.generation = native_quest_preparation_generation + 1;
+		state->generation = entry.generation;
+		entry.player.pid = static_cast<int32_t>(state->player_pid);
+		entry.money_only = state->payload.native_money.present;
+		entry.player.money_only = entry.money_only;
+		if (entry.money_only)
+		{
+			entry.money_projection = state->payload.native_money.projection;
+			entry.money_original_room_vnum =
+				state->payload.native_money.original_room_vnum;
+			entry.money_player_wallet_mapping_id =
+				state->payload.native_money.player_wallet_mapping_id;
+		}
+		entry.root_uid = item_transfer_result_root(state->payload);
+		entry.reference = state->payload.native_mobile.reference;
+		entry.command = state->command;
+		entry.submission_started = true;
+		if (!native_item_envelope_copy_request(envelope, request) ||
+		    !budget.request(request, critical_command_copy_frame_bytes() +
+						     item_replay_allocator_frames))
+			return false;
+		entry.restored_original =
+			std::make_unique<critical_native_recovery_envelope>(envelope);
+		if (player_item_snapshot_list_encode_bounded(
+			    state->native_before, &entry.native_before,
+			    held_native_item_replay_budget::child, &budget,
+			    0) != player_snapshot_codec_result::ok)
+			return false;
+		entry.publication_bytes = native_quest_restore_bytes(*state);
+		const size_t extra_record = sizeof(envelope) + CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+					    entry.restored_original->attachment.capacity();
+		if (entry.publication_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+		    extra_record > PLAYER_SAVE_PIPELINE_MAX_BYTES - entry.publication_bytes)
+			return false;
+		entry.publication_bytes += extra_record;
+		if (entry.native_before.capacity() >
+			    PLAYER_SAVE_PIPELINE_MAX_BYTES - entry.publication_bytes ||
+		    2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES >
+			    PLAYER_SAVE_PIPELINE_MAX_BYTES - entry.publication_bytes -
+				    entry.native_before.capacity() ||
+		    !native_quest_preparation_capacity(entry.publication_bytes +
+						       entry.native_before.capacity() +
+						       2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+			return false;
+		entry.publication = state;
+		if (!native_item_next_registry_peak(key, &request) || !budget.peak(request))
+			return false;
+		native_quest_acceptances.reserve(native_quest_acceptances.size() + 1);
+		auto installed = native_quest_acceptances.emplace(key, std::move(entry));
+		if (!installed.second)
+			return false;
+		budget.native_entry = nullptr;
+		budget.native_state = nullptr;
+		// Every allocation/domain reservation precedes the original PID hold.
+		// A refused hold removes only this unadmitted in-memory candidate.
+		if (!player_save_native_recovery_replay_owner::restore_native_checkpoint(
+			    envelope, scope, held_native_item_replay_budget::child, &budget, 0))
+		{
+			native_quest_acceptances.erase(installed.first);
+			return false;
+		}
+		installed.first->second.player_held = true;
+		native_quest_preparation_generation = state->generation;
+		return true; // No completion, runtime binding, or native effect is claimed.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool item_native_recovery_replay_owner::restore_continuation(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Phase classification belongs to the actual original recovery envelope.
+	// World quest, with its complete original branch/child progress, owns this
+	// continuation. Item-native acceptances and ordinary pending stay foreign.
+	if (envelope.phase != critical_native_recovery_phase::continuation_pending)
+		return false;
+	size_t outer = outer_live;
+	if (!item_replay_add(outer, 5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool)))
+		return false;
+	return quest_native_frozen_continuation_owner::restore_bounded(envelope, scope, reserve,
+								       context, outer);
+}
+
+bool item_native_quest_gameplay_publication_owner::restore_budget_bounded(
+	size_t bytes, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	// Preserve the complete original domain capacity law and its scalar only
+	// update. Actual ROOT must retain the existing authentic coordinator lender
+	// while its coordinator lock is held; this companion adds no such authority.
+	size_t source = outer_live;
+	size_t frames = 0;
+	if (!item_native_quest_restore_budget_source_frames(&frames))
+		return false;
+	if (!reserve || !item_replay_add(source, frames) || !reserve(source, context) ||
+	    !native_quest_preparation_capacity(bytes, false))
+		return false;
+	native_quest_gameplay_retained_bytes = bytes;
+	return true;
+}
+
+// Pure typed source companions for the original quest86 CURRENT graph. These
+// count source objects and call carriers, not retained heaps or emitted stack.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+template <class Table> constexpr size_t nq_item_current_range_frames() noexcept
+{
+	// Actual nonconst global range: range alias, begin/end iterator, structured
+	// pair/key/value aliases. Wrapper+hashtable begin/end each own this/iterator;
+	// _M_begin owns this/node; derived/base iterator constructors own this/node.
+	// Equality owns two iterator references and bool, ++ owns this/reference,
+	// _M_incr owns this, _M_next owns this/node. Dereference/_M_v/_M_valptr/
+	// aligned_buffer::_M_ptr/_M_addr each own this and returned reference/pointer.
+	return sizeof(void *) + 2 * sizeof(typename Table::iterator) + 3 * sizeof(void *) +
+	       4 * (sizeof(void *) + sizeof(typename Table::iterator)) + 2 * sizeof(void *) +
+	       4 * (2 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	       sizeof(void *) + 2 * sizeof(void *) + 5 * (2 * sizeof(void *));
+}
+constexpr size_t nq_item_current_thread_frames() noexcept
+{
+	// Genuine nevent game-thread predicate, thread::id/get_id/equality chain,
+	// native handle/result and the trivial by-value id cleanup source carriers.
+	return 3 * sizeof(std::thread::id) + 5 * sizeof(void *) +
+	       3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+}
+constexpr size_t nq_item_current_alias_frames() noexcept
+{
+	// Original public predicate command/output/owned/result; pending helper
+	// command/result and its actual loop; native loop and exact shared get,
+	// publication bool and operator->/_M_get/get chain. No command allocation.
+	return 2 * sizeof(void *) + 2 * sizeof(bool) + nq_item_current_thread_frames() +
+	       sizeof(void *) + sizeof(bool) + nq_item_current_range_frames<item_pending_table>() +
+	       2 * (2 * sizeof(void *)) +
+	       nq_item_current_range_frames<decltype(native_quest_acceptances)>() +
+	       2 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(bool) + 3 * (2 * sizeof(void *));
+}
+}
+#else
+}
+#endif
+
+bool item_native_quest_retained_command_allocation_owned_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = nq_item_current_alias_frames();
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_current_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t command = 0;
+	if (!critical_command_current_heap_observer_frame_bytes(&command))
+		return false;
+	// All terms below are actual source helper parameters/results/locals and
+	// actual named library getters. Sum static call sites conservatively; loop
+	// iterations do not multiply live source objects. Aggregates stay retained
+	// CURRENT owners and are not replaced by these allowances.
+	const size_t add = sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	const size_t rows = sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + add;
+	// string capacity/_M_is_local/_M_data/_M_local_data/pointer_to/addressof.
+	const size_t text = 2 * sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+			    11 * sizeof(void *) + sizeof(bool) + add;
+	const size_t cmd = 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + command + add;
+	// Four caller unique envelope get sites reach actual unique_ptr::get,
+	// __uniq_ptr_impl::_M_ptr, get<0>, __get_helper, _Tuple_impl::_M_head and
+	// _Head_base::_M_head. Each real scope owns its argument and pointer/ref
+	// result. This source closure is independent of direct shared_ptr::get.
+	const size_t unique_get = 6 * (2 * sizeof(void *));
+	const size_t envelope = 2 * sizeof(void *) + sizeof(bool) + add + cmd + rows +
+				sizeof(void *) + sizeof(size_t) + unique_get;
+	const size_t table = 2 * sizeof(void *) + sizeof(bool) +
+			     4 * (sizeof(void *) + sizeof(size_t)) + add + 2 * rows;
+	const size_t forest =
+		2 * sizeof(void *) + sizeof(bool) + rows + sizeof(void *) +
+		2 * sizeof(decltype(std::declval<const std::vector<player_item_snapshot> &>()
+					    .begin())) +
+		sizeof(void *) + sizeof(size_t) +
+		// vector begin/end: this/iterator-return, iterator ctor, base/get/incr/==.
+		// vector begin/end twice, normal iterator constructor twice,
+		// dereference, prefix increment, equality and its two base() calls.
+		2 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+		2 * sizeof(void *) + (2 * sizeof(void *) + sizeof(bool)) +
+		2 * (2 * sizeof(void *)) +
+		player_item_snapshot_current_heap_observer_frame_bytes() + add;
+	const size_t shared =
+		3 * sizeof(void *) + sizeof(bool) +
+		// get, bool, dereference and the complete same-table command-seen scan.
+		2 * sizeof(void *) + sizeof(void *) + sizeof(bool) + 3 * (2 * sizeof(void *)) +
+		nq_item_current_alias_frames() + 2 * sizeof(void *) + sizeof(bool) + add + cmd;
+	size_t bytes = sizeof(void *) + sizeof(bool) + sizeof(int) + sizeof(size_t) +
+		       2 * sizeof(bool) + nq_item_current_thread_frames() + table +
+		       2 * nq_item_current_range_frames<decltype(native_quest_acceptances)>() +
+		       text + rows + envelope + 2 * shared +
+		       // public loop shared control comparisons and bool/deref source calls.
+		       8 * (2 * sizeof(void *)) + 6 * (sizeof(void *) + sizeof(bool)) +
+		       // publication: bytes/state/heap/result, payload, recovery key, stages,
+		       // five forests, three independent envelopes and shared object deref.
+		       2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + add +
+		       item_transfer_payload_current_heap_observer_frame_bytes() + add + text +
+		       rows + 5 * forest + 3 * envelope +
+		       // capture: bytes/capture/result, original command getter, root vector,
+		       // message/vanish getters and their two genuine independent string heaps.
+		       2 * sizeof(void *) + sizeof(bool) + 2 * add + cmd + rows + 2 * text +
+		       6 * (2 * sizeof(void *));
+#ifndef __NO_MYSQL__
+	// Optional reward bool/arrow, continuation capacity and terms' two strings.
+	// optional::bool -> _M_is_engaged each(this,bool); each arrow
+	// -> _Optional_base_impl::_M_get -> payload::_M_get -> __addressof
+	// owns(this/ref/result), plus the genuine engaged assertion predicate.
+	bytes += 2 * (sizeof(void *) + sizeof(bool)) +
+		 2 * (4 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(bool)) + rows +
+		 2 * sizeof(void *) + sizeof(bool) + 2 * text;
+#endif
+	// Checked add helper remains part of the original observed graph. No query
+	// result is published until every dependent source getter has succeeded.
+	if (!bytes)
+		return false;
+	*output = bytes;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::refresh_borrow(
+	const void *actual_lender, bool (*actual_reserve)(size_t, void *) noexcept,
+	void *actual_guard, size_t freshly_observed_current) noexcept
+{
+	// This is only the existing active loan's fresh CURRENT update. The real
+	// same-lock lender owns the scanner and loan lifetime; identity cannot be
+	// created, rebound, ended or inferred from a remembered numeric baseline.
+	if (!actual_lender || !actual_reserve || !actual_guard || !nevent_is_game_thread() ||
+	    native_quest_coordinator_lender != actual_lender ||
+	    !native_quest_coordinator_observer || !native_quest_flat_global_observer ||
+	    actual_reserve != native_quest_coordinator_reserve ||
+	    native_quest_coordinator_guard != actual_guard ||
+	    native_quest_flat_global_scope != actual_guard || !native_quest_flat_literal_pool_owned)
+		return false;
+	native_quest_coordinator_borrowed_bytes = freshly_observed_current;
+	return true;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::borrowed_for(
+	const void *actual_guard, bool (*actual_reserve)(size_t, void *) noexcept) noexcept
+{
+	// Read only the real existing active loan. Registered idle observers alone
+	// cannot authorize the caller to scan or reserve with coordinator held.
+	return actual_guard && actual_reserve && nevent_is_game_thread() &&
+	       native_quest_coordinator_lender && native_quest_coordinator_observer &&
+	       native_quest_flat_global_observer && native_quest_flat_literal_pool_owned &&
+	       native_quest_coordinator_guard == actual_guard &&
+	       native_quest_flat_global_scope == actual_guard &&
+	       native_quest_coordinator_reserve == actual_reserve;
+}
+
+bool item_native_quest_coordinator_budget_scope_owner::unborrowed_for(
+	const void *actual_guard, bool (*actual_reserve)(size_t, void *) noexcept) noexcept
+{
+	// Wrong identity is not the absence of a loan. The actual global guard and
+	// registered callback remain live while the caller preflights its handoff.
+	return actual_guard && actual_reserve && nevent_is_game_thread() &&
+	       native_quest_coordinator_observer && native_quest_flat_global_observer &&
+	       native_quest_flat_literal_pool_owned &&
+	       native_quest_flat_global_scope == actual_guard &&
+	       native_quest_coordinator_reserve == actual_reserve &&
+	       !native_quest_coordinator_lender && !native_quest_coordinator_guard &&
+	       native_quest_coordinator_borrowed_bytes == 0;
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+// GNU13 installed header scopes; release-reference hash/prime internals remain
+// separately pinned source and are not evidence of the installed binary stack.
+template <class Table> size_t held_native_registry_source_frames() noexcept
+{
+	using iterator = typename Table::iterator;
+	using const_iterator = typename Table::const_iterator;
+	using result = std::pair<iterator, bool>;
+	using value = typename Table::value_type;
+	using node = std::__detail::_Hash_node<
+		value,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	const size_t node_access = 5 * (2 * sizeof(void *)); // _M_v/valptr/buffer ptr/addr/next.
+	const size_t bucket_code = sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+				   3 * sizeof(size_t) + sizeof(std::__detail::_Mod_range_hashing) +
+				   2 * sizeof(void *) + sizeof(void *) + 3 * sizeof(size_t);
+	// Hashtable code wrapper -> Hash_code_base code overload -> empty modulo
+	// adapter ctor/dtor and actual operator(this,code,bucketcount,result).
+	const size_t bucket_node = 2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+				   2 * sizeof(size_t) + sizeof(std::__detail::_Mod_range_hashing) +
+				   2 * sizeof(void *) + sizeof(void *) + 3 * sizeof(size_t);
+	// Cached-node wrapper/base overload uses real node._M_hash_code directly.
+	const size_t cached_hash = 2 * sizeof(void *) + sizeof(size_t);
+	// find, insertion/rebucket, predecessor search, erase and unique rehash use
+	// fixed finite code/node call sites; never multiply by bucket/node count.
+	const size_t buckets = 3 * bucket_code + 5 * bucket_node + cached_hash;
+	const size_t key_equal = 3 * sizeof(void *) + sizeof(bool) + // _M_key_equals.
+				 3 * sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) +
+				 node_access + // equal+Select1st.
+				 2 * sizeof(void *) + sizeof(bool) +
+				 4 * (sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) +
+				 sizeof(size_t) + sizeof(int); // string sizes/data/traits compare.
+	const size_t hash =
+		2 * sizeof(void *) + sizeof(size_t) + // _M_hash_code(key).
+		2 * sizeof(void *) + sizeof(size_t) + 2 * (sizeof(void *) + sizeof(size_t)) +
+		sizeof(void *) + 3 * sizeof(size_t) + // hash<string>/size/data/_Hash_impl.
+		// Actual GCC13.3 64-bit _Hash_bytes: ptr/len/seed/result, buf/end/p,
+		// aligned length/hash/data in loop and tail; helper load/mix scopes.
+		4 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+		sizeof(void *) + sizeof(int) + 2 * sizeof(size_t) + 2 * sizeof(size_t);
+	const size_t lookup = 2 * (2 * sizeof(void *) + sizeof(iterator)) + sizeof(iterator) +
+			      2 * sizeof(size_t) + nq_item_current_range_frames<Table>() +
+			      4 * sizeof(void *) + 2 * sizeof(size_t) + 5 * sizeof(void *) +
+			      2 * sizeof(size_t) + 3 * sizeof(void *) + 3 * sizeof(size_t) + hash +
+			      key_equal;
+	const size_t prime =
+		sizeof(std::__detail::_Prime_rehash_policy) + sizeof(float) + sizeof(void *) +
+		sizeof(float) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+		3 * sizeof(size_t) + sizeof(std::pair<bool, size_t>) + sizeof(double) +
+		3 * sizeof(void *) + 3 * sizeof(size_t) +
+		// Both actual std::max<size_t> closures and converted scalar inputs;
+		// floor declarations contribute their double input/returned value.
+		2 * (3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) + 4 * sizeof(double) +
+		// Real pair<bool,size_t> forwarding constructor and both forward
+		// argument/return reference leaves, scalar constructor inputs.
+		7 * sizeof(void *) + sizeof(bool) + sizeof(size_t) +
+		// lower_bound<const unsigned long*,size_t> params/return and genuine
+		// __iter_less_val returned empty adapter/default-this carrier.
+		5 * sizeof(void *) + sizeof(__gnu_cxx::__ops::_Iter_less_val) +
+		// __lower_bound params/return, comp, len/half/middle.
+		5 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) +
+		sizeof(__gnu_cxx::__ops::_Iter_less_val) +
+		// distance -> random-access __distance params/tag/returned distance.
+		4 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) +
+		sizeof(std::random_access_iterator_tag) +
+		// Both actual __iterator_category signatures and returned RA tags.
+		2 * (sizeof(void *) + sizeof(std::random_access_iterator_tag)) +
+		// advance's reference/n/local __d and RA __advance's ref/n/tag.
+		2 * sizeof(void *) + 3 * sizeof(std::ptrdiff_t) +
+		sizeof(std::random_access_iterator_tag) +
+		// _Iter_less_val::operator(): this/actual ulong pointer/value ref/bool.
+		3 * sizeof(void *) + sizeof(bool);
+	const size_t rehash =
+		2 * sizeof(void *) + sizeof(size_t) + // rehash(this,bkt,state).
+		sizeof(void *) + 3 * sizeof(size_t) + sizeof(void *) + // public rehash/saved ref.
+		sizeof(void *) + 3 * sizeof(size_t) + sizeof(void *) + // max/reset/policy getter.
+		sizeof(void *) + sizeof(size_t) + sizeof(std::true_type) + 3 * sizeof(void *) +
+		2 * sizeof(size_t) + // aux(new buckets,p,next,begin bkt,bkt).
+		// _M_allocate_buckets, allocator local and ptr/p, allocator getter chains;
+		// deallocate_buckets args/ptr/local allocator, pointer_to/addressof.
+		7 * sizeof(void *) + 2 * sizeof(size_t) +
+		sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+		4 * (2 * sizeof(void *)) + item_replay_allocator_frames + node_access;
+	const size_t emplace =
+		3 * sizeof(void *) + sizeof(result) + // wrapper key/value refs.
+		3 * sizeof(void *) + sizeof(std::true_type) + sizeof(result) + 2 * sizeof(void *) +
+		sizeof(void *) + 2 * sizeof(size_t) + sizeof(iterator) + sizeof(void *) +
+		// genuine Scoped_node two pointer fields; ctor/dtor this+owner/args.
+		2 * sizeof(void *) + 4 * sizeof(void *) + sizeof(void *) +
+		// _M_allocate_node this/key/value/result/nptr/node plus forward pair args,
+		// construct/placement-new and node value access; partial ctor unwind.
+		6 * sizeof(void *) + 4 * sizeof(void *) + 4 * sizeof(void *) + node_access +
+		sizeof(std::allocator<node>) + item_replay_allocator_frames +
+		// _M_insert_unique_node this/bkt/code/node/nelt/result, saved state ref,
+		// do_rehash pair; store code and insert_bucket_begin this/bkt/node.
+		3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(iterator) + sizeof(result) +
+		2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) + prime +
+		rehash;
+	const size_t erase =
+		sizeof(void *) + sizeof(const_iterator) + sizeof(iterator) + 2 * sizeof(void *) +
+		sizeof(size_t) + // erase actual node/bucket/previous.
+		3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + // previous-node loop.
+		3 * sizeof(void *) + sizeof(size_t) + sizeof(iterator) + sizeof(size_t) +
+		3 * sizeof(void *) + 2 * sizeof(size_t) + // remove bucket begin.
+		// deallocate_node/ptr and allocator destroy/pointer_to/addressof/traits.
+		5 * sizeof(void *) + 4 * (2 * sizeof(void *)) + sizeof(std::allocator<node>) +
+		item_replay_allocator_frames + node_access;
+	return lookup + emplace + erase + prime + rehash + buckets +
+	       item_replay_operation_key_frames;
+}
+
+size_t held_native_capacity_source_frames() noexcept
+{
+	// Capacity incoming/two bool parameters/result, journal/globals/coordinator
+	// and slots locals; exact range/structured aliases and size getters.
+	// Each journal wrapper returns size_t; atomic_base load owns this, memory
+	// order formal/masked local/result; enum bit-and owns two values/result.
+	const size_t journal = sizeof(size_t) + sizeof(void *) + 2 * sizeof(std::memory_order) +
+			       sizeof(size_t) + 2 * sizeof(std::memory_order) +
+			       sizeof(std::__memory_order_modifier);
+	return sizeof(size_t) + 3 * sizeof(bool) + 4 * sizeof(size_t) +
+	       nq_item_current_range_frames<decltype(native_quest_acceptances)>() + sizeof(void *) +
+	       sizeof(size_t) + journal + nq_item_current_thread_frames();
+}
+size_t held_native_original_retention_source_frames() noexcept
+{
+	// Original native_quest_restore_bytes: state/bytes, charge closure(reference)
+	// and this/value/result, five-pointer initializer backing array/descriptor,
+	// actual range endpoints/forest alias, row and extra-description ranges.
+	// Field capacities use the genuine row CURRENT getter source subgraph.
+	return sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	       sizeof(bool) + 5 * sizeof(void *) +
+	       sizeof(std::initializer_list<const std::vector<player_item_snapshot> *>) +
+	       3 * sizeof(void *) + 2 * sizeof(std::vector<player_item_snapshot>::const_iterator) +
+	       sizeof(void *) +
+	       2 * sizeof(std::vector<player_item_extra_description_snapshot>::const_iterator) +
+	       sizeof(void *) + 2 * (18 * sizeof(void *) + sizeof(bool)) +
+	       player_item_snapshot_current_heap_observer_frame_bytes() +
+	       item_transfer_payload_current_heap_observer_frame_bytes() +
+	       8 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(bool);
+}
+size_t held_native_control_source_frames() noexcept
+{
+	using state_control =
+		std::_Sp_counted_ptr_inplace<native_quest_publication_state, std::allocator<void>,
+					     __gnu_cxx::_S_atomic>;
+	using command_control =
+		std::_Sp_counted_ptr_inplace<const critical_command, std::allocator<void>,
+					     __gnu_cxx::_S_atomic>;
+	using state_allocator = typename state_control::__allocator_type;
+	using command_allocator = typename command_control::__allocator_type;
+	static_assert(sizeof(state_allocator) == sizeof(command_allocator));
+	static_assert(sizeof(std::__allocated_ptr<state_allocator>) ==
+		      sizeof(std::__allocated_ptr<command_allocator>));
+	// True rebound allocator local and actual guarded pointer type in both
+	// __shared_count::__a2 and inplace::_M_destroy::__a, not payload allocator.
+	const size_t guarded =
+		sizeof(state_allocator) + sizeof(std::__allocated_ptr<state_allocator>) +
+		// allocate_guarded(allocator&,return guard), guard ctor(this,allocator&,ptr),
+		// addressof(arg,result), get(this,result), to_address(ptr,result), assignment
+		// nullptr(this,nullptr arg,ref result), and guard destructor this.
+		sizeof(void *) + sizeof(std::__allocated_ptr<state_allocator>) +
+		3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		2 * sizeof(void *) + sizeof(std::nullptr_t) + sizeof(void *) +
+		item_replay_allocator_frames;
+	const size_t aligned = 3 * (2 * sizeof(void *));
+	// Exact control::_M_ptr -> aligned_buffer::_M_ptr -> _M_addr.
+	const size_t inplace =
+		sizeof(void *) + sizeof(std::allocator<void>) + sizeof(void *) +
+		// _Impl(this,allocator value), EBO helper(this,allocator ref), allocator copy.
+		sizeof(void *) + sizeof(std::allocator<void>) + 2 * sizeof(void *) +
+		2 * sizeof(void *) +
+		// _Sp_counted_base, empty mutex base and aligned buffer default this.
+		3 * sizeof(void *) + aligned +
+		// allocator_traits::construct -> _S_construct -> construct_at: actual
+		// allocator/object/command refs; placement new size/address/result.
+		3 * sizeof(void *) + 3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+		sizeof(size_t);
+	const size_t create =
+		sizeof(void *) + sizeof(std::shared_ptr<native_quest_publication_state>) +
+		sizeof(std::allocator<void>) +
+		sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>) +
+		// shared_ptr(tag,args): this/tag/ref; __shared_ptr(tag,args): this/tag/ref;
+		// __shared_count: this/output-ref/tag/command-ref, mem/pi local pointers.
+		2 * (2 * sizeof(void *) + sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>)) +
+		5 * sizeof(void *) + sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>) +
+		guarded + inplace +
+		// Eight genuine command-forward sites through make/shared constructors,
+		// control ctor, traits construct, _S_construct and construct_at.
+		8 * (2 * sizeof(void *)) + aligned;
+	const size_t atomic_dispatch =
+		sizeof(void *) + sizeof(int) + sizeof(_Atomic_word) + sizeof(bool) +
+		// Both actual single-thread and builtin alternatives own memory/value/result.
+		2 * (sizeof(void *) + sizeof(int) + sizeof(_Atomic_word));
+	const size_t dispose =
+		sizeof(void *) +
+		// _Impl::_M_alloc -> EBO::_S_get, and the real three-scope payload pointer.
+		2 * (2 * sizeof(void *)) + aligned +
+		// allocator_traits::destroy -> _S_destroy -> destroy_at -> object destructor.
+		2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(void *);
+	const size_t destroy =
+		sizeof(void *) + guarded + 2 * (2 * sizeof(void *)) +
+		// inplace/base/_Impl/EBO/allocator/actual storage destructors' this carriers.
+		6 * sizeof(void *);
+	const size_t release =
+		3 * sizeof(void *) +
+		// shared_ptr -> __shared_ptr -> __shared_count own this, _M_release(this)
+		// and genuine constexpr lockfree/double/aligned, wordbits/shiftbits,
+		// unique_ref and both_counts. Cold+last-use this scopes remain selected.
+		sizeof(void *) + 3 * sizeof(bool) + 2 * sizeof(int) + sizeof(long long) +
+		sizeof(void *) + 2 * sizeof(void *) + 2 * atomic_dispatch + dispose + destroy;
+	// Unique implementation pointer/deleter leaf: _M_ptr/_M_deleter, get<0/1>,
+	// __get_helper, Tuple_impl::_M_head, Head_base::_M_head = five real scopes.
+	const size_t tuple_leaf = 5 * (2 * sizeof(void *));
+	const size_t unique_default = // unique/data/impl/tuple, two Tuple_impls,
+		// two Head_bases and default_delete actual default this carriers.
+		9 * sizeof(void *);
+	const size_t unique_create =
+		sizeof(void *) + sizeof(std::unique_ptr<critical_native_recovery_envelope>) +
+		2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+		// Pointer unique/data/impl constructor parameters, tuple default subtree;
+		// constructor assigns real _M_ptr; no deleter DTO/storage fabricated.
+		3 * (2 * sizeof(void *)) + unique_default + tuple_leaf;
+	const size_t unique_release = sizeof(void *) + 2 * sizeof(void *) + 2 * tuple_leaf;
+	const size_t unique_reset = 2 * sizeof(void *) + sizeof(void *) + 2 * tuple_leaf +
+				    tuple_leaf + 2 * sizeof(void *) + sizeof(size_t);
+	const size_t unique_move =
+		3 * (3 * sizeof(void *)) + unique_release + unique_reset +
+		// Destination/source _M_deleter chains and actual std::forward plus
+		// default_delete's generated assignment this/source/ref-return.
+		2 * tuple_leaf + 2 * sizeof(void *) + 3 * sizeof(void *);
+	const size_t unique_destroy =
+		2 * sizeof(void *) + tuple_leaf +
+		// get_deleter(this,ref) -> implementation five-leaf chain; move arg/ref,
+		// default_delete(this,ptr), delete operator pointer/size declaration boundary.
+		2 * sizeof(void *) + tuple_leaf + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		sizeof(void *) + sizeof(size_t);
+	// Native state disposal can synchronously release its command control: two
+	// genuine shared-release levels, no count-dependent depth. Member destructor
+	// families consume their own exact string/vector/snapshot source companions.
+	return create + 2 * release + unique_create + unique_default + unique_move +
+	       unique_destroy + critical_command_copy_frame_bytes() +
+	       item_transfer_payload_copy_frame_bytes() + player_item_snapshot_copy_frame_bytes() +
+	       player_item_snapshot_vector_operation_frame_bytes() +
+	       item_replay_operation_key_frames;
+}
+size_t held_native_relay_source_frames() noexcept
+{
+	// budget current(this,out,extra,owner,heap,result), peak(this,extra,bytes,
+	// result), request(this,bytes,source,result), child(extra,opaque,result).
+	// Actual initializer-list backing array of two payload pointers+descriptor,
+	// actual current loop endpoints and value; wire loop endpoints/value.
+	return 2 * (sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool)) +
+	       held_retirement_codec_source_profile_query_frames() +
+	       native_quest_recovery_codec_source_profile_query_frames() + 2 * sizeof(void *) +
+	       3 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) +
+	       sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	       sizeof(std::initializer_list<const item_transfer_payload *>) + 6 * sizeof(void *) +
+	       2 * sizeof(size_t) + 4 * sizeof(bool) +
+	       item_transfer_payload_current_heap_observer_frame_bytes() +
+	       native_quest_recovery_context_current_heap_observer_frame_bytes() +
+	       player_save_native_recovery_replay_owner::current_observer_frame_bytes() +
+	       player_save_coin_replay_budget_scope_owner::observer_frame_bytes() +
+	       critical_command_valid_frame_bytes();
+}
+#endif
+}
+
+bool item_native_recovery_replay_owner::restore_held_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t current = 0;
+	if (!item_native_quest_current_source_frames(&current))
+		return false;
+	const size_t frames =
+		sizeof(held_native_item_replay_budget) + sizeof(lockpick_retirement_terms) +
+		sizeof(item_transfer_payload) + sizeof(held_retirement_recovery) +
+		sizeof(std::string) + sizeof(pending_movement) + 2 * sizeof(std::vector<uint8_t>) +
+		sizeof(item_pending_table::iterator) +
+		sizeof(std::pair<item_pending_table::iterator, bool>) + 12 * sizeof(void *) +
+		12 * sizeof(size_t) + 9 * sizeof(bool) +
+		item_movement_transaction_replay_observer_frame_bytes() +
+		held_native_registry_source_frames<item_pending_table>() +
+		held_native_control_source_frames() + held_native_relay_source_frames() + current +
+		nq_item_current_range_frames<item_pending_table>() + 2 * sizeof(void *) +
+		3 * sizeof(size_t);
+	*output = frames;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+bool item_native_recovery_replay_owner::restore_execution_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t current = 0;
+	if (!item_native_quest_current_source_frames(&current))
+		return false;
+	const size_t frames =
+		sizeof(held_native_item_replay_budget) + sizeof(std::string) +
+		sizeof(std::shared_ptr<native_quest_publication_state>) +
+		sizeof(native_quest_recovery_context) +
+		sizeof(native_quest_acceptance_preparation) + 18 * sizeof(void *) +
+		18 * sizeof(size_t) + 11 * sizeof(bool) + 4 * sizeof(uint64_t) +
+		sizeof(decltype(native_quest_acceptances)::iterator) +
+		sizeof(std::pair<decltype(native_quest_acceptances)::iterator, bool>) +
+		held_native_registry_source_frames<decltype(native_quest_acceptances)>() +
+		held_native_control_source_frames() + held_native_relay_source_frames() + current +
+		held_native_capacity_source_frames() +
+		held_native_original_retention_source_frames() +
+		// native_restore_values plus forest-copy and selected relay owning callers.
+		4 * sizeof(void *) + 3 * sizeof(bool) + 2 * sizeof(size_t) +
+		sizeof(std::vector<player_item_snapshot>) + 7 * sizeof(void *) +
+		3 * sizeof(size_t) + 2 * sizeof(bool) +
+		nq_item_current_range_frames<decltype(native_quest_acceptances)>() +
+		// Complete expected-forest comparison's real private storage/type, vector
+		// copy, both encode buffers, span and actual formals/scalars/range carriers.
+		sizeof(native_item_same_items_replay_budget) +
+		sizeof(std::vector<player_item_snapshot>) + 2 * sizeof(std::vector<uint8_t>) +
+		sizeof(std::span<const player_item_snapshot>) + 10 * sizeof(void *) +
+		8 * sizeof(size_t) + 5 * sizeof(bool) + 2 * sizeof(player_snapshot_codec_result) +
+		player_item_snapshot_copy_frame_bytes() + item_replay_allocator_frames +
+		// Envelope duplicate: two local wires, exact relay three pointer fields,
+		// helper/relay formals and bytes/reference/result carriers.
+		2 * sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 10 * sizeof(void *) +
+		5 * sizeof(size_t) + 3 * sizeof(bool) +
+		// Fresh forest copy's formals/scalars/row-range endpoints and getter scopes.
+		3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+		2 * sizeof(std::vector<player_item_snapshot>::const_iterator) +
+		18 * sizeof(void *) + sizeof(bool) + player_item_snapshot_copy_frame_bytes() +
+		// Nonthrowing post-hold account_health/range and pending-count/size source.
+		nq_item_current_range_frames<item_pending_table>() + 2 * sizeof(void *) +
+		3 * sizeof(size_t);
+	*output = frames;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_restore_budget_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = 3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+		  held_native_capacity_source_frames();
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+bool item_native_recovery_replay_owner::restore_continuation_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t bytes = 5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool);
+	const size_t child = quest_native_restore_phase2_source_frame_bytes();
+	if (!child || !item_replay_add(bytes, child))
+		return false;
+	*output = bytes;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
 }

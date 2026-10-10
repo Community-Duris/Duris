@@ -792,7 +792,10 @@ class player_save_coin_replay_budget_scope_owner final
 	friend class player_save_sql_drop_replay_owner;
 	friend class player_save_shop_replay_owner;
 	friend class player_save_sql_collector_replay_owner;
+	friend class player_save_native_recovery_replay_owner;
+	friend class player_save_auction_replay_owner;
 	friend bool player_save_pipeline_replay_current_storage_bytes(size_t *) noexcept;
+	friend bool player_save_pipeline_replay_current_storage_source_frames(size_t *) noexcept;
 	friend bool
 	player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_command &,
 								 bool (*)(size_t, void *) noexcept,
@@ -811,9 +814,20 @@ class player_save_coin_replay_budget_scope_owner final
 	bool locked() const noexcept;
 	bool prepared() const noexcept;
 	bool prepared_worker_storage_bytes(size_t *) const noexcept;
+
+    public:
 	// Pure complete fixed source-carrier handoff: ROOT admits these before
 	// constructing/scanning this scope. No storage/readiness is inferred.
 	static size_t observer_frame_bytes() noexcept;
+	static constexpr size_t observer_source_profile_query_frames() noexcept
+	{
+		// This accessor's result, both genuine observer getter results, nine
+		// worker getter scalar locals, and final maximum operands/result/bool.
+		// Pure query only: no scope construction, readiness, lock or census.
+		return 15 * sizeof(size_t) + sizeof(bool);
+	}
+
+    private:
 	static size_t prepared_worker_observer_frame_bytes() noexcept;
 	// ROOT holds authentic startup coordinator/lifecycle exclusion and this
 	// SAME pipeline scope across fresh bootstrap and complete replay. No DTO,
@@ -884,6 +898,15 @@ class player_save_sql_drop_replay_owner final
 // transient scope inline. Must not be called while pipeline_mutex is held;
 // use borrowed getter for mixed replay. All getters preserve output on refusal.
 bool player_save_pipeline_replay_current_storage_bytes(size_t *) noexcept;
+// Pure source profile, called and admitted BEFORE the external unheld observer.
+// It creates no scope and takes no lock; it includes the real temporary scope
+// and complete held observer closure, rather than any retained-storage baseline.
+constexpr size_t player_save_pipeline_replay_current_storage_source_profile_query_frames() noexcept
+{
+	return sizeof(size_t *) + 15 * sizeof(size_t) + 2 * sizeof(bool);
+}
+bool player_save_pipeline_replay_current_storage_source_frames(size_t *) noexcept;
+
 bool player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_command &,
 							      bool (*)(size_t, void *) noexcept,
 							      void *,
@@ -914,6 +937,54 @@ class player_save_sql_collector_replay_owner final
 					  size_t *) noexcept;
 	static bool restore(const critical_command &, player_save_coin_replay_budget_scope_owner &,
 			    size_t exclusive_outer) noexcept;
+};
+
+// Full original native/held passive checkpoints on the SAME genuine pipeline
+// lock. The caller's reserve relay refreshes provider and pipeline CURRENT.
+// No stage, gameplay, receipt, publication or ACK authority is introduced.
+class item_native_recovery_replay_owner;
+class player_save_native_recovery_replay_owner final
+{
+    public:
+	static bool restore_held_source_frames(size_t *) noexcept;
+	static bool restore_native_source_frames(size_t *) noexcept;
+	static constexpr size_t source_profile_query_frames() noexcept
+	{
+		return 2 * sizeof(void *) + 42 * sizeof(size_t) + 6 * sizeof(bool);
+	}
+
+	static size_t current_observer_frame_bytes() noexcept;
+	static bool current_storage_bytes(player_save_coin_replay_budget_scope_owner &,
+					  size_t *) noexcept;
+
+    private:
+	friend class item_native_recovery_replay_owner;
+	static bool restore_held_checkpoint(const critical_native_recovery_envelope &,
+					    player_save_coin_replay_budget_scope_owner &,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
+	static bool restore_native_checkpoint(const critical_native_recovery_envelope &,
+					      player_save_coin_replay_budget_scope_owner &,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t) noexcept;
+};
+
+class player_save_auction_replay_owner final
+{
+    public:
+	static bool restore_source_frames(size_t *) noexcept;
+	static constexpr size_t source_profile_query_frames() noexcept
+	{
+		return 2 * sizeof(void *) + 42 * sizeof(size_t) + 6 * sizeof(bool);
+	}
+
+	static size_t current_observer_frame_bytes() noexcept;
+	static bool current_storage_bytes(player_save_coin_replay_budget_scope_owner &,
+					  size_t *) noexcept;
+	static bool restore_recovery_checkpoint(const critical_native_recovery_envelope &,
+						player_save_coin_replay_budget_scope_owner &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept;
 };
 
 #endif

@@ -45,4 +45,10 @@ auction_native_command_bind(critical_command *, std::span<const player_item_snap
 economic_accounting_error auction_native_command_decode(const critical_command &,
 							auction_native_command_context *) noexcept;
 
+size_t auction_native_command_uid_set_source_frame_bytes() noexcept;
+economic_accounting_error auction_native_command_decode_bounded(const critical_command &,
+								auction_native_command_context *,
+								bool (*)(size_t, void *) noexcept,
+								void *, size_t) noexcept;
+
 #endif

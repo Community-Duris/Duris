@@ -55,4 +55,19 @@ economic_accounting_error auction_listing_accounting_plan(
 	const auction_listing_accounting_authority &authority, const auction_command_result &result,
 	economic_accounting_plan *plan);
 
+// Genuine complete original auction replay companions. Caller owns inputs,
+// prior outputs and sibling retained state in outer_live; callback retains the
+// admitted simultaneous peak. Semantic laws and strong outputs remain original.
+// No writer/source/execution authority; native qualification remains separate.
+economic_accounting_error auction_listing_accounting_intent_bounded(
+	const critical_command &command, const critical_operation_id &epoch,
+	const economic_account_key &wallet, const economic_account_key &bank,
+	std::vector<uint8_t> *encoded, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+
+economic_accounting_error auction_listing_accounting_decode_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+
 #endif

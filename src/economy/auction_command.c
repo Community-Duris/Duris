@@ -459,3 +459,959 @@ bool auction_command_build(critical_command *command, critical_operation_id oper
 		  { return critical_entity_key_less(left.key, right.key); });
 	return true;
 }
+
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+
+#include <stdexcept>
+namespace
+{
+// This block is genuine append/forward-copy/vector machinery shared with the
+// five auction accounting companions. Full source lineage is recorded by the
+// owner packet; the owning command profiles add their real typed carriers.
+constexpr size_t auction_codec_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t auction_codec_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t auction_codec_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t auction_codec_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t auction_codec_vector_frames =
+	auction_codec_allocator_frames + auction_codec_copy_frames + auction_codec_relocate_frames +
+	auction_codec_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t auction_codec_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + auction_codec_allocator_frames;
+constexpr size_t auction_codec_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<uint8_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + auction_codec_vector_frames;
+
+// Genuine additional selected typed library scopes beside the vector's
+// reserve/forward-insert profile. The owning inline DTOs remain in the actual
+// enclosing object sizes, rather than a fabricated encoded-envelope baseline.
+static_assert(std::is_trivially_copyable_v<economic_source_event>);
+static_assert(std::is_trivially_destructible_v<economic_source_event>);
+static_assert(std::is_trivially_copyable_v<auction_command_payload>);
+static_assert(std::is_trivially_copyable_v<economic_account_key>);
+constexpr size_t auction_codec_optional_frames =
+	// Actual metadata/frozen/admission default/generated move/copy member
+	// functions: this/source refs; optional/_Optional_base/_payload/_Storage
+	// default constructors and trivial storage destructor this carriers.
+	6 * sizeof(void *) + 5 * sizeof(void *) + sizeof(void *) +
+	// source_event assignment operator=(T&&): this/u/ref-result; real
+	// is_engaged/get/construct wrappers, payload _M_construct and forward.
+	3 * sizeof(void *) + (sizeof(void *) + sizeof(bool)) + 2 * (2 * sizeof(void *)) +
+	2 * sizeof(void *) + 2 * sizeof(void *) +
+	// __addressof -> _Construct -> forward -> placement new -> trivial
+	// economic_source_event generated move this/source. No extra DTO copy.
+	2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	sizeof(size_t) + sizeof(void *) + 2 * sizeof(void *) +
+	// Actual optional operator bool/operator->/base get/payload get and
+	// addressof parameter and reference/pointer/bool result carriers.
+	2 * (sizeof(void *) + sizeof(bool)) + 3 * (2 * sizeof(void *));
+constexpr size_t auction_codec_equal_frames =
+	// array/vector operator== actual lhs/rhs and returned bool; genuine
+	// container size/begin/end and array_traits::_S_ptr pointer returns.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	6 * (2 * sizeof(void *)) +
+	// equal/__equal_aux/__equal_aux1/__equal<true>::equal each three
+	// iterator arguments and returned bool; __simple and __len locals;
+	// niter_base calls and __memcmp's genuine pointers/length/int result.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(bool) + sizeof(size_t) +
+	3 * (2 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	// Actual normal_iterator copied argument/ctor/base source carriers.
+	4 * (2 * sizeof(void *));
+constexpr size_t auction_codec_copy_n_frames =
+	// Original copy_n(count literal16) owns first/count/result/__n2/result,
+	// __size_to_integer(int), iterator_category and __copy_n<RA> tag.
+	3 * sizeof(void *) + 2 * sizeof(int) + 2 * sizeof(int) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + 3 * sizeof(void *) + sizeof(int) +
+	sizeof(std::random_access_iterator_tag);
+constexpr size_t auction_codec_scalar_source_frames =
+	// Original read lambda (facts-reference capture/this, offset,width,
+	// byte index,value/result); typed read_number alternatives; span data,
+	// index,size/constructor parameters and returned pointer/reference.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+	4 * (sizeof(void *) + sizeof(size_t) + sizeof(void *)) +
+	// Actual account/empty/key_valid/kind_valid helper params/results,
+	// operation_id_equal two refs/result and zero's byte range loop.
+	3 * sizeof(void *) + sizeof(economic_account_kind) + sizeof(uint64_t) + sizeof(bool) +
+	2 * (sizeof(void *) + sizeof(bool)) + sizeof(economic_account_kind) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool) +
+	// Original append_u64/u32/u16 and native_fact_append<T> pointer/value/
+	// index/byte result lifetimes, plus initializer-list begin/end/size.
+	4 * (sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(uint8_t)) +
+	3 * (sizeof(void *) + sizeof(void *)) + sizeof(std::initializer_list<uint64_t>) +
+	// Original metadata assignment generated function this/source and the
+	// returned source_for event temporary, optional typed path above.
+	2 * sizeof(void *) + sizeof(economic_source_event) + auction_codec_optional_frames +
+	auction_codec_equal_frames + auction_codec_copy_n_frames;
+bool auction_codec_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+
+struct auction_command_refusal
+{
+};
+struct auction_command_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *command = nullptr;
+	const std::vector<critical_entity_key> *keys = nullptr;
+	const std::vector<critical_expected_revision> *revisions = nullptr;
+	const std::vector<uint8_t> *output = nullptr;
+	size_t excluded_caller_heap = 0;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &b = *static_cast<auction_command_budget *>(opaque);
+		if (b.denied || !b.reserve || !b.reserve(amount, b.context))
+		{
+			b.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &bytes, size_t extra = 0) noexcept
+	{
+		if (outer < excluded_caller_heap)
+		{
+			denied = true;
+			return false;
+		}
+		bytes = outer - excluded_caller_heap;
+		size_t heap = 0;
+		if (!auction_codec_add(bytes, sizeof(*this)) || !auction_codec_add(bytes, frames) ||
+		    !auction_codec_add(bytes, extra) ||
+		    (command && (!critical_command_current_heap_bytes(*command, &heap) ||
+				 !auction_codec_add(bytes, heap))) ||
+		    (keys &&
+		     (keys->capacity() > SIZE_MAX / sizeof(critical_entity_key) ||
+		      !auction_codec_add(bytes, keys->capacity() * sizeof(critical_entity_key)))) ||
+		    (revisions &&
+		     (revisions->capacity() > SIZE_MAX / sizeof(critical_expected_revision) ||
+		      !auction_codec_add(bytes, revisions->capacity() *
+							sizeof(critical_expected_revision)))) ||
+		    (output && !auction_codec_add(bytes, output->capacity())))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t bytes = 0;
+		if (!prefix(bytes, extra) || !forward(bytes, this))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	template <class T> void growth(std::vector<T> &v, size_t count)
+	{
+		if (count > v.max_size() - v.size())
+			throw std::length_error("auction command");
+		size_t request = 0;
+		if (v.size() + count > v.capacity())
+		{
+			const size_t growth = std::max(v.size(), count);
+			const size_t capacity =
+				growth > v.max_size() - v.size() ? v.max_size() : v.size() + growth;
+			if (capacity > SIZE_MAX / sizeof(T))
+			{
+				denied = true;
+				throw auction_command_refusal{};
+			}
+			request = capacity * sizeof(T);
+		}
+		if (!peak(request))
+			throw auction_command_refusal{};
+	}
+	template <class T> void push(std::vector<T> &v, const T &value)
+	{
+		growth(v, 1);
+		v.push_back(value);
+	}
+	template <class T, class Iterator>
+	void append(std::vector<T> &v, Iterator first, Iterator last)
+	{
+		const auto count = last - first;
+		if (count < 0)
+			throw std::length_error("auction command");
+		growth(v, static_cast<size_t>(count));
+		v.insert(v.end(), first, last);
+	}
+};
+struct auction_command_denial_latch
+{
+	const auction_command_budget &budget;
+	bool *output;
+	~auction_command_denial_latch() noexcept
+	{
+		if (output && budget.denied)
+			*output = true;
+	}
+};
+template <class T> void auction_append_le_bounded(auction_command_budget &budget,
+						  std::vector<uint8_t> *output, T value)
+{
+	using unsigned_type = std::make_unsigned_t<T>;
+	const unsigned_type encoded = static_cast<unsigned_type>(value);
+	for (size_t byte = 0; byte < sizeof(T); ++byte)
+		budget.push(*output, static_cast<uint8_t>(encoded >> (byte * 8)));
+}
+template <size_t Size> bool auction_append_string_bounded(auction_command_budget &budget,
+							  std::vector<uint8_t> *output,
+							  const std::array<char, Size> &value)
+{
+	const size_t length = strnlen(value.data(), value.size());
+	if (length >= value.size() || length > UINT16_MAX)
+		return false;
+	auction_append_le_bounded<uint16_t>(budget, output, static_cast<uint16_t>(length));
+	budget.append(*output, value.begin(), value.begin() + length);
+	return true;
+}
+bool auction_command_bounded_policy() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8;
+#else
+	return false;
+#endif
+}
+}
+
+namespace
+{
+template <class T, class Compare> size_t auction_command_sort_source_frames(size_t count) noexcept
+{
+	using iterator = typename std::vector<T>::iterator;
+	using difference = typename std::vector<T>::difference_type;
+	using compare = __gnu_cxx::__ops::_Iter_comp_iter<Compare>;
+	using value_compare = __gnu_cxx::__ops::_Val_comp_iter<Compare>;
+	using iter_value_compare = __gnu_cxx::__ops::_Iter_comp_val<Compare>;
+	// Actual typed sort/__sort and comparator construction/forwarding; their
+	// normal_iterator ctor/base/difference and __lg caller/return scopes.
+	constexpr size_t setup = 4 * sizeof(iterator) + 2 * sizeof(compare) + 2 * sizeof(void *) +
+				 3 * sizeof(difference) + sizeof(int) +
+				 8 * (sizeof(void *) + sizeof(iterator)) + 4 * sizeof(bool);
+	constexpr size_t recursive = 3 * sizeof(iterator) + sizeof(difference) + sizeof(compare);
+	// median-to-first, pivot partition, comparator forwarding and genuine swap
+	// temporary are typed T, not a uint64 stand-in.
+	constexpr size_t partition = 12 * sizeof(iterator) + 3 * sizeof(compare) +
+				     2 * sizeof(bool) + 7 * sizeof(void *) + sizeof(T);
+	constexpr size_t insertion = 10 * sizeof(iterator) + 2 * sizeof(compare) +
+				     2 * sizeof(value_compare) + sizeof(iter_value_compare) +
+				     3 * sizeof(T) + 2 * sizeof(difference) + 12 * sizeof(void *) +
+				     3 * sizeof(bool);
+	constexpr size_t heap = 12 * sizeof(iterator) + 14 * sizeof(difference) +
+				5 * sizeof(compare) + 2 * sizeof(value_compare) +
+				2 * sizeof(iter_value_compare) + 4 * sizeof(T) +
+				18 * sizeof(void *) + 3 * sizeof(bool);
+	// Function-pointer and captureless predicate bodies own their actual
+	// two row references, this where present and returned bool separately.
+	constexpr size_t comparator = 2 * sizeof(iterator) + 3 * sizeof(void *) + 3 * sizeof(bool);
+	size_t logarithm = 0;
+	for (size_t n = count; n > 1; n >>= 1)
+		++logarithm;
+	const size_t depth = count <= 16 ? 1 : std::min(logarithm * 2 + 1, count - 16 + 1);
+	return setup + depth * recursive + std::max({ partition, insertion, heap }) + comparator;
+}
+}
+size_t auction_command_build_sort_source_frame_bytes(const critical_command &command) noexcept
+{
+	using key_compare = decltype(&critical_entity_key_less);
+	using revision_compare =
+		decltype([](const critical_expected_revision &left,
+			    const critical_expected_revision &right)
+			 { return critical_entity_key_less(left.key, right.key); });
+	// The original two sorts execute sequentially. Their actual source
+	// scopes form a maximum; the declared caller/getter frame coexists.
+	const size_t keys = auction_command_sort_source_frames<critical_entity_key, key_compare>(
+		command.keys.size());
+	const size_t revisions =
+		auction_command_sort_source_frames<critical_expected_revision, revision_compare>(
+			command.expected_revisions.size());
+	// Original adjacent_find -> __adjacent_find with function-pointer
+	// iterator comparator adapter, first/last/next and key equality body.
+	const size_t adjacent =
+		12 * sizeof(std::vector<critical_entity_key>::iterator) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_equal)>) +
+		10 * sizeof(void *) + 4 * sizeof(bool);
+	return 3 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(std::initializer_list<size_t>) +
+	       std::max({ keys, revisions, adjacent });
+}
+size_t auction_command_matching_fences_source_frame_bytes(const critical_command &) noexcept
+{
+	using key_iterator = std::vector<critical_entity_key>::const_iterator;
+	using revision_iterator = std::vector<critical_expected_revision>::const_iterator;
+	// Original matching_native_item_fences parameters, outer key/known/
+	// original/count/found scopes; original matching_fences indices and
+	// genuine key/revision vector access and returned comparisons.
+	constexpr size_t bodies = 18 * sizeof(void *) + 9 * sizeof(size_t) + 8 * sizeof(bool) +
+				  4 * sizeof(key_iterator) + 4 * sizeof(revision_iterator);
+	// is_sorted -> is_sorted_until -> __is_sorted_until, and adjacent_find
+	// -> __adjacent_find: typed const iterators and real fn-pointer wrappers.
+	constexpr size_t ordered =
+		12 * sizeof(key_iterator) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_less)>) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_equal)>) +
+		12 * sizeof(void *) + 6 * sizeof(bool);
+	// binary_search -> lower_bound -> __lower_bound uses count/step
+	// difference_type, midpoint, advance -> __advance/random-access tag,
+	// iter_comp_val and final comparator. All loops are iterative.
+	constexpr size_t search =
+		12 * sizeof(key_iterator) + 5 * sizeof(std::ptrdiff_t) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_val<decltype(&critical_entity_key_less)>) +
+		15 * sizeof(void *) + 8 * sizeof(bool) +
+		2 * sizeof(std::random_access_iterator_tag);
+	// find_if/__find_if and count_if/__count_if actual captured key-reference
+	// closures, _Iter_pred wrappers, iterators, trip_count/count and row
+	// comparator bodies. No dictionary, allocation or recursive closure.
+	constexpr size_t scans = 14 * sizeof(revision_iterator) + 8 * sizeof(void *) +
+				 5 * sizeof(std::ptrdiff_t) + 14 * sizeof(void *) +
+				 8 * sizeof(bool);
+	return bodies + ordered + search + scans + auction_codec_vector_frames;
+}
+
+bool auction_command_encode_payload_bounded(const auction_command_payload &payload,
+					    std::vector<uint8_t> *encoded,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer, bool *budget_denied) noexcept
+{
+	const size_t frames =
+		// Actual encode and append helper args, local scalar values and loops,
+		// vector reserve/growth/move/copy/destruction source controls.
+		16 * sizeof(void *) + 12 * sizeof(size_t) + 8 * sizeof(bool) +
+		4 * sizeof(uint64_t) + sizeof(std::array<char, AUCTION_INFO_MAX_BYTES + 1> *) +
+		auction_codec_vector_frames + auction_codec_move_frames;
+	auction_command_budget budget{ reserve, context, outer, frames };
+	if (budget_denied)
+		*budget_denied = false;
+	auction_command_denial_latch denial{ budget, budget_denied };
+	if (encoded)
+	{
+		budget.output = encoded;
+		budget.excluded_caller_heap = encoded->capacity();
+	}
+	if (!auction_command_bounded_policy() || !budget.peak())
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	if (!encoded || !valid_payload(payload))
+		return false;
+	try
+	{
+		encoded->clear();
+		const size_t reservation =
+			512 + payload.object_blob_size +
+			strnlen(payload.object_info.data(), payload.object_info.size());
+		if (reservation > encoded->capacity() && !budget.peak(reservation))
+			throw auction_command_refusal{};
+		encoded->reserve(512 + payload.object_blob_size +
+				 strnlen(payload.object_info.data(), payload.object_info.size()));
+		auction_append_le_bounded<uint8_t>(budget, encoded,
+						   static_cast<uint8_t>(payload.action));
+		auction_append_le_bounded<uint32_t>(budget, encoded, payload.actor_pid);
+		auction_append_le_bounded<uint32_t>(budget, encoded, payload.auction_id);
+		auction_append_le_bounded<uint8_t>(budget, encoded, payload.racewar);
+		auction_append_le_bounded<uint64_t>(budget, encoded,
+						    payload.expected_wallet_revision);
+		auction_append_le_bounded<uint64_t>(budget, encoded,
+						    payload.expected_bank_revision);
+		auction_append_le_bounded<int64_t>(budget, encoded, payload.value);
+		auction_append_le_bounded<int64_t>(budget, encoded, payload.start_price);
+		auction_append_le_bounded<int64_t>(budget, encoded, payload.buy_price);
+		auction_append_le_bounded<int64_t>(budget, encoded, payload.listing_fee);
+		auction_append_le_bounded<uint32_t>(budget, encoded,
+						    payload.closing_fee_basis_points);
+		auction_append_le_bounded<uint32_t>(budget, encoded, payload.bid_extension_seconds);
+		auction_append_le_bounded<uint64_t>(budget, encoded, payload.end_time);
+		auction_append_le_bounded<uint16_t>(budget, encoded, payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			auction_append_le_bounded<uint64_t>(budget, encoded,
+							    payload.items[index].item_uid);
+			auction_append_le_bounded<uint64_t>(
+				budget, encoded, payload.items[index].expected_item_revision);
+			auction_append_le_bounded<int32_t>(budget, encoded,
+							   payload.items[index].vnum);
+		}
+		if (!auction_append_string_bounded(budget, encoded, payload.account_name) ||
+		    !auction_append_string_bounded(budget, encoded, payload.actor_name) ||
+		    !auction_append_string_bounded(budget, encoded, payload.object_short) ||
+		    !auction_append_string_bounded(budget, encoded, payload.id_keywords) ||
+		    !auction_append_string_bounded(budget, encoded, payload.object_info))
+			return false;
+		auction_append_le_bounded<uint32_t>(budget, encoded, payload.object_blob_size);
+		budget.append(*encoded, payload.object_blob.begin(),
+			      payload.object_blob.begin() + payload.object_blob_size);
+	}
+	catch (const auction_command_refusal &)
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		encoded->clear();
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		encoded->clear();
+		return false;
+	}
+	return encoded->size() <= CRITICAL_COMMAND_MAX_PAYLOAD_BYTES;
+}
+
+bool auction_command_build_bounded(critical_command *command, critical_operation_id operation_id,
+				   const auction_command_payload &payload,
+				   critical_source_site source_site,
+				   critical_deadline_class deadline_class,
+				   bool (*reserve)(size_t, void *) noexcept, void *context,
+				   size_t outer, bool *budget_denied) noexcept
+{
+	const size_t frames =
+		// Complete actual build values: account/player/item keys, operation
+		// parameter, two local vectors, scalar loops and result latches.
+		sizeof(critical_operation_id) + 3 * sizeof(critical_entity_key) +
+		sizeof(std::vector<critical_entity_key>) +
+		sizeof(std::vector<critical_expected_revision>) + sizeof(critical_command) +
+		16 * sizeof(void *) + 11 * sizeof(size_t) + 8 * sizeof(bool) +
+		3 * sizeof(uint64_t) + auction_codec_vector_frames + auction_codec_move_frames;
+	auction_command_budget budget{ reserve, context, outer, frames };
+	if (budget_denied)
+		*budget_denied = false;
+	auction_command_denial_latch denial{ budget, budget_denied };
+	if (command)
+	{
+		// Admit the pure copy-profile getter's return carrier, then its real
+		// complete command CURRENT observer closure before touching output.
+		// command remains null in the budget until this physical scan finishes.
+		if (!auction_command_bounded_policy() || !budget.peak(sizeof(size_t)) ||
+		    !budget.peak(critical_command_copy_frame_bytes()))
+		{
+			if (budget_denied)
+				*budget_denied = true;
+			return false;
+		}
+		if (!critical_command_current_heap_bytes(*command, &budget.excluded_caller_heap))
+		{
+			budget.denied = true;
+			return false;
+		}
+		budget.command = command;
+	}
+	if (!auction_command_bounded_policy() || !budget.peak())
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	if (!command || !valid_payload(payload))
+		return false;
+	critical_entity_key account_key = {};
+	std::vector<critical_entity_key> keys;
+	std::vector<critical_expected_revision> revisions;
+	try
+	{
+		budget.keys = &keys;
+		budget.revisions = &revisions;
+		size_t nested = 0;
+		if (payload.actor_pid)
+		{
+			const critical_entity_key player = { critical_entity_type::player,
+							     payload.actor_pid };
+			if (!budget.prefix(nested) ||
+			    !currency_account_key_bounded(
+				    payload.account_name.data(), payload.racewar, &account_key,
+				    auction_command_budget::forward, &budget, nested))
+				return false;
+			budget.push(keys, player);
+			budget.push(keys, account_key);
+			budget.push(revisions, critical_expected_revision{
+						       player, payload.expected_wallet_revision });
+			budget.push(revisions,
+				    critical_expected_revision{ account_key,
+								payload.expected_bank_revision });
+		}
+		budget.push(keys,
+			    critical_entity_key{ critical_entity_type::auction,
+						 payload.auction_id ? payload.auction_id :
+								      listing_key(operation_id) });
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const critical_entity_key item = { critical_entity_type::item,
+							   payload.items[index].item_uid };
+			budget.push(keys, item);
+			budget.push(revisions,
+				    critical_expected_revision{
+					    item, payload.items[index].expected_item_revision });
+		}
+	}
+	catch (const auction_command_refusal &)
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*command = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+		     .operation_id = operation_id,
+		     .type = critical_command_type::auction,
+		     .payload_version = AUCTION_COMMAND_PAYLOAD_VERSION,
+		     .source_site = source_site,
+		     .deadline_class = deadline_class,
+		     .accepted_at_usec = 0,
+		     .keys = std::move(keys),
+		     .expected_revisions = std::move(revisions),
+		     .payload = {} };
+	size_t nested = 0;
+	if (!budget.prefix(nested) ||
+	    !auction_command_encode_payload_bounded(payload, &command->payload,
+						    auction_command_budget::forward, &budget,
+						    nested, budget_denied))
+		return false;
+	if (!budget.peak(20 * sizeof(void *) + 19 * sizeof(size_t) + 3 * sizeof(bool)))
+		return false;
+	if (!budget.peak(auction_command_build_sort_source_frame_bytes(*command)))
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
+			       critical_entity_key_equal) != command->keys.end())
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  [](const critical_expected_revision &left,
+		     const critical_expected_revision &right)
+		  { return critical_entity_key_less(left.key, right.key); });
+	return true;
+}
+
+static bool decode_original_payload_bounded(const critical_command &command,
+					    auction_command_payload *payload,
+					    bool native_item_fences,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer, bool *budget_denied)
+{
+	const size_t frames = sizeof(critical_command) + 16 * sizeof(void *) + 8 * sizeof(size_t) +
+			      8 * sizeof(bool) + 4 * sizeof(uint64_t) + 4 * sizeof(uint32_t) +
+			      3 * sizeof(uint16_t) + auction_codec_vector_constructor_frames +
+			      auction_codec_move_frames;
+	auction_command_budget budget{ reserve, context, outer, frames };
+	if (budget_denied)
+		*budget_denied = false;
+	auction_command_denial_latch denial{ budget, budget_denied };
+	// The accessor owns one command reference, four constexpr size_t locals
+	// and its returned size_t; no CURRENT/profile query precedes this admission.
+	if (!auction_command_bounded_policy() ||
+	    !budget.peak(sizeof(void *) + 5 * sizeof(size_t)) ||
+	    !budget.peak(auction_command_matching_fences_source_frame_bytes(command)))
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	if (!payload || command.type != critical_command_type::auction ||
+	    command.payload_version != AUCTION_COMMAND_PAYLOAD_VERSION)
+		return false;
+	*payload = {};
+	const uint8_t *cursor = command.payload.data();
+	const uint8_t *end = cursor + command.payload.size();
+	uint8_t action = 0;
+	if (!read_le(&cursor, end, &action) || !read_le(&cursor, end, &payload->actor_pid) ||
+	    !read_le(&cursor, end, &payload->auction_id) ||
+	    !read_le(&cursor, end, &payload->racewar) ||
+	    !read_le(&cursor, end, &payload->expected_wallet_revision) ||
+	    !read_le(&cursor, end, &payload->expected_bank_revision) ||
+	    !read_le(&cursor, end, &payload->value) ||
+	    !read_le(&cursor, end, &payload->start_price) ||
+	    !read_le(&cursor, end, &payload->buy_price) ||
+	    !read_le(&cursor, end, &payload->listing_fee) ||
+	    !read_le(&cursor, end, &payload->closing_fee_basis_points) ||
+	    !read_le(&cursor, end, &payload->bid_extension_seconds) ||
+	    !read_le(&cursor, end, &payload->end_time) ||
+	    !read_le(&cursor, end, &payload->item_count) ||
+	    payload->item_count > payload->items.size())
+		return false;
+	payload->action = static_cast<auction_action>(action);
+	for (size_t index = 0; index < payload->item_count; ++index)
+		if (!read_le(&cursor, end, &payload->items[index].item_uid) ||
+		    !read_le(&cursor, end, &payload->items[index].expected_item_revision) ||
+		    !read_le(&cursor, end, &payload->items[index].vnum))
+			return false;
+	if (!read_string(&cursor, end, &payload->account_name) ||
+	    !read_string(&cursor, end, &payload->actor_name) ||
+	    !read_string(&cursor, end, &payload->object_short) ||
+	    !read_string(&cursor, end, &payload->id_keywords) ||
+	    !read_string(&cursor, end, &payload->object_info) ||
+	    !read_le(&cursor, end, &payload->object_blob_size) ||
+	    payload->object_blob_size > payload->object_blob.size() ||
+	    static_cast<size_t>(end - cursor) != payload->object_blob_size)
+		return false;
+	memcpy(payload->object_blob.data(), cursor, payload->object_blob_size);
+	if (!valid_payload(*payload))
+		return false;
+	critical_command expected = {};
+	budget.command = &expected;
+	size_t nested = 0;
+	if (!budget.prefix(nested) ||
+	    !auction_command_build_bounded(&expected, command.operation_id, *payload,
+					   command.source_site, command.deadline_class,
+					   auction_command_budget::forward, &budget, nested,
+					   budget_denied) ||
+	    !(native_item_fences ? matching_native_item_fences(expected, command) :
+				   matching_fences(expected, command)))
+		return false;
+	return true;
+}
+
+bool auction_command_decode_native_base_bounded(const critical_command &command,
+						std::span<const uint8_t> base,
+						auction_command_payload *payload,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer,
+						bool *budget_denied) noexcept
+{
+	const size_t frames = sizeof(critical_command) + sizeof(auction_command_payload) +
+			      14 * sizeof(void *) + 8 * sizeof(size_t) + 6 * sizeof(bool) +
+			      sizeof(std::span<const uint8_t>) + auction_codec_vector_frames +
+			      auction_codec_move_frames;
+	auction_command_budget budget{ reserve, context, outer, frames };
+	if (budget_denied)
+		*budget_denied = false;
+	auction_command_denial_latch denial{ budget, budget_denied };
+	if (!auction_command_bounded_policy() || !budget.peak())
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	try
+	{
+		if (!payload || command.type != critical_command_type::auction ||
+		    command.payload_version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION ||
+		    (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+		     command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION))
+			return false;
+		size_t request = 0, nested = 0;
+		if (!critical_command_fresh_copy_request_bytes(command, &request) ||
+		    !budget.peak(request + critical_command_copy_frame_bytes()))
+		{
+			if (budget_denied)
+				*budget_denied = true;
+			return false;
+		}
+		critical_command original = command;
+		budget.command = &original;
+		original.payload_version = AUCTION_COMMAND_PAYLOAD_VERSION;
+		if (base.size() > original.payload.capacity() && !budget.peak(base.size()))
+		{
+			if (budget_denied)
+				*budget_denied = true;
+			return false;
+		}
+		original.payload.assign(base.begin(), base.end());
+		auction_command_payload parsed{};
+		if (!budget.prefix(nested) ||
+		    !decode_original_payload_bounded(original, &parsed, true,
+						     auction_command_budget::forward, &budget,
+						     nested, budget_denied))
+			return false;
+		if (parsed.action == auction_action::claim_money &&
+		    !matching_fences(
+			    original,
+			    [&]()
+			    {
+				    critical_command expected{};
+				    if (!budget.prefix(nested) ||
+					!auction_command_build_bounded(
+						&expected, command.operation_id, parsed,
+						command.source_site, command.deadline_class,
+						auction_command_budget::forward, &budget, nested,
+						budget_denied))
+				    {
+					    if (budget.denied || (budget_denied && *budget_denied))
+						    throw auction_command_refusal{};
+				    }
+				    return expected;
+			    }()))
+			return false;
+		*payload = parsed;
+		return true;
+	}
+	catch (const auction_command_refusal &)
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool auction_command_decode_payload_bounded(const critical_command &command,
+					    auction_command_payload *payload,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer, bool *budget_denied) noexcept
+{
+	if (budget_denied)
+		*budget_denied = false;
+	if (payload && command.type == critical_command_type::auction &&
+	    command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+	{
+		const size_t frames = sizeof(auction_native_command_context) + 10 * sizeof(void *) +
+				      3 * sizeof(size_t) + 3 * sizeof(bool);
+		auction_command_budget budget{ reserve, context, outer, frames };
+		size_t nested = 0;
+		if (!auction_command_bounded_policy() || !budget.peak() || !budget.prefix(nested))
+		{
+			if (budget_denied)
+				*budget_denied = true;
+			return false;
+		}
+		auction_native_command_context candidate;
+		const auto result = auction_native_command_decode_bounded(
+			command, &candidate, auction_command_budget::forward, &budget, nested);
+		if (result != economic_accounting_error::ok)
+		{
+			if (budget_denied)
+				*budget_denied = budget.denied;
+			return false;
+		}
+		*payload = candidate.payload;
+		return true;
+	}
+	try
+	{
+		return decode_original_payload_bounded(command, payload, false, reserve, context,
+						       outer, budget_denied);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool auction_command_encode_result_bounded(
+	const auction_command_result &result,
+	std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	bool *budget_denied) noexcept
+{
+	const size_t frames = sizeof(std::vector<uint8_t>) + 14 * sizeof(void *) +
+			      10 * sizeof(size_t) + 6 * sizeof(bool) + 4 * sizeof(uint64_t) +
+			      4 * sizeof(int64_t) + auction_codec_vector_frames +
+			      auction_codec_move_frames;
+	auction_command_budget budget{ reserve, context, outer, frames };
+	if (budget_denied)
+		*budget_denied = false;
+	auction_command_denial_latch denial{ budget, budget_denied };
+	if (!auction_command_bounded_policy() || !budget.peak())
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	if (!encoded || result.item_count > result.item_uids.size())
+		return false;
+	encoded->fill(0);
+	std::vector<uint8_t> bytes;
+	budget.output = &bytes;
+	try
+	{
+		auction_append_le_bounded<uint8_t>(budget, &bytes,
+						   static_cast<uint8_t>(result.action));
+		auction_append_le_bounded<uint8_t>(budget, &bytes,
+						   static_cast<uint8_t>(result.event_type));
+		auction_append_le_bounded<uint32_t>(budget, &bytes, result.auction_id);
+		auction_append_le_bounded<uint32_t>(budget, &bytes, result.status);
+		auction_append_le_bounded<uint32_t>(budget, &bytes, result.seller_pid);
+		auction_append_le_bounded<uint32_t>(budget, &bytes, result.winner_pid);
+		auction_append_le_bounded<uint32_t>(budget, &bytes, result.previous_bidder_pid);
+		auction_append_le_bounded<int64_t>(budget, &bytes, result.final_price);
+		auction_append_le_bounded<int64_t>(budget, &bytes, result.wallet_value_delta);
+		for (int64_t value : result.wallet.amount)
+			auction_append_le_bounded<int64_t>(budget, &bytes, value);
+		for (int64_t value : result.bank.amount)
+			auction_append_le_bounded<int64_t>(budget, &bytes, value);
+		auction_append_le_bounded<uint64_t>(budget, &bytes, result.wallet_revision);
+		auction_append_le_bounded<uint64_t>(budget, &bytes, result.bank_revision);
+		auction_append_le_bounded<uint64_t>(budget, &bytes, result.auction_revision);
+		auction_append_le_bounded<uint64_t>(budget, &bytes, result.player_owner_revision);
+		auction_append_le_bounded<uint64_t>(budget, &bytes, result.auction_owner_revision);
+		auction_append_le_bounded<uint16_t>(budget, &bytes, result.item_count);
+		for (size_t index = 0; index < result.item_count; ++index)
+		{
+			auction_append_le_bounded<uint64_t>(budget, &bytes,
+							    result.item_uids[index]);
+			auction_append_le_bounded<uint64_t>(budget, &bytes,
+							    result.item_revisions[index]);
+		}
+		auction_append_le_bounded<int64_t>(budget, &bytes, result.claim_credit_used);
+	}
+	catch (const auction_command_refusal &)
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (bytes.size() > encoded->size())
+		return false;
+	std::copy(bytes.begin(), bytes.end(), encoded->begin());
+	return true;
+}
+#else
+
+size_t auction_command_build_sort_source_frame_bytes(const critical_command &) noexcept
+{
+	return 0;
+}
+size_t auction_command_matching_fences_source_frame_bytes(const critical_command &) noexcept
+{
+	return 0;
+}
+bool auction_command_encode_payload_bounded(const auction_command_payload &, std::vector<uint8_t> *,
+					    bool (*)(size_t, void *) noexcept, void *, size_t,
+					    bool *denied) noexcept
+{
+	if (denied)
+		*denied = true;
+	return false;
+}
+bool auction_command_build_bounded(critical_command *, critical_operation_id,
+				   const auction_command_payload &, critical_source_site,
+				   critical_deadline_class, bool (*)(size_t, void *) noexcept,
+				   void *, size_t, bool *denied) noexcept
+{
+	if (denied)
+		*denied = true;
+	return false;
+}
+bool auction_command_decode_native_base_bounded(const critical_command &, std::span<const uint8_t>,
+						auction_command_payload *,
+						bool (*)(size_t, void *) noexcept, void *, size_t,
+						bool *denied) noexcept
+{
+	if (denied)
+		*denied = true;
+	return false;
+}
+bool auction_command_decode_payload_bounded(const critical_command &, auction_command_payload *,
+					    bool (*)(size_t, void *) noexcept, void *, size_t,
+					    bool *denied) noexcept
+{
+	if (denied)
+		*denied = true;
+	return false;
+}
+bool auction_command_encode_result_bounded(const auction_command_result &,
+					   std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> *,
+					   bool (*)(size_t, void *) noexcept, void *, size_t,
+					   bool *denied) noexcept
+{
+	if (denied)
+		*denied = true;
+	return false;
+}
+
+#endif

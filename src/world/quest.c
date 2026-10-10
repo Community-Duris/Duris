@@ -42,6 +42,7 @@
 #include "core/files.h"
 #include <ctype.h>
 #include <climits>
+#include <cerrno>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -3377,6 +3378,10 @@ class quest_native_gameplay_owner final
     private:
 	friend class quest_native_frozen_continuation_owner;
 	static bool restore_phase2(const critical_native_recovery_envelope &) noexcept;
+	static bool restore_phase2_bounded(const critical_native_recovery_envelope &,
+					   player_save_coin_replay_budget_scope_owner &,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
 	static void passive_pulse() noexcept;
 #ifndef __NO_MYSQL__
 	static bool charge_passive_child(native_quest_gameplay_flow &) noexcept;
@@ -5270,4 +5275,1632 @@ static bool submit_native_quest_give(P_char mobile, P_char player, int quester_i
 static void native_quest_gameplay_pulse() noexcept
 {
 	quest_native_gameplay_owner::pulse();
+}
+
+// Pure CURRENT for the original native quest driver/reward owners. Runtime and
+// passive registries share flow pointers during genuine promotion; commands
+// also cross the item owner. Allocation-free identity scans preserve that cut.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+
+bool nq_world_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	bytes += extra;
+	return true;
+}
+bool nq_world_rows(size_t &bytes, size_t count, size_t width) noexcept
+{
+	if (width && count > SIZE_MAX / width)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	return nq_world_add(bytes, count * width);
+}
+bool nq_world_text(size_t &bytes, const std::string &value) noexcept
+{
+	// GNU13 C++11 ABI basic_string keeps capacities <=15 in its inline buffer.
+	if (value.capacity() == SIZE_MAX)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	return value.capacity() <= 15 || nq_world_add(bytes, value.capacity() + 1);
+}
+bool nq_world_command(size_t &bytes, const critical_command &value) noexcept
+{
+	size_t heap = 0;
+	return critical_command_current_heap_bytes(value, &heap) && nq_world_add(bytes, heap);
+}
+bool nq_world_envelope(size_t &bytes, const critical_native_recovery_envelope *value) noexcept
+{
+	return !value ||
+	       (nq_world_add(bytes, sizeof(*value)) && nq_world_command(bytes, value->command) &&
+		nq_world_rows(bytes, value->attachment.capacity(), sizeof(uint8_t)));
+}
+template <class Table> bool nq_world_table(size_t &bytes, const Table &table) noexcept
+{
+	// Actual default GNU13 unordered_map node type: its hash cache policy is
+	// selected by the real key/hash instantiation, not a guessed node overhead.
+	using node = std::__detail::_Hash_node<
+		typename Table::value_type,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	// These original tables use default allocators. GNU13's sole bucket is
+	// inline; a real allocated bucket array has at least two prime-policy buckets.
+	if (!table.bucket_count())
+	{
+		errno = EIO;
+		return false;
+	}
+	return nq_world_add(bytes, sizeof(table)) &&
+	       (table.bucket_count() <= 1 ||
+		nq_world_rows(bytes, table.bucket_count(),
+			      sizeof(std::__detail::_Hash_node_base *))) &&
+	       nq_world_rows(bytes, table.size(), sizeof(node));
+}
+#ifndef __NO_MYSQL__
+bool nq_world_terms(size_t &bytes, const quest_reward_continuation &terms) noexcept
+{
+	// All other continuation fields are fixed members of the owning object.
+	return nq_world_text(bytes, terms.character_name) &&
+	       nq_world_text(bytes, terms.definition_id);
+}
+#endif
+
+bool nq_world_flow_seen(const native_quest_gameplay_flow *flow,
+			const std::shared_ptr<native_quest_gameplay_flow> *current) noexcept
+{
+	for (const auto &[runtime, pointer] : native_quest_gameplay)
+	{
+		if (&pointer == current)
+			return false;
+		if (pointer.get() == flow)
+			return true;
+	}
+#ifndef __NO_MYSQL__
+	for (const auto &[key, pointer] : native_quest_passive_gameplay)
+	{
+		if (&pointer == current)
+			return false;
+		if (pointer.get() == flow)
+			return true;
+	}
+#endif
+	return false;
+}
+bool nq_world_flow_command_seen(const critical_command *command,
+				const std::shared_ptr<const critical_command> *current) noexcept
+{
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+		if (flow)
+			for (const auto *pointer :
+			     { &flow->acceptance_command, &flow->prepared_child,
+			       &flow->completed_child })
+			{
+				if (pointer == current)
+					return false;
+				if (pointer->get() == command)
+					return true;
+			}
+#ifndef __NO_MYSQL__
+	for (const auto &[key, flow] : native_quest_passive_gameplay)
+		if (flow)
+			for (const auto *pointer :
+			     { &flow->acceptance_command, &flow->prepared_child,
+			       &flow->completed_child })
+			{
+				if (pointer == current)
+					return false;
+				if (pointer->get() == command)
+					return true;
+			}
+#endif
+	return false;
+}
+bool nq_world_shared_command(size_t &bytes,
+			     const std::shared_ptr<const critical_command> &command) noexcept
+{
+	if (!command)
+		return true;
+	bool item_owned = false;
+	if (!item_native_quest_retained_command_allocation_owned(command.get(), &item_owned))
+		return false;
+	// Live commands use make_shared<const command>; the original cold decoder
+	// also uses make_shared<command>, then converts its shared pointer to const.
+	static_assert(
+		sizeof(std::_Sp_counted_ptr_inplace<critical_command, std::allocator<void>,
+						    __gnu_cxx::_S_atomic>) ==
+		sizeof(std::_Sp_counted_ptr_inplace<const critical_command, std::allocator<void>,
+						    __gnu_cxx::_S_atomic>));
+	return item_owned || nq_world_flow_command_seen(command.get(), &command) ||
+	       (nq_world_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+									std::allocator<void>,
+									__gnu_cxx::_S_atomic>)) &&
+		nq_world_command(bytes, *command));
+}
+bool nq_world_flow(size_t &bytes, const native_quest_gameplay_flow &flow) noexcept
+{
+	if (!nq_world_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<native_quest_gameplay_flow,
+								     std::allocator<void>,
+								     __gnu_cxx::_S_atomic>)) ||
+	    !nq_world_rows(bytes, flow.branches.capacity(), sizeof(flow.branches[0])) ||
+	    !nq_world_shared_command(bytes, flow.acceptance_command) ||
+	    !nq_world_shared_command(bytes, flow.prepared_child) ||
+	    !nq_world_shared_command(bytes, flow.completed_child) ||
+	    !nq_world_envelope(bytes, flow.recovery.get()) ||
+	    !nq_world_envelope(bytes, flow.pending.get()) ||
+	    !nq_world_envelope(bytes, flow.hook_return.get()) ||
+	    !nq_world_envelope(bytes, flow.child_context.get()) ||
+	    !nq_world_envelope(bytes, flow.restored_original.get()))
+		return false;
+	for (const auto &branch : flow.branches)
+		if (branch &&
+		    (!nq_world_add(bytes, sizeof(*branch)) ||
+		     !nq_world_rows(bytes, branch->give.capacity(), sizeof(goal_data)) ||
+		     !nq_world_rows(bytes, branch->receive.capacity(), sizeof(goal_data)) ||
+		     !nq_world_text(bytes, branch->message) ||
+		     !nq_world_text(bytes, branch->disappear_message) ||
+		     !nq_world_text(bytes, branch->definition_id)))
+			return false;
+	// branch.view pointers alias its owned strings/goal vectors; P_char/P_obj
+	// identities and actual gameplay bodies belong to the genuine whole-native G.
+	return true;
+}
+#ifndef __NO_MYSQL__
+bool nq_world_frozen(size_t &bytes, const native_quest_frozen_recovery_state &state) noexcept
+{
+	return nq_world_add(bytes,
+			    sizeof(std::_Sp_counted_ptr_inplace<native_quest_frozen_recovery_state,
+								std::allocator<void>,
+								__gnu_cxx::_S_atomic>)) &&
+	       nq_world_text(bytes, state.key) && nq_world_command(bytes, state.command) &&
+	       nq_world_rows(bytes, state.continuation.capacity(), sizeof(uint8_t)) &&
+	       nq_world_terms(bytes, state.terms) &&
+	       nq_world_envelope(bytes, state.current.get()) &&
+	       nq_world_envelope(bytes, state.pending.get()) &&
+	       nq_world_envelope(bytes, state.returned.get()) &&
+	       nq_world_envelope(bytes, state.restored_original.get()) &&
+	       nq_world_envelope(bytes, state.terminal_parent.get());
+}
+#endif
+#endif
+}
+
+bool quest_native_retained_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (__gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const int saved_errno = errno;
+	errno = 0;
+	size_t bytes = 0;
+	if (!nq_world_table(bytes, native_quest_gameplay) ||
+	    !nq_world_table(bytes, quest_reward_recoveries) ||
+	    !nq_world_table(bytes, quest_reward_recovery_items))
+		return false;
+	for (const auto &[key, attempt] : quest_reward_recoveries)
+		if (!nq_world_text(bytes, key) ||
+		    !nq_world_rows(bytes, attempt.expected_receipts.capacity(),
+				   sizeof(player_quest_xp_receipt_snapshot)))
+			return false;
+	for (const auto &[uid, key] : quest_reward_recovery_items)
+		if (!nq_world_text(bytes, key))
+			return false;
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+	{
+		if (!flow)
+		{
+			errno = EIO;
+			return false;
+		}
+		if (!nq_world_flow_seen(flow.get(), &flow) && !nq_world_flow(bytes, *flow))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+	}
+#ifndef __NO_MYSQL__
+	if (!nq_world_table(bytes, native_quest_passive_gameplay) ||
+	    !nq_world_table(bytes, native_quest_passive_children) ||
+	    !nq_world_table(bytes, native_quest_frozen_recoveries))
+		return false;
+	for (const auto &[key, flow] : native_quest_passive_gameplay)
+	{
+		if (!flow)
+		{
+			errno = EIO;
+			return false;
+		}
+		if (!nq_world_text(bytes, key) ||
+		    (!nq_world_flow_seen(flow.get(), &flow) && !nq_world_flow(bytes, *flow)))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+	}
+	for (const auto &[key, record] : native_quest_passive_children)
+	{
+		if (!record)
+		{
+			errno = EIO;
+			return false;
+		}
+		if (!nq_world_text(bytes, key))
+			return false;
+		bool seen = false;
+		for (const auto &[prior_key, prior] : native_quest_passive_children)
+		{
+			if (&prior == &record)
+				break;
+			seen = seen || prior.get() == record.get();
+		}
+		if (!seen &&
+		    (!nq_world_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<
+						  const critical_native_recovery_envelope,
+						  std::allocator<void>, __gnu_cxx::_S_atomic>)) ||
+		     !nq_world_command(bytes, record->command) ||
+		     !nq_world_rows(bytes, record->attachment.capacity(), sizeof(uint8_t))))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+	}
+	for (const auto &[key, state] : native_quest_frozen_recoveries)
+	{
+		if (!state)
+		{
+			errno = EIO;
+			return false;
+		}
+		if (!nq_world_text(bytes, key))
+			return false;
+		bool seen = false;
+		for (const auto &[prior_key, prior] : native_quest_frozen_recoveries)
+		{
+			if (&prior == &state)
+				break;
+			seen = seen || prior.get() == state.get();
+		}
+		if (!seen && !nq_world_frozen(bytes, *state))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+	}
+#endif
+	*output = bytes;
+	errno = saved_errno;
+	return true;
+#endif
+}
+
+#include <thread>
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13
+#include <bits/allocated_ptr.h>
+#endif
+namespace
+{
+constexpr size_t recovery_library_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t recovery_library_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t recovery_library_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t recovery_library_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint8_t);
+constexpr size_t recovery_library_vector_frames =
+	recovery_library_allocator_frames + recovery_library_copy_frames +
+	recovery_library_relocate_frames + recovery_library_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t recovery_library_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + recovery_library_allocator_frames;
+
+// Nontrivial row/description construction and destruction are source scopes,
+// not heap metadata. The nested member objects already live in sizeof(row).
+constexpr size_t recovery_library_nontrivial_frames =
+	// default_n_1<false>: first/n/cur/return; _Construct/addressof/placement.
+	3 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(void *) + sizeof(size_t) +
+	// Actual aggregate row and description this, four row strings and two
+	// description strings: string()/allocator hider/use-local-data/set-length.
+	2 * sizeof(void *) +
+	6 * (6 * sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(std::allocator<char>)) +
+	// row/description nested vector()/Vector_base()/Vector_impl()/data() and
+	// allocator return carriers. Three source member vector types.
+	3 * (5 * sizeof(void *) + sizeof(std::allocator<int32_t>)) +
+	// Nontrivial _Destroy range/aux::__destroy/destroy_at/__addressof; actual
+	// row/description destructor this then six string destructors/dispose/
+	// _M_is_local/_M_destroy and three nested vector destroy/deallocate scopes.
+	8 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) +
+	6 * (5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	3 * recovery_library_allocator_frames;
+// Fitting _M_replace calls _M_disjunct(this,s). Both actual less pointer
+// temporaries can coexist through the full || expression; their operator()
+// has this/x/y/result and is_constant_evaluated result. Data/size queries.
+constexpr size_t recovery_library_disjunct_frames =
+	2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(std::less<const char *>) +
+	2 * (3 * sizeof(void *) + 2 * sizeof(bool)) + 2 * (2 * sizeof(void *)) + sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t recovery_library_string_frames =
+	recovery_library_disjunct_frames +
+	// assign(s,n): this/s/n/ref-return; _M_replace(this,pos,len1,s,len2),
+	// old_size/new_size/p/how_much/ref-return, actual length checks/queries.
+	3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + 5 * sizeof(size_t) +
+	6 * (sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+	// _M_mutate(this,pos,len1,s,len2), how_much/new_capacity/r;
+	// _M_create(this,capacityref,oldcapacity), max_size, allocation return.
+	3 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	recovery_library_allocator_frames +
+	// _S_copy(d,s,n), traits::copy(s1,s2,n) returned pointer and memcopy
+	// argument/result carriers; one-character assign reference/char scopes.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(char) +
+	// old block dispose/destroy plus data/capacity/set-length and final NUL.
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + sizeof(char);
+// Genuine vector(n,value,allocator) constructor scopes, before fill:
+// vector this/n/value-reference/allocator-reference and default allocator;
+// _S_check_init_len n/a/result and its _Tp allocator copy; _Vector_base
+// this/n/a, _Vector_impl this/a and allocator copy, _Vector_impl_data this;
+// _M_create_storage this/n. Existing allocator profile owns _S_max_size.
+constexpr size_t recovery_library_size_constructor_frames =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<size_t>) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(std::allocator<size_t>) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) +
+	sizeof(size_t);
+
+// Actual codec linked owner/row-vector observation and relay source scopes.
+// These declared carriers complement the real T-specific CURRENT profiles.
+constexpr size_t recovery_owner_source_frames =
+	// add/rows/capacity + byte/row/payload/intent/context overload arguments,
+	// genuine const row range iterators, row reference and current-heap scalar.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 4 * sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + 10 * sizeof(void *) +
+	2 * sizeof(std::vector<player_item_snapshot>::const_iterator) + 2 * sizeof(size_t) +
+	4 * sizeof(bool) +
+	// current(this,out), bytes and actual linked cursor; prefix/peak this,
+	// outputs, requests/frames/bytes plus callback arguments/results.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 5 * sizeof(void *) +
+	7 * sizeof(size_t) + 4 * sizeof(bool) +
+	// invoke this/F-reference/failure/frames/local value, actual lambda prefix;
+	// watcher ctor this/owner/value and destructor this; observe formal pair.
+	2 * sizeof(void *) + sizeof(bool) + 3 * sizeof(size_t) + 6 * sizeof(void *) + sizeof(bool);
+}
+
+namespace
+{
+// Actual installed span/array/initializer_list source constructor/accessors.
+// The view object itself is a real caller local,priced separately.
+constexpr size_t recovery_library_view_frames =
+	// span(pointer,count) this/first/count; to_address/__to_address params+results;
+	// dynamic extent constructor and accessor each actual receiver/size value.
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	2 * (sizeof(void *) + sizeof(size_t)) +
+	// span default/array/converting constructors,actual reference and extent;
+	// begin/end actual normal_iterator return and ctor source references.
+	4 * sizeof(void *) + sizeof(size_t) + 2 * (4 * sizeof(void *)) +
+	// subspan this/offset/count/returned span; size/empty/data/index receiver/
+	// result,where size reaches the real extent accessor.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(std::span<const uint8_t>) +
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	// array begin/end/data/_S_ptr and actual operator[]/_S_ref argument/results.
+	4 * (4 * sizeof(void *)) + 3 * sizeof(void *) + sizeof(size_t) +
+	// initializer_list private compiler ctor and member begin/end/size.
+	2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+}
+// Genuine declared-source observer inventory. This is source storage, never
+// physical G. Independent review/native correspondence are separate evidence.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL)
+template <class Table> constexpr size_t quest_current_table_frames() noexcept
+{
+	using iterator = typename Table::const_iterator;
+	using value = typename Table::value_type;
+	using node = std::__detail::_Hash_node<
+		value,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	using base = std::__detail::_Node_iterator_base<
+		value,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	// nq_world_table(bytes&,table&) + unordered_map bucket_count/size receiver,
+	// return and hashtable receiver/return. Real range-for begin/end saved values,
+	// begin/end receiver and constructor argument/receiver/base carriers, _M_begin
+	// node return/receiver, iterator dereference/_M_v/_M_valptr/aligned-buffer
+	// pointers, prefix increment/_M_incr/_M_next, equality operands/bool result,
+	// and the actual structured-binding pair reference. All map node/layout types
+	// are selected from this actual Table, rather than a bucket/node estimate.
+	return 2 * sizeof(void *) + 2 * (2 * sizeof(void *) + 2 * sizeof(size_t)) +
+	       2 * sizeof(iterator) +
+	       2 * (sizeof(const Table *) + sizeof(iterator) + sizeof(node *) + sizeof(iterator *) +
+		    sizeof(base *) + sizeof(node *) + sizeof(const void *)) +
+	       sizeof(iterator *) + sizeof(node *) + sizeof(value *) + 2 * sizeof(void *) +
+	       sizeof(value *) + sizeof(iterator *) + sizeof(base *) + sizeof(node *) +
+	       sizeof(node *) + 2 * sizeof(const base *) + sizeof(bool) + sizeof(const value *);
+}
+template <class Vector> constexpr size_t quest_current_vector_frames() noexcept
+{
+	// Actual saved range iterators and element reference; begin/end const
+	// receiver/result/normal-iterator constructor, deref/increment/equality,
+	// both base() receiver/reference results, capacity receiver/result.
+	return 2 * sizeof(typename Vector::const_iterator) + sizeof(typename Vector::value_type *) +
+	       2 * (sizeof(const Vector *) + sizeof(typename Vector::const_iterator) +
+		    2 * sizeof(void *)) +
+	       2 * (2 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) +
+	       sizeof(const Vector *) + sizeof(size_t);
+}
+template <class T> constexpr size_t quest_current_shared_pointer_frames() noexcept
+{
+	// Actual __shared_ptr get/boolean/deref/arrow receivers and their returned
+	// pointers/references/boolean. Member object remains physical-owner storage.
+	return 5 * sizeof(void *) + sizeof(bool) + 2 * sizeof(T *);
+}
+template <class T> constexpr size_t quest_current_unique_pointer_frames() noexcept
+{
+	// unique_ptr::get -> __uniq_ptr_impl::_M_ptr -> tuple get -> __get_helper ->
+	// Tuple_impl::_M_head -> Head_base::_M_head: six receiver/ref/result pairs.
+	// bool/deref/arrow add three receivers, pointer/ref returns and bool result.
+	return 12 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(T *) + sizeof(bool);
+}
+}
+#else
+}
+#endif
+bool quest_native_current_source_frames(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || __cplusplus != 202002L ||         \
+	defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL)
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t frames = 0, item_ownership = 0, command_frames = 0;
+	if (!item_native_quest_retained_command_allocation_owned_source_frames(&item_ownership) ||
+	    !critical_command_current_heap_observer_frame_bytes(&command_frames))
+		return false;
+	// Real public getter: output/saved errno/bytes, thread get_id/ctor/equality
+	// (five id values plus ctor receiver), errno pointer and scalar returns.
+	if (!nq_world_add(frames, sizeof(output) + sizeof(int) + sizeof(size_t) +
+					  5 * sizeof(std::thread::id) + sizeof(void *) +
+					  sizeof(int *) + 3 * sizeof(bool)) ||
+	    !nq_world_add(frames, quest_current_table_frames<decltype(native_quest_gameplay)>()) ||
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(quest_reward_recoveries)>()) ||
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(quest_reward_recovery_items)>()))
+		return false;
+#ifndef __NO_MYSQL__
+	if (!nq_world_add(frames,
+			  quest_current_table_frames<decltype(native_quest_passive_gameplay)>()) ||
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(native_quest_passive_children)>()) ||
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(native_quest_frozen_recoveries)>()))
+		return false;
+#endif
+	// flow_seen and flow_command_seen each own their nested runtime/passive
+	// table walks while the original outer walk is still live. This is in
+	// addition to the six genuine top-level registry scans, not a substitute.
+	if (!nq_world_add(frames,
+			  2 * quest_current_table_frames<decltype(native_quest_gameplay)>()))
+		return false;
+#ifndef __NO_MYSQL__
+	if (!nq_world_add(
+		    frames,
+		    2 * quest_current_table_frames<decltype(native_quest_passive_gameplay)>()) ||
+	    // Children and frozen states have real nested prior-pointer dedup loops.
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(native_quest_passive_children)>()) ||
+	    !nq_world_add(frames,
+			  quest_current_table_frames<decltype(native_quest_frozen_recoveries)>()))
+		return false;
+#endif
+	// The two original command-scan loops each own an actual three-pointer
+	// initializer backing array and view, begin/end/element pointers and member
+	// begin/end receiver/results. No restored envelope or ownership flag.
+	if (!nq_world_add(frames,
+			  4 * sizeof(void *) + 2 * sizeof(bool) +
+				  2 * (3 * sizeof(const std::shared_ptr<const critical_command> *) +
+				       sizeof(std::initializer_list<
+					       const std::shared_ptr<const critical_command> *>) +
+				       3 * sizeof(void *) + 4 * sizeof(void *))) ||
+	    !nq_world_add(frames, item_ownership))
+		return false;
+	// Genuine declared command CURRENT profile, not its unrelated copy/encode
+	// request allowance. The query's P+B source formals are separately owned.
+	if (!nq_world_add(frames, command_frames) ||
+	    !nq_world_add(frames, sizeof(size_t *) + sizeof(bool)))
+		return false;
+	// Real nq_world_shared_command's byte/command refs,item-owned and bool;
+	// command's byte/value refs,heap scalar and boolean; envelope's two formals;
+	// flow/frozen/terms two formals each and boolean. Add/rows have their genuine
+	// reference/value/width parameters and return. Text has three actual capacity
+	// call sites (SIZE_MAX,SSO,allocated request); GNU13 const capacity reaches
+	// data/local-data/pointer_to/addressof with its eleven pointer carriers.
+	using branches = decltype(std::declval<native_quest_gameplay_flow>().branches);
+	if (!nq_world_add(
+		    frames,
+		    2 * sizeof(void *) + 2 * sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) +
+			    sizeof(bool) + 4 * (2 * sizeof(void *) + sizeof(bool)) +
+			    sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+			    2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+			    3 * (11 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+			    sizeof(int *)) ||
+	    !nq_world_add(frames, quest_current_vector_frames<branches>()) ||
+	    !nq_world_add(frames,
+			  quest_current_shared_pointer_frames<native_quest_gameplay_flow>()) ||
+	    !nq_world_add(frames, quest_current_shared_pointer_frames<const critical_command>()) ||
+	    !nq_world_add(
+		    frames,
+		    quest_current_unique_pointer_frames<const native_quest_original_branch>()) ||
+	    !nq_world_add(frames,
+			  quest_current_unique_pointer_frames<critical_native_recovery_envelope>()))
+		return false;
+#ifndef __NO_MYSQL__
+	// Top-level full child/frozen shared pointers are different genuine template
+	// instantiations. The original dedup seen locals are two actual booleans.
+	if (!nq_world_add(
+		    frames,
+		    quest_current_shared_pointer_frames<const critical_native_recovery_envelope>()) ||
+	    !nq_world_add(
+		    frames,
+		    quest_current_shared_pointer_frames<native_quest_frozen_recovery_state>()) ||
+	    !nq_world_add(frames, 2 * sizeof(bool)))
+		return false;
+#endif
+	*output = frames;
+	return true;
+#endif
+}
+size_t quest_native_current_source_profile_query_frames() noexcept
+{
+	// Actual profile output/return, three scalars; dependent item query formals
+	// and critical pure query P+B; twelve typed table calls (six outer, four flow
+	// alias and two dedup), four shared,two unique,one vector profile returns;
+	// checked add reference/value/result. Unsupported build branches use less.
+	return sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	       item_native_quest_retained_command_allocation_owned_source_profile_query_frames() +
+	       sizeof(size_t *) + sizeof(bool) + 19 * sizeof(size_t) + sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool);
+}
+
+namespace
+{
+using quest_replay_reserve = bool (*)(size_t, void *) noexcept;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+struct quest_phase2_workspace
+{
+	player_save_coin_replay_budget_scope_owner &pipeline;
+	quest_replay_reserve reserve;
+	void *callback_context;
+	size_t outer;
+	const item_transfer_payload *payload = nullptr;
+	const native_quest_recovery_context *context = nullptr;
+	const std::string *key = nullptr;
+	const native_quest_gameplay_flow *flow = nullptr;
+	const native_quest_frozen_recovery_state *frozen = nullptr;
+	const critical_native_recovery_envelope *record = nullptr;
+	const critical_command *child = nullptr;
+	const native_quest_original_branch *branch = nullptr;
+	const std::vector<uint8_t> *left = nullptr, *right = nullptr;
+	bool current(size_t *output) const noexcept
+	{
+		size_t bytes = outer, world = 0, pipe = 0, heap = 0;
+		if (!output || !quest_native_retained_storage_bytes(&world) ||
+		    !player_save_native_recovery_replay_owner::current_storage_bytes(pipeline,
+										     &pipe) ||
+		    !nq_world_add(bytes, world) || !nq_world_add(bytes, pipe) ||
+		    !nq_world_add(bytes, sizeof(*this)))
+			return false;
+		if (payload &&
+		    (!item_transfer_payload_current_heap_bytes(*payload, &heap) ||
+		     !nq_world_add(bytes, sizeof(*payload)) || !nq_world_add(bytes, heap)))
+			return false;
+		if (context &&
+		    (!native_quest_recovery_context_current_heap_bytes(*context, &heap) ||
+		     !nq_world_add(bytes, sizeof(*context)) || !nq_world_add(bytes, heap)))
+			return false;
+		if (key && (!nq_world_add(bytes, sizeof(*key)) || !nq_world_text(bytes, *key)))
+			return false;
+		if (flow && !nq_world_flow_seen(flow, nullptr) && !nq_world_flow(bytes, *flow))
+			return false;
+		if (frozen)
+		{
+			bool owned = false;
+			for (const auto &[k, p] : native_quest_frozen_recoveries)
+				owned = owned || p.get() == frozen;
+			if (!owned && !nq_world_frozen(bytes, *frozen))
+				return false;
+		}
+		if (record)
+		{
+			bool owned = false;
+			for (const auto &[k, p] : native_quest_passive_children)
+				owned = owned || p.get() == record;
+			if (!owned &&
+			    (!nq_world_add(bytes,
+					   sizeof(std::_Sp_counted_ptr_inplace<
+						   const critical_native_recovery_envelope,
+						   std::allocator<void>, __gnu_cxx::_S_atomic>)) ||
+			     !nq_world_command(bytes, record->command) ||
+			     !nq_world_rows(bytes, record->attachment.capacity(), sizeof(uint8_t))))
+				return false;
+		}
+		if (child && (!nq_world_add(bytes, sizeof(std::_Sp_counted_ptr_inplace<
+							   critical_command, std::allocator<void>,
+							   __gnu_cxx::_S_atomic>)) ||
+			      !nq_world_command(bytes, *child)))
+			return false;
+		if (branch &&
+		    (!nq_world_add(bytes, sizeof(*branch)) ||
+		     !nq_world_text(bytes, branch->message) ||
+		     !nq_world_text(bytes, branch->disappear_message) ||
+		     !nq_world_text(bytes, branch->definition_id) ||
+		     !nq_world_rows(bytes, branch->give.capacity(), sizeof(goal_data)) ||
+		     !nq_world_rows(bytes, branch->receive.capacity(), sizeof(goal_data))))
+			return false;
+		for (const auto *buffer : { left, right })
+			if (buffer && (!nq_world_add(bytes, sizeof(*buffer)) ||
+				       !nq_world_rows(bytes, buffer->capacity(), sizeof(uint8_t))))
+				return false;
+		*output = bytes;
+		return true;
+	}
+	bool peak(size_t request, size_t *prefix = nullptr) noexcept
+	{
+		size_t bytes = 0, frames = 0;
+		if (!quest_native_current_source_frames(&frames) || !current(&bytes) ||
+		    !nq_world_add(bytes, frames) ||
+		    !nq_world_add(bytes, player_save_native_recovery_replay_owner::
+						 current_observer_frame_bytes()) ||
+		    !nq_world_add(bytes, quest_native_restore_phase2_source_frame_bytes()) ||
+		    !nq_world_add(bytes, request) || !reserve || !reserve(bytes, callback_context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		if (prefix)
+			*prefix = bytes;
+		return true;
+	}
+	template <class F, class R> R invoke_native_codec(F &&body, R failure) noexcept
+	{
+		if (!peak(native_quest_recovery_codec_source_profile_query_frames()))
+			return failure;
+		const size_t source = native_quest_recovery_codec_source_frame_bytes();
+		size_t request = native_quest_recovery_codec_entry_inline_bytes();
+		if (!nq_world_add(request, source) || !peak(request))
+			return failure;
+		size_t bytes = 0;
+		return peak(0, &bytes) ? body(bytes) : failure;
+	}
+	template <class F, class R> R invoke(F &&body, R failure) noexcept
+	{
+		size_t bytes = 0;
+		return peak(0, &bytes) ? body(bytes) : failure;
+	}
+	bool command_copy(const critical_command &source, size_t fixed = 0) noexcept
+	{
+		size_t request = 0;
+		return critical_command_fresh_copy_request_bytes(source, &request) &&
+		       nq_world_add(request, fixed) &&
+		       nq_world_add(request, critical_command_copy_frame_bytes()) && peak(request);
+	}
+	bool envelope_copy(const critical_native_recovery_envelope &source,
+			   size_t fixed = sizeof(critical_native_recovery_envelope)) noexcept
+	{
+		size_t request = 0;
+		return critical_command_fresh_copy_request_bytes(source.command, &request) &&
+		       nq_world_add(request, fixed) &&
+		       nq_world_add(request, source.attachment.size()) &&
+		       nq_world_add(request, critical_command_copy_frame_bytes()) && peak(request);
+	}
+	bool string_assign(const std::string &target, const std::string &source) noexcept
+	{
+		size_t request = 0;
+		if (source.size() > target.capacity())
+		{
+			request = source.size();
+			if (request < 2 * target.capacity())
+				request = 2 * target.capacity();
+			if (request == SIZE_MAX)
+				return false;
+			++request;
+		}
+		return peak(request);
+	}
+	template <class Table> bool map_reserve(Table &table, size_t count)
+	{
+		// Admit the actual owning source before the policy's out-of-line query.
+		// Its authentic installed-body qualification remains an explicit HOLD.
+		if (!peak(0))
+			return false;
+		std::__detail::_Prime_rehash_policy policy(table.max_load_factor());
+		const size_t buckets = policy._M_next_bkt(policy._M_bkt_for_elements(count));
+		if (buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+		    !peak(buckets * sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		table.reserve(count);
+		return true;
+	}
+	template <class Table> bool map_node(const Table &, const std::string &name) noexcept
+	{
+		using node = std::__detail::_Hash_node<
+			typename Table::value_type,
+			std::__cache_default<typename Table::key_type,
+					     typename Table::hasher>::value>;
+		size_t request = sizeof(node);
+		return (name.size() <= 15 || nq_world_add(request, name.size() + 1)) &&
+		       peak(request);
+	}
+};
+bool quest_phase2_equal_bounded(const critical_native_recovery_envelope &a,
+				const critical_native_recovery_envelope &b,
+				quest_phase2_workspace &budget) noexcept
+{
+	if (a.phase != b.phase || a.revision != b.revision || a.attachment != b.attachment)
+		return false;
+	std::vector<uint8_t> left, right;
+	budget.left = &left;
+	budget.right = &right;
+	const bool equal = budget.invoke(
+				   [&](size_t prefix) noexcept
+				   {
+					   return critical_command_encode_bounded(
+						   a.command, &left, budget.reserve,
+						   budget.callback_context, prefix);
+				   },
+				   critical_command_codec_result::overflow) ==
+				   critical_command_codec_result::ok &&
+			   budget.invoke(
+				   [&](size_t prefix) noexcept
+				   {
+					   return critical_command_encode_bounded(
+						   b.command, &right, budget.reserve,
+						   budget.callback_context, prefix);
+				   },
+				   critical_command_codec_result::overflow) ==
+				   critical_command_codec_result::ok &&
+			   left == right;
+	budget.left = budget.right = nullptr;
+	return equal;
+}
+#endif
+}
+
+// Complete declared-source inventory for the original phase2 algorithm.
+// Sum the real supported instantiations, not physical G, heap requests or a
+// reserve margin. Native/emitted correspondence is qualified separately.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+constexpr size_t quest_restore_hash_frames =
+	// hash<string>::operator()(this,string&), _Hash_impl::hash(ptr,len,seed),
+	// actual _Hash_bytes(ptr,len,seed): buf/end and loop p; len_aligned/hash/
+	// loop data and tail data. Count both lexical data declarations. Static
+	// mul is not a per-call object. GCC13.3 hash_bytes.cc128ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ153,64-bit branch.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(size_t) +
+	sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(const char *) + 4 * sizeof(size_t) +
+	sizeof(size_t) +
+	// unaligned_load pointer+result; actual memcpy dst/src/length/return;
+	// load_bytes pointer/int/result and its n/ptr loop; shift_mix value/result.
+	sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	sizeof(int) + sizeof(size_t) + sizeof(int) + sizeof(void *) + 2 * sizeof(size_t) +
+	// basic_string data()/length()/size() receivers, pointers and results.
+	3 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *);
+constexpr size_t quest_restore_prime_frames =
+	// _M_next_bkt this/n/result; n_primes,last_prime,next_bkt lexical locals.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(size_t) + 2 * sizeof(const unsigned long *) +
+	// lower_bound first/last/value reference/result, __iter_less_val adapter,
+	// __lower_bound first/last/value/comp/len/half/middle/result. Actual unsigned
+	// long pointer iterators: no recursion, allocation or iterator proxy state.
+	4 * sizeof(void *) + sizeof(__gnu_cxx::__ops::_Iter_less_val) + 5 * sizeof(void *) +
+	2 * sizeof(std::ptrdiff_t) + sizeof(__gnu_cxx::__ops::_Iter_less_val) +
+	// distance/__distance and advance/__advance/category constructors.
+	4 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + 4 * sizeof(void *) +
+	3 * sizeof(std::ptrdiff_t) + 3 * sizeof(std::random_access_iterator_tag) +
+	// _Iter_less_val::operator() this/iterator/value-reference/result;
+	// both max<size_t> operand refs/result, each two argument temporaries.
+	3 * sizeof(void *) + sizeof(bool) + 2 * (3 * sizeof(void *) + 2 * sizeof(size_t)) +
+	// _M_need_rehash this/three n parameters/min_bkts/returned pair; both pair
+	// brace construction instantiations: this/two forwarded scalar refs and
+	// forward receivers/results. floor conversions input/output double.
+	sizeof(void *) + 3 * sizeof(size_t) + sizeof(double) + sizeof(std::pair<bool, size_t>) +
+	2 * (3 * sizeof(void *) + sizeof(bool) + sizeof(size_t) + 4 * sizeof(void *)) +
+	4 * sizeof(double) +
+	// _M_bkt_for_elements this/n/result, max_load_factor this/float result,
+	// _M_state/_M_reset receiver/state-ref and returned state reference.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) + sizeof(float) + 5 * sizeof(void *);
+constexpr size_t quest_restore_equal_frames =
+	// Genuine vector<byte> ==/!= formals, size queries, begin/end normal iterator
+	// return/constructor scopes; equal/__equal_aux/__equal_aux1/__equal<true>
+	// first/last/second/returned bool and its two real compile-time bool locals.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	3 * (4 * sizeof(void *)) + 4 * (3 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(bool) +
+	sizeof(std::ptrdiff_t) +
+	// __memcmp and actual builtin memcmp pointer/length/int results; runtime
+	// is_constant_evaluated result. Array<16> == uses the same byte comparison,
+	// plus two real array references and data/_S_ptr source receiver/returns.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(int)) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(bool) + 8 * sizeof(void *) +
+	// equal_to<string>, operator==(string,string), size queries and traits
+	// compare/_S_compare: arguments/results/counts and real int comparison.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+	2 * (sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	2 * sizeof(size_t) + sizeof(int) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t quest_restore_all_of_frames =
+	// Original array<9> begin/end/data/_S_ptr calls, all_of -> find_if_not ->
+	// __find_if(random_access), Iter_negate/Iter_pred constructors/operators.
+	// Original predicate is a GNU13 empty noncapturing closure (one byte);
+	// its actual receiver,uint8_t step and bool return are explicitly priced.
+	8 * sizeof(void *) + 3 * (2 * sizeof(void *) + sizeof(char) + sizeof(bool)) +
+	2 * sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(std::random_access_iterator_tag) +
+	3 * sizeof(char) + 8 * sizeof(void *) + 4 * sizeof(bool) + sizeof(uint8_t);
+
+template <class Table> constexpr size_t quest_restore_map_frames() noexcept
+{
+	using value = typename Table::value_type;
+	using iterator = typename Table::iterator;
+	using const_iterator = typename Table::const_iterator;
+	using node = std::__detail::_Hash_node<
+		value,
+		std::__cache_default<typename Table::key_type, typename Table::hasher>::value>;
+	using base = std::__detail::_Hash_node_base;
+	using node_allocator = std::allocator<node>;
+	// Genuine unordered_map/Hashtable find receiver/key/result, small-table
+	// range iterator, hash code/bucket/node, find-before-node predecessor/p/node
+	// and next-bucket temporaries. find_node adds its predecessor and return.
+	const size_t find = 4 * sizeof(void *) + 2 * sizeof(iterator) + sizeof(iterator) +
+			    2 * sizeof(size_t) + 2 * sizeof(node *) + 4 * sizeof(void *) +
+			    sizeof(size_t) + 3 * sizeof(base *) + 2 * sizeof(node *) +
+			    sizeof(bool) + 4 * sizeof(void *) + sizeof(size_t) + sizeof(base *) +
+			    sizeof(node *);
+	// Actual _M_emplace(true): this/key-ref/node guard (two real fields, h/node),
+	// iterator loop/code/bkt/pos/returned pair. The private _Scoped_node fields
+	// are a hashtable-allocation receiver pointer and node*, both pointer-aligned
+	// in this authenticated64-bit layout. No invented public guard substitute.
+	const size_t emplace =
+		3 * sizeof(void *) + sizeof(void *) + sizeof(node *) + 2 * sizeof(iterator) +
+		2 * sizeof(size_t) + sizeof(iterator) + sizeof(std::pair<iterator, bool>) +
+		// guard constructor/destructor: this/h/two forwarded argument references;
+		// node allocator receiver+returned node/value address and live allocator.
+		6 * sizeof(void *) + sizeof(node_allocator) + sizeof(node *) + sizeof(value *) +
+		// allocation/placement/value pair ctor(key-ref,mapped-ref), forward source
+		// scopes and pair result. Actual key string ctor source is added below.
+		recovery_library_allocator_frames + 6 * sizeof(void *) + 4 * sizeof(void *) +
+		2 * sizeof(value *) + 4 * sizeof(void *);
+	// _M_insert_unique_node receiver/bkt/code/node/n_elt/state-ref/rehash-pair/
+	// returned iterator; _M_insert_bucket_begin receiver/bkt/node/before pointer;
+	// stored-code/hash/bucket/index/equality/extract-key/node value descendants.
+	const size_t insert =
+		3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::pair<bool, size_t>) +
+		sizeof(iterator) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(base *) +
+		10 * sizeof(void *) + 5 * sizeof(size_t) + 4 * sizeof(bool) +
+		sizeof(typename Table::key_equal) + sizeof(std::__detail::_Select1st) +
+		sizeof(std::__detail::_Mod_range_hashing);
+	// reserve wrappers this/n; Hashtable rehash saved-state ref,bkt; _M_rehash
+	// this/bkt/state-ref; unique _M_rehash_aux this/bkt/true-tag/new buckets/p/
+	// bbegin/next/bkt, allocate/deallocate bucket allocator and pointer scopes.
+	const size_t rehash = 3 * (sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+			      2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+			      3 * sizeof(size_t) + sizeof(std::true_type) +
+			      2 * sizeof(std::allocator<base *>) + 8 * sizeof(void *) +
+			      3 * sizeof(size_t) + recovery_library_allocator_frames;
+	// erase(iterator) wrappers and _M_erase: const iterator/node/bkt/prev/next,
+	// remove bucket begin receiver/bkt/next/next_bkt; returned iterator, actual
+	// _M_deallocate_node and _M_deallocate_node_ptr allocators/p/value pointers.
+	const size_t erase =
+		4 * sizeof(void *) + 2 * sizeof(const_iterator) + 2 * sizeof(iterator) +
+		3 * sizeof(node *) + 2 * sizeof(base *) + 3 * sizeof(size_t) + 3 * sizeof(void *) +
+		sizeof(size_t) + sizeof(node *) + sizeof(size_t) + 6 * sizeof(void *) +
+		sizeof(node_allocator) + sizeof(value *) + recovery_library_allocator_frames;
+	// Actual node value/iterator begin/end/deref/increment/equality closure is
+	// the paired typed CURRENT inventory. Reserve helper's real policy object
+	// and count/buckets/request/this/table source locals are added separately.
+	return find + emplace + insert + rehash + erase + quest_current_table_frames<Table>() +
+	       quest_restore_prime_frames + quest_restore_hash_frames + quest_restore_equal_frames +
+	       recovery_library_string_frames;
+}
+
+template <class T> constexpr size_t quest_restore_shared_frames() noexcept
+{
+	using control = std::_Sp_counted_ptr_inplace<T, std::allocator<void>, __gnu_cxx::_S_atomic>;
+	using allocator = typename control::__allocator_type;
+	using guard = std::__allocated_ptr<allocator>;
+	// make_shared actual default allocator + _Sp_alloc_shared_tag and returned
+	// shared_ptr; shared_ptr/base constructors own this/tag; __shared_count owns
+	// this/p-ref/tag, rebind allocator, actual allocated guard, mem and pi.
+	// Element object and control live in the separately admitted heap request.
+	return sizeof(std::allocator<void>) +
+	       sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>) +
+	       sizeof(std::shared_ptr<T>) + 4 * sizeof(void *) +
+	       sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>) + 2 * sizeof(void *) +
+	       sizeof(std::_Sp_alloc_shared_tag<std::allocator<void>>) + sizeof(allocator) +
+	       sizeof(guard) + 2 * sizeof(control *) +
+	       // __allocate_guarded/guard constructor/get/null assignment/dtor plus
+	       // addressof/to_address/allocator allocate+deallocate source closures.
+	       10 * sizeof(void *) + sizeof(std::nullptr_t) + recovery_library_allocator_frames +
+	       // _Sp_counted_ptr_inplace constructor/default Impl/_Sp_ebo_helper/_S_get/
+	       // _M_ptr/aligned-buffer, actual allocator passed by value at each boundary.
+	       9 * sizeof(void *) + 3 * sizeof(std::allocator<void>) +
+	       // shared copy/move/conversion/get/bool/operator->, count copy/add-ref and
+	       // destruction/release/dispose/destroy. Control _M_destroy owns actual rebind
+	       // allocator+guard. _M_release owns this/both_counts/unique_ref; _M_release_last_use
+	       // owns this and count arithmetic. Atomic dispatch uses actual pointer,int,
+	       // single-thread result, builtin result or single-path local result. No heap
+	       // of a new mutex, no invocation of game callbacks is implied by the profile.
+	       16 * sizeof(void *) + 5 * sizeof(bool) + 5 * sizeof(void *) + 2 * sizeof(long long) +
+	       3 * sizeof(bool) + 2 * sizeof(int) + sizeof(allocator) + sizeof(guard) +
+	       5 * sizeof(void *) + 4 * (sizeof(void *) + sizeof(int)) + 2 * sizeof(int) +
+	       2 * sizeof(bool) +
+	       // alloc_traits destroy -> destroy_at -> actual T destructor receiver and
+	       // forward/placement construct_at source scopes, not T's owned inline data.
+	       8 * sizeof(void *) + sizeof(size_t);
+}
+
+template <class T> constexpr size_t quest_restore_unique_frames() noexcept
+{
+	// Actual unique_ptr<T/default_delete<T>>, its __uniq_ptr_data/impl and tuple
+	// pointer+deleter constructor/get/release/reset/move/convert/destructor
+	// scopes. Each receiver, forwarded pointer/reference, returned pointer,
+	// tuple get/head, default-delete and sized delete carrier is source storage.
+	return sizeof(std::unique_ptr<T>) + sizeof(std::default_delete<T>) + 4 * sizeof(void *) +
+	       sizeof(T *) + 4 * sizeof(void *) + 4 * (3 * sizeof(void *) + sizeof(T *)) +
+	       2 * sizeof(bool) + 4 * (2 * sizeof(void *) + sizeof(T *)) + 4 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::nullptr_t);
+}
+// Actual default objects: frozen state one string/one continuation byte vector,
+// terms two strings; flow one branch vector; original branch three strings and
+// two goal vectors. Critical commands/envelopes are covered by their genuine
+// copy profile and byte-vector inventory below. Their owned inline members
+// already belong to the actual heap/object request, not this source profile.
+constexpr size_t quest_restore_default_frames =
+	3 * sizeof(void *) +
+	6 * (6 * sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(std::allocator<char>)) +
+	8 * (5 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	// Matching real string/byte/goal/unique-element-vector member destructors.
+	6 * (5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	8 * recovery_library_allocator_frames +
+	// Branch goal fill: generic lambda captures budget, from/to refs, source
+	// iterators/goal ref, actual goal_data aggregate temporary and i; reserve
+	// before the complete fill makes every push_back nonallocating. Its actual
+	// trivial construct/forward/construct_at source scopes still occur.
+	3 * sizeof(void *) + 2 * sizeof(std::vector<native_quest_recovery_goal>::const_iterator) +
+	sizeof(const native_quest_recovery_goal *) + sizeof(goal_data) + sizeof(size_t) +
+	8 * sizeof(void *) + sizeof(goal_data *) + sizeof(size_t) +
+	// Branch vector has already reserved the complete count. Each move-push
+	// owns the genuine converted const unique pointer and relocation/construct
+	// references; no prospective reallocation is assumed from this cut.
+	sizeof(std::unique_ptr<const native_quest_original_branch>) + 7 * sizeof(void *) +
+	2 * sizeof(std::unique_ptr<const native_quest_original_branch>);
+
+size_t quest_restore_complete_frames() noexcept
+{
+	using runtime = decltype(native_quest_gameplay);
+	using children = decltype(native_quest_passive_children);
+	using flows = decltype(native_quest_passive_gameplay);
+	using frozen = decltype(native_quest_frozen_recoveries);
+	// restore_phase2_bounded real formals; three duplicate iterators, runtime
+	// loop begin/end/pair-ref; key/shared state/record/flow/child/branch locals;
+	// installed result pairs, bytes/retained and charge lambda source captures.
+	const size_t method =
+		4 * sizeof(void *) + sizeof(size_t) + sizeof(typename flows::iterator) +
+		sizeof(typename children::iterator) + sizeof(typename frozen::iterator) +
+		2 * sizeof(typename runtime::iterator) + sizeof(typename runtime::value_type *) +
+		sizeof(std::string) + sizeof(std::shared_ptr<native_quest_frozen_recovery_state>) +
+		sizeof(std::shared_ptr<const critical_native_recovery_envelope>) +
+		sizeof(std::shared_ptr<native_quest_gameplay_flow>) +
+		sizeof(std::shared_ptr<critical_command>) +
+		sizeof(std::unique_ptr<native_quest_original_branch>) +
+		sizeof(std::pair<typename flows::iterator, bool>) +
+		sizeof(std::pair<typename children::iterator, bool>) +
+		sizeof(std::pair<typename frozen::iterator, bool>) + 5 * sizeof(size_t) +
+		sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	// Genuine phase2 workspace current/peak/invoke (bool and two codec result
+	// instantiations)/command-copy/envelope-copy/string-assign/map-reserve/node
+	// source scopes. Actual workspace/payload/context private objects are counted
+	// by physical current, so do not charge their complete inline size here.
+	const size_t owner =
+		// Native-codec preflight F/receiver/reference and failure, source/request/bytes,
+		// two pure getter return carriers and the checked-add/admission result.
+		4 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool) +
+		sizeof(player_snapshot_codec_result) + 6 * sizeof(void *) + 6 * sizeof(size_t) +
+		3 * sizeof(bool) + 6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+		3 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+		sizeof(critical_command_codec_result) + sizeof(player_snapshot_codec_result) +
+		8 * sizeof(void *) + 5 * sizeof(size_t) + 4 * sizeof(bool) +
+		sizeof(std::__detail::_Prime_rehash_policy) + 4 * sizeof(void *) +
+		3 * sizeof(size_t) + sizeof(float) +
+		// Actual fresh-copy request helper: command/output,total, four vector-size
+		// calls and checked-add descendant; copy-frame getter result carrier.
+		7 * sizeof(void *) + 7 * sizeof(size_t) + 2 * sizeof(bool) +
+		// Private unregistered frozen/record scans include their genuine own map
+		// iterators/structured bindings. Flow seen and world-owned helper scopes are
+		// also traversed by the paired CURRENT profile, admitted separately by peak.
+		2 * sizeof(typename frozen::const_iterator) +
+		sizeof(typename frozen::value_type *) +
+		2 * sizeof(typename children::const_iterator) +
+		sizeof(typename children::value_type *) +
+		// equal helper a/b/budget refs, actual two vector locals and bool result;
+		// its already admitted command codec descendants own their separate source.
+		3 * sizeof(void *) + 2 * sizeof(std::vector<uint8_t>) + sizeof(bool) +
+		// key helper operation_id receiver and string(begin,end) constructor source.
+		sizeof(void *) + 4 * sizeof(void *) + sizeof(std::string) + sizeof(size_t);
+	// Original retained scalar helpers frozen_bytes/gameplay_recovery_bytes have
+	// real five-pointer arrays, array range iterators and captured add lambdas;
+	// passive_total owns all four table walks and passive_bytes's fixed scalar.
+	const size_t retention =
+		2 * (3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+		     sizeof(std::array<const critical_native_recovery_envelope *, 5>) +
+		     3 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+		2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) + sizeof(bool) +
+		quest_current_table_frames<runtime>() + quest_current_table_frames<children>() +
+		quest_current_table_frames<flows>() + quest_current_table_frames<frozen>();
+	// Paired bridge formals/return; own profile query occurs again in peak,
+	// while the complete source allowance also covers the real CURRENT-profile
+	// query before its physical census. No physical G value is inferred here.
+	size_t capacity = 0;
+	if (!item_native_quest_restore_budget_source_frames(&capacity))
+		return SIZE_MAX;
+	const size_t pipeline = player_save_coin_replay_budget_scope_owner::observer_frame_bytes();
+	if (!pipeline)
+	{
+		errno = ENOTSUP;
+		return SIZE_MAX;
+	}
+	size_t total = method + owner + retention + 4 * sizeof(void *) + sizeof(size_t) +
+		       sizeof(bool) + quest_native_restore_phase2_source_profile_query_frames() +
+		       quest_native_current_source_profile_query_frames() +
+		       quest_restore_map_frames<children>() + quest_restore_map_frames<flows>() +
+		       quest_restore_map_frames<frozen>() +
+		       quest_restore_shared_frames<native_quest_frozen_recovery_state>() +
+		       quest_restore_shared_frames<native_quest_gameplay_flow>() +
+		       quest_restore_shared_frames<const critical_native_recovery_envelope>() +
+		       quest_restore_shared_frames<const critical_command>() +
+		       quest_restore_shared_frames<critical_command>() +
+		       quest_restore_unique_frames<native_quest_original_branch>() +
+		       quest_restore_unique_frames<const native_quest_original_branch>() +
+		       quest_restore_unique_frames<critical_native_recovery_envelope>() +
+		       quest_restore_default_frames + recovery_library_vector_frames +
+		       recovery_library_copy_frames + recovery_library_size_constructor_frames +
+		       recovery_library_move_frames + recovery_library_string_frames +
+		       quest_restore_equal_frames + quest_restore_all_of_frames;
+	// Every original restore_budget branch enters the exact original capacity
+	// graph. Own its genuine query and returned source before selecting it.
+	// SAME pipeline census reaches bootstrap plus the complete held observer;
+	// wrapper-only allowance is insufficient. These are source, never heap G.
+	if (!nq_world_add(total, capacity) ||
+	    !nq_world_add(total, item_native_quest_restore_budget_source_profile_query_frames()) ||
+	    !nq_world_add(total, pipeline) ||
+	    !nq_world_add(total, player_save_coin_replay_budget_scope_owner::
+					 observer_source_profile_query_frames()) ||
+	    !nq_world_add(total, 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)))
+		return SIZE_MAX;
+	return total;
+}
+#endif
+}
+size_t quest_native_restore_phase2_source_frame_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	return quest_restore_complete_frames();
+#else
+	return sizeof(void *) + sizeof(size_t);
+#endif
+}
+size_t quest_native_restore_phase2_source_profile_query_frames() noexcept
+{
+	// Getter+complete helper returns and three const subtotals; three map calls
+	// each five const subtotals+return; five shared, three unique and seven table; CURRENT-query and its alias-query
+	// return carriers. This prices only querying the source profile.
+	return 2 * sizeof(size_t) + 3 * sizeof(size_t) + 3 * 6 * sizeof(size_t) +
+	       5 * sizeof(size_t) + 3 * sizeof(size_t) + 7 * sizeof(size_t) + 2 * sizeof(size_t) +
+	       // New actual capacity/pipeline/total locals; checked-add reference/value,
+	       // result and overflow errno pointer; own fixed-query return. The two named
+	       // lower query laws own their accessors and genuine nested pure getters.
+	       3 * sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	       2 * sizeof(size_t) + item_native_quest_restore_budget_source_profile_query_frames() +
+	       player_save_coin_replay_budget_scope_owner::observer_source_profile_query_frames();
+}
+
+size_t quest_native_restore_phase2_entry_inline_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	// Real empty workspace, payload and context before the first original decode.
+	// Only transient prospective preflight; the actual workspace CURRENT owns
+	// these three real objects after entry, with no inflated outgoing prefix.
+	return sizeof(quest_phase2_workspace) + sizeof(item_transfer_payload) +
+	       sizeof(native_quest_recovery_context);
+#else
+	return 0;
+#endif
+}
+
+bool quest_native_gameplay_owner::restore_phase2_bounded(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &actual_scope, quest_replay_reserve reserve,
+	void *callback_context, size_t outer) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)envelope;
+	(void)actual_scope;
+	(void)reserve;
+	(void)callback_context;
+	(void)outer;
+	return false;
+#elif !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || __cplusplus != 202002L ||           \
+	defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL)
+	(void)envelope;
+	(void)actual_scope;
+	(void)reserve;
+	(void)callback_context;
+	(void)outer;
+	errno = ENOTSUP;
+	return false;
+#else
+	try
+	{
+		quest_phase2_workspace budget{ actual_scope, reserve, callback_context, outer };
+		item_transfer_payload payload{};
+		budget.payload = &payload;
+		native_quest_recovery_context context;
+		budget.context = &context;
+		if (envelope.phase != critical_native_recovery_phase::continuation_pending ||
+		    !envelope.revision ||
+		    !budget.invoke(
+			    [&](size_t prefix) noexcept
+			    {
+				    return item_transfer_command_decode_payload_bounded(
+					    envelope.command, &payload, reserve, callback_context,
+					    prefix);
+			    },
+			    false) ||
+		    !budget.invoke(
+			    [&](size_t prefix) noexcept
+			    {
+				    return item_transfer_native_mobile_recovery_shape_valid_bounded(
+					    payload, reserve, callback_context, prefix);
+			    },
+			    false) ||
+		    budget.invoke_native_codec(
+			    [&](size_t prefix) noexcept
+			    {
+				    return native_quest_recovery_context_decode_bounded(
+					    envelope.command, envelope.attachment, &context,
+					    reserve, callback_context, prefix);
+			    },
+			    player_snapshot_codec_result::allocation_failure) !=
+			    player_snapshot_codec_result::ok ||
+		    !context.receipt.present ||
+		    context.publication_stage !=
+			    native_quest_recovery_publication_stage::physically_proven)
+			return false;
+		if (!budget.peak(envelope.command.operation_id.bytes.size() + 1))
+			return false;
+		const std::string key = quest_reward_operation_key(envelope.command.operation_id);
+		budget.key = &key;
+		for (const auto &[runtime, flow] : native_quest_gameplay)
+			if (flow->acceptance_command &&
+			    flow->acceptance_command->operation_id.bytes ==
+				    envelope.command.operation_id.bytes)
+				return flow->restored_original &&
+				       quest_phase2_equal_bounded(*flow->restored_original,
+								  envelope, budget);
+		auto existing = native_quest_passive_gameplay.find(key);
+		if (existing != native_quest_passive_gameplay.end())
+			return existing->second->restored_original &&
+			       quest_phase2_equal_bounded(*existing->second->restored_original,
+							  envelope, budget);
+		auto child_existing = native_quest_passive_children.find(key);
+		if (child_existing != native_quest_passive_children.end())
+			return quest_phase2_equal_bounded(*child_existing->second, envelope,
+							  budget);
+		auto reward_existing = native_quest_frozen_recoveries.find(key);
+		if (reward_existing != native_quest_frozen_recoveries.end())
+			return reward_existing->second->restored_original &&
+			       quest_phase2_equal_bounded(
+				       *reward_existing->second->restored_original, envelope,
+				       budget);
+		if (native_quest_passive_gameplay.size() + native_quest_passive_children.size() +
+			    native_quest_frozen_recoveries.size() + native_quest_gameplay.size() >=
+		    ITEM_MOVEMENT_PENDING_MAX)
+			return false;
+		if (payload.native_mobile.action == item_native_mobile_action::consumption)
+		{
+			if (payload.continuation.kind ==
+				    item_transfer_continuation_kind::quest_offering &&
+			    (context.receipt.outcome == critical_apply_outcome::applied ||
+			     context.receipt.outcome == critical_apply_outcome::already_applied))
+			{
+				if (!budget.peak(
+					    sizeof(std::_Sp_counted_ptr_inplace<
+						    native_quest_frozen_recovery_state,
+						    std::allocator<void>, __gnu_cxx::_S_atomic>)))
+					return false;
+				auto state = std::make_shared<native_quest_frozen_recovery_state>();
+				budget.frozen = state.get();
+				if (!budget.string_assign(state->key, key))
+					return false;
+				state->key = key;
+				if (!budget.command_copy(envelope.command))
+					return false;
+				state->command = envelope.command;
+				if (!budget.peak(payload.continuation.data.size()))
+					return false;
+				state->continuation = payload.continuation.data;
+				if (!budget.invoke(
+					    [&](size_t prefix) noexcept
+					    {
+						    return quest_reward_continuation_decode_bounded(
+							    state->continuation.data(),
+							    state->continuation.size(),
+							    &state->terms, reserve,
+							    callback_context, prefix);
+					    },
+					    false) ||
+				    (state->terms.version != 5 &&
+				     !(state->terms.version == 6 && payload.native_cost.fee_only)) ||
+				    state->terms.player_pid != payload.native_recovery.player_pid ||
+				    payload.native_recovery.publication_terms.disappear)
+					return false;
+				if (!budget.envelope_copy(envelope))
+					return false;
+				state->current =
+					std::make_unique<critical_native_recovery_envelope>(
+						envelope);
+				if (!budget.envelope_copy(envelope))
+					return false;
+				state->restored_original =
+					std::make_unique<critical_native_recovery_envelope>(
+						envelope);
+				state->started = context.publication_steps[5] != 0;
+				state->effect_returned = state->durable_returned =
+					context.publication_steps[5] == 2;
+				state->restored = true;
+				state->retained_bytes = native_quest_frozen_bytes(*state);
+				if (!budget.map_reserve(native_quest_frozen_recoveries,
+							native_quest_frozen_recoveries.size() + 1))
+					return false;
+				if (!budget.map_node(native_quest_frozen_recoveries, key))
+					return false;
+				auto installed = native_quest_frozen_recoveries.emplace(key, state);
+				size_t bytes = 0;
+				if (!installed.second || !native_quest_passive_total(&bytes) ||
+				    !budget.invoke(
+					    [&](size_t prefix) noexcept
+					    {
+						    return item_native_quest_gameplay_publication_owner::
+							    restore_budget_bounded(bytes, reserve,
+										   callback_context,
+										   prefix);
+					    },
+					    false))
+				{
+					if (installed.second)
+						native_quest_frozen_recoveries.erase(
+							installed.first);
+					return false;
+				}
+				return true;
+			}
+			if (!budget.envelope_copy(
+				    envelope, sizeof(std::_Sp_counted_ptr_inplace<
+						      const critical_native_recovery_envelope,
+						      std::allocator<void>, __gnu_cxx::_S_atomic>)))
+				return false;
+			auto record =
+				std::make_shared<const critical_native_recovery_envelope>(envelope);
+			budget.record = record.get();
+			if (!budget.map_reserve(native_quest_passive_children,
+						native_quest_passive_children.size() + 1))
+				return false;
+			if (!budget.map_node(native_quest_passive_children, key))
+				return false;
+			auto installed =
+				native_quest_passive_children.emplace(key, std::move(record));
+			size_t bytes = 0;
+			if (!installed.second || !native_quest_passive_total(&bytes) ||
+			    !budget.invoke(
+				    [&](size_t prefix) noexcept
+				    {
+					    return item_native_quest_gameplay_publication_owner::
+						    restore_budget_bounded(bytes, reserve,
+									   callback_context,
+									   prefix);
+				    },
+				    false))
+			{
+				if (installed.second)
+					native_quest_passive_children.erase(installed.first);
+				return false;
+			}
+			return true;
+		}
+		if (!budget.peak(sizeof(std::_Sp_counted_ptr_inplace<native_quest_gameplay_flow,
+								     std::allocator<void>,
+								     __gnu_cxx::_S_atomic>)))
+			return false;
+		auto flow = std::make_shared<native_quest_gameplay_flow>();
+		budget.flow = flow.get();
+		if (!budget.command_copy(envelope.command,
+					 sizeof(std::_Sp_counted_ptr_inplace<const critical_command,
+									     std::allocator<void>,
+									     __gnu_cxx::_S_atomic>)))
+			return false;
+		flow->acceptance_command =
+			std::make_shared<const critical_command>(envelope.command);
+		if (!budget.envelope_copy(envelope))
+			return false;
+		flow->recovery = std::make_unique<critical_native_recovery_envelope>(envelope);
+		if (!budget.envelope_copy(envelope))
+			return false;
+		flow->restored_original =
+			std::make_unique<critical_native_recovery_envelope>(envelope);
+		flow->player_pid = payload.native_recovery.player_pid;
+		flow->original_root_uid = item_transfer_result_root(payload);
+		flow->give_hooks = context.give_hooks;
+		flow->branch_program_frozen = flow->program_durable = context.branch_program_frozen;
+		flow->original_program_lost = !context.branch_program_frozen &&
+					      std::all_of(context.give_hooks.begin(),
+							  context.give_hooks.end(),
+							  [](uint8_t step) { return step == 2; });
+		flow->completion_index = static_cast<int>(context.next_branch);
+		flow->acceptance_handoff_durable = context.parent_acceptance.bytes ==
+						   envelope.command.operation_id.bytes;
+		flow->acceptance_rejected = context.receipt.outcome ==
+					    critical_apply_outcome::terminal_failure;
+		flow->child_operation = context.next_child_operation;
+		flow->child_allocated = context.child_handoff_stage != 0;
+		flow->child_handoff_durable = context.child_handoff_stage == 2;
+		flow->restored = true;
+		if (!context.next_child_command.empty())
+		{
+			if (!budget.peak(
+				    sizeof(std::_Sp_counted_ptr_inplace<critical_command,
+									std::allocator<void>,
+									__gnu_cxx::_S_atomic>)))
+				return false;
+			auto child = std::make_shared<critical_command>();
+			budget.child = child.get();
+			if (budget.invoke(
+				    [&](size_t prefix) noexcept
+				    {
+					    return critical_command_decode_bounded(
+						    context.next_child_command.data(),
+						    context.next_child_command.size(), child.get(),
+						    reserve, callback_context, prefix);
+				    },
+				    critical_command_codec_result::overflow) !=
+			    critical_command_codec_result::ok)
+				return false;
+			flow->prepared_child = std::move(child);
+			budget.child = nullptr;
+			flow->child_frame_durable = true;
+		}
+		if (!budget.peak(context.branches.size() * sizeof(flow->branches[0])))
+			return false;
+		flow->branches.reserve(context.branches.size());
+		size_t retained = sizeof(*flow) + key.capacity() + 1;
+		const auto charge = [&](size_t value)
+		{
+			if (value > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained)
+				return false;
+			retained += value;
+			return true;
+		};
+		if (!charge(flow->branches.capacity() *
+			    sizeof(std::unique_ptr<const native_quest_original_branch>)))
+			return false;
+		for (const auto &original : context.branches)
+		{
+			if (!budget.peak(sizeof(native_quest_original_branch)))
+				return false;
+			auto branch = std::make_unique<native_quest_original_branch>();
+			budget.branch = branch.get();
+			if (!budget.string_assign(branch->message, original.message))
+				return false;
+			branch->message = original.message;
+			if (!budget.string_assign(branch->disappear_message,
+						  original.disappear_message))
+				return false;
+			branch->disappear_message = original.disappear_message;
+			if (!budget.string_assign(branch->definition_id, original.definition_id))
+				return false;
+			branch->definition_id = original.definition_id;
+			const auto goals = [&](const auto &from, std::vector<goal_data> &to)
+			{
+				if (!budget.peak(from.size() * sizeof(goal_data)))
+					return false;
+				to.reserve(from.size());
+				for (const auto &goal : from)
+					to.push_back({ static_cast<char>(goal.type), goal.number,
+						       nullptr });
+				for (size_t i = 1; i < to.size(); ++i)
+					to[i - 1].next = &to[i];
+				return true;
+			};
+			if (!goals(original.give, branch->give) ||
+			    !goals(original.receive, branch->receive))
+				return false;
+			branch->view.message = original.message_present ? branch->message.data() :
+									  nullptr;
+			branch->view.disappear_message = original.disappear_message_present ?
+								 branch->disappear_message.data() :
+								 nullptr;
+			branch->view.echoAll = original.echo_all;
+			branch->view.disappear = original.disappear;
+			branch->view.give = branch->give.empty() ? nullptr : branch->give.data();
+			branch->view.receive = branch->receive.empty() ? nullptr :
+									 branch->receive.data();
+			if (!charge(sizeof(*branch) + branch->give.capacity() * sizeof(goal_data) +
+				    branch->receive.capacity() * sizeof(goal_data) +
+				    branch->message.capacity() + 1 +
+				    branch->disappear_message.capacity() + 1 +
+				    branch->definition_id.capacity() + 1))
+				return false;
+			flow->branches.push_back(std::move(branch));
+			budget.branch = nullptr;
+		}
+		flow->recovery_bytes = native_quest_gameplay_recovery_bytes(*flow);
+		if (!charge(flow->recovery_bytes))
+			return false;
+		flow->retained_bytes = retained;
+		flow->phase = flow->branch_program_frozen ?
+				      native_quest_gameplay_phase::choose_branch :
+				      native_quest_gameplay_phase::original_give_hooks;
+		if (!budget.map_reserve(native_quest_passive_gameplay,
+					native_quest_passive_gameplay.size() + 1))
+			return false;
+		if (!budget.map_node(native_quest_passive_gameplay, key))
+			return false;
+		auto installed = native_quest_passive_gameplay.emplace(key, flow);
+		size_t bytes = 0;
+		if (!installed.second || !native_quest_passive_total(&bytes) ||
+		    !budget.invoke(
+			    [&](size_t prefix) noexcept
+			    {
+				    return item_native_quest_gameplay_publication_owner::
+					    restore_budget_bounded(bytes, reserve, callback_context,
+								   prefix);
+			    },
+			    false))
+		{
+			if (installed.second)
+				native_quest_passive_gameplay.erase(installed.first);
+			return false;
+		}
+		return true; // Exact original branch/hook/child progress, no effect or coordinator call.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_native_frozen_continuation_owner::restore_bounded(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer) noexcept
+{
+	return quest_native_gameplay_owner::restore_phase2_bounded(envelope, scope, reserve,
+								   context, outer);
 }

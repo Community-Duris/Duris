@@ -186,22 +186,28 @@
       "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
       "src/core/utility.c": "42a057b1f46bebcd3c80b85fd689352455102d18503a7526600f58c46e9f9ba2",
       "src/core/utility.h": "0d5e840171023d0413b4ae132af2f5fc01772b281c2b97498e5ef0177455627d",
-      "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
-      "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
-      "src/economy/auction_item_claim_accounting.c": "7fe018e60a4d16c3d188703ea70fceb48e3d7b5026e239a6017fc8930d8a572d",
-      "src/economy/auction_item_claim_accounting.h": "73744633505c20bb315ab6eb99a3798b2a3f10693c5f8cfc4b599e57d500f83a",
-      "src/economy/auction_listing_accounting.c": "8921edc27abdb122d2dc2f6083e65303a42b29815f32b8cb3e60c57f6c26be34",
-      "src/economy/auction_listing_accounting.h": "6243fb0e2593ac42d58587f67f41f84230efb95350d3f0f5ffc62ded1e16dff3",
-      "src/economy/auction_native_command_context.c": "e6531f8c25be35d87c995d1acc6a01b6ab9dbfa6634417afe144bd87b31506cb",
-      "src/economy/auction_native_command_context.h": "5b788b82d8d261c768f6fb78bcadd9f0945fde51530b0f5887983a63a9a10b1b",
-      "src/economy/auction_native_publication.c": "869ed9f6cf0c70f232c2daa0e85fa7cb940f700c9472d19f338ff49d3c47cbe5",
-      "src/economy/auction_native_publication.h": "36d11f4cbc3e551985f8dc2c1ad5817eec175706af86602489f97531f5c6f87b",
+      "src/economy/auction_accounting.c": "b502dd2e9f8f330b0c8c1a3b8ed5cc53ab0e9b181ad1255c73895d30635e0050",
+      "src/economy/auction_accounting.h": "97524ae769fa572836efebea752b78eb7e7ed42ef8fe7f0d5b5bb456bd7ecc34",
+      "src/economy/auction_command.c": "aebdab070c729c571f7497822aae7c6e9cccd57d108455697aa490204706d445",
+      "src/economy/auction_command.h": "968cc1851b4b0bfcc1d9e70b34722aae9b05b7c01f0da8e5fbadfe9d5dfe40ac",
+      "src/economy/auction_item_claim_accounting.c": "fa4939f7d2debfc95de94b70c3e9e735ef7c5288641492c9b1db0eb00f3563ce",
+      "src/economy/auction_item_claim_accounting.h": "7f9de46059fddd38cef5e85700674e297175021007a8a82ac8037f5ccf22fedb",
+      "src/economy/auction_listing_accounting.c": "097f2b7b46022984274940fbf51221ab143539372015828612adf36b64769676",
+      "src/economy/auction_listing_accounting.h": "ff7f3816217d4e87e70bd08d394a9ba5cec5a0b03a03af0439d53ea21655abd0",
+      "src/economy/auction_money_claim_accounting.c": "c94dd239f970c4fbaadfe0c10006198240b59e0d43d7e074eea56a2c6f036da2",
+      "src/economy/auction_money_claim_accounting.h": "9d6884069508eba68f010f2c1ff8ceac0e36f83b1bf4d34d00404be9c0486aa5",
+      "src/economy/auction_native_command_context.c": "56ca0a593cb9d40da65da9a881d0d0ea4b2940fb031722e3a093df9961a1cfd8",
+      "src/economy/auction_native_command_context.h": "f3def6967656d7e1f170e6e6f998905e1f616ff6019cd532c680db69a0d4dfa4",
+      "src/economy/auction_native_publication.c": "075b08c36ca6005a5175eb0ffd8182bcbf07d5fb60fa09cf65bce986c80cbac9",
+      "src/economy/auction_native_publication.h": "e92fc93fca607869e8f24f81bb282af79ec039d0dc33a373ad499039e07de23f",
       "src/economy/auction_player_forest.c": "b5ee05b6b330d0d0e543a6208a2d2c8738d29087ce3926fbc3e1099edcee4e85",
       "src/economy/auction_player_forest_detail.h": "1a8d764ae5b50b62f3f9f38118876b3560d7cf195727b9c48f185724bf79d0a2",
-      "src/economy/auction_recovery_context.c": "f51081959a15f31721012f5ad604d72dea50b738240aeba43e5398334f978507",
-      "src/economy/auction_recovery_context.h": "bf53a80b683bbd0e5b73a375745101f14415f582c9a831c5280f6afd8d1ae923",
+      "src/economy/auction_recovery_context.c": "55d2ee49f94a6abe5cbea7a0607c7d01d9ba648c40ca60cc433c57039a205272",
+      "src/economy/auction_recovery_context.h": "8f1de35cca6876f08cbb62ac26112e45e515d5794bb0f80b11d516ffd08bfbaa",
       "src/economy/auction_repository.c": "26d0a36705c3ef8915b89247f1da3b71793cd881a6d37c61867ec7980ac808af",
       "src/economy/auction_repository.h": "32f4adbca349e3a627ec39e751319cf35ac52d8874414b0d2d2df2a038db6233",
+      "src/economy/auction_settlement_accounting.c": "8bc0b719c4e719c9d2ce72c79a79dca1257aa43ee90b94e45acbf01e0cfed1b8",
+      "src/economy/auction_settlement_accounting.h": "dc59b2d9f106e75ceb89b3cb77c8bd2398f2c232ec60537d4613bbe075ebc3db",
       "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
       "src/economy/coin_physical_publication.c": "a6c282a71d505b386334db1c8917a57fa4b831ac5710a74db79e7c5b6b093b23",
       "src/economy/coin_physical_recovery.c": "615ab746cf95d94f41c797f5e48547f55e14b3faf564aab34b85b6f6989e6cb2",
@@ -390,14 +396,14 @@
       "src/item/craft_recipe_continuation.h": "5d551129552997ed6a975a75aef703761ee997effbae793e34a1f31b45edda78",
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
-      "src/item/held_retirement_recovery.c": "b7532fffaba44c7f2b4ceb16c29d9148e6dc003f71d3c83bb6867ed1f6f59f31",
-      "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
+      "src/item/held_retirement_recovery.c": "b7a461c95179077ec9e4a5ba404cd7929fc033376ad6e9bfb722a8b12324f9c3",
+      "src/item/held_retirement_recovery.h": "d3b94fb478ae8e402e8808ea022ada04d0e5c3aee1e4ade8904c316325928e1d",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_actions.c": "b1c7a68f53c9260fb738586d63df43115ed54120f87a5a3945ced5091d23180c",
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "4f84667cd55683be6f17d68991e0bff7f72d9348abf268a1152772212e048c68",
-      "src/item/item_movement_transaction.h": "f51b99b3dcc31c98ee86983f72517c62f119627f4c700a065f2587eccfa5928c",
+      "src/item/item_movement_transaction.c": "371d538a2ead4fd3a0ad3712a55d548c3ff8c0cdc833ef3b9f964a182e6206c8",
+      "src/item/item_movement_transaction.h": "f2c04e3d028177d9391473cd91f8af93dbbbb692afd9c02ae0dbb493eb27dc6f",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
       "src/item/item_transfer_command.c": "eff01a826ac8236e577431a40258f6064169d14ef468eba689cc39536be7dc8b",
@@ -501,8 +507,8 @@
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "1ecbfd94f188f2fb0bb1228486738fd419bd6f8d5c65e3d5026a48d121fbd8a9",
-      "src/player/player_save_pipeline.h": "98c187cbf941f9f3cc2e5a1618d45ac6406c35656decf51099fcbca2a3a8ffc0",
+      "src/player/player_save_pipeline.c": "cbf1d1b016aaf0f7af5ee08daef843acb939a806e6538b71bdd312ac780ebab2",
+      "src/player/player_save_pipeline.h": "35e41e7408fc730c8c14488f9e8527a5ba22584ae581e1e39e84dc4718fbc97f",
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
       "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
@@ -540,14 +546,14 @@
       "src/world/native_mobile_birth_procedure.h": "21fc9f5fd131ad71ca17ab69a60279360ba8e5d280eb790d89d1d9079ad49b94",
       "src/world/native_mobile_birth_reset_tail.c": "19cf9a57222920abe9eff5a4052d5b90b9f1957c5fd2371ca9b22a3d3d6bc939",
       "src/world/native_mobile_birth_reset_tail.h": "520e934beec4a71cd1328d41a53e92bca31d19281f28edfa1a90e1df20470eb3",
-      "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
-      "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
-      "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
+      "src/world/native_quest_frozen_continuation.h": "70d9427e8e0af7012e6041d68656087302094c18fc5798b209155c61c2107341",
+      "src/world/native_quest_recovery_context.c": "d787256574ba674421817e76e8e44e2d9e5efa91f726050d6586c3f8ec7b9c7c",
+      "src/world/native_quest_recovery_context.h": "420dfd3de61d7e0d4962fb66520e33a63685522b1d409ab51c6d3d43c767542f",
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
       "src/world/new_events.c": "3d6e911292fc988ce4cf30ec574d370880fdaa1cf372d750d0b2b89b0ea7822e",
       "src/world/object_template.h": "665368e56fc30b87c2bb291b16879b313eb28c42f2a430b8b38fe8448a9c3fd5",
       "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
-      "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
+      "src/world/quest.c": "4887b36475dd639c7bca78babb1fa8f44313f193bb6b262044eebe7a4d8fcf7d",
       "src/world/quest_mobile_native.c": "10b78580b5bfd5018ff0dceb93bce0aeaa296a63025cda84c0ff81d3193726bd",
       "src/world/quest_mobile_native.h": "b9b783bd913abc88b484764fa7d9cd637b84553a62990ce2d8489cd27ee19a15",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
@@ -17623,7 +17629,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          962
+          964
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17673,7 +17679,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1027
+          1029
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17761,7 +17767,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3649
+          3651
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -18199,8 +18205,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4008,
-          4020
+          4010,
+          4022
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -18262,7 +18268,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1555
+          1557
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18324,7 +18330,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1455
+          1457
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18509,7 +18515,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1336
+          1338
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19631,7 +19637,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1177
+          1179
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19693,7 +19699,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1184
+          1186
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -20766,7 +20772,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4256
+          4258
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20828,7 +20834,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4068
+          4070
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -21814,7 +21820,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2905
+          2907
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -22592,7 +22598,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1831
+          1833
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22654,7 +22660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1387
+          1389
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -23022,7 +23028,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1242
+          1244
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -32888,7 +32894,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1885
+          1886
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -32947,7 +32953,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          156
+          157
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -33007,7 +33013,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          969
+          970
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -33067,7 +33073,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          969
+          970
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -33145,7 +33151,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1654
+          1655
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
@@ -33440,7 +33446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          156
+          157
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -33500,7 +33506,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          450
+          451
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -33558,7 +33564,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1783
+          1784
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -54888,7 +54894,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7876
+          7878
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",
@@ -55011,7 +55017,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1747
+          1750
         ],
         "file": "src/economy/auction_native_publication.c",
         "function": "auction_native_publication_owner::physical",

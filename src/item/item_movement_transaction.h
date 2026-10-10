@@ -299,7 +299,19 @@ class item_native_quest_coordinator_budget_scope_owner final
 	static bool begin_borrow(const void *actual_lender,
 				 bool (*actual_reserve)(size_t, void *) noexcept,
 				 void *actual_guard, size_t current) noexcept;
+	// Refresh only this SAME active loan from its genuine mutex-owned scan.
+	// The original begin/end identity and nonnested lifetime remain unchanged.
+	static bool refresh_borrow(const void *actual_lender,
+				   bool (*actual_reserve)(size_t, void *) noexcept,
+				   void *actual_guard, size_t freshly_observed_current) noexcept;
 	static bool end_borrow(const void *actual_lender) noexcept;
+	// Pure authentication of the real active loan for the same guard/callback.
+	// Grants no new loan, observer access, byte baseline or reserve capability.
+	static bool borrowed_for(const void *actual_guard,
+				 bool (*actual_reserve)(size_t, void *) noexcept) noexcept;
+	// Authenticate the same active global guard after the last loan has ended.
+	static bool unborrowed_for(const void *actual_guard,
+				   bool (*actual_reserve)(size_t, void *) noexcept) noexcept;
 	static bool exclusive_prefix(const void *actual_guard,
 				     bool (*actual_reserve)(size_t, void *) noexcept, size_t full,
 				     size_t *exclusive) noexcept;
@@ -313,6 +325,9 @@ class item_native_quest_gameplay_publication_owner final
 	static bool retain(const item_native_quest_preparation_token &) noexcept;
 	static bool retained_budget(size_t actual_driver_bytes) noexcept;
 	static bool restore_budget(size_t actual_driver_bytes) noexcept;
+	static bool restore_budget_bounded(size_t actual_driver_bytes,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
 	// Current repository receipt plus the complete original world cut; the
 	// returned runtime IDs are observed live bodies, never persisted IDs.
 	static bool restored_readback(const critical_native_recovery_envelope &, P_char *,
@@ -406,6 +421,30 @@ quest_native_completion_prepare(P_char native_mobile, P_char final_giver, int qu
 				int completion_index,
 				item_native_quest_preparation_token *) noexcept;
 
+// Pure original native-quest preparation/publication CURRENT. Actual shared
+// command ownership priority is ordinary pending, then native preparation,
+// then quest gameplay. No source/admission/execution/ACK authority follows.
+// Observe all providers under the same genuine game-thread exclusion; consume
+// both item CURRENT getters and quest_native_retained_storage_bytes once.
+// The predicate returns false for unavailable observation, never false absence;
+// all output values remain unchanged on failure.
+bool item_native_quest_retained_storage_bytes(size_t *) noexcept;
+// Pure source closure queries; caller admits results before CURRENT.
+bool item_native_quest_current_source_frames(size_t *) noexcept;
+constexpr size_t item_native_quest_current_source_profile_query_frames() noexcept
+{
+	// Output formal; eleven real scalar locals, dependent CURRENT profile query,
+	// constexpr thread/range return carriers and success/failure booleans.
+	return 2 * sizeof(void *) + 20 * sizeof(size_t) + 4 * sizeof(bool);
+}
+constexpr size_t
+item_native_quest_retained_command_allocation_owned_source_profile_query_frames() noexcept
+{
+	return sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+}
+bool item_native_quest_retained_command_allocation_owned_source_frames(size_t *) noexcept;
+bool item_native_quest_retained_command_allocation_owned(const critical_command *, bool *) noexcept;
+
 // Pure CURRENT replay registration storage. Selecting caller owns other item
 // drivers and foreign domains; this observer owns the actual pending table and
 // health, full payload heaps and distinct original shared command allocations.
@@ -421,5 +460,36 @@ class player_save_coin_replay_budget_scope_owner;
 bool item_movement_transaction_restore_replayed_command_bounded(
 	const critical_command &, player_save_coin_replay_budget_scope_owner &,
 	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
+bool item_native_quest_restore_budget_source_frames(size_t *) noexcept;
+constexpr size_t item_native_quest_restore_budget_source_profile_query_frames() noexcept
+{
+	return sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool);
+}
+
+class item_native_recovery_replay_owner final
+{
+    public:
+	static bool restore_held_source_frames(size_t *) noexcept;
+	static bool restore_execution_source_frames(size_t *) noexcept;
+	static bool restore_continuation_source_frames(size_t *) noexcept;
+	static constexpr size_t source_profile_query_frames() noexcept
+	{
+		// Actual output/current/frame locals plus registry eight-subtotal, control
+		// named-control subtotals, bucket/relay/retention/capacity and existing CURRENT query scopes.
+		return 4 * sizeof(void *) + 92 * sizeof(size_t) + 8 * sizeof(bool);
+	}
+
+	static bool restore_held(const critical_native_recovery_envelope &,
+				 player_save_coin_replay_budget_scope_owner &,
+				 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_execution(const critical_native_recovery_envelope &,
+				      player_save_coin_replay_budget_scope_owner &,
+				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_continuation(const critical_native_recovery_envelope &,
+					 player_save_coin_replay_budget_scope_owner &,
+					 bool (*)(size_t, void *) noexcept, void *,
+					 size_t) noexcept;
+};
 
 #endif
