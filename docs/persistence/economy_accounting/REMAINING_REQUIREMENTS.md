@@ -4631,3 +4631,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Complete command source joins for native birth result proofs implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_BIRTH_GENERAL_CASH_ROLE_RESULT_SOURCE_JOINS_2026-10-10.md) complete command SOURCE/query joins integrated in both full native birth result providers, independently reviewed in actual formatted files; native and combined-host qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
