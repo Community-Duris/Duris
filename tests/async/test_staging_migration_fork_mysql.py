@@ -27,6 +27,42 @@ import migration_runner as runner
 import telemetry_rollup_schema_mysql as schema
 
 
+
+SCHEMA65_MANIFESTS = (
+    ("migration_manifest.json", "migration_manifest.nullable_default_0065.json", "migration_head", "nullable_default_migration_head"),
+    ("migration_manifest.staging_0045.json", "migration_manifest.staging_0045_nullable_default_0065.json", "staging_0045_migration_head", "staging_0045_nullable_default_migration_head"),
+    ("migration_manifest.master_0031.json", "migration_manifest.master_0031_nullable_default_0065.json", "master_0031_migration_head", "master_0031_nullable_default_migration_head"),
+)
+
+
+def schema65_runtime_value() -> dict:
+    # Measurement helpers use a temporary challenge manifest, never a stored fake
+    # fingerprint. Promote the additive65 profile only in that temporary input.
+    value = json.loads(schema.RUNTIME_MANIFEST.read_text())
+    value.update(value["schema65"])
+    return value
+
+
+def require_schema65_history(engine: schema.Engine, key: str, runtime: dict) -> str:
+    serialized = engine.sql(runtime["migration_history_sql"], database=engine.database)
+    records = serialized.splitlines()
+    check(len(records) == 65, "schema65 history count/overflow mismatch")
+    digest = hashlib.sha256(b"".join(bytes.fromhex(line) for line in records)).hexdigest()
+    state = engine.sql("SELECT LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;",
+                       database=engine.database)
+    check(digest == state == runtime[key]["history_checksum"], "schema65 exact history/state differs")
+    return digest
+
+
+def measure_schema65_fingerprint(engine: schema.Engine, runtime: dict, key: str) -> str:
+    # Select this database's authentic head in the temporary measurement input.
+    # The existing helper supplies a zero-digest challenge and extracts actual
+    # server metadata; it never writes those challenge values into a contract.
+    selected = dict(runtime)
+    selected.pop("schema65", None)
+    selected["migration_head"] = runtime[key]
+    return schema.measure_fingerprint(engine, selected)
+
 def check(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
@@ -152,9 +188,9 @@ def history(engine: schema.Engine, limit: int | None = None) -> str:
                       database=engine.database)
 
 
-def boot(engine: schema.Engine, success: bool = True) -> str:
+def boot(engine: schema.Engine, success: bool = True, schema65: bool = True) -> str:
     results = []
-    for command in (["bash", "migrations/verify_runtime_compatibility.sh", "--schema-only"],
+    for command in (["bash", "migrations/verify_runtime_compatibility.sh", "--schema-only", *(["--schema65"] if schema65 else [])],
                     ["python3", "tests/async/runtime_migration_history_fixture.py"]):
         result = qa(engine, command)
         check((result.returncode == 0) == success,
@@ -359,9 +395,9 @@ def native_lock_fixture() -> dict:
 
 def run(update: bool, lock_only: bool = False, loopback_engine: str | None = None,
         master_bootstrap: Path | None = None) -> dict:
-    canonical = runner.load_manifest()
-    staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
-    master = runner.load_manifest(ROOT / "migrations/migration_manifest.master_0031.json")
+    canonical = runner.load_manifest(ROOT / "migrations/migration_manifest.nullable_default_0065.json")
+    staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045_nullable_default_0065.json")
+    master = runner.load_manifest(ROOT / "migrations/migration_manifest.master_0031_nullable_default_0065.json")
     unique_description_step = next(step for step in canonical.migrations
                                    if step.migration_id ==
                                    "0050_item_extra_description_fulltext_unique")
@@ -408,9 +444,9 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             from_master = engine_factory(label, name, password, f"duris_268_{token}_mastertest")
             print(f"{label}: building canonical history with the real runner", flush=True)
             setup(normal, canonical)
-            migrate(normal, "migration_manifest.json")
+            migrate(normal, "migration_manifest.nullable_default_0065.json")
             snapshot = history(normal)
-            migrate(normal, "migration_manifest.json")
+            migrate(normal, "migration_manifest.nullable_default_0065.json")
             check(snapshot == history(normal), "canonical rerun rewrote migration receipts")
             normal_rows = descriptions(normal)
             normal.sql_file(unique_description_step.apply_path)
@@ -432,11 +468,11 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             refusal = migrate(fork, "migration_manifest.json", False)
             check("edited or reordered" in refusal, "canonical did not reject the staging fork")
             check(before == history(fork, 45), "refusal altered staging receipts")
-            migrate(fork, "migration_manifest.staging_0045.json")
+            migrate(fork, "migration_manifest.staging_0045_nullable_default_0065.json")
             check(before == history(fork, 45), "transition rewrote staging receipts")
             check(rows == description_rows(fork), "transition changed protected descriptions")
             after = history(fork)
-            migrate(fork, "migration_manifest.staging_0045.json")
+            migrate(fork, "migration_manifest.staging_0045_nullable_default_0065.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
                   == str(len(staging.migrations)),
@@ -462,22 +498,22 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             refusal = migrate(from_master, "migration_manifest.json", False)
             check("edited or reordered" in refusal, "canonical accepted master history")
             check(master_before == history(from_master, 31), "refusal altered master receipts")
-            migrate(from_master, "migration_manifest.master_0031.json")
+            migrate(from_master, "migration_manifest.master_0031_nullable_default_0065.json")
             check(master_before == history(from_master, 31), "upgrade rewrote master receipts")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master upgrade changed retained item runtime payloads")
             master_after = history(from_master)
-            migrate(from_master, "migration_manifest.master_0031.json")
+            migrate(from_master, "migration_manifest.master_0031_nullable_default_0065.json")
             check(master_after == history(from_master), "master rerun rewrote migration receipts")
             check(from_master.sql("SELECT COUNT(*) FROM mud_schema_history;",
                                   database=from_master.database) == str(len(master.migrations)),
                   "master transition did not reach its complete registered history")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master rerun changed retained item runtime payloads")
-            runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
-            for current, key in ((normal, "migration_head"),
-                                 (fork, "staging_0045_migration_head"),
-                                 (from_master, "master_0031_migration_head")):
+            runtime = schema65_runtime_value()
+            for current, key in ((normal, "nullable_default_migration_head"),
+                                 (fork, "staging_0045_nullable_default_migration_head"),
+                                 (from_master, "master_0031_nullable_default_migration_head")):
                 serialized = current.sql(runtime["migration_history_sql"],
                                          database=current.database)
                 digest = hashlib.sha256(b"".join(bytes.fromhex(line)
@@ -488,10 +524,10 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                 print(f"{label}/{key}: framed={digest} state={state_digest}", flush=True)
                 check(digest == state_digest == runtime[key]["history_checksum"],
                       "SQL serialization and pinned history state differ")
-            measured = schema.measure_fingerprint(normal, runtime)
-            check(schema.measure_fingerprint(fork, runtime) == measured,
+            measured = measure_schema65_fingerprint(normal, runtime, "nullable_default_migration_head")
+            check(measure_schema65_fingerprint(fork, runtime, "staging_0045_nullable_default_migration_head") == measured,
                   "canonical and staging schema metadata differ")
-            check(schema.measure_fingerprint(from_master, runtime) == measured,
+            check(measure_schema65_fingerprint(from_master, runtime, "master_0031_nullable_default_migration_head") == measured,
                   "canonical and upgraded master schema metadata differ")
             report[label] = {"server_version": normal.server_version,
                              "fingerprint": measured, "staging_prefix_preserved": True,
@@ -502,6 +538,55 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                              "first_31_receipt_sha256": hashlib.sha256(master_before.encode()).hexdigest(),
                              "master_runtime_payload_preserved": True,
                              "master_bootstrap": "supplied" if master_bootstrap else "current"}
+            # Actual immutable original65 routes are qualified separately.
+            # MariaDB's known original apply refusal is recovered only while no
+            #65 receipt exists; never manufacture or rewrite a recorded65 row.
+            historical_routes = []
+            for ordinal, (old_name, new_name, old_key, new_key) in enumerate(SCHEMA65_MANIFESTS):
+                old_contract = runner.load_manifest(ROOT / "migrations" / old_name)
+                original_engine = engine_factory(label, name, password,
+                    f"duris_268_{token}_original{ordinal}test")
+                setup(original_engine, old_contract,
+                      master_bootstrap if ordinal == 2 else None)
+                prefix_result = qa(original_engine, ["python3", "-c",
+                    "import sys; from dataclasses import replace; sys.path.insert(0,'scripts'); "
+                    "import migration_runner as m; "
+                    f"manifest=m.load_manifest(m.ROOT/'migrations/{old_name}'); "
+                    "prefix=replace(manifest,migrations=manifest.migrations[:64]); "
+                    "print(m.run_pending(prefix,m.MysqlExecutor(prefix)))"])
+                check(prefix_result.returncode == 0, "authentic64 prefix failed: " +
+                      prefix_result.stdout + prefix_result.stderr)
+                boot(original_engine, schema65=False)
+                prefix64_receipts = history(original_engine, 64)
+                if label == "mysql8":
+                    migrate(original_engine, old_name)
+                    check(prefix64_receipts == history(original_engine, 64), "original65 changed64 receipts")
+                    old_receipts = history(original_engine)
+                    migrate(original_engine, new_name, False)
+                    check(old_receipts == history(original_engine), "variant selection changed original65 receipts")
+                    key = old_key
+                else:
+                    refusal = migrate(original_engine, old_name, False)
+                    check("zone reset item" in refusal, "original65 failed for an unexpected reason")
+                    check(original_engine.sql("SELECT COUNT(*) FROM mud_schema_history;",
+                          database=original_engine.database) == "64", "failed original65 recorded a receipt")
+                    old_receipts = history(original_engine, 64)
+                    migrate(original_engine, new_name)
+                    check(old_receipts == history(original_engine, 64), "variant recovery rewrote1-64")
+                    key = new_key
+                snapshot = history(original_engine)
+                migrate(original_engine, old_name if label == "mysql8" else new_name)
+                check(snapshot == history(original_engine), "history rerun rewrote receipts")
+                migrate(original_engine, new_name if label == "mysql8" else old_name, False)
+                check(snapshot == history(original_engine), "wrong65 selector changed receipts")
+                require_schema65_history(original_engine, key, runtime)
+                check(measure_schema65_fingerprint(original_engine, runtime, key) == measured,
+                      "original/recovered65 schema metadata differs from fresh variant")
+                historical_routes.append(original_engine)
+            report[label]["original65_histories_accepted" if label == "mysql8" else
+                          "original65_refusal_then_unrecorded_tail_recovery"] = True
+            report[label]["existing64_shell_and_compiled_boot_preserved"] = True
+            engines.append((label, *historical_routes))
             duplicate_guard(engine_factory(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),
                             unique_description_step)
@@ -521,12 +606,23 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             value = json.loads(schema.RUNTIME_MANIFEST.read_text())
             header_path = ROOT / "src/core/runtime_compatibility_contract.h"
             header = header_path.read_text()
-            for label in report:
-                old = value["normalized_metadata_fingerprints"][label]
+            check(set(report) == {"mysql8", "mariadb10_11"}, "schema65 sealing requires both engines")
+            for label, constant in (("mysql8", "RUNTIME_SCHEMA65_MYSQL8_METADATA_FINGERPRINT"),
+                                    ("mariadb10_11", "RUNTIME_SCHEMA65_MARIADB10_11_METADATA_FINGERPRINT")):
+                old = value["schema65"]["normalized_metadata_fingerprints"][label] or ""
                 new = report[label]["fingerprint"]
-                check(header.count(old) == 1, "compiled fingerprint is ambiguous")
-                header = header.replace(old, new)
-                value["normalized_metadata_fingerprints"][label] = new
+                check(re.fullmatch(r"[0-9a-f]{64}", new) is not None, "measured schema65 fingerprint malformed")
+                pattern = rf'({constant}\s*=\s*)"([^"\n]*)";'
+                matches = list(re.finditer(pattern, header))
+                check(len(matches) == 1 and matches[0].group(2) == old, "compiled schema65 fingerprint drift")
+                header = re.sub(pattern, lambda match: match.group(1) + json.dumps(new) + ";", header)
+                value["schema65"]["normalized_metadata_fingerprints"][label] = new
+            check(header.count("constexpr bool RUNTIME_SCHEMA65_QUALIFIED = false;") == 1 or
+                  header.count("constexpr bool RUNTIME_SCHEMA65_QUALIFIED = true;") == 1,
+                  "compiled schema65 measurement qualification drift")
+            header = header.replace("constexpr bool RUNTIME_SCHEMA65_QUALIFIED = false;",
+                                    "constexpr bool RUNTIME_SCHEMA65_QUALIFIED = true;")
+            value["schema65"]["qualification"] = "measured"
             schema.RUNTIME_MANIFEST.write_text(json.dumps(value, indent=2) + "\n", newline="\n")
             header_path.write_text(header, newline="\n")
         for label, normal, fork, from_master in engines:
@@ -540,7 +636,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                 engine.sql("UPDATE mud_schema_history SET description=LEFT(description,"
                            "CHAR_LENGTH(description)-1) WHERE sequence_number=3;",
                            database=engine.database)
-                other = json.loads(schema.RUNTIME_MANIFEST.read_text())[
+                other = json.loads(schema.RUNTIME_MANIFEST.read_text())["schema65"][
                     "staging_0045_migration_head" if engine is normal else "migration_head"][
                         "history_checksum"]
                 state = engine.sql("SELECT HEX(history_checksum) FROM mud_schema_migration_state "
@@ -560,7 +656,17 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                            "BINARY(32) GENERATED ALWAYS AS (UNHEX(SHA2(COALESCE(description,_utf8mb4''),"
                            "256))) STORED;", database=engine.database)
                 boot(engine)
+                if label == "mariadb10_11" and engine is normal:
+                    engine.sql("ALTER TABLE zone_reset_item_birth_origin MODIFY "
+                               "terminal_publication_context LONGBLOB NULL DEFAULT 'NULL';",
+                               database=engine.database)
+                    boot(engine, False)
+                    engine.sql("ALTER TABLE zone_reset_item_birth_origin MODIFY "
+                               "terminal_publication_context LONGBLOB NULL DEFAULT NULL;",
+                               database=engine.database)
+                    boot(engine)
             report[label]["shell_and_compiled_boot"] = True
+            report[label]["schema65_runtime_qualified"] = True
             report[label]["old_receipt_mixed_state_and_expression_tamper_rejected"] = True
         return report
     finally:

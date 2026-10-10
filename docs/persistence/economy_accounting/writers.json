@@ -22753,17 +22753,17 @@
       "sites": [
         [
           "src/sql/sql.c",
-          5094,
+          5248,
           "sql_economy"
         ],
         [
           "src/sql/sql.c",
-          5437,
+          5591,
           "sql_economy"
         ],
         [
           "src/sql/sql.c",
-          5465,
+          5619,
           "sql_economy"
         ]
       ],
@@ -63572,19 +63572,19 @@
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5094,
+      "line": 5248,
       "family": "sql_economy",
       "excerpt": "qry(\"DELETE FROM auction_money_pickups\") && qry(\"DELETE FROM auctions\"))"
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5437,
+      "line": 5591,
       "family": "sql_economy",
       "excerpt": "qry(\"DELETE FROM saved_item_extra_descr\") && qry(\"DELETE FROM saved_items\"))"
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5465,
+      "line": 5619,
       "family": "sql_economy",
       "excerpt": "if (qry(\"DELETE FROM ships\"))"
     },
@@ -66591,14 +66591,14 @@
       "migrations/migration_manifest.master_0031.json": "207dfb235a65ff97a6f4e4a9bf420b274adf3667473ed2c5c4552a9616b2e329",
       "migrations/migration_manifest.staging_0045.json": "29f220d7b59addba904cb0b809ef49644ef25a17469e3f21f8a8580c6ec2ec90",
       "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
-      "migrations/runtime_compatibility_manifest.json": "41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974",
-      "migrations/verify_runtime_compatibility.sh": "1e55d588c4215cc4d7f3ba01b1edb92523e943f08521d0821c1e21365a8ace47",
-      "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
+      "migrations/runtime_compatibility_manifest.json": "6ec36cf62c2fb688c2afce9d8eb2c9b05c59ad794ae61d196e79ec4077853a8a",
+      "migrations/verify_runtime_compatibility.sh": "0a803d5e3afd9b0af6c3de5a25dfa48a765fcecacdc4dbff3a1346051ae3474d",
+      "scripts/validate_runtime_compatibility.py": "d37537443fc920c3b49b61efa9e6b4d2629e0eb4b51902d1daf5d82158ce46de",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
       "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
-      "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
+      "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
       "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
       "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
       "src/economy/auction_item_claim_accounting.c": "7fe018e60a4d16c3d188703ea70fceb48e3d7b5026e239a6017fc8930d8a572d",
@@ -66649,7 +66649,7 @@
       "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
       "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
-      "src/sql/sql.c": "fcb648fea1a64750d097556c4254e338a749c9727cb92e989298598650bf7ee0",
+      "src/sql/sql.c": "57ee2e0fdbd7eede6e1c7e43f88013c76602fefcc068c5a4e90cdf56996ab70c",
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
@@ -66860,7 +66860,13 @@
       "src/economy/coin_transfer_command.c": "bef11515cfc6ddc2d46c5e74dd2e047ad5665875bbf90fa2ceb3c6dfe329b41e",
       "src/economy/coin_transfer_command.h": "2a13f56918b17edae53889ed560e2c657795becf23699d7c86376f56d5973b4d",
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
-      "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed"
+      "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed",
+      "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
+      "migrations/immutable/0065_zone_reset_item_birth_origin_nullable_default.sql": "056d5e33bd33d7e981a3ba13528e903fc8c0e142492b23d6fb4f8f88c8102a47",
+      "migrations/immutable/0065_zone_reset_item_birth_origin_nullable_default.sh": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
+      "migrations/migration_manifest.nullable_default_0065.json": "3f0454e01eae96d673b902fdf7a8aa7a714a7c354c2e83462900f5253a174a6f",
+      "migrations/migration_manifest.staging_0045_nullable_default_0065.json": "d98c932569cf1751ee3911f8939a13dc2ffaabef6c22638edbae89b32b56d5a9",
+      "migrations/migration_manifest.master_0031_nullable_default_0065.json": "5c7b65fa95391b53b2528275e5b4f3873d219761ed5e81bbca6e76487e2b22e5"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
