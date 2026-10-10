@@ -7800,3 +7800,308 @@ bool item_transfer_command_decode_payload_bounded(const critical_command &comman
 		return false;
 	}
 }
+
+namespace
+{
+struct item_full_build_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *encoded = nullptr;
+	const critical_command *working = nullptr, *candidate = nullptr;
+	bool command_heap(const critical_command &value, size_t &total) const noexcept
+	{
+		return payload_clone_add(total, sizeof(value)) &&
+		       payload_clone_vector_heap(value.keys, false, total) &&
+		       payload_clone_vector_heap(value.expected_revisions, false, total) &&
+		       payload_clone_vector_heap(value.payload, false, total) &&
+		       payload_clone_vector_heap(value.accounting_intent, false, total);
+	}
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 10 * sizeof(void *) + 8 * sizeof(size_t) +
+					       4 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observation) ||
+		    (encoded && (!payload_clone_add(total, sizeof(*encoded)) ||
+				 !payload_clone_vector_heap(*encoded, false, total))) ||
+		    (working && !command_heap(*working, total)) ||
+		    (candidate && !command_heap(*candidate, total)) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+constexpr size_t item_full_build_command_lifetime_frames =
+	// Genuine four vector/base/impl/data default constructors and all four
+	// vector move assignments/destruction. Generated command this/source
+	// carriers and fixed operation-array copy/query/zero-ID range scopes.
+	4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) + 4 * payload_clone_move_frames +
+	4 * payload_clone_allocator_frames + 5 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(bool) + sizeof(uint8_t);
+bool item_full_build_ordinary_owned(critical_command *command, critical_operation_id operation_id,
+				    const item_transfer_payload &payload,
+				    critical_source_site source_site,
+				    critical_deadline_class deadline_class,
+				    item_full_build_budget &budget)
+{
+	if (!command || critical_operation_id_is_zero(operation_id))
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+			 sizeof(std::allocator<uint8_t>)))
+		return false;
+	std::vector<uint8_t> encoded;
+	budget.encoded = &encoded;
+	size_t admission_prefix = 0;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_transfer_command_encode_payload_bounded(payload, &encoded, budget.reserve,
+							   budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(sizeof(critical_command) + item_full_build_command_lifetime_frames))
+		return false;
+	*command = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+		     .operation_id = operation_id,
+		     .type = critical_command_type::item_transfer,
+		     .payload_version = ITEM_TRANSFER_PAYLOAD_VERSION,
+		     .source_site = source_site,
+		     .deadline_class = deadline_class,
+		     .accepted_at_usec = 0,
+		     .keys = {},
+		     .expected_revisions = {},
+		     .payload = std::move(encoded) };
+	const bool populated =
+		budget.prefix(admission_prefix) &&
+		item_transfer_command_entities_bounded(command, payload, budget.reserve,
+						       budget.context, admission_prefix);
+	budget.encoded = nullptr;
+	return populated;
+}
+
+bool item_full_build_native_owned(critical_command *command, critical_operation_id operation_id,
+				  const item_transfer_payload &payload,
+				  critical_source_site source_site,
+				  critical_deadline_class deadline_class,
+				  item_full_build_budget &budget)
+{
+	if (!command || critical_operation_id_is_zero(operation_id))
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+				 sizeof(std::allocator<uint8_t>)))
+			return false;
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		size_t admission_prefix = 0;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_command_encode_native_mobile_bounded(
+			      payload, &encoded, budget.reserve, budget.context, admission_prefix)))
+			return false;
+		if (!budget.peak(sizeof(critical_command) +
+				 item_full_build_command_lifetime_frames))
+			return false;
+		critical_command candidate = {
+			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+			.operation_id = operation_id,
+			.type = critical_command_type::item_transfer,
+			.payload_version =
+				payload.native_money.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION :
+				payload.native_cost.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+			.source_site = source_site,
+			.deadline_class = deadline_class,
+			.accepted_at_usec = 0,
+			.keys = {},
+			.expected_revisions = {},
+			.payload = std::move(encoded)
+		};
+		budget.candidate = &candidate;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_command_entities_bounded(&candidate, payload, budget.reserve,
+							     budget.context, admission_prefix)))
+			return false;
+		if (!budget.peak(item_full_build_command_lifetime_frames))
+			return false;
+		*command = std::move(candidate);
+		budget.encoded = nullptr;
+		budget.candidate = nullptr;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_full_build_recovery_owned(critical_command *command, critical_operation_id operation_id,
+				    const item_transfer_payload &payload,
+				    critical_source_site source_site,
+				    critical_deadline_class deadline_class,
+				    item_full_build_budget &budget)
+{
+	if (!command || critical_operation_id_is_zero(operation_id))
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+				 sizeof(std::allocator<uint8_t>)))
+			return false;
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		size_t admission_prefix = 0;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_command_encode_native_mobile_recovery_bounded(
+			      payload, &encoded, budget.reserve, budget.context, admission_prefix)))
+			return false;
+		if (!budget.peak(sizeof(critical_command) +
+				 item_full_build_command_lifetime_frames))
+			return false;
+		critical_command candidate = {
+			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+			.operation_id = operation_id,
+			.type = critical_command_type::item_transfer,
+			.payload_version =
+				payload.native_money.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION :
+				payload.native_cost.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+			.source_site = source_site,
+			.deadline_class = deadline_class,
+			.accepted_at_usec = 0,
+			.keys = {},
+			.expected_revisions = {},
+			.payload = std::move(encoded)
+		};
+		budget.candidate = &candidate;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_command_entities_bounded(&candidate, payload, budget.reserve,
+							     budget.context, admission_prefix)))
+			return false;
+		if (!budget.peak(item_full_build_command_lifetime_frames))
+			return false;
+		*command = std::move(candidate);
+		budget.encoded = nullptr;
+		budget.candidate = nullptr;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+} // namespace
+
+bool item_transfer_command_build_bounded(critical_command *command,
+					 critical_operation_id operation_id,
+					 const item_transfer_payload &payload,
+					 critical_source_site source_site,
+					 critical_deadline_class deadline_class,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		9 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(bool) +
+		2 * sizeof(critical_operation_id) + 2 * sizeof(critical_source_site) +
+		2 * sizeof(critical_deadline_class) + item_full_build_command_lifetime_frames;
+	item_full_build_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command) + item_full_build_command_lifetime_frames))
+		return false;
+	try
+	{
+		critical_command working = {};
+		budget.working = &working;
+		if (!item_full_build_ordinary_owned(&working, operation_id, payload, source_site,
+						    deadline_class, budget) ||
+		    !budget.peak(item_full_build_command_lifetime_frames))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*command = std::move(working);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_command_build_native_mobile_bounded(critical_command *command,
+						       critical_operation_id operation_id,
+						       const item_transfer_payload &payload,
+						       critical_source_site source_site,
+						       critical_deadline_class deadline_class,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		9 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(bool) +
+		2 * sizeof(critical_operation_id) + 2 * sizeof(critical_source_site) +
+		2 * sizeof(critical_deadline_class) + item_full_build_command_lifetime_frames;
+	item_full_build_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command) + item_full_build_command_lifetime_frames))
+		return false;
+	try
+	{
+		critical_command working = {};
+		budget.working = &working;
+		if (!item_full_build_native_owned(&working, operation_id, payload, source_site,
+						  deadline_class, budget) ||
+		    !budget.peak(item_full_build_command_lifetime_frames))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*command = std::move(working);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_command_build_native_mobile_recovery_bounded(
+	critical_command *command, critical_operation_id operation_id,
+	const item_transfer_payload &payload, critical_source_site source_site,
+	critical_deadline_class deadline_class, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		9 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(bool) +
+		2 * sizeof(critical_operation_id) + 2 * sizeof(critical_source_site) +
+		2 * sizeof(critical_deadline_class) + item_full_build_command_lifetime_frames;
+	item_full_build_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command) + item_full_build_command_lifetime_frames))
+		return false;
+	try
+	{
+		critical_command working = {};
+		budget.working = &working;
+		if (!item_full_build_recovery_owned(&working, operation_id, payload, source_site,
+						    deadline_class, budget) ||
+		    !budget.peak(item_full_build_command_lifetime_frames))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*command = std::move(working);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
