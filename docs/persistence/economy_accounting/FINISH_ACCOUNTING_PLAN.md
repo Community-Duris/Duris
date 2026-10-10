@@ -317,6 +317,14 @@ repin or CLOSED reopen. Original root insertion history remains in Git; concurre
 primary75d83/69fd is preserved by a normal non-destructive merge. No source delta
 or private artifact import/commit belongs to this publication.
 
+Additional concurrent pouch validation 86b2b34ddd074282366147032a89959e07632135 / actual parent69fd
+EXISTS, private/unselected. Root full handoff/new9 header lines/two whole source
+forward-inverses authenticate; full283 added C semantics NOT PERFORMED. Private
+RAW/review/profile/preprocessor/policy/pin claims REPORTED ONLY. Queue at fixed PQ
+handoff only; no active task expansion/repin or old seal rerun. Original69 merge
+and source publication remain preserved; final insertion inverse restores primary
+86b2b34ddd074282366147032a89959e07632135.
+
 Applicable backend boundary: actual docs/reference/CODEBASE.md retires siege runtime;
 docs/reference/DATABASE.md and original baseline_item_ownership.sh retain siege SQL
 tombstones/baseline witnesses, not permission to revive runtime. Actual flat accounting
@@ -403,7 +411,8 @@ remain separate. Primary owns maintained implementation/math/admission/authority
 contracts/qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release.
 Root publishes only three owned coordination docs. Original insertion restores
 primary C14da733ce7fa7966eab6c3a37af052307423cd29; merged publication insertion
-restores late primary69fded96fc0c47f3187876d157a6351fbac64d63. No maintained-source delta/
+restores the exact current primary recorded in the root publication proof.
+The earlier69fd merge context above remains historical. No maintained-source delta/
 private artifact import/commit/compiler/preprocessor/native/product/DB/deploy/activation/
 production mutation or other-chat messages. Preserve all CLOSED OC/OR/RR/BR/SS/SG/PC/
 PD/SC/RK/RF/GG/CG/CK/SAME-lock seals/receipts/history and all original wording corrections:
