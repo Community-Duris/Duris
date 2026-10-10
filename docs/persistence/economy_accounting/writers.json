@@ -66849,7 +66849,9 @@
       "src/flatfile/flatfile_player_snapshot_file.c": "04186563b9e9a2fab8584c7fa75f8ef8b01aedf2757f1906b4834339649b281b",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.h": "024040638bfc27423e818d02ad4c561d5b6b8ae335305daf3e5a7c166fd81501",
       "src/flatfile/flatfile_auction_repository.c": "24d9b025930bf3ece5a6e42f982045c805720cc3a72feeff61bc6d781b55706e",
-      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c"
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c",
+      "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
+      "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

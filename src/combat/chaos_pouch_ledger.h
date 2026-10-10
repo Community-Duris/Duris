@@ -29,6 +29,24 @@ chaos_pouch_ledger_verify(const player_item_snapshot &before, const player_item_
 			  std::span<const chaos_material_pouch_usage> usage,
 			  chaos_pouch_usage_mode mode);
 
+// Genuine prospective counterparts. The caller outer includes full input
+// snapshots/usage/prior output and all sibling owners; each physical heap is
+// included once even when references alias. The implementation owns candidate,
+// deep-copy initializer-list/vector, chunk/description/string and codec frames.
+// Strong after output; no reserve/callback follows successful transfer. Original
+// methods/native apply/overlay and selected gameplay remain unchanged. Supported
+// allocator requests are pinned libstdc++13 C++11 ABI; no unbounded fallback.
+chaos_pouch_ledger_result
+chaos_pouch_ledger_prepare_bounded(const player_item_snapshot &,
+				   std::span<const chaos_material_pouch_usage>,
+				   chaos_pouch_usage_mode, player_item_snapshot *,
+				   bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+chaos_pouch_ledger_result
+chaos_pouch_ledger_verify_bounded(const player_item_snapshot &, const player_item_snapshot &,
+				  std::span<const chaos_material_pouch_usage>,
+				  chaos_pouch_usage_mode, bool (*)(size_t, void *) noexcept, void *,
+				  size_t) noexcept;
+
 // Apply only the counter mutation to a locked native item. Other native fields
 // may have advanced since capture and must not be replaced by the live image.
 chaos_pouch_ledger_result chaos_pouch_ledger_apply_native(
