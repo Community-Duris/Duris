@@ -196,6 +196,93 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## TC architecture CLOSED; Quest complete-scope metadata correction selected - 2026-10-10
+
+Architecture original TC independently SOURCE/DESIGN/METADATA PASS
+CLOSED_NO_CORRECTION remains immutable. Root original normal default ONCE at clean
+selecting759dcbd66095dea8667c5950fd7789f1566ccda4 reproduced exact11637-byte receipt,
+exit0/stderr0, before any original coordinator source advance. Architecture256
+acknowledged closure/IDLE. No rerun, repin, reopening or second task follows.
+
+Quest original sealed TC delivery arrived at263. Root read its whole25185-byte
+note and15355-byte stdlib/read-only Git verifier. Strict four payloads plus INDEX,
+50 fresh whole providers,65 exact byte ranges,six general whole forward/inverse
+transforms/raw diffs,six explicit equalities,27 UNEVALUATED declarations, original
+selecting/additive ancestry section inverses,current2b92 parents/three owned seals
+and36 streaming hash-only CLOSED preservation controls independently authenticate.
+No old CLOSED PINS/verifier/receipt is parsed, imported or executed. Full financial,
+transitive/global/libc/OpenSSL/ABI/allocator/emitted/native32MiB/full-host proof is
+not inferred. Exact prior complete owning-source readings are reused without any
+CLOSED execution; additional genuine lock/helper controls are read as source only.
+
+Original worker normal default ONCE is independently authenticated: exact1036-byte
+stdout equals original staged receipt,exit0/stderr0,packet unchanged before/after.
+That receipt's complete_cuts=65 claim is NOT accepted as complete-scope proof.
+Root original Quest default NOT_RUN. No worker rerun, root original execution,
+normalization, original receipt relabeling or packet rewrite is authorized.
+
+Three original ranges have kind=complete_required_scope but partial boundaries:
+- command_complete_envelope_validation, C critical_command.c9704:11880, starts
+  inside critical_command_envelope_valid. Actual full signature begins8814;
+  missing890 bytes include schema/intent/publication prefix and opening scope.
+- command_original_validation_helpers, C critical_command.c414:2229, includes
+  complete helpers followed by only hex_value's signature, without its body.
+- item_nested_heap_helpers, C player_snapshot_codec.c97709:99741, includes
+  complete helpers followed by only the first signature line of
+  player_item_snapshot_fresh_copy_request_bytes, omitting the rest/body.
+Whole-byte equality authenticates those slices, not their completeness. These
+are source-proof metadata findings, not C++/native executed failures. Existing
+TC1-TC4 design/gates/orders/strong tails/authority limits remain source-qualified.
+
+One narrow separate private D: Quest correction is selected:
+PUBLISHED_ORDINARY_AGGREGATE_CURRENT_TRANSACTION_COMPLETE_SCOPE_CORRECTION_2026-10-10.txt.
+Concrete output: exact full fixed source definitions or true complete helper-group
+boundaries, three original-range deltas/inverses, original seals/execution evidence,
+finite assessment, strict INDEX, fully audited deterministic stdlib/read-only Git
+verifier and separate original new normal-default ONCE binary stdout/receipt for
+root independent review. Future benefit: honest complete validator/helper proof
+for genuine TC producer preparation. Standalone verifier must not import/dispatch
+the old script or use exec/eval/compile/dynamic imports. Distinguish all65 original
+authenticated byte ranges from independently complete corrected required scopes.
+Read every newly included required signature/body. Preserve original note/PINS/
+INDEX/verifier/receipt/default/audit/history and all91 delivery seals unchanged.
+
+Fixed G/H,C/G,I/C and separate T context remain selected; no source repin or design,
+resource-category,algorithm repair/expansion. Primary owns maintained implementation
+and qualification; Plan5 owns backend/recovery/release; workers own private D: only.
+No maintained edits/imports/commits/merges/compiler/preprocessor/ELF/build/native/
+product/DB/operational execution or Goal mutation. Missing native inputs block
+dependent execution only. Architecture remains IDLE; Quest has only this bounded
+correction delivery. Paired publication and next meaningful source-grounded selection
+remain pending correction handoff/root review, with no adoption wait or second task.
+
+Root evidence is D:/Dev/Temp/coordinator-ordinary-aggregate-current-transaction-review-20261010:
+quest-source-authentication.json,quest-verifier-audit.json,quest-source-reading-reuse.json.
+Original coordinator stays clean759dc for separate future correction receipt seal.
+This status update uses a separate checkout, changing exactly three owned coordination
+docs. Whole inserted-section inverse restores actual published primarycef69012c.
+All original TC/additive ancestry sections and CLOSED AC/PP/WS/addendum/LR/SD/AR/CR/BO
+seals/defaults/receipts/history/failures remain. Questactual2b92/93d606+759dc/current
+three owned hashes, historical originals/excursion/archive/setup/sleep-only container
+and all live jobs/services/build/failure evidence remain preserved, without runtime
+operation. No current Quest hash is relabeled equal to the old93d606 snapshot.
+
+Prioritized queue: sole fixed TC correction/review first; then genuine later identity,
+lifecycle/publication/ROOT-cold/native constructor/reference/image/executable/procedure/
+spellbook/zombie/passive item-spell replay/registration source/profile/caller preparation
+at paired handoff. Publishedcef69012c passive registration source exists; its full392 C
+semantic/profile/caller/native/global audit remains QUEUED_NOT_PERFORMED. Private primary
+claims remain REPORTED_ONLY; producer/startup/recovery/first admission/native/host proof
+is not inferred. Original owner-held decoder repair execution and NMB3/custody categories,
+coin/receiver/host/save/Smith/applicable restitution and Plan5 backend obligations persist.
+
+Actual root Goal BLOCKED unchanged1791410483; worker Goals distinct BLOCKED preserved.
+No replacement/resumption/pause/completion. Broad Plans1-5/R1-R8/applicable backend/
+gameplay/persistence/recovery/required blockers/owner completion audit OPEN. Accounting
+inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat ACTIVE until
+broad completion audit/user pause. All Gitfetch/merge/commit/push gc.auto=0; no reset/
+revert/kill/delete/restart/pruning/housekeeping/deployment/activation/production action.
+
 ## TC ancestry correction and historical quest replay disposition - 2026-10-10
 
 This additive coordinator correction supersedes only erroneous TC parent prose in
