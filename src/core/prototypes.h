@@ -952,14 +952,35 @@ inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P
 			 data_size);
 }
 
+// The scheduler and retained-payload observer use the same actual typed
+// deletion identity, including when cancellation clears the event callback.
+// Canonical unqualified T matches the original allocated payload_type.
+template <typename T> inline void add_event_owned_payload_destroy_impl(void *stored_payload)
+{
+	using payload_type = std::remove_cv_t<T>;
+	delete static_cast<payload_type *>(stored_payload);
+}
+template <typename T>
+constexpr nevent_payload_destroy_type add_event_owned_payload_destroy() noexcept
+{
+	return &add_event_owned_payload_destroy_impl<std::remove_cv_t<T>>;
+}
+// This pure getter owns only its actual function-pointer return carrier.
+// Callers retain their identity/comparison and this profile getter's size_t
+// return separately. Neither getter invokes destruction or observes payloads.
+template <typename T>
+constexpr size_t add_event_owned_payload_destroy_observer_frame_bytes() noexcept
+{
+	return sizeof(nevent_payload_destroy_type);
+}
+
 template <typename T> inline nevent_schedule_result
 add_event_owned(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag, T data)
 {
 	using payload_type = std::remove_cv_t<T>;
 	payload_type *payload = new payload_type(std::move(data));
 	return add_event_owned_payload(func, delay, ch, victim, obj, flag, payload,
-				       [](void *stored_payload)
-				       { delete static_cast<payload_type *>(stored_payload); });
+				       add_event_owned_payload_destroy<T>());
 }
 
 nevent_schedule_result nevent_replace(nevent_handle, event_func, int, P_char, P_char, P_obj, int,
