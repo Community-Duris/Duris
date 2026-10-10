@@ -520,8 +520,8 @@
       "src/world/quest_mobile_native.h": "49ea690af488d383230b7c84dea4b195d13dea010e184d26594b4fc287b5da60",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
       "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
-      "src/world/quest_mobile_native_birth.c": "31e09105737348f7b58ecc5ca5874dcbab7550d32a1e610ac1a68c18012ebcf1",
-      "src/world/quest_mobile_native_birth.h": "d193bc14db3c6f67dbe3806309d484c7c32fc6a28d0b98fb4ed1a8600c56d9fd",
+      "src/world/quest_mobile_native_birth.c": "350b504f445073dfd7a968c7b7b2a9ce163f56cfbf1b482dbd1d317281e60f5d",
+      "src/world/quest_mobile_native_birth.h": "d607c60a30d3ac1290036cc777776daf590cc20710069570895bd455f613ace4",
       "src/world/quest_mobile_native_reference.c": "e35b73e7a93b47cf87df6c3a4aea47d4956bb20d587865b3b56de23c6a0b8663",
       "src/world/quest_mobile_native_reference.h": "33737074b17c0becce2db83baf1372d34cc4f6fe10cbd46ec9dbbedfcb8dba27",
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
@@ -53799,7 +53799,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1730
+          1732
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::prepare_mobile",
@@ -53846,7 +53846,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2042
+          2044
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::seal_mobile",
@@ -53903,7 +53903,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4317
+          4319
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::pulse",
@@ -54101,7 +54101,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1813
+          1815
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::capture_alchemist_spawn",
@@ -54161,7 +54161,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2967
+          2969
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::recover_cold",
@@ -54221,7 +54221,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2654
+          2656
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::resume_cold_projection",
@@ -54281,7 +54281,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3464
+          3466
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::publish",
