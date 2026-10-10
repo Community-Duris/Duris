@@ -292,6 +292,7 @@ class quest_mobile_native_stage
 	bool
 	restore_constructor(const quest_mobile_native_constructor_recipe &,
 			    const quest_mobile_native_constructor_digest &current_build) noexcept;
+	bool retained_bytes_excluding_mobile_pool(size_t *) const noexcept;
 	struct char_data *character() const noexcept { return character_; }
 	// Original detached shared keeper only. These passive observations neither
 	// authenticate the caller's reset/source cut nor permit publication or ACK.
@@ -674,5 +675,16 @@ void quest_mobile_native_item_observe_native_prepend(struct obj_data *) noexcept
 // Nonallocating observation at the original extraction cut; grants no authority.
 void quest_mobile_native_item_observe_extraction(struct obj_data *) noexcept;
 void free_world();
+
+// Disjoint genuine native storage partitions for the common ROOT census.
+// Whole char_data pool descriptors/list node/MEMCHK headers/mapped pages;
+// four exclusively owned mob_index cached string columns plus the actual
+// mob_f fopen object/libc buffer allocation extents; and actual published
+// NPC only.npc allocations (including MEMCHK header). Detached only.npc remains
+// birth-owned until actual list consumption. Refresh every return, including
+// refusal. These allocation-free strong outputs confer no native authority.
+bool quest_mobile_native_mobile_pool_storage_bytes(size_t *) noexcept;
+bool quest_mobile_native_mobile_catalog_string_storage_bytes(size_t *) noexcept;
+bool quest_mobile_native_published_npc_storage_bytes(size_t *) noexcept;
 
 #endif /* #ifndef _SOJ_DB_H_ */

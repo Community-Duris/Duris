@@ -1,3 +1,4 @@
+#include <cstddef>
 #ifndef NATIVE_MOBILE_BIRTH_PROCEDURE_H
 #define NATIVE_MOBILE_BIRTH_PROCEDURE_H
 
@@ -24,5 +25,14 @@ bool native_mobile_birth_procedure_capture(
 bool native_mobile_birth_procedure_matches(
 	int32_t mobile_vnum, const native_mobile_birth_procedure_digest &actual_build_digest,
 	const native_mobile_birth_procedure_digest &expected) noexcept;
+
+// Full actual original ELF/dispatcher/definition/predecessor witness with
+// admitted fixed SHA/carriers and original shop order. No callback execution.
+// Strong output; caller preserves actual source records through each relay.
+bool native_mobile_birth_procedure_capture_bounded(int32_t,
+						   const native_mobile_birth_procedure_digest &,
+						   native_mobile_birth_procedure_digest *,
+						   bool (*)(size_t, void *) noexcept, void *,
+						   size_t) noexcept;
 
 #endif

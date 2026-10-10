@@ -1,3 +1,5 @@
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "world/quest_mobile_native.h"
 #include "item/item_transfer_command.h"
 
@@ -1262,4 +1264,394 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 		return result::allocation_failure;
 	}
 #endif
+}
+
+namespace
+{
+using native_capture_reserve = bool (*)(size_t, void *) noexcept;
+
+// Authentic complete allocation-free original validator and its captured
+// libstdc++13/source-event scalar call inventory. Resource/profile failures
+// have a typed result before selecting the exact original semantic validator.
+constexpr size_t native_capture_reference_valid_frames =
+	// nonzero(id), original any_of->none_of->find_if->two __find_if calls:
+	// empty closure params/returned wrapper and real RA trip count/tag.
+	sizeof(void *) + sizeof(bool) + 3 * (2 * sizeof(void *) + sizeof(char) + sizeof(bool)) +
+	2 * (3 * sizeof(void *) + sizeof(char)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// __pred_iter/_Iter_pred source ctor/operator and lambda(this,byte)/result,
+	// real move refs; array pointer begin/end needs no heap.
+	6 * sizeof(void *) + 4 * sizeof(char) + 3 * sizeof(bool) + sizeof(uint8_t) +
+	4 * (2 * sizeof(void *)) +
+	// economic_source_event_valid and actual critical_operation_id_is_zero:
+	// references/results, range begin/end/byte and fixed-array query scopes.
+	2 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(void *) + sizeof(uint8_t) +
+	4 * (2 * sizeof(void *));
+player_snapshot_capture_result
+native_capture_reference_validate(const quest_mobile_native_reference &value,
+				  native_capture_reserve reserve, void *context,
+				  size_t outer) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&      \
+	defined(__x86_64__) && !defined(_WIN32)
+	constexpr size_t frames = native_capture_reference_valid_frames + 3 * sizeof(void *) +
+				  sizeof(size_t) + sizeof(player_snapshot_capture_result) +
+				  sizeof(bool);
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || !reserve || frames > SIZE_MAX - outer ||
+	    !reserve(outer + frames, context))
+		return player_snapshot_capture_result::limit_exceeded;
+	return quest_mobile_native_reference_valid(value) ?
+		       player_snapshot_capture_result::ok :
+		       player_snapshot_capture_result::invalid_identity;
+#else
+	(void)value;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return player_snapshot_capture_result::limit_exceeded;
+#endif
+}
+
+struct native_capture_audit
+{
+	// Fixed original limits bound physical alias/UID detection before any tree
+	// allocation. The bounded sibling preserves the original complete audit;
+	// its storage admission precedes construction of this actual workspace.
+	std::array<const obj_data *, PLAYER_SNAPSHOT_MAX_OBJECTS> objects{};
+	std::array<uint64_t, PLAYER_SNAPSHOT_MAX_OBJECTS> uids{};
+	size_t count = 0;
+};
+constexpr size_t native_capture_audit_frames =
+	(PLAYER_SNAPSHOT_MAX_DEPTH + 1) * (4 * sizeof(void *) + 2 * sizeof(size_t) +
+					   sizeof(player_snapshot_capture_result) + sizeof(bool));
+
+player_snapshot_capture_result native_capture_audit_tree(const obj_data *object,
+							 const obj_data *parent,
+							 native_capture_audit &seen,
+							 size_t depth) noexcept
+{
+	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH || seen.count >= PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return player_snapshot_capture_result::limit_exceeded;
+	for (size_t i = 0; i < seen.count; ++i)
+		if (seen.objects[i] == object)
+			return player_snapshot_capture_result::object_cycle;
+	if (!object->obj_uid || object->obj_uid == UINT64_MAX ||
+	    (parent && (object->loc_p != LOC_INSIDE || object->loc.inside != parent)))
+		return player_snapshot_capture_result::malformed_source;
+	for (size_t i = 0; i < seen.count; ++i)
+		if (seen.uids[i] == object->obj_uid)
+			return player_snapshot_capture_result::malformed_source;
+	seen.objects[seen.count] = object;
+	seen.uids[seen.count++] = object->obj_uid;
+	for (const obj_data *child = object->contains; child; child = child->next_content)
+	{
+		const auto result = native_capture_audit_tree(child, object, seen, depth + 1);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+	}
+	return player_snapshot_capture_result::ok;
+}
+
+bool native_capture_item_heap(const std::vector<player_item_snapshot> &items,
+			      size_t *output) noexcept
+{
+	if (!output || items.capacity() > SIZE_MAX / sizeof(player_item_snapshot))
+		return false;
+	size_t bytes = items.capacity() * sizeof(player_item_snapshot);
+	const auto string_heap = [&](const std::string &value) noexcept
+	{
+		return value.capacity() <= 15 || (value.capacity() != SIZE_MAX &&
+						  native_image_add(bytes, value.capacity() + 1));
+	};
+	for (const auto &item : items)
+	{
+		if (!string_heap(item.name) || !string_heap(item.short_description) ||
+		    !string_heap(item.description) || !string_heap(item.action_description) ||
+		    item.dynamic_affects.capacity() >
+			    SIZE_MAX / sizeof(player_item_dynamic_affect_snapshot) ||
+		    item.extra_descriptions.capacity() >
+			    SIZE_MAX / sizeof(player_item_extra_description_snapshot) ||
+		    !native_image_add(bytes, item.dynamic_affects.capacity() *
+						     sizeof(player_item_dynamic_affect_snapshot)) ||
+		    !native_image_add(bytes,
+				      item.extra_descriptions.capacity() *
+					      sizeof(player_item_extra_description_snapshot)))
+			return false;
+		for (const auto &extra : item.extra_descriptions)
+			if (!string_heap(extra.keyword) || !string_heap(extra.description) ||
+			    extra.spell_ids.capacity() > SIZE_MAX / sizeof(int32_t) ||
+			    !native_image_add(bytes, extra.spell_ids.capacity() * sizeof(int32_t)))
+				return false;
+	}
+	*output = bytes;
+	return true;
+}
+
+player_snapshot_capture_result native_capture_map_codec(player_snapshot_codec_result code) noexcept
+{
+	if (code == player_snapshot_codec_result::allocation_failure)
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	if (code == player_snapshot_codec_result::limit_exceeded)
+		return player_snapshot_capture_result::limit_exceeded;
+	return code == player_snapshot_codec_result::ok ?
+		       player_snapshot_capture_result::ok :
+		       player_snapshot_capture_result::malformed_source;
+}
+
+player_snapshot_capture_result native_capture_append_tree_bounded(
+	const obj_data *root, int16_t slot, std::vector<player_item_snapshot> &items, size_t &bytes,
+	native_capture_reserve reserve, void *context, size_t outer) noexcept
+{
+	constexpr size_t frames =
+		10 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(int16_t) +
+		sizeof(std::vector<player_item_snapshot>) + sizeof(player_snapshot_capture_result) +
+		2 * sizeof(std::vector<player_item_snapshot>::iterator) + sizeof(int32_t);
+	size_t heap = 0, base = outer;
+	if (!native_capture_item_heap(items, &heap) || !native_image_add(base, frames) ||
+	    !native_image_add(base, heap) || !native_image_admit(base, 0, reserve, context))
+		return player_snapshot_capture_result::limit_exceeded;
+	try
+	{
+		std::vector<player_item_snapshot> tree;
+		size_t estimate = 0, retained = 0;
+		const auto result = player_item_snapshot_tree_capture_literal_bounded(
+			const_cast<obj_data *>(root), &tree, &estimate, reserve, context, base,
+			&retained);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		if (tree.empty() || tree.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - items.size() ||
+		    estimate < sizeof(player_snapshot) || bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
+		    estimate - sizeof(player_snapshot) > PLAYER_SNAPSHOT_MAX_BYTES - bytes ||
+		    tree.size() > items.capacity() - items.size())
+			return player_snapshot_capture_result::limit_exceeded;
+		bytes += estimate - sizeof(player_snapshot);
+		const int32_t offset = static_cast<int32_t>(items.size());
+		tree[0].equipment_slot = slot;
+		// Candidate row capacity was admitted for the exact audited count before
+		// any capture. Moves preserve existing literal allocations and order.
+		for (auto &row : tree)
+		{
+			if (row.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				row.parent_index += offset;
+			items.push_back(std::move(row));
+		}
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+}
+
+player_snapshot_capture_result
+native_items_capture_bounded(P_char mob, const quest_mobile_native_reference &reference,
+			     std::vector<player_item_snapshot> *output,
+			     native_capture_reserve reserve, void *context, size_t outer,
+			     size_t *retained_output) noexcept
+{
+#if !defined(__GLIBCXX__) || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)mob;
+	(void)reference;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	(void)retained_output;
+	return player_snapshot_capture_result::limit_exceeded;
+#else
+	constexpr size_t frames =
+		sizeof(native_capture_audit) + native_capture_audit_frames +
+		2 * sizeof(std::vector<uint8_t>) + sizeof(std::vector<player_item_snapshot>) +
+		12 * sizeof(void *) + 8 * sizeof(size_t) + 2 * sizeof(int) +
+		3 * sizeof(player_snapshot_capture_result) + sizeof(player_snapshot_codec_result);
+	size_t base = outer;
+	if (!native_image_add(base, frames) || !native_image_admit(base, 0, reserve, context))
+		return player_snapshot_capture_result::limit_exceeded;
+	const auto validated_reference =
+		native_capture_reference_validate(reference, reserve, context, base);
+	if (validated_reference != player_snapshot_capture_result::ok)
+		return validated_reference;
+	if (!mob || !output || !IS_NPC(mob) || !mob->only.npc ||
+
+	    !mob_index || GET_RNUM(mob) < 0 || GET_RNUM(mob) > top_of_mobt ||
+	    mob_index[GET_RNUM(mob)].virtual_number != reference.mobile_vnum ||
+	    GET_BIRTHPLACE(mob) != reference.birthplace_vnum)
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		native_capture_audit seen;
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+		{
+			const obj_data *root = mob->equipment[slot];
+			if (!root)
+				continue;
+			if (root->loc_p != LOC_WORN || root->loc.wearing != mob ||
+			    root->next_content)
+				return player_snapshot_capture_result::malformed_source;
+			const auto result = native_capture_audit_tree(root, nullptr, seen, 1);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
+		for (const obj_data *root = mob->carrying; root; root = root->next_content)
+		{
+			if (root->loc_p != LOC_CARRIED || root->loc.carrying != mob)
+				return player_snapshot_capture_result::malformed_source;
+			const auto result = native_capture_audit_tree(root, nullptr, seen, 1);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
+		std::vector<player_item_snapshot> candidate;
+		if (seen.count > SIZE_MAX / sizeof(player_item_snapshot) ||
+		    !native_image_admit(base, seen.count * sizeof(player_item_snapshot), reserve,
+					context))
+			return player_snapshot_capture_result::limit_exceeded;
+		candidate.reserve(seen.count);
+		size_t bytes = sizeof(player_snapshot);
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+		{
+			if (!mob->equipment[slot])
+				continue;
+			const auto result = native_capture_append_tree_bounded(
+				mob->equipment[slot], static_cast<int16_t>(slot + 1), candidate,
+				bytes, reserve, context, base);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
+		for (const obj_data *root = mob->carrying; root; root = root->next_content)
+		{
+			const auto result = native_capture_append_tree_bounded(
+				root, 0, candidate, bytes, reserve, context, base);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
+		if (candidate.size() != seen.count)
+			return player_snapshot_capture_result::malformed_source;
+		size_t heap = 0, live = base;
+		if (!native_capture_item_heap(candidate, &heap) || !native_image_add(live, heap))
+			return player_snapshot_capture_result::limit_exceeded;
+		std::vector<uint8_t> canonical;
+		// The existing bounded image encoder applies the full original native
+		// forest validation. Its reference/cash policy is checked by the public
+		// capture; here retain the original complete generic item codec check.
+		const auto code = player_item_snapshot_list_encode_bounded(candidate, &canonical,
+									   reserve, context, live);
+		const auto result = native_capture_map_codec(code);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		*output = std::move(candidate);
+		if (retained_output)
+			*retained_output = heap;
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+#endif
+}
+}
+
+player_snapshot_capture_result quest_mobile_native_capture_bounded(
+	P_char mob, const quest_mobile_native_reference &reference,
+	quest_mobile_lifetime_state state, const critical_operation_id &last_transition,
+	quest_mobile_native_image *output, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer, size_t *retained_image_heap) noexcept
+{
+	constexpr size_t frames =
+		sizeof(quest_mobile_native_image) + sizeof(std::vector<uint8_t>) +
+		8 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(quest_mobile_lifetime_state) +
+		2 * sizeof(player_snapshot_capture_result) + sizeof(player_snapshot_codec_result);
+	size_t base = outer;
+	if (!native_image_add(base, frames) || !native_image_admit(base, 0, reserve, context))
+		return player_snapshot_capture_result::limit_exceeded;
+	const auto validated_reference =
+		native_capture_reference_validate(reference, reserve, context, base);
+	if (validated_reference != player_snapshot_capture_result::ok)
+		return validated_reference;
+	if (state != quest_mobile_lifetime_state::live || !mob || !output || !IS_NPC(mob) ||
+	    !mob->only.npc || !nonzero(last_transition) || !mob_index || GET_RNUM(mob) < 0 ||
+	    GET_RNUM(mob) > top_of_mobt ||
+	    mob_index[GET_RNUM(mob)].virtual_number != reference.mobile_vnum ||
+	    GET_BIRTHPLACE(mob) != reference.birthplace_vnum)
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		quest_mobile_native_image candidate;
+		candidate.reference = reference;
+		candidate.state = quest_mobile_lifetime_state::live;
+		candidate.last_transition_operation = last_transition;
+		size_t heap = 0;
+		const auto captured = native_items_capture_bounded(mob, reference, &candidate.items,
+								   reserve, context, base, &heap);
+		if (captured != player_snapshot_capture_result::ok)
+			return captured;
+		size_t live = base;
+		if (!native_image_add(live, heap))
+			return player_snapshot_capture_result::limit_exceeded;
+		std::vector<uint8_t> canonical;
+		const auto result = native_capture_map_codec(
+			quest_mobile_native_image_encode_bounded(candidate, &canonical, reserve,
+								 context, live));
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		*output = std::move(candidate);
+		if (retained_image_heap)
+			*retained_image_heap = heap;
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+}
+
+player_snapshot_capture_result
+quest_mobile_native_capture_bounded(P_char mob, const quest_mobile_native_reference &reference,
+				    quest_mobile_lifetime_state state,
+				    const critical_operation_id &last_transition,
+				    uint64_t cash_revision, quest_mobile_native_image *output,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer, size_t *retained_image_heap) noexcept
+{
+	if (!output || !cash_revision)
+		return player_snapshot_capture_result::invalid_identity;
+	constexpr size_t frames = sizeof(quest_mobile_native_image) + sizeof(std::vector<uint8_t>) +
+				  8 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(uint64_t) +
+				  sizeof(quest_mobile_lifetime_state) +
+				  2 * sizeof(player_snapshot_capture_result);
+	size_t base = outer;
+	if (!native_image_add(base, frames) || !native_image_admit(base, 0, reserve, context))
+		return player_snapshot_capture_result::limit_exceeded;
+	quest_mobile_native_image candidate;
+	size_t heap = 0;
+	const auto captured = quest_mobile_native_capture_bounded(
+		mob, reference, state, last_transition, &candidate, reserve, context, base, &heap);
+	if (captured != player_snapshot_capture_result::ok)
+		return captured;
+	try
+	{
+		candidate.cash.emplace();
+		candidate.cash->revision = cash_revision;
+		candidate.cash->denominations.amount = { GET_COPPER(mob), GET_SILVER(mob),
+							 GET_GOLD(mob), GET_PLATINUM(mob) };
+		size_t live = base;
+		if (!native_image_add(live, heap))
+			return player_snapshot_capture_result::limit_exceeded;
+		std::vector<uint8_t> canonical;
+		const auto result = native_capture_map_codec(
+			quest_mobile_native_image_encode_bounded(candidate, &canonical, reserve,
+								 context, live));
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		*output = std::move(candidate);
+		if (retained_image_heap)
+			*retained_image_heap = heap;
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
 }
