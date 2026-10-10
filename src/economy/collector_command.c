@@ -1155,3 +1155,258 @@ bool collector_command_decode_payload_bounded(const critical_command &command,
 		return false;
 	}
 }
+
+// Pure selected-source contracts for the existing full payload decoder.
+// The original body, output partial-write law, canonical builder and refusal
+// relay remain untouched. These queries confer no admission/route authority.
+namespace
+{
+constexpr size_t collector_source_P = sizeof(void *);
+constexpr size_t collector_source_N = sizeof(size_t);
+constexpr size_t collector_source_B = sizeof(bool);
+constexpr size_t collector_source_D = sizeof(std::ptrdiff_t);
+
+bool collector_payload_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(bool) == 1 && sizeof(SHA_LONG) == 4 && sizeof(unsigned int) == 4 &&
+	       sizeof(unsigned long) == 8 && sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::allocator<critical_entity_key>) == 1 &&
+	       sizeof(std::allocator<critical_expected_revision>) == 1 &&
+	       sizeof(std::vector<uint8_t>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_entity_key>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_expected_revision>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+
+// Relay fields are two genuine INLINE pointers and are factored out of its
+// original 5P+B term; only constructor/destructor receiver/result scopes remain.
+// Exact persistent SOURCE terms already admitted by the original public
+// decoder and budget.prefix. Its critical_command/payload/vector objects are
+// actual INLINE and are deliberately absent here. The by-value operation ID,
+// keys and revision are genuine native argument/temporary value carriers.
+constexpr size_t collector_payload_original_scalar_source =
+	18 * collector_source_P + 10 * collector_source_N + 8 * collector_source_B +
+	8 * sizeof(uint8_t) + 4 * sizeof(critical_entity_key) + sizeof(critical_operation_id) +
+	sizeof(critical_expected_revision) + 3 * collector_source_P + collector_source_B +
+	14 * collector_source_P + 8 * collector_source_N + 5 * sizeof(uint64_t) +
+	8 * collector_source_B + 4 * sizeof(uint8_t) +
+	// Genuine original prefix/add/peak/relay parameters and results.
+	8 * collector_source_P + 8 * collector_source_N + 4 * collector_source_B;
+
+// Array methods are not the enclosing fixed arrays. GNU13 array.data has
+// this/result only (no _S_ptr on this selected header); begin/end additionally
+// traverse data. All four actual element types use the same pointer widths.
+constexpr size_t collector_payload_array_access_source =
+	2 * collector_source_P + // data(this,result)
+	2 * (2 * collector_source_P + 2 * collector_source_P) + // begin/end + data
+	collector_source_P + collector_source_N + // size(this,result)
+	2 * collector_source_P + collector_source_N; // index(this,n,ref)
+
+// read_name really calls array<char>::fill(0), selecting the GNU13 byte fill
+// path. This is distinct from vector allocator/relocation/push controllers.
+constexpr size_t collector_payload_name_fill_source =
+	// array.fill(this,value-ref) and actual zero temporary. Its standard
+	// fill_n/size conversion/tag/scalar controllers already occur in the
+	// authentic normalize primitive default/fill subgraph retained by child.
+	2 * collector_source_P + sizeof(char) +
+	// Byte-specialized __fill_a1 has its genuine char temporary, runtime
+	// __len and is_constant_evaluated boolean instead of the scalar uint64
+	// temporary in that existing native primitive inventory.
+	sizeof(char) + collector_source_N + 2 * collector_source_B;
+
+// The original prefix already owns critical_command_copy_frame_bytes(). Its
+// genuine normalize vector primitives include the complete forward-insert,
+// reserve/push/copy/relocate/assign/advance/query and trivial destruction paths,
+// alongside the real command move/current closure. These exact primitive
+// families are selected here for byte/key/revision vectors; no complete codec
+// or command-copy profile is newly added to the supplement. Source55 authentic
+// primitive ownership and the named source partition document this subset.
+// Only omitted callable/typed carriers below are retained by the caller.
+constexpr size_t collector_payload_vector_descendant_source =
+	// get_allocator already owns this/return; its _M_get_Tp_allocator and
+	// allocator/new_allocator const-copy(this,source) are genuine descendants.
+	// The returned allocator temporary has allocator/new_allocator dtors.
+	3 * (2 * collector_source_P) + 2 * collector_source_P +
+	// __alloc_on_move already owns its two allocator refs. C++20's nested
+	// std::move, allocator/new_allocator assignment(this,source,returned-ref)
+	// and the two actual _M_get_Tp_allocator calls are distinct source scopes.
+	2 * collector_source_P + 2 * (3 * collector_source_P) + 2 * (2 * collector_source_P) +
+	// _M_swap_data owns its data temporary physically, but the actual data
+	// default ctor/destructor(this) source receivers were not in that ledger.
+	2 * collector_source_P +
+	// Its third real _M_copy_data(this,source) call is absent from the old
+	// two-copy native term. The moved command byte member selects the distinct
+	// vector/base/impl/data/allocator/new_allocator move-constructor receivers
+	// (six this/source pairs), two std::move calls, and data pointer() reset.
+	2 * collector_source_P + 16 * collector_source_P + sizeof(uint8_t *) +
+	// _M_move_assign(true) creates __tmp(get_allocator()), selecting the real
+	// const-allocator vector/base/impl/allocator/new_allocator constructor
+	// (five this/source pairs) plus default data constructor receiver.
+	11 * collector_source_P +
+	// Original four vector destructor/allocator controllers already own the
+	// element range/deallocate path. Base/impl/data/allocator/new_allocator
+	// generated dtors and get-Tp-allocator receivers are additional call scopes.
+	collector_source_P + 4 * collector_source_P + 2 * collector_source_P +
+	// Selected trivial _Destroy's actual constant-evaluation result.
+	collector_source_B +
+	// Original clear invokes _M_erase_at_end(this,pos,n), a native control
+	// scope absent from the normalize reserve/assign/push inventory. Its called
+	// _Destroy/get-allocator descendants reuse the genuine terms above.
+	2 * collector_source_P + collector_source_N;
+
+// Actual aggregate assignments are distinct from their large fixed payload
+// and temporary command objects. Canonical command move already owns this and
+// source; only its generated returned-reference carrier is additional.
+constexpr size_t collector_payload_generated_source =
+	3 * collector_source_P + // payload assignment(this,source,ref)
+	3 * (3 * collector_source_P) + // account/items/blob array assignments
+	3 * collector_source_P + // item_transfer_entry assignment
+	3 * collector_source_P + // owner-identity assignment
+	collector_source_P + // command assignment returned-reference
+	// The actual empty encoded vector and four canonical command members
+	// select the genuine DEFAULT six-this-pointer chain, not copy constructors.
+	5 * (6 * collector_source_P);
+
+// Native find_if predicates capture the actual key by reference. The original
+// validator's stateless predicate/controller/iterator graph is child-owned,
+// but these real reference fields are not stateless one-byte closure values.
+// Public find_if, __pred_iter input/return, _Iter_pred input/member, __find_if
+// wrapper/RA branch and native predicate receiver each have an actual capture.
+constexpr size_t collector_payload_capture_source = 8 * collector_source_P;
+// Actual captured find_if lifetime, not copies of local add_key/add_fence.
+// Public lambda parameter is direct prvalue-initialized then destroyed. The
+// __pred_iter lvalue copy, _Iter_pred parameter move and actual _M_pred move
+// are three genuine generated this/source pairs. RA adapter copy additionally
+// constructs its lambda member; both adapter instances destroy that member.
+// Two local outer closure destructors and the two actual std::move functions
+// complete this selected path; no invented closure constructor is included.
+constexpr size_t collector_payload_closure_lifetime_source =
+	collector_source_P + // public predicate destructor
+	3 * (2 * collector_source_P) + // copy/move/move lambda receivers
+	2 * collector_source_P + // two lambda parameter destructors
+	2 * collector_source_P + // RA adapter copy receivers (this/source)
+	2 * collector_source_P + // its genuine lambda member copy receivers
+	2 * (2 * collector_source_P) + // two adapter + member destructor pairs
+	2 * collector_source_P + // local add_key/add_fence destructors
+	2 * (2 * collector_source_P); // actual two std::move argument/result scopes
+// Iterator typed source operations are trivial, but named copy/move/destructor
+// receiver scopes are not the iterator values in native sort/find arguments.
+constexpr size_t collector_payload_iterator_lifetime_source =
+	2 * collector_source_P + collector_source_P;
+// Actual trivial key/revision generated move/assignment/destroy receivers are
+// separate from sort's typed value temporaries and comparator controllers.
+constexpr size_t collector_payload_sort_value_source =
+	2 * (2 * collector_source_P + 3 * collector_source_P + collector_source_P);
+
+static_assert(sizeof(collector_command_payload) >= sizeof(critical_command),
+	      "Actual earlier payload assignment temporary dominates the later command temporary");
+static_assert(std::is_trivially_copyable_v<critical_entity_key>);
+static_assert(std::is_trivially_copyable_v<critical_expected_revision>);
+
+// Purchase and item-bearing builds have three local keys live while the
+// by-value add_fence and nested add_key each own another genuine key argument.
+// Original native ledger owns four K; the fifth nested argument is explicit.
+constexpr size_t collector_payload_nested_key_argument_source = sizeof(critical_entity_key);
+
+constexpr size_t collector_payload_unowned_local_source =
+	collector_payload_nested_key_argument_source + collector_payload_array_access_source +
+	collector_payload_name_fill_source + collector_payload_vector_descendant_source +
+	collector_payload_generated_source + collector_payload_capture_source +
+	collector_payload_closure_lifetime_source + collector_payload_iterator_lifetime_source +
+	collector_payload_sort_value_source;
+
+constexpr size_t collector_payload_sort_depth() noexcept
+{
+	// Builder sorts BEFORE its final MAX_KEYS check. Its genuine construction
+	// can hold listing/player/account/from/to plus every item, including the
+	// maximum collect tree; do not use the post-sort public limit as a bound.
+	size_t n = COLLECTOR_COMMAND_MAX_ITEMS + 5, depth = 0;
+	while (n > 1)
+	{
+		n >>= 1;
+		++depth;
+	}
+	return depth;
+}
+
+constexpr size_t collector_payload_key_sort_leaf =
+	collector_codec_sort_leaf_frames<critical_entity_key, decltype(&critical_entity_key_less)>();
+constexpr size_t collector_payload_revision_sort_leaf =
+	collector_codec_sort_leaf_frames<critical_expected_revision, char>();
+
+bool collector_payload_source_parts(size_t *complete, size_t *supplement) noexcept
+{
+	if (!complete || !supplement || !collector_payload_source_policy())
+		return false;
+	size_t account = 0, account_supplement = 0, item_owner = 0, item_owner_supplement = 0;
+	if (!currency_account_key_source_frame_bytes(&account) ||
+	    !currency_account_key_source_supplement_frame_bytes(&account_supplement) ||
+	    !item_owner_key_source_frame_bytes(&item_owner) ||
+	    !item_owner_key_source_supplement_frame_bytes(&item_owner_supplement))
+		return false;
+	size_t owned = collector_payload_original_scalar_source;
+	if (!collector_codec_add(owned, 4 * collector_codec_vector_frames) ||
+	    !collector_codec_add(owned, critical_command_copy_frame_bytes()) ||
+	    !collector_codec_add(owned, critical_command_valid_frame_bytes()))
+		return false;
+	// Genuine original key and revision sort controllers. The two paths are
+	// sequential, but conservatively retain both selected source inventories.
+	constexpr size_t levels = 2 * collector_payload_sort_depth() + 1;
+	if (!collector_codec_add(owned, collector_payload_key_sort_leaf) ||
+	    !collector_codec_add(owned, levels * (3 * collector_source_P + collector_source_D +
+						  sizeof(decltype(&critical_entity_key_less)))) ||
+	    !collector_codec_add(owned, collector_payload_revision_sort_leaf) ||
+	    !collector_codec_add(
+		    owned, levels * (3 * collector_source_P + collector_source_D + sizeof(char))))
+		return false;
+	size_t extra = collector_payload_unowned_local_source;
+	if (!collector_codec_add(extra, account_supplement) ||
+	    !collector_codec_add(extra, item_owner_supplement) ||
+	    !collector_codec_add(owned, collector_payload_unowned_local_source) ||
+	    !collector_codec_add(owned, account) || !collector_codec_add(owned, item_owner))
+		return false;
+	*complete = owned;
+	*supplement = extra;
+	return true;
+}
+}
+
+bool collector_command_decode_payload_source_frame_bytes(size_t *output) noexcept
+{
+	size_t complete = 0, supplement = 0;
+	if (!output || !collector_payload_source_parts(&complete, &supplement))
+		return false;
+	*output = complete;
+	return true;
+}
+bool collector_command_decode_payload_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	size_t complete = 0, supplement = 0;
+	if (!output || !collector_payload_source_parts(&complete, &supplement))
+		return false;
+	*output = supplement;
+	return true;
+}
+bool collector_command_decode_payload_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !collector_payload_source_policy())
+		return false;
+	// Original budget aggregate and two-reference refusal relay exist before
+	// the original first peak. The frames size_t local is SOURCE, not INLINE. Later candidate DTOs and
+	// capacities remain wholly owned by that original child's actual prefix.
+	*output = sizeof(collector_codec_budget) + 2 * sizeof(void *);
+	return true;
+}
