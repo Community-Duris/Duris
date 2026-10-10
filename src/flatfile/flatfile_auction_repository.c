@@ -2815,8 +2815,8 @@ void physical_hash_reserve(Set &values, size_t count, physical_scope scope, size
 						  sizeof(std::__detail::_Hash_node_base *))));
 	values.reserve(count);
 }
-template <class Set>
-void physical_hash_insert_admit(const Set &values, physical_scope scope, size_t live)
+template <class Set> void physical_hash_insert_admit([[maybe_unused]] const Set &values,
+						     physical_scope scope, size_t live)
 {
 	using node = std::__detail::_Hash_node<
 		typename Set::value_type,
