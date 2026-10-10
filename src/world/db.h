@@ -499,6 +499,24 @@ class quest_mobile_native_item_stage
 	friend class smith_native_producer;
 	struct implementation;
 	implementation *state_ = nullptr;
+	// Private constructor-local census/parser types; no public allocation or source capability.
+	struct ordinary_item_constructor_budget;
+	struct ordinary_item_template_reader;
+	static object_template
+	parse_ordinary_item_template_bounded(int, ordinary_item_template_reader &);
+	// Actual original accepting NPC-item constructor only; real factory source required.
+	static bool prepare_impl_npc_flat_bounded(
+		int, int, uint64_t, const quest_mobile_native_npc_flat_factory_scope &,
+		quest_mobile_native_item_stage *, bool (*)(size_t *, void *) noexcept,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	// Full original native constructor plus genuine retained NPC source copy.
+	// Caller supplies CURRENT whole G once and actual old outputs/input retention;
+	// received callback recenses output candidate after every transfer/refusal.
+	static bool prepare_retaining_npc_flat_bounded(
+		int, int, uint64_t, const quest_mobile_native_npc_flat_factory_scope &,
+		quest_mobile_native_item_stage *, bool (*)(size_t *, void *) noexcept,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 	static bool prepare(int nr, int type, uint64_t supplied_reserved_uid,
 			    quest_mobile_native_item_stage *) noexcept;
 	// False may retain the authentic unresolved factory candidate in output.
@@ -705,5 +723,11 @@ void free_world();
 bool quest_mobile_native_mobile_pool_storage_bytes(size_t *) noexcept;
 bool quest_mobile_native_mobile_catalog_string_storage_bytes(size_t *) noexcept;
 bool quest_mobile_native_published_npc_storage_bytes(size_t *) noexcept;
+
+// Actual original object catalog cached literals and retained boot FILE/buffer.
+// Excludes pooled object/affect pages and all private description allocations.
+// Whole ROOT literal_pool_owned census selects this exactly once alongside
+// the genuine warm item constructor; strong output, game-thread observation.
+bool quest_mobile_native_object_catalog_string_storage_bytes(size_t *) noexcept;
 
 #endif /* #ifndef _SOJ_DB_H_ */
