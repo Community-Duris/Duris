@@ -84,4 +84,12 @@ player_death_restitution_runtime_live_health_copy(void);
 // its incoming outer and observes/adds it itself.
 bool player_death_restitution_runtime_replay_storage_bytes(size_t *output) noexcept;
 
+// Complete genuine passive restitution replay companion. Game-thread caller
+// outer owns the actual command/caller/C and sibling owners, and EXCLUDES this
+// adapter's static submission/status arrays, callback table and actor heaps.
+// Provider reobserves/adds this cache itself. No route or activation is selected.
+bool player_death_restitution_runtime_restore_replayed_command_bounded(
+	const critical_command &, void *original_context, bool (*reserve)(size_t, void *) noexcept,
+	void *budget_context, size_t outer_live) noexcept;
+
 #endif
