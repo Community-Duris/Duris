@@ -46,4 +46,14 @@ native_quest_coin_give_result
 native_quest_coin_give_decode(std::span<const uint8_t>,
 			      native_quest_coin_give_projection *) noexcept;
 
+// Unselected full NQG1 value codecs; authentic outer owns input, old output
+// and callers. No native money/source/publication authority is supplied.
+native_quest_coin_give_result
+native_quest_coin_give_encode_bounded(const native_quest_coin_give_projection &,
+				      std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+				      void *, size_t) noexcept;
+native_quest_coin_give_result
+native_quest_coin_give_decode_bounded(std::span<const uint8_t>, native_quest_coin_give_projection *,
+				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
 #endif
