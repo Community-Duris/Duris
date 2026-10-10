@@ -613,4 +613,20 @@ bool item_transfer_native_money_decode_bounded(const critical_command &, item_tr
 					       bool (*)(size_t, void *) noexcept, void *context,
 					       size_t outer_live) noexcept;
 
+// Complete original public item native encoders and all-version payload
+// decoder dispatch, preserving full v2-v16 parse/canonical/refusal order.
+// Authentic input/old output/caller/siblings outer-owned; pure strong output.
+bool item_transfer_command_encode_native_mobile_bounded(const item_transfer_payload &,
+							std::vector<uint8_t> *,
+							bool (*)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_bounded(const item_transfer_payload &,
+								 std::vector<uint8_t> *,
+								 bool (*)(size_t, void *) noexcept,
+								 void *context,
+								 size_t outer_live) noexcept;
+bool item_transfer_command_decode_payload_bounded(const critical_command &, item_transfer_payload *,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+
 #endif
