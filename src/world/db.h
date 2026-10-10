@@ -346,6 +346,72 @@ class quest_mobile_native_flat_factory_scope final
 	std::string root_;
 	economic_source_event source_{};
 };
+// Genuine original M factory provenance. Only the retained birth owner can mint
+// this type after its actual constructor returned and entered the registry.
+// It is distinct from ROOM/WORLD factory provenance and grants no publication.
+class quest_mobile_native_npc_flat_factory_scope final
+{
+    public:
+	~quest_mobile_native_npc_flat_factory_scope() = default;
+
+    private:
+	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_native_item_stage;
+	friend class shop_trade_original_procedure_binding_stage;
+	quest_mobile_native_npc_flat_factory_scope(
+		const std::string &root, const void *owner, struct char_data *character,
+		uint64_t runtime_id, uint64_t native_id, const critical_operation_id &operation,
+		const economic_source_event &source, const critical_operation_id &lineage,
+		const critical_operation_id &epoch, int zone, int zone_vnum, int room, int rnum,
+		int shop, const void *commands, const std::array<int, 4> &original_m_args,
+		bool original_if_flag, const quest_mobile_native_constructor_recipe &constructor)
+		: root_(root)
+		, owner_(owner)
+		, character_(character)
+		, runtime_id_(runtime_id)
+		, native_id_(native_id)
+		, operation_(operation)
+		, source_(source)
+		, lineage_(lineage)
+		, epoch_(epoch)
+		, zone_(zone)
+		, zone_vnum_(zone_vnum)
+		, room_(room)
+		, rnum_(rnum)
+		, shop_(shop)
+		, commands_(commands)
+		, original_m_args_(original_m_args)
+		, original_if_flag_(original_if_flag)
+		, build_(constructor.build_digest)
+		, procedure_before_(constructor.procedure_before)
+		, procedure_after_(constructor.procedure_after)
+		, reset_tail_(constructor.reset_tail)
+	{
+	}
+	quest_mobile_native_npc_flat_factory_scope(
+		const quest_mobile_native_npc_flat_factory_scope &) = default;
+	// Pure identity-only CURRENT grants no scratch/constructor admission.
+	bool current() const noexcept;
+	using reserve_fn = bool (*)(size_t, void *) noexcept;
+	bool current_bounded(reserve_fn, void *, size_t) const noexcept;
+	static size_t copy_source_frames() noexcept;
+	bool same_owner(const quest_mobile_native_npc_flat_factory_scope &) const noexcept;
+	size_t retained_heap_bytes() const noexcept;
+	std::string root_;
+	const void *owner_;
+	struct char_data *character_;
+	uint64_t runtime_id_, native_id_;
+	critical_operation_id operation_;
+	economic_source_event source_;
+	critical_operation_id lineage_, epoch_;
+	int zone_, zone_vnum_, room_, rnum_, shop_;
+	const void *commands_;
+	std::array<int, 4> original_m_args_;
+	bool original_if_flag_;
+	quest_mobile_native_constructor_digest build_, procedure_before_, procedure_after_,
+		reset_tail_;
+};
+
 // Read-only original constructor facts for the existing checked binding batch.
 // No public construction, source/SQL/publication/ACK permission.
 class quest_mobile_native_item_binding
@@ -369,6 +435,7 @@ class quest_mobile_native_item_binding
 	// Pending flat provenance cannot fall back to the original SQL token path.
 	bool flat_factory_ = false;
 	std::shared_ptr<const quest_mobile_native_flat_factory_scope> flat_scope_;
+	std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> npc_flat_scope_;
 	quest_mobile_native_item_binding(struct obj_data *object, uint64_t uid, int rnum, int vnum,
 					 long position, procedure before,
 					 bool parsed_proclib) noexcept
@@ -426,6 +493,13 @@ class quest_mobile_native_item_stage
 	static bool prepare_retaining_flat(int nr, int type, uint64_t reserved_uid,
 					   const quest_mobile_native_flat_factory_scope &,
 					   quest_mobile_native_item_stage *) noexcept;
+	static bool prepare_retaining_npc_flat(int, int, uint64_t,
+					       const quest_mobile_native_npc_flat_factory_scope &,
+					       quest_mobile_native_item_stage *,
+					       bool (*)(size_t, void *) noexcept, void *) noexcept;
+	static size_t npc_retained_observation_source_frames() noexcept;
+	bool
+	npc_flat_factory_matches(const quest_mobile_native_npc_flat_factory_scope &) const noexcept;
 	bool is_flat_factory() const noexcept;
 	bool flat_factory_matches(const std::string &selected_root,
 				  const economic_source_event &original_source) const noexcept;

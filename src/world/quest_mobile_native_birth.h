@@ -37,6 +37,7 @@ struct native_mobile_birth_recovery_effect;
 struct quest_mobile_native_image;
 struct native_mobile_wallet_origin;
 struct quest_mobile_native_constructor_recipe;
+class quest_mobile_native_npc_flat_factory_scope;
 struct quest_mobile_native_reference;
 struct economic_source_event;
 // RAM-only original dispatcher values. The private owning entry point below
@@ -232,6 +233,21 @@ class quest_mobile_native_birth_owner final
 					   int32_t *) noexcept;
 	static void finish_reset() noexcept;
 	static void seal_mobile() noexcept;
+	friend class quest_mobile_native_npc_flat_factory_scope;
+	static bool
+	npc_flat_factory_scope_current(const quest_mobile_native_npc_flat_factory_scope &) noexcept;
+	static size_t npc_flat_factory_scope_current_frames() noexcept;
+	static size_t npc_flat_projection_source_frames() noexcept;
+	static bool capture_npc_flat_factory_scope(size_t, size_t) noexcept;
+	static bool
+	borrow_npc_flat_factory_scope(P_char, const quest_mobile_native_npc_flat_factory_scope **,
+				      size_t) noexcept;
+	static bool reserve_npc_binding_scratch(size_t, void *) noexcept;
+	static P_obj prepare_item_flat(int, size_t private_live) noexcept;
+	static bool capture_alchemist_spawn_flat(P_char, int) noexcept;
+	static void seal_mobile_flat(size_t private_live) noexcept;
+	static void block_mobile_flat() noexcept;
+	static void finish_reset_flat() noexcept;
 	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
 	static bool ordinary_flat_execution_source_current(
 		const quest_mobile_native_birth_ordinary_execution_lease &, const void *) noexcept;
@@ -241,6 +257,14 @@ class quest_mobile_native_birth_owner final
 	static bool prepare_shared_capture(size_t) noexcept;
 	static void block_mobile() noexcept;
 	static P_char prepare_mobile(int rnum, int room, uint32_t slot, int shop) noexcept;
+	// Private original M constructor/source leaf only, deliberately unselected.
+	// Exact entered M cursor/root/projection; final NPC item/binding/seal and
+	// producer/postreceipt joins are separate. Values cannot mint a source pin.
+	static bool flat_mobile_factory_current(int, int, uint32_t, size_t private_live) noexcept;
+	static bool capture_flat_mobile_factory_source(int, int, uint32_t, economic_source_event *,
+						       int32_t *, size_t private_live) noexcept;
+	static P_char prepare_mobile_flat(int rnum, int room, uint32_t slot, int shop) noexcept;
+
 	static bool capture_alchemist_spawn(P_char, int original_room) noexcept;
 	static P_obj prepare_item(int rnum) noexcept;
 	static bool owns(P_char) noexcept;

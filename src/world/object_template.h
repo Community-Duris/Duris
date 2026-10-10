@@ -86,6 +86,7 @@ struct player_item_snapshot;
 class shop_trade_native_publication_owner;
 class quest_mobile_native_item_binding;
 class quest_mobile_native_flat_factory_scope;
+class quest_mobile_native_npc_flat_factory_scope;
 class shop_trade_original_procedure_binding_stage
 {
     public:
@@ -141,6 +142,12 @@ class shop_trade_original_procedure_binding_stage
 		const std::span<const quest_mobile_native_item_binding> &,
 		shop_trade_original_procedure_binding_stage &, bool (*)(size_t, void *) noexcept,
 		void *, size_t outer_live_scratch) noexcept;
+	// Genuine original NPC factory scope is required even for an empty forest.
+	static bool prepare_native_birth_npc_flat_bounded(
+		const std::span<const quest_mobile_native_item_binding> &,
+		const quest_mobile_native_npc_flat_factory_scope &,
+		shop_trade_original_procedure_binding_stage &, bool (*)(size_t, void *) noexcept,
+		void *, size_t) noexcept;
 	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
 	bool valid_flat() const noexcept;
@@ -155,11 +162,13 @@ class shop_trade_original_procedure_binding_stage
 	bool prepared_ = false;
 	// Backend identity remains with the original retained stage, not caller values.
 	bool flat_ = false;
+	bool native_npc_flat_ = false;
 	bool native_flat_ = false; // Native scope checks do not alter existing flat SHOP stages.
 	// The binding batch owns immutable scope copies independently of factory
 	// tokens. Every actual scope/root/control-block request is charged here,
 	// including after the original factory releases its own metadata.
 	std::vector<std::shared_ptr<const quest_mobile_native_flat_factory_scope>> flat_scopes_;
+	std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> npc_flat_scope_;
 };
 
 P_obj instantiate_object_template(const object_template &prototype);

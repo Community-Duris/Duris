@@ -40,6 +40,7 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include <mutex>
 #include <condition_variable>
 
@@ -488,6 +489,7 @@ struct original_birth
 	quest_mobile_native_constructor_recipe constructor;
 	bool constructor_present = false;
 	std::unique_ptr<quest_mobile_native_birth_ordinary_source_pin> ordinary_flat_source;
+	std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> npc_flat_factory_scope;
 	native_mobile_birth_cash_role_recipe cash_role;
 	bool cash_role_present = false;
 	bool non_alchemist_cut_returned = false;
@@ -1179,6 +1181,13 @@ bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcep
 			if (ptr)
 			{
 				const auto &b = *ptr;
+				if (b.npc_flat_factory_scope)
+				{
+					const size_t retained =
+						b.npc_flat_factory_scope->retained_heap_bytes();
+					if (!retained || !add_bytes(bytes, retained))
+						return false;
+				}
 				if (b.ordinary_flat_source &&
 				    (!b.ordinary_flat_source->state_ ||
 				     !add_bytes(bytes, sizeof(*b.ordinary_flat_source)) ||
@@ -5625,4 +5634,913 @@ void quest_mobile_native_birth_owner::service_ordinary_flat_execution_requests()
 			std::terminate();
 		}
 	}
+}
+
+// Unselected original M factory/source prerequisite only. General flat M/G/E
+// dispatch, genuine NPC item provenance/binding, command freeze and publication
+// remain separate primary-owned joins. This is not a ROOM source reinterpretation.
+bool quest_mobile_native_birth_owner::flat_mobile_factory_current(int rnum, int room, uint32_t slot,
+								  size_t private_live) noexcept
+{
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !reset_in_progress ||
+	    !replay_ready || !reset_dispatch.flat_backend || !reset_dispatch.valid ||
+	    !reset_dispatch.open || reset_dispatch.completed || reset_dispatch.aborted ||
+	    reset_dispatch.current_command != 'M' || reset_dispatch.current_slot != slot ||
+	    !reset_dispatch.locals.command_entered || reset_dispatch.locals.cmd_no < 0 ||
+	    static_cast<uint32_t>(reset_dispatch.locals.cmd_no) != slot || !zone_table ||
+	    reset_zone_rnum < 0 || reset_zone_rnum > top_of_zone_table ||
+	    !reset_dispatch.commands ||
+	    zone_table[reset_zone_rnum].cmd != reset_dispatch.commands ||
+	    zone_table[reset_zone_rnum].number != reset_dispatch.zone_vnum || !world || room < 0 ||
+	    room > top_of_world || !mob_index || rnum < 0 || rnum > top_of_mobt)
+		return false;
+	const auto &actual = reset_dispatch.commands[slot];
+	const auto &captured = reset_dispatch.original_command;
+	if (actual.command != 'M' || actual.arg1 != rnum || actual.arg3 != room ||
+	    actual.command != captured.command || actual.if_flag != captured.if_flag ||
+	    actual.arg1 != captured.arg1 || actual.arg2 != captured.arg2 ||
+	    actual.arg3 != captured.arg3 || actual.arg4 != captured.arg4)
+		return false;
+	const char *configured = persistence_mode_flatfile_root();
+	if (!configured || reset_dispatch.selected_flat_root.empty() ||
+	    reset_dispatch.selected_flat_root != configured)
+		return false;
+	// Full genuine same projection observation as reset_flat_projection_current,
+	// with the real still-private birth/source caller lifetime supplied by this
+	// private owning constructor. Both actual IDs die before the refresh.
+	const size_t own_frames =
+		sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(private_live) +
+		sizeof(&actual) + sizeof(&captured) + sizeof(configured) + sizeof(size_t) +
+		sizeof(size_t) + sizeof(size_t) + // own_frames/surviving/scratch
+		sizeof(bool) + sizeof(bool) + sizeof(bool) + // matches/recensused/return
+		npc_flat_projection_source_frames();
+	size_t surviving = private_live;
+	if (!add_bytes(surviving, own_frames))
+		return false;
+	size_t scratch = surviving;
+	if (!add_bytes(scratch, sizeof(critical_operation_id)) ||
+	    !add_bytes(scratch, sizeof(critical_operation_id)) || !charge(scratch))
+		return false;
+	bool matches = false;
+	{
+		critical_operation_id lineage{}, epoch{};
+		matches = economic_gameplay_authority::capture_flat_reset_projection(&lineage,
+										     &epoch) &&
+			  lineage.bytes == reset_dispatch.flat_lineage.bytes &&
+			  epoch.bytes == reset_dispatch.flat_epoch.bytes;
+	}
+	const bool recensused = charge(surviving);
+	return matches && recensused;
+}
+
+bool quest_mobile_native_birth_owner::capture_flat_mobile_factory_source(
+	int rnum, int room, uint32_t slot, economic_source_event *source, int32_t *zone_vnum,
+	size_t private_live) noexcept
+{
+	if (!source || !zone_vnum)
+		return false;
+	constexpr size_t own_frames =
+		sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(source) + sizeof(zone_vnum) +
+		sizeof(private_live) + sizeof(size_t) + sizeof(bool) +
+		sizeof(economic_source_event); // live/return/actual source aggregate
+	size_t live = private_live;
+	if (!add_bytes(live, own_frames) || !flat_mobile_factory_current(rnum, room, slot, live))
+		return false;
+	// Preserve the original lazy nonce cut: the caller already sealed the
+	// previous birth, allocated its private owner and reserved births capacity.
+	// Original nonce-attempt latch, generator and transfer are unchanged.
+	if (critical_operation_id_is_zero(reset_invocation))
+	{
+		if (reset_dispatch.invocation_attempted)
+			return false;
+		size_t request = live;
+		if (!add_bytes(request, sizeof(request)) ||
+		    !add_bytes(request, sizeof(critical_operation_id)) || !charge(request))
+			return false;
+		reset_dispatch.invocation_attempted = true;
+		critical_operation_id invocation{};
+		if (!critical_operation_id_generate(&invocation))
+			return false;
+		reset_invocation = invocation;
+	}
+	// These are private original value outputs, not factory/source authority.
+	// Only the final genuine sealed producer may mint the separate closed pin.
+	*source = { economic_source_kind::npc_generation, reset_invocation, reset_invocation, 0,
+		    slot };
+	*zone_vnum = reset_dispatch.zone_vnum;
+	return true;
+}
+
+P_char quest_mobile_native_birth_owner::prepare_mobile_flat(int rnum, int room, uint32_t slot,
+							    int shop) noexcept
+{
+	if (!reset_in_progress || !replay_ready || !nevent_is_game_thread() || room < 0 ||
+	    room > top_of_world || rnum < 0 || rnum > top_of_mobt || !mob_index || !world)
+		return nullptr;
+	// Only the actual entered/open original M frame may construct this body.
+	// No caller DTO, replay image or source pin can open that frame.
+	if (!flat_mobile_factory_current(rnum, room, slot,
+					 sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+						 sizeof(P_char)))
+		return nullptr;
+	seal_mobile_flat(sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+			 sizeof(P_char));
+	try
+	{
+		size_t available = 0;
+		while (available < births.size() && births[available])
+			++available;
+		if (available == births.size() &&
+		    births.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS)
+			return nullptr;
+		auto b = std::make_unique<original_birth>();
+		b->zone = reset_zone_rnum;
+		b->room = room;
+		b->rnum = rnum;
+		b->shop = shop;
+		if (available == births.size())
+			births.reserve(births.size() + 1);
+		economic_source_event original_source{};
+		int32_t original_zone_vnum = -1;
+		// The fresh private birth has no dynamic payload yet. Its actual
+		// allocation is not in births until the original insertion below.
+		// Carry it, its unique_ptr and the actual source/output/scalar locals
+		// through the full projection/nonce proof; never use bare charge(0)
+		// while this genuine private allocation is alive.
+		size_t private_live = sizeof(*b) + sizeof(b) + sizeof(available) +
+				      sizeof(original_source) + sizeof(original_zone_vnum) +
+				      sizeof(size_t) + 3 * sizeof(int) + sizeof(uint32_t) +
+				      sizeof(P_char) + sizeof(void *);
+		if (!capture_flat_mobile_factory_source(rnum, room, slot, &original_source,
+							&original_zone_vnum, private_live))
+			return nullptr;
+		auto &ref = b->reference;
+		if (!critical_operation_id_generate(&ref.birth_operation) ||
+		    ref.birth_operation.bytes == reset_invocation.bytes)
+			return nullptr;
+		ref.mobile_instance_id = item_uid_allocator_next();
+		if (!ref.mobile_instance_id || ref.mobile_instance_id == UINT64_MAX)
+			return nullptr;
+		ref.birth_source = original_source;
+		ref.mobile_vnum = mob_index[rnum].virtual_number;
+		ref.birthplace_vnum = world[room].number;
+		ref.reset_zone_vnum = original_zone_vnum;
+		ref.provenance = quest_mobile_birth_provenance::reset;
+		ref.mobile_revision = 1;
+		ref.stock_revision = 1;
+		b->accepted_usec = accepted_now();
+		quest_mobile_native_constructor_digest running_build;
+		if (!native_mobile_birth_running_artifact_digest(&running_build) ||
+		    !b->mobile.prepare_captured(rnum, REAL, true, running_build, world[room].number,
+						shop, &b->constructor))
+			return nullptr;
+		b->constructor_present = true;
+		b->character = b->mobile.character();
+		b->runtime_id = b->character->runtime_id;
+		b->mobile_bytes = sizeof(*b->character) + sizeof(*b->character->only.npc);
+		// General mobile/room hooks still require their actual original owners.
+		// The alchemist decision runs later at its original post-reset-tail cut.
+		if (world[room].funct ||
+		    (IS_SET(b->character->specials.act, ACT_SPEC) && mob_index[rnum].func.mob))
+		{
+			b->blocked = true;
+		}
+		const size_t index = available;
+		if (index == births.size())
+			births.push_back(std::move(b));
+		else
+			births[index] = std::move(b);
+		current_birth = index;
+		// Full genuine original caller survives the registry transfer. The birth
+		// allocation and accepted metadata now belong to CURRENT exactly once.
+		size_t mint_outer = sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+				    sizeof(P_char) + sizeof(available) + sizeof(b) +
+				    sizeof(original_source) + sizeof(original_zone_vnum) +
+				    sizeof(private_live) + sizeof(&ref) + sizeof(running_build) +
+				    sizeof(index) + sizeof(size_t);
+		if (!charge(mint_outer))
+		{
+			births[index]->blocked = true;
+			current_birth = SIZE_MAX;
+			discard(index);
+			return nullptr;
+		}
+		if (births[index]->blocked)
+			return nullptr;
+		if (!capture_npc_flat_factory_scope(index, mint_outer))
+		{
+			births[index]->blocked = true;
+			current_birth = SIZE_MAX;
+			discard(index);
+			return nullptr;
+		}
+		return births[index]->character;
+	}
+	catch (...)
+	{
+		return nullptr;
+	}
+}
+
+size_t quest_mobile_native_birth_owner::npc_flat_projection_source_frames() noexcept
+{
+	// Exact capture_flat_reset_projection source, including selected and the
+	// optional distinct atomic-load return carrier, with actual load/lock locals.
+	constexpr size_t capture = sizeof(critical_operation_id *) +
+				   sizeof(critical_operation_id *) + sizeof(const char *) +
+				   sizeof(bool);
+	constexpr size_t atomic_load =
+		sizeof(const void *) + sizeof(std::memory_order) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(void *) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(uintptr_t) + sizeof(void *) + sizeof(void *) +
+		sizeof(void *) + sizeof(const void *) + sizeof(std::memory_order) +
+		sizeof(const void *) + sizeof(int);
+	constexpr size_t is_zero = sizeof(const critical_operation_id *) + sizeof(uint8_t) +
+				   sizeof(const uint8_t *) + sizeof(const uint8_t *) + sizeof(bool);
+	return capture + atomic_load + is_zero + sizeof(size_t) +
+	       economic_gameplay_authority::active_regular_flat_working_bytes() +
+	       economic_gameplay_authority::active_regular_flat_working_bytes();
+}
+
+size_t quest_mobile_native_birth_owner::npc_flat_factory_scope_current_frames() noexcept
+{
+	// scope argument, configured root, actual owner, actual loop entry/begin/end,
+	// birth and original-M references, genuine projection output carriers.
+	constexpr size_t observer =
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) + sizeof(const char *) +
+		sizeof(const original_birth *) + sizeof(const std::unique_ptr<original_birth> *) +
+		sizeof(decltype(births.cbegin())) + sizeof(decltype(births.cend())) +
+		sizeof(const original_birth *) + sizeof(decltype(&zone_table[0].cmd[0])) +
+		sizeof(critical_operation_id) + sizeof(critical_operation_id) + sizeof(bool);
+	// same_owner parameters/return plus source-level equal array/string comparison
+	// carriers. No container heap is allocated by these identity comparisons.
+	constexpr size_t comparison =
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) + sizeof(bool) +
+		sizeof(const std::string *) + sizeof(const std::string *) + sizeof(const char *) +
+		sizeof(const char *) + sizeof(size_t) + sizeof(int) +
+		sizeof(const std::array<uint8_t, 16> *) + sizeof(const std::array<uint8_t, 16> *) +
+		sizeof(const std::array<uint8_t, 32> *) + sizeof(const std::array<uint8_t, 32> *) +
+		sizeof(const std::array<int, 4> *) + sizeof(const std::array<int, 4> *) +
+		sizeof(const uint8_t *) + sizeof(const uint8_t *) + sizeof(const uint8_t *) +
+		sizeof(const int *) + sizeof(const int *) + sizeof(const int *) +
+		sizeof(std::ptrdiff_t) + sizeof(bool);
+	// Actual capture_flat_reset_projection parameters, root local and return;
+	// real selected shared_ptr carrier is supplied by its existing provider.
+	constexpr size_t projection = sizeof(critical_operation_id *) +
+				      sizeof(critical_operation_id *) + sizeof(const char *) +
+				      sizeof(bool) + sizeof(std::memory_order) + sizeof(size_t);
+	// Actual fixed native identity helper carriers. The map lookup allocates
+	// nothing: wrapper/key/iterator and actual node/hash/bucket traversals.
+	constexpr size_t identity_lookup =
+		sizeof(uint64_t) + sizeof(std::unordered_map<uint64_t, P_char>::iterator) +
+		sizeof(P_char) + sizeof(const char *) + sizeof(bool) + // nevent_require_game_thread
+		sizeof(std::unordered_map<uint64_t, P_char> *) + sizeof(const uint64_t *) +
+		sizeof(std::unordered_map<uint64_t, P_char>::iterator) + sizeof(size_t) +
+		sizeof(size_t) + // hash code / bucket
+		sizeof(const void *) + sizeof(size_t) + sizeof(const uint64_t *) + sizeof(size_t) +
+		sizeof(void *) + // find_node before node
+		sizeof(const void *) + sizeof(size_t) + sizeof(const uint64_t *) + sizeof(size_t) +
+		sizeof(void *) + sizeof(void *) + // find_before_node prev/node
+		sizeof(const void *) + sizeof(const uint64_t *) + sizeof(size_t) +
+		sizeof(const void *) + sizeof(const uint64_t *) + sizeof(const uint64_t *) +
+		sizeof(bool); // key equality
+	// Actual atomic shared_ptr load scopes: public load, _Sp_atomic::load,
+	// count lock/unlock and _S_add_ref. Shared_ptr returned carrier may coexist
+	// with selected; the actual shared_ptr object size comes from its owner.
+	constexpr size_t atomic_load =
+		sizeof(const void *) + sizeof(std::memory_order) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(void *) + sizeof(const void *) +
+		sizeof(std::memory_order) + sizeof(uintptr_t) + sizeof(void *) + sizeof(void *) +
+		sizeof(void *) + // _S_add_ref argument/return
+		sizeof(const void *) + sizeof(std::memory_order) + // count unlock
+		sizeof(const void *) + sizeof(int) + // _M_add_ref_copy / increment
+		sizeof(const critical_operation_id *) + sizeof(uint8_t) + sizeof(const uint8_t *) +
+		sizeof(const uint8_t *) + sizeof(bool); // ID is_zero
+	return observer + comparison + projection + identity_lookup + atomic_load +
+	       economic_gameplay_authority::active_regular_flat_working_bytes() +
+	       economic_gameplay_authority::active_regular_flat_working_bytes();
+}
+
+bool quest_mobile_native_birth_owner::npc_flat_factory_scope_current(
+	const quest_mobile_native_npc_flat_factory_scope &scope) noexcept
+{
+	const char *configured = persistence_mode_flatfile_root();
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !configured ||
+	    scope.root_.empty() || scope.root_ != configured || !scope.owner_ ||
+	    scope.source_.kind != economic_source_kind::npc_generation || scope.source_.sequence ||
+	    critical_operation_id_is_zero(scope.source_.source) ||
+	    scope.source_.source.bytes != scope.source_.generation.bytes ||
+	    critical_operation_id_is_zero(scope.operation_) || !scope.native_id_ ||
+	    scope.native_id_ == UINT64_MAX || !scope.runtime_id_)
+		return false;
+	const original_birth *actual = nullptr;
+	for (const auto &entry : births)
+		if (entry && entry.get() == scope.owner_)
+		{
+			actual = entry.get();
+			break;
+		}
+	if (!actual || !actual->npc_flat_factory_scope ||
+	    !actual->npc_flat_factory_scope->same_owner(scope))
+		return false;
+	const auto &b = *actual;
+	if (!zone_table || scope.zone_ < 0 || scope.zone_ > top_of_zone_table || !scope.commands_ ||
+	    zone_table[scope.zone_].cmd != scope.commands_ ||
+	    zone_table[scope.zone_].number != scope.zone_vnum_)
+		return false;
+	const auto &original_m = zone_table[scope.zone_].cmd[scope.source_.slot];
+	if (original_m.command != 'M' || original_m.if_flag != scope.original_if_flag_ ||
+	    original_m.arg1 != scope.original_m_args_[0] ||
+	    original_m.arg2 != scope.original_m_args_[1] ||
+	    original_m.arg3 != scope.original_m_args_[2] ||
+	    original_m.arg4 != scope.original_m_args_[3])
+		return false;
+	if (b.cold || b.blocked || b.retired || b.mobile_consumed || b.mobile_started ||
+	    !b.constructor_present || !b.character || b.character != scope.character_ ||
+	    b.mobile.character() != b.character || b.runtime_id != scope.runtime_id_ ||
+	    b.character->runtime_id != scope.runtime_id_ || b.character->in_room != NOWHERE ||
+	    find_character_by_runtime_id(scope.runtime_id_) ||
+	    b.reference.mobile_instance_id != scope.native_id_ ||
+	    b.reference.birth_operation.bytes != scope.operation_.bytes ||
+	    b.reference.birth_source.kind != scope.source_.kind ||
+	    b.reference.birth_source.source.bytes != scope.source_.source.bytes ||
+	    b.reference.birth_source.generation.bytes != scope.source_.generation.bytes ||
+	    b.reference.birth_source.sequence != scope.source_.sequence ||
+	    b.reference.birth_source.slot != scope.source_.slot || b.zone != scope.zone_ ||
+	    b.reference.reset_zone_vnum != scope.zone_vnum_ || b.room != scope.room_ ||
+	    b.rnum != scope.rnum_ || b.shop != scope.shop_ ||
+	    b.constructor.build_digest != scope.build_ ||
+	    b.constructor.procedure_before != scope.procedure_before_ ||
+	    b.constructor.procedure_after != scope.procedure_after_ ||
+	    b.constructor.reset_tail != scope.reset_tail_)
+		return false;
+	critical_operation_id lineage{}, epoch{};
+	return economic_gameplay_authority::capture_flat_reset_projection(&lineage, &epoch) &&
+	       lineage.bytes == scope.lineage_.bytes && epoch.bytes == scope.epoch_.bytes;
+}
+bool quest_mobile_native_birth_owner::capture_npc_flat_factory_scope(size_t index,
+								     size_t outer_live) noexcept
+{
+	if (index >= births.size() || !births[index] || births[index]->npc_flat_factory_scope)
+		return false;
+	auto &b = *births[index];
+	if (current_birth != index || b.cold || b.blocked || b.sealed || b.submitted ||
+	    b.mobile_started || b.mobile_consumed || !b.constructor_present || !b.character ||
+	    b.mobile.character() != b.character || b.character->runtime_id != b.runtime_id ||
+	    b.reference.birth_source.kind != economic_source_kind::npc_generation ||
+	    b.reference.birth_source.sequence ||
+	    b.reference.birth_source.source.bytes != reset_invocation.bytes ||
+	    b.reference.birth_source.generation.bytes != reset_invocation.bytes ||
+	    !flat_mobile_factory_current(b.rnum, b.room, b.reference.birth_source.slot,
+					 outer_live > SIZE_MAX - (sizeof(index) +
+								  sizeof(outer_live) + sizeof(&b) +
+								  sizeof(bool)) ?
+						 SIZE_MAX :
+						 outer_live + sizeof(index) + sizeof(outer_live) +
+							 sizeof(&b) + sizeof(bool)))
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	size_t request =
+		sizeof(quest_mobile_native_npc_flat_factory_scope) +
+		sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+					    __gnu_cxx::_S_atomic>) +
+		sizeof(std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>) +
+		sizeof(index) + sizeof(outer_live) + sizeof(&b) + sizeof(size_t) + sizeof(bool) +
+		sizeof(std::array<int, 4>) +
+		// Real original constructor argument carriers coexist with root copy.
+		sizeof(const std::string *) + sizeof(const void *) + sizeof(P_char) +
+		sizeof(uint64_t) + sizeof(uint64_t) + sizeof(const critical_operation_id *) +
+		sizeof(const economic_source_event *) + sizeof(const critical_operation_id *) +
+		sizeof(const critical_operation_id *) + sizeof(int) + sizeof(int) + sizeof(int) +
+		sizeof(int) + sizeof(int) + sizeof(const void *) +
+		sizeof(const std::array<int, 4> *) + sizeof(bool) +
+		sizeof(const quest_mobile_native_constructor_recipe *) +
+		quest_mobile_native_npc_flat_factory_scope::copy_source_frames();
+	if (reset_dispatch.selected_flat_root.size() > 15)
+	{
+		if (reset_dispatch.selected_flat_root.size() == SIZE_MAX ||
+		    !add_bytes(request, reset_dispatch.selected_flat_root.size() + 1))
+			return false;
+	}
+	if (!add_bytes(request, outer_live) || !charge(request))
+		return false;
+	try
+	{
+		b.npc_flat_factory_scope =
+			std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>(
+				new quest_mobile_native_npc_flat_factory_scope(
+					reset_dispatch.selected_flat_root, &b, b.character,
+					b.runtime_id, b.reference.mobile_instance_id,
+					b.reference.birth_operation, b.reference.birth_source,
+					reset_dispatch.flat_lineage, reset_dispatch.flat_epoch,
+					b.zone, b.reference.reset_zone_vnum, b.room, b.rnum, b.shop,
+					reset_dispatch.commands,
+					{ reset_dispatch.original_command.arg1,
+					  reset_dispatch.original_command.arg2,
+					  reset_dispatch.original_command.arg3,
+					  reset_dispatch.original_command.arg4 },
+					reset_dispatch.original_command.if_flag, b.constructor));
+		// request's heap/constructor terms have transferred into CURRENT; only
+		// live caller/mint scalars remain private for this new observation.
+		size_t current_outer = outer_live;
+		if (!add_bytes(current_outer, sizeof(index)) ||
+		    !add_bytes(current_outer, sizeof(outer_live)) ||
+		    !add_bytes(current_outer, sizeof(&b)) ||
+		    !add_bytes(current_outer, sizeof(request)) ||
+		    !add_bytes(current_outer, sizeof(current_outer)) ||
+		    !b.npc_flat_factory_scope->current_bounded(reserve_npc_binding_scratch, nullptr,
+							       current_outer))
+		{
+			b.npc_flat_factory_scope.reset();
+			charge(current_outer);
+			return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	return false;
+#endif
+}
+bool quest_mobile_native_birth_owner::borrow_npc_flat_factory_scope(
+	P_char actor, const quest_mobile_native_npc_flat_factory_scope **output,
+	size_t outer_live) noexcept
+{
+	if (!output || !actor || !owns(actor) || !nevent_is_game_thread())
+		return false;
+	const auto &b = *births[current_birth];
+	size_t current_outer = outer_live;
+	if (!add_bytes(current_outer, sizeof(actor)) || !add_bytes(current_outer, sizeof(output)) ||
+	    !add_bytes(current_outer, sizeof(outer_live)) ||
+	    !add_bytes(current_outer, sizeof(&b)) ||
+	    !add_bytes(current_outer, sizeof(current_outer)) ||
+	    !add_bytes(current_outer, sizeof(bool)) || !b.npc_flat_factory_scope ||
+	    !b.npc_flat_factory_scope->current_bounded(reserve_npc_binding_scratch, nullptr,
+						       current_outer))
+		return false;
+	// Borrowed solely from the actual retained constructor owner. Its immutable
+	// storage ends with that owner; every consumer reauthenticates current().
+	*output = b.npc_flat_factory_scope.get();
+	return true;
+}
+bool quest_mobile_native_birth_owner::reserve_npc_binding_scratch(size_t live,
+								  void *context) noexcept
+{
+	// Candidate/map/UID set/request storage is supplied by the real DB owner.
+	// Current birth registry, sibling stages and all other retained state are
+	// observed by charge; the incoming private candidate never duplicates it.
+	return add_bytes(live, sizeof(live)) && add_bytes(live, sizeof(context)) &&
+	       add_bytes(live, sizeof(bool)) && charge(live);
+}
+
+P_obj quest_mobile_native_birth_owner::prepare_item_flat(int rnum, size_t outer_live) noexcept
+{
+	if (current_birth >= births.size() || !births[current_birth] ||
+	    births[current_birth]->blocked || rnum < 0 || rnum > top_of_objt)
+		return nullptr;
+	auto &b = *births[current_birth];
+	size_t entry_outer = outer_live;
+	if (!add_bytes(entry_outer, sizeof(rnum)) || !add_bytes(entry_outer, sizeof(outer_live)) ||
+	    !add_bytes(entry_outer, sizeof(&b)) || !add_bytes(entry_outer, sizeof(entry_outer)) ||
+	    !add_bytes(entry_outer, sizeof(P_obj)) || !b.npc_flat_factory_scope ||
+	    !b.npc_flat_factory_scope->current_bounded(reserve_npc_binding_scratch, nullptr,
+						       entry_outer))
+		return nullptr;
+	original_item item;
+	struct scope_copy_context
+	{
+		quest_mobile_native_item_stage *stage;
+		size_t private_live;
+	} scratch{ nullptr, 0 };
+	const auto reserve_scope = [](size_t extra, void *opaque) noexcept
+	{
+		const auto &state = *static_cast<const scope_copy_context *>(opaque);
+		size_t bytes = state.private_live;
+		size_t native = sizeof(quest_mobile_native_item_stage);
+		if (state.stage && !state.stage->empty())
+		{
+			if (item_native_quest_global_budget_scope_owner::literal_pool_owned() &&
+			    state.stage->is_flat_factory())
+			{
+				if (!state.stage->retained_bytes_excluding_literal_pools(&native))
+					return false;
+			}
+			else
+			{
+				native = state.stage->retained_bytes();
+				if (!native)
+					return false;
+			}
+		}
+		// Callback extra/opaque/state/bytes/native/return and the genuinely
+		// selected observer's complete declared source carriers coexist here.
+		return add_bytes(bytes, native) && add_bytes(bytes, extra) &&
+		       add_bytes(bytes, sizeof(extra)) && add_bytes(bytes, sizeof(opaque)) &&
+		       add_bytes(bytes, sizeof(&state)) && add_bytes(bytes, sizeof(bytes)) &&
+		       add_bytes(bytes, sizeof(native)) && add_bytes(bytes, sizeof(bool)) &&
+		       add_bytes(bytes, sizeof(const quest_mobile_native_item_stage
+						       *)) && // empty/is_flat_factory this
+		       add_bytes(bytes, sizeof(bool)) && // leaf return
+		       add_bytes(bytes, sizeof(size_t *)) &&
+		       add_bytes(bytes, sizeof(size_t)) &&
+		       add_bytes(bytes, sizeof(bool)) && // add_bytes reference/amount/return
+		       add_bytes(bytes, quest_mobile_native_item_stage::
+						npc_retained_observation_source_frames()) &&
+		       charge(bytes);
+	};
+	scratch.private_live = outer_live;
+	if (!add_bytes(scratch.private_live, sizeof(item)) ||
+	    !add_bytes(scratch.private_live, sizeof(scratch)) ||
+	    !add_bytes(scratch.private_live, sizeof(reserve_scope)) ||
+	    !add_bytes(scratch.private_live, sizeof(rnum)) ||
+	    !add_bytes(scratch.private_live, sizeof(outer_live)) ||
+	    !add_bytes(scratch.private_live, sizeof(&b)) ||
+	    !add_bytes(scratch.private_live, sizeof(entry_outer)) ||
+	    !add_bytes(scratch.private_live, sizeof(P_obj)) ||
+	    !add_bytes(scratch.private_live, sizeof(size_t))) // actual request local
+		return nullptr;
+	try
+	{
+		if (b.stock.size() >= PLAYER_SNAPSHOT_MAX_ROWS)
+		{
+			b.blocked = true;
+			return nullptr;
+		}
+		size_t request = scratch.private_live;
+		if (!add_bytes(request, sizeof(quest_mobile_native_item_stage)) ||
+		    !add_bytes(request, sizeof(std::unique_ptr<quest_mobile_native_item_stage>)) ||
+		    !charge(request))
+		{
+			b.blocked = true;
+			return nullptr;
+		}
+		item.stage = std::make_unique<quest_mobile_native_item_stage>();
+		scratch.stage = item.stage.get();
+		request = 0;
+		if (b.stock.size() == b.stock.capacity())
+		{
+			if (b.stock.size() == SIZE_MAX ||
+			    b.stock.size() + 1 > SIZE_MAX / sizeof(original_item))
+			{
+				b.blocked = true;
+				return nullptr;
+			}
+			request = (b.stock.size() + 1) * sizeof(original_item);
+		}
+		if (!reserve_scope(request, &scratch))
+		{
+			b.blocked = true;
+			return nullptr;
+		}
+		b.stock.reserve(b.stock.size() + 1);
+		item.uid = item_uid_allocator_next();
+		item.rnum = rnum;
+		if (!item.uid || !quest_mobile_native_item_stage::prepare_retaining_npc_flat(
+					 rnum, REAL, item.uid, *b.npc_flat_factory_scope,
+					 item.stage.get(), reserve_scope, &scratch))
+		{
+			// Genuine unresolved native state cannot disappear with the local
+			// stage pointer. The already-reserved stock slot retains it closed.
+			item.object = item.stage->object();
+			b.stock.push_back(std::move(item));
+			b.blocked = true;
+			charge(scratch.private_live);
+			return nullptr;
+		}
+		item.object = item.stage->object();
+		const size_t steps = item.stage->publication_step_count();
+		if (!add_bytes(scratch.private_live, sizeof(steps)))
+		{
+			b.stock.push_back(std::move(item));
+			b.blocked = true;
+			charge(scratch.private_live);
+			return nullptr;
+		}
+		if (steps > SIZE_MAX / sizeof(quest_mobile_native_item_effect) ||
+		    !reserve_scope(steps * sizeof(quest_mobile_native_item_effect), &scratch))
+		{
+			b.stock.push_back(std::move(item));
+			b.blocked = true;
+			charge(scratch.private_live);
+			return nullptr;
+		}
+		item.effects.resize(steps);
+		P_obj result = item.object;
+		// The actual effects/native stage move into registry storage; the local
+		// object and result carrier remain alive, and no private heap is duplicated.
+		if (!add_bytes(scratch.private_live, sizeof(result)))
+		{
+			b.stock.push_back(std::move(item));
+			b.blocked = true;
+			charge(scratch.private_live);
+			return nullptr;
+		}
+		b.stock.push_back(std::move(item));
+		if (!charge(scratch.private_live))
+		{
+			b.blocked = true;
+			const size_t index = current_birth;
+			current_birth = SIZE_MAX;
+			discard(index);
+			return nullptr;
+		}
+		return result;
+	}
+	catch (...)
+	{
+		if (item.stage && !item.stage->discard_unadmitted())
+		{
+			// Original reserve succeeded before any native construction. The
+			// fitting move cannot allocate; retain only genuinely surviving state.
+			item.object = item.stage->object();
+			if (b.stock.size() < b.stock.capacity())
+				b.stock.push_back(std::move(item));
+		}
+		b.blocked = true;
+		charge(scratch.private_live);
+		return nullptr;
+	}
+}
+
+bool quest_mobile_native_birth_owner::capture_alchemist_spawn_flat(P_char actor, int room) noexcept
+{
+	if (!reset_in_progress || !nevent_is_game_thread() || !owns(actor) ||
+	    room != births[current_birth]->room || room <= NOWHERE || room > top_of_world)
+		return false;
+	auto &birth = *births[current_birth];
+	if (!birth.npc_flat_factory_scope ||
+	    !birth.npc_flat_factory_scope->current_bounded(reserve_npc_binding_scratch, nullptr,
+							   sizeof(actor) + sizeof(room) +
+								   sizeof(&birth) + sizeof(bool)))
+		return false;
+	if (birth.blocked || birth.sealed || !birth.constructor_present ||
+	    birth.constructor.wire_version !=
+		    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION)
+		return false;
+	if (!GET_CLASS(actor, CLASS_ALCHEMIST))
+	{
+		// The genuine original decision returned without attempting a roll.
+		birth.non_alchemist_cut_returned = true;
+		return true;
+	}
+	if (birth.alchemist_started || actor->in_room != NOWHERE || !obj_index)
+	{
+		birth.blocked = true;
+		return false;
+	}
+	birth.alchemist_started = true;
+	native_alchemist_vial_choice choice = native_alchemist_vial_choice::not_attempted;
+	if (!npc_alchemist_original_birth::capture(actor, room, &choice))
+	{
+		birth.blocked = true;
+		return false;
+	}
+	birth.alchemist_returned = true;
+	birth.constructor.wire_version = NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION;
+	birth.constructor.alchemist_choice = static_cast<original_alchemist_choice>(choice);
+	birth.constructor.alchemist_grant_uid = 0;
+	if (!alchemist_choice_compatible(actor, birth.constructor))
+	{
+		birth.blocked = true;
+		return false;
+	}
+	if (choice != native_alchemist_vial_choice::selected)
+		return true;
+	// This is the original read_object(VIRTUAL) no-object branch, before any
+	// constructor or UID reservation. An actual preparation failure is distinct.
+	const int rnum = real_object(VOBJ_POISON_VIALS);
+	if (rnum < 0 || rnum > top_of_objt)
+		return true;
+	const size_t item_outer = sizeof(actor) + sizeof(room) + sizeof(&birth) + sizeof(choice) +
+				  sizeof(rnum) + sizeof(P_obj) + sizeof(bool) + sizeof(size_t);
+	P_obj vial = prepare_item_flat(rnum, item_outer);
+	// Preparation may discard the owner on budget failure; never reuse birth.
+	if (!vial || !carry(vial, actor))
+		return false;
+	if (!owns(actor) || !vial->obj_uid || vial->obj_uid == UINT64_MAX)
+		return false;
+	auto &current = *births[current_birth];
+	current.constructor.alchemist_grant_uid = vial->obj_uid;
+	if (!native_mobile_birth_constructor_recipe_valid(current.constructor))
+	{
+		current.blocked = true;
+		return false;
+	}
+	return true;
+}
+void quest_mobile_native_birth_owner::seal_mobile_flat(size_t outer_live) noexcept
+{
+	if (current_birth >= births.size() || !births[current_birth])
+		return;
+	const size_t index = current_birth;
+	auto &b = *births[index];
+	current_birth = SIZE_MAX;
+	if (b.blocked || b.sealed || !b.character)
+		return;
+	if (!b.npc_flat_factory_scope ||
+	    !b.npc_flat_factory_scope->current_bounded(
+		    reserve_npc_binding_scratch, nullptr,
+		    outer_live > SIZE_MAX - (sizeof(outer_live) + sizeof(index) + sizeof(&b)) ?
+			    SIZE_MAX :
+			    outer_live + sizeof(outer_live) + sizeof(index) + sizeof(&b)))
+	{
+		b.blocked = true;
+		return;
+	}
+	if (GET_CLASS(b.character, CLASS_ALCHEMIST) &&
+	    (!b.alchemist_started || !b.alchemist_returned ||
+	     b.constructor.wire_version !=
+		     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
+	{
+		b.blocked = true;
+		return;
+	}
+	try
+	{
+		if (quest_mobile_native_capture(b.character, b.reference,
+						quest_mobile_lifetime_state::live,
+						b.reference.birth_operation, 1,
+						&b.image) != player_snapshot_capture_result::ok)
+		{
+			b.blocked = true;
+			return;
+		}
+		// A constructed orphan cannot be published outside this exact born forest.
+		size_t selected = 0;
+		for (const auto &item : b.stock)
+			if (item.stage)
+			{
+				++selected;
+				size_t found = 0;
+				for (const auto &row : b.image.items)
+					if (row.object_uid == item.uid)
+						++found;
+				if (found != 1)
+				{
+					b.blocked = true;
+					return;
+				}
+			}
+		if (selected != b.image.items.size())
+		{
+			b.blocked = true;
+			return;
+		}
+		b.current_custody.resize(b.image.items.size());
+		b.recipes.resize(b.image.items.size());
+		for (size_t row = 0; row < b.image.items.size(); ++row)
+		{
+			const auto selected =
+				std::find_if(b.stock.begin(), b.stock.end(), [&](const auto &item)
+					     { return item.uid == b.image.items[row].object_uid; });
+			if (selected == b.stock.end() || !selected->stage ||
+			    !selected->stage->capture_recipe(b.image.items[row], &b.recipes[row]))
+			{
+				b.blocked = true;
+				return;
+			}
+		}
+		if (!native_mobile_birth_recipe_valid(b.image.items, b.recipes))
+		{
+			b.blocked = true;
+			return;
+		}
+		// NBC4 requires the complete original decision capsule. Only a fresh
+		// birth which genuinely reached the non-alchemist return cut may record
+		// not_attempted; historical NBC2 commands are never rewritten.
+		if (b.constructor.wire_version ==
+		    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION)
+		{
+			if (!b.non_alchemist_cut_returned ||
+			    GET_CLASS(b.character, CLASS_ALCHEMIST) ||
+			    b.constructor.alchemist_choice !=
+				    original_alchemist_choice::not_attempted ||
+			    b.constructor.alchemist_grant_uid)
+			{
+				b.blocked = true;
+				return;
+			}
+			b.constructor.wire_version =
+				NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION;
+		}
+		if (!native_mobile_birth_cash_role_recipe_capture(b.constructor, &b.cash_role))
+		{
+			b.blocked = true;
+			return;
+		}
+		b.cash_role_present = true;
+		if (b.cash_role.role == native_mobile_birth_cash_role::shared_shopkeeper)
+		{
+			// Genuine source/stage cut only; the earlier accepted_usec is not a
+			// save-time observation. The clock is sampled once at this final cut.
+			if (!reset_dispatch_identity() || b.zone != reset_zone_rnum ||
+			    b.reference.birth_source.source.bytes != reset_invocation.bytes ||
+			    b.reference.birth_source.generation.bytes != reset_invocation.bytes ||
+			    b.shared_checkpoint || !shared_cash_role_current(b))
+			{
+				b.blocked = true;
+				return;
+			}
+			b.shared_saved_at =
+				std::chrono::duration_cast<std::chrono::seconds>(
+					std::chrono::system_clock::now().time_since_epoch())
+					.count();
+			if (b.shared_saved_at < 0)
+			{
+				b.blocked = true;
+				return;
+			}
+			// The original owner freezes the complete final source/body/choice
+			// cut before fallible passive capture. Detached, unlinked and
+			// unscheduled stage ownership survives a pure allocation refusal.
+			b.shared_source_cut = true;
+		}
+		else if (b.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		{
+			b.blocked = true;
+			return;
+		}
+		std::vector<quest_mobile_native_item_binding> inputs;
+		inputs.reserve(b.stock.size());
+		for (const auto &item : b.stock)
+			if (item.stage)
+				inputs.push_back(item.stage->binding_input());
+		size_t binding_outer = sizeof(outer_live) + sizeof(inputs) + sizeof(index) +
+				       sizeof(&b) + sizeof(selected) +
+				       sizeof(size_t) + // actual binding_outer local
+				       sizeof(std::span<const quest_mobile_native_item_binding>);
+		if (!add_bytes(binding_outer, outer_live) ||
+		    inputs.capacity() >
+			    (SIZE_MAX - binding_outer) / sizeof(quest_mobile_native_item_binding))
+		{
+			b.blocked = true;
+			return;
+		}
+		binding_outer += inputs.capacity() * sizeof(quest_mobile_native_item_binding);
+		const std::span<const quest_mobile_native_item_binding> originals(inputs);
+		if (!shop_trade_original_procedure_binding_stage::
+			    prepare_native_birth_npc_flat_bounded(
+				    originals, *b.npc_flat_factory_scope, b.bindings,
+				    reserve_npc_binding_scratch, nullptr, binding_outer))
+		{
+			b.blocked = true;
+			return;
+		}
+		b.sealed = true;
+		if (b.cash_role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+		    reset_dispatch.flat_backend && !capture_ordinary_flat_source_pin(index))
+		{
+			b.blocked = true;
+			return;
+		}
+		if (b.shared_source_cut)
+			capture_shared_checkpoint(index);
+		if (!charge())
+		{
+			b.blocked = true;
+			discard(index);
+		}
+	}
+	catch (...)
+	{
+		b.blocked = true;
+	}
+}
+void quest_mobile_native_birth_owner::block_mobile_flat() noexcept
+{
+	if (current_birth < births.size() && births[current_birth])
+		births[current_birth]->blocked = true;
+	seal_mobile_flat(0);
+}
+void quest_mobile_native_birth_owner::finish_reset_flat() noexcept
+{
+	if (!reset_in_progress)
+		return;
+	if (!reset_dispatch.completed || !reset_dispatch.valid)
+	{
+		zone_reset_item_owner::abort_warm_capture();
+		reset_dispatch.held = true;
+		reset_dispatch.retryable = false;
+		// No S was reached: retain invocation, original locals and current factory.
+		// A genuine explicit pure hold uses hold_reset and does not call finish.
+		charge();
+		return;
+	}
+	// The real stop releases borrowed mobile lifetimes before sealing its final
+	// owner. All original slot/body/decision state survives until this boundary.
+	for (auto &hold : reset_dispatch.actors)
+		hold = {};
+	seal_mobile_flat(0);
+	reset_in_progress = false;
+	reset_zone_rnum = -1;
+	reset_invocation = {};
+	reset_dispatch = {};
+	charge();
 }
