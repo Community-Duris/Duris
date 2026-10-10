@@ -66503,7 +66503,7 @@
       "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "29e9d23f878945338f6a7561107e010f5d492e982c0ae7d35d7708ee5fdcb412",
       "src/flatfile/flatfile_economic_runtime.c": "0361c613879b7ea4bfd4c5dca5fe441a1ea77558753a87db88cdc72a2434e6b9",
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
-      "src/flatfile/flatfile_item_repository.c": "9f1819ce2ef730eeee22e00e156c482ae477725fe62431fe940a910d2897e249",
+      "src/flatfile/flatfile_item_repository.c": "232451449290a33db5625175833366a44a1ddc9b35d7ddbd558542150331a373",
       "src/flatfile/flatfile_item_repository.h": "60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
       "src/flatfile/quest_mobile_native_flatfile.c": "70c774a294c518460f3bbde5b2059fc95d3f2f668c3d7fc11ca5f3561a578e3d",
@@ -66843,7 +66843,8 @@
       "src/player/player_death_restitution_runtime.h": "9413afb082f7980bc2917c30e41524388bfd31bbe4f9c20703b585265097d671",
       "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "29d1197e11ba2a4305cd5f804634fde5c657ebf0161de2e53c9cea4ac020894e",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
-      "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "85d89092fb73602ad994365336f2d506be36379d33515771414b35bd69c25f98"
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h": "85d89092fb73602ad994365336f2d506be36379d33515771414b35bd69c25f98",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "abadd19eddef9336571001f8ff49565d7839a687ae5795a4a76a1d4201e50f6a"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

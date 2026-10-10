@@ -2,6 +2,7 @@
 #include "flatfile/quest_mobile_native_flatfile.h"
 #include "item/item_transfer_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_custody.h"
 
 #include "flatfile/flatfile_auction_repository.h"
 #include "flatfile/flatfile_artifact_repository.h"
@@ -8430,4 +8431,290 @@ flatfile_item_repository_result flatfile_room_reset_current_custody_storage::rea
 		return flatfile_item_repository_result::invalid;
 	}
 #endif
+}
+
+flatfile_item_repository_result
+flatfile_native_mobile_birth_ordinary_custody_storage::prepare_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, const flatfile_economic_mapping &mapping,
+	flatfile_native_mobile_birth_ordinary_custody_stage *output, std::string *error) noexcept
+{
+	if (root.empty() || !output || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_initial(original))
+			return flatfile_item_repository_result::invalid;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		if (native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event || !image.cash ||
+		    image.cash->revision != 1 || !economic_account_key_valid(mapping.account) ||
+		    mapping.account.lineage.bytes != intent.admission.metadata.lineage.bytes ||
+		    !flatfile_native_mobile_wallet_locator_valid(
+			    mapping.account.kind, mapping.account.context_id, mapping.locator) ||
+		    mapping.locator.native_id != image.reference.mobile_instance_id ||
+		    mapping.creating_operation.bytes != original.command.operation_id.bytes ||
+		    mapping.last_operation.bytes != original.command.operation_id.bytes ||
+		    !critical_operation_id_is_zero(mapping.retiring_operation) || mapping.revision)
+			return flatfile_item_repository_result::invalid;
+		// Values do not prove the actual allocator/source. The sole transaction
+		// friend joins its genuine closed mapping stage and original admission.
+		quest_mobile_native_flatfile_row native;
+		const int native_error = quest_mobile_native_flatfile_read_locked(
+			root, lock, image.reference.mobile_instance_id, &native);
+		if (native_error || native.present)
+			return native_error == ENOMEM || native_error == EIO ?
+				       flatfile_item_repository_result::io_error :
+				       flatfile_item_repository_result::invalid;
+		ownership_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_item_repository_result::ok &&
+		    loaded != flatfile_item_repository_result::not_found)
+			return loaded;
+		if (!valid_catalog(catalog) || catalog.revision == UINT64_MAX ||
+		    catalog.owners.size() >= ownership_maximum_entries ||
+		    image.items.size() > ownership_maximum_entries ||
+		    catalog.items.size() > ownership_maximum_entries - image.items.size())
+			return flatfile_item_repository_result::invalid;
+		const item_owner_identity selected{ item_owner_type::native_mobile,
+						    image.reference.mobile_instance_id, 0 };
+		if (!item_owner_identity_valid(selected))
+			return flatfile_item_repository_result::invalid;
+		// All native owner contexts must be absent, including empty/retired cuts.
+		for (const auto &owner : catalog.owners)
+			if (owner.owner.type == selected.type && owner.owner.id == selected.id)
+				return flatfile_item_repository_result::invalid;
+		std::unordered_set<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			if (!born.insert(literal.object_uid).second)
+				return flatfile_item_repository_result::invalid;
+		for (const auto &row : catalog.items)
+			if (born.contains(row.item_uid) || born.contains(row.root_item_uid) ||
+			    born.contains(row.parent_item_uid) ||
+			    (row.owner.type == selected.type && row.owner.id == selected.id))
+				return flatfile_item_repository_result::invalid;
+		for (const auto &operation : catalog.operations)
+			if (operation.operation_id.bytes == original.command.operation_id.bytes ||
+			    born.contains(operation.result.root_item_uid))
+				return flatfile_item_repository_result::invalid;
+
+		flatfile_native_mobile_birth_ordinary_custody_stage stage;
+		if (native_mobile_birth_cash_role_accounting_compile(
+			    original.command, mapping.account, &stage.plan) !=
+			    economic_accounting_error::ok ||
+		    stage.plan.item_events.size() != image.items.size() ||
+		    stage.plan.items_before.size() != image.items.size() ||
+		    stage.plan.items_after.size() != image.items.size())
+			return flatfile_item_repository_result::invalid;
+		stage.catalog_before_present = loaded == flatfile_item_repository_result::ok;
+		stage.catalog_revision_before = catalog.revision;
+		stage.catalog_revision_after = catalog.revision + 1;
+		// Ordinary SQL ALWAYS creates owner/context0 at revision1. An empty
+		// forest does not inherit shared SHOP's unchanged-owner special case.
+		auto *owner_after = ensure_owner(&catalog, selected);
+		if (!owner_after)
+			return flatfile_item_repository_result::io_error;
+		owner_after->revision = 1;
+		stage.owner_revision_after = owner_after->revision;
+		for (size_t index = 0; index < stage.plan.item_events.size(); ++index)
+		{
+			const auto &event = stage.plan.item_events[index];
+			const auto &literal = image.items[index];
+			if (event.event_index != index || event.child_index ||
+			    event.uid != literal.object_uid ||
+			    !economic_item_position_equal(event.before, economic_item_position{}) ||
+			    event.after.state != item_custody_state::active ||
+			    event.after.revision != 1 ||
+			    !item_owner_identity_equal(event.after.owner, selected) ||
+			    event.after.equipment_slot != literal.equipment_slot)
+				return flatfile_item_repository_result::invalid;
+			// Full original DFS topology and every literal remain in the SAME
+			// NMB4/native image. SQL ordinary custody uses NULL coin_payload;
+			// do not invent an ITEM_MONEY mutation or normalize native literals.
+			catalog.items.push_back({ event.uid,
+						  event.after.root_uid,
+						  event.after.parent_uid,
+						  event.after.owner,
+						  event.after.revision,
+						  literal.vnum,
+						  event.after.state,
+						  {},
+						  event.after.equipment_slot });
+		}
+		std::sort(catalog.items.begin(), catalog.items.end(), item_less);
+		if (!valid_catalog(catalog))
+			return flatfile_item_repository_result::invalid;
+		stage.operation.store = flatfile_authority_store::domains;
+		stage.operation.kind = flatfile_authority_operation_kind::write;
+		stage.operation.filename = ownership_filename;
+		if (!encode_catalog(catalog, stage.catalog_revision_after,
+				    &stage.operation.bytes) ||
+		    !lock.matches(root))
+			return flatfile_item_repository_result::invalid;
+		// No generic transfer receipt is fabricated. Independent creation ledger,
+		// physical all-domain exclusion and atomic native/financial/source receipt
+		// are actual required transaction joins, not claimed by this catalog leaf.
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_native_mobile_birth_ordinary_custody_stage>);
+		*output = std::move(stage);
+		return flatfile_item_repository_result::ok;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+}
+
+flatfile_item_repository_result flatfile_native_mobile_birth_ordinary_custody_storage::read_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	const flatfile_accounting_record &retained,
+	flatfile_native_mobile_birth_ordinary_current_custody *output, std::string *error) noexcept
+{
+	if (root.empty() || !output || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_valid(original) ||
+		    !critical_command_equal(retained.command, original.command) ||
+		    retained.result_code ||
+		    retained.failure_stage != critical_failure_stage::none ||
+		    retained.durable_revision != 1 ||
+		    retained.result.size() != NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES)
+			return flatfile_item_repository_result::invalid;
+		native_mobile_birth_recovery_context context;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		native_mobile_birth_cash_role_result result;
+		if (native_mobile_birth_cash_role_recovery_decode(original.command,
+								  original.attachment, &context) !=
+			    economic_accounting_error::ok ||
+		    native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event ||
+		    !native_mobile_birth_cash_role_result_decode(retained.result, &result) ||
+		    result.role != native_mobile_birth_cash_role::ordinary_wallet)
+			return flatfile_item_repository_result::invalid;
+		const economic_account_key wallet{ intent.admission.metadata.lineage,
+						   economic_account_kind::wallet,
+						   result.wallet_mapping_id,
+						   ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		economic_accounting_plan plan;
+		std::vector<uint8_t> canonical_plan;
+		native_mobile_birth_cash_role_result expected;
+		std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES> canonical_result{};
+		if (native_mobile_birth_cash_role_accounting_compile(
+			    original.command, wallet, &plan) != economic_accounting_error::ok ||
+		    economic_plan_encode(plan, &canonical_plan) != economic_accounting_error::ok ||
+		    canonical_plan != retained.plan ||
+		    native_mobile_birth_cash_role_result_build(original.command, wallet, plan,
+							       &expected) !=
+			    economic_accounting_error::ok ||
+		    !native_mobile_birth_cash_role_result_encode(expected, &canonical_result) ||
+		    !std::equal(canonical_result.begin(), canonical_result.end(),
+				retained.result.begin()))
+			return flatfile_item_repository_result::invalid;
+		if (context.receipt_present)
+		{
+			const auto &receipt = context.receipt;
+			if ((receipt.outcome != critical_apply_outcome::applied &&
+			     receipt.outcome != critical_apply_outcome::already_applied) ||
+			    receipt.operation_id.bytes != original.command.operation_id.bytes ||
+			    receipt.durable_revision != 1 || receipt.error_code ||
+			    receipt.failure_stage != critical_failure_stage::none ||
+			    receipt.disposition != critical_completion_disposition::execution ||
+			    receipt.result_size != retained.result.size() ||
+			    !std::equal(retained.result.begin(), retained.result.end(),
+					receipt.result_payload.begin()) ||
+			    !std::all_of(receipt.result_payload.begin() + receipt.result_size,
+					 receipt.result_payload.end(),
+					 [](uint8_t byte) { return !byte; }))
+				return flatfile_item_repository_result::invalid;
+		}
+		ownership_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		// Owner revision1 exists even for zero born rows: absence is not a valid
+		// ordinary CURRENT projection and cannot use shared's zero-stock skip.
+		if (loaded != flatfile_item_repository_result::ok)
+			return loaded;
+		if (!valid_catalog(catalog))
+			return flatfile_item_repository_result::invalid;
+		const item_owner_identity selected{ item_owner_type::native_mobile,
+						    image.reference.mobile_instance_id, 0 };
+		for (const auto &owner : catalog.owners)
+			if (owner.owner.type == selected.type && owner.owner.id == selected.id &&
+			    owner.owner.context_id)
+				return flatfile_item_repository_result::invalid;
+		const auto *owner = find_owner(&catalog, selected);
+		if (!owner || owner->revision != 1 || result.item_owner_revision != 1 ||
+		    result.item_owner_id != selected.id)
+			return flatfile_item_repository_result::invalid;
+		std::unordered_set<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			if (!born.insert(literal.object_uid).second)
+				return flatfile_item_repository_result::invalid;
+		flatfile_native_mobile_birth_ordinary_current_custody observed;
+		observed.owner_revision = owner->revision;
+		observed.rows.reserve(image.items.size());
+		for (const auto &row : catalog.items)
+		{
+			if (!born.contains(row.item_uid))
+			{
+				// SQL CURRENT custody_scope counts all rows/states, not just active
+				// native inventory. No foreign/inactive root/parent may hide here.
+				if (born.contains(row.root_item_uid) ||
+				    born.contains(row.parent_item_uid) ||
+				    (row.owner.type == selected.type &&
+				     row.owner.id == selected.id))
+					return flatfile_item_repository_result::invalid;
+				continue;
+			}
+			const auto event = std::find_if(plan.item_events.begin(),
+							plan.item_events.end(), [&](const auto &e)
+							{ return e.uid == row.item_uid; });
+			const auto literal = std::find_if(image.items.begin(), image.items.end(),
+							  [&](const auto &i)
+							  { return i.object_uid == row.item_uid; });
+			if (event == plan.item_events.end() || literal == image.items.end() ||
+			    !item_owner_identity_equal(row.owner, selected) ||
+			    row.state != item_custody_state::active || row.item_revision != 1 ||
+			    row.root_item_uid != event->after.root_uid ||
+			    row.parent_item_uid != event->after.parent_uid ||
+			    row.item_revision != event->after.revision ||
+			    row.equipment_slot != event->after.equipment_slot ||
+			    row.vnum != literal->vnum || !row.coin_payload.empty())
+				return flatfile_item_repository_result::invalid;
+			observed.rows.push_back(row);
+		}
+		if (observed.rows.size() != image.items.size() || !lock.matches(root))
+			return flatfile_item_repository_result::invalid;
+		static_assert(std::is_nothrow_move_assignable_v<
+			      flatfile_native_mobile_birth_ordinary_current_custody>);
+		*output = std::move(observed);
+		return flatfile_item_repository_result::ok;
+	}
+	catch (...)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
 }
