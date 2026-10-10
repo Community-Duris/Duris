@@ -230,4 +230,17 @@ bool critical_operation_id_derive_bounded(const critical_operation_id &, uint32_
 					  bool (*)(size_t, void *) noexcept, void *context,
 					  size_t outer_live) noexcept;
 
+// Full original normalize COPY/sort/duplicate/private-envelope behavior.
+// Authentic input/prior destination heap and caller remain outer. Candidate's
+// four actual vector allocations and full original source calls are admitted.
+bool critical_command_normalize_bounded(critical_command *, bool (*)(size_t, void *) noexcept,
+					void *context, size_t outer_live) noexcept;
+// Allocation-free owning profiles for authentic command copies/current state.
+// Heaps exclude command inline object. Fresh request uses each source.size();
+// current uses capacity(), never encoded bytes. Caller owns observations/frames.
+bool critical_command_current_heap_bytes(const critical_command &, size_t *) noexcept;
+bool critical_command_fresh_copy_request_bytes(const critical_command &, size_t *) noexcept;
+size_t critical_command_copy_frame_bytes() noexcept;
+size_t critical_command_valid_frame_bytes() noexcept;
+
 #endif

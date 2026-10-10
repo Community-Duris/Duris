@@ -901,3 +901,323 @@ bool critical_operation_id_derive_bounded(const critical_operation_id &parent, u
 	return false;
 #endif
 }
+
+#include <type_traits>
+namespace
+{
+constexpr size_t critical_normalize_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t critical_normalize_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t critical_normalize_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t critical_normalize_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t critical_normalize_vector_frames =
+	critical_normalize_allocator_frames + critical_normalize_copy_frames +
+	critical_normalize_relocate_frames + critical_normalize_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t critical_normalize_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + critical_normalize_allocator_frames;
+constexpr size_t critical_normalize_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + critical_normalize_vector_frames;
+template <typename T, typename Comparator> constexpr size_t critical_normalize_sort_leaf_frames()
+{
+	// Same real GCC13 sort/partition/insertion/heap/copy/adjacent call scopes
+	// as UID sorting. Values and comparator carriers use their genuine types.
+	// Original key less/equal this-free argument/result scopes and revision
+	// lambda this/left/right/result plus its nested key less call.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+// Entire original allocation-free private/public envelope/legacy predicate
+// source closure. Calls keep original laws; no duplicate authority predicate.
+constexpr size_t critical_normalize_valid_frames =
+	// native-auction, key-limit, valid-type and original schema/legacy wrapper
+	// parameters/results, actual accepted payload predicate version/result.
+	5 * (sizeof(void *) + sizeof(bool)) + sizeof(void *) + sizeof(size_t) +
+	sizeof(critical_entity_type) + sizeof(bool) + sizeof(uint16_t) + sizeof(bool) +
+	// envelope_encoded_size command/size refs, bytes, add closure refs,
+	// count/width/this/returned bool, lambda captures bytes by reference.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(void *) + 2 * sizeof(size_t) +
+	sizeof(bool) +
+	// Original envelope command/wire_bytes/key+revision indices/key ref/bool,
+	// zero predicate reference/range begin/end/current byte/return.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) +
+	sizeof(uint8_t) + sizeof(bool) +
+	// legacy none_of/find_if/__find_if wrapper and RA branch trip_count,
+	// real stateless lambda and _Iter_pred/constructor/call carriers.
+	4 * (3 * sizeof(void *) + sizeof(char) + sizeof(bool)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(char) + 4 * sizeof(void *) +
+	2 * sizeof(char) + sizeof(bool) +
+	// binary_search(first,last,val,comp,i,result); __lower_bound
+	// first/last/val/comp, len/half/middle/return; real iter_comp_val
+	// conversion temporary and call this/iterator/value/result.
+	6 * sizeof(void *) + sizeof(bool) + 5 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(bool) +
+	// distance/__distance + advance/__advance/category and iterator
+	// subtraction/base/deref/++/+=/comparison/ctor carriers (no recursion).
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::ptrdiff_t) + sizeof(void *) + sizeof(std::random_access_iterator_tag) +
+	sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag) +
+	9 * (2 * sizeof(void *)) + 2 * sizeof(std::ptrdiff_t) + 2 * sizeof(bool) +
+	// Real key less/equal parameters/results, vector query/subscript,
+	// inline empty/size/begin/end and shop accounted version predicate.
+	2 * (2 * sizeof(void *) + sizeof(bool)) + 10 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t critical_normalize_command_copy_frames =
+	// Actual critical_command generated copy this/source and four vector
+	// copy constructors, including exact source.size capacity requests.
+	2 * sizeof(void *) + 4 * critical_normalize_vector_constructor_frames +
+	// Scalar/fixed operation array member copy construction carries refs.
+	2 * sizeof(void *) +
+	// Copy failure rollback destroys genuinely constructed earlier members.
+	4 * (sizeof(void *) + critical_normalize_allocator_frames);
+constexpr size_t critical_normalize_move_frames_total =
+	// Genuine critical_command generated move assignment + four standard
+	// equal-allocator vector moves, destination old heap destruction, and
+	// normalized's eventual four moved-from destructors. No heap request.
+	2 * sizeof(void *) + 4 * critical_normalize_move_frames + sizeof(void *) +
+	4 * (sizeof(void *) + critical_normalize_allocator_frames);
+constexpr size_t critical_normalize_observation_frames =
+	// prefix/result/extra/total/heap, peak and checked-add argument carriers,
+	// current four-capacity scan, typed fresh-copy size scan and real queries.
+	12 * sizeof(void *) + 10 * sizeof(size_t) + 6 * sizeof(bool) +
+	8 * (sizeof(void *) + sizeof(size_t));
+struct critical_normalize_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *normalized = nullptr;
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = outer, heap = 0;
+		if (!critical_decode_add(total, sizeof(*this)) ||
+		    !critical_decode_add(total, frames) ||
+		    !critical_decode_add(total, critical_normalize_observation_frames))
+			return false;
+		if (normalized && (!critical_decode_add(total, sizeof(*normalized)) ||
+				   !critical_decode_heap(*normalized, &heap) ||
+				   !critical_decode_add(total, heap)))
+			return false;
+		return critical_decode_add(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		size_t levels = 0, remaining = count,
+		       request = critical_normalize_sort_leaf_frames<T, Comparator>();
+		while (remaining > 1)
+		{
+			remaining >>= 1;
+			++levels;
+		}
+		constexpr size_t recursion =
+			3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator);
+		if (2 * levels + 1 > SIZE_MAX / recursion ||
+		    !critical_decode_add(request, (2 * levels + 1) * recursion) ||
+		    !critical_decode_add(request,
+					 sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)))
+			return false;
+		return peak(request);
+	}
+};
+}
+bool critical_command_current_heap_bytes(const critical_command &command, size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+	return critical_decode_heap(command, bytes);
+}
+bool critical_command_fresh_copy_request_bytes(const critical_command &command,
+					       size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+	size_t total = 0;
+	if (command.keys.size() > SIZE_MAX / sizeof(critical_entity_key) ||
+	    command.expected_revisions.size() > SIZE_MAX / sizeof(critical_expected_revision) ||
+	    !critical_decode_add(total, command.keys.size() * sizeof(critical_entity_key)) ||
+	    !critical_decode_add(total, command.expected_revisions.size() *
+						sizeof(critical_expected_revision)) ||
+	    !critical_decode_add(total, command.payload.size()) ||
+	    !critical_decode_add(total, command.accounting_intent.size()))
+		return false;
+	*bytes = total;
+	return true;
+}
+size_t critical_command_copy_frame_bytes() noexcept
+{
+	return critical_normalize_command_copy_frames + critical_normalize_move_frames_total +
+	       critical_normalize_observation_frames + sizeof(bool) + sizeof(size_t);
+}
+size_t critical_command_valid_frame_bytes() noexcept
+{
+	return critical_normalize_valid_frames + sizeof(size_t);
+}
+namespace
+{
+bool critical_normalize_owned(critical_command *command, critical_normalize_budget &budget)
+{
+	if (!command)
+		return false;
+	size_t wire_bytes = 0;
+	if (command->keys.size() > envelope_key_limit(*command) ||
+	    command->expected_revisions.size() > envelope_key_limit(*command) ||
+	    command->payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    command->accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
+	    !envelope_encoded_size(*command, &wire_bytes))
+		return false;
+	try
+	{
+		size_t admission_request = 0;
+		if (!critical_command_fresh_copy_request_bytes(*command, &admission_request) ||
+		    !critical_decode_add(admission_request,
+					 sizeof(critical_command) +
+						 critical_normalize_command_copy_frames) ||
+		    !budget.peak(admission_request))
+			return false;
+		auto normalized = *command;
+		budget.normalized = &normalized;
+		if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+			    normalized.keys.size()))
+			return false;
+		std::sort(normalized.keys.begin(), normalized.keys.end(), critical_entity_key_less);
+		if (!budget.peak(critical_normalize_sort_leaf_frames<
+				 critical_entity_key, decltype(&critical_entity_key_equal)>()))
+			return false;
+		if (std::adjacent_find(normalized.keys.begin(), normalized.keys.end(),
+				       critical_entity_key_equal) != normalized.keys.end())
+			return false;
+		// Genuine original stateless revision lambda has one-byte closure;
+		// actual comparator expression below is unchanged.
+		if (!budget.sort_frame<critical_expected_revision, char>(
+			    normalized.expected_revisions.size()))
+			return false;
+		std::sort(normalized.expected_revisions.begin(),
+			  normalized.expected_revisions.end(),
+			  [](const critical_expected_revision &left,
+			     const critical_expected_revision &right)
+			  { return critical_entity_key_less(left.key, right.key); });
+		if (!budget.peak(critical_normalize_valid_frames +
+				 critical_normalize_move_frames_total))
+			return false;
+		if (!(critical_command_native_auction_envelope(normalized) ?
+			      critical_command_envelope_valid(normalized) :
+			      critical_command_valid(normalized)))
+			return false;
+		*command = std::move(normalized);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+} // namespace
+bool critical_command_normalize_bounded(critical_command *command,
+					bool (*reserve)(size_t, void *) noexcept, void *context,
+					size_t outer_live) noexcept
+{
+	if (!command || !reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Public and owned function arguments/return, genuine wire_bytes,
+		// admission_request local, catch bad_alloc reference and helpers.
+		6 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) + sizeof(size_t) +
+		sizeof(size_t) + sizeof(void *);
+	critical_normalize_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(critical_normalize_valid_frames))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+	return critical_normalize_owned(command, budget);
+#else
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
