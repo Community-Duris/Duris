@@ -66493,9 +66493,9 @@
       "src/economy/shop_trade_transaction.h": "38b1f15d83a6342fbfc27fdfa9c8731791f1a1a9e101c556070a657113861020",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
-      "src/flatfile/flatfile_accounting_authority.c": "cde3ddd68a7ea3ba1795e75d7175b99a3853e3b96c1065d81bd9a2806cc19fce",
+      "src/flatfile/flatfile_accounting_authority.c": "79ee2fd30b141fdc605bae070bcd076e802e58474f55afc723b17b8a29306023",
       "src/flatfile/flatfile_accounting_authority.h": "fbc4a15e02f592da91e48edbf71bf7b2328fbfba81f5cf9b1c1ed41f7682f572",
-      "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
+      "src/flatfile/flatfile_accounting_baseline.c": "c98511736a68004ba725daf8655b633003006a24d06d30de31e320cf20aa01c6",
       "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
       "src/flatfile/flatfile_accounting_coin_transaction.c": "bca1d94e6092234a6b11445ee42629417c05b6fb16da5f38f95c4aacf97c1d3b",
       "src/flatfile/flatfile_accounting_coin_transaction.h": "ec0413e401d2f2dd72930dc8488bf55f8e5e55382226436c449ecb8d922abb6c",
@@ -66851,7 +66851,8 @@
       "src/flatfile/flatfile_auction_repository.c": "24d9b025930bf3ece5a6e42f982045c805720cc3a72feeff61bc6d781b55706e",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_physical.c": "d3139583f2f6d48707773fda5b3948afd11c40271b311d5025da084c6201d42c",
       "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
-      "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2"
+      "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
+      "src/flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h": "bf9936db6fd062b65e186446ac52f0152bb36afc1e7ef5d2fb4ad09f1dce5e18"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
