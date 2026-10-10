@@ -153,8 +153,17 @@ def database_import(generation, env):
         process.stdin.close()
 
 
-def database_qualify(env):
-    backup.run(["bash", str(backup.ROOT / "migrations/verify_runtime_compatibility.sh")], env=env)
+def database_qualify(env, schema=None, profile=None):
+    schema = schema or Path(env.get("RUNTIME_COMPATIBILITY_MANIFEST",
+                                   backup.ROOT / "migrations/runtime_compatibility_manifest.json"))
+    args = ["--no-defaults", "--protocol=socket", "--socket=" + env["DB_SOCKET"],
+            "--user=" + env["DB_USER"]]
+    actual = backup.database_runtime_profile(schema, args, env, env["DB_NAME"])
+    if profile is not None:
+        backup.require(type(profile) is int and profile == actual, "runtime_schema_profile_changed")
+    env = dict(env, RUNTIME_COMPATIBILITY_MANIFEST=str(schema))
+    backup.run(["bash", str(backup.ROOT / "migrations/verify_runtime_compatibility.sh"),
+                *(["--schema65"] if actual == 65 else [])], env=env)
     backup.run(["python3", str(backup.ROOT / "scripts/qualify_database_restore.py")], env=env)
 
 
@@ -229,9 +238,13 @@ def restore(p, generation_name, tombstones, drill=False):
             backup.require(backup.GENERATION.fullmatch(generation_name), "invalid_generation_name")
             generation = p["root"] / generation_name
             meta = backup.verify(generation)
-        backup.require(meta["runtime_schema_sha256"] ==
-                       backup.digest(backup.ROOT / "migrations/runtime_compatibility_manifest.json"),
-                       "restore_requires_matching_runtime")
+        runtime = backup.ROOT / "migrations/runtime_compatibility_manifest.json"
+        matching = meta["runtime_schema_sha256"] == backup.digest(runtime)
+        if not matching and meta["mode"] == "mariadb-primary" and \
+                meta.get("runtime_schema_profile", 64) == 64:
+            matching = (backup.runtime_schema_profile(generation / "runtime-schema.json", 64) ==
+                        backup.runtime_schema_profile(runtime, 64))
+        backup.require(matching, "restore_requires_matching_runtime")
         ledger_hash = tombstone_preflight(tombstones, p, meta["created"])
         candidate = p["restore_root"] / ("candidate-" + uuid.uuid4().hex)
         candidate.mkdir(mode=0o700)
@@ -255,12 +268,14 @@ def restore(p, generation_name, tombstones, drill=False):
             else:
                 with private_database(candidate, p.get("restore_database_engine", "mariadb")) as env:
                     database_import(generation, env)
-                    database_qualify(env)
+                    database_qualify(env, generation / "runtime-schema.json",
+                                     meta.get("runtime_schema_profile", 64))
                     aggregates = {"schema_history_and_value_reconciliation": "ok",
                                   "database_engine": p.get("restore_database_engine", "mariadb")}
                     service_load(candidate, meta["mode"], env)
                     backup.run([qualifier, "--journals-drained", str(candidate)], env=env)
-                    database_qualify(env)
+                    database_qualify(env, generation / "runtime-schema.json",
+                                     meta.get("runtime_schema_profile", 64))
             backup.require(ledger_hash == tombstone_preflight(tombstones, p, meta["created"]),
                            "erasure_evidence_changed_during_restore")
             backup.verify(generation)
