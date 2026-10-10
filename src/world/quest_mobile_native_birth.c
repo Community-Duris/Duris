@@ -4488,22 +4488,37 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 					if (b.npc_flat_factory_scope && !submission_current)
 						continue;
 				}
-				if (b.submitted && !b.coordinator_generation)
-					critical_native_mobile_birth_publication_owner::
-						observe_generation(b.envelope,
-								   &b.coordinator_generation);
-				critical_completion completion{};
-				if (b.submitted && !b.completed &&
-				    critical_command_coordinator_get_completed(
-					    b.command.operation_id, &completion))
+				if (b.npc_flat_factory_scope)
 				{
-					if (!critical_completion_disposition_valid(completion))
-					{
-						b.blocked = true;
+					if (b.submitted &&
+					    (!b.coordinator_generation || !b.completed) &&
+					    !observe_ordinary_flat_post_submit(
+						    i, sizeof(prepare_original_resets) +
+							       sizeof(recovery_only) + sizeof(i) +
+							       sizeof(&b)))
 						continue;
+				}
+				else
+				{
+					if (b.submitted && !b.coordinator_generation)
+						critical_native_mobile_birth_publication_owner::
+							observe_generation(
+								b.envelope,
+								&b.coordinator_generation);
+					critical_completion completion{};
+					if (b.submitted && !b.completed &&
+					    critical_command_coordinator_get_completed(
+						    b.command.operation_id, &completion))
+					{
+						if (!critical_completion_disposition_valid(
+							    completion))
+						{
+							b.blocked = true;
+							continue;
+						}
+						b.completion = completion;
+						b.completed = true;
 					}
-					b.completion = completion;
-					b.completed = true;
 				}
 				if (b.cold && !b.completed &&
 				    b.envelope.phase ==
@@ -7252,4 +7267,227 @@ quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, siz
 	// before any generation/completion/publication work.
 	*current_after_submit = charge(surviving);
 	return result;
+}
+
+// Retained ordinary source observation only, after genuine submission.
+// The exact original privately installed source/scope/image/binding proofs
+// remain mandatory. Completed births can still need generation observation;
+// pre-submit freeze/submit gates and world/publication permissions are unchanged.
+bool quest_mobile_native_birth_owner::ordinary_flat_observation_source_current(size_t index) noexcept
+{
+	if (!nevent_is_game_thread() || index >= births.size() || !births[index])
+		return false;
+	const auto &b = *births[index];
+	if (!b.npc_flat_factory_scope || !b.ordinary_flat_source ||
+	    !b.ordinary_flat_source->state_ || !b.constructor_present || !b.sealed || b.cold ||
+	    b.blocked || !b.submitted || b.retired || b.mobile_started || b.mobile_consumed ||
+	    b.runtime_applied || b.physically_proven || !b.cash_role_present ||
+	    b.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+	    !b.npc_flat_factory_scope->current() || !b.bindings.valid_flat())
+		return false;
+	const auto &pin = *b.ordinary_flat_source->state_;
+	const auto &scope = *b.npc_flat_factory_scope;
+	const auto &source = b.reference.birth_source;
+	const auto &image = b.image.reference;
+	// Both capabilities were privately installed by this very original M owner.
+	// An equal operation/native ID or a caller-built value cannot mint either.
+	return pin.producer == &b && pin.selected_root == scope.root_ &&
+	       pin.runtime == scope.runtime_id_ && pin.instance == scope.native_id_ &&
+	       pin.birth.bytes == scope.operation_.bytes && pin.slot == scope.source_.slot &&
+	       pin.zone == scope.zone_ && pin.room == scope.room_ && pin.rnum == scope.rnum_ &&
+	       pin.original_m_args[0] == scope.original_m_args_[0] &&
+	       pin.original_m_args[1] == scope.original_m_args_[1] &&
+	       pin.original_m_args[2] == scope.original_m_args_[2] &&
+	       pin.original_m_args[3] == scope.original_m_args_[3] &&
+	       pin.lineage.bytes == scope.lineage_.bytes && pin.epoch.bytes == scope.epoch_.bytes &&
+	       source.kind == economic_source_kind::npc_generation && !source.sequence &&
+	       source.source.bytes == pin.invocation.bytes &&
+	       source.generation.bytes == pin.invocation.bytes &&
+	       pin.birth.bytes == b.reference.birth_operation.bytes &&
+	       pin.instance == b.reference.mobile_instance_id && pin.runtime == b.runtime_id &&
+	       pin.slot == source.slot && pin.zone == b.zone && pin.room == b.room &&
+	       pin.rnum == b.rnum && image.mobile_instance_id == b.reference.mobile_instance_id &&
+	       image.birth_operation.bytes == b.reference.birth_operation.bytes &&
+	       image.birth_source.kind == source.kind &&
+	       image.birth_source.source.bytes == source.source.bytes &&
+	       image.birth_source.generation.bytes == source.generation.bytes &&
+	       image.birth_source.sequence == source.sequence &&
+	       image.birth_source.slot == source.slot &&
+	       image.mobile_vnum == b.reference.mobile_vnum &&
+	       image.birthplace_vnum == b.reference.birthplace_vnum &&
+	       image.reset_zone_vnum == b.reference.reset_zone_vnum &&
+	       image.provenance == b.reference.provenance &&
+	       image.mobile_revision == b.reference.mobile_revision &&
+	       image.stock_revision == b.reference.stock_revision;
+}
+
+struct quest_mobile_native_birth_owner::ordinary_flat_observation_budget
+{
+	ordinary_flat_envelope_budget prefix;
+	bool denied = false;
+};
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_observation(size_t full,
+									void *opaque) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_observation_budget *>(opaque);
+	const auto &state = budget.prefix;
+	size_t live = full;
+	// Genuine retained-source leaf, with its complete actual callback carriers.
+	// It never delegates to the pre-submit-only freeze/submit callback.
+	constexpr size_t frames = sizeof(full) + sizeof(opaque) + sizeof(&budget) + sizeof(&state) +
+				  sizeof(live) + sizeof(bool) + sizeof(size_t *) + sizeof(size_t) +
+				  sizeof(bool);
+	if (state.index >= births.size() || births[state.index].get() != state.owner ||
+	    !ordinary_flat_observation_source_current(state.index) ||
+	    !birth_passive_add(live, frames) ||
+	    !birth_passive_add(live, ordinary_flat_envelope_source_frames()) || !charge(live))
+	{
+		budget.denied = true;
+		return false;
+	}
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::observe_ordinary_flat_post_submit(size_t index,
+									size_t outer_live) noexcept
+{
+	if (index >= births.size() || !births[index])
+		return false;
+	auto &b = *births[index];
+	if (!b.npc_flat_factory_scope || !b.submitted)
+		return false;
+	// Admit actual completion/generation outputs BEFORE constructing them.
+	// They remain live through both observations and the immediate outside
+	// census. Registry-held old outputs remain in the genuine current charge.
+	struct observation_outputs
+	{
+		critical_completion completion{};
+		uint64_t generation = 0;
+		bool generation_available = false, completion_available = false;
+		bool scope_ready = false, denied = false, invalid_receipt = false;
+	};
+	size_t surviving = outer_live;
+	constexpr size_t surviving_frames = sizeof(index) + sizeof(outer_live) + sizeof(&b) +
+					    sizeof(surviving) + sizeof(observation_outputs) +
+					    sizeof(unsigned int) + sizeof(bool);
+	if (!birth_passive_add(surviving, surviving_frames))
+		return false;
+	{
+		size_t initial = surviving;
+		// Genuine source observer and charge helper/output carriers before the
+		// output constructor. Existing full native/library profiles stay OPEN.
+		if (!birth_passive_add(initial, sizeof(initial)) ||
+		    !birth_passive_add(initial, sizeof(size_t *) + sizeof(size_t) + sizeof(bool)) ||
+		    !birth_passive_add(initial, ordinary_flat_envelope_source_frames()) ||
+		    !charge(initial) || !ordinary_flat_observation_source_current(index))
+			return false;
+	}
+	observation_outputs outputs;
+	// Each real observation has its own actual guard lifetime. Even an early
+	// coordinator refusal before the birth callback runs must be followed by a
+	// checked outside CURRENT census before the next observation is attempted.
+	for (unsigned int observation = 0; observation < 2; ++observation)
+	{
+		if (observation == 0 ? b.coordinator_generation != 0 : b.completed)
+			continue;
+		outputs.generation_available = false;
+		outputs.completion_available = false;
+		outputs.scope_ready = false;
+		outputs.denied = false;
+		{
+			using observation_guard =
+				zone_reset_item_owner::ordinary_flat_submission_guard;
+			size_t scope_live = surviving;
+			size_t current_coordinator_bytes = SIZE_MAX;
+			constexpr size_t scope_frames = sizeof(scope_live) +
+							sizeof(current_coordinator_bytes) +
+							sizeof(ordinary_flat_observation_budget);
+			if (!birth_passive_add(scope_live, scope_frames) ||
+			    !birth_passive_add(scope_live, observation_guard::inline_bytes()))
+				return false;
+			// Actual guard accessors, destructor and genuine callback wrapper are
+			// admitted before construction. No historical maximum stands in for C/G.
+			constexpr size_t accessor_frames =
+				sizeof(bool (*)(size_t, void *) noexcept) +
+				sizeof(observation_guard *) + sizeof(void *);
+			constexpr size_t cleanup_frames = sizeof(observation_guard *) +
+							  sizeof(void *) + sizeof(bool) +
+							  sizeof(bool);
+			size_t call_live = scope_live;
+			if (!birth_passive_add(call_live, sizeof(call_live)) ||
+			    !birth_passive_add(call_live, accessor_frames) ||
+			    !birth_passive_add(call_live, cleanup_frames))
+				return false;
+			{
+				size_t initial = call_live;
+				constexpr size_t lifecycle_frames =
+					sizeof(observation_guard *) +
+					sizeof(bool (*)(size_t, void *) noexcept) + sizeof(void *) +
+					sizeof(observation_guard *) + sizeof(void *) +
+					sizeof(bool) + sizeof(size_t) + sizeof(size_t *) +
+					sizeof(size_t) + sizeof(bool);
+				if (!birth_passive_add(initial, sizeof(initial)) ||
+				    !birth_passive_add(initial, lifecycle_frames) ||
+				    !birth_passive_add(initial,
+						       ordinary_flat_envelope_source_frames()) ||
+				    !charge(initial) ||
+				    !ordinary_flat_observation_source_current(index))
+					return false;
+			}
+			ordinary_flat_observation_budget budget{
+				{ index, scope_live, &b, nullptr, nullptr, nullptr }, false
+			};
+			{
+				observation_guard guard(&reserve_ordinary_flat_observation,
+							&budget);
+				outputs.scope_ready = guard.begin(call_live);
+				if (outputs.scope_ready)
+				{
+					if (observation == 0)
+						outputs.generation_available =
+							critical_native_mobile_birth_publication_owner::
+								observe_generation_bounded(
+									b.envelope,
+									&outputs.generation,
+									guard.callback(),
+									guard.context(), call_live,
+									&current_coordinator_bytes);
+					else
+						outputs.completion_available =
+							critical_native_mobile_birth_publication_owner::
+								completion_bounded(
+									b.command.operation_id,
+									&outputs.completion,
+									guard.callback(),
+									guard.context(), call_live,
+									&current_coordinator_bytes);
+				}
+				outputs.denied = budget.denied;
+			} // Actual coor mutex/lender returned, then the genuine common guard ends.
+		} // Callback/query/call-local carriers died; no stale G or scratch survives.
+		// Preserve successfully observed original scalar transitions before the
+		// fallible outside census. A missing receipt makes no state transition.
+		if (outputs.generation_available)
+			b.coordinator_generation = outputs.generation;
+		if (outputs.completion_available)
+		{
+			if (!critical_completion_disposition_valid(outputs.completion))
+			{
+				b.blocked = true;
+				outputs.invalid_receipt = true;
+			}
+			else
+			{
+				b.completion = outputs.completion;
+				b.completed = true;
+			}
+		}
+		// Exact post-scope CURRENT ownership is observed even after ordinary absence
+		// or a denied callback. Never proceed using unavailable C/G as logical zero.
+		if (!charge(surviving) || !outputs.scope_ready || outputs.denied ||
+		    outputs.invalid_receipt)
+			return false;
+	} // Ordinary absence can advance only after this fresh outside census.
+	return true;
 }
