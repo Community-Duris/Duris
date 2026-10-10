@@ -605,7 +605,8 @@ service/scheduler/placement/activity and full native/caller aggregate/crypto/ABI
 allocator evidence remain required without busywork or second tasks.
 Primary retains maintained implementation/math/admission/authority/contracts/
 qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release. Root publishes
-only three owned coordination docs, exact insertion inverse restores original H.
+only three owned coordination docs. Original insertion restores H; the merged
+publication insertion restores late primary7f6ce000e30ee0026ec0f9a36575e62241c79ea4.
 No maintained-source delta/private artifact import/commit/compiler/preprocessor/
 native/product/DB/deploy/activation/production mutation or other-chat messages.
 Preserve CLOSED RR/BR/SS/SG/PC/PD/SC/RK/RF/GG/CG/CK/SAME-lock seals/receipts/history;
