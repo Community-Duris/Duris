@@ -66449,8 +66449,8 @@
       "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
       "src/economy/collector_transaction.c": "7071d61afa5741368ebd4c890b2fab4cca820e773eb5d17bbffc1cf177e034ed",
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
-      "src/economy/currency_transaction.c": "4988d9686707daa366ccb66ee3b458767001792f9e98d5849c2345466e0c6262",
-      "src/economy/currency_transaction.h": "436838037e48bf86d60bd52023039464cce1b2edbad5f29be6e9cfed340bd970",
+      "src/economy/currency_transaction.c": "76ecc3d104cc2933eeb076260d7a5fce7d3ca18dae4b900a15b097b0a881543e",
+      "src/economy/currency_transaction.h": "f85a6532df6a9d5da0e9a2448ae934492a99816f469c794e1f30af8f3df5cd87",
       "src/economy/economic_accounting_plan.c": "75a3b50a03d42264f940316975897f5c319bae404df55db46bd23dd5fd2c81d8",
       "src/economy/economic_accounting_plan.h": "7f37271a0a4226ce30d6d862c9dd3819f357cccdc31fb1ad80f06f3d71837db7",
       "src/economy/economic_accounting_types.c": "c4d0eba179cf599c1e8f70912d6fa7740a974f8826beb843cfc4c469095277f3",
@@ -66543,8 +66543,8 @@
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "8a0eac193729a5517d8010ddfdbfc351293342eab4238a452da121c182c1d8e2",
-      "src/player/player_save_pipeline.h": "eab66073259c515e373802671b9b3dad3dcc6541dc3cf6f7c420ce0006807cdb",
+      "src/player/player_save_pipeline.c": "7cd45a1d881b2c2dc9565f87cdc1123b80261b047467e2d2c1b61e6a8f02f893",
+      "src/player/player_save_pipeline.h": "e07be073559db64fa2683c016c580066dfc62d6f9a782cef0879fa61482f8b57",
       "src/player/player_snapshot_codec.c": "7c751d4668efe1400a2b1953fa3764e147e6f7c2f0effaab4d92581f24be9f7c",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
@@ -66858,7 +66858,9 @@
       "src/flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.c": "ff3e16ee54163330c612035702fe94b4cc6707a928455bfb0907475b0b0c9d82",
       "src/flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.h": "31790a5b5eca0f8ea10473ed97a0335fa2c73978ec4deb1ca5e47bdd236dfba4",
       "src/economy/coin_transfer_command.c": "bef11515cfc6ddc2d46c5e74dd2e047ad5665875bbf90fa2ceb3c6dfe329b41e",
-      "src/economy/coin_transfer_command.h": "2a13f56918b17edae53889ed560e2c657795becf23699d7c86376f56d5973b4d"
+      "src/economy/coin_transfer_command.h": "2a13f56918b17edae53889ed560e2c657795becf23699d7c86376f56d5973b4d",
+      "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
+      "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
