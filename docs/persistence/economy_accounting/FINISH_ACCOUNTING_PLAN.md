@@ -196,6 +196,168 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## RC pair reviewed CLOSED; pure retained Birth and affect pair selected - 2026-10-10
+
+Both original RC packets independently SOURCE/DESIGN/METADATA PASS
+CLOSED_NO_CORRECTION. Architecture original 282 payloads plus INDEX, 56 fresh whole
+providers, 209 finite complete source cuts, 286 direct owner-member ranges and 79
+UNEVALUATED constants authenticate. Seven general whole source transforms/inverses,
+seven precise current provider equalities plus unchanged native-header control,
+14 genuine dependency equalities, 19 unchanged original definitions and all three
+selecting-document inverses authenticate. Whole 63174-byte stdlib/read-only Git
+verifier read/audited before root original normal default ONCE at unchanged clean
+selecting8c73c8d0e2b9bd1fbb6efc40acce3a151c6d881f: exact2821-byte binary stdout equals
+original author stdout, exit0/stderr0. Full authored note narrative/RC1-RC4 contracts
+read in the verifier and exact147141-byte reconstructed note; generated209 reference
+inventory authenticated as metadata. Canonical400910 ownership map,22226 blueprints
+and4042 assessment authenticate. 201 exact source-cut bodies reuse the completed
+root RC source reading; additional3326 complete special-owner/macro bytes read.
+Architecture installed library controls NOT_CAPTURED_OR_USED; no runtime inference.
+
+Quest original strict four payloads plus INDEX, full25300-byte authored note and
+16280-byte standalone stdlib/read-only Git verifier read/audited before root original
+normal default ONCE at unchanged clean selecting8c73: exact1045-byte binary stdout
+equals separate original receipt, exit0/stderr0. 46 fresh whole providers,seven
+general whole transforms/inverses/seven precise current equalities,18 fixed dependency
+equalities,four separate runtime-owner equalities,49 finite source ranges authenticate.
+Twelve exact prior root reading ranges plus120958 additional original/helper/library
+source bytes read; complete signatures/bodies/preflight lambdas/owners remain genuine.
+14 original captured GCC13 files authenticate exact package MD5/hash/provenance and
+10 complete inline scopes; NO live installed-provider reread or ABI equivalence.
+87 new external delivery seals and160 streaming hash-only historical controls
+authenticate. No old CLOSED PINS/verifier/default/receipt parse/import/dispatch.
+Original preseal currency/STL scope findings and capture failures remain preserved.
+
+All RC root defaults sealed BEFORE coordinator source advance. Original worker
+executions, packets, INDEX/PINS/defaults/receipts/PENDING-at-seal history and failures
+are immutable. No rerun, normalization, repin, correction or CLOSED proof reopening.
+Separate root evidence D:/Dev/Temp/coordinator-ordinary-reference-image-artifact-review-20261010
+contains both independent source authentications,whole verifier audits,exact source
+reading reuse,new original root attempts/binary stdout/stderr/exits and architecture-
+authentication.json/quest-authentication.json. These close metadata only. RC1-RC4,
+component/native/product UNEXECUTED; genuine commands UNAVAILABLE. Financial/crypto/
+transitive/global/libc/OpenSSL/guard/ABI/allocator/emitted/native32MiB/full-host proof
+and producer/first admission/cold-warm/publication/recovery/terminal/outbox/ACK remain OPEN.
+The actual custom-allocator runtime map versus default-allocator iterator frame is
+a profile/layout dependency, not a defect or accepted equivalence. Image actual-heap
+replacement is source-verified, not an executed defect resolution. Every-return FULL
+external survivor census remains a future genuine caller obligation.
+
+Published7262df8aad407bc194fb4a880211fc30ef8943cc / actualparent5bc1bbffe2f5ae0f1fa52fedc644b6defc6296ca
+/ actualparentselecting8c73 is the publication base. Pure retained Birth/affect and
+flat diagnostic companions EXIST. Full47/40-line handoffs and declaration diffs,
+eight whole source transforms and exact RC continuity previously authenticate in
+heartbeat-1701/authentication.json. Full flat1478-C semantic/profile/caller/global/
+native audit remains QUEUED_NOT_PERFORMED. Private primary source/library/preprocessor/
+registry/native claims remain REPORTED_ONLY; both handoffs report no compiler or
+executable tests and no major qualification completion. No private adoption inferred.
+
+One bounded RB delivery per authorized existing chat selected at fixed
+F5bc1bbffe2f5ae0f1fa52fedc644b6defc6296ca / actualparentselecting8c73:
+complete original plus additive pure retained Birth C/H and paired DB affect C/H.
+Architecture: PUBLISHED_PURE_RETAINED_BIRTH_AFFECT_AUTHORITY_BOUNDARY_2026-10-10.txt.
+Quest: PUBLISHED_PURE_RETAINED_BIRTH_AFFECT_ACCEPTANCE_DELTA_2026-10-10.txt.
+Concrete output: one private exact actual ownership/alias/partition map,exactly
+RB1-RB4 legal future acceptance blueprints,finite available-source assessment,
+strict INDEX,fully audited deterministic stdlib/read-only Git verifier and separate
+original new normal-default ONCE binary stdout/receipt/root independent review.
+Future benefit: genuine caller-ready pure CURRENT observation boundaries for full
+retained Birth/warm/affect ownership, preventing duplicate allowance or invented
+readiness/admission authority. Full aggregate is not labeled exact heap.
+
+Inputs: full fixed F quest_mobile_native_birth.c/h and db.c/h,full actual original
+original_birth/original_item/checkpoint/deferred/reset/dispatch/module owners and
+ordinary source-pin state/execution-lease fixed storage; necessary complete original
+native-mobile/item stages and factory-scope retained observers,procedure binding
+stage retained observer,zone_reset_item_owner.c/h warm_retained_size and complete
+necessary warm owners,actual item_movement_transaction.c/h literal_pool_owned and
+owning declarations. Real command/recovery/context/image/recipe/custody/affect DTOs,
+heap helpers and game-thread/profile declarations remain genuine dependency controls.
+Use actual fixed definitions and all necessary signatures/bodies/catches/inline
+methods/owners; do not guess source paths or substitute frame literals for helpers.
+Root full366 new C lines/four declaration diffs/full47-line handoff,original Birth/
+item/checkpoint owners,execution-lease fixed getter,literal partition predicate,
+factory retained getter and finite warm source read. Remaining original helper,
+owner/alias/source-semantic audit belongs bounded workers; no blanket root approval.
+
+RB1 Complete pure owning-value walk: actual command keys/revisions/payload/intent,
+envelope attachment,recovery item/effect capacities,image complete nested item/string/
+affect/extra/spell capacities,recipes/libraries,stock/effects/body/fixed owners.
+Actual retained capacity differs from fresh-copy size; reserved empty capacity counts.
+Birth SSO capacity<=15 adds no external string heap; warm's original capacity+1
+conservative allowance remains distinct. All arithmetic/storage expressions UNEVALUATED.
+Checked SIZE_MAX overflow and false/error propagation stay source-specific; no codec,
+financial/hash/allocator/C++ model or source-law repair is assigned.
+RB2 Complete actual births/deferred/reset/current/replay/dispatch globals and execution
+lease fixed mutex/condition/head storage,including inactive owners. Borrowed pointers
+and array slots stay aliases; complete body,source-pin/factory scopes,checkpoint/
+returned-writer/chosen-context/ACK successor/bindings/stock-stage owning allocations
+retain actual lexical ownership. Authenticate original alias formation needed for
+this walk; shared holders never imply a proven nonoverlap or deduplication policy.
+Record any genuine unresolved shared ownership partition; do not invent a cache,
+owner table,identity,readiness flag or replacement census. No registration/native action.
+RB3 Genuine literal_pool_owned selects paired ROOT versus original unpaired partition.
+Paired AF checkpoint and row-vector presence must agree; count their inline pointees,
+retained capacities and installed-pointer capacity. Native AF/event/mobile/literal
+pools remain G-owned; mobile/item private observers exclude those pools. Unpaired
+original affect charge and unconsumed mobile reservation remain their original
+allowance. Keep actual factory/control-block/source-state/binding allocations and
+zero/error refusal semantics; no budget notification/admission/authority inference.
+RB4 Full original warm_retained_size is included ONCE,with its original conservative
+SSO/request/profile and registered-publication/literal partition. A selecting owner
+must not add warm again or claim exact heap. Preserve Birth profile-before-input,
+game-thread/width checks,actual saved-errno reset/fallback/error propagation and final
+strong scalar transfer plus errno restoration only on success. Original DB affect
+helper has its own null/thread EINVAL,pair mismatch EIO,overflow EOVERFLOW routes.
+Pure observation leaves original charge/default/recovery/native algorithms unchanged.
+Every success/failure still requires fresh FULL external surviving caller/input/
+prior-output/callback-private/sibling/global census AFTER return by the genuine caller.
+The observer does not perform that outer census or supply a caller admission callback.
+
+Across RB1-RB4 no callback into held coordinator/journal locks,no late fallible callback
+after strong outputs,no copied financial/STL model or synthetic owner/phase/thread/
+constant observer/accepting fixture. Values,capacities,private friendship or literal
+partition supply no recovered identity THEN authority,SAME original interval/source/
+origin/history/producer/cold-warm/publication/native/ACK permission. Full native Birth/
+warm algorithms,SQL,constructor/replay/startup/Smith/coin/flat-diagnostic algorithms
+are outside this finite retained-observer task. Necessary original helpers may be
+read fresh as source without reopening completed leaf proofs. Minimal CLOSED RC/TC/
+other note+INDEX context only; no old PINS/verifier/default/receipt parsing or execution.
+Captured genuine library controls require exact hash/version/package MD5/provenance,
+captured-versus-live distinction and explicit missing out-of-line/emitted/native inputs.
+No compiler/preprocessor evaluation. RB1-RB4/component/native UNEXECUTED; commands
+UNAVAILABLE. Genuine stable caller/ownership/alias/profile/ABI/allocator/library/global/
+emitted/fault/native32MiB/full-host/producer/publication/recovery/ACK execution controls
+remain unavailable. Missing native/private inputs block dependent execution only.
+
+Primary owns maintained implementation/contracts/authority/admission/math/qualification;
+Plan5 owns backend/recovery/release. Workers own private D: packets only,one active
+delivery each. No maintained edits/imports/commits/merges/Goal mutation/compiler/
+preprocessor/ELF/build/native/product/DB/operational/deploy/activation/production.
+No second task/live expansion/repin/CLOSED rerun/reopen/adoption wait/restart on timeout.
+At RB handoff reassess queue: pure retained observers first,then activity/scheduler,
+flat diagnostics/failure completion,passive replay/registration,native capture/identity/
+lifecycle/initialized world/ROOT-cold/warm constructors/procedure/spellbook/zombie and
+genuine producer/first-admission/primitive/global/native qualification. Original09a
+decoder execution,NMB3/custody categories,coin/receiver/host/save/Smith/applicable
+restitution/outbox/ACK/pause/transient32MiB and Plan5 SQL0065/schema65/history/measurement/
+backup/restore/recovery/release remain owner-held required obligations.
+
+Root publication changes exactly three owned coordination docs; whole insertion
+inverse restores actual published7262. All original RC/TC/ancestry/finding sections
+and all CLOSED seals/defaults/receipts/history/failures remain. No maintained-source
+or private-artifact delta. Actual Aclean5c53 and Q2b92 parents93d606+759dc/current
+three hashes remain; old93d606 originals are historical copies,not current equality.
+Excursion/archive/setup/sleep-only container/jobs/services/build/failure evidence
+preserved with no runtime operation. Historical Oct7 disposition stands; genuinely
+newer human instructions take priority. Actual root Goal BLOCKED1791410483 and workers
+distinct BLOCKED1791446642/1791411827/objectives unchanged,no replacement/resumption/
+pause/completion. Broad Plans1-5/R1-R8/applicable backend/gameplay/persistence/recovery/
+blockers/owner completion audit OPEN;accounting inactive/admission CLOSED/coverage
+incomplete/release BLOCKED. Heartbeat ACTIVE until broad audit/user pause. All Git
+fetch/merge/commit/push gc.auto=0;no reset/revert/kill/delete/restart/pruning/housekeeping.
+
+
 ## TC pair reviewed CLOSED; reference, image and artifact pair selected - 2026-10-10
 
 Architecture original TC remains independently SOURCE/DESIGN/METADATA PASS
