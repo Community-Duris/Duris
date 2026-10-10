@@ -980,3 +980,278 @@ bool player_death_restitution_command_decode_result(const uint8_t *encoded, size
 	*result = decoded;
 	return true;
 }
+
+namespace
+{
+using restitution_state_reserve_fn = bool (*)(size_t, void *) noexcept;
+
+bool restitution_state_storage_profile() noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	!defined(_GLIBCXX_DEBUG)
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool restitution_state_add(size_t &value, size_t amount) noexcept
+{
+	if (amount > std::numeric_limits<size_t>::max() - value)
+		return false;
+	value += amount;
+	return true;
+}
+
+bool restitution_state_admit(size_t current, size_t request, restitution_state_reserve_fn reserve,
+			     void *context) noexcept
+{
+	return reserve && restitution_state_add(current, request) && reserve(current, context);
+}
+
+// Caller owns this actual census frame, including every iteration/result carrier.
+struct restitution_state_census
+{
+	size_t total = 0;
+	size_t index = 0;
+	size_t request = 0;
+
+	bool observe(const player_death_restitution_item_state &state) noexcept
+	{
+		total = 0;
+		if (state.affects.capacity() >
+			    std::numeric_limits<size_t>::max() /
+				    sizeof(player_death_restitution_item_affect) ||
+		    state.extra_descriptions.capacity() >
+			    std::numeric_limits<size_t>::max() /
+				    sizeof(player_death_restitution_item_extra_description))
+			return false;
+		if (!restitution_state_add(total,
+					   state.affects.capacity() *
+						   sizeof(player_death_restitution_item_affect)) ||
+		    !restitution_state_add(
+			    total, state.extra_descriptions.capacity() *
+					   sizeof(player_death_restitution_item_extra_description)))
+			return false;
+		for (index = 0; index < state.strings.size(); ++index)
+			if (!restitution_state_add(total, state.strings[index].capacity()))
+				return false;
+		for (index = 0; index < state.extra_descriptions.size(); ++index)
+			if (!restitution_state_add(
+				    total, state.extra_descriptions[index].keyword.capacity()) ||
+			    !restitution_state_add(
+				    total, state.extra_descriptions[index].description.capacity()))
+				return false;
+		return true;
+	}
+};
+
+struct restitution_state_reader
+{
+	const uint8_t *input;
+	size_t size;
+	size_t offset = 0;
+	uint64_t word = 0;
+	size_t index = 0;
+
+	template <typename T> bool read(T *value) noexcept
+	{
+		static_assert(std::is_integral_v<T> && sizeof(T) <= sizeof(word));
+		if (!input || !value || offset > size || sizeof(T) > size - offset)
+			return false;
+		word = 0;
+		for (index = 0; index < sizeof(T); ++index)
+			word |= static_cast<uint64_t>(input[offset + index]) << (index * 8);
+		offset += sizeof(T);
+		*value = static_cast<T>(static_cast<typename std::make_unsigned<T>::type>(word));
+		return true;
+	}
+};
+
+struct restitution_state_decode_workspace
+{
+	player_death_restitution_item_state decoded = {};
+	player_death_restitution_item_extra_description description;
+	player_death_restitution_item_affect affect = {};
+	restitution_state_reader reader;
+	restitution_state_census census;
+	size_t base;
+	size_t current = 0;
+	size_t request = 0;
+	size_t index = 0;
+	uint32_t magic = 0;
+	uint16_t version = 0;
+	uint16_t flags = 0;
+	uint16_t length = 0;
+	uint16_t affect_count = 0;
+	uint16_t description_count = 0;
+	uint16_t keyword_length = 0;
+	uint32_t description_length = 0;
+	restitution_state_reserve_fn reserve;
+	void *context;
+
+	bool live() noexcept
+	{
+		if (!census.observe(decoded))
+			return false;
+		current = base;
+		return restitution_state_add(current, census.total) &&
+		       restitution_state_add(current, description.keyword.capacity()) &&
+		       restitution_state_add(current, description.description.capacity());
+	}
+	bool allocation(size_t count, size_t width) noexcept
+	{
+		if (width && count > std::numeric_limits<size_t>::max() / width)
+			return false;
+		request = count * width;
+		return live() && restitution_state_admit(current, request, reserve, context);
+	}
+	bool bytes(size_t count, std::vector<uint8_t> *output)
+	{
+		if (!reader.input || !output || reader.offset > reader.size ||
+		    count > reader.size - reader.offset)
+			return false;
+		// These destinations are genuine fresh default vectors. The source-selected
+		// GCC13 forward assign allocates exactly count elements; no prior heap dies.
+		if (!allocation(count, sizeof(uint8_t)))
+			return false;
+		try
+		{
+			output->assign(reader.input + reader.offset,
+				       reader.input + reader.offset + count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		reader.offset += count;
+		return true;
+	}
+	bool valid() noexcept
+	{
+		if (!decoded.item_uid || !decoded.vnum || !decoded.quantity ||
+		    decoded.affects.size() > MAX_ITEM_AFFECTS ||
+		    decoded.extra_descriptions.size() > MAX_ITEM_DESCRIPTIONS)
+			return false;
+		for (index = 0; index < decoded.strings.size(); ++index)
+			if (decoded.strings[index].size() > MAX_ITEM_TEXT_BYTES ||
+			    (!decoded.string_present[index] && !decoded.strings[index].empty()))
+				return false;
+		for (index = 0; index < decoded.extra_descriptions.size(); ++index)
+			if (decoded.extra_descriptions[index].keyword.empty() ||
+			    decoded.extra_descriptions[index].keyword.size() > 255 ||
+			    decoded.extra_descriptions[index].description.size() >
+				    MAX_ITEM_TEXT_BYTES)
+				return false;
+		return true;
+	}
+};
+}
+
+bool player_death_restitution_item_state_decode_bounded(const uint8_t *encoded, size_t encoded_size,
+							player_death_restitution_item_state *state,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live,
+							size_t *retained_state_heap_bytes) noexcept
+{
+	if (!encoded || !state || encoded_size < 8 ||
+	    encoded_size > PLAYER_DEATH_RESTITUTION_MAX_ITEM_STATE_BYTES)
+		return false;
+	if (!restitution_state_storage_profile())
+		return false;
+	size_t base = outer_live;
+	if (!restitution_state_add(base, sizeof(restitution_state_decode_workspace)) ||
+	    !restitution_state_add(base, sizeof(base)) ||
+	    !restitution_state_admit(base, 0, reserve, context))
+		return false;
+	restitution_state_decode_workspace work;
+	work.reader.input = encoded;
+	work.reader.size = encoded_size;
+	work.base = base;
+	work.reserve = reserve;
+	work.context = context;
+	if (!work.reader.read(&work.magic) || !work.reader.read(&work.version) ||
+	    !work.reader.read(&work.flags) || work.magic != ITEM_STATE_MAGIC ||
+	    work.version != ITEM_STATE_VERSION || (work.flags & 0xfe00U))
+		return false;
+	if (!work.reader.read(&work.decoded.item_uid) || !work.reader.read(&work.decoded.vnum) ||
+	    !work.reader.read(&work.decoded.equip_slot) ||
+	    !work.reader.read(&work.decoded.quantity) || !work.reader.read(&work.decoded.weight) ||
+	    !work.reader.read(&work.decoded.cost) || !work.reader.read(&work.decoded.timer) ||
+	    !work.reader.read(&work.decoded.extra_flags) ||
+	    !work.reader.read(&work.decoded.wear_flags) ||
+	    !work.reader.read(&work.decoded.item_type))
+		return false;
+	for (work.index = 0; work.index < work.decoded.values.size(); ++work.index)
+		if (!work.reader.read(&work.decoded.values[work.index]))
+			return false;
+	if (!work.reader.read(&work.decoded.material) || !work.reader.read(&work.decoded.condition))
+		return false;
+	for (work.index = 0; work.index < work.decoded.strings.size(); ++work.index)
+	{
+		work.length = 0;
+		if (!work.reader.read(&work.length) || work.length > MAX_ITEM_TEXT_BYTES ||
+		    !work.bytes(work.length, &work.decoded.strings[work.index]))
+			return false;
+		work.decoded.string_present[work.index] = (work.flags & (1U << work.index)) != 0;
+		if (!work.decoded.string_present[work.index] && work.length)
+			return false;
+	}
+	for (work.index = 0; work.index < work.decoded.bitvectors.size(); ++work.index)
+	{
+		if (!work.reader.read(&work.decoded.bitvectors[work.index]))
+			return false;
+		work.decoded.bitvector_present[work.index] =
+			(work.flags & (1U << (work.index + 4))) != 0;
+	}
+	work.affect_count = 0;
+	work.description_count = 0;
+	if (!work.reader.read(&work.affect_count) || !work.reader.read(&work.description_count) ||
+	    work.affect_count > MAX_ITEM_AFFECTS || work.description_count > MAX_ITEM_DESCRIPTIONS)
+		return false;
+	try
+	{
+		if (!work.allocation(work.affect_count,
+				     sizeof(player_death_restitution_item_affect)))
+			return false;
+		work.decoded.affects.reserve(work.affect_count);
+		if (!work.allocation(work.description_count,
+				     sizeof(player_death_restitution_item_extra_description)))
+			return false;
+		work.decoded.extra_descriptions.reserve(work.description_count);
+		for (work.index = 0; work.index < work.affect_count; ++work.index)
+		{
+			work.affect = {};
+			if (!work.reader.read(&work.affect.location) ||
+			    !work.reader.read(&work.affect.modifier))
+				return false;
+			work.decoded.affects.push_back(work.affect);
+		}
+		for (work.index = 0; work.index < work.description_count; ++work.index)
+		{
+			work.keyword_length = 0;
+			work.description_length = 0;
+			if (!work.reader.read(&work.keyword_length) ||
+			    !work.reader.read(&work.description_length) || !work.keyword_length ||
+			    work.keyword_length > 255 ||
+			    work.description_length > MAX_ITEM_TEXT_BYTES ||
+			    !work.bytes(work.keyword_length, &work.description.keyword) ||
+			    !work.bytes(work.description_length, &work.description.description))
+				return false;
+			work.decoded.extra_descriptions.push_back(std::move(work.description));
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
+	if (work.reader.offset != encoded_size || !work.valid())
+		return false;
+	if (!work.census.observe(work.decoded))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<player_death_restitution_item_state>);
+	*state = std::move(work.decoded);
+	if (retained_state_heap_bytes)
+		*retained_state_heap_bytes = work.census.total;
+	return true;
+}
