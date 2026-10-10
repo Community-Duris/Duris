@@ -15823,3 +15823,20 @@ no current binary equivalence inferred. 458 pins/931 unchanged policies/protecte
 Plan 5 WIP pass. Caller/emitted/transitive/global32MiB/native/mixed-thread/R1-R8
 qualification remains OPEN; tests deferred major-plan batch. Inactive/CLOSED,
 coverage incomplete, release BLOCKED, goal ACTIVE. No major plan completion.
+
+
+## Paired native retained globals and actual stage ownership implemented - 2026-10-10
+
+[Source checkpoint](PAIRED_NATIVE_CURRENT_GLOBAL_RETENTION_2026-10-10.md)
+joins real identity/maintenance/cancellation/Redis and complete mobile pool/
+catalog/published-NPC retention into common ROOT/cold current-G observers.
+The actual stage owns detached NPC-only allocation under the genuine full
+registered policy; list transfer changes ownership before later callbacks,
+independent of mobile_consumed lag. Legacy policy remains unchanged. All three
+full registrations and cold historical rebase preserve current G once/refusal.
+Independent RAW and installed source review, four inverses/16 dependencies/
+sealed charge/newline aliases/formatting/458pins/931policies/protected Plan5 WIP
+pass. Existing conservative shared-shopkeeper reservation/full caller/emitted/
+native/global32MiB/recovery/R1-R8 remain OPEN; tests deferred major-plan batch.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE. No major
+plan or full accounting completion is claimed.

@@ -5,6 +5,9 @@
 #include "net/comm.h"
 #include "world/world_activity.h"
 #include "world/handler.h"
+#include "account/character_identity.h"
+#include "world/character_maintenance.h"
+#include "redis/redis_report_cache.h"
 #include "persistence/economic_sql_zone_reset_item_transaction.h"
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
@@ -3615,6 +3618,20 @@ struct room_cold_current_globals
 		    !room_prepare_add(bytes, current) ||
 		    !item_ownership_runtime_cache_storage_bytes(&current) ||
 		    !room_prepare_add(bytes, current) || !world_activity_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !character_runtime_identity_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !character_maintenance_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !nevent_character_cancel_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !redis_report_cache_retained_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !quest_mobile_native_mobile_pool_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !quest_mobile_native_mobile_catalog_string_storage_bytes(&current) ||
+		    !room_prepare_add(bytes, current) ||
+		    !quest_mobile_native_published_npc_storage_bytes(&current) ||
 		    !room_prepare_add(bytes, current))
 			return false;
 		*output = bytes;

@@ -1290,7 +1290,19 @@ bool quest_mobile_native_birth_owner::charge(size_t prospective_scratch) noexcep
 								       sizeof(int32_t)))
 							return false;
 				}
-				if (!b.mobile_consumed && !add_bytes(bytes, b.mobile_bytes))
+				if (item_native_quest_global_budget_scope_owner::literal_pool_owned())
+				{
+					// Paired genuine ROOT owns the whole mobile pool/catalog and
+					// actual published NPC-only allocations. The stage owns only
+					// its still-detached NPC-only body; mobile_consumed can lag
+					// the real native list transfer during a nested request.
+					size_t mobile_private = 0;
+					if (!b.mobile.retained_bytes_excluding_mobile_pool(
+						    &mobile_private) ||
+					    !add_bytes(bytes, mobile_private))
+						return false;
+				}
+				else if (!b.mobile_consumed && !add_bytes(bytes, b.mobile_bytes))
 					return false;
 				for (const auto &item : b.stock)
 				{
