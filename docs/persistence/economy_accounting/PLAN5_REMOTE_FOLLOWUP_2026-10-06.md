@@ -3108,3 +3108,37 @@ All27 owned bodies and7 historical tips preserved; no branch switch or primary
 push,activation,production mutation,autocorrection,deploy or merge. Goal remains
 active/fullscopeunfinished. This additive curator packet supersedes only named
 old source findings, never historical native evidence or original completion gates.
+
+## Native-mobile wallet locator source correction; native acceptance pending - 2026-10-09
+
+Owned base `bc6dfa479ddda729505a7857e12b2cae95ef7889`; sole branch `codex/accounting-plan5`.
+[Exact correction and regression handoff](PLAN5_NATIVE_WALLET_LOCATOR_SOURCE_FIX_2026-10-09.md)
+binds published `d0985e90936b02071ae8c107ad37d8c3da58e64f`, native `5c27cf2e4a5d0ed8aceca3fb231347fcf14ac0a6`,
+migration `a22d54a28286200f09d91d11cb0cbd8c782b0b82` (unchanged65). New native namespace
+kind1/context12/locator7/nonzero ID below UINT64_MAX/empty name conflicts with
+the independent reader's former type==kind/context0 rule. One six-line owned
+header branch recognizes exactly this metadata; whole original inverse and all
+27 prior owned bodies are exact. No mutation helper/API/schema/wire change.
+
+Disposition SOURCE_CORRECTED/NATIVE_ACCEPTANCE_PENDING. Original shared native
+fixture extensions are handed to primary: real mapping/index positive/boundary/
+refusal cases, original namespaces and byte/mode lock safety, and continued
+native_domain_missing/economic_history_missing when actual authority is absent.
+No original/shared fixture or recipe is edited. No native/DB/compiler/maintained
+server/gameplay/recovery execution; original make/native acceptance stays deferred.
+Changed-line clang-format14 and whitespace pass; formatter/image and initial
+WSL-alias limitations are retained. Native build and regression are not claimed.
+
+Published source57 methods55 pass/1 fail/1 error; composed57 methods54 pass/2 fail/
+1 error;0 skips. Default validators pass, release exits1; published matrix passes,
+composition reports known backup-coordinate drift.425 primary raw pins match,
+418 composed;7 substituted pins remain adoption work. Reader header outside
+selected425 is bound by complete manifest/explicit raw hashes, not a new pin policy.
+The two shared ROOM/bandage contract failures remain.931-route draft census,
+791 release blockers, schema65 SQL prerequisites, durable erasure, budgets and
+real native/recovery acceptance remain incomplete; historical proof stays scoped.
+
+Raw evidence `D:/Dev/Tests/Duris/accounting-plan5/native-wallet-reader-20261009-d0985e9`;
+seal `3496fa5cb9db885dbd1ac7047f37efb56e31c02ac88d4f4c5b4d7f36cdfdc078`; post-push delivery binds result/remote and all sealed files.
+All7 historical tips preserved. Notebook nonblocking; curator/import/application/
+adoption/ack unclaimed. Accounting inactive and original full goal unfinished.

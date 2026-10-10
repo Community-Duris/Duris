@@ -301,6 +301,12 @@ inline void put(bytes &out, uint64_t value, size_t width)
 inline void locator(uint64_t kind, uint64_t context, uint64_t type, uint64_t native,
 		    std::span<const uint8_t> name, bool key = false)
 {
+	// Native-mobile wallets retain kind 1 with owner context 12 and locator 7.
+	if (kind == 1 && context == 12)
+	{
+		need(type == 7 && native > 0 && native < UINT64_MAX && name.empty());
+		return;
+	}
 	need(type == kind);
 	if (kind == 2)
 	{
