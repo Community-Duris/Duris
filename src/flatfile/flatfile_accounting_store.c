@@ -1,4 +1,10 @@
 #include "flatfile/flatfile_accounting_store.h"
+#include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_ordinary_native_birth_receipt.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
+#include "economy/native_mobile_birth_cash_role_result.h"
+#include <type_traits>
+#include <utility>
 #include "flatfile/flatfile_store.h"
 
 #include <algorithm>
@@ -1528,4 +1534,122 @@ flatfile_accounting_status flatfile_accounting_storage::verify_source_claim_boun
 		return status::io_error;
 	}
 #endif
+}
+
+// The exact typed future ordinary owner must separately prove its genuine
+// original terminal carrier/native publication cut before sealing any origin.
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_retained_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, flatfile_accounting_record *output,
+	std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(output && !root.empty() && lock.matches(root) &&
+				!critical_operation_id_is_zero(operation));
+			// Full ORIGINAL index/active/sealed segment/stale-next/canonical record
+			// proof, with recovery deliberately left at the caller's original cut.
+			const auto current = load_context(root, bucket_for(operation), error);
+			auto record = retained_in(root, current, operation, error);
+			require(record.command.schema_version ==
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+				record.command.type == critical_command_type::native_mobile_birth &&
+				record.command.payload_version ==
+					NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+				!record.result_code &&
+				record.failure_stage == critical_failure_stage::none &&
+				record.durable_revision == 1 &&
+				record.result.size() == NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES);
+			quest_mobile_native_image born;
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			checked(native_mobile_birth_cash_role_command_decode(record.command, &born,
+									     &recipes, &role));
+			require(role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+				born.cash &&
+				born.reference.birth_operation.bytes == operation.bytes);
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(record.command.accounting_intent, &intent));
+			checked(economic_intent_verify_binding(record.command, intent));
+			require(intent.admission.metadata.source_event.has_value());
+			native_mobile_birth_cash_role_result receipt;
+			require(native_mobile_birth_cash_role_result_decode(record.result,
+									    &receipt) &&
+				receipt.role == native_mobile_birth_cash_role::ordinary_wallet);
+			const economic_account_key wallet{ intent.admission.metadata.lineage,
+							   economic_account_kind::wallet,
+							   receipt.wallet_mapping_id,
+							   ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+			economic_accounting_plan expected;
+			checked(native_mobile_birth_cash_role_accounting_compile(
+				record.command, wallet, &expected));
+			std::vector<uint8_t> plan_bytes;
+			checked(economic_plan_encode(expected, &plan_bytes));
+			require(plan_bytes == record.plan && expected.children.empty());
+			native_mobile_birth_cash_role_result expected_receipt;
+			checked(native_mobile_birth_cash_role_result_build(
+				record.command, wallet, expected, &expected_receipt));
+			std::array<uint8_t, NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES>
+				receipt_bytes{};
+			require(native_mobile_birth_cash_role_result_encode(expected_receipt,
+									    &receipt_bytes) &&
+				std::equal(receipt_bytes.begin(), receipt_bytes.end(),
+					   record.result.begin()));
+
+			// Historical mapping identity survives retirement. This genuine private
+			// companion authenticates catalog/control/epoch/full mapping census;
+			// it neither recovers nor uses today's active epoch/native balances.
+			const unsigned int authority_error =
+				flatfile_ordinary_native_birth_history_storage::verify_locked(
+					root, lock, wallet, intent.admission.metadata.epoch,
+					operation, born.reference.mobile_instance_id, error);
+			require(!authority_error,
+				authority_error == ENOMEM || authority_error == ENOSPC ?
+					status::capacity :
+				authority_error == EIO ? status::io_error :
+							 status::invalid);
+			std::vector<economic_accounting_item_reference> references;
+			references.reserve(expected.item_events.size());
+			for (const auto &event : expected.item_events)
+			{
+				require(event.event_index < UINT16_MAX);
+				economic_accounting_item_reference reference;
+				reference.operation_id = operation;
+				reference.line_index = static_cast<uint16_t>(event.event_index);
+				reference.event_index = event.event_index;
+				reference.child_index = event.child_index;
+				reference.item_uid = event.uid;
+				reference.before_revision = event.before.revision;
+				reference.after_revision = event.after.revision;
+				reference.legacy_operation_id = operation;
+				reference.legacy_event_index = reference.line_index;
+				require(economic_accounting_item_reference_validate(reference));
+				references.push_back(reference);
+			}
+			// The original passive full-set reader does not recover/repair/append;
+			// this owner holds the SAME root lock around the entire synchronous read.
+			const auto references_error =
+				flatfile_item_accounting_reference_verify_operation(
+					root, operation, references, error);
+			require(references_error == flatfile_item_accounting_status::ok,
+				references_error == flatfile_item_accounting_status::capacity ?
+					status::capacity :
+				references_error == flatfile_item_accounting_status::io_error ?
+					status::io_error :
+				references_error == flatfile_item_accounting_status::not_found ?
+					status::not_found :
+					status::invalid);
+			// Original exact source-claim bytes include lineage/event/original ID;
+			// successful ordinary birth is required to have a source, never skipped.
+			const auto claim_error = flatfile_accounting_storage::verify_source_claim(
+				root, lock, record, error);
+			require(claim_error == status::ok, claim_error);
+			require(lock.matches(root));
+			static_assert(
+				std::is_nothrow_move_assignable_v<flatfile_accounting_record>);
+			*output = std::move(record);
+		},
+		error);
 }
