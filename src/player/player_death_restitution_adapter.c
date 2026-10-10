@@ -531,6 +531,8 @@ class player_death_restitution_replay_budget_owner;
 class player_death_restitution_status_cache_budget_owner
 {
 	friend class player_death_restitution_replay_budget_owner;
+	friend bool
+	player_death_restitution_runtime_replay_storage_source_frames(size_t *) noexcept;
 	friend bool player_death_restitution_runtime_replay_storage_bytes(size_t *) noexcept;
 
 	using reserve_fn = bool (*)(size_t, void *) noexcept;
@@ -1051,4 +1053,40 @@ bool player_death_restitution_runtime_restore_replayed_command_bounded(
 {
 	return player_death_restitution_replay_budget_owner::restore(
 		command, original_context, reserve, budget_context, outer_live);
+}
+
+namespace
+{
+constexpr size_t restitution_current_source_P = sizeof(void *),
+		 restitution_current_source_N = sizeof(size_t),
+		 restitution_current_source_B = sizeof(bool);
+// Actual census.observe: receiver/result, array size, direct mutable operator[],
+// complete string capacity/is_local/local_data/pointer_traits/address chain,
+// and two numeric_limits<size_t>::max results. Fresh array has no _S_ref helper.
+constexpr size_t restitution_current_census_observe_source = 16 * restitution_current_source_P +
+							     5 * restitution_current_source_N +
+							     2 * restitution_current_source_B;
+// CURRENT output/result + actual profile result + census ctor/dtor receivers.
+// Actual census object sizeof is added by its friend getter; its fields must not
+// be duplicated by a guessed DTO or by a fixed-record-count frame multiplier.
+constexpr size_t restitution_current_other_source = 3 * restitution_current_source_P +
+						    2 * restitution_current_source_B +
+						    restitution_current_census_observe_source;
+}
+
+bool player_death_restitution_runtime_replay_storage_source_frames(size_t *output) noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&             \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                      \
+	__cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL)
+	if (!output)
+		return false;
+	*output = sizeof(player_death_restitution_status_cache_budget_owner::census) +
+		  restitution_current_other_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
 }

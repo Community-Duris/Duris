@@ -1156,3 +1156,140 @@ bool shop_trade_recovery_forest_decode_bounded(std::span<const uint8_t> bytes,
 		return false;
 	}
 }
+
+namespace
+{
+constexpr size_t shop_forest_freeze_frames =
+	sizeof(std::vector<player_item_snapshot>) + sizeof(std::vector<uint8_t>) +
+	sizeof(shop_trade_recovery_forest_binding) +
+	sizeof(std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH>) + 15 * sizeof(void *) +
+	12 * sizeof(size_t) + sizeof(uint32_t) + 8 * sizeof(bool) +
+	sizeof(shop_trade_recovery_forest_role) + 2 * sizeof(player_snapshot_codec_result) +
+	shop_manifest_vector_frames + shop_manifest_move_frames + shop_manifest_equal_frames;
+struct shop_forest_freeze_budget
+{
+	shop_manifest_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	const std::vector<player_item_snapshot> *items = nullptr;
+	const std::vector<uint8_t> *canonical = nullptr;
+	const shop_trade_recovery_forest_binding *binding = nullptr;
+	bool prefix(size_t &value, size_t extra = 0) const noexcept
+	{
+		value = outer;
+		size_t heap = 0;
+		if (!shop_manifest_add(value, sizeof(*this) + shop_forest_freeze_frames) ||
+		    !shop_manifest_add(value, extra))
+			return false;
+		if (items && (!player_item_snapshot_list_current_heap_bytes(*items, &heap) ||
+			      !shop_manifest_add(value, heap)))
+			return false;
+		if (canonical && !shop_manifest_add(value, canonical->capacity()))
+			return false;
+		if (binding &&
+		    (binding->ordered_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		     !shop_manifest_add(value,
+					binding->ordered_item_uids.capacity() * sizeof(uint64_t))))
+			return false;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t value = 0;
+		return prefix(value, extra) && reserve && reserve(value, context);
+	}
+};
+}
+size_t shop_trade_recovery_forest_freeze_frame_bytes() noexcept
+{
+	return sizeof(shop_forest_freeze_budget) + shop_forest_freeze_frames;
+}
+bool shop_trade_recovery_forest_freeze_bounded(std::span<const uint8_t> canonical_bytes,
+					       shop_trade_recovery_forest_role role,
+					       shop_trade_recovery_forest_binding *out,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept
+{
+	if (!out || !valid_role(role) || canonical_bytes.empty() ||
+	    canonical_bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return false;
+	shop_forest_freeze_budget budget{ reserve, context, outer_live };
+	if (!budget.peak())
+		return false;
+	const uint8_t *cursor = canonical_bytes.data();
+	const uint8_t *end = cursor + canonical_bytes.size();
+	uint32_t count = 0;
+	if (!read_le(&cursor, end, &count) || count > SHOP_TRADE_RECOVERY_MAX_UIDS)
+		return false;
+	try
+	{
+		std::vector<player_item_snapshot> items;
+		std::vector<uint8_t> canonical;
+		budget.items = &items;
+		budget.canonical = &canonical;
+		size_t nested = 0;
+		if (!budget.prefix(nested) ||
+		    player_item_snapshot_list_decode_bounded(
+			    canonical_bytes.data(), canonical_bytes.size(), &items, reserve,
+			    context, nested) != player_snapshot_codec_result::ok ||
+		    items.size() > SHOP_TRADE_RECOVERY_MAX_UIDS || !contiguous_dfs(items))
+			return false;
+		if (!budget.prefix(nested) ||
+		    player_item_snapshot_list_encode_bounded(items, &canonical, reserve, context,
+							     nested) !=
+			    player_snapshot_codec_result::ok ||
+		    canonical.size() != canonical_bytes.size() ||
+		    !std::equal(canonical.begin(), canonical.end(), canonical_bytes.begin()))
+			return false;
+		shop_trade_recovery_forest_binding candidate;
+		budget.binding = &candidate;
+		candidate.present = true;
+		candidate.canonical_bytes = static_cast<uint32_t>(canonical.size());
+		if (items.size() > SIZE_MAX / sizeof(uint64_t) ||
+		    !budget.peak(items.size() * sizeof(uint64_t)))
+			return false;
+		candidate.ordered_item_uids.reserve(items.size());
+		for (const auto &item : items)
+			candidate.ordered_item_uids.push_back(item.object_uid);
+		if (!budget.prefix(nested) ||
+		    !shop_manifest_digest_bounded(
+			    canonical, role, static_cast<uint32_t>(items.size()),
+			    &candidate.canonical_digest, reserve, context, nested) ||
+		    !shop_trade_recovery_forest_shape_valid_bounded(candidate, role, reserve,
+								    context, nested))
+			return false;
+		if (!budget.peak())
+			return false;
+		*out = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool shop_trade_recovery_forest_verify_bounded(std::span<const uint8_t> canonical_bytes,
+					       shop_trade_recovery_forest_role role,
+					       const shop_trade_recovery_forest_binding &binding,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept
+{
+	if (!binding.present)
+		return false;
+	constexpr size_t own = sizeof(shop_trade_recovery_forest_binding) +
+			       sizeof(std::span<const uint8_t>) + 7 * sizeof(void *) +
+			       4 * sizeof(size_t) + 3 * sizeof(bool) +
+			       sizeof(shop_trade_recovery_forest_role) + shop_manifest_equal_frames;
+	size_t prefix = outer_live;
+	if (!shop_manifest_add(prefix, own) || !shop_manifest_admit(prefix, 0, reserve, context))
+		return false;
+	shop_trade_recovery_forest_binding expected;
+	if (!shop_trade_recovery_forest_freeze_bounded(canonical_bytes, role, &expected, reserve,
+						       context, prefix))
+		return false;
+	if (expected.ordered_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+	    !shop_manifest_admit(prefix, expected.ordered_item_uids.capacity() * sizeof(uint64_t),
+				 reserve, context))
+		return false;
+	return expected == binding;
+}

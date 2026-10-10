@@ -97,4 +97,12 @@ bool collector_command_build(critical_command *command, critical_operation_id op
 			     critical_source_site source_site,
 			     critical_deadline_class deadline_class);
 
+// Full original parse and canonical fence reconstruction with prospective actual
+// vector growth and source-carrier admission. Original partial payload semantics
+// remain; caller owns input, output inline, old output and foreign retained state.
+bool collector_command_decode_payload_bounded(const critical_command &, collector_command_payload *,
+					      bool (*)(size_t, void *) noexcept, void *context,
+					      size_t outer_live,
+					      bool *capacity_refused = nullptr) noexcept;
+
 #endif

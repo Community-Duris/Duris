@@ -131,6 +131,12 @@ class shop_trade_original_item_stage
 	// and all literal/forest holders. Values grant no enrollment or budget permit.
 	bool retained_bytes(const player_item_snapshot &original_literal,
 			    size_t *bytes_out) const noexcept;
+	// Genuine CURRENT private malloc ownership; pooled object/affect slots
+	// belong to the shared literal pool pages and are excluded here. This
+	// allocation-free observer preserves output on invalid/overflow refusal.
+	bool current_private_heap_bytes(const player_item_snapshot &, size_t *) const noexcept;
+	static size_t current_private_heap_observer_frame_bytes() noexcept;
+
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
@@ -160,4 +166,5 @@ inert_item_stage_result
 prepare_inert_money_stage(const player_item_snapshot &literal, uint64_t original_uid,
 			  const std::array<int32_t, 4> &verified_denominations,
 			  inert_item_stage &output) noexcept;
+
 #endif

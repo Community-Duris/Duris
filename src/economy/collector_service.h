@@ -41,4 +41,11 @@ bool collector_service_player_busy(P_char character);
 collector_service_health collector_service_health_copy(void);
 void collector_service_reset_for_tests(void);
 
+class player_save_coin_replay_budget_scope_owner;
+bool collector_service_restore_replayed_purchase_bounded(
+	const critical_command &, player_save_coin_replay_budget_scope_owner &,
+	bool (*)(size_t, void *) noexcept, void *, size_t outer_live) noexcept;
+size_t collector_service_replay_observer_frame_bytes() noexcept;
+bool collector_service_replay_current_storage_bytes(size_t *) noexcept;
+
 #endif

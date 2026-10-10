@@ -2751,3 +2751,56 @@ bool currency_transaction_replay_owner::restore(const critical_command &command,
 	return false;
 #endif
 }
+
+namespace
+{
+constexpr size_t currency_current_source_P = sizeof(void *),
+		 currency_current_source_N = sizeof(size_t),
+		 currency_current_source_B = sizeof(bool);
+// Actual const _Hashtable begin/end/node value-storage/increment/cleanup and
+// all four key capacity invocations. No bucket/hash lookup or iterator-per-node
+// multiplication; buckets/nodes/keys remain retained CURRENT storage separately.
+constexpr size_t currency_current_const_table_source =
+	88 * currency_current_source_P + 9 * currency_current_source_N +
+	6 * currency_current_source_B + 4 * sizeof(currency_pending_table::const_iterator);
+// Outer CURRENT uses MUTABLE begin/end even though its structured pair/key/entry
+// binding is const. get<0/1>(const pair&) adds real __pair_get borrowed closures.
+constexpr size_t currency_current_outer_range_source =
+	37 * currency_current_source_P + currency_current_source_B +
+	4 * sizeof(currency_pending_table::iterator) + 8 * currency_current_source_P;
+constexpr size_t currency_current_checked_add_source =
+	currency_current_source_P + currency_current_source_N + currency_current_source_B;
+constexpr size_t currency_current_optional_bool_source =
+	2 * currency_current_source_P + 2 * currency_current_source_B;
+constexpr size_t currency_current_optional_arrow_source =
+	8 * currency_current_source_P + currency_current_source_B;
+constexpr size_t currency_current_optional_deref_source =
+	6 * currency_current_source_P + currency_current_source_B;
+// Own command/bytes references/result; six actual vector.capacity calls and four
+// checked additions. Inline optionals/commands are borrowed, never copied here.
+constexpr size_t currency_current_command_heap_source = 12 * currency_current_source_P +
+							10 * currency_current_source_N +
+							5 * currency_current_source_B;
+constexpr size_t currency_current_complete_source =
+	currency_current_source_P + currency_current_source_N + currency_current_source_B +
+	currency_current_const_table_source + 2 * currency_current_checked_add_source +
+	currency_current_outer_range_source + 2 * currency_current_optional_bool_source +
+	2 * currency_current_optional_arrow_source + currency_current_optional_deref_source +
+	3 * currency_current_command_heap_source;
+}
+
+bool currency_transaction_current_storage_source_frames(size_t *output) noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&             \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                      \
+	__cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL)
+	if (!output)
+		return false;
+	*output = currency_current_complete_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}

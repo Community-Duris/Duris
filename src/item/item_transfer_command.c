@@ -8105,3 +8105,55 @@ bool item_transfer_command_build_native_mobile_recovery_bounded(
 		return false;
 	}
 }
+
+// Complete original native recovery-shape dispatch. The payload and all caller
+// owners remain in outer; only the original cost branch's private exact wire
+// vector and genuine constructor/destructor/parameter scopes are callee-owned.
+bool item_transfer_native_mobile_recovery_shape_valid_bounded(
+	const item_transfer_payload &payload, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		// public payload/reserve/context, outer, actual prefix/result/catch ref;
+		// vector exact plus vector/base/impl/data/allocator default constructors;
+		// its real destructor/_Destroy/deallocation tail is already mapped.
+		5 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool) +
+		sizeof(std::vector<uint8_t>) + 4 * sizeof(void *) +
+		sizeof(std::allocator<uint8_t>) + payload_clone_vector_frames;
+	size_t prefix = outer_live;
+	if (!payload_clone_add(prefix, frames) || !reserve(prefix, context))
+		return false;
+	try
+	{
+		if (payload.native_money.present)
+			return item_transfer_native_money_shape_valid_bounded(
+				payload, true, reserve, context, prefix);
+		if (payload.native_cost.present)
+		{
+			std::vector<uint8_t> exact;
+			return item_transfer_native_cost_encode_bounded(payload, true, &exact,
+									reserve, context, prefix);
+		}
+		return item_transfer_payload_valid_bounded(
+			payload, ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION, reserve,
+			context, prefix);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+size_t item_transfer_payload_current_heap_observer_frame_bytes() noexcept
+{
+	// Exact current getter/shared six-string/six-vector observation source;
+	// no aggregate copies, codec scratch or allocation requests are borrowed.
+	// capacity -> _M_is_local -> const _M_data/_M_local_data -> pointer_to ->
+	// addressof/__addressof has 11P+B beneath the already inventoried capacity
+	// this/result. CURRENT public params/value/policy/strong-result and this
+	// numeric profile's returned size_t are explicit additional source scopes.
+	return payload_clone_observation_frames + 11 * sizeof(void *) + sizeof(bool) +
+	       2 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool);
+}

@@ -41,9 +41,17 @@ using collector_purchase_effect_fn = bool (*)(P_char, const collector_command_re
 
 // Only the named service restoration entry may choose the existing native effect
 // and post-ACK notification. No public callback registration or receipt synthesis.
+class player_save_coin_replay_budget_scope_owner;
 class collector_purchase_cold_restore_owner
 {
 	friend bool collector_service_restore_replayed_purchase(const critical_command &) noexcept;
+	friend bool collector_service_restore_replayed_purchase_bounded(
+		const critical_command &, player_save_coin_replay_budget_scope_owner &,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_bounded(const critical_command &, collector_purchase_effect_fn,
+				    collector_completion_fn,
+				    player_save_coin_replay_budget_scope_owner &,
+				    bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	static bool restore(const critical_command &, collector_purchase_effect_fn,
 			    collector_completion_fn) noexcept;
 };
@@ -103,5 +111,10 @@ critical_outbox_delivery_result
 collector_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
 void collector_transaction_publish_outbox(void);
 void collector_transaction_reset_for_tests(void);
+
+// Full actual domain state; ROOT owns lifecycle/game-thread exclusion. Borrowed
+// pipeline scope remains separately counted by the caller. Strong pure output.
+size_t collector_transaction_replay_observer_frame_bytes() noexcept;
+bool collector_transaction_replay_current_storage_bytes(size_t *) noexcept;
 
 #endif
