@@ -74,6 +74,7 @@ class flatfile_accounting_storage
 	friend class flatfile_accounting_collector_transaction;
 	friend class flatfile_accounting_shop_transaction;
 	friend class flatfile_accounting_native_mobile_birth_shared_shop_transaction;
+	friend class flatfile_accounting_native_mobile_birth_ordinary_transaction;
 	friend class flatfile_accounting_zone_reset_item_transaction;
 	friend class flatfile_accounting_auction_item_claim_transaction;
 	friend class flatfile_accounting_coin_transaction;
@@ -119,6 +120,12 @@ class flatfile_accounting_storage
 						const flatfile_accounting_record &,
 						std::vector<flatfile_authority_operation> *,
 						std::string *);
+	// Original full staging algorithm under the SAME already recovered lock;
+	// no recovery or authority acquisition in the ordinary atomic final cut.
+	static flatfile_accounting_status
+	stage_ordinary_locked(const std::string &, const flatfile_authority_lock &,
+			      const flatfile_accounting_record &,
+			      std::vector<flatfile_authority_operation> *, std::string *);
 	static flatfile_accounting_status
 	stage_source_claim(const std::string &, const flatfile_authority_lock &,
 			   const flatfile_accounting_record &,

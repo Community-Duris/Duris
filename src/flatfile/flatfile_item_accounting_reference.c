@@ -1268,3 +1268,115 @@ flatfile_native_mobile_birth_ordinary_reference_history_storage::verify_current_
 		return status::io_error;
 	}
 }
+
+flatfile_item_accounting_status
+flatfile_native_mobile_birth_ordinary_reference_stage_storage::stage_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &legacy_operation_id,
+	std::span<const economic_accounting_item_reference> references,
+	std::vector<flatfile_authority_operation> *operations, std::string *error)
+try
+{
+	if (root.empty() || !lock.matches(root) || !operations ||
+	    critical_operation_id_is_zero(legacy_operation_id))
+		return flatfile_item_accounting_status::invalid;
+	const critical_operation_id &operation_id = legacy_operation_id;
+	const uint8_t bucket = operation_id.bytes[0];
+
+	std::vector<uint8_t> addition;
+	addition.reserve(references.size() * FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+	std::vector<uint16_t> event_indexes;
+	event_indexes.reserve(references.size());
+	for (const auto &reference : references)
+	{
+		if (reference.legacy_operation_id.bytes != operation_id.bytes)
+			return flatfile_item_accounting_status::invalid;
+		std::vector<uint8_t> encoded;
+		const auto status = flatfile_item_accounting_reference_encode(reference, &encoded);
+		if (status != flatfile_item_accounting_status::ok)
+			return status;
+		if (std::find(event_indexes.begin(), event_indexes.end(),
+			      reference.legacy_event_index) != event_indexes.end())
+			return flatfile_item_accounting_status::invalid;
+		event_indexes.push_back(reference.legacy_event_index);
+		addition.insert(addition.end(), encoded.begin(), encoded.end());
+	}
+
+	const std::string dir = item_refs_directory(root);
+	// Authenticate the ACTUAL established private namespace via original FD IO.
+	// Missing directory/security/read failure is not empty, even with zero refs
+	// or an already staged image. No mkdir/chmod/recovery belongs to this leaf.
+	{
+		std::vector<uint8_t> namespace_probe;
+		const auto namespace_status =
+			flatfile_read(dir, bucket_filename(bucket),
+				      FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+				      &namespace_probe, error);
+		if (namespace_status != flatfile_read_result::ok &&
+		    namespace_status != flatfile_read_result::not_found)
+			return read_status(namespace_status);
+	}
+	const std::string filename = bucket_filename(bucket);
+	std::vector<uint8_t> existing;
+	size_t staged_index = operations->size();
+	for (size_t index = 0; index < operations->size(); ++index)
+		if ((*operations)[index].store ==
+			    flatfile_authority_store::item_accounting_references &&
+		    (*operations)[index].filename == filename)
+		{
+			if (staged_index != operations->size() ||
+			    (*operations)[index].kind != flatfile_authority_operation_kind::write)
+				return flatfile_item_accounting_status::invalid;
+			staged_index = index;
+		}
+	if (staged_index < operations->size())
+		existing = (*operations)[staged_index].bytes;
+	else
+	{
+		if (!references.empty() &&
+		    operations->size() >= flatfile_authority_transaction_maximum_operations)
+			return flatfile_item_accounting_status::capacity;
+		const auto read_result = flatfile_read(
+			dir, filename, FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+			&existing, error);
+		if (read_result != flatfile_read_result::ok &&
+		    read_result != flatfile_read_result::not_found)
+			return read_status(read_result);
+	}
+	if (!valid_bucket(existing, bucket))
+		return flatfile_item_accounting_status::invalid;
+	for (size_t offset = 0; offset < existing.size();
+	     offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+	{
+		economic_accounting_item_reference retained = {};
+		if (flatfile_item_accounting_reference_decode(
+			    std::span<const uint8_t>(existing).subspan(
+				    offset, FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES),
+			    &retained) != flatfile_item_accounting_status::ok)
+			return flatfile_item_accounting_status::invalid;
+		if (retained.legacy_operation_id.bytes == operation_id.bytes)
+			return flatfile_item_accounting_status::already_exists;
+	}
+	if (addition.size() > FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES - existing.size())
+		return flatfile_item_accounting_status::capacity;
+	if (references.empty())
+		return flatfile_item_accounting_status::ok;
+	if (addition.size() > flatfile_authority_transaction_maximum_bytes - existing.size())
+		return flatfile_item_accounting_status::capacity;
+	existing.insert(existing.end(), addition.begin(), addition.end());
+	auto candidate = *operations;
+	if (staged_index < candidate.size())
+		candidate[staged_index].bytes = std::move(existing);
+	else
+		candidate.push_back({ flatfile_authority_store::item_accounting_references,
+				      flatfile_authority_operation_kind::write, filename,
+				      std::move(existing) });
+	if (!lock.matches(root))
+		return flatfile_item_accounting_status::invalid;
+	*operations = std::move(candidate);
+	return flatfile_item_accounting_status::ok;
+}
+catch (const std::bad_alloc &)
+{
+	return flatfile_item_accounting_status::capacity;
+}
