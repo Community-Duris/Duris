@@ -52,4 +52,31 @@ flatfile_read_result flatfile_read_bounded(const std::string &directory, const s
 size_t flatfile_atomic_write_working_bytes() noexcept;
 size_t flatfile_atomic_remove_working_bytes() noexcept;
 
+// Distinct original diagnostic-channel companions. Caller owns the actual
+// existing outputs/error capacities in outer at entry and retains admitted
+// storage through return. Native/libc/emitted qualification remains separate.
+// published/removed latch immediately on original rename/unlink; returned means
+// original completion, including semantic failure, never later budget refusal.
+bool flatfile_atomic_write_with_error_bounded(const std::string &, const std::string &,
+					      const std::vector<uint8_t> &, std::string *,
+					      bool *published, bool *returned,
+					      flatfile_scratch_reserve_fn, void *, size_t,
+					      bool *allocation_exception = nullptr) noexcept;
+bool flatfile_atomic_remove_with_error_bounded(const std::string &, const std::string &, bool,
+					       std::string *, bool *removed, bool *returned,
+					       flatfile_scratch_reserve_fn, void *, size_t,
+					       bool *allocation_exception = nullptr) noexcept;
+flatfile_read_result
+flatfile_read_with_error_bounded(const std::string &, const std::string &, size_t,
+				 std::vector<uint8_t> *, std::string *, bool *returned,
+				 flatfile_scratch_reserve_fn, void *, size_t,
+				 bool *allocation_exception = nullptr) noexcept;
+bool flatfile_lock_acquire_with_error_bounded(const std::string &, const std::string &, int *,
+					      std::string *, bool *returned,
+					      flatfile_scratch_reserve_fn, void *, size_t,
+					      bool *allocation_exception = nullptr) noexcept;
+// Actual called-source diagnostic string carrier allowance, no IO/heap/authority.
+// The caller owns observer parameters/return and includes existing string objects.
+size_t flatfile_diagnostic_string_source_frame_bytes() noexcept;
+
 #endif

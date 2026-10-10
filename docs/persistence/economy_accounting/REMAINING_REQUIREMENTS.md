@@ -4405,3 +4405,17 @@ Independent RAW/installed reviews authenticate 71+14 members, four inverses,
 frame/foreign ownership, full host/accepting publication/native32MiB/running
 drain/gameplay/persistence/recovery/R1-R8 remain OPEN. Tests deferred major-plan
 batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Original bounded flat diagnostics implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_BOUNDED_FLAT_DIAGNOSTICS_2026-10-10.md) adds complete
+original store/authority companions with real diagnostics, retained buffers,
+read/clear/lock/recovery/apply ordering and explicit completion/exception causes.
+Original selected/default bodies and protected Plan5 WIP remain intact.
+Independent RAW/installed reviews authenticate 94+14 members, full inverses,
+six current dependencies and installed controls; source registry completed with
+463 pins/four updates/931 unchanged policies/2,853 mapped sites/no new writers.
+Full extraction/shared startup/native32MiB/gameplay/persistence/recovery/drain/
+R1-R8 remain OPEN. Tests deferred major-plan batch; inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
