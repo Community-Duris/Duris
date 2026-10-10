@@ -1740,3 +1740,360 @@ bool world_activity_object_enter_bounded(P_obj object, bool (*reserve)(size_t, v
 	}
 #endif
 }
+
+#include <memory>
+#include <new>
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+namespace
+{
+bool activity_character_objects_bounded(activity_enter_budget &budget, size_t scope, P_char ch)
+{
+	if (!ch)
+		return true;
+	if (!sibling_cycle(ch->carrying))
+		for (P_obj object = ch->carrying; object; object = object->next_content)
+			if (!activity_update_subtree_bounded(budget, scope, object, true))
+				return false;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (ch->equipment[slot] &&
+		    !activity_update_subtree_bounded(budget, scope, ch->equipment[slot], true))
+			return false;
+	return true;
+}
+bool activity_controlled_enter_bounded(activity_enter_budget &budget, size_t scope, P_char ch)
+{
+	if (!config.enabled || !ch || !IS_NPC(ch))
+		return true;
+	const bool controlled = valid_room(ch->in_room) && controlled_presence(ch);
+	auto previous = controlled_rooms.find(ch);
+	if (previous != controlled_rooms.end())
+	{
+		if (controlled && previous->second == ch->in_room)
+			return true;
+		if (!activity_adjust_reason_bounded(budget, scope, previous->second, true, -1))
+			return false;
+		controlled_rooms.erase(previous);
+	}
+	if (controlled)
+	{
+		if (!budget.insert(controlled_rooms, ch, scope))
+			return false;
+		controlled_rooms.emplace(ch, ch->in_room);
+		if (!activity_adjust_reason_bounded(budget, scope, ch->in_room, true, 1))
+			return false;
+	}
+	return true;
+}
+bool activity_native_budget_init(activity_enter_budget &budget, size_t outer_live,
+				 size_t frame) noexcept
+{
+	size_t activity, pending, output;
+	if (!world_activity_storage_bytes(&activity) ||
+	    !nevent_native_reschedule_storage_bytes(&pending) ||
+	    !diagnostic_output_storage_bytes(&output) || activity > outer_live ||
+	    pending > outer_live - activity || output > outer_live - activity - pending)
+		return false;
+	budget.base = outer_live - activity - pending - output + frame;
+	return true;
+}
+struct activity_projection_scratch
+{
+	activity_enter_budget &budget;
+	size_t heap = 0;
+	size_t carriers;
+};
+template <class T> struct activity_projection_allocator
+{
+	using value_type = T;
+	activity_projection_scratch *scratch;
+	explicit activity_projection_allocator(activity_projection_scratch &s) noexcept
+		: scratch(&s)
+	{
+	}
+	template <class U>
+	activity_projection_allocator(const activity_projection_allocator<U> &a) noexcept
+		: scratch(a.scratch)
+	{
+	}
+	T *allocate(size_t count)
+	{
+		if (count > SIZE_MAX / sizeof(T))
+			throw std::bad_alloc();
+		const size_t bytes = count * sizeof(T);
+		if (scratch->heap > SIZE_MAX - scratch->carriers ||
+		    bytes > SIZE_MAX - scratch->heap ||
+		    !scratch->budget.admit(bytes, scratch->heap + scratch->carriers))
+			throw std::bad_alloc();
+		T *result = std::allocator<T>{}.allocate(count);
+		scratch->heap += bytes;
+		return result;
+	}
+	void deallocate(T *pointer, size_t count) noexcept
+	{
+		std::allocator<T>{}.deallocate(pointer, count);
+		scratch->heap -= count * sizeof(T);
+	}
+	template <class U>
+	bool operator==(const activity_projection_allocator<U> &other) const noexcept
+	{
+		return scratch == other.scratch;
+	}
+};
+}
+#endif
+
+bool world_activity_character_enter_bounded(P_char ch, bool *returned, bool *succeeded,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	if (!returned || !succeeded || returned == succeeded || *returned || !reserve ||
+	    !nevent_is_game_thread())
+		return false;
+	constexpr size_t frame = sizeof(activity_enter_budget) + 8 * sizeof(void *) +
+				 7 * sizeof(size_t) + 3 * sizeof(int) + 3 * sizeof(bool);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	activity_enter_budget budget{ reserve, context, 0 };
+	if (!activity_native_budget_init(budget, outer_live, frame))
+		return false;
+	try
+	{
+		if (config.enabled && ch && valid_room(ch->in_room))
+		{
+			if (IS_NPC(ch))
+			{
+				const int zone_number = activity_zone_for_room(ch->in_room);
+				if (zone_number >= 0)
+				{
+					if (!budget.insert(zones[zone_number].npcs, ch, 0))
+						return false;
+					zones[zone_number].npcs.insert(ch);
+				}
+				if (!activity_controlled_enter_bounded(budget, 0, ch))
+					return false;
+			}
+			if (!activity_character_objects_bounded(budget, 0, ch))
+				return false;
+		}
+		*returned = true;
+		*succeeded = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+#else
+	(void)ch;
+	(void)returned;
+	(void)succeeded;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
+
+bool world_activity_schedule_mundane_after_bounded(P_char ch, int delay, bool *returned,
+						   bool *succeeded,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer_live) noexcept
+{
+	if (!returned || !succeeded || returned == succeeded || *returned || !reserve ||
+	    !nevent_is_game_thread())
+		return false;
+	constexpr size_t frame = 3 * sizeof(nevent_handle) + sizeof(nevent_schedule_result) +
+				 8 * sizeof(void *) + 7 * sizeof(size_t) + 6 * sizeof(bool) +
+				 2 * sizeof(int);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	try
+	{
+		if (!ch)
+		{
+			*returned = true;
+			*succeeded = false;
+			return true;
+		}
+		bool complete = true;
+		const nevent_handle existing = validated_mundane_event(ch, &complete);
+		if (!complete && (!current_nevent || current_nevent->ch != ch ||
+				  current_nevent->func != event_mob_mundane))
+		{
+			*returned = true;
+			*succeeded = existing.event != nullptr;
+			return true;
+		}
+		if (existing.event && existing.event != current_nevent)
+		{
+			bool rescheduled;
+			if (!nevent_reschedule_after_bounded(existing, std::max(0, delay),
+							     &rescheduled, reserve, context,
+							     outer_live + frame))
+				return false;
+			*returned = true;
+			*succeeded = existing.event != nullptr;
+			return true;
+		}
+		nevent_schedule_result result{};
+		bool action_returned = false, action_succeeded = false;
+		const bool status = nevent_schedule_character_bounded(
+			event_mob_mundane, std::max(0, delay), ch, &result, &action_returned,
+			&action_succeeded, reserve, context, outer_live + frame);
+		if (action_returned)
+		{
+			if (result.was_scheduled())
+				world_activity_record_mundane_event(ch, result.handle);
+			*returned = true;
+			*succeeded = result.was_scheduled();
+		}
+		return status;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool world_activity_native_birth_restore_owner::enter_bounded(
+	P_char ch, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	if (!reserve || !nevent_is_game_thread() || !ch || !IS_NPC(ch) || !ch->only.npc ||
+	    !IS_ALIVE(ch) || !ch->runtime_id || !valid_room(ch->in_room) ||
+	    controlled_presence(ch) || controlled_rooms.contains(ch))
+		return false;
+
+	struct entry
+	{
+		P_obj object;
+		P_obj parent;
+		size_t depth;
+		int slot;
+	};
+	using pending_type = std::vector<entry, activity_projection_allocator<entry>>;
+	using seen_type = std::unordered_set<P_obj, std::hash<P_obj>, std::equal_to<P_obj>,
+					     activity_projection_allocator<P_obj>>;
+	using uid_type = std::unordered_set<uint64_t, std::hash<uint64_t>, std::equal_to<uint64_t>,
+					    activity_projection_allocator<uint64_t>>;
+	using neighbor_type = std::unordered_set<int, std::hash<int>, std::equal_to<int>,
+						 activity_projection_allocator<int>>;
+	constexpr size_t frame = sizeof(activity_enter_budget) +
+				 sizeof(activity_projection_scratch) + sizeof(pending_type) +
+				 sizeof(seen_type) + sizeof(uid_type) + sizeof(neighbor_type) +
+				 4 * sizeof(entry) + 15 * sizeof(void *) + 12 * sizeof(size_t) +
+				 5 * sizeof(int) + 4 * sizeof(bool) + 3 * sizeof(uint32_t) +
+				 5 * sizeof(activity_projection_allocator<entry>);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	activity_enter_budget budget{ reserve, context, 0 };
+	if (!activity_native_budget_init(budget, outer_live, frame))
+		return false;
+	if (!config.enabled)
+		return true;
+	activity_projection_scratch scratch{
+		budget, 0, 6 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(std::allocator<entry>)
+	};
+	try
+	{
+		// The complete forest is already authenticated by the birth owner;
+		// independently check its physical links before counting PC corpses.
+		// All traversal/allocation precedes any activity projection mutation.
+		pending_type pending{ activity_projection_allocator<entry>(scratch) };
+		seen_type seen{ 0, std::hash<P_obj>{}, std::equal_to<P_obj>{},
+				activity_projection_allocator<P_obj>(scratch) };
+		uid_type uids{ 0, std::hash<uint64_t>{}, std::equal_to<uint64_t>{},
+			       activity_projection_allocator<uint64_t>(scratch) };
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+			if (ch->equipment[slot])
+			{
+				if (ch->equipment[slot]->next_content)
+					return false;
+				pending.push_back({ ch->equipment[slot], nullptr, 1, slot + 1 });
+			}
+		if (ch->carrying)
+			pending.push_back({ ch->carrying, nullptr, 1, 0 });
+		uint32_t corpses = 0;
+		while (!pending.empty())
+		{
+			const auto current = pending.back();
+			pending.pop_back();
+			const auto object = current.object;
+			if (current.depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+			    seen.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
+			    !seen.insert(object).second || !object->obj_uid ||
+			    object->obj_uid == UINT64_MAX || !uids.insert(object->obj_uid).second)
+				return false;
+			if (current.parent)
+			{
+				if (object->loc_p != LOC_INSIDE ||
+				    object->loc.inside != current.parent)
+					return false;
+			}
+			else if (current.slot)
+			{
+				if (object->loc_p != LOC_WORN || object->loc.wearing != ch)
+					return false;
+			}
+			else if (object->loc_p != LOC_CARRIED || object->loc.carrying != ch)
+				return false;
+			if (pc_corpse(object))
+				++corpses;
+			if (!current.slot && object->next_content)
+				pending.push_back(
+					{ object->next_content, current.parent, current.depth, 0 });
+			if (object->contains)
+				pending.push_back(
+					{ object->contains, object, current.depth + 1, 0 });
+		}
+		const int own = activity_zone_for_room(ch->in_room);
+		if (own < 0)
+			return true; // Original enter has no region contribution at this cut.
+		if (static_cast<size_t>(own) >= zones.size())
+			return false;
+		neighbor_type neighbors{ 0, std::hash<int>{}, std::equal_to<int>{},
+					 activity_projection_allocator<int>(scratch) };
+		for (int neighbor : zones[own].neighbors)
+		{
+			if (neighbor < 0 || static_cast<size_t>(neighbor) >= zones.size() ||
+			    neighbor == own || !neighbors.insert(neighbor).second)
+				return false;
+		}
+		for (const auto &zone : zones)
+			if (zone.npcs.contains(ch))
+				return false; // This room substep cannot count an enrolled body twice.
+		// unordered_set insertion has the strong guarantee. After this succeeds,
+		// only no-throw counter assignments remain: no wake/RNG/scheduler or
+		// rebuild_encounters allocation can split activity reconstruction.
+		if (!budget.insert(zones[own].npcs, ch, scratch.heap))
+			return false;
+		if (!zones[own].npcs.insert(ch).second)
+			return false;
+		const auto add = [corpses](uint32_t &counter) noexcept
+		{
+			const auto remaining = std::numeric_limits<uint32_t>::max() - counter;
+			counter += std::min(corpses, remaining);
+		};
+		add(zones[own].corpses);
+		for (int neighbor : zones[own].neighbors)
+			add(zones[neighbor].adjacent_corpses);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+#else
+	(void)ch;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}

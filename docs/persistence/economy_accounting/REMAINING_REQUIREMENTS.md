@@ -4159,3 +4159,19 @@ chains/formatting/protected3 and451pins/931unchangedpolicies authenticate.
 Actual producer/common-G joins, native/global32MiB/concurrency/recovery/R1-R8
 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE. Source evidence completes no major plan.
+
+
+## Bounded original runtime services implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_ORIGINAL_RUNTIME_SERVICES_2026-10-10.md) supplies
+complete private identity, maintenance, activity, character-event and warm/cold
+stock companions. Original allocator behavior, event/link/order/cadence and cold
+four-step semantics survive; genuine current globals are refreshed at nested
+effects/refusals. Full RAW/profile and installed source review, ten whole
+inverses, explicit newline aliases, formatting and protected Plan5 WIP pass.
+Registry455pins/four additions/931 unchanged policies/zero new unmapped sites.
+One existing handler-header declaration/census coordinate relocates16-to18
+after two reviewed header additions; its declaration and policy remain unchanged.
+Actual producer/common-G/publication integration and native/global32MiB/R1-R8
+remain OPEN; tests deferred major-plan batch. Inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE; no major-plan completion is claimed.

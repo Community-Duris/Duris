@@ -8073,3 +8073,782 @@ size_t zone_reset_room_local_nesting::mutation_working_bytes() noexcept
 	// remain unchanged; the subsequent NOWHERE-root propagation is scalar only.
 	return sizeof(std::array<P_obj, PLAYER_SNAPSHOT_MAX_DEPTH>);
 }
+
+extern const int arena_hometown_location[];
+namespace
+{
+struct native_character_room_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	bool live(size_t *result) const noexcept
+	{
+		size_t global;
+		if (!current_global || !current_global(&global, context) ||
+		    global > SIZE_MAX - base)
+			return false;
+		*result = base + global;
+		return true;
+	}
+	bool init(size_t outer, size_t frame) noexcept
+	{
+		size_t globals;
+		if (frame > SIZE_MAX - outer || !reserve(outer + frame, context) ||
+		    !live(&globals) || globals > outer)
+			return false;
+		base = outer - globals + frame;
+		return true;
+	}
+	bool finish(bool status) const noexcept
+	{
+		// Fresh actual complete G on EVERY effected return, even a refusal.
+		size_t global;
+		const bool observed = current_global && current_global(&global, context);
+		return status && observed;
+	}
+};
+bool native_birth_arena_send_bounded(const char *message, native_character_room_budget &budget)
+{
+	// Complete original send_to_arena(msg,-1) recipient/duplicate-delivery policy.
+	// Other race modes cannot be called by the original native -2 room path.
+	for (P_desc descriptor = descriptor_list; descriptor; descriptor = descriptor->next)
+	{
+		if (descriptor->connected != CON_PLAYING)
+			continue;
+		if (CHAR_IN_ARENA(descriptor->character))
+		{
+			size_t live;
+			if (!budget.live(&live) ||
+			    !diagnostic_send_to_char_bounded(message, descriptor->character,
+							     budget.reserve, budget.context, live))
+				return false;
+		}
+		for (int race = 0; race < MAX_RACES; ++race)
+			if (arena_hometown_location[race] != -1 &&
+			    real_room(arena_hometown_location[race]) ==
+				    descriptor->character->in_room)
+			{
+				size_t live;
+				if (!budget.live(&live) ||
+				    !diagnostic_send_to_char_bounded(message, descriptor->character,
+								     budget.reserve, budget.context,
+								     live))
+					return false;
+			}
+	}
+	return true;
+}
+}
+bool native_birth_char_light_bounded(P_char ch, int *output,
+				     bool (*reserve)(size_t, void *) noexcept, void *context,
+				     size_t outer_live) noexcept
+{
+	int i, amt = 0;
+	if (!output || !reserve || !nevent_is_game_thread())
+		return false;
+	if (2 * sizeof(int) + sizeof(P_char) > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + 2 * sizeof(int) + sizeof(P_char), context))
+		return false;
+	outer_live += 2 * sizeof(int) + sizeof(P_char);
+
+	if (!ch)
+	{
+		*output = -1;
+		return true;
+	}
+
+	/* These are all handled elsewhere.  And fire elementals no longer light up the room.
+	  if( GET_RACE(ch) == RACE_F_ELEMENTAL )
+	  {
+	    amt += 3;
+	  }
+
+	  if (IS_AFFECTED4(ch, AFF4_MAGE_FLAME) ||
+	      IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
+	  {
+	    mf_l = 0;
+
+	    // first, check if spell has been cast, and base level of light on
+	    //   that.  if not, assume artifact or whatnot and use vict level
+
+	    for (af = ch->affected; af; af = af->next)
+	    {
+	      if ((IS_AFFECTED4(ch, AFF4_MAGE_FLAME) ? (af->type == SPELL_MAGE_FLAME)
+	           : (af->type == SPELL_GLOBE_OF_DARKNESS)) && (af->modifier > 0))
+	      {
+	        mf_l = af->modifier / 10;
+	      }
+	    }
+
+	    if (!mf_l)
+	      mf_l = (GET_LEVEL(ch) / 10) + 3;
+
+	    if (IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
+	      mf_l = -mf_l;
+
+	    amt += mf_l;
+
+	    amt = BOUNDED(-1, amt, 127);
+	  }
+	*/
+
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		if (ch->equipment[i])
+		{
+			/* hands have a light that's not burnt out */
+			if (((i >= WIELD) && (i <= HOLD)) &&
+			    (ch->equipment[i]->type == ITEM_LIGHT) && ch->equipment[i]->value[2])
+			{
+				amt++;
+			}
+			else if (IS_SET(ch->equipment[i]->extra_flags, ITEM_LIT))
+			{
+				amt++;
+			}
+		}
+	}
+	/* yup inven (surface layer anyway) counts */
+	/* No more inventory.. too cheesy.
+	for (t_obj = ch->carrying; !dark && t_obj; t_obj = t_obj->next_content)
+	{
+	  if (IS_SET(t_obj->extra_flags, ITEM_LIT))
+	    amt += 3;
+	}
+	if (dark)
+	  amt = -1;
+	*/
+
+	i = ch->light;
+	ch->light = BOUNDED(-1, amt, 127);
+
+	// If the ch changed the amount of light on them, change the room they're in too.
+	if (ch->light != i)
+	{
+		if (!native_reset_room_light_bounded(ch->in_room, REAL, output, reserve, context,
+						     outer_live))
+			return false;
+	}
+
+	*output = ch->light;
+	return true;
+}
+bool char_to_room_native_birth_bounded(P_char ch, int room, bool *returned, bool *succeeded,
+				       bool (*current_global)(size_t *, void *) noexcept,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer_live) noexcept
+{
+	if (!current_global || !returned || !succeeded || returned == succeeded || *returned ||
+	    !reserve || !nevent_is_game_thread() || !ch || !IS_NPC(ch) || !ch->only.npc ||
+	    !IS_ALIVE(ch) || !ch->runtime_id ||
+	    find_character_by_runtime_id(ch->runtime_id) != ch || !world || room < 0 ||
+	    room > top_of_world || ch->desc || ch->following || ch->followers || ch->group ||
+	    ch->linked || ch->linking || ch->obj_linked || GET_OPPONENT(ch))
+		return false;
+	constexpr size_t frame = sizeof(native_character_room_budget) + sizeof(buf) +
+				 2 * MAX_STRING_LENGTH + 15 * sizeof(void *) + 15 * sizeof(int) +
+				 9 * sizeof(size_t) + 8 * sizeof(bool) + 3 * sizeof(char);
+	native_character_room_budget budget{ current_global, reserve, context, 0 };
+	if (!budget.init(outer_live, frame))
+		return false;
+	try
+	{
+		const int dir = -2;
+		size_t live;
+		int light;
+		bool lower_returned = false, lower_succeeded = false;
+		P_char t_ch, k, who;
+		P_desc d;
+		char exit1 = -1, exit2 = -1, exit3 = -1;
+		char Gbuf1[MAX_STRING_LENGTH];
+		char temp_buffer[MAX_STRING_LENGTH];
+		int j, was_in, current, total_coins, x, worked = FALSE;
+		bool was_in_arena;
+		struct zone_data *zone = 0;
+		P_room rm = 0;
+
+		if (!training_dummy_can_enter_room(ch))
+		{
+			if (!budget.live(&live) ||
+			    !diagnostic_logit_bounded(
+				    reserve, context, live, LOG_DEBUG,
+				    "char_to_room: refusing to move anchored training dummy %s",
+				    J_NAME(ch)))
+				return budget.finish(false);
+			*returned = true;
+			*succeeded = false;
+			return budget.finish(true);
+		}
+
+		if (!IS_ALIVE(ch))
+		{
+			*returned = true;
+			*succeeded = false;
+			return budget.finish(true);
+		}
+
+		if (room < 0)
+		{
+			if (IS_NPC(ch))
+			{
+				if (!budget.live(&live) ||
+				    !diagnostic_logit_bounded(
+					    reserve, context, live, LOG_DEBUG,
+					    "char_to_room: trying to move %s (%d) to room %d.",
+					    J_NAME(ch), GET_VNUM(ch), room))
+					return budget.finish(false);
+				extract_char(ch);
+				ch = NULL;
+				*returned = true;
+				*succeeded = false;
+				return budget.finish(true);
+			}
+			// Move them to Limbo!
+			room = 0;
+			if (!budget.live(&live) ||
+			    !diagnostic_logit_bounded(reserve, context, live, LOG_DEBUG,
+						      "char_to_room: trying to move %s to room < 0",
+						      GET_NAME(ch)))
+				return budget.finish(false);
+			wizlog(AVATAR, "char_to_room: trying to move %s to room < 0", GET_NAME(ch));
+		}
+
+		/* this is a serious error, but let's just try and live with it */
+
+		if (ch->in_room != NOWHERE)
+		{
+			if (!budget.live(&live) ||
+			    !diagnostic_logit_bounded(
+				    reserve, context, live, LOG_DEBUG,
+				    "char_to_room: refusing duplicate insertion of %s still linked to rnum %d into rnum %d [vnum %d]",
+				    J_NAME(ch), ch->in_room, room, world[room].number))
+				return budget.finish(false);
+			*returned = true;
+			*succeeded = false;
+			return budget.finish(true);
+		}
+
+		if (!IS_ROOM(room, ROOM_SINGLE_FILE))
+		{
+			ch->next_in_room = world[room].people;
+			world[room].people = ch;
+		}
+		else
+		{
+			// Find the first two valid exits and the last one.
+			for (j = 0; j < NUM_EXITS; j++)
+				if (world[room].dir_option[j])
+				{
+					if (exit1 == -1)
+						exit1 = j;
+					else if (exit2 == -1)
+						exit2 = j;
+					else
+						exit3 = j;
+				}
+
+			if ((exit1 == -1) || (exit2 == -1))
+			{
+				REMOVE_BIT(world[room].room_flags, ROOM_SINGLE_FILE);
+				exit1 = -1; /* will cause normal behavior */
+			}
+			if (exit3 != -1)
+			{
+				REMOVE_BIT(world[room].room_flags, ROOM_SINGLE_FILE);
+				exit1 = -1; /* will cause normal behavior */
+			}
+			if ((exit1 == -1) || (exit1 == rev_dir[(dir < 0) ? 0 : dir]))
+			{
+				ch->next_in_room = world[room].people;
+				world[room].people = ch;
+			}
+			else
+			{
+				if (!(k = world[room].people))
+					world[room].people = ch;
+				else
+				{
+					while (k->next_in_room)
+						k = k->next_in_room;
+					k->next_in_room = ch;
+					ch->next_in_room = 0;
+				}
+			}
+		}
+
+		was_in = real_room0(ch->specials.was_in_room);
+		was_in_arena = IS_ROOM(was_in, ROOM_ARENA) != 0;
+
+		ch->in_room = room;
+
+		if ((was_in_arena != (IS_ROOM(room, ROOM_ARENA) != 0)) && !IS_TRUSTED(ch))
+		{
+			if (was_in_arena && IS_SET(arena.flags, FLAG_SEENAME))
+			{
+				snprintf(buf, sizeof buf, "%s has left the arena.\r\n",
+					 GET_NAME(ch));
+				if (!native_birth_arena_send_bounded(buf, budget))
+					return budget.finish(false);
+				//      broadcast_to_arena("%s has left the arena.\r\n", ch, 0, was_in);
+			}
+			else if (IS_SET(arena.flags, FLAG_SEENAME))
+			{
+				snprintf(buf, sizeof buf, "%s has entered the arena.\r\n",
+					 GET_NAME(ch));
+				if (!native_birth_arena_send_bounded(buf, budget))
+					return budget.finish(false);
+				//      broadcast_to_arena("%s has entered the arena.\r\n", ch, 0, room);
+			}
+		}
+
+		update_groupies(ch);
+
+		// if anything has moved on the map, find everyone who can see them
+		// and set their flag to send a map update
+		if (IS_MAP_ROOM(was_in) || IS_MAP_ROOM(ch->in_room))
+		{
+			for (d = descriptor_list; d; d = d->next)
+			{
+				who = d->character;
+				if (!who || !who->desc)
+					continue;
+
+				// Determine observer's effective map room
+				int observer_map_room = who->in_room;
+				P_ship observer_ship = NULL;
+
+				if (IS_SHIP_ROOM(who->in_room))
+				{
+					// Ship observers: GMCP only (no terminal spam)
+					if (!GMCP_ENABLED(who))
+						continue;
+					observer_ship = get_ship_from_char(who);
+					if (observer_ship && IS_MAP_ROOM(observer_ship->location))
+					{
+						// Skip wilderness zones - too large, frontend doesn't render them anyway
+						int zone_num =
+							zone_table[world[observer_ship->location]
+									   .zone]
+								.number;
+						if (zone_num == 600 || // The Adventurers Shipyards
+						    (zone_num >= 1200 &&
+						     zone_num <= 1238) || // Alatorin
+						    (zone_num >= 5000 &&
+						     zone_num <= 6599) || // Surface
+						    (zone_num >= 6600 &&
+						     zone_num <= 6999) || // Newbie Maps
+						    (zone_num >= 7000 &&
+						     zone_num <= 8599)) // Underdark
+							continue;
+						observer_map_room = observer_ship->location;
+					}
+					else
+						continue; // Ship not on map, skip this observer
+				}
+				else if (IS_MAP_ROOM(who->in_room))
+				{
+					// Map room observers: MSP or GMCP (original behavior)
+					if (who->desc->term_type != TERM_MSP && !GMCP_ENABLED(who))
+						continue;
+				}
+				else
+				{
+					continue; // Not in map room or ship room
+				}
+
+				if (!CAN_SEE_Z_CORD(who, ch))
+					continue;
+				// Don't show if people move off the map? :(
+				if (!IS_MAP_ROOM(ch->in_room))
+					continue;
+				if (ch == who)
+					continue;
+				if (who->desc->last_map_update) // performance saving!
+					continue;
+
+				// If who is going to follow ch, then don't update map.
+				if (ch == who->following && was_in == who->in_room &&
+				    GET_STAT(who) == STAT_NORMAL && GET_POS(who) == POS_STANDING &&
+				    CAN_ACT(who))
+					continue;
+				// If ch is in the act of following someone.
+				if (IS_AFFECTED5(ch, AFF5_FOLLOWING))
+				{
+					// If the person they're following is who, don't update who's automap.
+					if (ch->following == who)
+						continue;
+					// If they're following the same person (ie same group) and moving together.
+					if (ch->following == who->following &&
+					    (who->in_room == was_in || who->in_room == ch->in_room))
+						continue;
+				}
+
+				int dist = calculate_map_distance(ch->in_room, observer_map_room);
+				int view_dist = map_view_distance(who, observer_map_room);
+
+				if (dist >= 0 && dist <= (view_dist * view_dist))
+				{
+					who->desc->last_map_update = 1;
+					continue;
+				}
+			}
+		}
+
+		if (ch && ch->desc && ch->desc->term_type == TERM_MSP)
+		{
+			if (!(IS_MAP_ROOM(ch->in_room)) && !(IS_SHIP_ROOM(ch->in_room)))
+			{
+				send_to_char("\n<map>\n", ch);
+				rm = &world[ch->in_room];
+				zone = &zone_table[world[ch->in_room].zone];
+				snprintf(temp_buffer, MAX_STRING_LENGTH,
+					 "&+WZone: %s&n.\n&+WRoom: %s", zone->name, rm->name);
+				send_to_char(temp_buffer, ch);
+				send_to_char("\n</map>\n", ch);
+				ch->desc->last_map_update = 0;
+			}
+		}
+
+		AddCharToZone(ch);
+		if (!budget.live(&live) ||
+		    !world_activity_character_enter_bounded(ch, &lower_returned, &lower_succeeded,
+							    reserve, context, live))
+			return budget.finish(false);
+		lower_returned = lower_succeeded = false;
+		if (!budget.live(&live) ||
+		    !character_maintenance_enter_bounded(ch, &lower_returned, &lower_succeeded,
+							 reserve, context, live))
+			return budget.finish(false);
+
+		if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
+		{
+			char_from_room(t_ch);
+			char_to_room(t_ch, ch->in_room, dir);
+		}
+
+		if ((t_ch = get_linking_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
+		{
+			char_from_room(t_ch);
+			char_to_room(t_ch, ch->in_room, dir);
+		}
+
+		/*
+	 * ok, since running battles aren't allowed, if they get here and are
+	 * still fighting, they either got yanked out of combat or this is a
+	 * do_at() call.  we check for the do_at() call, and stop them from
+	 * fighting if it's not a do_at() call (farsee spell uses do_at())
+	 */
+
+		if (GET_OPPONENT(ch) && (dir >= 0))
+			stop_fighting(ch);
+
+		if (!budget.live(&live) ||
+		    !native_birth_char_light_bounded(ch, &light, reserve, context, live))
+			return budget.finish(false);
+		if (!budget.live(&live) ||
+		    !native_reset_room_light_bounded(ch->in_room, REAL, &light, reserve, context,
+						     live))
+			return budget.finish(false);
+
+		if (dir != -2)
+			do_look(ch, 0, -4);
+
+		/* Send GMCP Room.Info - must be before early returns */
+		gmcp_room_info(ch);
+
+		/* Mark room as dirty for GMCP updates (so other players see this character) */
+		gmcp_mark_room_dirty(ch->in_room);
+
+		/* Send GMCP Room.Map for wilderness zones */
+		gmcp_room_map(ch);
+
+		if (dir < 0) /* flag value, skip aggro checks */
+		{
+			*returned = true;
+			*succeeded = true;
+			return budget.finish(true);
+		}
+
+		return budget.finish(false);
+	}
+	catch (...)
+	{
+		return budget.finish(false);
+	}
+}
+bool quest_mobile_native_room_restore_owner::restore_bounded(
+	P_char ch, int room, size_t *retained_step,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!current_global || !reserve || !retained_step || *retained_step > 4 ||
+	    !nevent_is_game_thread() || !ch || !IS_NPC(ch) || !ch->only.npc || !IS_ALIVE(ch) ||
+	    !ch->runtime_id || find_character_by_runtime_id(ch->runtime_id) != ch || !world ||
+	    room < 0 || room > top_of_world || ch->desc || ch->following || ch->followers ||
+	    ch->group || ch->linked || ch->linking || ch->obj_linked || GET_OPPONENT(ch) ||
+	    !training_dummy_can_enter_room(ch))
+		return false;
+	constexpr size_t frame = sizeof(native_character_room_budget) + 15 * sizeof(void *) +
+				 12 * sizeof(size_t) + 5 * sizeof(int) + 5 * sizeof(bool) +
+				 3 * sizeof(char);
+	native_character_room_budget budget{ current_global, reserve, context, 0 };
+	if (!budget.init(outer_live, frame))
+		return false;
+	size_t live;
+	int light;
+	bool returned = false, succeeded = false;
+	try
+	{
+		if (*retained_step == 0)
+		{
+			if (ch->in_room != NOWHERE || ch->next_in_room)
+				return budget.finish(false);
+			// Validate the actual list before the original fixed -2 linkage.
+			P_char slow = world[room].people, fast = slow;
+			while (fast && fast->next_in_room)
+			{
+				slow = slow->next_in_room;
+				fast = fast->next_in_room->next_in_room;
+				if (slow == fast)
+					return budget.finish(false);
+			}
+			for (P_char current = world[room].people; current;
+			     current = current->next_in_room)
+				if (current == ch)
+					return budget.finish(false);
+			char exit1 = -1, exit2 = -1, exit3 = -1;
+			if (IS_ROOM(room, ROOM_SINGLE_FILE))
+			{
+				for (int j = 0; j < NUM_EXITS; ++j)
+					if (world[room].dir_option[j])
+					{
+						if (exit1 == -1)
+							exit1 = j;
+						else if (exit2 == -1)
+							exit2 = j;
+						else
+							exit3 = j;
+					}
+				if (exit1 == -1 || exit2 == -1 || exit3 != -1)
+				{
+					REMOVE_BIT(world[room].room_flags, ROOM_SINGLE_FILE);
+					exit1 = -1;
+				}
+			}
+			if (exit1 == -1 || exit1 == rev_dir[0])
+			{
+				ch->next_in_room = world[room].people;
+				world[room].people = ch;
+			}
+			else
+			{
+				P_char tail = world[room].people;
+				if (!tail)
+					world[room].people = ch;
+				else
+				{
+					while (tail->next_in_room)
+						tail = tail->next_in_room;
+					tail->next_in_room = ch;
+				}
+				ch->next_in_room = nullptr;
+			}
+			ch->in_room = room;
+			*retained_step = 1; // Actual fixed linkage cannot be repeated.
+		}
+		if (ch->in_room != room)
+			return budget.finish(false);
+		if (*retained_step == 1)
+		{
+			// Root-owned prevalidated allocation/assignment cut; false changes
+			// no activity projection, true precedes the retained completion.
+			if (!budget.live(&live) ||
+			    !world_activity_native_birth_restore_owner::enter_bounded(
+				    ch, reserve, context, live))
+				return budget.finish(false);
+			*retained_step = 2;
+		}
+		if (*retained_step == 2)
+		{
+			if (!budget.live(&live))
+				return budget.finish(false);
+			const bool complete = character_maintenance_enter_bounded(
+				ch, &returned, &succeeded, reserve, context, live);
+			if (returned && succeeded)
+				*retained_step = 3;
+			if (!complete)
+				return budget.finish(false);
+			if (!ch->character_maintenance_in_world)
+				return budget.finish(false);
+			*retained_step = 3;
+		}
+		if (*retained_step == 3)
+		{
+			if (!budget.live(&live) ||
+			    !native_birth_char_light_bounded(ch, &light, reserve, context, live))
+				return budget.finish(false);
+			if (!budget.live(&live) ||
+			    !native_reset_room_light_bounded(room, REAL, &light, reserve, context,
+							     live))
+				return budget.finish(false);
+			*retained_step = 4;
+		}
+		return budget.finish(*retained_step == 4);
+	}
+	catch (...)
+	{
+		return budget.finish(
+			false); // Retain linkage and every genuinely completed substep.
+	}
+}
+
+// Complete borrowed-authority dependency supplied by independent artifact owner.
+#include "guild/artifact_native_birth.h"
+namespace
+{
+bool native_birth_balance_affects_bounded(P_char ch, native_character_room_budget &budget)
+{
+	// Complete original balance_affects: identical alive/existing-event test;
+	// actual future callback remains event_balance_affects, never invoked here.
+	if (!IS_ALIVE(ch) || get_scheduled(ch, event_balance_affects))
+		return true;
+	nevent_schedule_result result{};
+	bool returned = false, succeeded = false;
+	size_t live;
+	if (!budget.live(&live))
+		return false;
+	return nevent_schedule_character_bounded(event_balance_affects, 0, ch, &result, &returned,
+						 &succeeded, budget.reserve, budget.context, live);
+}
+}
+bool quest_mobile_native_local_stock::enroll_bounded(
+	P_obj object, P_char ch, const std::string &root, const flatfile_authority_lock &authority,
+	bool *returned, bool *succeeded, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!current_global || !returned || !succeeded || returned == succeeded || *returned ||
+	    !reserve || !nevent_is_game_thread())
+		return false;
+	constexpr size_t frame = sizeof(native_character_room_budget) + 12 * sizeof(void *) +
+				 10 * sizeof(size_t) + 8 * sizeof(bool) +
+				 3 * sizeof(nevent_handle) + sizeof(nevent_schedule_result) +
+				 2 * sizeof(int);
+	native_character_room_budget budget{ current_global, reserve, context, 0 };
+	if (!budget.init(outer_live, frame))
+		return false;
+	if (!ch || !IS_NPC(ch) || !ch->only.npc || ch->desc || ch->following || ch->followers ||
+	    ch->group || ch->linked || ch->linking || ch->obj_linked || GET_OPPONENT(ch))
+		return budget.finish(false);
+	size_t live;
+	int light;
+	bool lower_returned = false, lower_succeeded = false;
+	if (!nevent_is_game_thread() || !object || !ch || !IS_NPC(ch) || ch->in_room == NOWHERE)
+		return budget.finish(false);
+	try
+	{
+		if (!budget.live(&live) ||
+		    !world_activity_object_enter_bounded(object, reserve, context, live))
+			return budget.finish(false);
+		if (IS_ARTIFACT(object))
+			if (!budget.live(&live) ||
+			    artifact_native_birth_location_bounded(
+				    root, authority, object, ch, &lower_returned, &lower_succeeded,
+				    reserve, context, live) != 0)
+				return budget.finish(false);
+		if (object->loc_p == LOC_WORN)
+			if (!native_birth_balance_affects_bounded(ch, budget))
+				return budget.finish(false);
+		if (!budget.live(&live) ||
+		    !native_birth_char_light_bounded(ch, &light, reserve, context, live))
+			return budget.finish(false);
+		if (!budget.live(&live) ||
+		    !native_reset_room_light_bounded(ch->in_room, REAL, &light, reserve, context,
+						     live))
+			return budget.finish(false);
+		mark_char_or_owner_dirty(ch);
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		*returned = true;
+		*succeeded = true;
+		return budget.finish(true);
+	}
+	catch (...)
+	{
+		return budget.finish(false);
+	}
+}
+
+bool quest_mobile_native_local_stock::restore_enrollment_bounded(
+	P_obj object, P_char ch, bool *returned, bool *succeeded,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!current_global || !returned || !succeeded || returned == succeeded || *returned ||
+	    !reserve || !nevent_is_game_thread())
+		return false;
+	constexpr size_t frame = sizeof(native_character_room_budget) + 12 * sizeof(void *) +
+				 10 * sizeof(size_t) + 8 * sizeof(bool) +
+				 3 * sizeof(nevent_handle) + sizeof(nevent_schedule_result) +
+				 2 * sizeof(int);
+	native_character_room_budget budget{ current_global, reserve, context, 0 };
+	if (!budget.init(outer_live, frame))
+		return false;
+	if (!ch || !IS_NPC(ch) || !ch->only.npc || ch->desc || ch->following || ch->followers ||
+	    ch->group || ch->linked || ch->linking || ch->obj_linked || GET_OPPONENT(ch))
+		return budget.finish(false);
+	size_t live;
+	int light;
+	bool lower_returned = false, lower_succeeded = false;
+	if (!nevent_is_game_thread() || !object || !ch || !IS_NPC(ch) || !ch->only.npc ||
+	    !IS_ALIVE(ch) || ch->in_room < 0 || ch->in_room > top_of_world ||
+	    find_character_by_runtime_id(ch->runtime_id) != ch || !object->obj_uid)
+		return budget.finish(false);
+	P_obj root = object, slow = object, fast = object;
+	while (OBJ_INSIDE(fast) && fast->loc.inside && OBJ_INSIDE(fast->loc.inside))
+	{
+		slow = slow->loc.inside;
+		fast = fast->loc.inside->loc.inside;
+		if (!fast || slow == fast)
+			return budget.finish(false);
+	}
+	while (OBJ_INSIDE(root))
+	{
+		if (!root->loc.inside)
+			return budget.finish(false);
+		root = root->loc.inside;
+	}
+	if (!OBJ_CARRIED_BY(root, ch) && !(root->loc_p == LOC_WORN && root->loc.wearing == ch))
+		return budget.finish(false);
+	try
+	{
+		// Whole actual forest activity is reconciled by room restoration once.
+		// No artifact SQL, item probe, cast, proc or duplicate corpse adjustment.
+		if (object->loc_p == LOC_WORN)
+		{
+			if (!native_birth_balance_affects_bounded(ch, budget))
+				return budget.finish(false);
+			P_nevent event = get_scheduled(ch, event_balance_affects);
+			if (!event || event->ch != ch ||
+			    event->owner_runtime_id != ch->runtime_id ||
+			    !nevent_handle_is_active(nevent_handle_from_event(event)))
+				return budget.finish(false);
+		}
+		if (!budget.live(&live) ||
+		    !native_birth_char_light_bounded(ch, &light, reserve, context, live))
+			return budget.finish(false);
+		if (!budget.live(&live) ||
+		    !native_reset_room_light_bounded(ch->in_room, REAL, &light, reserve, context,
+						     live))
+			return budget.finish(false);
+		mark_char_or_owner_dirty(ch);
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		*returned = true;
+		*succeeded = true;
+		return budget.finish(true);
+	}
+	catch (...)
+	{
+		return budget.finish(false);
+	}
+}

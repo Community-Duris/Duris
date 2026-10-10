@@ -107,4 +107,24 @@ bool nevent_advance_by_bounded(const nevent_handle &, unsigned long long, bool *
 			       bool (*)(size_t, void *) noexcept, void *,
 			       size_t outer_live) noexcept;
 
+// Genuine character-only/no-victim/no-payload scheduling; SAME shared event
+// pool and original wheel/character links. Pool/output CURRENT included once.
+// Actual output/returned/succeeded are latched BEFORE fallible diagnostics;
+// false after returned never authorizes a second scheduling action.
+bool nevent_schedule_character_bounded(event_func_type, int, P_char, nevent_schedule_result *,
+				       bool *, bool *, bool (*)(size_t, void *) noexcept, void *,
+				       size_t) noexcept;
+// ONLY actual cancellation vector inline+retained capacity. Does not duplicate
+// shared pool or pending/deferred observers. Refresh common CURRENT every return.
+bool nevent_character_cancel_storage_bytes(size_t *) noexcept;
+// Complete original reschedule-after and actual prospective missing tree node;
+// original active-dispatch refusal/ENOMEM fallback preserved. Strong output.
+bool nevent_reschedule_after_bounded(nevent_handle, unsigned long long, bool *,
+				     bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+// Original maintenance no-payload action only, complete original cancellation
+// and prospective pending-cancellation growth; arbitrary payloads refuse.
+bool nevent_cancel_character_maintenance_bounded(nevent_handle, nevent_cancel_result *,
+						 bool (*)(size_t, void *) noexcept, void *,
+						 size_t) noexcept;
+
 #endif /* _SOJ_EVENTS_H_ */

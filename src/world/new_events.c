@@ -3830,3 +3830,242 @@ bool nevent_advance_by_bounded(const nevent_handle &handle, unsigned long long t
 	return true; // Caller records actual returned before further fallible work.
 #endif
 }
+
+bool nevent_schedule_character_bounded(event_func_type func, int delay, P_char character,
+				       nevent_schedule_result *output, bool *returned,
+				       bool *succeeded, bool (*reserve)(size_t, void *) noexcept,
+				       void *context, size_t outer_live) noexcept
+{
+	if (!output || !returned || !succeeded || returned == succeeded || *returned || !reserve ||
+	    !character || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)func;
+	(void)delay;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		object_schedule_diagnostic_budget budget;
+		size_t pool_now;
+		nevent_schedule_result result;
+		workspace(bool (*r)(size_t, void *) noexcept, void *c, size_t base) noexcept
+			: budget{ r, c, base }
+			, pool_now(0)
+			, result{}
+		{
+		}
+	};
+	const size_t frame = sizeof(workspace) + sizeof(nevent_schedule_result) +
+			     sizeof(nevent_handle) + 9 * sizeof(void *) + 4 * sizeof(size_t) +
+			     sizeof(int) + 3 * sizeof(bool);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	size_t initial_pool, initial_output;
+	if (!nevent_object_schedule_pool_storage_bytes(&initial_pool) ||
+	    !diagnostic_output_storage_bytes(&initial_output) || initial_pool > outer_live ||
+	    initial_output > outer_live - initial_pool)
+		return false;
+	workspace work(reserve, context, outer_live + frame - initial_output);
+	try
+	{
+		// Complete original character-only/no-victim/no-payload validation and messages.
+		if (!func)
+		{
+			work.budget.debug("add_event: No function!");
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::null_callback);
+		}
+		else if (delay < 0)
+		{
+			work.budget.debug("add_event: Delay (%d) les than zero?!", delay);
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::negative_delay);
+		}
+		else if (!IS_ALIVE(character) && func != release_mob_mem)
+		{
+			work.budget.logit(LOG_DEBUG,
+					  "add_event: dead ch '%s' in room r%d/v%d function %s",
+					  GET_NAME(character), character->in_room,
+					  ROOM_VNUM(character->in_room),
+					  get_function_name((void *)func));
+			work.budget.debug("add_event: dead ch '%s' in room r%d/v%d function %s",
+					  GET_NAME(character), character->in_room,
+					  ROOM_VNUM(character->in_room),
+					  get_function_name((void *)func));
+			work.result = nevent_schedule_failure(nevent_schedule_status::dead_owner);
+		}
+		else if (ne_event_sequence == ULLONG_MAX)
+		{
+			work.budget.logit(LOG_EXIT,
+					  "add_event: scheduler sequence space exhausted");
+			work.result =
+				nevent_schedule_failure(nevent_schedule_status::sequence_exhausted);
+		}
+		else
+		{
+			// The genuine configured pool and its outstanding-object/counter agreement
+			// must hold before acquiring a slot. No hidden panic/log allocation afterward.
+			if (!ne_dead_event_pool ||
+			    ne_dead_event_pool->size != sizeof(nevent_data) ||
+			    ne_dead_event_pool->next_off != offsetof(nevent_data, next_sched) ||
+			    ne_event_counter < 0 ||
+			    static_cast<size_t>(ne_event_counter) != ne_dead_event_pool->objs_used)
+				return false;
+			if (!nevent_reserve_object_schedule_slot_bounded(reserve, context,
+									 work.budget.live()) ||
+			    !nevent_object_schedule_pool_storage_bytes(&work.pool_now) ||
+			    work.pool_now < initial_pool ||
+			    work.pool_now - initial_pool > SIZE_MAX - work.budget.base)
+				return false;
+			work.budget.base += work.pool_now - initial_pool;
+			if (!object_schedule_priority_log_preflight(work.budget))
+				return false;
+			// Nonallocating equivalent of original mm_get on the genuinely pre-reserved
+			// free list: same slot order/count/zeroing; no hidden chunk mmap can occur.
+			P_nevent event = static_cast<P_nevent>(mm_try_get(ne_dead_event_pool));
+			if (!event)
+				return false;
+			event->prev_sched = event->next_sched = nullptr;
+			event->prev_char_nev = event->next_char_nev = nullptr;
+			event->prev_obj_nev = event->next_obj_nev = nullptr;
+			event->ch = character;
+			event->victim = nullptr;
+			event->obj = nullptr;
+			event->owner_runtime_id = character->runtime_id;
+			event->victim_runtime_id = 0;
+			event->diagnostic_obj_vnum = 0;
+			event->func = func;
+			event->data = nullptr;
+			event->data_destroy = nullptr;
+			event->priority = nevent_priority(func, character);
+			event->deferral_count = 0;
+			event->periodic_job_id = 0;
+			event->deferred_cost_us = 0;
+			event->due_tick = nevent_add_ticks(ne_event_tick,
+							   static_cast<unsigned long long>(delay));
+			if (event->due_tick < nevent_first_eligible_tick())
+				event->due_tick = nevent_first_eligible_tick();
+			event->sequence = ++ne_event_sequence;
+			event->lifecycle_state = NEVENT_LIFECYCLE_ACTIVE;
+			event->cld = nullptr;
+			const int loc = static_cast<int>(nevent_bucket_for_tick(event->due_tick));
+			event->element = loc;
+			event->prev_char_nev = character->nevents_tail;
+			if (character->nevents_tail)
+				character->nevents_tail->next_char_nev = event;
+			else
+				character->nevents = event;
+			character->nevents_tail = event;
+			nevent_link_schedule(event, loc);
+			++ne_event_counter;
+			nevent_assert_pool_accounting("add_event");
+			work.result = { nevent_schedule_status::scheduled,
+					nevent_handle_from_event(event) };
+		}
+		*output = work.result;
+		*returned = true;
+		*succeeded =
+			work.result.was_scheduled(); // Both actual effect fields BEFORE diagnostics.
+		if (!work.result.was_scheduled() || !debug_event_list)
+			return true;
+		return nevent_check_object_schedule_invariants_bounded(reserve, context,
+								       work.budget.live());
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool nevent_character_cancel_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	if (nevent_pending_cancellations.capacity() >
+	    (SIZE_MAX - sizeof(nevent_pending_cancellations)) / sizeof(nevent_handle))
+		return false;
+	*output = sizeof(nevent_pending_cancellations) +
+		  nevent_pending_cancellations.capacity() * sizeof(nevent_handle);
+	return true;
+}
+
+bool nevent_reschedule_after_bounded(nevent_handle handle, unsigned long long delay,
+				     bool *rescheduled, bool (*reserve)(size_t, void *) noexcept,
+				     void *context, size_t outer_live) noexcept
+{
+	if (!rescheduled || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	size_t working = 2 * sizeof(nevent_handle) + sizeof(nevent_pending_reschedule) +
+			 2 * sizeof(unsigned long long) + sizeof(P_nevent) + sizeof(size_t);
+	P_nevent event = handle.event;
+	if (event && handle.sequence && event->sequence == handle.sequence &&
+	    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE &&
+	    (current_nevent || nevent_reschedule_batch_depth) && event != current_nevent &&
+	    nevent_pending_reschedules.find(event) == nevent_pending_reschedules.end())
+		if (!native_reschedule_add(
+			    working, sizeof(std::_Rb_tree_node<
+					     decltype(nevent_pending_reschedules)::value_type>)))
+			return false;
+	if (working > SIZE_MAX - outer_live || !reserve(outer_live + working, context))
+		return false;
+	*rescheduled = nevent_reschedule_after(handle, delay);
+	return true; // Original insertion, current-dispatch refusal and ENOMEM fallback.
+#endif
+}
+
+// Private action domain: the genuine character-maintenance no-payload event.
+// Arbitrary payload destructors are not granted a new bounded callback contract.
+bool nevent_cancel_character_maintenance_bounded(nevent_handle handle, nevent_cancel_result *output,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept
+{
+	if (!output || !reserve || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	P_nevent event = handle.event;
+	size_t working = 2 * sizeof(nevent_handle) + sizeof(P_nevent) + 3 * sizeof(size_t);
+	if (event && handle.sequence && event->sequence == handle.sequence &&
+	    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+	{
+		if (event->func != generic_char_event || !event->ch || event->victim ||
+		    event->obj || event->data || event->data_destroy || !ne_dead_event_pool ||
+		    ne_event_counter <= 0 ||
+		    static_cast<size_t>(ne_event_counter) != ne_dead_event_pool->objs_used)
+			return false;
+		if (current_nevent &&
+		    nevent_pending_cancellations.size() == nevent_pending_cancellations.capacity())
+		{
+			const size_t size = nevent_pending_cancellations.size();
+			if (size > SIZE_MAX - std::max(size, size_t{ 1 }))
+				return false;
+			const size_t capacity = size + std::max(size, size_t{ 1 });
+			if (capacity > SIZE_MAX / sizeof(nevent_handle) ||
+			    !native_reschedule_add(working, capacity * sizeof(nevent_handle)))
+				return false;
+		}
+	}
+	if (working > SIZE_MAX - outer_live || !reserve(outer_live + working, context))
+		return false;
+	try
+	{
+		*output = nevent_cancel(handle);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	} // Original partial cancel remains retained/observable.
+#endif
+}
