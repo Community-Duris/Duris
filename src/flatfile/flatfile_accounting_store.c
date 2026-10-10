@@ -1,3 +1,5 @@
+#include "flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h"
+#include <set>
 #include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_ordinary_native_birth_receipt.h"
@@ -1878,6 +1880,410 @@ flatfile_ordinary_native_birth_receipt_storage::verify_source_claim_current_lock
 				record.durable_revision == 1 &&
 				record.result.size() == NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES);
 			ordinary_birth_claim_census_locked(root, lock, record.command, true, error);
+		},
+		error);
+}
+
+namespace
+{
+void ordinary_history_authority_checked(unsigned int error)
+{
+	require(!error, error == ENOMEM || error == ENOSPC || error == EOVERFLOW ?
+				status::capacity :
+			error == EIO ? status::io_error :
+				       status::invalid);
+}
+std::vector<uint64_t> ordinary_history_born_uids(const quest_mobile_native_image &image)
+{
+	std::vector<uint64_t> born;
+	born.reserve(image.items.size());
+	for (const auto &literal : image.items)
+		born.push_back(literal.object_uid);
+	std::sort(born.begin(), born.end());
+	require(std::adjacent_find(born.begin(), born.end()) == born.end() &&
+		(born.empty() || born.front()));
+	return born;
+}
+
+// Only the closed receipt-owner entries below create metadata with the owning
+// passive storage reader. This helper has no public DTO/capability entry point.
+template <class Visit> void ordinary_history_scan_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_native_mobile_birth_ordinary_retained_metadata &metadata,
+	flatfile_ordinary_native_birth_economic_history_counts &observed, Visit visit,
+	std::string *error)
+{
+	require(!root.empty() && lock.matches(root));
+	std::set<std::array<uint8_t, 16>> retained_epochs;
+	for (const auto &epoch : metadata.epochs)
+		require(retained_epochs.insert(epoch.epoch.bytes).second);
+	require(metadata.epochs.size() == metadata.control.epoch_count);
+	observed.lineage = metadata.control.lineage;
+	observed.lineage_revision = metadata.control.revision;
+	observed.epochs_digest = metadata.control.epochs_digest;
+	observed.retained_epochs = static_cast<uint32_t>(metadata.epochs.size());
+	for (size_t bucket = 0; bucket < FLATFILE_ACCOUNTING_BUCKETS; ++bucket)
+	{
+		const bool initialized = (metadata.control.evidence_initialized[bucket / 8] &
+					  (uint8_t{ 1 } << (bucket % 8))) != 0;
+		if (!initialized)
+		{
+			// Original full-prefix namespace fence. File absence alone does
+			// not authenticate a clear initialized bit or an empty bucket.
+			require_empty_bucket(root, bucket);
+			++observed.clear_buckets;
+		}
+		else
+		{
+			auto value = load_context(root, bucket, error);
+			require(value.index.lineage.bytes == metadata.control.lineage.bytes,
+				status::conflict);
+			++observed.initialized_buckets;
+			if (!value.index.entries.empty())
+			{
+				const uint32_t active = last_segment(value.index);
+				for (uint32_t segment = 0; segment <= active; ++segment)
+				{
+					// load_context already authenticates the active segment
+					// and stale-next fence. Each sealed segment is fully read
+					// with the original checksum/count/index digest decoder.
+					const auto bytes = segment == active ?
+								   std::move(value.active) :
+								   load_segment(root, value.index,
+										segment, error);
+					for (const auto *item :
+					     segment_entries(value.index, segment))
+					{
+						const auto wire =
+							std::span<const uint8_t>(bytes).subspan(
+								header_bytes + 32 + item->offset,
+								item->bytes);
+						auto record = decode_record(wire);
+						economic_frozen_intent intent;
+						checked(economic_intent_decode(
+							record.command.accounting_intent, &intent));
+						checked(economic_intent_verify_binding(
+							record.command, intent));
+						require(record.command.operation_id.bytes ==
+								item->id.bytes &&
+							intent.admission.metadata.lineage.bytes ==
+								value.index.lineage.bytes &&
+							retained_epochs.contains(
+								intent.admission.metadata.epoch
+									.bytes));
+						// Full record round trip includes every original command,
+						// outcome/revision/plan/result byte, not a projected DTO.
+						const auto canonical = encode_record(record);
+						require(canonical.size() == wire.size() &&
+							std::equal(canonical.begin(),
+								   canonical.end(), wire.begin()));
+						++observed.records_verified;
+						if (record.result_code)
+						{
+							++observed.failed_records;
+							visit(record, nullptr, wire);
+						}
+						else
+						{
+							economic_accounting_plan plan;
+							checked(economic_plan_decode(record.plan,
+										     &plan));
+							require(plan.metadata.operation_id.bytes ==
+									record.command.operation_id
+										.bytes &&
+								plan.metadata.lineage.bytes ==
+									metadata.control.lineage
+										.bytes &&
+								plan.metadata.epoch.bytes ==
+									intent.admission.metadata
+										.epoch.bytes &&
+								plan.children.empty());
+							++observed.successful_records;
+							observed.item_events_verified +=
+								plan.item_events.size();
+							visit(record, &plan, wire);
+						}
+					}
+					++observed.segments_verified;
+				}
+			}
+		}
+		++observed.buckets_verified;
+	}
+	require(observed.buckets_verified == FLATFILE_ACCOUNTING_BUCKETS && lock.matches(root));
+}
+
+void ordinary_history_verify_creation_events(const critical_command &command,
+					     const quest_mobile_native_image &image,
+					     const economic_accounting_plan &plan)
+{
+	require(command.type == critical_command_type::native_mobile_birth &&
+		command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+		image.reference.birth_operation.bytes == command.operation_id.bytes &&
+		plan.metadata.operation_id.bytes == command.operation_id.bytes && image.cash &&
+		image.cash->revision == 1 && plan.children.empty() &&
+		plan.item_events.size() == image.items.size() &&
+		plan.items_before.size() == image.items.size() &&
+		plan.items_after.size() == image.items.size());
+	std::vector<uint64_t> roots;
+	roots.reserve(image.items.size());
+	for (size_t index = 0; index < image.items.size(); ++index)
+	{
+		const auto &literal = image.items[index];
+		uint64_t root_uid = literal.object_uid, parent_uid = 0;
+		if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		{
+			require(literal.parent_index >= 0 &&
+				static_cast<size_t>(literal.parent_index) < index &&
+				!literal.equipment_slot);
+			const size_t parent = static_cast<size_t>(literal.parent_index);
+			root_uid = roots[parent];
+			parent_uid = image.items[parent].object_uid;
+		}
+		roots.push_back(root_uid);
+		const auto &event = plan.item_events[index];
+		// Original SQL ledger's operation/event/UID, root/parent, from-owner
+		// and to-owner/context, item revision and equipment fields. Complete
+		// NMB4 ordinary compilation already binds the full EAP1 bytes.
+		require(event.event_index == index && !event.child_index &&
+			event.uid == literal.object_uid &&
+			economic_item_position_equal(event.before, economic_item_position{}) &&
+			event.after.owner.type == item_owner_type::native_mobile &&
+			event.after.owner.id == image.reference.mobile_instance_id &&
+			event.after.owner.context_id == 0 && event.after.root_uid == root_uid &&
+			event.after.parent_uid == parent_uid && event.after.revision == 1 &&
+			event.after.state == item_custody_state::active &&
+			event.after.equipment_slot == literal.equipment_slot);
+		// The typed creation family fixes from/to owner revisions 0/1 and
+		// creation reason/id creation/0 in the original SQL ledger marshaller;
+		// source_site is the actual immutable command field. No independent
+		// mutable ledger DTO or fictitious disk columns supply those values.
+		const auto prior = std::lower_bound(plan.items_before.begin(),
+						    plan.items_before.end(), literal.object_uid,
+						    [](const economic_item_snapshot &row,
+						       uint64_t uid) { return row.uid < uid; });
+		const auto after = std::lower_bound(plan.items_after.begin(),
+						    plan.items_after.end(), literal.object_uid,
+						    [](const economic_item_snapshot &row,
+						       uint64_t uid) { return row.uid < uid; });
+		require(prior != plan.items_before.end() && prior->uid == literal.object_uid &&
+			economic_item_position_equal(prior->position, event.before) &&
+			after != plan.items_after.end() && after->uid == literal.object_uid &&
+			economic_item_position_equal(after->position, event.after));
+	}
+}
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_initial_history_absence_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_ordinary_native_birth_economic_history_counts *output, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(output && !root.empty() && lock.matches(root) &&
+				native_mobile_birth_cash_role_recovery_initial(original));
+			quest_mobile_native_image image;
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			economic_frozen_intent intent;
+			checked(native_mobile_birth_cash_role_command_decode(
+				original.command, &image, &recipes, &role));
+			checked(economic_intent_decode(original.command.accounting_intent,
+						       &intent));
+			checked(economic_intent_verify_binding(original.command, intent));
+			require(role.role == native_mobile_birth_cash_role::ordinary_wallet &&
+				image.cash &&
+				image.reference.birth_operation.bytes ==
+					original.command.operation_id.bytes &&
+				intent.admission.metadata.source_event.has_value());
+			const auto born = ordinary_history_born_uids(image);
+			flatfile_native_mobile_birth_ordinary_retained_metadata metadata;
+			ordinary_history_authority_checked(
+				flatfile_native_mobile_birth_ordinary_baseline_history_storage::
+					read_metadata_locked(root, lock, &metadata, error));
+			require(metadata.control.lineage.bytes ==
+				intent.admission.metadata.lineage.bytes);
+			flatfile_native_mobile_birth_ordinary_baseline_absence baseline;
+			const auto baseline_status =
+				flatfile_native_mobile_birth_ordinary_baseline_history_storage::
+					verify_initial_absence_locked(root, lock, original,
+								      &baseline, error);
+			require(baseline_status == status::ok, baseline_status);
+			require(baseline.lineage.bytes == metadata.control.lineage.bytes &&
+				baseline.lineage_revision == metadata.control.revision &&
+				baseline.epochs_digest == metadata.control.epochs_digest &&
+				baseline.born_uids == born.size());
+			const auto claim_status = verify_source_claim_absent_locked(
+				root, lock, original.command, error);
+			require(claim_status == status::ok, claim_status);
+
+			flatfile_ordinary_native_birth_economic_history_counts observed;
+			observed.born_uids = born.size();
+			observed.baseline_indexes_verified = baseline.indexes_verified;
+			observed.baseline_item_reservations_verified =
+				baseline.item_reservations_verified;
+			ordinary_history_scan_locked(
+				root, lock, metadata, observed,
+				[&](const flatfile_accounting_record &record,
+				    const economic_accounting_plan *plan, std::span<const uint8_t>)
+				{
+					// Any retained outcome already owns this operation ID.
+					require(record.command.operation_id.bytes !=
+							original.command.operation_id.bytes,
+						status::already_exists);
+					if (!plan)
+						return;
+					for (const auto &event : plan->item_events)
+						require(!std::binary_search(born.begin(),
+									    born.end(), event.uid),
+							status::already_exists);
+					if (record.command.type ==
+					    critical_command_type::economic_baseline)
+					{
+						// Baseline has before==after witnesses and NO item
+						// events. Its original UID history must not disappear.
+						for (const auto *rows :
+						     { &plan->items_before, &plan->items_after })
+							for (const auto &row : *rows)
+							{
+								require(!std::binary_search(
+										born.begin(),
+										born.end(),
+										row.uid),
+									status::already_exists);
+								++observed.baseline_witness_rows_verified;
+							}
+					}
+				},
+				error);
+			require(lock.matches(root));
+			static_assert(std::is_nothrow_copy_assignable_v<
+				      flatfile_ordinary_native_birth_economic_history_counts>);
+			*output = observed;
+		},
+		error);
+}
+
+flatfile_accounting_status
+flatfile_ordinary_native_birth_receipt_storage::verify_retained_history_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, flatfile_accounting_record *output,
+	flatfile_ordinary_native_birth_economic_history_counts *counts, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(output && counts && !root.empty() && lock.matches(root) &&
+				!critical_operation_id_is_zero(operation));
+			flatfile_accounting_record record;
+			const auto receipt_status = verify_retained_current_locked(
+				root, lock, operation, &record, error);
+			require(receipt_status == status::ok, receipt_status);
+			const auto claim_status =
+				verify_source_claim_current_locked(root, lock, record, error);
+			require(claim_status == status::ok, claim_status);
+
+			quest_mobile_native_image image;
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			checked(native_mobile_birth_cash_role_command_decode(record.command, &image,
+									     &recipes, &role));
+			require(role.role == native_mobile_birth_cash_role::ordinary_wallet);
+			native_mobile_birth_cash_role_result receipt;
+			require(native_mobile_birth_cash_role_result_decode(record.result,
+									    &receipt) &&
+				receipt.role == native_mobile_birth_cash_role::ordinary_wallet);
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(record.command.accounting_intent, &intent));
+			checked(economic_intent_verify_binding(record.command, intent));
+			const economic_account_key wallet{ intent.admission.metadata.lineage,
+							   economic_account_kind::wallet,
+							   receipt.wallet_mapping_id,
+							   ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+			economic_accounting_plan expected;
+			checked(native_mobile_birth_cash_role_accounting_compile(
+				record.command, wallet, &expected));
+			std::vector<uint8_t> expected_plan;
+			checked(economic_plan_encode(expected, &expected_plan));
+			require(expected_plan == record.plan);
+			ordinary_history_verify_creation_events(record.command, image, expected);
+			const auto original_record = encode_record(record);
+			const auto born = ordinary_history_born_uids(image);
+			flatfile_native_mobile_birth_ordinary_retained_metadata metadata;
+			ordinary_history_authority_checked(
+				flatfile_native_mobile_birth_ordinary_baseline_history_storage::
+					read_metadata_locked(root, lock, &metadata, error));
+			require(metadata.control.lineage.bytes == expected.metadata.lineage.bytes);
+
+			flatfile_ordinary_native_birth_economic_history_counts observed;
+			observed.born_uids = born.size();
+			ordinary_history_scan_locked(
+				root, lock, metadata, observed,
+				[&](const flatfile_accounting_record &retained,
+				    const economic_accounting_plan *plan,
+				    std::span<const uint8_t> wire)
+				{
+					if (retained.command.operation_id.bytes == operation.bytes)
+					{
+						require(plan &&
+							original_record.size() == wire.size() &&
+							std::equal(original_record.begin(),
+								   original_record.end(),
+								   wire.begin()));
+						ordinary_history_verify_creation_events(
+							retained.command, image, *plan);
+						require(retained.command.source_site ==
+								record.command.source_site &&
+							retained.plan == expected_plan &&
+							plan->accounts.size() ==
+								expected.accounts.size() &&
+							plan->postings.size() ==
+								expected.postings.size() &&
+							plan->children.empty());
+						++observed.birth_records_verified;
+						observed.creation_events_verified +=
+							plan->item_events.size();
+						observed.birth_account_effects_verified +=
+							plan->accounts.size();
+						observed.birth_coin_postings_verified +=
+							plan->postings.size();
+						return;
+					}
+					if (!plan)
+						return;
+					for (const auto &event : plan->item_events)
+						// Original SQL ledger UNIQUE(item_uid,item_revision).
+						// Do NOT apply this key to references or to baseline
+						// before==after revision1 witnesses that have no event.
+						require(event.after.revision != 1 ||
+								!std::binary_search(born.begin(),
+										    born.end(),
+										    event.uid),
+							status::conflict);
+					if (retained.command.type ==
+					    critical_command_type::economic_baseline)
+						observed.baseline_witness_rows_verified +=
+							plan->items_before.size() +
+							plan->items_after.size();
+				},
+				error);
+			require(observed.birth_records_verified == 1 &&
+				observed.creation_events_verified == expected.item_events.size() &&
+				observed.birth_account_effects_verified ==
+					expected.accounts.size() &&
+				observed.birth_coin_postings_verified == expected.postings.size() &&
+				lock.matches(root));
+			static_assert(
+				std::is_nothrow_move_assignable_v<flatfile_accounting_record>);
+			static_assert(std::is_nothrow_copy_assignable_v<
+				      flatfile_ordinary_native_birth_economic_history_counts>);
+			// Both final transfers are nonthrowing; no fallible tail can
+			// publish only one output after an earlier refusal.
+			*output = std::move(record);
+			*counts = observed;
 		},
 		error);
 }
