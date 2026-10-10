@@ -248,6 +248,8 @@ class quest_mobile_native_birth_owner final
 	static void seal_mobile_flat(size_t private_live) noexcept;
 	static void block_mobile_flat() noexcept;
 	static void finish_reset_flat() noexcept;
+	static bool ordinary_flat_freeze_source_current(size_t) noexcept;
+	static bool freeze_ordinary_flat_command(size_t, size_t);
 	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
 	static bool ordinary_flat_execution_source_current(
 		const quest_mobile_native_birth_ordinary_execution_lease &, const void *) noexcept;

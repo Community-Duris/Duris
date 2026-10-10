@@ -173,6 +173,13 @@ class economic_gameplay_authority
 		const native_mobile_birth_cash_role_recipe &, critical_source_site,
 		uint64_t accepted_at_usec, critical_command *) noexcept;
 
+	// Actual constructor owner supplies its immutable source projection. The
+	// retained selected view remains alive through the complete bounded compiler.
+	static economic_accounting_error prepare_native_mobile_birth_ordinary_wallet_flat_bounded(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const native_mobile_birth_cash_role_recipe &, critical_source_site, uint64_t,
+		critical_command *, const critical_operation_id &, const critical_operation_id &,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	// Fresh shared role only, using the same installed regular SQL projection.
 	// The original birth owner proves source/stage/constructor/checkpoint facts;
 	// no replay rebind, SHOP clock, admission or publication follows here.
