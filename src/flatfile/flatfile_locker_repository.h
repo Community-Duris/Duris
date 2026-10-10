@@ -115,4 +115,14 @@ flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_au
 				      flatfile_locker_transfer_mutation *mutation,
 				      std::string *error);
 
+// Full passive borrowed-lock catalog reader with prospective storage admission.
+// Preserves both wire versions, every locker/chest/item and all access policy.
+// Caller outer includes authentic inputs/prior output/other owners; the returned
+// heap counts actual nested retained capacities excluding inline vector/rows.
+// Strong vector/scalar output; ENOBUFS is admission refusal, never absence.
+flatfile_locker_result flatfile_locker_recovery_list_locked_bounded(
+	const std::string &, const flatfile_authority_lock &, std::vector<flatfile_locker_record> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_output_heap = nullptr) noexcept;
+
 #endif

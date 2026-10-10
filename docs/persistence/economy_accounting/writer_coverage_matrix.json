@@ -339,6 +339,8 @@
       "src/flatfile/flatfile_item_accounting_reference.h": "a027f934d96a892d2839b9d6eb22e67bee3eec3fee57e25533fa0c03f03b2417",
       "src/flatfile/flatfile_item_repository.c": "55bd3a0525af70f65c12534d65a6bfdfd4050a6b0658233f87de2d950debf138",
       "src/flatfile/flatfile_item_repository.h": "60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42",
+      "src/flatfile/flatfile_locker_repository.c": "778b9047b845112d8c60f6a32d929b1ad79ad8c142627110e82721ea8bc43369",
+      "src/flatfile/flatfile_locker_repository.h": "1616e171362b3130c23aeb5446aa58797ccf3e3bf9865d89a89beea18f6285f5",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h": "ec22e00f4759383dff532c9e3ffc602a30a8363bb2fa95700703c4dc33c0583f",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_custody.h": "10c97ecc1a8707dcba2dd85592e6fc94f98ab0018a75ec3e973cce985bde0230",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128",
