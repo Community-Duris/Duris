@@ -1013,3 +1013,344 @@ error native_mobile_birth_command_decode_bounded(
 	}
 #endif
 }
+namespace
+{
+// Full NMB2 companions preserve historical recipe framing and canonical proof.
+error birth_recipe_payload_encode_bounded(
+	const quest_mobile_native_image &image,
+	const std::span<const native_mobile_birth_item_recipe> &recipes,
+	std::vector<uint8_t> *output, birth_command_reserve_fn reserve, void *context,
+	size_t outer) noexcept
+{
+	if (!output || !reserve)
+		return error::corrupt_evidence;
+	size_t base = outer;
+	if (!birth_command_add(base, sizeof(birth_payload_workspace)) ||
+	    !birth_command_add(base, sizeof(birth_payload_live)) ||
+	    !birth_command_admit(base, 0, reserve, context))
+		return error::capacity;
+	try
+	{
+		birth_payload_workspace work;
+		birth_payload_live live{ work, base };
+		size_t current = base;
+		auto status = image_error(quest_mobile_native_image_encode_bounded(
+			image, &work.image, reserve, context, current));
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = birth_command_recipe_encode_bounded(image.items, recipes, &work.recipe,
+							     reserve, context, current);
+		if (status != error::ok)
+			return status;
+		const size_t fixed = RECIPE_PAYLOAD_HEADER_BYTES;
+		if (work.image.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - fixed ||
+		    work.recipe.size() >
+			    CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - fixed - work.image.size())
+			return error::capacity;
+		const size_t encoded = fixed + work.image.size() + work.recipe.size();
+		if (!live.bytes(current) ||
+		    !birth_command_admit(current, encoded, reserve, context))
+			return error::capacity;
+		work.candidate.reserve(encoded);
+		work.candidate.insert(work.candidate.end(), RECIPE_PAYLOAD_MAGIC.begin(),
+				      RECIPE_PAYLOAD_MAGIC.end());
+		append_u32(work.candidate, static_cast<uint32_t>(work.image.size()));
+		append_u32(work.candidate, static_cast<uint32_t>(work.recipe.size()));
+		work.candidate.insert(work.candidate.end(), work.image.begin(), work.image.end());
+		work.candidate.insert(work.candidate.end(), work.recipe.begin(), work.recipe.end());
+		*output = std::move(work.candidate);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+error birth_recipe_command_build_bounded(
+	const economic_operation_metadata &metadata, const quest_mobile_native_image &image,
+	const std::span<const native_mobile_birth_item_recipe> &recipes, critical_source_site site,
+	uint64_t accepted_at_usec, critical_command *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!output || !accepted_at_usec || site < critical_source_site::command ||
+	    site > critical_source_site::operator_repair)
+		return error::invalid_identity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)metadata;
+	(void)image;
+	(void)recipes;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return error::unresolved;
+#else
+	// Original metadata owns two source arrays; the source encoder owns its
+	// distinct result array. All checks precede candidate allocations as before.
+	if (!birth_command_admit(outer,
+				 3 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>),
+				 reserve, context))
+		return error::capacity;
+	const auto checked = original_metadata(metadata, image);
+	if (checked != error::ok)
+		return checked;
+	size_t base = outer;
+	if (!birth_command_add(base, sizeof(birth_build_workspace)) ||
+	    !birth_command_add(base, sizeof(birth_build_live)) ||
+	    !birth_command_admit(base, 0, reserve, context))
+		return error::capacity;
+	try
+	{
+		birth_build_workspace work;
+		birth_build_live live{ work, base };
+		auto &candidate = work.candidate;
+		candidate.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		candidate.operation_id = image.reference.birth_operation;
+		candidate.type = critical_command_type::native_mobile_birth;
+		candidate.payload_version = NATIVE_MOBILE_BIRTH_RECIPE_PAYLOAD_VERSION;
+		candidate.source_site = site;
+		candidate.deadline_class = critical_deadline_class::background;
+		candidate.accepted_at_usec = accepted_at_usec;
+		auto status = birth_recipe_payload_encode_bounded(
+			image, recipes, &candidate.payload, reserve, context, base);
+		if (status != error::ok)
+			return status;
+		if (candidate.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+			return error::capacity;
+		size_t current = 0, extra = 0;
+		if (!live.bytes(current) ||
+		    !birth_command_push_request(candidate.keys.size(), candidate.keys.capacity(),
+						sizeof(critical_entity_key),
+						sizeof(critical_entity_key), extra) ||
+		    !birth_command_admit(current, extra, reserve, context))
+			return error::capacity;
+		candidate.keys.push_back({ critical_entity_type::native_mobile,
+					   image.reference.mobile_instance_id });
+		if (!live.bytes(current) ||
+		    !birth_command_push_request(candidate.expected_revisions.size(),
+						candidate.expected_revisions.capacity(),
+						sizeof(critical_expected_revision),
+						sizeof(critical_expected_revision), extra) ||
+		    !birth_command_admit(current, extra, reserve, context))
+			return error::capacity;
+		candidate.expected_revisions.push_back({ candidate.keys.back(), 0 });
+		if (image.reference.provenance == quest_mobile_birth_provenance::reset)
+		{
+			if (!live.bytes(current) ||
+			    !birth_command_push_request(candidate.keys.size(),
+							candidate.keys.capacity(),
+							sizeof(critical_entity_key),
+							sizeof(critical_entity_key), extra) ||
+			    !birth_command_admit(current, extra, reserve, context))
+				return error::capacity;
+			candidate.keys.push_back(
+				{ critical_entity_type::zone,
+				  static_cast<uint64_t>(image.reference.reset_zone_vnum) + 1 });
+		}
+		for (const auto &item : image.items)
+		{
+			if (!live.bytes(current) ||
+			    !birth_command_push_request(candidate.keys.size(),
+							candidate.keys.capacity(),
+							sizeof(critical_entity_key),
+							sizeof(critical_entity_key), extra) ||
+			    !birth_command_admit(current, extra, reserve, context))
+				return error::capacity;
+			candidate.keys.push_back({ critical_entity_type::item, item.object_uid });
+			if (!live.bytes(current) ||
+			    !birth_command_push_request(candidate.expected_revisions.size(),
+							candidate.expected_revisions.capacity(),
+							sizeof(critical_expected_revision),
+							sizeof(critical_expected_revision),
+							extra) ||
+			    !birth_command_admit(current, extra, reserve, context))
+				return error::capacity;
+			candidate.expected_revisions.push_back({ candidate.keys.back(), 0 });
+		}
+		if (candidate.keys.size() > CRITICAL_COMMAND_MAX_KEYS ||
+		    candidate.expected_revisions.size() > CRITICAL_COMMAND_MAX_KEYS)
+			return error::capacity;
+		std::sort(candidate.keys.begin(), candidate.keys.end(), critical_entity_key_less);
+		std::sort(candidate.expected_revisions.begin(), candidate.expected_revisions.end(),
+			  [](const auto &a, const auto &b)
+			  { return critical_entity_key_less(a.key, b.key); });
+		work.facts.metadata = metadata;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = economic_intent_freeze_bounded(candidate, work.facts,
+							&candidate.accounting_intent, reserve,
+							context, current);
+		if (status != error::ok)
+			return status;
+		candidate.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		candidate.publication_required = true;
+		if (!critical_command_envelope_valid(candidate))
+			return error::corrupt_evidence;
+		*output = std::move(candidate);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
+
+error birth_recipe_command_decode_bounded(
+	const critical_command &command, quest_mobile_native_image *output,
+	std::vector<native_mobile_birth_item_recipe> *recipe_output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	size_t *retained_image_heap, size_t *retained_recipe_heap) noexcept
+{
+	if (!output || !recipe_output ||
+	    command.payload_version != NATIVE_MOBILE_BIRTH_RECIPE_PAYLOAD_VERSION ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.type != critical_command_type::native_mobile_birth ||
+	    !command.publication_required || !critical_command_envelope_valid(command))
+		return error::corrupt_evidence;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	(void)retained_image_heap;
+	(void)retained_recipe_heap;
+	return error::unresolved;
+#else
+	size_t base = outer;
+	if (!birth_command_add(base, sizeof(birth_decode_workspace)) ||
+	    !birth_command_add(base, sizeof(birth_decode_live)) ||
+	    !birth_command_admit(base, sizeof(std::span<const uint8_t>), reserve, context))
+		return error::capacity;
+	try
+	{
+		birth_decode_workspace work;
+		birth_decode_live live{ work, base };
+		work.payload = std::span<const uint8_t>(command.payload);
+		const auto &bytes = work.payload;
+		if (bytes.size() < RECIPE_PAYLOAD_HEADER_BYTES ||
+		    !std::equal(RECIPE_PAYLOAD_MAGIC.begin(), RECIPE_PAYLOAD_MAGIC.end(),
+				bytes.begin()))
+			return error::corrupt_evidence;
+		const size_t image_size = read_u32(bytes, 4);
+		const size_t recipe_size = read_u32(bytes, 8);
+		const size_t body_size = bytes.size() - RECIPE_PAYLOAD_HEADER_BYTES;
+		if (!image_size || !recipe_size || image_size > body_size ||
+		    recipe_size != body_size - image_size)
+			return error::corrupt_evidence;
+		work.image_wire = bytes.subspan(RECIPE_PAYLOAD_HEADER_BYTES, image_size);
+		work.recipe_wire =
+			bytes.subspan(RECIPE_PAYLOAD_HEADER_BYTES + image_size, recipe_size);
+		size_t current = base;
+		auto status = image_error(quest_mobile_native_image_decode_bounded(
+			work.image_wire, &work.image, reserve, context, current, &work.image_heap));
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = birth_command_recipe_decode_bounded(work.recipe_wire, work.image.items,
+							     &work.recipes, reserve, context,
+							     current, &work.recipe_heap);
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current) ||
+		    !birth_command_admit(current, sizeof(std::span<const uint8_t>), reserve,
+					 context))
+			return error::capacity;
+		work.intent_wire = std::span<const uint8_t>(command.accounting_intent);
+		status = economic_intent_decode_bounded(work.intent_wire, &work.intent, reserve,
+							context, current);
+		if (status != error::ok)
+			return status;
+		if (work.intent.admission.facts_version != 1 ||
+		    !work.intent.admission.facts.empty())
+			return error::payload_conflict;
+		if (!live.bytes(current))
+			return error::capacity;
+		status = economic_intent_verify_binding_bounded(command, work.intent, reserve,
+								context, current);
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current) ||
+		    !birth_command_admit(current,
+					 sizeof(std::span<const native_mobile_birth_item_recipe>),
+					 reserve, context))
+			return error::capacity;
+		work.recipe_values = std::span<const native_mobile_birth_item_recipe>(work.recipes);
+		status = birth_recipe_command_build_bounded(
+			work.intent.admission.metadata, work.image, work.recipe_values,
+			command.source_site, command.accepted_at_usec, &work.expected, reserve,
+			context, current);
+		if (status != error::ok)
+			return status;
+		if (!live.bytes(current))
+			return error::capacity;
+		if (critical_command_encode_bounded(command, &work.actual_bytes, reserve, context,
+						    current) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (!live.bytes(current))
+			return error::capacity;
+		if (critical_command_encode_bounded(work.expected, &work.expected_bytes, reserve,
+						    context,
+						    current) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (work.actual_bytes != work.expected_bytes)
+			return error::payload_conflict;
+		static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_image>);
+		static_assert(std::is_nothrow_move_assignable_v<
+			      std::vector<native_mobile_birth_item_recipe>>);
+		*recipe_output = std::move(work.recipes);
+		*output = std::move(work.image);
+		if (retained_image_heap)
+			*retained_image_heap = work.image_heap;
+		if (retained_recipe_heap)
+			*retained_recipe_heap = work.recipe_heap;
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}
+} // namespace
+
+economic_accounting_error native_mobile_birth_command_decode_bounded(
+	const critical_command &command, quest_mobile_native_image *output,
+	std::vector<native_mobile_birth_item_recipe> *recipes,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_image_heap_bytes, size_t *retained_recipe_heap_bytes) noexcept
+{
+	if (command.payload_version == NATIVE_MOBILE_BIRTH_RECIPE_PAYLOAD_VERSION)
+		return birth_recipe_command_decode_bounded(command, output, recipes, reserve,
+							   context, outer_live,
+							   retained_image_heap_bytes,
+							   retained_recipe_heap_bytes);
+	if (command.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION)
+		return error::corrupt_evidence;
+	// The real constructor output remains live throughout the genuine v3 decoder.
+	size_t base = outer_live;
+	if (!birth_command_add(base, sizeof(quest_mobile_native_constructor_recipe)) ||
+	    !birth_command_admit(base, 0, reserve, context))
+		return error::capacity;
+	quest_mobile_native_constructor_recipe constructor;
+	return native_mobile_birth_command_decode_bounded(command, output, recipes, &constructor,
+							  reserve, context, base,
+							  retained_image_heap_bytes,
+							  retained_recipe_heap_bytes);
+}

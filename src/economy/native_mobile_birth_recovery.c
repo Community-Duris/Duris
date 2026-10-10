@@ -2101,3 +2101,189 @@ bool native_mobile_birth_shared_shop_recovery_execution_valid_bounded(
 	       (revision != 1 ||
 		(!work.value.progress.receipt_present && no_progress(work.value.progress)));
 }
+
+namespace
+{
+
+struct historical_initial_command_workspace
+{
+	quest_mobile_native_image image;
+};
+bool historical_initial_command_values_bounded(
+	const critical_command &command, std::vector<uint8_t> *canonical,
+	std::vector<native_mobile_birth_item_recipe> *recipes, recovery_reserve_fn reserve,
+	void *context, size_t outer, size_t *recipe_heap)
+{
+	size_t base = outer;
+	if (!recovery_add(base, sizeof(historical_initial_command_workspace)) ||
+	    !recovery_admit(base, 0, reserve, context))
+		return false;
+	historical_initial_command_workspace work;
+	if ((command.payload_version != NATIVE_MOBILE_BIRTH_RECIPE_PAYLOAD_VERSION &&
+	     command.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION) ||
+	    !command.publication_required ||
+	    critical_command_encode_bounded(command, canonical, reserve, context, base) !=
+		    critical_command_codec_result::ok ||
+	    canonical->size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES ||
+	    !recovery_add(base, canonical->capacity()))
+		return false;
+	size_t image_heap = 0, recipes_heap = 0;
+	if (native_mobile_birth_command_decode_bounded(command, &work.image, recipes, reserve,
+						       context, base, &image_heap,
+						       &recipes_heap) != error::ok)
+		return false;
+	*recipe_heap = recipes_heap;
+	return true;
+}
+
+error historical_initial_decode_bounded(const critical_command &command,
+					const std::span<const uint8_t> &bytes,
+					native_mobile_birth_recovery_context *output,
+					recovery_reserve_fn reserve, void *context, size_t outer,
+					size_t *retained_heap) noexcept
+{
+	constexpr auto policy = recovery_policy::historical;
+	if (!output)
+		return error::corrupt_evidence;
+	if (!recovery_storage_policy())
+		return error::unresolved;
+	size_t base = outer;
+	if (!recovery_add(base, sizeof(recovery_decode_workspace)) ||
+	    !recovery_add(base, sizeof(recovery_reservation)) ||
+	    !recovery_add(base, sizeof(recovery_wire_item_access)) ||
+	    !recovery_add(base, sizeof(recovery_wire_count_access)) ||
+	    !recovery_add(base, sizeof(recovery_wire_effect_access)) ||
+	    !recovery_admit(base, 0, reserve, context))
+		return error::capacity;
+	recovery_reservation admission{ reserve, context };
+	reserve = &recovery_reservation::forward;
+	context = &admission;
+	try
+	{
+		recovery_decode_workspace work;
+		recovery_wire_item_access get_item{ bytes, work.view };
+		recovery_wire_count_access get_count{ bytes, work.view };
+		recovery_wire_effect_access get_effect{ bytes, work.view };
+		const auto checked = recovery_preflight_bounded(&command, bytes, &work.view, policy,
+								reserve, context, base);
+		if (checked != error::ok)
+			return checked;
+		// INITIAL only. A successful receipt requires a separate historical result
+		// compiler; refuse every receipt before entering the bounded progress path.
+		if (work.view.body[0])
+			return error::corrupt_evidence;
+		size_t recipe_heap = 0;
+		if (!historical_initial_command_values_bounded(command, &work.canonical,
+							       &work.recipes, reserve, context,
+							       base, &recipe_heap) ||
+		    !std::equal(work.canonical.begin(), work.canonical.end(),
+				work.view.command.begin(), work.view.command.end()) ||
+		    work.view.count != work.recipes.size())
+			return admission.refused ? error::capacity : error::payload_conflict;
+		size_t current = base;
+		if (!recovery_add(current, work.canonical.capacity()) ||
+		    !recovery_add(current, recipe_heap))
+			return error::capacity;
+		if (!recovery_admit(current,
+				    sizeof(std::span<const native_mobile_birth_item_recipe>),
+				    reserve, context))
+			return error::capacity;
+		work.recipe_values = work.recipes;
+		if (!recovery_admit(current,
+				    sizeof(std::span<const native_mobile_birth_item_recipe>),
+				    reserve, context))
+			return error::capacity;
+		// The complete wire bounds preceded all allocation. Check recipe-derived
+		// counts before creating any attachment container, not only afterwards.
+		size_t offset = work.view.items_offset;
+		for (size_t i = 0; i < work.recipes.size(); ++i)
+		{
+			const size_t count =
+				static_cast<uint32_t>(get(bytes.data() + offset + 16, 4));
+			const size_t index =
+				recipe_index(work.recipe_values, get(bytes.data() + offset, 8));
+			if (index == work.recipes.size() ||
+			    count != step_count(work.recipes[index]))
+				return error::corrupt_evidence;
+			offset += ITEM_BYTES + count;
+		}
+		if (!recovery_admit(current, 2 * sizeof(critical_completion), reserve, context))
+			return error::capacity;
+		read_body(work.view.body, &work.candidate);
+		if (!recovery_context_valid_range_bounded(
+			    command, work.recipe_values, work.candidate, work.view.count, get_item,
+			    get_count, get_effect, policy, reserve, context, current))
+			return admission.refused ? error::capacity : error::corrupt_evidence;
+		// All attachment semantics, including ordering, cursor/latches and exact
+		// recipe/result correlation, now passed before attachment containers allocate.
+		size_t retained = 0;
+		if (!recovery_rows(retained, work.view.count,
+				   sizeof(native_mobile_birth_recovery_item)) ||
+		    !recovery_admit(current, retained, reserve, context))
+			return error::capacity;
+		work.candidate.items.reserve(work.view.count);
+		offset = work.view.items_offset;
+		for (size_t i = 0; i < work.view.count; ++i)
+		{
+			size_t row_live = current;
+			if (!recovery_add(row_live, retained) ||
+			    !recovery_admit(row_live, 2 * sizeof(native_mobile_birth_recovery_item),
+					    reserve, context))
+				return error::capacity;
+			auto item = read_item(bytes.data() + offset);
+			// Already proved against this UID's recipe before any container allocation.
+			const size_t count =
+				static_cast<uint32_t>(get(bytes.data() + offset + 16, 4));
+			offset += ITEM_BYTES;
+			size_t effect_heap = 0, effect_live = row_live;
+			if (!recovery_rows(effect_heap, count,
+					   sizeof(native_mobile_birth_recovery_effect)) ||
+			    !recovery_add(effect_live, sizeof(native_mobile_birth_recovery_item)) ||
+			    !recovery_add(effect_live, effect_heap) ||
+			    !recovery_admit(effect_live,
+					    sizeof(native_mobile_birth_recovery_effect), reserve,
+					    context))
+				return error::capacity;
+			item.effects.reserve(count);
+			for (size_t e = 0; e < count; ++e)
+				item.effects.push_back(effect(bytes[offset++]));
+			work.candidate.items.push_back(std::move(item));
+			if (!recovery_add(retained, effect_heap))
+				return error::capacity;
+		}
+		static_assert(
+			std::is_nothrow_move_assignable_v<native_mobile_birth_recovery_context>);
+		*output = std::move(work.candidate);
+		if (retained_heap)
+			*retained_heap = retained;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+}
+} // namespace
+
+bool native_mobile_birth_recovery_initial_bounded(const critical_native_recovery_envelope &envelope,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	if (envelope.revision != 1 ||
+	    envelope.phase != critical_native_recovery_phase::execution_pending)
+		return false;
+	struct initial_workspace
+	{
+		native_mobile_birth_recovery_context value;
+		std::span<const uint8_t> attachment;
+	};
+	size_t base = outer_live;
+	if (!recovery_add(base, sizeof(initial_workspace)) ||
+	    !recovery_admit(base, sizeof(std::span<const uint8_t>), reserve, context))
+		return false;
+	initial_workspace work;
+	work.attachment = envelope.attachment;
+	return historical_initial_decode_bounded(envelope.command, work.attachment, &work.value,
+						 reserve, context, base, nullptr) == error::ok &&
+	       !work.value.receipt_present && no_progress(work.value);
+}
