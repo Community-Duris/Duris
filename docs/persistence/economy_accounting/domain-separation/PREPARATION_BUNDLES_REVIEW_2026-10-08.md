@@ -2847,6 +2847,160 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Bank passive recovery pair reviewed CLOSED; restitution passive runtime pair selected - 2026-10-10
+
+Both original PUBLISHED_BANK_PASSIVE_RECOVERY_AUTHORITY_BOUNDARY_2026-10-10.txt
+and PUBLISHED_BANK_PASSIVE_RECOVERY_ACCEPTANCE_DELTA_2026-10-10.txt independently
+SOURCE/DESIGN/METADATA PASS; both BR reviews CLOSED without correction at fixed K
+330a4556a285f2c182dfac9e6219faa1adb87582 / actual parent A
+a6e5b792e46cd95d37438eb4809ad145def87397. Original selecting charter Q
+8e7a53045293e1f22cc87fa7863438ac11008013 / parent W
+2bcee7ea43333cc6e14f8b664560da9bc41ed5e9 and retained-status C
+c285511ac6a37e2d0b051e2311389443e9350fe6 remain sealed. Architecture's limited
+empty remote query and quest's separate current53 observation are distinct; neither
+repins original K. No note/PINS/receipt/index/history rewrite or old verifier rerun.
+Root evidence D:/Dev/Temp/coordinator-bank-passive-review-20261010 independently
+authenticates strict indices/raw complete providers/Git identities/full definitions/
+catches/declarations/inline methods/lifetimes/equalities/whole forward-inverses/
+complete diffs/continuities and minimal CLOSED SS/SG principals. Both verifiers
+fully read and audited as pure stdlib/read-only Git; default stdout reproduced
+each original saved receipt exactly before coordinator source advance.
+Architecture:28 providers,111 exact cuts,34 complete original equalities,eight new
+definitions,21 declarations,10 declaration equalities,three inline methods,three
+try/scratch lifetime blocks,four whole inverse pairs/eight raw diffs,12 whole
+continuities,one original command C prefix,three censuses,four minimal principals,
+one finite assessment;155 indexed payloads plus INDEX,156 files total.
+Quest:30 providers,80 full functions,35 scopes,three inline methods,five owning
+controls,58 equalities,four inverses/raw diffs,one command C prefix,12 continuities,
+two minimal SS/SG contexts/10 principals and four-payload index. No correction.
+All BR1-BR4 component/native UNEXECUTED; genuine commands UNAVAILABLE.
+Original principal seals:
+- Architecture INDEX.json: 25157/b889141106cb1940119c84c68fd2db5181bce471d3ef92cc7b2242442c893f25
+- Architecture PINS.json: 156177/ad9f8df06578f106a0a1f024d2e91b81e66b65fdfc1e3ade6995548b91d066dc
+- Architecture PUBLISHED_BANK_PASSIVE_RECOVERY_AUTHORITY_BOUNDARY_2026-10-10.txt: 38510/a50ed03c4b2ca16617decde1b0e5d7ea04b6ed96a27cd4217430f3a39fb0f494
+- Architecture VERIFICATION.json: 2182/40626efef4234394599a9dc1a8e601df38be2928f6e4b492dd04c7ac084851cd
+- Architecture verify.py: 33189/6851a5276ba617dbe8a562a306bfc6195ce7ea8ae7f47106cb4a927e361d374f
+- Quest INDEX.json: 667/ee1df281f6c2476a59d9c793817a7d644c24a79475246b9b291261d6182ae404
+- Quest PINS.json: 3604267/d8267a0bd73b1d771225742bf0a141036d2e71226bb3693efe14c333346152a5
+- Quest PUBLISHED_BANK_PASSIVE_RECOVERY_ACCEPTANCE_DELTA_2026-10-10.txt: 26732/8778b4152983b9e087d856bee99791d6de2e6786b84d1ede3a6e0eb4f1505fd8
+- Quest VERIFICATION.json: 3237/645ff96941688e3a2483eae2c9826315678c3fbe75c9b6865ce9bbe24803e017
+- Quest verify.py: 21763/58a9de2f9b535531424db596dddfc96f2f78591af2303e1c2e15d9d36ed0dcc5
+
+BR preserves original schema/publication observation and explicit bank-only refusal,
+full envelope/typed ATM/name/padding/vector/key/limit/duplicate controls and original
+mixed currency receiver. Exact original lower-name/NUL/racewar/SHA256/first-u64/
+zero-to-one identity is source evidence, not crypto execution or mapping authority.
+New bounded key/payload outputs are strong after genuine final refresh; old decoder
+mutating-on-false remains. Actual data-free table/health/buckets/nodes/key and optional
+coin-command capacities count once, actual copied policy/new allocation overlap and
+original node-handle forwarding remain. Genuine returned insertion facts precede
+fallible CURRENT; scratch dies before final rebase. False erases only genuinely new
+node without callback/allocation in erase, retains prior entries/buckets, then ignores
+the best-effort recensus result. No new success health/forced zero/authority follows.
+Caller excludes currency once, carries real C/J/input/output/siblings; no locking
+reentry, lease, atomic combined state or added external OS-thread runtime gate.
+Full original crypto/container/native/math/ABI/allocator/full aggregate qualification
+NOT PERFORMED. This closure supplies preparation review, not primary adoption.
+
+Current successor R53c66b0c3a9d636ff39e86f71c534eddfa3c6a6b / actual parent Q8e7
+EXISTS and is unselected: complete private bounded restitution adapter/runtime replay
+and closed paired actual offline/pending-save/fence callbacks. Prior root source proof
+reads full handoff/headers/all262 adapter+121 runtime appended C, authenticates four
+whole forward/inverses,14 unchanged whole bank/SS/ROOT/budget/coordinator/journal
+providers and all three owned Q sections. At this delivery root also reads complete
+runtime C/H, original adapter replay and actual offline/pending/acquire/release,
+status identity/registration context and v3/status handoffs/full command header.
+Complete original codec/status-cache/save/load/revision/quarantine/crypto/container/
+native closure/request math/ABI/allocator/aggregate qualification NOT PERFORMED.
+Private RAW/review/token/preprocessor/policy/source-pin claims REPORTED ONLY.
+The decoder Dfe7fdcb809c996b70d144005a03f7207d6f86ec0 / parent K330, cache owner
+Sc285511ac6a37e2d0b051e2311389443e9350fe6 / parent Dfe7 and IST1 decoder
+I60cf5cd1be3ac4a1843168e8aef33190d14e7234 / parent d5 EXIST. Prior separate
+whole source inverses authenticate their availability; their full new C semantic
+review is not inferred from that metadata. Status/runtime missing-leaf claims are
+obsolete. Genuine host/sibling/full mixed startup selection remains unfinished.
+
+One bounded active delivery per chat now selected, fixed R53/Q8e7, Dfe7/K330,
+Sc285/Dfe7 and required IST1 I60cf/d5 dependencies:
+- Architecture: PUBLISHED_RESTITUTION_PASSIVE_RUNTIME_AUTHORITY_BOUNDARY_2026-10-10.txt
+- Quest: PUBLISHED_RESTITUTION_PASSIVE_RUNTIME_ACCEPTANCE_DELTA_2026-10-10.txt
+Complete player_death_restitution_adapter/runtime C/H original and bounded restore,
+actual cache census/reservation/identity/slot/cleanup, closed callback owner and full
+required offline/save/login fence closure; exact v3 bounded command/plan validator,
+original decode/plan-valid controls and required IST1 ownership/decoder dependencies.
+Pin genuine helper scopes/owners and whole inverses, not transitive full inventories.
+Minimal CLOSED BR/SG references only, no old verifier/history rerun. Future benefit:
+implementation-ready original restitution startup custody, simultaneous plans/cache
+and once-only real target-fence acquisition with legal refusal/retry acceptance.
+No second domain/full host inventory or duplicate maintained math/admission policy.
+
+Four RR legal acceptance cuts only:
+RR1 Genuine original full command-valid twice and five complete plan validations,
+actual v3/IST1/item/artifact/source/UID/key/time/digest law and exact status identity/
+duplicate/submission-slot decisions. No initial-only shortcut or synthetic command,
+phase/receipt/generation/readiness/custody/authority. Whole original controls govern.
+RR2 Real adapter and nested runtime plans, decoded/current/prior outputs, item-row/
+validator/crypto scratch, cache arrays/callback table/all retained actor capacities
+including cleared/unused entries coexist. Authentic outer excludes cache exactly once,
+includes C/J/input/output/host/siblings; actual request/reset/new-status retention and
+strong codec outputs remain distinct. Snapshot is no lease/atomic aggregate proof.
+RR3 Closed genuine paired offline/pending-save/acquire callbacks preserve actual
+load/descriptor/online/save/revision/quarantine/worker/fixed target-slot checks and
+original offline -> acquire -> offline -> exact release-on-second-refusal law.
+Admit entire declared closure before entering real fence; no later fallible budget
+callback/allocation/new predicate after successful acquire. Real target fence IS a
+control-state effect; passive restore does not deliver items, issue SQL/RNG/UID/native
+construction, submit a replacement command, append journal or grant ACK authority.
+Source carrier expressions are not emitted-stack/crypto/allocator qualification.
+RR4 Actual result mapping and new-status-only preallowed cleanup preserve original
+records/retained actor capacity; false from admission is not proof the underlying
+offline/save predicate failed. Accepted result roots real submission/status with
+original nonfallible tail; no native/fence rerun or post-success reserve. Provider/
+both plans/scratch die before fresh genuine surviving sibling/full aggregate census.
+Persistent journal attempt once outside outer, held C/J callback exclusions and
+original ambiguous/terminal/abort ownership controls remain without invented gates.
+No synthetic flags/receipts/generation/phase/owners/lenders/native markers, constant
+observers/accepting stubs/copied fixtures or maintained money/admission/contract edit.
+All RR1-RR4 component/native UNEXECUTED; genuine commands UNAVAILABLE. Private D:
+strict INDEX/deterministic audited stdlib/read-only Git verifier/exact saved receipt,
+root independent review. Missing authentic host full-family dispatcher/fresh surviving
+sibling aggregation/full mixed startup selector/admission/original owner/fault/restart/
+capture/current native ELF/schema/crypto/ABI/allocator/full caller aggregate inputs
+block dependent execution only, not this concrete source preparation.
+
+Evolving queue: selected RR map/four blueprints first. At handoff reassess meaningful
+published successors once, never expand/reassign/repin active tasks or CLOSED proof.
+Complete mixed startup/host/ROOM/shared/legacy/currency and fresh sibling joining,
+SG guard/N402 replay/7f rollback/persistent metadata-uncertainty/full selector/admission/
+capture/legal failure/restart remain separate. Available R/D/S/I/bank and all earlier
+private pulse/submit/driver/lender/locked startup leaves are not missing capabilities.
+Smith genuine SQL/flat BEFORE/history/season/capture-factory-save-source/participant/
+publication/guarded ACK; paired ROOT/publication/NPC pool-slot/four cold routes/
+detach/adopt/enroll/light; diagnostics/service/scheduler/placement/activity and full
+caller/native/crypto/ABI/allocator evidence remain queued without busywork/adoption wait.
+Primary retains maintained implementation/math/admission/authority/contracts/
+qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release. Root publishes
+only three owned docs, exact inserted section inverse restores original R53; no
+maintained-source delta/private artifact import/commit/compiler/preprocessor/native/
+product/DB/deploy/activation/production mutation or other-chat messages.
+Preserve all CLOSED BR/SS/SG/PC/PD/SC/RK/RF/GG/CG/CK/SAME-lock original pins/receipts/
+histories, SS two-sentence/five originals, PC two-sentence/244 originals, SC class/five
+originals, scanner unchecked-close/242 originals, lifecycle hydration-allocation law
+(may allocate pre-admitted nodes/no budget callbacks; only post-hydration native tail
+no allocation), CURRENT/warm/constructor declaration-order/141 originals, terminal TR
+UNEXECUTED/factory CURRENT-RETAINED/immutable and every earlier seal. Preserve isolated
+clean checkouts/live jobs/services/build evidence and quest unpublished f4e20219113fdaee7d3ead787418d89683e05590.
+Historical Oct7 e7c381c7/Pasted text.txt genuine newer human provenance answer pending
+as observed; actual new human instructions take priority. Prior component PASS/QP04
+FAIL/private-ready SQL-flat reports root UNREVIEWED, no current ELF/gameplay/SQL capture
+qualification. No reset/revert/kill/delete/restart/extra product/DB work/private adoption
+inference. Missing execution inputs do not block selected private source work.
+Actual Goal BLOCKED unchanged1791410483, no replacement/resumption/completion.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/owner completion audit open.
+Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat
+ACTIVE until broad audit/user pause, quiet unchanged/non-actionable notifications;
+notify meaningful progress/failure/completion/required user action.
+
 ## Shared-shop passive replay pair reviewed CLOSED; bank passive recovery pair selected - 2026-10-10
 
 Both original PUBLISHED_SHARED_SHOP_PASSIVE_REPLAY_AUTHORITY_BOUNDARY_2026-10-10.txt
