@@ -2253,13 +2253,103 @@ struct mobile_constructor_frame_scope
 	}
 };
 
-template <class... Args> bool mobile_constructor_logit(mobile_constructor_budget *budget,
-						       const char *filename, const char *format,
-						       Args... args) noexcept
+enum class mobile_constructor_log_format
+{
+	message_0,
+	message_1,
+	message_2,
+	message_3,
+	message_4,
+	message_5,
+	message_6,
+	message_7,
+	message_8,
+	message_9,
+	message_10,
+	message_11,
+	message_12,
+	message_13,
+	message_14,
+	message_15
+};
+
+enum class mobile_constructor_debug_format
+{
+	message_0
+};
+
+template <mobile_constructor_log_format Format, class... Args>
+bool mobile_constructor_logit(mobile_constructor_budget *budget, const char *filename,
+			      Args... args) noexcept
 {
 	if (!budget)
 	{
-		logit(filename, format, args...);
+		if constexpr (Format == mobile_constructor_log_format::message_0)
+		{
+			logit(filename, "%s", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_1)
+		{
+			logit(filename, "fread_string: string too large (db.c)", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_2)
+		{
+			logit(filename, "read_mobile: Mob %d not in database", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_3)
+		{
+			logit(filename, "read_mobile: negative rnum (%d). args %d, %s", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_4)
+		{
+			logit(filename, "mob %s has no only.npc struct!", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_5)
+		{
+			logit(filename, "Mob %d has messed up format.", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_6)
+		{
+			logit(filename, "Bad level %ld for mob '%s' %d.", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_7)
+		{
+			logit(filename, "Warning: MOB #%d has negative (%d) hp.\n", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_8)
+		{
+			logit(filename, "Mob '%s' %d has extreme exp %s.", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_9)
+		{
+			logit(filename, "MOB #%d has negative (%d) hp.", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_10)
+		{
+			logit(filename, "Mob %d tried to load dead", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_11)
+		{
+			logit(filename, "Mob %d loaded fighting.", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_12)
+		{
+			logit(filename, "Old style mob: %d Race: %s(%d)", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_13)
+		{
+			logit(filename,
+			      "FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
+			      args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_14)
+		{
+			logit(filename, "ACT_SPEC, but no function: %d %s", args...);
+		}
+		else if constexpr (Format == mobile_constructor_log_format::message_15)
+		{
+			logit(filename, "Object %d has an invalid B5 affect mask.", args...);
+		}
 		return true;
 	}
 	constexpr size_t frames = 4 * sizeof(void *) + sizeof(size_t) + (sizeof(Args) + ... + 0) +
@@ -2268,16 +2358,114 @@ template <class... Args> bool mobile_constructor_logit(mobile_constructor_budget
 		return false;
 	mobile_constructor_frame_scope scope(budget, frames);
 	size_t live = 0;
-	return budget->live(&live) &&
-	       diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live, filename,
-					format, args...);
+	if (!budget->live(&live))
+		return false;
+	if constexpr (Format == mobile_constructor_log_format::message_0)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "%s", args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_1)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "fread_string: string too large (db.c)",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_2)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "read_mobile: Mob %d not in database",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_3)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename,
+						"read_mobile: negative rnum (%d). args %d, %s",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_4)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "mob %s has no only.npc struct!",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_5)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Mob %d has messed up format.", args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_6)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Bad level %ld for mob '%s' %d.",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_7)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename,
+						"Warning: MOB #%d has negative (%d) hp.\n",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_8)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Mob '%s' %d has extreme exp %s.",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_9)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "MOB #%d has negative (%d) hp.", args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_10)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Mob %d tried to load dead", args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_11)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Mob %d loaded fighting.", args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_12)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "Old style mob: %d Race: %s(%d)",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_13)
+	{
+		return diagnostic_logit_bounded(
+			mobile_constructor_budget::relay, budget, live, filename,
+			"FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
+			args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_14)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename, "ACT_SPEC, but no function: %d %s",
+						args...);
+	}
+	else if constexpr (Format == mobile_constructor_log_format::message_15)
+	{
+		return diagnostic_logit_bounded(mobile_constructor_budget::relay, budget, live,
+						filename,
+						"Object %d has an invalid B5 affect mask.",
+						args...);
+	}
+	return false;
 }
-template <class... Args> bool mobile_constructor_debug(mobile_constructor_budget *budget,
-						       const char *format, Args... args) noexcept
+template <mobile_constructor_debug_format Format, class... Args>
+bool mobile_constructor_debug(mobile_constructor_budget *budget, Args... args) noexcept
 {
 	if (!budget)
 	{
-		debug(format, args...);
+		if constexpr (Format == mobile_constructor_debug_format::message_0)
+		{
+			debug("Bad level %ld for mob '%s' %d.", args...);
+		}
 		return true;
 	}
 	constexpr size_t frames = 3 * sizeof(void *) + sizeof(size_t) + (sizeof(Args) + ... + 0) +
@@ -2286,8 +2474,14 @@ template <class... Args> bool mobile_constructor_debug(mobile_constructor_budget
 		return false;
 	mobile_constructor_frame_scope scope(budget, frames);
 	size_t live = 0;
-	return budget->live(&live) && diagnostic_debug_bounded(mobile_constructor_budget::relay,
-							       budget, live, format, args...);
+	if (!budget->live(&live))
+		return false;
+	if constexpr (Format == mobile_constructor_debug_format::message_0)
+	{
+		return diagnostic_debug_bounded(mobile_constructor_budget::relay, budget, live,
+						"Bad level %ld for mob '%s' %d.", args...);
+	}
+	return false;
 }
 
 bool mobile_constructor_wizlog_bounded(mobile_constructor_budget &budget, int level,
@@ -2358,7 +2552,8 @@ bool mobile_constructor_read_text_bounded(FILE *fl, char **output,
 		if (!fgets(tmp, MAX_STRING_LENGTH - 5, fl))
 		{
 			perror("fread_string");
-			if (!mobile_constructor_logit(&budget, LOG_DEBUG, "%s", tmp))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_0>(
+				    &budget, LOG_DEBUG, tmp))
 				return false;
 			return false;
 		}
@@ -2380,8 +2575,8 @@ bool mobile_constructor_read_text_bounded(FILE *fl, char **output,
 		}
 		if (length + templength >= MAX_STRING_LENGTH)
 		{
-			if (!mobile_constructor_logit(&budget, LOG_EXIT,
-						      "fread_string: string too large (db.c)"))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_1>(
+				    &budget, LOG_EXIT))
 				return false;
 			return false;
 		}
@@ -2937,17 +3132,16 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		if ((nr = real_mobile(nr)) < 0)
 		{
 #if defined(DB_NOTIFY) && DB_NOTIFY
-			if (!mobile_constructor_logit(budget, LOG_DEBUG,
-						      "read_mobile: Mob %d not in database", i))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_2>(
+				    budget, LOG_DEBUG, i))
 				return nullptr;
 #endif
 			return 0;
 		}
 	if (nr < 0)
 	{
-		if (!mobile_constructor_logit(budget, LOG_DEBUG,
-					      "read_mobile: negative rnum (%d). args %d, %s", nr, i,
-					      type ? "VIRTUAL" : "REAL"))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_3>(
+			    budget, LOG_DEBUG, nr, i, type ? "VIRTUAL" : "REAL"))
 			return nullptr;
 		return 0;
 	}
@@ -3042,8 +3236,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		}
 		else
 			wizlog(56, "mob has no only.npc struct!");
-		if (!mobile_constructor_logit(budget, LOG_DEBUG, "mob %s has no only.npc struct!",
-					      GET_NAME(mob)))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_4>(
+			    budget, LOG_DEBUG, GET_NAME(mob)))
 			return nullptr;
 		if (!detached)
 			mm_release(dead_mob_pool, mob);
@@ -3219,9 +3413,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	{
 		if (sscanf(buf, " %ld %ld %ld %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3)
 		{
-			if (!mobile_constructor_logit(budget, LOG_DEBUG,
-						      "Mob %d has messed up format.",
-						      mob_index[nr].virtual_number))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_5>(
+				    budget, LOG_DEBUG, mob_index[nr].virtual_number))
 				return nullptr;
 			SET_BIT(mob->specials.act, ACT_ISNPC);
 			if (!detached)
@@ -3301,12 +3494,11 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		if (tmp > MAXLVL || tmp < 1)
 		{
-			if (!mobile_constructor_logit(budget, LOG_DEBUG,
-						      "Bad level %ld for mob '%s' %d.", tmp,
-						      J_NAME(mob), GET_VNUM(mob)))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_6>(
+				    budget, LOG_DEBUG, tmp, J_NAME(mob), GET_VNUM(mob)))
 				return nullptr;
-			if (!mobile_constructor_debug(budget, "Bad level %ld for mob '%s' %d.", tmp,
-						      J_NAME(mob), GET_VNUM(mob)))
+			if (!mobile_constructor_debug<mobile_constructor_debug_format::message_0>(
+				    budget, tmp, J_NAME(mob), GET_VNUM(mob)))
 				return nullptr;
 			mob->player.level = level = (tmp > MAXLVL) ? MAXLVL : 1;
 		}
@@ -3378,9 +3570,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		}
 		mob->points.hit = mob->points.max_hit = mob->points.base_hit;
 		if (mob->points.hit <= 0)
-			if (!mobile_constructor_logit(
-				    budget, LOG_MOB, "Warning: MOB #%d has negative (%d) hp.\n",
-				    mob_index[nr].virtual_number, mob->points.hit))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_7>(
+				    budget, LOG_MOB, mob_index[nr].virtual_number, mob->points.hit))
 				return nullptr;
 
 		REQUIRED_FSCANF(mob_f, " %ldd%ld+%ld \n", &tmp, &tmp2, &tmp3);
@@ -3400,10 +3591,10 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 			GET_COPPER(mob) = tmp1; /* * (number(50, 200) / 100); */
 			if (tmp > 10000000)
 			{
-				if (!mobile_constructor_logit(
-					    budget, LOG_MOB, "Mob '%s' %d has extreme exp %s.",
-					    mob->player.name, mob_index[nr].virtual_number,
-					    comma_string(tmp)))
+				if (!mobile_constructor_logit<
+					    mobile_constructor_log_format::message_8>(
+					    budget, LOG_MOB, mob->player.name,
+					    mob_index[nr].virtual_number, comma_string(tmp)))
 					return nullptr;
 			}
 			GET_EXP(mob) = tmp * (capsule ?
@@ -3476,9 +3667,9 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		mob->points.hit = mob->points.max_hit = mob->points.base_hit;
 		if (mob->points.hit < 0)
 		{
-			if (!mobile_constructor_logit(
-				    budget, LOG_DEBUG, "MOB #%d has negative (%d) hp.",
-				    mob_index[nr].virtual_number, mob->points.hit))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_9>(
+				    budget, LOG_DEBUG, mob_index[nr].virtual_number,
+				    mob->points.hit))
 				return nullptr;
 		}
 
@@ -3517,8 +3708,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	switch (tmp)
 	{
 	case 0: /* * was POSITION_DEAD */
-		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d tried to load dead",
-					      mob_index[nr].virtual_number))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_10>(
+			    budget, LOG_DEBUG, mob_index[nr].virtual_number))
 			return nullptr;
 		SET_POS(mob, POS_PRONE + STAT_DYING);
 		break;
@@ -3541,8 +3732,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		SET_POS(mob, POS_SITTING + STAT_NORMAL);
 		break;
 	case 7: /* * was POSITION_FIGHTING */
-		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d loaded fighting.",
-					      mob_index[nr].virtual_number))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_11>(
+			    budget, LOG_DEBUG, mob_index[nr].virtual_number))
 			return nullptr;
 		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
@@ -3571,8 +3762,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	switch (tmp)
 	{
 	case 0: /* * was POSITION_DEAD */
-		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d tried to load dead",
-					      mob_index[nr].virtual_number))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_10>(
+			    budget, LOG_DEBUG, mob_index[nr].virtual_number))
 			return nullptr;
 		SET_POS(mob, POS_PRONE + STAT_DYING);
 		break;
@@ -3595,8 +3786,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		SET_POS(mob, POS_SITTING + STAT_NORMAL);
 		break;
 	case 7: /* * was POSITION_FIGHTING */
-		if (!mobile_constructor_logit(budget, LOG_DEBUG, "Mob %d loaded fighting.",
-					      mob_index[nr].virtual_number))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_11>(
+			    budget, LOG_DEBUG, mob_index[nr].virtual_number))
 			return nullptr;
 		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
@@ -3808,9 +3999,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 				     Gbuf1))
 				mob->player.race = i;
 
-		if (!mobile_constructor_logit(budget, LOG_MOB, "Old style mob: %d Race: %s(%d)",
-					      mob_index[nr].virtual_number, Gbuf1,
-					      mob->player.race))
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_12>(
+			    budget, LOG_MOB, mob_index[nr].virtual_number, Gbuf1, mob->player.race))
 			return nullptr;
 
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
@@ -3916,10 +4106,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 	if (foo > bar)
 	{
 		foo = bar;
-		if (!mobile_constructor_logit(
-			    budget, LOG_MOB,
-			    "FYI - no changes made to MOB: %d has _RIDICULOUS_ damage. %dd%d + %d (%d to %d) check mob code, stats and racial stats.",
-			    mob_index[nr].virtual_number, mob->points.damnodice,
+		if (!mobile_constructor_logit<mobile_constructor_log_format::message_13>(
+			    budget, LOG_MOB, mob_index[nr].virtual_number, mob->points.damnodice,
 			    mob->points.damsizedice, GET_DAMROLL(mob),
 			    GET_DAMROLL(mob) + mob->points.damnodice,
 			    GET_DAMROLL(mob) + (mob->points.damnodice * mob->points.damsizedice)))
@@ -3940,9 +4128,8 @@ static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detac
 		if (mob_index[nr].number == (detached ? 0 : 1)) /*
 		                                * only first, not every
 		                                */
-			if (!mobile_constructor_logit(budget, LOG_MOB,
-						      "ACT_SPEC, but no function: %d %s",
-						      mob_index[nr].virtual_number, GET_NAME(mob)))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_14>(
+				    budget, LOG_MOB, mob_index[nr].virtual_number, GET_NAME(mob)))
 				return nullptr;
 	}
 	/* if they have a func but no spec bit, add one -- DTS 2/12/95 */
@@ -12665,15 +12852,15 @@ const object_template *cold_birth_flat_template_find(int vnum) noexcept
 // equality; this private leaf does not supply command/source/custody permission.
 const object_template *cold_birth_strict_flat_template(int vnum) noexcept
 {
-	if (mysql_enabled || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return nullptr;
 	return cold_birth_flat_template_find(vnum);
 }
-const object_template *
-cold_birth_bound_flat_template(const player_item_snapshot &literal,
-			       const native_mobile_birth_item_recipe &recipe) noexcept
+} // private cold catalog helpers
+const object_template *quest_mobile_native_item_stage::cold_birth_bound_flat_template(
+	const player_item_snapshot &literal, const native_mobile_birth_item_recipe &recipe) noexcept
 {
-	if (mysql_enabled || !cold_birth_flat_templates_ready())
+	if (!cold_birth_flat_templates_ready())
 		return nullptr;
 	const auto found = std::lower_bound(recovery_object_templates.begin(),
 					    recovery_object_templates.end(), literal.vnum,
@@ -12709,7 +12896,6 @@ cold_birth_bound_flat_template(const player_item_snapshot &literal,
 		return nullptr;
 	return &found->prototype;
 }
-}
 bool quest_mobile_native_item_stage::restore_bounded(const player_item_snapshot &literal,
 						     const native_mobile_birth_item_recipe &recipe,
 						     quest_mobile_native_item_stage *output,
@@ -12726,7 +12912,7 @@ bool quest_mobile_native_item_stage::restore_bounded(const player_item_snapshot 
 	(void)outer_live;
 	return false;
 #else
-	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	if (!reserve || !nevent_is_game_thread() ||
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	size_t globals = 0, fixed = outer_live;
@@ -12889,7 +13075,7 @@ bool quest_mobile_native_item_stage::restore_bound_bounded(
 	(void)outer_live;
 	return false;
 #else
-	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	if (!reserve || !nevent_is_game_thread() ||
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	size_t globals = 0, fixed = outer_live;
@@ -13049,7 +13235,7 @@ bool quest_mobile_native_item_stage::restore_rebind_bounded(
 	(void)outer_live;
 	return false;
 #else
-	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	if (!reserve || !nevent_is_game_thread() ||
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	size_t globals = 0, fixed = outer_live;
@@ -13202,8 +13388,8 @@ bool flat_private_malloc_request(const void *body, size_t &bytes) noexcept
 	if (!body)
 		return true;
 #ifdef MEMCHK
-	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
-		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	const auto *header = static_cast<const ALLOCATION_HEADER *>(static_cast<const void *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER)));
 	if (header->body != body || !header->size || !cold_birth_add(bytes, header->size) ||
 	    !cold_birth_add(bytes, sizeof(ALLOCATION_HEADER)))
 		return false;
@@ -13328,7 +13514,7 @@ bool quest_mobile_native_item_stage::adopt_published_bounded(
 	(void)outer_live;
 	return false;
 #else
-	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	if (!reserve || !nevent_is_game_thread() ||
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	size_t globals = 0, fixed = outer_live;
@@ -13538,7 +13724,7 @@ bool quest_mobile_native_item_stage::rebuild_enrollment_bounded(
 	return false;
 #else
 	if (!reserve || !nevent_is_game_thread() || !state_ || !state_->bounded_cold_literal ||
-	    mysql_enabled || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	struct live_state
 	{
@@ -14399,8 +14585,8 @@ bool birth_mobile_malloc_storage(const void *body, size_t expected, size_t *outp
 	if (!body || !output)
 		return false;
 #ifdef MEMCHK
-	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
-		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	const auto *header = static_cast<const ALLOCATION_HEADER *>(static_cast<const void *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER)));
 	if (header->body != body || header->size < expected ||
 	    header->size > SIZE_MAX - sizeof(ALLOCATION_HEADER))
 		return false;
@@ -15349,9 +15535,9 @@ object_template quest_mobile_native_item_stage::parse_ordinary_item_template_bou
 		{
 			if (input.recoverable)
 				throw template_read_failure{ EILSEQ };
-			if (!mobile_constructor_logit(&input.budget.request_owner, LOG_STATUS,
-						      "Object %d has an invalid B5 affect mask.",
-						      obj_index[nr].virtual_number))
+			if (!mobile_constructor_logit<mobile_constructor_log_format::message_15>(
+				    &input.budget.request_owner, LOG_STATUS,
+				    obj_index[nr].virtual_number))
 				throw template_read_failure{ static_cast<unsigned>(
 					errno ? errno : ENOBUFS) };
 		}
@@ -16344,8 +16530,8 @@ bool shell_private_request(const void *body, size_t minimum, size_t *bytes) noex
 	if (!body)
 		return true;
 #if defined(MEMCHK) && MEMCHK == 1
-	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
-		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	const auto *header = static_cast<const ALLOCATION_HEADER *>(static_cast<const void *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER)));
 	if (header->body != body || header->size < minimum || !header->tag || header->tag[0] != 'M')
 	{
 		errno = EIO;
@@ -18294,7 +18480,7 @@ bool quest_mobile_native_item_stage::restore_ordinary_bounded(
 	(void)outer_live;
 	return false;
 #else
-	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	if (!reserve || !nevent_is_game_thread() ||
 	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	size_t globals = 0, fixed = outer_live;
