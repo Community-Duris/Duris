@@ -1,0 +1,7 @@
+# Add complete bounded player item list decoder - 2026-10-09
+
+The mixed currency replay path needs the real item-list decoder for both endpoint validation and physical recovery. The new bounded companion preserves the complete original item fields, nested vectors, strings, limits and relationship checks. It admits actual allocations before requests and observes all simultaneous capacities, including its real depth vector through final transfer. Original decoding methods remain unchanged.
+
+Full original and corrected RAW plus final formatted source review passed. The correction includes genuine GCC13 fill-vector constructor and fitting-string pointer-disjointness profiles; all original body and header inverses, logical preprocessing, token streams and protected files authenticate. Registry authentication retains 415 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/item-list-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
