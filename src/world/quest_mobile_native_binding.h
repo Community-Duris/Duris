@@ -42,9 +42,13 @@ struct quest_mobile_native_binding
 	std::uint8_t cash_revision_[8], wallet_mapping_id_[8], lineage_[16], birth_epoch_[16];
 
 	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_native_stage;
 	friend class quest_mobile_native_publication_binding;
 	friend bool quest_mobile_native_reference_copy(const char_data *, std::uint64_t,
 						       quest_mobile_native_reference *) noexcept;
+	friend player_snapshot_codec_result quest_mobile_native_reference_copy_bounded(
+		const char_data *, std::uint64_t, quest_mobile_native_reference *,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 	friend bool
 	quest_mobile_native_cash_reference_copy(const char_data *, std::uint64_t,
 						quest_mobile_native_cash_reference *) noexcept;
@@ -63,6 +67,15 @@ static_assert(std::is_standard_layout_v<quest_mobile_native_binding>);
 // pet/keeper state, a probe, runtime_id, or the ordinary idnum allocator.
 bool quest_mobile_native_reference_copy(const char_data *, std::uint64_t expected_runtime_id,
 					quest_mobile_native_reference *output) noexcept;
+
+// Same complete indexed observation/canonical policy, with genuine prospective
+// codec/query storage admission and strong output. Outer includes actual input,
+// prior output and every other caller owner. Resource refusals retain their
+// existing codec result; invalid_value never proves that a binding is absent.
+// No binding write, birth, UID, wallet, custody, replay or admission capability.
+player_snapshot_codec_result quest_mobile_native_reference_copy_bounded(
+	const char_data *, uint64_t expected_runtime_id, quest_mobile_native_reference *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
 
 // Exact indexed runtime and original reference are observed before private cash
 // metadata/literal access. Unknown legacy metadata refuses; output preserved.
