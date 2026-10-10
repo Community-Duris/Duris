@@ -17646,3 +17646,16 @@ Full selecting host, foreign CURRENT, producer/publication/running drain,
 native32MiB/gameplay/persistence/recovery/R1–R8/release remain OPEN. Tests stay
 deferred to major-plan readiness; inactive/CLOSED, incomplete coverage, release
 BLOCKED and goal ACTIVE. No major-plan completion is claimed.
+
+
+## Critical command CURRENT source profile implemented - 2026-10-10
+
+[Source checkpoint](CRITICAL_COMMAND_CURRENT_SOURCE_PROFILE_2026-10-10.md)
+adds the pure authentic source closure needed before the original retained-command
+heap scan. Independent owner10/original source and actual formatted token/PP
+reviews passed; full C prefix, additive header and both inverses remain exact.
+Registry467/931 unchanged policies/2853 mapped sites and protected Plan5 work persist.
+Full selecting startup, physical ownership, producer/publication/drain, native32MiB,
+gameplay/persistence/recovery/R1–R8/release remain OPEN. Tests stay deferred to
+major-plan readiness; inactive/CLOSED, incomplete coverage, release BLOCKED and
+goal ACTIVE. No major-plan completion is claimed.

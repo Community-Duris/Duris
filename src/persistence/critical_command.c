@@ -1221,3 +1221,27 @@ bool critical_command_normalize_bounded(critical_command *command,
 	return false;
 #endif
 }
+
+// Pure source profile for the unchanged allocation-free CURRENT getter.
+// The existing observation subtotal explicitly contains the current four-vector
+// capacity scan and checked arithmetic, plus the larger fresh-copy size scan.
+// Keep that authenticated conservative subtotal; no copy-constructor, allocation,
+// storage query, command baseline or retained byte count is used as an allowance.
+bool critical_command_current_heap_observer_frame_bytes(size_t *output) noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&             \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                      \
+	__cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL)
+	if (!output)
+		return false;
+	// Real public CURRENT command/output pointer formals and bool return
+	// surround critical_decode_heap. The named observation subtotal dominates
+	// its size_t local, four capacity invocations and sequential checked adds.
+	*output = 2 * sizeof(void *) + sizeof(bool) + critical_normalize_observation_frames;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
