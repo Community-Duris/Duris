@@ -66726,7 +66726,7 @@
       "src/economy/zone_reset_item_accounting.c": "34c94652aa4cf15cf360047204b3ed9d1c29975a40b9c76967d01230533c18cf",
       "src/persistence/economic_sql_native_mobile_birth_shared_shop_observation.h": "efa9e7a75644a0650bcfc1d3dd2f487a5c21db535f153049452e9001bc60d443",
       "src/world/zone_reset_room_nesting.h": "1fc91a523d8c00f7a04eb29f51312abdd578360fffae1d3f14ed8a2bca6b39d7",
-      "src/flatfile/flatfile_accounting_store.c": "674e52c67da4031ae38628ea06728f061233feaff7f7694da59e788e47a26f21",
+      "src/flatfile/flatfile_accounting_store.c": "200f94dd5773b62c6b01cbec5ede5952826e5ec9898f6dd3faa7792561443e2b",
       "src/economy/zone_reset_item_source_proof.c": "438d4722d1418c6d04878077920247a1c3e93917d728dcb6466ad47debbed856",
       "src/economy/native_mobile_birth_cash_role_recipe.c": "3b8b1185e596b345147c5b9e097581ac5e1afe6eb5b4383dfb73d4a26da9828c",
       "src/flatfile/flatfile_authority_transaction.c": "c441de943f6289a58075dfeca6358b570399bbec8cb5ea9e5ec4d9cfb30c3023",
@@ -66841,7 +66841,7 @@
       "src/flatfile/flatfile_native_mobile_wallet.h": "2465dab1e202bf4ab2b2480cd1b61d633fa08fa556ead1b7610fad086487f15c",
       "src/player/player_death_restitution_runtime.c": "39b492876e8183878c37419134eb248493a8d7501c921ff7e71793e5c44328d6",
       "src/player/player_death_restitution_runtime.h": "9413afb082f7980bc2917c30e41524388bfd31bbe4f9c20703b585265097d671",
-      "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "34957c7921762e57b9119606a4b5e2871cdbada6f16175ffecaaac7c6dad3a58",
+      "src/flatfile/flatfile_ordinary_native_birth_receipt.h": "29d1197e11ba2a4305cd5f804634fde5c657ebf0161de2e53c9cea4ac020894e",
       "src/flatfile/flatfile_native_mobile_birth_ordinary_initial.h": "a381b9eeedde487864e2e03566b9095e2f7eaa0a6f43ba2330f766251466c128"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",

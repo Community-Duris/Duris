@@ -22,6 +22,19 @@ class flatfile_ordinary_native_birth_receipt_storage final
 	verify_retained_current_locked(const std::string &, const flatfile_authority_lock &,
 				       const critical_operation_id &original_birth,
 				       flatfile_accounting_record *, std::string *);
+
+	// Complete original sourceclaim namespace census, under the SAME recovered
+	// root lock: INITIAL requires selected-source absence and operation count0;
+	// retained proof requires the exact selected bytes and operation count1.
+	// All canonical claims, including foreign lineage/events, are authenticated.
+	// These passive leaves do not replace full financial/physical/terminal proof.
+	// No recovery/acquire/write/native/publication/ACK or memory-bound claim.
+	static flatfile_accounting_status
+	verify_source_claim_absent_locked(const std::string &, const flatfile_authority_lock &,
+					  const critical_command &, std::string *);
+	static flatfile_accounting_status
+	verify_source_claim_current_locked(const std::string &, const flatfile_authority_lock &,
+					   const flatfile_accounting_record &, std::string *);
 };
 
 // Separate CLOSED historical owner: only the actual receipt owner may enter.
