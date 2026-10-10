@@ -3517,3 +3517,12 @@ The complete item/craft/coin decoder closure, physical/save-obligation providers
 Full original and corrected RAW plus final formatted source review passed. Full header and method inverses, actual compiler-source dependencies, logical preprocessing, token streams, strong final transfer and protected files authenticate. Registry authentication retains 415 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/quest-continuation-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
 
 The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
+
+
+## Add complete bounded native quest cost codec implemented - 2026-10-09
+
+[Source handoff](BOUNDED_NATIVE_QUEST_COST_CODEC_2026-10-09.md) The full original item parse reaches native quest cost projection and canonical verification. Complete bounded projection, verification and NQC1 encoding/decoding companions preserve the original requirements, attempts, canonical bytes and equality checks. Real requirements, expected, decoded and encoded capacities remain charged simultaneously; constructor and fitting vector source scopes are admitted before their requests.
+
+Full original RAW plus final formatted source review passed. Complete method and header inverses, real allocation overlap and compiler profiles, logical preprocessing, token streams, strong output transfer and protected files authenticate. Registry authentication retains 415 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/native-quest-cost-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
