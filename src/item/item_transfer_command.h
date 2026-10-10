@@ -554,4 +554,16 @@ bool item_transfer_command_entities_bounded(critical_command *, const item_trans
 					    bool (*)(size_t, void *) noexcept, void *context,
 					    size_t outer_live) noexcept;
 
+// Complete original generic payload wire encoder for its original version
+// argument, including true corpse/collector/native-reference/recovery tails.
+// This is a pure prerequisite; native cost/fee/money dispatch remains separate.
+bool item_transfer_payload_encode_version_bounded(
+	const item_transfer_payload &, uint16_t, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool item_transfer_command_encode_payload_bounded(const item_transfer_payload &,
+						  std::vector<uint8_t> *,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live) noexcept;
+
 #endif
