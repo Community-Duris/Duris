@@ -129,4 +129,13 @@ player_item_snapshot_extract_forest(const std::vector<player_item_snapshot> &ite
 				    std::vector<player_item_snapshot> *selected_out,
 				    std::vector<player_item_snapshot> *remaining_out);
 
+// Full original unversioned item-list decoder with prospective real vector and
+// string requests, all row/depth limits and strong output. Outer includes
+// authentic input, prior output and every other live owner; excludes this
+// callee's private workspace. No execution/native authority is granted.
+player_snapshot_codec_result player_item_snapshot_list_decode_bounded(
+	const uint8_t *, size_t, std::vector<player_item_snapshot> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_item_heap_bytes = nullptr) noexcept;
+
 #endif
