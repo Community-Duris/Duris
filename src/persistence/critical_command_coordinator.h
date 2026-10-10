@@ -483,6 +483,27 @@ class critical_native_mobile_birth_publication_owner final
 					 critical_native_recovery_envelope *, uint64_t *,
 					 bool (*)(size_t, void *) noexcept, void *,
 					 size_t) noexcept;
+
+	// Ordinary birth-only complete post-submit observations. Caller outer owns
+	// genuine retained input, old output, registry/journal and all noncoordinator
+	// state. Reserve uses the exact registered ROOT callback/common guard and
+	// never reacquires coordinator/journal locks. Fresh CURRENT C is lent under
+	// the actual held mutex once per request; public outputs stay unchanged on
+	// false. Original SQL/shared observations and ROOM authority are unchanged.
+	// These snapshots grant no delivery, execution, publication, ACK or activation
+	// authority. Complete first-admission/native frame qualification is separate.
+	static bool observe_generation_bounded(const critical_native_recovery_envelope &,
+					       uint64_t *, bool (*)(size_t, void *) noexcept,
+					       void *, size_t outer,
+					       size_t *current_coordinator_bytes) noexcept;
+	static bool completion_bounded(const critical_operation_id &, critical_completion *,
+				       bool (*)(size_t, void *) noexcept, void *, size_t outer,
+				       size_t *current_coordinator_bytes) noexcept;
+	static bool copy_context_ordinary_bounded(const critical_command &,
+						  critical_native_recovery_envelope *,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t outer,
+						  size_t *current_coordinator_bytes) noexcept;
 	static bool checkpoint_context(const critical_native_recovery_envelope &,
 				       const critical_native_recovery_envelope &) noexcept;
 	static bool observe_generation(const critical_native_recovery_envelope &,
