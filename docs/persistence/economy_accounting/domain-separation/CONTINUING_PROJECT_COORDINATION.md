@@ -452,6 +452,216 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Bounded observation pair reviewed CLOSED; CURRENT custody/reference pair selected - 2026-10-10
+
+Both original BO deliveries have independently passed SOURCE/DESIGN/METADATA review
+at fixed B5de359bbd5aab5edd641b7e7b4b5617c85e0d06b / actual parent V
+fbeca5b3362735ecbb99fe17ca531e26ba24a9d1, Qcf2/Uafd6 dependency controls.
+Original selecting S6ea74c3ef8d7473bc0cd9c2da2d29916426ce82b / actual parent B
+remains immutable. Architecture CLOSED_NO_CORRECTION; quest CLOSED_WITH_ADDITIVE
+ORDER_CORRECTION. Original packets, notes, maps, PINS, INDEX, verifiers, receipts
+and history remain unchanged. No CLOSED verifier/default rerun or repin.
+
+Root D:/Dev/Temp/coordinator-ordinary-birth-observation-review-20261010 preserves
+architecture-authentication.json, quest-authentication.json, quest-order-finding.json
+and quest-correction-authentication.json. The original quest design finding remains
+historical evidence; the additive packet supersedes ONLY ownership_map.provider_routes[1].
+Actual source order: provider return if invoked -> guard death -> callback/budget/
+query/call-local scope death -> successful generation or valid completion latch
+if available -> immediate fresh outside census. Guard/query death offsets4756/4834,
+generation/valid completion5100/5378, outside if5569 (!charge5573) authenticate the
+same actual statement. Original detailed quest note/lifetime records were correct.
+
+Architecture strict1266 indexed payloads plus INDEX;61 providers/1148 cuts/92 original
+equalities/29 scope equalities/nine new full definitions/one changed pulse/three changed
+scopes/ten inline methods/23 default-delete/417 declarations/six constants/81 routes/
+six general whole inverses/twelve raw diffs/three selecting transforms/dependency
+continuities. Actual25 installed GCC13 headers independently authenticated read-only
+against existing container1172e0cf7e2b7e37abf42a9077b3935c27eb19135e62ae0f0c27c6ab5250f898,
+image74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b,
+package13.3.0-6ubuntu2~24.04.1 and actual package MD5. Quest original strictfour payloads
+plus INDEX;64 providers/344 full functions/78 scopes/252 original function equalities/
+51 scope equalities/39 whole equalities/six whole transforms/diffs/29 lifetimes/six
+relations/12 constants/27 routes/seven orders/two minimal FC principals. Whitespace
+positives/deleted-expression refusals authenticate source sensitivity only.
+Both whole original notes/maps/four blueprints/assessments and entire executable
+verifiers audited as stdlib/read-only Git BEFORE original normal defaults ONCE at
+unchanged clean S: architecture4830/quest12944 stdout bytes exactly reproduced,
+exit0/stderr0. Architecture original verifier was not rerun after closure.
+
+Quest additive strictfour payloads plus INDEX authenticates nine providers/nine full
+functions/three scopes/ten preserved actual lifetimes/eight anchors/14 endpoints/15
+explicit relations. Entire11227-byte note/map/proof and16483-byte stdlib/read-only
+Git verifier read/audited before additive normal default ONCE at unchanged clean S:
+exact4011 stdout bytes,exit0/stderr0. Original five quest principals authenticated
+before/after, original12944 receipt/verifier untouched. Root original metadata-key,
+newline-tail and outside-anchor normalizations are root review setup only; original
+packets/product source unchanged. No product/native finding or qualification inferred.
+
+BO preserves distinct genuine generation/completion/context gates, actual retained
+submitted source provenance/full NPC scope/all-four-M-args/current bindings, each real
+ROOT guard/held coordinator mutex/registered SAME lender/fresh C once, old output/
+full capacities and genuine scratch deaths. Absence/refusal still reaches outside
+census after entered observation; invalid disposition blocks affected birth; failed
+census stops its dependent observation/publication. Private six-argument CURRENT
+facade remains informational. Original SQL-only executing-source validity still
+rejects flat; factory selection/cold provenance/publication/ACK remain distinct.
+BO1-BO4/component/native UNEXECUTED; genuine commands UNAVAILABLE. Full financial/
+SQL/crypto/math/ABI/allocator/emitted/native/transient32MiB/full host qualification
+NOT PERFORMED. Exact original principal seals follow.
+
+- architecture authority-map.json: 15741/1397a23a2aede5db042d1fe708922f0e96e6734cca3883a6bf08b5da66742638
+- architecture available-source-assessment.json: 5039/05bad42c7a5c8adb880d474fea01323f26ac83087f8e3fa354080b64bad9c300
+- architecture INDEX.json: 238326/f322029fb9b5ac801db1c424ea44604e37b9d16e4eef8cd6c84256136ed95ee3
+- architecture PINS.json: 1430663/65c6cb038ba986f3313fcbfb22678faa06b0169fc515c8721c0b04f7733dbb14
+- architecture PUBLISHED_ORDINARY_BIRTH_BOUNDED_POST_SUBMIT_OBSERVATION_AUTHORITY_BOUNDARY_2026-10-10.txt: 31125/b1dd6557f9c29480557bfd5e3197e01f6de8316c1fc1330d273d4d12dd5a89a9
+- architecture VERIFICATION.json: 4830/21ba789be538fb85735ebf69bed5f5478033d5a687506fa0d5a7be2d04b2d79e
+- architecture verify.py: 84937/3c2e71e8a717c6bda6827f63be2dca5de1241e1a2dd5d8474a67464a7cc8c698
+- quest INDEX.json: 718/b75015b358c203b0bf2eeb9589d943a58b3e7ebc6b7be4622fdcd55bb72c6eaf
+- quest PINS.json: 23612818/d4e60ad24cdd2e9940f4d4544a2c3cb00f27820402f664fc4bac0635983d7473
+- quest PUBLISHED_ORDINARY_BIRTH_BOUNDED_POST_SUBMIT_OBSERVATION_ACCEPTANCE_DELTA_2026-10-10.txt: 28494/996dcfa107e387202e6e9defabbfaf001a7b407c1c5b3ea71535e7a38c6b03a5
+- quest VERIFICATION.json: 12944/5f979b16e803c926072f3b3269106119806432475f8bd18118928813c580775b
+- quest verify.py: 18559/6705c8b7222c165829936b8f14f2753de7d88648bbe1122e1562ea08d8902753
+- quest_addendum INDEX.json: 716/9b979766ef013944035500dfd9d8dcea96026a7aa2d10e17f0d852f48c15e42e
+- quest_addendum PINS.json: 5961662/f495691a4ebb24197a52c5138dbd740a8f53be88012fa4e489cc92df296ceb91
+- quest_addendum PUBLISHED_ORDINARY_BIRTH_BOUNDED_POST_SUBMIT_OBSERVATION_ORDER_CORRECTION_2026-10-10.txt: 11227/bd5bd4548131278fb036b538539190a3c99029dd330d8977ff0e067b9ebb1830
+- quest_addendum VERIFICATION.json: 4011/bd77b9a01106f1cbc28de3387b25bd3feac972eb14f9c1e81efa71dd15bf5914
+- quest_addendum verify.py: 16483/20f2155857a3d009586cb20dbd2a7ccf0a85b11407ef09db5773ac40b566e283
+
+Published successors are separate available source capabilities, not original BO repins:
+Dd36bcc60cbec820aab999601d290c81fff9091bf / actual parent S6ea supplies full private
+bounded original CURRENT custody. R79f34777077c83818ba05c25f43ab68b64ddb6e2 / actual
+parent D supplies full private all256 CURRENT reference correspondence. Prior root
+heartbeat-0927 proof authenticates complete359+376 C additions/four whole insertion
+forward-inverses/two C prefixes/25 adjacent controls/three original selected BO sections.
+Full custody command/recovery/intent/EAP1/MBR4/attached receipt/catalog/native-context0
+revision1/all rows/unique born/output ownership and reference both identities/global
+uniqueness/canonical66-byte/full expected rows/empty-forest/all256/missing-error/borrowed
+lock leaves EXIST. Full original financial/catalog/codec/SQL/crypto/math/ABI/allocator/
+native32MiB/full host integrated qualification remains NOT PERFORMED.
+
+A cbba2c7b6dc225dce5158f95f2ba39449d68b8ed / actual parent R supplies bounded live
+wallet/native authority/retained mapping lifetime/baseline metadata and three full
+receipt/source/history companions. Prior heartbeat-0943 proof authenticates six whole
+insertion inverses/two C prefixes/four headers/25 controls/original BO sections. Full898
+authority+1038 store new C source/profile/caller audit remains queued, NOT PERFORMED.
+T416ae0ee29aa58dd7b9434be4e1e69c1540d0d09 / actual parent A supplies genuine passive
+full player_snapshot_decode_bounded declaration/definition. Full handoff/header read;
+decoder-successor-authentication.json authenticates two whole insertion inverses,
+original C prefix/25 adjacent controls/original BO sections. Full970 new C lines/
+transitive helper/profile/caller semantic audit remains queued, NOT PERFORMED. Private
+RAW/review/correction/preprocessor/policy/registry/source-number/native claims remain
+REPORTED ONLY. Actual physical readers/complete caller/first admission/current native
+qualification remain open; no missing-custody/reference/authority/receipt/decoder-leaf
+claim or private adoption/activation inferred. Plan5 retains backend qualification.
+
+One bounded CR delivery per existing chat now selected at fixed
+R79f34777077c83818ba05c25f43ab68b64ddb6e2 / actual parent
+Dd36bcc60cbec820aab999601d290c81fff9091bf, with D / actual parent S6ea fixed controls:
+- Architecture: PUBLISHED_ORDINARY_CURRENT_CUSTODY_REFERENCE_AUTHORITY_BOUNDARY_2026-10-10.txt
+- Quest: PUBLISHED_ORDINARY_CURRENT_CUSTODY_REFERENCE_ACCEPTANCE_DELTA_2026-10-10.txt
+Concrete output: one exact private ownership/authority map, exactly CR1-CR4 legal future
+acceptance blueprints and one finite available-source assessment; strict INDEX/fully
+audited deterministic stdlib/read-only Git verifier/exact original default stdout/root
+independent review. Future benefit: implementation-ready actual full custody/catalog
+and all256 reference correspondence boundaries for later complete CURRENT transaction
+consumption, including legal resource/error and simultaneous ownership cuts.
+Available inputs: all four changed D/S and R/D source providers, complete original
+read_locked/verify_current_operation_locked and required genuine bounded codec/catalog/
+recovery/intent/plan/secure-read/lock/request helpers at these refs. Read full new
+workspace/census/admit/relay/catch/transfer definitions and authentic declarations/
+friends/inline members/constants/true lifetimes; authenticate four whole insertion
+forward-inverses and unchanged necessary original full algorithms. D and S are fixed
+dependency controls, not later repins. Preserve each provider's actual distinct policy
+and gate order. Genuine installed GCC13 hash/tree/string/vector/allocator controls may
+be read source-only with actual provider/version/MD5 and explicit unavailable controls.
+Reuse minimal CLOSED BO note+INDEX and quest correction note+INDEX where needed for
+original caller/authority limits; no old PINS/verifier/receipt/history rerun or unrelated
+SQL/Smith/coin/compiler/full startup inventory. No copied allocator/financial/hash/C++
+model, constant observer, accepting fixture or artificial owner/thread/phase/receipt.
+Primary owns maintained authority/implementation/contracts/admission/math/qualification.
+Workers own private D: packets only, one bounded delivery each. No maintained source/
+tests/docs edits/imports/commits/compiler/preprocessor/ELF/build/native/product/DB/
+activation/Goal resumption. Missing actual native/host inputs block dependent execution
+only. Later authority/receipt/decoder successors queued at CR handoff; no live expansion/
+reassignment/repin, adoption wait or CLOSED proof reopen.
+
+Four CR legal cuts only:
+CR1 Full genuine custody read under actual same-root borrowed recovered lock and
+authentic immutable envelope/retained receipt. Preserve complete original command/
+recovery/intent/EAP1/MBR4/attached receipt/catalog/owner-revision/full row/root-parent/
+unique born/creation-event/literal laws, including native/context0 revision1 even
+with empty forest. This passive output does not authenticate full financial receipt,
+global source claim, immutable creation origin, native body or producer publication.
+No recovered lock/owner/receipt or catalog row is fabricated; no acquisition/recovery/
+repair/write/commit/world/terminal/ACK authority follows.
+CR2 Full original all256 correspondence, both operation identities, global operation-
+line and legacy-event uniqueness, canonical66-byte round trips, complete sorted/valid
+expected rows/exact matched counts. Empty expected forest still scans all256. Preserve
+true missing-selected shard versus read/security/directory/corruption/error laws and
+final borrowed-lock check before strong scalar counts. Counts grant no source/catalog/
+financial/native/publication authority or lost-history completeness.
+CR3 Admission precedes genuine workspace/directory/vector/string/hash/tree nodes and
+nested codec/catalog/output allocations. Preserve actual distinct unsupported gates,
+null/root/operation checks, checked overflow, latched custody budget refusal/error and
+reference missing/error/catch order. Read full actual reservation/census/relay helpers;
+only source-defined payload requests, actual retained capacity/SSO/buckets/nodes count.
+No ABI/allocator metadata/native bytes inferred from literal sizeof carriers. Output
+and transferred custody heap scalar commit only at genuine no-throw tail; every other
+refusal preserves authentic old public outputs even if real callback state changed.
+CR4 Actual caller root/lock/envelope/receipt/expected backing/old output/siblings/global
+owners stay external. Genuine custody recovery/image/recipes/intent/plan/canonical/
+catalog/born set/observed rows and reference sorted/global uniqueness/matched sets/
+directory/bucket/file/row/canonical/expected buffers coexist at actual lexical cuts.
+Inline storage counts once; full live nested heaps/capacities remain. Transfer changes
+ownership without duplicating registry/caller heaps. Private scratch dies before fresh
+surviving full caller/sibling/global census. Real transaction must retain original
+identity THEN authority locks, recovery and SAME interval consumption, fresh full
+physical domains and original receipt/history/wallet/native/source laws. No new
+callback into held coordinator/journal locks, partial fixed-charge financial wrapper,
+accepting observer or synthetic fixture. Full actual caller/first admission/transitive
+primitive/global/library/OpenSSL/current ELF/schema/SQL parity/crypto/math/ABI/allocator/
+emitted/native/transient32MiB/full host/legal capture/fault/restart/cold/warm publication/
+terminal/outbox/guarded ACK remain unavailable qualification dependencies. CR1-CR4/
+component/native UNEXECUTED; genuine execution commands UNAVAILABLE.
+
+Evolving prioritized queue:
+1. Selected fixed CR custody/reference pair only; reassess at handoff without repin,
+   CLOSED reopen, adoption wait or busywork. Both full private source leaves EXIST.
+2. Genuine A authority/receipt and T full decoder for exact full source/profile/caller
+   preparation, then actual complete physical domains/transaction consumption/first
+   admission/primitive/global/factory selection/original executing source/current
+   provenance/lost-history/cold/warm publication/terminal/outbox/ACK/pause latency/
+   transient32MiB qualification. No missing current leaf claim. Existing freeze/submit/
+   envelope/common ROOT/INITIAL/registration/lifecycle/prepared save/receiver leaves
+   survive. Full coin compiler/compound receiver/host/save and Smith BEFORE/history/
+   season/capture/source/participant/ACK remain distinct original requirements.
+3. Full mixed startup/host ROOM/shared/legacy/currency/applicable restitution/fresh
+   siblings/H/SG/N402/7f uncertainty/full selector/admission/legal failure/restart/
+   capture; paired ROOT/publication/NPC pool/four cold routes/detach/adopt/enroll/light/
+   service/diagnostics/scheduler/placement/activity/native/crypto/ABI/allocator proof.
+   Plan5 owns backend/SQL0065/schema65/measurement/history/backup/restore/32MiB/recovery/
+   release. Siege runtime retired with applicable SQL witnesses retained. Unsupported
+   flat restitution/mixed-clientful selection refuses; original requirements preserved.
+
+Root publishes only three owned coordination docs; whole inserted-section inverse
+restores actual primary T in publication-verified.json. No maintained-source/private
+artifact delta. Preserve every CLOSED BO/FC/PS/CS/OW/CV/OA/EH/PQ/OC/OR/RR/BR/SS/SG/PC/
+PD/SC/RK/RF/GG/CG/CK/SAME-lock seal/receipt/history/correction/known-zero cash/unchecked
+close/hydration allocation/CURRENT-warm/constructor declaration-order/TR UNEXECUTED/
+factory CURRENT-RETAINED and earlier originals. Preserve architecture clean5c53/
+unsealed probe,questacb1/630b/f4e ancestry/three owned local edits,all isolated jobs/
+services/containers/builds/failure evidence. Historical Oct7 attachment/ae70 provenance
+correction stand; genuinely newer human instructions take priority. Private native/
+build/SQL reports root UNREVIEWED. Actual root Goal BLOCKED unchanged1791410483;
+workers BLOCKED1791446642/1791411827 distinct; no replacement/resumption/pause/completion.
+Broad required Plans1-5/R1-R8/applicable backend/gameplay/persistence/recovery/owner
+completion audit OPEN. Accounting inactive/admission CLOSED/coverage incomplete/release
+BLOCKED. Heartbeat ACTIVE until broad audit/user pause; quiet unchanged/non-actionable,
+notify meaningful progress/failure/completion/required user action. All Git fetch/merge/
+commit/push gc.auto=0; no reset/revert/kill/delete/restart/pruning/housekeeping.
+
+
 ## Ordinary NPC factory pair reviewed CLOSED; bounded post-submit observation pair selected - 2026-10-10
 
 Both original PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_AUTHORITY_BOUNDARY_2026-10-10.txt
