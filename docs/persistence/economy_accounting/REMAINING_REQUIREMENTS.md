@@ -4551,3 +4551,13 @@ passed; original bodies/defaults and protected WIP remain exact. Registry476/
 shared host, historical joins, native/gameplay/persistence/recovery/R1-R8/release
 stay OPEN; no major plan completion. Tests remain batched at major-plan readiness;
 inactive/CLOSED, coverage incomplete, release BLOCKED and goal ACTIVE.
+
+
+## Native birth keeper source contract implemented - 2026-10-10
+
+[Source checkpoint](NATIVE_BIRTH_KEEPER_SOURCE_CONTRACT_2026-10-10.md) adds the missing pure original keeper SOURCE and query interface, preserving actual charge/rollback and caller-owned callback source.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

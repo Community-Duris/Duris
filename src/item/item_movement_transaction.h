@@ -492,4 +492,16 @@ class item_native_recovery_replay_owner final
 					 size_t) noexcept;
 };
 
+// Complete original native birth retained_budget call SOURCE. Its actual
+// capacity callbacks are caller-owned ROOT source, never a cached byte proof.
+// Caller admits this query and its accessor's size_t result before obtaining
+// SOURCE; only the original caller owns the resulting supplement through charge.
+bool item_native_quest_birth_retained_budget_source_frames(size_t *) noexcept;
+constexpr size_t item_native_quest_birth_retained_budget_source_profile_query_frames() noexcept
+{
+	// output/result; capacity's journal local and return; true range/thread
+	// profile returns, and keeper's separate genuine thread-profile return.
+	return sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
+}
+
 #endif

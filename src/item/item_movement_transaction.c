@@ -11242,3 +11242,32 @@ bool item_native_recovery_replay_owner::restore_continuation_source_frames(size_
 	return false;
 #endif
 }
+
+// Pure SOURCE for the genuine original native birth keeper. This observes no
+// registry or retained summary and grants no charge/publication authority.
+// Callback targets retain their own authentic ROOT source in caller outer;
+// the exact existing capacity graph prices its real dispatch and local leaves.
+bool item_native_quest_birth_retained_budget_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	// Actual retained_budget size_t formal and bool return enclose both its
+	// game-thread predicate and the complete original preparation capacity.
+	// No caller charge local, registry heap, full J or cached keeper bytes are
+	// substituted here; this is only genuine named call-source ownership.
+	*output = sizeof(size_t) + sizeof(bool) + nq_item_current_thread_frames() +
+		  held_native_capacity_source_frames();
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
