@@ -1673,6 +1673,24 @@ static bool sql_verify_boot_database(void)
 		logit(LOG_STATUS, "FATAL: database connection is not initialized at boot.");
 		return false;
 	}
+	// Select only from the genuine recorded state; an unmeasured65 never borrows64.
+	MYSQL_RES *profile_result =
+		db_query("SELECT applied_count FROM mud_schema_migration_state WHERE state_id=1");
+	MYSQL_ROW profile_row = profile_result ? mysql_fetch_row(profile_result) : NULL;
+	const bool schema65 = profile_row && profile_row[0] && !strcmp(profile_row[0], "65");
+	const bool profile_ok =
+		profile_row && profile_row[0] &&
+		(!strcmp(profile_row[0], "64") || (schema65 && RUNTIME_SCHEMA65_QUALIFIED)) &&
+		!mysql_fetch_row(profile_result);
+	if (profile_result)
+		mysql_free_result(profile_result);
+	if (!profile_ok)
+	{
+		if (schema65 && !RUNTIME_SCHEMA65_QUALIFIED)
+			logit(LOG_STATUS,
+			      "FATAL: COMPAT-E011 schema65 metadata awaits actual two-engine measurement");
+		return false;
+	}
 
 	MYSQL_RES *result = db_query(
 		"SELECT "
@@ -1684,27 +1702,90 @@ static bool sql_verify_boot_database(void)
 		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
 		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
 		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
+		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
+		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
+		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
+		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
+		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
+		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
 		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
 		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
-		"applied_count=%u AND LOWER(HEX(history_checksum)) IN ('%s','%s','%s')),"
+		"applied_count=%u AND LOWER(HEX(history_checksum)) IN ('%s','%s','%s','%s','%s','%s')),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
 		"AND table_type='BASE TABLE' AND table_name IN (%s)),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
 		"AND table_type='BASE TABLE' AND engine='InnoDB' AND "
 		"table_collation='utf8mb4_unicode_ci' AND table_name IN (%s))",
 		RUNTIME_BASELINE_ID, RUNTIME_BASELINE_FINGERPRINT,
-		RUNTIME_COMPATIBILITY_MANIFEST_VERSION, RUNTIME_MIGRATION_HEAD_ID,
-		RUNTIME_MIGRATION_HEAD_SEQUENCE, RUNTIME_MIGRATION_APPLY_CHECKSUM,
-		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HEAD_ID,
-		RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE,
-		RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM,
-		RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM,
-		RUNTIME_MASTER_0031_MIGRATION_HEAD_ID, RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE,
-		RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM,
-		RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
-		RUNTIME_MIGRATION_HISTORY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM,
-		RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM, RUNTIME_TABLE_SQL_LIST,
-		RUNTIME_TABLE_SQL_LIST);
+		RUNTIME_COMPATIBILITY_MANIFEST_VERSION,
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_ID : RUNTIME_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_APPLY_CHECKSUM :
+			    RUNTIME_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_VERIFY_CHECKSUM :
+			    RUNTIME_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_HEAD_ID :
+			    RUNTIME_STAGING_0045_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_APPLY_CHECKSUM :
+			    RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_VERIFY_CHECKSUM :
+			    RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_HEAD_ID :
+			    RUNTIME_MASTER_0031_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_APPLY_CHECKSUM :
+			    RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_VERIFY_CHECKSUM :
+			    RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_HEAD_ID :
+			    RUNTIME_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_APPLY_CHECKSUM :
+			    RUNTIME_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_VERIFY_CHECKSUM :
+			    RUNTIME_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_HEAD_ID :
+			    RUNTIME_STAGING_0045_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ?
+			 RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_APPLY_CHECKSUM :
+			 RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ?
+			 RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_VERIFY_CHECKSUM :
+			 RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_HEAD_ID :
+			    RUNTIME_MASTER_0031_MIGRATION_HEAD_ID),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_APPLY_CHECKSUM :
+			    RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM),
+		(schema65 ?
+			 RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_VERIFY_CHECKSUM :
+			 RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_SEQUENCE :
+			    RUNTIME_MIGRATION_HEAD_SEQUENCE),
+		(schema65 ? RUNTIME_SCHEMA65_MIGRATION_HISTORY_CHECKSUM :
+			    RUNTIME_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_HISTORY_CHECKSUM :
+			    RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_HISTORY_CHECKSUM :
+			    RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM :
+			    RUNTIME_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ?
+			 RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM :
+			 RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ?
+			 RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM :
+			 RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM),
+		(schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST),
+		(schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST));
 	if (!result)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
@@ -1712,16 +1793,23 @@ static bool sql_verify_boot_database(void)
 	}
 	MYSQL_ROW row = mysql_fetch_row(result);
 	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
-	bool compatibility_ok = row && lengths && row[0] && atoi(row[0]) == 1 && row[1] &&
-				atoi(row[1]) == 1 && row[2] && atoi(row[2]) == 1 && row[3] &&
-				atoi(row[3]) == (int)RUNTIME_CURRENT_TABLE_COUNT && row[4] &&
-				atoi(row[4]) == (int)RUNTIME_CURRENT_TABLE_COUNT;
+	bool compatibility_ok =
+		row && lengths && row[0] && atoi(row[0]) == 1 && row[1] && atoi(row[1]) == 1 &&
+		row[2] && atoi(row[2]) == 1 && row[3] &&
+		atoi(row[3]) == (int)(schema65 ? RUNTIME_SCHEMA65_CURRENT_TABLE_COUNT :
+						 RUNTIME_CURRENT_TABLE_COUNT) &&
+		row[4] &&
+		atoi(row[4]) == (int)(schema65 ? RUNTIME_SCHEMA65_CURRENT_TABLE_COUNT :
+						 RUNTIME_CURRENT_TABLE_COUNT);
 	mysql_free_result(result);
 	if (!compatibility_ok)
 	{
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E002 migration, table, engine, or collation identity mismatch expected_baseline=%s expected_head=%s expected_tables=%u",
-		      RUNTIME_BASELINE_ID, RUNTIME_MIGRATION_HEAD_ID, RUNTIME_CURRENT_TABLE_COUNT);
+		      RUNTIME_BASELINE_ID,
+		      (schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_ID : RUNTIME_MIGRATION_HEAD_ID),
+		      (schema65 ? RUNTIME_SCHEMA65_CURRENT_TABLE_COUNT :
+				  RUNTIME_CURRENT_TABLE_COUNT));
 		return false;
 	}
 	if (!sql_verify_migration_history())
@@ -2232,10 +2320,25 @@ static bool sql_verify_boot_database(void)
  * stored state digest alone cannot prove that older receipts remain intact. */
 static bool sql_verify_migration_history(void)
 {
-	MYSQL_RES *result = db_query("%s", RUNTIME_MIGRATION_HISTORY_SQL);
+	// Select only from the genuine recorded state; an unmeasured65 never borrows64.
+	MYSQL_RES *profile_result =
+		db_query("SELECT applied_count FROM mud_schema_migration_state WHERE state_id=1");
+	MYSQL_ROW profile_row = profile_result ? mysql_fetch_row(profile_result) : NULL;
+	const bool schema65 = profile_row && profile_row[0] && !strcmp(profile_row[0], "65");
+	const bool profile_ok =
+		profile_row && profile_row[0] &&
+		(!strcmp(profile_row[0], "64") || (schema65 && RUNTIME_SCHEMA65_QUALIFIED)) &&
+		!mysql_fetch_row(profile_result);
+	if (profile_result)
+		mysql_free_result(profile_result);
+	if (!profile_ok)
+		return false;
+	MYSQL_RES *result = db_query("%s", (schema65 ? RUNTIME_SCHEMA65_MIGRATION_HISTORY_SQL :
+						       RUNTIME_MIGRATION_HISTORY_SQL));
 	if (!result)
 		return false;
-	if (mysql_num_rows(result) != RUNTIME_MIGRATION_HEAD_SEQUENCE)
+	if (mysql_num_rows(result) !=
+	    (schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_SEQUENCE : RUNTIME_MIGRATION_HEAD_SEQUENCE))
 	{
 		mysql_free_result(result);
 		return false;
@@ -2277,13 +2380,24 @@ static bool sql_verify_migration_history(void)
 	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
 		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
 	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
-	if (strcmp(encoded, RUNTIME_MIGRATION_HISTORY_CHECKSUM) &&
-	    strcmp(encoded, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM) &&
-	    strcmp(encoded, RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM))
+	if (strcmp(encoded, (schema65 ? RUNTIME_SCHEMA65_MIGRATION_HISTORY_CHECKSUM :
+					RUNTIME_MIGRATION_HISTORY_CHECKSUM)) &&
+	    strcmp(encoded, (schema65 ? RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_HISTORY_CHECKSUM :
+					RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM)) &&
+	    strcmp(encoded, (schema65 ? RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_HISTORY_CHECKSUM :
+					RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM)) &&
+	    (!schema65 ||
+	     (strcmp(encoded, RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM) &&
+	      strcmp(encoded,
+		     RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM) &&
+	      strcmp(encoded,
+		     RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_HISTORY_CHECKSUM))))
 		return false;
 	result = db_query("SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 "
 			  "AND applied_count=%u AND LOWER(HEX(history_checksum))='%s'",
-			  RUNTIME_MIGRATION_HEAD_SEQUENCE, encoded);
+			  (schema65 ? RUNTIME_SCHEMA65_MIGRATION_HEAD_SEQUENCE :
+				      RUNTIME_MIGRATION_HEAD_SEQUENCE),
+			  encoded);
 	row = result ? mysql_fetch_row(result) : NULL;
 	bool valid = row && row[0] && !strcmp(row[0], "1");
 	if (result)
@@ -2293,6 +2407,33 @@ static bool sql_verify_migration_history(void)
 
 static bool sql_verify_metadata_fingerprint(void)
 {
+	// Select only from the genuine recorded state; an unmeasured65 never borrows64.
+	MYSQL_RES *profile_result =
+		db_query("SELECT applied_count FROM mud_schema_migration_state WHERE state_id=1");
+	MYSQL_ROW profile_row = profile_result ? mysql_fetch_row(profile_result) : NULL;
+	const bool schema65 = profile_row && profile_row[0] && !strcmp(profile_row[0], "65");
+	const bool profile_ok =
+		profile_row && profile_row[0] &&
+		(!strcmp(profile_row[0], "64") || (schema65 && RUNTIME_SCHEMA65_QUALIFIED)) &&
+		!mysql_fetch_row(profile_result);
+	if (profile_result)
+		mysql_free_result(profile_result);
+	if (!profile_ok)
+		return false;
+	if (schema65)
+	{
+		// Quote-stripping metadata must not equate a literal 'NULL' default.
+		MYSQL_RES *terminal_result =
+			db_query("%s", RUNTIME_SCHEMA65_ZONE_RESET_ITEM_TERMINAL_DEFAULT_SQL);
+		MYSQL_ROW terminal_row = terminal_result ? mysql_fetch_row(terminal_result) : NULL;
+		const bool terminal_ok = terminal_row && terminal_row[0] &&
+					 !strcmp(terminal_row[0], "1") &&
+					 !mysql_fetch_row(terminal_result);
+		if (terminal_result)
+			mysql_free_result(terminal_result);
+		if (!terminal_ok)
+			return false;
+	}
 	/* The sealed F rows name a referenced table but not its schema. Reject any
 	 * external redirect before hashing, including a website FK to a runtime
 	 * table. All accepted runtime FKs target this database. */
@@ -2300,9 +2441,11 @@ static bool sql_verify_metadata_fingerprint(void)
 		"SELECT COUNT(*) FROM information_schema.key_column_usage k WHERE "
 		"k.constraint_schema=DATABASE() AND k.referenced_table_name IS NOT NULL "
 		"AND (k.table_name IN (";
-	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query +=
+		(schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	foreign_schema_query += ") OR k.referenced_table_name IN (";
-	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query +=
+		(schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	foreign_schema_query += ")) AND (k.referenced_table_schema IS NULL OR "
 				"BINARY k.referenced_table_schema <> BINARY DATABASE())";
 	if (mysql_real_query(DB, foreign_schema_query.c_str(), foreign_schema_query.size()))
@@ -2322,7 +2465,7 @@ static bool sql_verify_metadata_fingerprint(void)
 		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
 		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
 		"table_type='BASE TABLE' AND table_name IN (";
-	query += RUNTIME_TABLE_SQL_LIST;
+	query += (schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	query +=
 		") UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),"
 		"c.column_name,CHAR(9),c.ordinal_position,CHAR(9),c.data_type,CHAR(9),c.is_nullable,"
@@ -2337,13 +2480,13 @@ static bool sql_verify_metadata_fingerprint(void)
 		"JOIN information_schema.tables t ON t.table_schema=c.table_schema AND "
 		"t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE "
 		"c.table_schema=DATABASE() AND c.table_name IN (";
-	query += RUNTIME_TABLE_SQL_LIST;
+	query += (schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	query +=
 		") "
 		"UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),"
 		"non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) "
 		"FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name IN (";
-	query += RUNTIME_TABLE_SQL_LIST;
+	query += (schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	query +=
 		") UNION ALL SELECT "
 		"CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,"
@@ -2353,9 +2496,9 @@ static bool sql_verify_metadata_fingerprint(void)
 		"r ON r.constraint_schema=k.constraint_schema AND "
 		"r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND "
 		"(k.table_name IN (";
-	query += RUNTIME_TABLE_SQL_LIST;
+	query += (schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	query += ") OR k.referenced_table_name IN (";
-	query += RUNTIME_TABLE_SQL_LIST;
+	query += (schema65 ? RUNTIME_SCHEMA65_TABLE_SQL_LIST : RUNTIME_TABLE_SQL_LIST);
 	query += ")) AND k.referenced_table_name IS NOT NULL AND NOT ("
 		 "BINARY k.table_name='user_profile_stats' AND "
 		 "BINARY k.constraint_name='user_profile_stats_ibfk_1' AND "
@@ -2373,6 +2516,14 @@ static bool sql_verify_metadata_fingerprint(void)
 	if (!strstr(server, "MariaDB"))
 		query +=
 			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
+	if (schema65)
+	{
+		query +=
+			" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('zone_reset_item_birth_origin') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('zone_reset_item_birth_origin')";
+		if (!strstr(server, "MariaDB"))
+			query +=
+				" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('zone_reset_item_birth_origin')";
+	}
 	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
@@ -2407,8 +2558,11 @@ static bool sql_verify_metadata_fingerprint(void)
 	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
 
 	const char *expected = server && strstr(server, "MariaDB") ?
-				       RUNTIME_MARIADB10_11_METADATA_FINGERPRINT :
-				       RUNTIME_MYSQL8_METADATA_FINGERPRINT;
+				       (schema65 ?
+						RUNTIME_SCHEMA65_MARIADB10_11_METADATA_FINGERPRINT :
+						RUNTIME_MARIADB10_11_METADATA_FINGERPRINT) :
+				       (schema65 ? RUNTIME_SCHEMA65_MYSQL8_METADATA_FINGERPRINT :
+						   RUNTIME_MYSQL8_METADATA_FINGERPRINT);
 	return !strcmp(encoded, expected);
 }
 

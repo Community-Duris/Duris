@@ -3,13 +3,29 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SCHEMA_ONLY=0
-if [[ $# == 1 && "$1" == --schema-only ]]; then
-    SCHEMA_ONLY=1
-elif [[ $# != 0 ]]; then
-    echo "usage: verify_runtime_compatibility.sh [--schema-only]" >&2
-    exit 2
-fi
+SCHEMA65=0
+for argument in "$@"; do
+    case "$argument" in
+        --schema-only) [[ "$SCHEMA_ONLY" == 0 ]] || exit 2; SCHEMA_ONLY=1 ;;
+        --schema65) [[ "$SCHEMA65" == 0 ]] || exit 2; SCHEMA65=1 ;;
+        *) echo "usage: verify_runtime_compatibility.sh [--schema-only] [--schema65]" >&2; exit 2 ;;
+    esac
+done
 MANIFEST="${RUNTIME_COMPATIBILITY_MANIFEST:-$SCRIPT_DIR/runtime_compatibility_manifest.json}"
+# Scope extraction to exactly one profile; nested65 must never contaminate64.
+manifest_text=$(sed '/^  "schema65": {/,/^  }/d' "$MANIFEST")
+if [[ "$SCHEMA65" == 1 ]]; then
+    profile_text=$(sed -n '/^  "schema65": {/,/^  }/p' "$MANIFEST")
+    qualification=$(printf '%s\n' "$profile_text" | sed -n 's/^    "qualification": "\([^" ]*\)".*/\1/p')
+    [[ "$qualification" == measured ]] || {
+        echo "FAILED: 0065 runtime metadata fingerprints await actual two-engine measurement" >&2
+        exit 1
+    }
+    # Carry only common baseline/generated-expression fields, not64 heads or
+    # counts. This preserves the verifier's existing Bash/sed-only dependencies.
+    common_text=$(sed -n '/^  "baseline_id": /p; /^  "baseline_table_fingerprint": /p; /^  "extra_description_generation_sql": /p; /^  "auction_active_item_generation_sql": /p' "$MANIFEST")
+    manifest_text=$(printf '%s\n%s\n' "$profile_text" "$common_text")
+fi
 if [[ -z "${DB_HOST:-}" ]]; then
     # shellcheck disable=SC1091
     source "$PROJECT_ROOT/.env"
@@ -25,8 +41,8 @@ else
     MYSQL_CONNECTION=("${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}")
 fi
 MYSQL=(mysql "${MYSQL_CONNECTION[@]}" -u "$DB_USER" -N -B --raw "$DB_NAME")
-extract_string() { sed -n "s/.*\"$1\": \"\([^\"]*\)\".*/\1/p" "$MANIFEST" | head -1; }
-extract_number() { sed -n "s/.*\"$1\": \([0-9][0-9]*\).*/\1/p" "$MANIFEST" | head -1; }
+extract_string() { printf '%s\n' "$manifest_text" | sed -n "s/.*\"$1\": \"\([^\"]*\)\".*/\1/p" | head -1; }
+extract_number() { printf '%s\n' "$manifest_text" | sed -n "s/.*\"$1\": \([0-9][0-9]*\).*/\1/p" | head -1; }
 expected=(
     "$(extract_number current_table_count)"
     "$(extract_string mysql8)"
@@ -47,7 +63,7 @@ expected=(
 # Scope alternate fields to their object; the unqualified extractor selects
 # the canonical head. All histories are pinned by the offline validator.
 extract_head() {
-    sed -n "/\"$1\": {/,/}/p" "$MANIFEST" |
+    printf '%s\n' "$manifest_text" | sed -n "/\"$1\": {/,/}/p" |
         sed -n "s/.*\"$2\": \([^,]*\).*/\1/p" | tr -d '"\r'
 }
 staging=("$(extract_head staging_0045_migration_head id)" "$(extract_head staging_0045_migration_head sequence)"
@@ -56,6 +72,20 @@ staging=("$(extract_head staging_0045_migration_head id)" "$(extract_head stagin
 master=("$(extract_head master_0031_migration_head id)" "$(extract_head master_0031_migration_head sequence)"
         "$(extract_head master_0031_migration_head apply_checksum)" "$(extract_head master_0031_migration_head verify_checksum)"
         "$(extract_head master_0031_migration_head history_checksum)")
+variant=("$(extract_head nullable_default_migration_head id)" "$(extract_head nullable_default_migration_head sequence)"
+         "$(extract_head nullable_default_migration_head apply_checksum)" "$(extract_head nullable_default_migration_head verify_checksum)"
+         "$(extract_head nullable_default_migration_head history_checksum)")
+staging_variant=("$(extract_head staging_0045_nullable_default_migration_head id)" "$(extract_head staging_0045_nullable_default_migration_head sequence)"
+         "$(extract_head staging_0045_nullable_default_migration_head apply_checksum)" "$(extract_head staging_0045_nullable_default_migration_head verify_checksum)"
+         "$(extract_head staging_0045_nullable_default_migration_head history_checksum)")
+master_variant=("$(extract_head master_0031_nullable_default_migration_head id)" "$(extract_head master_0031_nullable_default_migration_head sequence)"
+         "$(extract_head master_0031_nullable_default_migration_head apply_checksum)" "$(extract_head master_0031_nullable_default_migration_head verify_checksum)"
+         "$(extract_head master_0031_nullable_default_migration_head history_checksum)")
+if [[ "$SCHEMA65" == 0 ]]; then
+    # Default schema64 verification cannot borrow identities from nested65.
+    variant=("${expected[5]}" "${expected[6]}" "${expected[7]}" "${expected[8]}" "${expected[9]}")
+    staging_variant=("${staging[@]}"); master_variant=("${master[@]}")
+fi
 history_query=$(extract_string migration_history_sql)
 [[ -n "$history_query" ]]
 # Decode directly into the pipe: shell variables cannot preserve NUL bytes in
@@ -71,9 +101,16 @@ history_digest=$("${MYSQL[@]}" -e "$history_query" |
         done
         [[ "$rows" == "${expected[6]}" ]]
     ) | sha256sum | cut -d' ' -f1)
-if [[ "$history_digest" != "${expected[9]}" && "$history_digest" != "${staging[4]}" && "$history_digest" != "${master[4]}" ]]; then
+if [[ "$history_digest" != "${expected[9]}" && "$history_digest" != "${staging[4]}" && "$history_digest" != "${master[4]}" && "$history_digest" != "${variant[4]}" && "$history_digest" != "${staging_variant[4]}" && "$history_digest" != "${master_variant[4]}" ]]; then
     echo "FAILED: full immutable migration history mismatch" >&2
     exit 1
+fi
+if [[ "${expected[0]}" == 231 ]]; then
+    # Generic metadata normalizes quotes; prove absent default separately.
+    terminal_default_query=$(extract_string zone_reset_item_terminal_default_sql)
+    [[ -n "$terminal_default_query" ]] || { echo "FAILED: schema65 terminal default query missing" >&2; exit 1; }
+    terminal_default=$("${MYSQL[@]}" -e "$terminal_default_query")
+    [[ "$terminal_default" == 1 ]] || { echo "FAILED: schema65 terminal default differs" >&2; exit 1; }
 fi
 runtime_tables=$(extract_string runtime_table_sql_list)
 [[ -n "$runtime_tables" ]]
@@ -94,6 +131,12 @@ query+=" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR
 if [[ "$server_version" != *MariaDB* ]]; then
     query+=" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')"
 fi
+if [[ "${expected[0]}" == 231 ]]; then
+    query+=" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('zone_reset_item_birth_origin') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('zone_reset_item_birth_origin')"
+    if [[ "$server_version" != *MariaDB* ]]; then
+        query+=" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('zone_reset_item_birth_origin')"
+    fi
+fi
 query+=" ORDER BY 1;"
 fingerprint=$("${MYSQL[@]}" -e "$query" | sha256sum | cut -d' ' -f1)
 server_version=$("${MYSQL[@]}" -e "SELECT VERSION();")
@@ -101,7 +144,7 @@ if [[ "$server_version" == *MariaDB* ]]; then metadata_fingerprint="${expected[2
 tables=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND table_name IN ($runtime_tables);")
 transactional=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND table_name IN ($runtime_tables) AND engine='InnoDB' AND table_collation='utf8mb4_unicode_ci';")
 baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='${expected[3]}' AND LOWER(HEX(schema_fingerprint))='${expected[4]}' AND manifest_version=1 AND runner_version=1;")
-head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1 OR migration_id='${staging[0]}' AND sequence_number=${staging[1]} AND LOWER(HEX(apply_checksum))='${staging[2]}' AND LOWER(HEX(verify_checksum))='${staging[3]}' AND runner_version=1 OR migration_id='${master[0]}' AND sequence_number=${master[1]} AND LOWER(HEX(apply_checksum))='${master[2]}' AND LOWER(HEX(verify_checksum))='${master[3]}' AND runner_version=1;")
+head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1 OR migration_id='${staging[0]}' AND sequence_number=${staging[1]} AND LOWER(HEX(apply_checksum))='${staging[2]}' AND LOWER(HEX(verify_checksum))='${staging[3]}' AND runner_version=1 OR migration_id='${master[0]}' AND sequence_number=${master[1]} AND LOWER(HEX(apply_checksum))='${master[2]}' AND LOWER(HEX(verify_checksum))='${master[3]}' AND runner_version=1 OR migration_id='${variant[0]}' AND sequence_number=${variant[1]} AND LOWER(HEX(apply_checksum))='${variant[2]}' AND LOWER(HEX(verify_checksum))='${variant[3]}' AND runner_version=1 OR migration_id='${staging_variant[0]}' AND sequence_number=${staging_variant[1]} AND LOWER(HEX(apply_checksum))='${staging_variant[2]}' AND LOWER(HEX(verify_checksum))='${staging_variant[3]}' AND runner_version=1 OR migration_id='${master_variant[0]}' AND sequence_number=${master_variant[1]} AND LOWER(HEX(apply_checksum))='${master_variant[2]}' AND LOWER(HEX(verify_checksum))='${master_variant[3]}' AND runner_version=1;")
 state=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND applied_count=${expected[6]} AND LOWER(HEX(history_checksum))='$history_digest';")
 description_columns=$("${MYSQL[@]}" -e "$(extract_string extra_description_generation_sql)")
 auction_active_item=$("${MYSQL[@]}" -e "$(extract_string auction_active_item_generation_sql)")

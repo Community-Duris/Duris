@@ -146,12 +146,17 @@
       "migrations/immutable/0064_auction_custody_history.sql": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
       "migrations/immutable/0065_zone_reset_item_birth_origin.sh": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3",
       "migrations/immutable/0065_zone_reset_item_birth_origin.sql": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "migrations/immutable/0065_zone_reset_item_birth_origin_nullable_default.sh": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
+      "migrations/immutable/0065_zone_reset_item_birth_origin_nullable_default.sql": "056d5e33bd33d7e981a3ba13528e903fc8c0e142492b23d6fb4f8f88c8102a47",
       "migrations/migration_manifest.json": "a8fb1cf120787ab8d53fc6abc2912a8e641b9f43f6d5d6544636a63c773b4ceb",
       "migrations/migration_manifest.master_0031.json": "207dfb235a65ff97a6f4e4a9bf420b274adf3667473ed2c5c4552a9616b2e329",
+      "migrations/migration_manifest.master_0031_nullable_default_0065.json": "5c7b65fa95391b53b2528275e5b4f3873d219761ed5e81bbca6e76487e2b22e5",
+      "migrations/migration_manifest.nullable_default_0065.json": "3f0454e01eae96d673b902fdf7a8aa7a714a7c354c2e83462900f5253a174a6f",
       "migrations/migration_manifest.staging_0045.json": "29f220d7b59addba904cb0b809ef49644ef25a17469e3f21f8a8580c6ec2ec90",
+      "migrations/migration_manifest.staging_0045_nullable_default_0065.json": "d98c932569cf1751ee3911f8939a13dc2ffaabef6c22638edbae89b32b56d5a9",
       "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
-      "migrations/runtime_compatibility_manifest.json": "41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974",
-      "migrations/verify_runtime_compatibility.sh": "1e55d588c4215cc4d7f3ba01b1edb92523e943f08521d0821c1e21365a8ace47",
+      "migrations/runtime_compatibility_manifest.json": "6ec36cf62c2fb688c2afce9d8eb2c9b05c59ad794ae61d196e79ec4077853a8a",
+      "migrations/verify_runtime_compatibility.sh": "0a803d5e3afd9b0af6c3de5a25dfa48a765fcecacdc4dbff3a1346051ae3474d",
       "scripts/economic_sql_audit_snapshot.py": "b11872745b57c339995ab890171b5003f8132e194a73ae4f5fa69bc92fd2f8ae",
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/persistence_backup.py": "28d5803fcf6e5b3d37abdb65ebdfe506ab958677880479a614639fed97c23c63",
@@ -159,7 +164,7 @@
       "scripts/reconcile_economy_accounting.py": "fc4bb9555326967bd14c0892e6998553cd58dbb4294d628f8643304f97748bc8",
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
+      "scripts/validate_runtime_compatibility.py": "d37537443fc920c3b49b61efa9e6b4d2629e0eb4b51902d1daf5d82158ce46de",
       "src/Makefile": "9737d5ca4d187bbb399babc4f9368676ea83cb183cb2f4ff50d342d8e72a698e",
       "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
@@ -173,7 +178,7 @@
       "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
-      "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
+      "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
       "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
       "src/core/utility.c": "9e31e75c9e62c76aecc72e5d573f6377424993e90087ba6cd825983a88f9fba8",
       "src/core/utility.h": "67b283f7f66a83511ed9bb17ff22bce27901a50c675b6099217edc2846823cc4",
@@ -485,7 +490,7 @@
       "src/specs/specs.vecna.c": "5b1075a75fc61ac5f67d3e3f51731dfe22bd6928d8ee149e58769e3697b24f3e",
       "src/specs/specs.venthix.c": "f4b888002e7649be677441a2b8d3730140603d496ebd2101b02d6c8f8213fb16",
       "src/specs/specs.venthix.h": "935b00228abc68f7f719cc3923eb3bb40beac8259c1ad09530cac3468eaa2efe",
-      "src/sql/sql.c": "fcb648fea1a64750d097556c4254e338a749c9727cb92e989298598650bf7ee0",
+      "src/sql/sql.c": "57ee2e0fdbd7eede6e1c7e43f88013c76602fefcc068c5a4e90cdf56996ab70c",
       "src/sql/sql_economic_runtime.c": "ed8ba402f2bcc9f13181c38423831589568c9c538755be78137ca92672fd2e76",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
@@ -569,6 +574,7 @@
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
       "tests/async/test_reconcile_economy_accounting.py": "7c430d5650ce51a47e1cc2487663ce52c1644df3612e4378ebde7802253096cc",
+      "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
       "tests/integration_manifest.json": "78b7fc1fc4342d7708e3e87bc944588ca0c40677c9e8efc08043df67103aeb27"
     },
     "status": "source_integrated_unqualified"
@@ -26475,7 +26481,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           737,
-          4961
+          5115
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -26522,7 +26528,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           564,
-          2999
+          3153
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",

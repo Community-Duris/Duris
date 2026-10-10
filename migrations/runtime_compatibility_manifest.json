@@ -50,5 +50,58 @@
     "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
     "history_checksum": "07b6774ac624152e0c8b850f884393632d1b933e4485e3658b8da9baddc0c8a2"
   },
-  "auction_active_item_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='auction_item_custody' AND column_name='active_item_uid' AND ordinal_position=11 AND data_type='bigint' AND LOWER(column_type) IN ('bigint unsigned','bigint(20) unsigned') AND is_nullable='YES' AND numeric_precision=20 AND numeric_scale=0 AND LOWER(extra)='stored generated' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CHAR(96),''),' ',''),CHAR(9),''),CHAR(10),''),CHAR(13),''),'(',''),')',''))='casewhenclaimed_atisnullthenitem_uidelsenullend'"
+  "auction_active_item_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='auction_item_custody' AND column_name='active_item_uid' AND ordinal_position=11 AND data_type='bigint' AND LOWER(column_type) IN ('bigint unsigned','bigint(20) unsigned') AND is_nullable='YES' AND numeric_precision=20 AND numeric_scale=0 AND LOWER(extra)='stored generated' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CHAR(96),''),' ',''),CHAR(9),''),CHAR(10),''),CHAR(13),''),'(',''),')',''))='casewhenclaimed_atisnullthenitem_uidelsenullend'",
+  "schema65": {
+    "qualification": "unmeasured",
+    "current_table_count": 231,
+    "runtime_table_sql_list": "'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards','account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores','account_erasure_tombstones','account_ips','account_locker_access','account_locker_item_affects','account_locker_item_extra_descr','account_locker_items','account_lockers','accounts','alliances','artifact_bind','artifact_delta_ledger','artifact_domain_baseline','artifact_domain_state','artifact_guild_outcome','artifact_guild_outcome_delta','artifact_mana','artifacts','artifacts_mortal','associations','auction_bid_history','auction_item_custody','auction_item_pickups','auction_ledger','auction_money_pickups','auction_reconciliation_quarantine','auctions','boon_reward_outcome','boon_reward_outcome_entry','boons','boons_progress','boons_shop','categories','changes','classes','collector_catalog_state','collector_deaths','collector_ledger','collector_listings','collector_reconciliation_quarantine','combat_frag_baseline','combat_frag_ledger','combat_outcome','combat_outcome_participant','corpse_catalog_state','corpse_item_affects','corpse_item_extra_descr','corpse_items','corpses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe','critical_test_state','ctf_data','currency_bank_baseline','currency_ledger','currency_wallet_baseline','economic_account_mapping','economic_accounting_account_effect','economic_accounting_child','economic_accounting_coin_posting','economic_accounting_item_reference','economic_accounting_operation','economic_accounting_source_claim','economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_epoch','economic_lineage_state','economic_pending_claim_consumption','economic_pending_claim_source','economic_sql_activation_receipt','economic_sql_global_activation','economic_sql_lifecycle_installation','epic_balance_baseline','epic_bonus','epic_gain','epic_ledger','epic_stone_claim','eq_drop','frag_leaderboard','guild_members','guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms','guildhalls','guilds','ip_info','item_current_owner','item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_ownership_quarantine','item_uid_allocator','items','kingdom_garrison','kingdom_land','kingdom_realms','level_cap','lifecycle_archive_batches','lifecycle_archive_evidence','lifecycle_archive_jobs','lifecycle_archive_rows','locker_access','locker_activity_log','locker_chests','locker_item_affects','locker_item_extra_descr','locker_items','locker_kickouts','locker_session_state','lockers','log_entries','lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history','mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones','offline_message_receipts','offline_messages','outposts','pages','persistence_item_events','persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections','ping','pkill_event','pkill_info','player_affects','player_craft_progression','player_data','player_death_conflict_evidence','player_death_custody','player_death_disposition','player_death_restitution_delivery','player_death_restitution_item','player_death_restitution_receipt','player_death_restitution_runtime','player_forged_items','player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr','player_item_runtime_state','player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr','player_pet_items','player_pets','player_recipes','player_shapechanges','player_skills','player_spell_effect_receipt','player_spellbooks','player_timers','player_undead_slots','player_witnesses','poll_options','poll_votes','polls','prepstatement_duris_sql','private_chest_log','private_chests','progress','quest_mobile_native','quest_mobile_native_birth_origin','quest_reward_obligation','quest_reward_xp_entitlement','quest_trophy','races','racewar_stat_mods','saved_item_affects','saved_item_extra_descr','saved_item_recovery_handoff','saved_items','season_reset_state','server_reboots','session_audit_outcome','ship_armor','ship_cargo_market_mods','ship_cargo_prices','ship_crew','ship_slots','ships','shop_trophy','shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_item_runtime_state','shopkeeper_items','shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items','sql_room_item_payload','statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval','telemetry_player_day','telemetry_quarantine','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished','zone_reset_item_birth_origin','zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'",
+    "normalized_metadata_fingerprints": {
+      "mysql8": null,
+      "mariadb10_11": null
+    },
+    "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 66",
+    "zone_reset_item_terminal_default_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='zone_reset_item_birth_origin' AND ordinal_position=5 AND column_name='terminal_publication_context' AND data_type='longblob' AND is_nullable='YES' AND (column_default IS NULL OR (VERSION() LIKE '10.11.%MariaDB%' AND BINARY column_default = BINARY 'NULL')) AND extra=''",
+    "migration_head": {
+      "id": "0065_zone_reset_item_birth_origin",
+      "sequence": 65,
+      "apply_checksum": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "verify_checksum": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3",
+      "history_checksum": "a0920c9e76246161f9e3dae66a020dbb770ccacbcaaf5a684d4f45fe64d2ab7f"
+    },
+    "staging_0045_migration_head": {
+      "id": "0065_zone_reset_item_birth_origin",
+      "sequence": 65,
+      "apply_checksum": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "verify_checksum": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3",
+      "history_checksum": "fca49b0d040627d255f43f2170f4af69d9cdd3dc74f4e13461780358ba3cf84e"
+    },
+    "master_0031_migration_head": {
+      "id": "0065_zone_reset_item_birth_origin",
+      "sequence": 65,
+      "apply_checksum": "659b8738581d52cddafb90bee22bdf77240c0748922c057a4a40dd6f3d160f98",
+      "verify_checksum": "17c45a08f92d4fc00e98712850015cb39fb9830e5ea2bf293d415b8eba4186d3",
+      "history_checksum": "d94d73d733186351a5ed2df7890679ebabe344b92e3a4d14a4ed7e8f29ea28e3"
+    },
+    "nullable_default_migration_head": {
+      "id": "0065_zone_reset_item_birth_origin_nullable_default",
+      "sequence": 65,
+      "apply_checksum": "056d5e33bd33d7e981a3ba13528e903fc8c0e142492b23d6fb4f8f88c8102a47",
+      "verify_checksum": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
+      "history_checksum": "55ab85c769d0f271c0c01b2ec55ac01217548d8062be3f837692bf05987b57ba"
+    },
+    "staging_0045_nullable_default_migration_head": {
+      "id": "0065_zone_reset_item_birth_origin_nullable_default",
+      "sequence": 65,
+      "apply_checksum": "056d5e33bd33d7e981a3ba13528e903fc8c0e142492b23d6fb4f8f88c8102a47",
+      "verify_checksum": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
+      "history_checksum": "9e81f924525c9e089a92559d1429e83f7e1c05cead3ca652a89eb68ec5534f97"
+    },
+    "master_0031_nullable_default_migration_head": {
+      "id": "0065_zone_reset_item_birth_origin_nullable_default",
+      "sequence": 65,
+      "apply_checksum": "056d5e33bd33d7e981a3ba13528e903fc8c0e142492b23d6fb4f8f88c8102a47",
+      "verify_checksum": "f0c8bf48e46178710de90c0822dfe69c3b46f0a2dbb27849403f3b365a8da8b3",
+      "history_checksum": "45b830b94d19c1ab6ff017e33125e0426099a3a2508fb2d0a19b573ece5c0e02"
+    }
+  }
 }

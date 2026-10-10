@@ -22,7 +22,7 @@ FIELDS = {
     "runtime_table_sql_list", "normalized_metadata_fingerprints", "migration_head",
     "connection", "lookup", "staging_0045_migration_head", "master_0031_migration_head",
     "migration_history_sql",
-    "extra_description_generation_sql", "auction_active_item_generation_sql",
+    "extra_description_generation_sql", "auction_active_item_generation_sql", "schema65",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
                "history_checksum"}
@@ -189,6 +189,96 @@ def load() -> dict:
     return value
 
 
+
+SCHEMA65_TERMINAL_DEFAULT_SQL = "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='zone_reset_item_birth_origin' AND ordinal_position=5 AND column_name='terminal_publication_context' AND data_type='longblob' AND is_nullable='YES' AND (column_default IS NULL OR (VERSION() LIKE '10.11.%MariaDB%' AND BINARY column_default = BINARY 'NULL')) AND extra=''"
+
+
+SCHEMA65_HEADS = (
+    ("migration_head", "migration_manifest.json", "RUNTIME_SCHEMA65_MIGRATION_"),
+    ("staging_0045_migration_head", "migration_manifest.staging_0045.json", "RUNTIME_SCHEMA65_STAGING_0045_MIGRATION_"),
+    ("master_0031_migration_head", "migration_manifest.master_0031.json", "RUNTIME_SCHEMA65_MASTER_0031_MIGRATION_"),
+    ("nullable_default_migration_head", "migration_manifest.nullable_default_0065.json", "RUNTIME_SCHEMA65_NULLABLE_DEFAULT_MIGRATION_"),
+    ("staging_0045_nullable_default_migration_head", "migration_manifest.staging_0045_nullable_default_0065.json", "RUNTIME_SCHEMA65_STAGING_0045_NULLABLE_DEFAULT_MIGRATION_"),
+    ("master_0031_nullable_default_migration_head", "migration_manifest.master_0031_nullable_default_0065.json", "RUNTIME_SCHEMA65_MASTER_0031_NULLABLE_DEFAULT_MIGRATION_"),
+)
+
+
+def validate_schema65(value: dict, header: str, lifecycle_tables: list[str]) -> dict:
+    """Validate source coherence; unmeasured source is never schema65 acceptance."""
+    profile = value["schema65"]
+    fields = {"qualification", "current_table_count", "runtime_table_sql_list",
+              "normalized_metadata_fingerprints", "migration_history_sql", "zone_reset_item_terminal_default_sql"}
+    fields.update(name for name, _, _ in SCHEMA65_HEADS)
+    if not isinstance(profile, dict) or set(profile) != fields or \
+            profile["qualification"] not in ("unmeasured", "measured") or \
+            profile["current_table_count"] != 231:
+        raise migration_runner.MigrationContractError("schema65 profile fields/count drift")
+    measured = profile["qualification"] == "measured"
+    fingerprints = profile["normalized_metadata_fingerprints"]
+    if not isinstance(fingerprints, dict) or set(fingerprints) != {"mysql8", "mariadb10_11"} or \
+            (not measured and any(item is not None for item in fingerprints.values())) or \
+            (measured and any(not isinstance(item, str) or not re.fullmatch(r"[0-9a-f]{64}", item)
+                              for item in fingerprints.values())):
+        raise migration_runner.MigrationContractError("schema65 measurement qualification drift")
+    qualified = re.search(r"RUNTIME_SCHEMA65_QUALIFIED\s*=\s*(true|false);", header)
+    if qualified is None or (qualified.group(1) == "true") != measured:
+        raise migration_runner.MigrationContractError("compiled schema65 qualification drift")
+    contracts = []
+    for name, filename, prefix in SCHEMA65_HEADS:
+        contract = migration_runner.load_manifest(ROOT / "migrations" / filename)
+        if len(contract.migrations) != 65 or contract.baseline_id != value["baseline_id"] or \
+                contract.required_table_count != 170 or \
+                contract.required_table_fingerprint != value["baseline_table_fingerprint"]:
+            raise migration_runner.MigrationContractError("schema65 baseline/history count drift")
+        final = contract.migrations[-1]
+        rows = [migration_runner.AppliedMigration(item.migration_id, item.sequence, item.description,
+                item.apply_checksum, item.verify_checksum, item.compatibility, contract.runner_version)
+                for item in contract.migrations]
+        expected = {"id": final.migration_id, "sequence": final.sequence,
+                    "apply_checksum": final.apply_checksum, "verify_checksum": final.verify_checksum,
+                    "history_checksum": migration_runner.history_checksum(rows)}
+        if not isinstance(profile[name], dict) or set(profile[name]) != HEAD_FIELDS or profile[name] != expected:
+            raise migration_runner.MigrationContractError("schema65 authentic history drift")
+        for suffix, field in (("HEAD_ID", "id"), ("HEAD_SEQUENCE", "sequence"),
+                              ("APPLY_CHECKSUM", "apply_checksum"), ("VERIFY_CHECKSUM", "verify_checksum"),
+                              ("HISTORY_CHECKSUM", "history_checksum")):
+            match = re.search(rf'{prefix}{suffix}\s*=\s*("[^\"]*"|[0-9]+);', header)
+            if match is None or json.loads(match.group(1)) != expected[field]:
+                raise migration_runner.MigrationContractError("compiled schema65 history drift")
+        contracts.append(contract)
+    from dataclasses import replace
+    for original, variant in zip(contracts[:3], contracts[3:]):
+        if original.required_tables != variant.required_tables or original.migrations[:64] != variant.migrations[:64] or \
+                original.migrations[-1].migration_id != "0065_zone_reset_item_birth_origin" or \
+                variant.migrations[-1].migration_id != "0065_zone_reset_item_birth_origin_nullable_default" or \
+                original.migrations[-1].description != variant.migrations[-1].description or \
+                original.migrations[-1].compatibility != variant.migrations[-1].compatibility:
+            raise migration_runner.MigrationContractError("schema65 variant prefix/identity drift")
+    tables = set(contracts[0].required_tables) | lifecycle.schema_tables(tuple(
+        item.apply_path for item in contracts[0].migrations))
+    table_list = ",".join(f"'{table}'" for table in sorted(tables))
+    if len(tables) != 231 or "zone_reset_item_birth_origin" not in tables or \
+            profile["runtime_table_sql_list"] != table_list or \
+            profile["migration_history_sql"] != migration_runner.runtime_history_sql(66) or \
+            profile["zone_reset_item_terminal_default_sql"] != SCHEMA65_TERMINAL_DEFAULT_SQL:
+        raise migration_runner.MigrationContractError("schema65 inventory/history query drift")
+    for constant, expected in (("RUNTIME_SCHEMA65_TABLE_SQL_LIST", table_list),
+            ("RUNTIME_SCHEMA65_MIGRATION_HISTORY_SQL", profile["migration_history_sql"]),
+            ("RUNTIME_SCHEMA65_ZONE_RESET_ITEM_TERMINAL_DEFAULT_SQL", SCHEMA65_TERMINAL_DEFAULT_SQL),
+            ("RUNTIME_SCHEMA65_MYSQL8_METADATA_FINGERPRINT", fingerprints["mysql8"] or ""),
+            ("RUNTIME_SCHEMA65_MARIADB10_11_METADATA_FINGERPRINT", fingerprints["mariadb10_11"] or "")):
+        match = re.search(rf'{constant}\s*=\s*((?:"[^\"]*"\s*)+);', header)
+        compiled = "".join(json.loads(literal) for literal in re.findall(r'"[^\"]*"', match.group(1))) if match else None
+        if compiled != expected:
+            raise migration_runner.MigrationContractError("compiled schema65 query/fingerprint drift")
+    count = re.search(r"RUNTIME_SCHEMA65_CURRENT_TABLE_COUNT\s*=\s*231;", header)
+    registered = len(lifecycle_tables) == 231 and set(lifecycle_tables) == tables
+    if count is None or (measured and not registered):
+        raise migration_runner.MigrationContractError("schema65 lifecycle/count qualification drift")
+    return {"qualification": profile["qualification"], "current_table_count": 231,
+            "authentic_histories": 6, "lifecycle_inventory_registered": registered,
+            "status": "valid" if measured else "unqualified: actual two-engine measurements pending"}
+
 def validate() -> dict:
     """Prove the runtime, migration, lifecycle, and compiled contracts agree.
 
@@ -202,7 +292,10 @@ def validate() -> dict:
     validate_death_schema()
     validate_death_conflict_schema()
     value = load()
-    migration = migration_runner.load_manifest()
+    from dataclasses import replace
+    complete_migration = migration_runner.load_manifest()
+    # Keep the supported schema64 profile pinned to its exact historical prefix.
+    migration = replace(complete_migration, migrations=complete_migration.migrations[:64])
     if value["baseline_id"] != migration.baseline_id or \
             value["baseline_table_count"] != migration.required_table_count or \
             value["baseline_table_fingerprint"] != migration.required_table_fingerprint or \
@@ -210,6 +303,8 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
+    complete_staging = staging
+    staging = replace(staging, migrations=staging.migrations[:64])
     if len(migration.migrations) != 64 or len(staging.migrations) != 64 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
@@ -225,6 +320,8 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("staging migration append drift")
     master = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.master_0031.json")
+    complete_master = master
+    master = replace(master, migrations=master.migrations[:64])
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
     if len(master.migrations) != 64 or master.baseline_id != migration.baseline_id or \
@@ -260,6 +357,9 @@ def validate() -> dict:
     )
     tables = [entry["locator"] for entry in lifecycle_manifest["entries"]
               if entry["kind"] == "database_table"]
+    complete_lifecycle_tables = list(tables)
+    # The additive65 lifecycle entry must not change the accepted64 inventory.
+    tables = [table for table in tables if table != "zone_reset_item_birth_origin"]
     # Discover post-baseline tables from the immutable schema sources instead of
     # maintaining an exclusion list that can hide an unregistered migration.
     immutable_tables = lifecycle.schema_tables(tuple(
@@ -338,12 +438,18 @@ def validate() -> dict:
             "current_table_count": value["current_table_count"],
             "migration_head": head.migration_id,
             "normalized_metadata_fingerprints":
-                value["normalized_metadata_fingerprints"], "status": "valid"}
+                value["normalized_metadata_fingerprints"], "status": "valid",
+            "schema65": validate_schema65(value, header, complete_lifecycle_tables)}
 
 
 if __name__ == "__main__":
     try:
-        print(json.dumps(validate(), sort_keys=True))
+        if sys.argv[1:] not in ([], ["--schema65"]):
+            raise migration_runner.MigrationContractError("usage: validate_runtime_compatibility.py [--schema65]")
+        report = validate()
+        if sys.argv[1:] and report["schema65"]["qualification"] != "measured":
+            raise migration_runner.MigrationContractError("0065 runtime metadata fingerprints await actual two-engine measurement")
+        print(json.dumps(report, sort_keys=True))
     except (json.JSONDecodeError, lifecycle.ValidationError,
             migration_runner.MigrationContractError) as error:
         print(f"runtime compatibility validation failed: {error}", file=sys.stderr)
