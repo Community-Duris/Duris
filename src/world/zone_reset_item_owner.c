@@ -3,6 +3,9 @@
 #include "flatfile/flatfile_season_state.h"
 #include "world/zone_reset_room_publication.h"
 #include "world/handler.h"
+#include "account/character_identity.h"
+#include "world/character_maintenance.h"
+#include "redis/redis_report_cache.h"
 #include <array>
 #include "economy/economic_gameplay_authority.h"
 #include "economy/zone_reset_item_recovery.h"
@@ -4670,6 +4673,11 @@ bool zone_reset_item_owner::flat_current_global_storage(size_t *output) noexcept
 	    !warm_scratch_add(bytes, current) ||
 	    !item_ownership_runtime_cache_storage_bytes(&current) ||
 	    !warm_scratch_add(bytes, current) || !world_activity_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !character_runtime_identity_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) || !character_maintenance_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) || !nevent_character_cancel_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) || !redis_report_cache_retained_bytes(&current) ||
 	    !warm_scratch_add(bytes, current))
 		return false;
 	*output = bytes;
@@ -4734,6 +4742,12 @@ bool zone_reset_item_owner::flat_current_global_storage_with_literal_pools(size_
 	size_t bytes = 0, current = 0;
 	if (!flat_current_global_storage(&bytes) ||
 	    !native_mobile_birth_literal_pool_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !quest_mobile_native_mobile_pool_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !quest_mobile_native_mobile_catalog_string_storage_bytes(&current) ||
+	    !warm_scratch_add(bytes, current) ||
+	    !quest_mobile_native_published_npc_storage_bytes(&current) ||
 	    !warm_scratch_add(bytes, current))
 		return false;
 	*output = bytes;
