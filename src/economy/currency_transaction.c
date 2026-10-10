@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <type_traits>
 
 extern P_desc descriptor_list;
 extern P_char character_list;
@@ -87,7 +88,90 @@ struct pending_currency
 	bool restored_coin_receipt_sealed = false;
 };
 
-std::unordered_map<std::string, pending_currency> pending;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+// New data-free owner of the original unordered_map's actual table. No existing
+// map is cast or layout-read. All selected ordinary algorithms remain inherited.
+class currency_native_pending_table final
+	: public std::__umap_hashtable<std::string, pending_currency>
+{
+	using table_type = std::__umap_hashtable<std::string, pending_currency>;
+	using original_type = std::unordered_map<std::string, pending_currency>;
+	using actual_node = std::__detail::_Hash_node<
+		typename table_type::value_type,
+		std::__cache_default<std::string, std::hash<std::string>>::value>;
+
+    public:
+	using table_type::table_type;
+	using table_type::operator=;
+	using table_type::insert;
+	// Exact original unordered_map node-handle forwarding used by selected
+	// coin-publication refusal recovery; retain inherited value insert overloads.
+	insert_return_type insert(node_type &&node)
+	{
+		return this->_M_reinsert_node(std::move(node));
+	}
+	bool current_table_heap_bytes(size_t *output) const noexcept
+	{
+		if (!output)
+			return false;
+		size_t bytes = 0;
+		const size_t buckets = this->bucket_count();
+		if (!buckets ||
+		    (buckets > 1 && buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *)))
+			return false;
+		if (buckets > 1)
+			bytes = buckets * sizeof(std::__detail::_Hash_node_base *);
+		if (this->size() > (SIZE_MAX - bytes) / sizeof(actual_node))
+			return false;
+		bytes += this->size() * sizeof(actual_node);
+		for (const auto &entry : *this)
+			if (entry.first.capacity() > 15)
+			{
+				if (entry.first.capacity() == SIZE_MAX ||
+				    entry.first.capacity() + 1 > SIZE_MAX - bytes)
+					return false;
+				bytes += entry.first.capacity() + 1;
+			}
+		*output = bytes;
+		return true;
+	}
+	bool next_bank_insert_extra_peak(const std::string &key, size_t *output) const noexcept
+	{
+		if (!output || this->size() == this->max_size() || key.size() == SIZE_MAX)
+			return false;
+		const size_t text = key.size() > 15 ? key.size() + 1 : 0;
+		if (text > SIZE_MAX - sizeof(actual_node))
+			return false;
+		size_t extra = sizeof(actual_node) + text;
+		// These objects are admitted by the owning caller before this pure profile
+		// call. Copy the actual CURRENT original policy, never guess a threshold.
+		auto policy = this->__rehash_policy();
+		const auto next = policy._M_need_rehash(this->bucket_count(), this->size(), 1);
+		if (next.first && next.second > 1)
+		{
+			if (next.second >
+			    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				return false;
+			extra += next.second * sizeof(std::__detail::_Hash_node_base *);
+		}
+		*output = extra;
+		return true;
+	}
+};
+static_assert(sizeof(currency_native_pending_table) ==
+	      sizeof(std::unordered_map<std::string, pending_currency>));
+static_assert(alignof(currency_native_pending_table) ==
+	      alignof(std::unordered_map<std::string, pending_currency>));
+static_assert(std::is_same_v<currency_native_pending_table::iterator,
+			     std::unordered_map<std::string, pending_currency>::iterator>);
+static_assert(std::is_same_v<currency_native_pending_table::allocator_type,
+			     std::unordered_map<std::string, pending_currency>::allocator_type>);
+using currency_pending_table = currency_native_pending_table;
+#else
+using currency_pending_table = std::unordered_map<std::string, pending_currency>;
+#endif
+currency_pending_table pending;
 currency_transaction_health health = {};
 
 std::string operation_key(const critical_operation_id &operation_id)
@@ -1867,4 +1951,206 @@ void currency_transaction_reset_for_tests(void)
 		}
 	pending.clear();
 	health = {};
+}
+
+namespace
+{
+[[maybe_unused]] bool currency_replay_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+[[maybe_unused]] bool currency_replay_command_heap(const critical_command &command,
+						   size_t &bytes) noexcept
+{
+	return command.keys.capacity() <= SIZE_MAX / sizeof(critical_entity_key) &&
+	       currency_replay_add(bytes, command.keys.capacity() * sizeof(critical_entity_key)) &&
+	       command.expected_revisions.capacity() <=
+		       SIZE_MAX / sizeof(critical_expected_revision) &&
+	       currency_replay_add(bytes, command.expected_revisions.capacity() *
+						  sizeof(critical_expected_revision)) &&
+	       currency_replay_add(bytes, command.payload.capacity()) &&
+	       currency_replay_add(bytes, command.accounting_intent.capacity());
+}
+[[maybe_unused]] bool currency_replay_admit(size_t outer, size_t local, size_t extra,
+					    bool (*reserve)(size_t, void *) noexcept,
+					    void *context) noexcept
+{
+	size_t bytes = 0;
+	return reserve && currency_transaction_current_storage_bytes(&bytes) &&
+	       currency_replay_add(bytes, outer) && currency_replay_add(bytes, local) &&
+	       currency_replay_add(bytes, extra) && reserve(bytes, context);
+}
+}
+
+// Complete CURRENT currency owner, including retained SQL coin commands from
+// original routes. Inline table/health, actual buckets/nodes/keys and every deep
+// command vector appear once; inline optional endpoint bodies already live in nodes.
+bool currency_transaction_current_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output)
+		return false;
+	size_t bytes = 0;
+	if (!pending.current_table_heap_bytes(&bytes) ||
+	    !currency_replay_add(bytes, sizeof(pending)) ||
+	    !currency_replay_add(bytes, sizeof(health)))
+		return false;
+	for (const auto &[key, entry] : pending)
+	{
+		(void)key;
+		if (entry.coin &&
+		    (!currency_replay_command_heap(entry.coin->source.change, bytes) ||
+		     !currency_replay_command_heap(entry.coin->destination.change, bytes)))
+			return false;
+		if (entry.restored_coin_command &&
+		    !currency_replay_command_heap(*entry.restored_coin_command, bytes))
+			return false;
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+// Explicit bank-only companion, not a complete currency/coin dispatcher. Full
+// original schema/publication skips and ATM predicates remain unchanged. The
+// caller's authentic exclusive outer excludes this currency owner exactly once.
+bool currency_transaction_restore_bank_replayed_command_bounded(
+	const critical_command &command, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)command;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve)
+		return false;
+	if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !command.publication_required)
+		return currency_replay_admit(outer_live, 0, 0, reserve, context);
+	if (command.type != critical_command_type::account_bank)
+	{
+		currency_replay_admit(outer_live, 0, 0, reserve, context);
+		return false; // Separate SQL coin owner is intentionally not supplied here.
+	}
+	using insertion_result = std::pair<currency_pending_table::iterator, bool>;
+	const size_t fixed = sizeof(currency_command_payload) + sizeof(pending_currency) +
+			     sizeof(std::string) + sizeof(currency_pending_table::iterator);
+	const size_t policy_frames =
+		sizeof(std::__detail::_Prime_rehash_policy) + 2 * sizeof(std::pair<bool, size_t>);
+	// Genuine installed hashtable's _Scoped_node two-pointer owner, temporary
+	// saved _State, original policy result/return pairs, actual bucket allocator
+	// object, returned iterator and fresh copied-string _Guard. These are dead
+	// after emplace returns and never become persistent currency ownership.
+	const size_t insertion_frames = 3 * sizeof(void *) +
+					sizeof(std::__detail::_Prime_rehash_policy::_State) +
+					2 * sizeof(std::pair<bool, size_t>) +
+					sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+					sizeof(currency_pending_table::iterator);
+	if (!currency_replay_admit(outer_live, fixed, 0, reserve, context))
+		return false;
+	currency_pending_table::iterator inserted_node = pending.end();
+	bool inserted = false, completed = false;
+	try
+	{
+		{
+			currency_command_payload payload{};
+			pending_currency entry{};
+			std::string key;
+			do
+			{
+				if (!critical_command_envelope_valid(command))
+					break;
+				size_t current = 0;
+				if (!currency_transaction_current_storage_bytes(&current) ||
+				    !currency_replay_add(current, outer_live) ||
+				    !currency_replay_add(current, fixed) ||
+				    !currency_command_decode_payload_bounded(
+					    command, &payload, reserve, context, current) ||
+				    !currency_replay_admit(outer_live, fixed, 0, reserve,
+							   context) ||
+				    (payload.reason != currency_reason_type::atm_deposit &&
+				     payload.reason != currency_reason_type::atm_withdraw) ||
+				    pending.size() >= CURRENCY_PENDING_MAX)
+					break;
+				entry.pid = payload.pid;
+				entry.account_name = payload.account_name;
+				entry.racewar = payload.racewar;
+				entry.publication_required = true;
+				const size_t key_request =
+					command.operation_id.bytes.size() > 15 ?
+						command.operation_id.bytes.size() + 1 :
+						0;
+				if (!currency_replay_admit(outer_live,
+							   fixed + sizeof(std::string) +
+								   sizeof(void *),
+							   key_request, reserve, context))
+					break;
+				// Admit the actual original fresh constructor's returned object and
+				// 16-byte key heap before its allocation-free move into empty key.
+				key = std::string(reinterpret_cast<const char *>(
+							  command.operation_id.bytes.data()),
+						  command.operation_id.bytes.size());
+				const size_t key_heap = key.capacity() > 15 ? key.capacity() + 1 :
+									      0;
+				if (!currency_replay_admit(outer_live, fixed, key_heap, reserve,
+							   context) ||
+				    pending.find(key) != pending.end())
+					break; // Original duplicates refuse; do not replace or attach.
+				size_t extra = 0;
+				if (!currency_replay_admit(outer_live, fixed,
+							   key_heap + policy_frames, reserve,
+							   context) ||
+				    !pending.next_bank_insert_extra_peak(key, &extra) ||
+				    extra > SIZE_MAX - key_heap - sizeof(insertion_result) -
+						    insertion_frames ||
+				    !currency_replay_admit(outer_live, fixed,
+							   key_heap + extra +
+								   sizeof(insertion_result) +
+								   insertion_frames,
+							   reserve, context))
+					break;
+				const auto actual = pending.emplace(key, std::move(entry));
+				// Mark actual returned insertion before later fallible CURRENT rebase.
+				inserted_node = actual.first;
+				inserted = actual.second;
+				completed = inserted;
+			} while (false);
+		}
+	}
+	catch (...)
+	{
+		completed = false;
+	}
+	// Private key/payload/entry and profile/returned pair frames have died. Only
+	// the actual iterator survives; a snapshot is not a borrowed storage lease.
+	const bool refreshed =
+		currency_replay_admit(outer_live, sizeof(inserted_node), 0, reserve, context);
+	if (!completed || !refreshed)
+	{
+		// No callback or allocation during refusal cleanup. Remove only this
+		// genuinely returned new node; existing entries and actual bucket growth stay.
+		if (inserted)
+		{
+			pending.erase(inserted_node);
+			inserted_node = pending.end();
+			// Cleanup is complete before refreshing its actual surviving buckets.
+			currency_replay_admit(outer_live, sizeof(inserted_node), 0, reserve,
+					      context);
+		}
+		return false;
+	}
+	update_retained_health(); // Original allocation-free full health tail.
+	return true;
+#endif
 }
