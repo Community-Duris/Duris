@@ -452,6 +452,65 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Historical quest request provenance; selected economic-history delivery correction - 2026-10-10
+
+The 04:02 compact observation found architecture continuing its selected EH
+authority map, while quest reread e7c381c7/Pasted text.txt after compaction and
+treated its implementation/execution request as newer steering. The actual
+available quest conversation record dates that human attachment to
+2026-10-07T06:43:36.393Z; no newer substantive human request appears in the
+available record. Its historical implementation authorization and completed
+QP02/QP07 fixes remain preserved. Rereading the attachment does not establish
+a new resumption or supersede the subsequently acknowledged EH assignment.
+Actual genuinely newer human instructions still take priority.
+
+Root sent a bounded provenance/assignment correction to the existing quest chat:
+continue PUBLISHED_ORDINARY_NATIVE_BIRTH_ECONOMIC_HISTORY_ACCEPTANCE_DELTA_2026-10-10.txt
+at unchanged Hfe7a7f8d896ebc926bf93cabe9ca8dbe4d53c6fa / parent
+f1caf80298c3ff3d492ad4281ce54b6453ac0faf and the exact four EH cuts/dependencies.
+Architecture's selected EH map continues independently. No second delivery,
+new source/task repin, old CLOSED verifier rerun or adoption wait is selected.
+Quest acknowledges the correction at cursor174 and returns to EH without further
+runtime batches. Both selected packets remain unfinished, not silently completed.
+
+Quest performed a non-destructive merge to candidate
+630b012d398f16c1e5672896f71e0ed0e53f93d4, preserving original unpublished
+f4e20219113fdaee7d3ead787418d89683e05590 ancestry. At root observation,
+tests/async/quest_accounting_prep/case_data.py has a local modification.
+Preserve that work, isolated checkouts, the already-started build/jobs/services
+and all setup/compiler/regression evidence; no reset/revert/kill/delete/restart
+or rollback. Do not launch additional native/product/DB/build broad batches
+under the selected source-preparation assignment. Exact private current build,
+component and SQL/native reports remain root UNREVIEWED; setup failures before
+source extraction are not candidate compiler findings. No new qualified ELF,
+SQL capture, gameplay journey, primary adoption or release result is inferred.
+Checkout/current-candidate observations remain separate from immutable EH proof.
+
+Concurrent primary d3e38df91ae533fb4864f672a1ebacc0e0630560 / actual parent
+selecting205411 adds complete bounded native mobile context validation. Root reads
+its full handoff/new public declaration and authenticates two whole insertion-only
+source forward/inverses and unchanged EH/ordinary providers. Full188 new C semantic
+review and original codec/native/crypto/math/ABI/allocator/full caller qualification
+are NOT PERFORMED; private RAW/profile/preprocessor/policy/review/pin claims are
+REPORTED ONLY. The genuine leaf EXISTS, unselected and queued at EH handoff only;
+no active task expansion/repin or full item/craft/coin/startup qualification follows.
+
+Root evidence is D:/Dev/Temp/coordinator-ordinary-physical-quarantine-review-20261010/heartbeat-0402/.
+It records available human-request timestamps and attachment identity, current
+published/owned refs and the narrow three-document insertion. Private attachment,
+rollout, packet, build and test artifacts are not imported or committed. Only
+the three owned coordination documents receive this clarification; its exact
+inserted-section inverse restores primaryd3e38df91ae533fb4864f672a1ebacc0e0630560.
+The original selecting section, all CLOSED PQ/OC/OR/RR/BR/SS/SG and earlier seals,
+receipts/history and the full evolving queue remain preserved.
+
+Actual coordinator Goal remains BLOCKED unchanged1791410483. No replacement,
+resumption, pause or completion follows. Broad Plans1-5/R1-R8/applicable backend/
+gameplay/persistence/recovery/owner completion audit is open; accounting inactive,
+admission CLOSED, coverage incomplete and release BLOCKED. Heartbeat stays ACTIVE.
+Root performs no native/product/DB/compiler/preprocessor/deploy/activation work;
+all Git fetch/merge/commit/push use gc.auto=0, with no pruning/housekeeping.
+
 ## Named physical/quarantine pair reviewed CLOSED; ordinary economic history pair selected - 2026-10-10
 
 Both original PUBLISHED_ORDINARY_NATIVE_BIRTH_PHYSICAL_QUARANTINE_AUTHORITY_BOUNDARY_2026-10-10.txt
