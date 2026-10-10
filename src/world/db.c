@@ -6231,6 +6231,13 @@ size_t shop_trade_original_procedure_binding_stage::retained_bytes() const noexc
 				return 0;
 			total += retained;
 		}
+	if (npc_flat_scope_)
+	{
+		const size_t retained = npc_flat_scope_->retained_heap_bytes();
+		if (!retained || retained > SIZE_MAX - total)
+			return 0;
+		total += retained;
+	}
 	return total;
 }
 bool shop_trade_original_procedure_binding_stage::valid() const noexcept
@@ -6262,6 +6269,8 @@ bool shop_trade_original_procedure_binding_stage::valid_flat() const noexcept
 	    !flatfile_coin_boot_templates::ready() || !chain_.valid())
 		return false;
 	if (native_flat_ && flat_scopes_.empty())
+		return false;
+	if (native_npc_flat_ && (native_flat_ || !npc_flat_scope_ || !npc_flat_scope_->current()))
 		return false;
 	for (const auto &scope : flat_scopes_)
 		if (!scope || !scope->current())
@@ -6761,6 +6770,7 @@ struct quest_mobile_native_item_stage::implementation
 	bool metadata_borrowed_world = false;
 	bool flat_factory = false;
 	std::shared_ptr<const quest_mobile_native_flat_factory_scope> flat_scope;
+	std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> npc_flat_scope;
 
 	// Exact private raw allocation retention from genuine bounded cold hydration.
 	// These observations grant no factory/source/UID/publication authority.
@@ -6829,6 +6839,7 @@ quest_mobile_native_item_binding quest_mobile_native_item_stage::binding_input()
 	result.restored_bridge_request_ = state_->restored_bridge_request;
 	result.flat_factory_ = state_->flat_factory;
 	result.flat_scope_ = state_->flat_scope;
+	result.npc_flat_scope_ = state_->npc_flat_scope;
 	return result;
 }
 size_t quest_mobile_native_item_stage::retained_bytes() const noexcept
@@ -6849,6 +6860,12 @@ size_t quest_mobile_native_item_stage::retained_bytes() const noexcept
 	if (s.flat_scope)
 	{
 		const size_t scope_bytes = s.flat_scope->retained_heap_bytes();
+		if (!scope_bytes || !add(scope_bytes))
+			return 0;
+	}
+	if (s.npc_flat_scope)
+	{
+		const size_t scope_bytes = s.npc_flat_scope->retained_heap_bytes();
 		if (!scope_bytes || !add(scope_bytes))
 			return 0;
 	}
@@ -12642,6 +12659,12 @@ bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 		if (!scope || !cold_birth_add(bytes, scope))
 			return false;
 	}
+	if (s.npc_flat_scope)
+	{
+		const size_t scope = s.npc_flat_scope->retained_heap_bytes();
+		if (!scope || !cold_birth_add(bytes, scope))
+			return false;
+	}
 	if (s.zombie.game_ &&
 	    (!cold_birth_add(bytes, sizeof(ZombieGame)) ||
 	     !cold_birth_rows(bytes, s.zombie.game_->zombies.capacity(), sizeof(P_char))))
@@ -13282,4 +13305,486 @@ bool quest_mobile_native_item_stage::detach_room_bounded(
 					outer_live) &&
 	       zone_reset_room_local_nesting::detach(child.state_->object, target.state_->object,
 						     root.state_->object);
+}
+
+bool quest_mobile_native_npc_flat_factory_scope::current() const noexcept
+{
+	return quest_mobile_native_birth_owner::npc_flat_factory_scope_current(*this);
+}
+
+bool quest_mobile_native_npc_flat_factory_scope::current_bounded(reserve_fn reserve, void *context,
+								 size_t outer_live) const noexcept
+{
+	if (!reserve)
+		return false;
+	// Parameters/return and the genuine request local coexist with the complete
+	// identity observer. The observer profile includes actual projection outputs.
+	size_t request = outer_live;
+	if (!cold_birth_add(request, sizeof(this)) || !cold_birth_add(request, sizeof(reserve)) ||
+	    !cold_birth_add(request, sizeof(context)) ||
+	    !cold_birth_add(request, sizeof(outer_live)) ||
+	    !cold_birth_add(request, sizeof(request)) || !cold_birth_add(request, sizeof(bool)) ||
+	    !cold_birth_add(
+		    request,
+		    quest_mobile_native_birth_owner::npc_flat_factory_scope_current_frames()) ||
+	    !reserve(request, context))
+		return false;
+	return quest_mobile_native_birth_owner::npc_flat_factory_scope_current(*this);
+}
+size_t quest_mobile_native_npc_flat_factory_scope::copy_source_frames() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	// Copy constructor: this/reference; raw shared_ptr constructor's pointer,
+	// deleter allocator and control-count carriers; string copy's this/reference,
+	// source begin/end, length and copied allocator. Returned shared_ptr is owned
+	// explicitly by the actual allocation request, not by this fixed profile.
+	return sizeof(quest_mobile_native_npc_flat_factory_scope *) +
+	       sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+	       sizeof(const std::string *) + sizeof(std::string *) + sizeof(const char *) +
+	       sizeof(const char *) + sizeof(size_t) + sizeof(std::allocator<char>) +
+	       sizeof(quest_mobile_native_npc_flat_factory_scope *) +
+	       sizeof(std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> *) +
+	       sizeof(std::__shared_count<__gnu_cxx::_S_atomic> *) +
+	       sizeof(std::false_type) + // __shared_count pointer + false_type delegation
+	       sizeof(quest_mobile_native_npc_flat_factory_scope *) + // shared_ptr(pointer) parameter
+	       sizeof(std::__shared_count<__gnu_cxx::_S_atomic> *) +
+	       sizeof(quest_mobile_native_npc_flat_factory_scope *) + // delegated count parameter
+	       sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+					   __gnu_cxx::_S_atomic> *) +
+	       sizeof(quest_mobile_native_npc_flat_factory_scope *) + // counted pointer ctor
+	       sizeof(std::_Sp_counted_base<__gnu_cxx::_S_atomic> *) + // count base ctor
+	       sizeof(std::__shared_ptr<const quest_mobile_native_npc_flat_factory_scope,
+					__gnu_cxx::_S_atomic> *) +
+	       sizeof(quest_mobile_native_npc_flat_factory_scope *) + // empty no-esft helper
+	       sizeof(bool) +
+	       // Actual string forward construct: this/beg/end/tag/dnew/guard;
+	       // _M_create: this/capacity-reference/old-capacity/returned pointer;
+	       // _Alloc_hider and allocator selection: this/data/allocator-reference.
+	       sizeof(std::string *) + sizeof(const char *) + sizeof(const char *) +
+	       sizeof(std::forward_iterator_tag) + sizeof(size_t) + sizeof(std::string *) +
+	       sizeof(std::string *) + sizeof(size_t *) + sizeof(size_t) + sizeof(char *) +
+	       sizeof(void *) + sizeof(char *) + sizeof(std::allocator<char> *) +
+	       sizeof(const std::allocator<char> *) + sizeof(std::allocator<char>) +
+	       // std::distance pointer path and copy_chars/_S_copy/_M_set_length:
+	       sizeof(const char *) + sizeof(const char *) + sizeof(std::ptrdiff_t) +
+	       sizeof(const char *) + sizeof(const char *) +
+	       sizeof(std::random_access_iterator_tag) + sizeof(char *) + sizeof(const char *) +
+	       sizeof(const char *) + sizeof(char *) + sizeof(const char *) + sizeof(size_t) +
+	       sizeof(std::string *) + sizeof(size_t) + sizeof(char *) + sizeof(const char *);
+#else
+	return 0;
+#endif
+}
+size_t quest_mobile_native_item_stage::npc_retained_observation_source_frames() noexcept
+{
+	// Both real observer paths, expressed by their actual declared carriers.
+	// The sum permits conservative overlap of mutually exclusive named scopes;
+	// it is source-carrier admission, not a claim about compiler-emitted stack.
+	constexpr size_t common = sizeof(const quest_mobile_native_item_stage *) +
+				  sizeof(size_t *) + sizeof(const implementation *) +
+				  sizeof(size_t) + sizeof(bool);
+	constexpr size_t ordinary =
+		sizeof(size_t *) + // add lambda's reference capture
+		sizeof(size_t) + sizeof(bool) + // add(amount)
+		sizeof(void *) + // multiply lambda's reference capture
+		sizeof(size_t) + sizeof(size_t) + sizeof(bool) + // multiply(count,size)
+		sizeof(const obj_affect *) + sizeof(std::array<char *, 4>) + sizeof(size_t) +
+		sizeof(const extra_descr_data *) + sizeof(size_t); // scope_bytes
+	constexpr size_t excluding =
+		sizeof(size_t) + sizeof(size_t) + sizeof(size_t) + sizeof(bool) + // rows/add calls
+		sizeof(const extra_descr_data *) + sizeof(const extra_descr_data *) +
+		sizeof(const extra_descr_data *) + // slow/fast/d
+		sizeof(const void *) + sizeof(size_t *) +
+		sizeof(const void *) /* header pointer carrier, also present under MEMCHK */ +
+		sizeof(bool) + sizeof(size_t); // flat_private_malloc_request and scope local
+	constexpr size_t scope_heap = sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+				      sizeof(size_t) +
+				      sizeof(size_t); // retained_heap_bytes this/bytes/return
+	return common + std::max(ordinary, excluding) + scope_heap;
+}
+
+bool quest_mobile_native_npc_flat_factory_scope::same_owner(
+	const quest_mobile_native_npc_flat_factory_scope &other) const noexcept
+{
+	return owner_ == other.owner_ && character_ == other.character_ &&
+	       runtime_id_ == other.runtime_id_ && native_id_ == other.native_id_ &&
+	       operation_.bytes == other.operation_.bytes && root_ == other.root_ &&
+	       source_.kind == other.source_.kind &&
+	       source_.source.bytes == other.source_.source.bytes &&
+	       source_.generation.bytes == other.source_.generation.bytes &&
+	       source_.sequence == other.source_.sequence && source_.slot == other.source_.slot &&
+	       lineage_.bytes == other.lineage_.bytes && epoch_.bytes == other.epoch_.bytes &&
+	       zone_ == other.zone_ && zone_vnum_ == other.zone_vnum_ && room_ == other.room_ &&
+	       rnum_ == other.rnum_ && shop_ == other.shop_ && commands_ == other.commands_ &&
+	       original_m_args_ == other.original_m_args_ &&
+	       original_if_flag_ == other.original_if_flag_ && build_ == other.build_ &&
+	       procedure_before_ == other.procedure_before_ &&
+	       procedure_after_ == other.procedure_after_ && reset_tail_ == other.reset_tail_;
+}
+size_t quest_mobile_native_npc_flat_factory_scope::retained_heap_bytes() const noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	size_t bytes = sizeof(*this) +
+		       sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+						   __gnu_cxx::_S_atomic>);
+	if (root_.capacity() > 15)
+	{
+		if (root_.capacity() == SIZE_MAX || root_.capacity() + 1 > SIZE_MAX - bytes)
+			return 0;
+		bytes += root_.capacity() + 1;
+	}
+	return bytes;
+#else
+	return 0;
+#endif
+}
+bool quest_mobile_native_item_stage::prepare_retaining_npc_flat(
+	int nr, int type, uint64_t reserved_uid,
+	const quest_mobile_native_npc_flat_factory_scope &scope,
+	quest_mobile_native_item_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context) noexcept
+{
+	constexpr size_t source_frames =
+		sizeof(nr) + sizeof(type) + sizeof(reserved_uid) + sizeof(&scope) + sizeof(output) +
+		sizeof(reserve) + sizeof(context) + sizeof(size_t) + sizeof(bool) +
+		sizeof(bool) + // request/prepared/return
+		sizeof(const quest_mobile_native_item_stage *) +
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) + sizeof(bool) +
+		sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
+		sizeof(bool); // match/current wrappers
+	if (!output || output->state_ || !reserve ||
+	    !scope.current_bounded(reserve, context, source_frames) || !scope.retained_heap_bytes())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	// Scope requests only. The original native constructor remains the real
+	// prepare_impl owner; this seam does not claim bounded native construction.
+	size_t request = sizeof(quest_mobile_native_npc_flat_factory_scope) +
+			 sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+						     __gnu_cxx::_S_atomic>) +
+			 sizeof(std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>) +
+			 source_frames +
+			 quest_mobile_native_npc_flat_factory_scope::copy_source_frames();
+	if (scope.root_.size() > 15)
+	{
+		if (scope.root_.size() == SIZE_MAX || scope.root_.size() + 1 > SIZE_MAX - request)
+			return false;
+		request += scope.root_.size() + 1;
+	}
+	if (!reserve(request, context))
+		return false;
+	const bool prepared = prepare_impl(nr, type, reserved_uid, output, true);
+	if (!output->state_)
+		return false;
+	output->state_->flat_factory = true;
+	// The real returned native candidate now coexists with the future copy.
+	// The birth-owned callback reobserves it; never reuse the earlier census.
+	if (!reserve(request, context))
+		return false;
+	try
+	{
+		output->state_->npc_flat_scope =
+			std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>(
+				new quest_mobile_native_npc_flat_factory_scope(scope));
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// The original match is allocation-free identity only. Reobserve its
+	// actual live caller + genuine retained candidate through the owning callback.
+	return prepared && scope.current_bounded(reserve, context, source_frames) &&
+	       output->npc_flat_factory_matches(scope);
+#else
+	(void)nr;
+	(void)type;
+	(void)reserved_uid;
+	(void)context;
+	return false;
+#endif
+}
+bool quest_mobile_native_item_stage::npc_flat_factory_matches(
+	const quest_mobile_native_npc_flat_factory_scope &scope) const noexcept
+{
+	return state_ && state_->flat_factory && !state_->flat_scope && state_->npc_flat_scope &&
+	       state_->npc_flat_scope->current() && state_->npc_flat_scope->same_owner(scope);
+}
+
+bool shop_trade_original_procedure_binding_stage::prepare_native_birth_npc_flat_bounded(
+	const std::span<const quest_mobile_native_item_binding> &originals,
+	const quest_mobile_native_npc_flat_factory_scope &scope,
+	shop_trade_original_procedure_binding_stage &output,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch) noexcept
+{
+	if (output.prepared_ && !output.flat_)
+		return false;
+	if (!nevent_is_game_thread() || persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    originals.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !flatfile_coin_boot_templates::ready())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI
+	constexpr size_t parameter_frames = sizeof(&originals) + sizeof(&scope) + sizeof(&output) +
+					    sizeof(reserve_scratch_peak) + sizeof(context) +
+					    sizeof(outer_live_scratch) + sizeof(bool);
+	size_t entry_live = outer_live_scratch;
+	if (parameter_frames > SIZE_MAX - entry_live ||
+	    sizeof(entry_live) > SIZE_MAX - entry_live - parameter_frames ||
+	    !scope.current_bounded(reserve_scratch_peak, context,
+				   entry_live + parameter_frames + sizeof(entry_live)))
+		return false;
+	using scope_ptr = std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope>;
+	using number_map = std::map<int, size_t>;
+	using uid_set = std::unordered_set<uint64_t>;
+	using chain_request = proclib_recovery_chain_stage::request;
+	constexpr size_t map_node_bytes = sizeof(std::_Rb_tree_node<number_map::value_type>);
+	constexpr size_t uid_node_bytes =
+		sizeof(std::__detail::_Hash_node<
+			uint64_t, std::__cache_default<uint64_t, std::hash<uint64_t>>::value>);
+	struct workspace
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		number_map by_number;
+		uid_set uids;
+		std::vector<chain_request> requests;
+		std::__detail::_Prime_rehash_policy uid_policy;
+		std::pair<bool, size_t> uid_growth{};
+	};
+	struct live_state
+	{
+		workspace &work;
+		size_t fixed;
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		bool bytes(size_t &total) const noexcept
+		{
+			total = fixed;
+			const size_t retained = work.candidate.retained_bytes();
+			if (!retained || retained < sizeof(work.candidate) ||
+			    retained - sizeof(work.candidate) > SIZE_MAX - total)
+				return false;
+			total += retained - sizeof(work.candidate);
+			if (work.by_number.size() > (SIZE_MAX - total) / map_node_bytes)
+				return false;
+			total += work.by_number.size() * map_node_bytes;
+			if (work.uids.size() > (SIZE_MAX - total) / uid_node_bytes)
+				return false;
+			total += work.uids.size() * uid_node_bytes;
+			if (work.uids.bucket_count() > 1)
+			{
+				if (work.uids.bucket_count() >
+				    (SIZE_MAX - total) / sizeof(std::__detail::_Hash_node_base *))
+					return false;
+				total += work.uids.bucket_count() *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (work.requests.capacity() > (SIZE_MAX - total) / sizeof(chain_request))
+				return false;
+			total += work.requests.capacity() * sizeof(chain_request);
+			return true;
+		}
+		bool admit(size_t extra) const noexcept
+		{
+			size_t total = 0;
+			if (!bytes(total) || extra > SIZE_MAX - total || !reserve ||
+			    !reserve(total + extra, context))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+			return true;
+		}
+		// GCC 13 vector's actual single-element push request. Its old backing
+		// storage is already live in bytes(); replacement storage coexists.
+		bool push(size_t size, size_t capacity, size_t width, size_t temporary,
+			  size_t &extra) const noexcept
+		{
+			if (temporary > SIZE_MAX - extra)
+				return false;
+			extra += temporary;
+			if (size != capacity)
+				return true;
+			const size_t growth = std::max(size, size_t{ 1 });
+			if (growth > SIZE_MAX - size || size + growth > (SIZE_MAX - extra) / width)
+				return false;
+			extra += (size + growth) * width;
+			return true;
+		}
+	};
+	constexpr size_t inline_bytes =
+		sizeof(workspace) + sizeof(live_state) + parameter_frames + sizeof(entry_live) +
+		sizeof(size_t) + // scope_request
+		sizeof(size_t) + // current_live
+		sizeof(shop_trade_original_procedure_binding_stage *) + // candidate reference
+		sizeof(const quest_mobile_native_item_binding *) + // loop original reference
+		sizeof(decltype(originals.begin())) + sizeof(decltype(originals.end()));
+	if (inline_bytes > SIZE_MAX - outer_live_scratch || !reserve_scratch_peak ||
+	    !reserve_scratch_peak(outer_live_scratch + inline_bytes, context))
+	{
+		errno = ENOBUFS;
+		return false;
+	}
+	try
+	{
+		workspace work;
+		live_state live{ work, outer_live_scratch + inline_bytes, reserve_scratch_peak,
+				 context };
+		auto &candidate = work.candidate;
+		size_t scope_request =
+			sizeof(quest_mobile_native_npc_flat_factory_scope) +
+			sizeof(std::_Sp_counted_ptr<quest_mobile_native_npc_flat_factory_scope *,
+						    __gnu_cxx::_S_atomic>) +
+			sizeof(scope_ptr) +
+			quest_mobile_native_npc_flat_factory_scope::copy_source_frames();
+		if (scope.root_.size() > 15)
+		{
+			if (scope.root_.size() == SIZE_MAX ||
+			    scope.root_.size() + 1 > SIZE_MAX - scope_request)
+				return false;
+			scope_request += scope.root_.size() + 1;
+		}
+		if (!live.admit(scope_request))
+			return false;
+		candidate.npc_flat_scope_ =
+			scope_ptr(new quest_mobile_native_npc_flat_factory_scope(scope));
+
+		size_t current_live = 0;
+		for (const auto &original : originals)
+		{
+			if (!original.flat_factory_ || original.flat_scope_ ||
+			    !original.npc_flat_scope_ ||
+			    (!live.bytes(current_live) ||
+			     !original.npc_flat_scope_->current_bounded(reserve_scratch_peak,
+									context, current_live)) ||
+			    !original.npc_flat_scope_->same_owner(scope))
+				return false;
+			size_t extra = 0;
+			const auto *prototype = flatfile_coin_boot_templates::find(original.vnum_);
+			P_obj object = original.object_;
+			if (!object || !prototype || !original.uid_ ||
+			    work.uids.find(original.uid_) != work.uids.end())
+				return false;
+			work.uid_growth = work.uid_policy._M_need_rehash(work.uids.bucket_count(),
+									 work.uids.size(), 1);
+			extra = uid_node_bytes + sizeof(decltype(work.uids.insert(original.uid_)));
+			if (work.uid_growth.first)
+			{
+				if (work.uid_growth.second >
+				    (SIZE_MAX - extra) / sizeof(std::__detail::_Hash_node_base *))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				extra += work.uid_growth.second *
+					 sizeof(std::__detail::_Hash_node_base *);
+			}
+			if (!live.admit(extra))
+				return false;
+			if (!work.uids.insert(original.uid_).second ||
+			    object->obj_uid != original.uid_ || object->R_num != original.rnum_ ||
+			    prototype->R_num != original.rnum_ ||
+			    obj_index[original.rnum_].pos != original.position_ ||
+			    obj_index[original.rnum_].func.obj != original.before_ ||
+			    (original.parsed_proclib_ &&
+			     !IS_SET(object->extra_flags, ITEM_PROCLIB)))
+				return false;
+			auto found = std::lower_bound(recovery_object_templates.begin(),
+						      recovery_object_templates.end(),
+						      original.vnum_,
+						      [](const auto &entry, int value)
+						      { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != original.vnum_ || &found->prototype != prototype ||
+			    found->special != original.before_)
+				return false;
+			const size_t position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			// Duplicate R_num lookup does not allocate a speculative map node.
+			// Distinct entries preserve the original first-occurrence ordering.
+			auto located = work.by_number.find(original.rnum_);
+			if (located == work.by_number.end())
+			{
+				if (!live.admit(
+					    map_node_bytes +
+					    sizeof(decltype(work.by_number.emplace(
+						    original.rnum_, candidate.bindings_.size())))))
+					return false;
+				work.by_number.emplace(original.rnum_, candidate.bindings_.size());
+				located = work.by_number.find(original.rnum_);
+				extra = 0;
+				if (!live.push(candidate.bindings_.size(),
+					       candidate.bindings_.capacity(), sizeof(binding),
+					       sizeof(binding), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			}
+			auto &binding = candidate.bindings_[located->second];
+			if ((original.parsed_proclib_ || original.restored_bridge_request_) &&
+			    binding.after != proclib_obj_cmd_bridge)
+			{
+				binding.predecessor = binding.after;
+				binding.chain_needed = true;
+				binding.after = proclib_obj_cmd_bridge;
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+			{
+				size_t extra = 0;
+				if (!live.push(work.requests.size(), work.requests.capacity(),
+					       sizeof(chain_request), sizeof(chain_request), extra))
+				{
+					errno = ENOBUFS;
+					return false;
+				}
+				if (!live.admit(extra))
+					return false;
+				work.requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+			}
+		if (!live.admit(sizeof(std::span<const chain_request>)))
+			return false;
+		const std::span<const chain_request> requests(work.requests);
+		size_t chain_outer = 0;
+		if (!live.bytes(chain_outer) || sizeof(requests) > SIZE_MAX - chain_outer)
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		chain_outer += sizeof(requests);
+		if (!proclib_recovery_chain_stage::prepare_bounded(
+			    requests, candidate.chain_, reserve_scratch_peak, context, chain_outer))
+			return false;
+		candidate.flat_ = true;
+		candidate.native_npc_flat_ = true;
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+#else
+	(void)reserve_scratch_peak;
+	(void)context;
+	(void)outer_live_scratch;
+	errno = ENOTSUP;
+	return false;
+#endif
 }

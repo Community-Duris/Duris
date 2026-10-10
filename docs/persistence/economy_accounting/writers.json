@@ -45458,22 +45458,22 @@
       "sites": [
         [
           "src/world/db.c",
-          6600,
+          6609,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          8712,
+          8729,
           "item_lifecycle"
         ],
         [
           "src/world/object_template.h",
-          109,
+          110,
           "item_lifecycle"
         ],
         [
           "src/world/object_template.h",
-          165,
+          174,
           "item_lifecycle"
         ]
       ],
@@ -46408,7 +46408,7 @@
       "sites": [
         [
           "src/world/db.c",
-          8706,
+          8723,
           "item_lifecycle"
         ]
       ],
@@ -46823,22 +46823,22 @@
       "sites": [
         [
           "src/world/db.c",
-          8967,
+          8984,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9005,
+          9022,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          9729,
+          9746,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9817,
+          9834,
           "item_publication"
         ]
       ],
@@ -46883,12 +46883,12 @@
       "sites": [
         [
           "src/world/db.c",
-          10050,
+          10067,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          10051,
+          10068,
           "item_publication"
         ]
       ],
@@ -46933,12 +46933,12 @@
       "sites": [
         [
           "src/world/db.c",
-          9984,
+          10001,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10055,
+          10072,
           "item_publication"
         ]
       ],
@@ -46983,22 +46983,22 @@
       "sites": [
         [
           "src/world/db.c",
-          9089,
+          9106,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9123,
+          9140,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          9859,
+          9876,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9922,
+          9939,
           "item_publication"
         ]
       ],
@@ -47043,22 +47043,22 @@
       "sites": [
         [
           "src/world/db.c",
-          9035,
+          9052,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9066,
+          9083,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          9396,
+          9413,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9434,
+          9451,
           "item_publication"
         ]
       ],
@@ -47103,122 +47103,122 @@
       "sites": [
         [
           "src/world/db.c",
-          8977,
-          "item_lifecycle"
-        ],
-        [
-          "src/world/db.c",
-          8987,
-          "item_lifecycle"
-        ],
-        [
-          "src/world/db.c",
           8994,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9002,
+          9004,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9045,
+          9011,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9054,
+          9019,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9061,
+          9062,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9099,
+          9071,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9109,
+          9078,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9117,
+          9116,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9133,
+          9126,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9415,
+          9134,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9424,
+          9150,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9430,
+          9432,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9752,
+          9441,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9786,
+          9447,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9796,
+          9769,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9882,
+          9803,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9894,
+          9813,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9912,
+          9899,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9937,
+          9911,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10007,
+          9929,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10019,
+          9954,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10035,
+          10024,
+          "item_lifecycle"
+        ],
+        [
+          "src/world/db.c",
+          10036,
+          "item_lifecycle"
+        ],
+        [
+          "src/world/db.c",
+          10052,
           "item_lifecycle"
         ]
       ],
@@ -48228,12 +48228,12 @@
       "sites": [
         [
           "src/world/db.c",
-          6957,
+          6974,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          6964,
+          6981,
           "item_lifecycle"
         ]
       ],
@@ -64316,51 +64316,39 @@
     },
     {
       "path": "src/world/db.c",
-      "line": 6600,
+      "line": 6609,
       "family": "item_lifecycle",
       "excerpt": "P_obj instantiate_object_template(const object_template &prototype)"
     },
     {
       "path": "src/world/db.c",
-      "line": 6957,
+      "line": 6974,
       "family": "item_lifecycle",
       "excerpt": "P_obj probe = read_object(s.rnum, REAL);"
     },
     {
       "path": "src/world/db.c",
-      "line": 6964,
+      "line": 6981,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(probe, TRUE);"
     },
     {
       "path": "src/world/db.c",
-      "line": 8706,
+      "line": 8723,
       "family": "item_lifecycle",
       "excerpt": "P_obj read_object(int nr, int type)"
     },
     {
       "path": "src/world/db.c",
-      "line": 8712,
+      "line": 8729,
       "family": "item_lifecycle",
       "excerpt": "return instantiate_object_template(parse_object_template(nr));"
     },
     {
       "path": "src/world/db.c",
-      "line": 8967,
+      "line": 8984,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(temp, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 8977,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 8987,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
@@ -64370,217 +64358,229 @@
     },
     {
       "path": "src/world/db.c",
-      "line": 9002,
+      "line": 9004,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9035,
+      "line": 9011,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 9019,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 9052,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(temp, REAL)))"
     },
     {
       "path": "src/world/db.c",
-      "line": 9045,
+      "line": 9062,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9054,
+      "line": 9071,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9061,
+      "line": 9078,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9089,
+      "line": 9106,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(temp, REAL)))"
     },
     {
       "path": "src/world/db.c",
-      "line": 9099,
+      "line": 9116,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9109,
+      "line": 9126,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9117,
+      "line": 9134,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9133,
+      "line": 9150,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9396,
+      "line": 9413,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
     },
     {
       "path": "src/world/db.c",
-      "line": 9415,
+      "line": 9432,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9424,
+      "line": 9441,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9430,
+      "line": 9447,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9729,
+      "line": 9746,
       "family": "item_lifecycle",
       "excerpt": "read_object(ZCMD.arg1, REAL))))"
     },
     {
       "path": "src/world/db.c",
-      "line": 9752,
+      "line": 9769,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9786,
+      "line": 9803,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9796,
+      "line": 9813,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9859,
+      "line": 9876,
       "family": "item_lifecycle",
       "excerpt": "read_object(ZCMD.arg1, REAL))))"
     },
     {
       "path": "src/world/db.c",
-      "line": 9882,
+      "line": 9899,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9894,
+      "line": 9911,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9912,
+      "line": 9929,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9937,
+      "line": 9954,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9984,
+      "line": 10001,
       "family": "item_lifecycle",
       "excerpt": "read_object(ZCMD.arg1, REAL))))"
     },
     {
       "path": "src/world/db.c",
-      "line": 10007,
+      "line": 10024,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 10019,
+      "line": 10036,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 10035,
+      "line": 10052,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9005,
+      "line": 9022,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, obj_to);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9066,
+      "line": 9083,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ZCMD.arg3);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9123,
+      "line": 9140,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9434,
+      "line": 9451,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ZCMD.arg3);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9817,
+      "line": 9834,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, obj_to);"
     },
     {
       "path": "src/world/db.c",
-      "line": 9922,
+      "line": 9939,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
     {
       "path": "src/world/db.c",
-      "line": 10050,
+      "line": 10067,
       "family": "item_publication",
       "excerpt": "obj_to_char("
     },
     {
       "path": "src/world/db.c",
-      "line": 10051,
+      "line": 10068,
       "family": "item_publication",
       "excerpt": "unequip_char("
     },
     {
       "path": "src/world/db.c",
-      "line": 10055,
+      "line": 10072,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, ZCMD.arg3, 1);"
     },
@@ -65462,13 +65462,13 @@
     },
     {
       "path": "src/world/object_template.h",
-      "line": 109,
+      "line": 110,
       "family": "item_lifecycle",
       "excerpt": "friend P_obj instantiate_object_template(const object_template &);"
     },
     {
       "path": "src/world/object_template.h",
-      "line": 165,
+      "line": 174,
       "family": "item_lifecycle",
       "excerpt": "P_obj instantiate_object_template(const object_template &prototype);"
     },
@@ -66553,8 +66553,8 @@
       "src/specs/specs.venthix.c": "f4b888002e7649be677441a2b8d3730140603d496ebd2101b02d6c8f8213fb16",
       "src/specs/specs.venthix.h": "935b00228abc68f7f719cc3923eb3bb40beac8259c1ad09530cac3468eaa2efe",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "922a80a86b04734bb8fe127b04194dafad9e2843cb121deaa0c8fabfb160d551",
-      "src/world/db.h": "b821b4a01bb825eb6537ca50fcaf62201725eb3b3042550777603bd5704f08bc",
+      "src/world/db.c": "0776e68878800332b1e4efc9929bac627c5dcc0cc6ea1c27db9c359ddfd59f83",
+      "src/world/db.h": "a322f9bb086e1ccf05d7772d06bac92cd4ee5bf613e9e9bc4154c5165f9dec1b",
       "src/world/handler.c": "ced28c7b8a5191241130114f0f06399bd8764ea077c9c3ebf2e77af3d3646ce1",
       "src/world/handler.h": "9d9e461f1d7a38fa20f2b659e9882baecc2764890ca40bd7a305548947ae14b2",
       "src/world/native_mobile_birth_artifact.c": "b7c368d336c0bdd75e9bb2a6a1a8e4be0ed19f103e9ae42beba357eeb6a4407f",
@@ -66566,13 +66566,13 @@
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
       "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
       "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
-      "src/world/object_template.h": "7dd2291d0b72fc9330a8aac00154784f22be65715fe9f2822dbd7c2109480e98",
+      "src/world/object_template.h": "665368e56fc30b87c2bb291b16879b313eb28c42f2a430b8b38fe8448a9c3fd5",
       "src/world/quest_mobile_native.c": "d95a3330125a2e14176218184f9c59df68bc5abc2c361c2fc83fffce803582f7",
       "src/world/quest_mobile_native.h": "49ea690af488d383230b7c84dea4b195d13dea010e184d26594b4fc287b5da60",
       "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
       "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
-      "src/world/quest_mobile_native_birth.c": "e952808e4f1b7062559c9396db9701d638948e33d25f1a88ce5cc8ccc5869584",
-      "src/world/quest_mobile_native_birth.h": "2bb58d6a9b0fe4d3989afc38b2fff97e73033cb611aa7e1681b08807078c2533",
+      "src/world/quest_mobile_native_birth.c": "b1e3ee7db8b3f694e5576f82026999df813481214134733c1380123f043caee3",
+      "src/world/quest_mobile_native_birth.h": "12d87bda28d1f45bc5195532146819de44bd9387f723ec74b8b5b88dec24f72c",
       "src/world/quest_mobile_native_reference.c": "e35b73e7a93b47cf87df6c3a4aea47d4956bb20d587865b3b56de23c6a0b8663",
       "src/world/quest_mobile_native_reference.h": "33737074b17c0becce2db83baf1372d34cc4f6fe10cbd46ec9dbbedfcb8dba27",
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
