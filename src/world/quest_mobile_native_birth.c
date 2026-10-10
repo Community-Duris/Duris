@@ -1,5 +1,8 @@
 #include "economy/native_mobile_birth_recovery.h"
 #include "world/quest_mobile_native_birth.h"
+#include "flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.h"
+#include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/quest_mobile_native_flatfile.h"
 #include "world/zone_reset_item_owner.h"
 #include "world/db.h"
 #include "persistence/persistence_mode.h"
@@ -493,6 +496,7 @@ struct original_birth
 	bool constructor_present = false;
 	std::unique_ptr<quest_mobile_native_birth_ordinary_source_pin> ordinary_flat_source;
 	bool ordinary_flat_replay_registered = false;
+	bool ordinary_flat_choice_started = false;
 	std::string ordinary_flat_recovery_root;
 	std::shared_ptr<const quest_mobile_native_npc_flat_factory_scope> npc_flat_factory_scope;
 	native_mobile_birth_cash_role_recipe cash_role;
@@ -3486,6 +3490,11 @@ bool quest_mobile_native_birth_owner::publish(size_t index, bool allow_reconstru
 {
 	if (index < births.size() && births[index] && reset_holds_birth(*births[index]))
 		return false;
+	if (index < births.size() && births[index] &&
+	    (births[index]->ordinary_flat_source || births[index]->ordinary_flat_replay_registered))
+		return publish_ordinary_flat(index, allow_reconstruction,
+					     sizeof(index) + sizeof(allow_reconstruction) +
+						     sizeof(bool));
 #ifdef __NO_MYSQL__
 	(void)index;
 	(void)allow_reconstruction;
@@ -4372,6 +4381,20 @@ void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
 						prepare_shared_capture(i);
 					// General shared admission remains CLOSED, including passive
 					// cold replay: no submit, SQL, world publication or retirement.
+					continue;
+				}
+				if (b.submitted &&
+				    (b.ordinary_flat_source || b.ordinary_flat_replay_registered))
+				{
+					const size_t publication_outer =
+						sizeof(prepare_original_resets) +
+						sizeof(recovery_only) + sizeof(i) + sizeof(&b) +
+						sizeof(size_t) + sizeof(bool);
+					publish_ordinary_flat(i,
+							      (prepare_original_resets ||
+							       recovery_only) &&
+								      replay_ready,
+							      publication_outer);
 					continue;
 				}
 				if (!b.cold && b.sealed && !b.blocked && !b.submitted)
@@ -5834,6 +5857,14 @@ P_char quest_mobile_native_birth_owner::prepare_mobile_flat(int rnum, int room, 
 					 sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
 						 sizeof(P_char)))
 		return nullptr;
+	bool ordinary_refused = false;
+	const size_t selection_outer = sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+				       sizeof(P_char) + sizeof(ordinary_refused) + sizeof(size_t);
+	if (ordinary_flat_mobile_factory_selected(rnum, room, slot, shop, selection_outer,
+						  &ordinary_refused))
+		return prepare_mobile_ordinary_flat(rnum, room, slot, shop);
+	if (ordinary_refused)
+		return nullptr;
 	seal_mobile_flat(sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
 			 sizeof(P_char));
 	try
@@ -6195,6 +6226,16 @@ P_obj quest_mobile_native_birth_owner::prepare_item_flat(int rnum, size_t outer_
 	if (current_birth >= births.size() || !births[current_birth] ||
 	    births[current_birth]->blocked || rnum < 0 || rnum > top_of_objt)
 		return nullptr;
+	bool ordinary_refused = false;
+	size_t selection_outer = outer_live;
+	if (!birth_passive_add(selection_outer, sizeof(rnum) + sizeof(outer_live) +
+							sizeof(ordinary_refused) +
+							sizeof(selection_outer) + sizeof(P_obj)))
+		return nullptr;
+	if (ordinary_flat_item_factory_selected(current_birth, selection_outer, &ordinary_refused))
+		return prepare_item_ordinary_flat(rnum, selection_outer);
+	if (ordinary_refused)
+		return nullptr;
 	auto &b = *births[current_birth];
 	size_t entry_outer = outer_live;
 	if (!add_bytes(entry_outer, sizeof(rnum)) || !add_bytes(entry_outer, sizeof(outer_live)) ||
@@ -6429,6 +6470,26 @@ void quest_mobile_native_birth_owner::seal_mobile_flat(size_t outer_live) noexce
 {
 	if (current_birth >= births.size() || !births[current_birth])
 		return;
+	bool ordinary_refused = false;
+	size_t selection_outer = outer_live;
+	if (!birth_passive_add(selection_outer,
+			       sizeof(outer_live) + sizeof(ordinary_refused) + sizeof(size_t)))
+	{
+		births[current_birth]->blocked = true;
+		current_birth = SIZE_MAX;
+		return;
+	}
+	if (ordinary_flat_item_factory_selected(current_birth, selection_outer, &ordinary_refused))
+	{
+		seal_mobile_ordinary_flat(selection_outer);
+		return;
+	}
+	if (ordinary_refused)
+	{
+		births[current_birth]->blocked = true;
+		current_birth = SIZE_MAX;
+		return;
+	}
 	const size_t index = current_birth;
 	auto &b = *births[index];
 	current_birth = SIZE_MAX;
@@ -8223,4 +8284,3776 @@ bool quest_mobile_native_birth_owner::current_retained_storage_bytes(size_t *out
 bool quest_mobile_native_birth_retained_storage_bytes(size_t *output) noexcept
 {
 	return quest_mobile_native_birth_owner::current_retained_storage_bytes(output);
+}
+
+struct quest_mobile_native_birth_owner::ordinary_flat_factory_budget
+{
+	int rnum, room;
+	uint32_t slot;
+	original_birth *private_birth = nullptr;
+	void *common_context = nullptr;
+	bool denied = false;
+};
+bool quest_mobile_native_birth_owner::ordinary_flat_factory_globals(size_t *output, void *) noexcept
+{
+	return zone_reset_item_owner::flat_current_global_storage_with_literal_pools(output);
+}
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_factory_root(size_t full,
+									 void *opaque) noexcept
+{
+	if (!opaque)
+		return false;
+	auto &factory = *static_cast<ordinary_flat_factory_budget *>(opaque);
+	constexpr size_t frames = 3 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+	size_t globals = 0, live = full, detached = 0;
+	if (factory.denied || !ordinary_flat_factory_globals(&globals, &factory) || globals > live)
+		return false;
+	live -= globals; // Existing genuine charge joins this same CURRENT G once.
+	if (!birth_passive_add(live, frames) ||
+	    (factory.private_birth &&
+	     (!birth_passive_new_body_heap(live, *factory.private_birth) ||
+	      !factory.private_birth->mobile.retained_bytes_excluding_mobile_pool(&detached) ||
+	      !birth_passive_add(live, detached))) ||
+	    !flat_mobile_factory_current(factory.rnum, factory.room, factory.slot, live))
+	{
+		factory.denied = true;
+		return false;
+	}
+	return true; // Full source proof already performs exact original charge.
+}
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_factory_globals(size_t full,
+									    void *opaque) noexcept
+{
+	if (!opaque)
+		return false;
+	auto &factory = *static_cast<ordinary_flat_factory_budget *>(opaque);
+	size_t globals = 0;
+	if (factory.denied || !factory.common_context ||
+	    !ordinary_flat_factory_globals(&globals, &factory) || globals > full)
+		return false;
+	const bool admitted = zone_reset_item_owner::ordinary_flat_submission_guard::callback()(
+		full - globals, factory.common_context);
+	factory.denied |= !admitted;
+	return admitted;
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_mobile_factory_selected(int rnum, int room,
+									    uint32_t slot, int shop,
+									    size_t outer_live,
+									    bool *refused) noexcept
+{
+	if (!refused)
+		return false;
+	*refused = false;
+	if (!nevent_is_game_thread() || !reset_dispatch.flat_backend || !mob_index || !world ||
+	    rnum < 0 || rnum > top_of_mobt || room < 0 || room > top_of_world ||
+	    number_of_shops < 0 || (number_of_shops && !shop_index))
+	{
+		*refused = true;
+		return false;
+	}
+	const size_t frames =
+		sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) + sizeof(outer_live) +
+		sizeof(refused) + sizeof(size_t) + sizeof(uint32_t) + sizeof(int) +
+		2 * sizeof(bool) + sizeof(shop_native_mobile_birth_reset_selection) +
+		// Actual original selector arguments/output/selected/mobile/room/shop/candidate.
+		3 * sizeof(int32_t) + sizeof(int) + sizeof(void *) + 4 * sizeof(int) +
+		sizeof(shop_native_mobile_birth_reset_selection) + sizeof(bool);
+	size_t live = outer_live;
+	if (!birth_passive_add(live, frames) ||
+	    !flat_mobile_factory_current(rnum, room, slot, live))
+	{
+		*refused = true;
+		return false;
+	}
+	uint32_t matches = 0;
+	const int room_vnum = world[room].number;
+	for (int candidate = 0; candidate < number_of_shops; ++candidate)
+		if (shop_index[candidate].keeper == rnum &&
+		    shop_index[candidate].in_room == room_vnum)
+			++matches;
+	shop_native_mobile_birth_reset_selection actual;
+	const bool selected = matches == 0 && shop == -1 &&
+			      shop_native_mobile_birth_reset_tail_selection(
+				      mob_index[rnum].virtual_number, room_vnum, shop, &actual) &&
+			      actual.index == -1;
+	const bool recensused = charge(live);
+	if (!recensused)
+		*refused = true;
+	return selected && recensused;
+}
+
+P_char quest_mobile_native_birth_owner::prepare_mobile_ordinary_flat(int rnum, int room,
+								     uint32_t slot,
+								     int shop) noexcept
+{
+	if (!reset_in_progress || !replay_ready || !nevent_is_game_thread() || room < 0 ||
+	    room > top_of_world || rnum < 0 || rnum > top_of_mobt || !mob_index || !world)
+		return nullptr;
+	// Only the actual entered/open original M frame may construct this body.
+	// No caller DTO, replay image or source pin can open that frame.
+	if (!flat_mobile_factory_current(rnum, room, slot,
+					 sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+						 sizeof(P_char)))
+		return nullptr;
+	seal_mobile_ordinary_flat(sizeof(rnum) + sizeof(room) + sizeof(slot) + sizeof(shop) +
+				  sizeof(P_char));
+	constexpr size_t caller_frames =
+		3 * sizeof(int) + sizeof(uint32_t) + sizeof(P_char) + sizeof(size_t) +
+		sizeof(ordinary_flat_factory_budget) +
+		// Actual result/closure/guard lifetime and private-candidate scalar refs.
+		2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+		sizeof(std::unique_ptr<original_birth>) + sizeof(economic_source_event) +
+		sizeof(int32_t) + sizeof(quest_mobile_native_constructor_digest) +
+		// The same original_birth value construction, unique owner transfer and
+		// births.reserve/push_back(move)/empty-slot move overloads authenticated
+		// for passive registration. All four nested stage vectors are empty at
+		// construction; native preparation's later populated cleanup stays with
+		// its genuine stage providers, not this empty-construction profile.
+		ordinary_passive_body_frames;
+	size_t entered = caller_frames;
+	if (!birth_passive_add(
+		    entered,
+		    zone_reset_item_owner::ordinary_flat_submission_guard::inline_bytes()) ||
+	    !charge(entered))
+		return nullptr;
+	P_char result = nullptr;
+	{
+		ordinary_flat_factory_budget factory{ rnum, room, slot };
+		zone_reset_item_owner::ordinary_flat_submission_guard guard(
+			reserve_ordinary_flat_factory_root, &factory);
+		factory.common_context = guard.context();
+		size_t globals = 0;
+		if (guard.begin(entered))
+			result = [&]() noexcept -> P_char
+			{
+				try
+				{
+					size_t available = 0;
+					while (available < births.size() && births[available])
+						++available;
+					if (available == births.size() &&
+					    births.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS)
+						return nullptr;
+					size_t body_request = entered;
+					if (!birth_passive_add(body_request,
+							       sizeof(original_birth)) ||
+					    !charge(body_request))
+						return nullptr;
+					auto b = std::make_unique<original_birth>();
+					factory.private_birth = b.get();
+					struct private_body_lifetime
+					{
+						ordinary_flat_factory_budget &factory;
+						~private_body_lifetime()
+						{
+							factory.private_birth = nullptr;
+						}
+					} private_lifetime{ factory };
+					b->zone = reset_zone_rnum;
+					b->room = room;
+					b->rnum = rnum;
+					b->shop = shop;
+					if (available == births.size())
+					{
+						size_t request = entered;
+						if (!birth_passive_add(request, sizeof(*b)) ||
+						    !birth_passive_rows(request, births.size() + 1,
+									sizeof(births[0])) ||
+						    !charge(request))
+							return nullptr;
+						births.reserve(births.size() + 1);
+					}
+					economic_source_event original_source{};
+					int32_t original_zone_vnum = -1;
+					// The fresh private birth has no dynamic payload yet. Its actual
+					// allocation is not in births until the original insertion below.
+					// Carry it, its unique_ptr and the actual source/output/scalar locals
+					// through the full projection/nonce proof; never use bare charge(0)
+					// while this genuine private allocation is alive.
+					size_t private_live =
+						sizeof(*b) + sizeof(b) + sizeof(available) +
+						sizeof(original_source) +
+						sizeof(original_zone_vnum) + sizeof(size_t) +
+						3 * sizeof(int) + sizeof(uint32_t) +
+						sizeof(P_char) + sizeof(void *) + entered +
+						sizeof(private_lifetime);
+					if (!capture_flat_mobile_factory_source(
+						    rnum, room, slot, &original_source,
+						    &original_zone_vnum, private_live))
+						return nullptr;
+					auto &ref = b->reference;
+					if (!critical_operation_id_generate(&ref.birth_operation) ||
+					    ref.birth_operation.bytes == reset_invocation.bytes)
+						return nullptr;
+					ref.mobile_instance_id = item_uid_allocator_next();
+					if (!ref.mobile_instance_id ||
+					    ref.mobile_instance_id == UINT64_MAX)
+						return nullptr;
+					ref.birth_source = original_source;
+					ref.mobile_vnum = mob_index[rnum].virtual_number;
+					ref.birthplace_vnum = world[room].number;
+					ref.reset_zone_vnum = original_zone_vnum;
+					ref.provenance = quest_mobile_birth_provenance::reset;
+					ref.mobile_revision = 1;
+					ref.stock_revision = 1;
+					b->accepted_usec = accepted_now();
+					quest_mobile_native_constructor_digest running_build;
+					size_t constructor_live = entered;
+					if (!ordinary_flat_factory_globals(&globals, &factory) ||
+					    !birth_passive_add(constructor_live, globals) ||
+					    !native_mobile_birth_running_artifact_digest_bounded(
+						    &running_build,
+						    reserve_ordinary_flat_factory_globals, &factory,
+						    constructor_live) ||
+					    !b->mobile.prepare_captured_bounded(
+						    rnum, REAL, true, running_build,
+						    world[room].number, shop, &b->constructor,
+						    ordinary_flat_factory_globals,
+						    reserve_ordinary_flat_factory_globals, &factory,
+						    constructor_live))
+						return nullptr;
+					b->constructor_present = true;
+					b->character = b->mobile.character();
+					b->runtime_id = b->character->runtime_id;
+					b->mobile_bytes = sizeof(*b->character) +
+							  sizeof(*b->character->only.npc);
+					// General mobile/room hooks still require their actual original owners.
+					// The alchemist decision runs later at its original post-reset-tail cut.
+					if (world[room].funct ||
+					    (IS_SET(b->character->specials.act, ACT_SPEC) &&
+					     mob_index[rnum].func.mob))
+					{
+						b->blocked = true;
+					}
+					const size_t index = available;
+					if (index == births.size())
+						births.push_back(std::move(b));
+					else
+						births[index] = std::move(b);
+					factory.private_birth =
+						nullptr; // Actual registry transfer; original charge owns it now.
+					current_birth = index;
+					// Full genuine original caller survives the registry transfer. The birth
+					// allocation and accepted metadata now belong to CURRENT exactly once.
+					size_t mint_outer =
+						sizeof(rnum) + sizeof(room) + sizeof(slot) +
+						sizeof(shop) + sizeof(P_char) + sizeof(available) +
+						sizeof(b) + sizeof(original_source) +
+						sizeof(original_zone_vnum) + sizeof(private_live) +
+						sizeof(&ref) + sizeof(running_build) +
+						sizeof(index) + sizeof(size_t) + entered +
+						sizeof(private_lifetime);
+					if (!charge(mint_outer))
+					{
+						births[index]->blocked = true;
+						current_birth = SIZE_MAX;
+						discard(index);
+						return nullptr;
+					}
+					if (births[index]->blocked)
+						return nullptr;
+					if (!capture_npc_flat_factory_scope(index, mint_outer))
+					{
+						births[index]->blocked = true;
+						current_birth = SIZE_MAX;
+						discard(index);
+						return nullptr;
+					}
+					return births[index]->character;
+				}
+				catch (...)
+				{
+					return nullptr;
+				}
+			}();
+	} // Native preparation cleanup and all source carriers end before ROOT recensus.
+	const bool recensused = charge(caller_frames);
+	return recensused ? result : nullptr;
+}
+
+struct quest_mobile_native_birth_owner::ordinary_flat_item_factory_budget
+{
+	size_t index;
+	original_item *local_item = nullptr;
+	void *common_context = nullptr;
+	bool callee_owns_stage = false;
+	bool denied = false;
+};
+
+bool quest_mobile_native_birth_owner::ordinary_flat_item_factory_selected(size_t index,
+									  size_t outer_live,
+									  bool *refused) noexcept
+{
+	if (!refused)
+		return false;
+	*refused = false;
+	if (index >= births.size() || !births[index])
+		return false;
+	const auto &b = *births[index];
+	if (!nevent_is_game_thread() || !reset_dispatch.flat_backend || !b.constructor_present ||
+	    !b.npc_flat_factory_scope || !mob_index || !world || b.rnum < 0 ||
+	    b.rnum > top_of_mobt || b.room < 0 || b.room > top_of_world || number_of_shops < 0 ||
+	    (number_of_shops > 0 && !shop_index) ||
+	    b.constructor.mobile_vnum != mob_index[b.rnum].virtual_number ||
+	    b.constructor.reset_room_vnum != world[b.room].number ||
+	    b.constructor.reset_shop_index != b.shop)
+		return false;
+	const size_t frames = sizeof(index) + sizeof(outer_live) + sizeof(&b) + sizeof(size_t) +
+			      sizeof(uint32_t) + sizeof(int) + 2 * sizeof(bool) +
+			      sizeof(shop_native_mobile_birth_reset_selection) +
+			      // Full original shop selector: arguments, this-free output/candidate,
+			      // mobile/room/selected/loop and its return carrier.
+			      3 * sizeof(int32_t) + sizeof(int) + sizeof(void *) + 4 * sizeof(int) +
+			      sizeof(shop_native_mobile_birth_reset_selection) + sizeof(bool);
+	size_t live = outer_live;
+	if (!birth_passive_add(live, frames) || !charge(live) ||
+	    !b.npc_flat_factory_scope->current_bounded(reserve_npc_binding_scratch, nullptr, live))
+	{
+		*refused = true;
+		return false;
+	}
+	uint32_t matches = 0;
+	for (int shop = 0; shop < number_of_shops; ++shop)
+		if (shop_index[shop].keeper == b.rnum &&
+		    shop_index[shop].in_room == b.constructor.reset_room_vnum)
+		{
+			// A real match or ambiguity preserves the original shared route. There is
+			// no interpretation of an ambiguous selector's -1 as ordinary absence.
+			++matches;
+		}
+	shop_native_mobile_birth_reset_selection actual;
+	const bool ordinary = matches == 0 && b.shop == -1 &&
+			      shop_native_mobile_birth_reset_tail_selection(
+				      b.constructor.mobile_vnum, b.constructor.reset_room_vnum,
+				      b.shop, &actual) &&
+			      actual.index == -1;
+	const bool recensused = charge(live);
+	if (!recensused)
+		*refused = true;
+	return ordinary && recensused;
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_item_factory_root(size_t full,
+									      void *opaque) noexcept
+{
+	if (!opaque)
+		return false;
+	auto &factory = *static_cast<ordinary_flat_item_factory_budget *>(opaque);
+	const size_t frames =
+		5 * sizeof(void *) + 6 * sizeof(size_t) + 4 * sizeof(bool) +
+		quest_mobile_native_item_stage::npc_retained_observation_source_frames();
+	size_t globals = 0, live = full, retained = 0;
+	if (factory.denied || factory.index >= births.size() || !births[factory.index] ||
+	    !ordinary_flat_factory_globals(&globals, &factory) || globals > live)
+		return false;
+	live -= globals; // Existing charge joins this same genuine whole G once.
+	if (!birth_passive_add(live, frames))
+		return false;
+	if (factory.local_item)
+	{
+		const auto &item = *factory.local_item;
+		if (item.effects.capacity() > SIZE_MAX / sizeof(quest_mobile_native_item_effect) ||
+		    !birth_passive_add(live, item.effects.capacity() *
+						     sizeof(quest_mobile_native_item_effect)))
+			return false;
+		if (!factory.callee_owns_stage && item.stage && !item.stage->empty())
+		{
+			const int saved_errno = errno;
+			errno = 0;
+			if (!item.stage->retained_bytes_excluding_literal_pools(&retained) ||
+			    retained < sizeof(*item.stage))
+			{
+				if (!errno)
+					errno = EIO;
+				factory.denied = true;
+				return false;
+			}
+			errno = saved_errno;
+			if (!birth_passive_add(live, retained - sizeof(*item.stage)))
+				return false;
+		}
+	}
+	const auto &birth = *births[factory.index];
+	const bool admitted = birth.npc_flat_factory_scope &&
+			      birth.npc_flat_factory_scope->current_bounded(
+				      reserve_npc_binding_scratch, nullptr, live);
+	factory.denied |= !admitted;
+	return admitted;
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_item_factory_globals(
+	size_t full, void *opaque) noexcept
+{
+	if (!opaque)
+		return false;
+	auto &factory = *static_cast<ordinary_flat_item_factory_budget *>(opaque);
+	const size_t frames = sizeof(full) + sizeof(opaque) + sizeof(&factory) + sizeof(size_t) +
+			      sizeof(int) + 2 * sizeof(bool) + sizeof(size_t) + sizeof(size_t *) +
+			      sizeof(size_t) + sizeof(bool);
+	size_t globals = 0;
+	if (factory.denied || !factory.common_context ||
+	    !ordinary_flat_factory_globals(&globals, &factory) || globals > full)
+		return false;
+	const int saved_errno = errno;
+	errno = 0;
+	size_t exclusive = full - globals;
+	if (!birth_passive_add(exclusive, frames))
+	{
+		errno = EOVERFLOW;
+		factory.denied = true;
+		return false;
+	}
+	const bool admitted = zone_reset_item_owner::ordinary_flat_submission_guard::callback()(
+		exclusive, factory.common_context);
+	if (!admitted && !errno)
+		errno = ENOBUFS;
+	if (admitted)
+		errno = saved_errno;
+	factory.denied |= !admitted;
+	return admitted;
+}
+
+P_obj quest_mobile_native_birth_owner::prepare_item_ordinary_flat(int rnum,
+								  size_t outer_live) noexcept
+{
+	if (current_birth >= births.size() || !births[current_birth] ||
+	    births[current_birth]->blocked || rnum < 0 || rnum > top_of_objt)
+		return nullptr;
+	const size_t index = current_birth;
+	auto &b = *births[index];
+	// Same original scope is proved before allocation and again on every real
+	// ROOT request. Final cash classification and source pin remain at seal.
+	const size_t caller_frames =
+		sizeof(rnum) + sizeof(outer_live) + sizeof(index) + sizeof(&b) +
+		sizeof(original_item) + sizeof(ordinary_flat_item_factory_budget) + sizeof(P_obj) +
+		4 * sizeof(size_t) + 3 * sizeof(bool) + 6 * sizeof(void *) +
+		zone_reset_item_owner::ordinary_flat_submission_guard::inline_bytes();
+	size_t entered = outer_live;
+	if (!birth_passive_add(entered, caller_frames) ||
+	    !birth_passive_add(entered, sizeof(quest_mobile_native_item_stage)) || !charge(entered))
+		return nullptr;
+	P_obj result = nullptr;
+	{
+		original_item item;
+		ordinary_flat_item_factory_budget factory{ index, &item };
+		zone_reset_item_owner::ordinary_flat_submission_guard guard(
+			reserve_ordinary_flat_item_factory_root, &factory);
+		factory.common_context = guard.context();
+		const auto request = [&](size_t extra = 0) noexcept
+		{
+			size_t full = entered, globals = 0;
+			return ordinary_flat_factory_globals(&globals, &factory) &&
+			       birth_passive_add(full, globals) && birth_passive_add(full, extra) &&
+			       reserve_ordinary_flat_item_factory_globals(full, &factory);
+		};
+		// The actual output stage belongs to the constructor/wrapper while they
+		// run. After return this ROOT context owns its observed private retention.
+		struct stage_call
+		{
+			ordinary_flat_item_factory_budget &factory;
+			explicit stage_call(ordinary_flat_item_factory_budget &value) noexcept
+				: factory(value)
+			{
+				factory.callee_owns_stage = true;
+			}
+			~stage_call() { factory.callee_owns_stage = false; }
+		};
+		const auto retain_item = [&]() noexcept
+		{
+			item.object = item.stage ? item.stage->object() : nullptr;
+			b.stock.push_back(std::move(item)); // Original slot was reserved first.
+			factory.local_item = nullptr;
+			entered -=
+				sizeof(quest_mobile_native_item_stage); // Registry now owns inline.
+		};
+		if (guard.begin(entered))
+		{
+			result = [&]() noexcept -> P_obj
+			{
+				try
+				{
+					if (b.stock.size() >= PLAYER_SNAPSHOT_MAX_ROWS)
+					{
+						b.blocked = true;
+						return nullptr;
+					}
+					if (!request())
+					{
+						b.blocked = true;
+						return nullptr;
+					}
+					item.stage =
+						std::make_unique<quest_mobile_native_item_stage>();
+					size_t prospective = 0;
+					if (b.stock.size() == b.stock.capacity())
+					{
+						if (b.stock.size() == SIZE_MAX ||
+						    b.stock.size() + 1 >
+							    SIZE_MAX / sizeof(original_item))
+						{
+							errno = EOVERFLOW;
+							b.blocked = true;
+							return nullptr;
+						}
+						prospective = (b.stock.size() + 1) *
+							      sizeof(original_item);
+					}
+					if (!request(prospective))
+					{
+						b.blocked = true;
+						return nullptr;
+					}
+					b.stock.reserve(b.stock.size() + 1);
+					item.uid = item_uid_allocator_next();
+					item.rnum = rnum;
+					size_t full = entered, globals = 0;
+					bool prepared = false;
+					if (item.uid &&
+					    ordinary_flat_factory_globals(&globals, &factory) &&
+					    birth_passive_add(full, globals))
+					{
+						stage_call call(factory);
+						prepared = quest_mobile_native_item_stage::
+							prepare_retaining_npc_flat_bounded(
+								rnum, REAL, item.uid,
+								*b.npc_flat_factory_scope,
+								item.stage.get(),
+								ordinary_flat_factory_globals,
+								reserve_ordinary_flat_item_factory_globals,
+								&factory, full);
+					}
+					if (!prepared)
+					{
+						// Complete failed output stays in its already-reserved stock slot.
+						// Neither constructor refusal nor diagnostics may discard this owner.
+						retain_item();
+						b.blocked = true;
+						charge(entered);
+						return nullptr;
+					}
+					item.object = item.stage->object();
+					const size_t steps = item.stage->publication_step_count();
+					if (steps > SIZE_MAX /
+							    sizeof(quest_mobile_native_item_effect) ||
+					    !request(steps *
+						     sizeof(quest_mobile_native_item_effect)))
+					{
+						if (steps >
+						    SIZE_MAX /
+							    sizeof(quest_mobile_native_item_effect))
+							errno = EOVERFLOW;
+						retain_item();
+						b.blocked = true;
+						charge(entered);
+						return nullptr;
+					}
+					item.effects.resize(steps);
+					P_obj selected = item.object;
+					retain_item();
+					if (!charge(entered))
+					{
+						b.blocked = true;
+						current_birth = SIZE_MAX;
+						discard(index);
+						return nullptr;
+					}
+					return selected;
+				}
+				catch (...)
+				{
+					if (item.stage && !item.stage->discard_unadmitted())
+					{
+						item.object = item.stage->object();
+						if (b.stock.size() < b.stock.capacity())
+							retain_item();
+					}
+					b.blocked = true;
+					charge(entered);
+					return nullptr;
+				}
+			}();
+		}
+		else
+			b.blocked = true;
+	} // All true native cleanup and caller/source carriers precede ROOT ending.
+	size_t survivors = outer_live;
+	const bool recensused =
+		birth_passive_add(survivors, sizeof(rnum) + sizeof(outer_live) + sizeof(index) +
+						     sizeof(&b) + sizeof(result) + sizeof(entered) +
+						     sizeof(size_t) + sizeof(bool)) &&
+		charge(survivors);
+	return recensused ? result : nullptr;
+}
+
+bool quest_mobile_native_birth_owner::nest_ordinary_flat(P_obj object, P_obj target, P_char mob,
+							 size_t outer_live) noexcept
+{
+	if (!owns(mob) || current_birth >= births.size() || !births[current_birth] ||
+	    births[current_birth]->blocked)
+		return false;
+	const size_t index = current_birth;
+	auto &b = *births[index];
+	// This body is selected only by the parent's real complete dispatcher join.
+	// Existing entered-P/body/domain predicates do not substitute for readiness.
+	if (!reset_dispatch.flat_backend || !reset_dispatch.valid || !reset_dispatch.open ||
+	    reset_dispatch.completed || reset_dispatch.aborted ||
+	    reset_dispatch.current_command != 'P' || !reset_dispatch.locals.command_entered ||
+	    !original_command_current() || !reset_actor_holds_current() ||
+	    !b.npc_flat_factory_scope || b.shop != -1)
+		return false;
+	constexpr size_t native_geometry_frames =
+		// begin/finish_reducing_nest parameters, count/selected/direct/after/correction.
+		2 * (2 * sizeof(P_obj) + sizeof(P_char)) + 4 * sizeof(size_t) +
+		4 * sizeof(int64_t) + sizeof(quest_mobile_native_container_shell *) +
+		2 * sizeof(P_obj) +
+		// Actual native_birth_weight_fits arrays; calls are sequential, not recursive.
+		sizeof(std::array<P_obj, PLAYER_SNAPSHOT_MAX_DEPTH>) +
+		sizeof(std::array<int64_t, PLAYER_SNAPSHOT_MAX_DEPTH>) + sizeof(P_obj) +
+		sizeof(P_char) + 2 * sizeof(int) + 3 * sizeof(size_t) + 6 * sizeof(int64_t) +
+		sizeof(std::initializer_list<int>) + 2 * sizeof(const int *) +
+		// Original detached/group, obj_can_nest and container reduction helpers.
+		sizeof(P_char) + 2 * sizeof(P_obj) + sizeof(P_obj *) + sizeof(P_obj) +
+		3 * sizeof(P_obj) + sizeof(int) + sizeof(P_obj) + sizeof(int) +
+		// Terminal original encumbrance_adjust(ch,weight), no allocation.
+		sizeof(P_char) + sizeof(int) +
+		// Plain nest branch's same native ownership/root/group/weight statements.
+		3 * sizeof(P_obj) + sizeof(P_char);
+	size_t depth = 0;
+	P_obj slow = target, fast = target;
+	while (fast && OBJ_INSIDE(fast))
+	{
+		slow = slow && OBJ_INSIDE(slow) ? slow->loc.inside : nullptr;
+		fast = fast->loc.inside;
+		fast = fast && OBJ_INSIDE(fast) ? fast->loc.inside : nullptr;
+		if (slow && slow == fast)
+		{
+			errno = EINVAL;
+			return false;
+		}
+	}
+	for (P_obj node = target; node; node = OBJ_INSIDE(node) ? node->loc.inside : nullptr)
+	{
+		if (depth == SIZE_MAX)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		++depth;
+	}
+	// add_weight -> propagate_weight_delta -> parent add_weight is genuinely
+	// recursive. Admit the actual ancestor count; sequential full/correction
+	// calls reuse this same maximum rather than inventing an iterative leaf.
+	constexpr size_t recursive_weight_frame = 2 * (sizeof(P_obj) + sizeof(int)) + sizeof(int);
+	if (depth > SIZE_MAX / recursive_weight_frame)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const size_t recursive_frames = depth * recursive_weight_frame;
+	const size_t live_frames =
+		sizeof(object) + sizeof(target) + sizeof(mob) + sizeof(outer_live) + sizeof(index) +
+		sizeof(&b) + sizeof(ordinary_flat_item_factory_budget) +
+		sizeof(quest_mobile_native_container_shell) + sizeof(bool) + 5 * sizeof(size_t) +
+		sizeof(std::vector<original_item>::iterator) + 5 * sizeof(void *) +
+		zone_reset_item_owner::ordinary_flat_submission_guard::inline_bytes() +
+		native_geometry_frames + sizeof(depth) + 4 * sizeof(P_obj) +
+		sizeof(recursive_frames);
+	size_t entered = outer_live;
+	if (!birth_passive_add(entered, live_frames) ||
+	    !birth_passive_add(entered, recursive_frames) || !charge(entered))
+		return false;
+	bool placed = false;
+	{
+		ordinary_flat_item_factory_budget factory{ index };
+		zone_reset_item_owner::ordinary_flat_submission_guard guard(
+			reserve_ordinary_flat_item_factory_root, &factory);
+		factory.common_context = guard.context();
+		if (guard.begin(entered))
+		{
+			placed = [&]() noexcept -> bool
+			{
+				size_t globals = 0, full = entered;
+				if (!ordinary_flat_factory_globals(&globals, &factory) ||
+				    !birth_passive_add(full, globals) ||
+				    !reserve_ordinary_flat_item_factory_globals(full, &factory))
+					return false;
+				if (target && target->type == ITEM_CONTAINER &&
+				    target->value[4] > 0)
+				{
+					const auto selected =
+						std::find_if(b.stock.begin(), b.stock.end(),
+							     [target](const auto &item) {
+								     return item.object == target &&
+									    item.stage &&
+									    !item.published;
+							     });
+					if (selected == b.stock.end())
+						return false;
+					quest_mobile_native_container_shell shell;
+					// Original actual grouping/full weight happens before the real probe.
+					// A refusal retains both the already-begun native geometry and exact
+					// outstanding probe; the owner is blocked and cannot re-enter this P.
+					if (!quest_mobile_native_local_stock::begin_reducing_nest(
+						    object, target, mob))
+						return false;
+					if (!selected->stage->capture_container_shell_bounded(
+						    &shell, ordinary_flat_factory_globals,
+						    reserve_ordinary_flat_item_factory_globals,
+						    &factory, full))
+						return false;
+					return quest_mobile_native_local_stock::finish_reducing_nest(
+						object, target, mob, shell);
+				}
+				return quest_mobile_native_local_stock::nest(object, target, mob);
+			}();
+		}
+	} // The actual guard destructor ends its exact registered ROOT scope.
+	if (!placed)
+		b.blocked = true;
+	// No durable-retirement action occurs here. The exact common scope ended;
+	// fresh surviving-owner charge now sees real stage-owned probe/private game.
+	size_t survivors = outer_live;
+	const bool observed =
+		birth_passive_add(survivors, sizeof(object) + sizeof(target) + sizeof(mob) +
+						     sizeof(outer_live) + sizeof(index) +
+						     sizeof(&b) + sizeof(placed) +
+						     sizeof(entered)) &&
+		charge(survivors);
+	if (!observed)
+		b.blocked = true;
+	return placed && observed;
+}
+
+bool quest_mobile_native_birth_owner::capture_ordinary_flat_source_pin_bounded(
+	size_t index, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)index;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	using pin = quest_mobile_native_birth_ordinary_source_pin;
+	// Genuine whole ordinary source predicate runs before any candidate allocation.
+	// The caller owns old registry/native/ROOT/G once. These carriers and the local
+	// allocation remain private only until the original final installation.
+	constexpr size_t string_frames =
+		// operator=/assign/_M_assign, source addressof and length/capacity accessors.
+		6 * sizeof(std::string *) + sizeof(const std::string *) + 3 * sizeof(size_t) +
+		sizeof(char *) + sizeof(const std::string *) + sizeof(const std::string *) +
+		// _M_create(this,requested&,old_capacity) and allocator_traits/_S_allocate.
+		sizeof(std::string *) + sizeof(size_t *) + sizeof(size_t) + sizeof(char *) +
+		sizeof(std::allocator<char> *) + sizeof(size_t) + sizeof(const void *) +
+		sizeof(std::allocator<char> *) + sizeof(size_t) + sizeof(void *) +
+		// _M_dispose/_M_destroy/_M_data/_M_capacity and _S_copy/traits::copy/_M_set_length.
+		4 * sizeof(std::string *) + sizeof(size_t) + sizeof(char *) + sizeof(size_t) +
+		sizeof(char *) + sizeof(const char *) + sizeof(size_t) + sizeof(char *) +
+		sizeof(const char *) + sizeof(size_t) + sizeof(std::string *) + sizeof(size_t) +
+		sizeof(char *) + sizeof(size_t) + sizeof(void *) + sizeof(const void *) +
+		sizeof(size_t) + sizeof(void *) +
+		// Actual deallocate source; selected success/string move and unique_ptr move.
+		sizeof(std::allocator<char> *) + sizeof(char *) + sizeof(size_t) +
+		8 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+	constexpr size_t frames =
+		sizeof(index) + sizeof(reserve) + sizeof(context) + sizeof(outer_live) +
+		2 * sizeof(size_t) + 2 * sizeof(void *) +
+		sizeof(std::unique_ptr<pin::implementation>) + sizeof(std::unique_ptr<pin>) +
+		sizeof(size_t) + sizeof(int) + 2 * sizeof(bool) + string_frames +
+		// make_unique ctor allocation, actual pin ctor/move/default and cleanup.
+		12 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool);
+	if (!reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t live = outer_live;
+	if (!birth_passive_add(live, frames))
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	if (!reserve(live, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	if (!reserve || !nevent_is_game_thread() || index >= births.size() || !births[index] ||
+	    !reset_dispatch_current() || !reset_dispatch.flat_backend ||
+	    reset_dispatch.selected_flat_root.empty())
+		return false;
+	auto &b = *births[index];
+	const auto &source = b.reference.birth_source;
+	if (b.ordinary_flat_source || b.cold || b.submitted || b.blocked || !b.sealed ||
+	    !b.character || b.mobile.character() != b.character ||
+	    b.character->runtime_id != b.runtime_id ||
+	    !birth_ordinary_flat_cash_role_current_bounded(b, reserve, context, live) ||
+	    b.zone != reset_zone_rnum || b.room < 0 || b.rnum < 0 ||
+	    source.kind != economic_source_kind::npc_generation || source.sequence ||
+	    source.source.bytes != reset_invocation.bytes ||
+	    source.generation.bytes != reset_invocation.bytes ||
+	    critical_operation_id_is_zero(reset_invocation) ||
+	    critical_operation_id_is_zero(b.reference.birth_operation) ||
+	    b.reference.birth_operation.bytes == reset_invocation.bytes ||
+	    !b.reference.mobile_instance_id || b.reference.mobile_instance_id == UINT64_MAX ||
+	    !(source.slot < reset_dispatch.next_slot ||
+	      (reset_dispatch.open && source.slot == reset_dispatch.current_slot)) ||
+	    b.reference.reset_zone_vnum != reset_dispatch.zone_vnum)
+		return false;
+	const auto &m = reset_dispatch.commands[source.slot];
+	if (m.command != 'M' || m.arg1 != b.rnum || m.arg3 != b.room)
+		return false;
+
+	size_t root_heap = 0;
+	const size_t length = reset_dispatch.selected_flat_root.size();
+	// Fresh original _M_assign starts with the real GCC13 local capacity15.
+	// _M_create doubles15 to30 for length16..29, then requests capacity+1.
+	if (length > 15)
+	{
+		const size_t capacity = length < 30 ? 30 : length;
+		if (capacity == SIZE_MAX)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		root_heap = capacity + 1;
+	}
+	size_t prospective = live;
+	if (!birth_passive_add(prospective, sizeof(pin::implementation)) ||
+	    !birth_passive_add(prospective, sizeof(pin)) ||
+	    !birth_passive_add(prospective, root_heap))
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	if (!reserve(prospective, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	try
+	{
+		auto state = std::make_unique<pin::implementation>();
+		state->producer = &b;
+		state->selected_root = reset_dispatch.selected_flat_root;
+		state->invocation = reset_invocation;
+		state->birth = b.reference.birth_operation;
+		state->lineage = reset_dispatch.flat_lineage;
+		state->epoch = reset_dispatch.flat_epoch;
+		state->instance = b.reference.mobile_instance_id;
+		state->runtime = b.runtime_id;
+		state->slot = source.slot;
+		state->zone = b.zone;
+		state->room = b.room;
+		state->rnum = b.rnum;
+		state->original_m_args = { m.arg1, m.arg2, m.arg3, m.arg4 };
+		std::unique_ptr<pin> retained(new pin(std::move(state)));
+		// Installation belongs only to this original factory; replay cannot mint it.
+		b.ordinary_flat_source = std::move(retained);
+		if (!reserve(live, context))
+		{
+			b.ordinary_flat_source.reset();
+			(void)reserve(live, context);
+			return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+void quest_mobile_native_birth_owner::seal_mobile_ordinary_flat(size_t outer_live) noexcept
+{
+	if (current_birth >= births.size() || !births[current_birth])
+		return;
+	const size_t index = current_birth;
+	auto &b = *births[index];
+	current_birth = SIZE_MAX;
+	if (b.blocked || b.sealed || !b.character)
+		return;
+	if (!b.npc_flat_factory_scope ||
+	    !b.npc_flat_factory_scope->current_bounded(
+		    reserve_npc_binding_scratch, nullptr,
+		    outer_live > SIZE_MAX - (sizeof(outer_live) + sizeof(index) + sizeof(&b)) ?
+			    SIZE_MAX :
+			    outer_live + sizeof(outer_live) + sizeof(index) + sizeof(&b)))
+	{
+		b.blocked = true;
+		return;
+	}
+	if (GET_CLASS(b.character, CLASS_ALCHEMIST) &&
+	    (!b.alchemist_started || !b.alchemist_returned ||
+	     b.constructor.wire_version !=
+		     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
+	{
+		b.blocked = true;
+		return;
+	}
+	using guard_type = zone_reset_item_owner::ordinary_flat_submission_guard;
+	const size_t frames =
+		sizeof(ordinary_flat_item_factory_budget) + guard_type::inline_bytes() +
+		sizeof(std::vector<quest_mobile_native_item_binding>) +
+		sizeof(std::span<const quest_mobile_native_item_binding>) + 14 * sizeof(void *) +
+		13 * sizeof(size_t) + 4 * sizeof(bool) + 3 * sizeof(int) + sizeof(outer_live) +
+		sizeof(index) + sizeof(&b) + sizeof(native_mobile_birth_recipe_allocation_profile);
+	size_t base = outer_live;
+	if (!birth_passive_add(base, frames) || !charge(base))
+	{
+		b.blocked = true;
+		return;
+	}
+	{
+		ordinary_flat_item_factory_budget factory{ index };
+		guard_type guard(reserve_ordinary_flat_item_factory_root, &factory);
+		factory.common_context = guard.context();
+		const auto live = [&](size_t *value, size_t extra = 0) noexcept
+		{
+			size_t bytes = base, globals = 0;
+			if (!ordinary_flat_factory_globals(&globals, &factory) ||
+			    !birth_passive_add(bytes, globals) || !birth_passive_add(bytes, extra))
+				return false;
+			*value = bytes;
+			return true;
+		};
+		const auto request = [&](size_t extra = 0) noexcept
+		{
+			size_t full = 0;
+			return live(&full, extra) &&
+			       reserve_ordinary_flat_item_factory_globals(full, &factory);
+		};
+		if (guard.begin(base))
+			[&]() noexcept
+			{
+				try
+				{
+					size_t capture_live = 0;
+					if (!live(&capture_live) ||
+					    quest_mobile_native_capture_bounded(
+						    b.character, b.reference,
+						    quest_mobile_lifetime_state::live,
+						    b.reference.birth_operation, 1, &b.image,
+						    reserve_ordinary_flat_item_factory_globals,
+						    &factory, capture_live) !=
+						    player_snapshot_capture_result::ok)
+					{
+						b.blocked = true;
+						return;
+					}
+					// A constructed orphan cannot be published outside this exact born forest.
+					size_t selected = 0;
+					for (const auto &item : b.stock)
+						if (item.stage)
+						{
+							++selected;
+							size_t found = 0;
+							for (const auto &row : b.image.items)
+								if (row.object_uid == item.uid)
+									++found;
+							if (found != 1)
+							{
+								b.blocked = true;
+								return;
+							}
+						}
+					if (selected != b.image.items.size())
+					{
+						b.blocked = true;
+						return;
+					}
+					if (b.image.items.size() >
+						    SIZE_MAX /
+							    sizeof(item_ownership_runtime_entry) ||
+					    b.image.items.size() >
+						    SIZE_MAX /
+							    sizeof(native_mobile_birth_item_recipe) ||
+					    !request(b.image.items.size() *
+						     (sizeof(item_ownership_runtime_entry) +
+						      sizeof(native_mobile_birth_item_recipe))))
+					{
+						b.blocked = true;
+						return;
+					}
+					b.current_custody.resize(b.image.items.size());
+					b.recipes.resize(b.image.items.size());
+					for (size_t row = 0; row < b.image.items.size(); ++row)
+					{
+						const auto selected = std::find_if(
+							b.stock.begin(), b.stock.end(),
+							[&](const auto &item) {
+								return item.uid ==
+								       b.image.items[row].object_uid;
+							});
+						size_t recipe_live = 0;
+						if (selected == b.stock.end() || !selected->stage ||
+						    !live(&recipe_live) ||
+						    !selected->stage->capture_recipe_bounded(
+							    b.image.items[row], &b.recipes[row],
+							    reserve_ordinary_flat_item_factory_globals,
+							    &factory, recipe_live))
+						{
+							b.blocked = true;
+							return;
+						}
+					}
+					if (!request(
+						    native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+					    !native_mobile_birth_recipe_valid(b.image.items,
+									      b.recipes))
+					{
+						b.blocked = true;
+						return;
+					}
+					// NBC4 requires the complete original decision capsule. Only a fresh
+					// birth which genuinely reached the non-alchemist return cut may record
+					// not_attempted; historical NBC2 commands are never rewritten.
+					if (b.constructor.wire_version ==
+					    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION)
+					{
+						if (!b.non_alchemist_cut_returned ||
+						    GET_CLASS(b.character, CLASS_ALCHEMIST) ||
+						    b.constructor.alchemist_choice !=
+							    original_alchemist_choice::not_attempted ||
+						    b.constructor.alchemist_grant_uid)
+						{
+							b.blocked = true;
+							return;
+						}
+						b.constructor.wire_version =
+							NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION;
+					}
+					if (!native_mobile_birth_cash_role_recipe_capture(
+						    b.constructor, &b.cash_role))
+					{
+						b.blocked = true;
+						return;
+					}
+					b.cash_role_present = true;
+					if (b.cash_role.role !=
+					    native_mobile_birth_cash_role::ordinary_wallet)
+					{
+						b.blocked = true;
+						return;
+					}
+					{
+						std::vector<quest_mobile_native_item_binding> inputs;
+						if (b.stock.size() >
+							    SIZE_MAX /
+								    sizeof(quest_mobile_native_item_binding) ||
+						    !request(
+							    b.stock.size() *
+							    sizeof(quest_mobile_native_item_binding)))
+						{
+							b.blocked = true;
+							return;
+						}
+						inputs.reserve(b.stock.size());
+						for (const auto &item : b.stock)
+							if (item.stage)
+								inputs.push_back(
+									item.stage->binding_input());
+						size_t binding_outer =
+							sizeof(outer_live) + sizeof(inputs) +
+							sizeof(index) + sizeof(&b) +
+							sizeof(selected) +
+							sizeof(size_t) + // actual binding_outer local
+							sizeof(std::span<
+								const quest_mobile_native_item_binding>);
+						if (!add_bytes(binding_outer, base) ||
+						    inputs.capacity() >
+							    (SIZE_MAX - binding_outer) /
+								    sizeof(quest_mobile_native_item_binding))
+						{
+							b.blocked = true;
+							return;
+						}
+						binding_outer +=
+							inputs.capacity() *
+							sizeof(quest_mobile_native_item_binding);
+						const std::span<
+							const quest_mobile_native_item_binding>
+							originals(inputs);
+						if (!shop_trade_original_procedure_binding_stage::
+							    prepare_native_birth_npc_flat_bounded(
+								    originals,
+								    *b.npc_flat_factory_scope,
+								    b.bindings, guard.callback(),
+								    guard.context(), binding_outer))
+						{
+							b.blocked = true;
+							return;
+						}
+					} // Actual private binding-input storage ends before late source pin.
+					if (!live(&capture_live))
+					{
+						b.blocked = true;
+						return;
+					}
+					b.sealed = true;
+					if (b.cash_role.role ==
+						    native_mobile_birth_cash_role::ordinary_wallet &&
+					    reset_dispatch.flat_backend &&
+					    !capture_ordinary_flat_source_pin_bounded(
+						    index,
+						    reserve_ordinary_flat_item_factory_globals,
+						    &factory, capture_live))
+					{
+						b.blocked = true;
+						return;
+					}
+					if (!request())
+					{
+						b.blocked = true;
+						discard(index);
+					}
+				}
+				catch (...)
+				{
+					b.blocked = true;
+				}
+			}();
+		else
+			b.blocked = true;
+	}
+	size_t survivors = outer_live;
+	(void)(birth_passive_add(survivors, sizeof(outer_live) + sizeof(index) + sizeof(&b) +
+						    sizeof(base) + sizeof(size_t) + sizeof(bool)) &&
+	       charge(survivors));
+}
+
+namespace
+{
+using birth_publication_reserve = bool (*)(size_t, void *) noexcept;
+
+// Source carriers for the exact GNU13 default-allocator member/owner lifetime.
+// The vector and unique_ptr inline objects and their real capacity allocations
+// are charged separately. No byte below represents fictitious empty-vector heap.
+template <class T> constexpr size_t birth_publication_unique_lifetime_frames() noexcept
+{
+	// Same pointer-owner constructor, reset/release/delete and both tuple/head
+	// getter chains as ordinary_passive_body_frames, with the actual pointee type.
+	// make_unique's new result and allocation-size value survive construction.
+	return sizeof(T *) + sizeof(T *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(T *) +
+	       10 * sizeof(void *) + sizeof(T *) + 8 * (2 * sizeof(void *) + sizeof(void *));
+}
+
+template <class T> constexpr size_t birth_publication_vector_cleanup_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	// ~vector -> get_Tp_allocator -> _Destroy(three args) -> _Destroy(two args)
+	// -> _Destroy_aux. The nontrivial element branch below is an actual items
+	// range; trivial effect/key/revision/byte ranges never enter its element leaf.
+	constexpr size_t destruction = sizeof(V *) + sizeof(V *) + sizeof(A *) + 2 * sizeof(T *) +
+				       sizeof(A *) + 2 * sizeof(T *) + 2 * sizeof(T *) +
+				       sizeof(bool);
+	constexpr size_t element =
+		std::is_trivially_destructible_v<T> ?
+			0 :
+			// __addressof input/result, _Destroy(pointer), destroy_at(pointer).
+			sizeof(T *) + sizeof(T *) + sizeof(T *) + sizeof(T *);
+	// Actual base destruction/deallocate chain, including the nonempty copied
+	// vectors' allocator_traits/allocator/new_allocator request arguments.
+	// C++20 allocator::deallocate is a real additional receiver/p/n frame,
+	// not an inherited alias; its constant-evaluation result and allocator
+	// destructor receiver are retained too. These selected types are unaligned.
+	constexpr size_t deallocation =
+		sizeof(void *) + sizeof(V *) + sizeof(T *) + sizeof(size_t) + sizeof(A *) +
+		sizeof(T *) + sizeof(size_t) + sizeof(A *) + sizeof(T *) + sizeof(size_t) +
+		sizeof(A *) + sizeof(T *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+		sizeof(bool) + sizeof(A *);
+	return destruction + element + deallocation;
+}
+
+template <class T> constexpr size_t birth_publication_vector_lifetime_frames() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	// Actual directly default-constructed vector, base, impl, allocator,
+	// new_allocator and impl_data receivers, followed by its cleanup closure.
+	constexpr size_t construction =
+		sizeof(V *) + 2 * sizeof(void *) + 2 * sizeof(A *) + sizeof(void *);
+	return construction + birth_publication_vector_cleanup_frames<T>();
+}
+
+constexpr size_t birth_publication_context_member_lifetime_frames =
+	// Exact generated context ctor/dtor, its items range and the real nontrivial
+	// item destructor's nested (trivial-element) effects range. An empty newly
+	// constructed context has no item/effects-vector construction. The clone
+	// provider owns later copied item construction; only actual nested cleanup
+	// belongs here. Items execute sequentially, never multiplied by UID count.
+	2 * sizeof(native_mobile_birth_recovery_context *) +
+	birth_publication_vector_lifetime_frames<native_mobile_birth_recovery_item>() +
+	sizeof(native_mobile_birth_recovery_item *) +
+	birth_publication_vector_cleanup_frames<native_mobile_birth_recovery_effect>();
+
+constexpr size_t birth_publication_envelope_member_lifetime_frames =
+	// Exact generated envelope/command ctor/dtor and all five owned vectors.
+	2 * sizeof(critical_native_recovery_envelope *) + 2 * sizeof(critical_command *) +
+	birth_publication_vector_lifetime_frames<critical_entity_key>() +
+	birth_publication_vector_lifetime_frames<critical_expected_revision>() +
+	3 * birth_publication_vector_lifetime_frames<uint8_t>();
+
+constexpr size_t birth_publication_writer_lifetime_frames =
+	// Original writer holds TWO complete envelopes plus one context. Summing
+	// their selected member chains also covers rollback of partially copied sides.
+	2 * sizeof(original_birth_checkpoint *) +
+	2 * birth_publication_envelope_member_lifetime_frames +
+	birth_publication_context_member_lifetime_frames +
+	birth_publication_unique_lifetime_frames<original_birth_checkpoint>();
+
+bool birth_publication_same_image(const quest_mobile_native_image &left_image,
+				  const quest_mobile_native_image &right_image,
+				  birth_publication_reserve reserve, void *context,
+				  size_t outer) noexcept
+{
+	using bytes_type = std::vector<uint8_t>;
+	using bytes_iterator = bytes_type::const_iterator;
+	// Actual GNU13 vector== -> equal -> __equal_aux -> __equal_aux1 ->
+	// __equal<true>::equal -> __memcmp. Both actual encoded allocations stay
+	// live through the comparison. Sum sequential iterator unwrap/size carriers
+	// rather than dropping the right output as soon as its encoder returns.
+	constexpr size_t equality_frames =
+		2 * sizeof(const bytes_type *) + 2 * sizeof(size_t) + 3 * sizeof(bytes_iterator) +
+		3 * sizeof(bytes_iterator) +
+		3 * (sizeof(bytes_iterator) + sizeof(const uint8_t *const *) +
+		     sizeof(const uint8_t *)) +
+		3 * (sizeof(const bytes_type *) + sizeof(bytes_iterator) + sizeof(const uint8_t *) +
+		     sizeof(void *)) +
+		3 * sizeof(const uint8_t *) + 3 * sizeof(const uint8_t *) + sizeof(std::ptrdiff_t) +
+		2 * sizeof(const uint8_t *) + sizeof(size_t) + 2 * sizeof(const void *) +
+		sizeof(size_t) + sizeof(int) + 5 * sizeof(bool);
+	constexpr size_t frames = 2 * sizeof(bytes_type) + 5 * sizeof(void *) + 3 * sizeof(size_t) +
+				  2 * sizeof(player_snapshot_codec_result) + equality_frames;
+	size_t live = outer;
+	if (!birth_passive_add(live, frames) || !birth_passive_admit(live, 0, reserve, context))
+		return false;
+	std::vector<uint8_t> left, right;
+	if (quest_mobile_native_image_encode_bounded(left_image, &left, reserve, context, live) !=
+		    player_snapshot_codec_result::ok ||
+	    !birth_passive_add(live, left.capacity()) ||
+	    quest_mobile_native_image_encode_bounded(right_image, &right, reserve, context, live) !=
+		    player_snapshot_codec_result::ok ||
+	    !birth_passive_add(live, right.capacity()) ||
+	    !birth_passive_admit(live, 0, reserve, context))
+		return false;
+	return left == right;
+}
+
+bool birth_publication_context_copy_request(const native_mobile_birth_recovery_context &value,
+					    size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t bytes = 0;
+	if (!birth_passive_rows(bytes, value.items.size(),
+				sizeof(native_mobile_birth_recovery_item)))
+		return false;
+	for (const auto &item : value.items)
+		if (!birth_passive_rows(bytes, item.effects.size(),
+					sizeof(native_mobile_birth_recovery_effect)))
+			return false;
+	*output = bytes;
+	return true;
+}
+
+bool birth_publication_writer_heap(const original_birth_checkpoint *writer, size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t bytes = 0;
+	if (writer && (!birth_passive_add(bytes, sizeof(*writer)) ||
+		       !birth_passive_envelope_heap(bytes, writer->expected) ||
+		       !birth_passive_envelope_heap(bytes, writer->successor) ||
+		       !birth_passive_context_heap(bytes, writer->context)))
+		return false;
+	*output = bytes;
+	return true;
+}
+
+bool birth_publication_clone_context(const native_mobile_birth_recovery_context &value,
+				     native_mobile_birth_recovery_context *output,
+				     birth_publication_reserve reserve, void *context,
+				     size_t outer) noexcept
+{
+	constexpr size_t frames =
+		sizeof(native_mobile_birth_recovery_context) + 7 * sizeof(void *) +
+		4 * sizeof(size_t) +
+		birth_envelope_vector_reserve_frames<native_mobile_birth_recovery_item>() +
+		birth_envelope_vector_reserve_frames<native_mobile_birth_recovery_effect>();
+	size_t request = frames;
+	if (!output || !birth_publication_context_copy_request(value, &request) ||
+	    !birth_passive_add(request, frames) ||
+	    !birth_passive_admit(outer, request, reserve, context))
+		return false;
+	try
+	{
+		auto copied = value;
+		*output = std::move(copied);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool birth_publication_clone_envelope(const critical_native_recovery_envelope &value,
+				      critical_native_recovery_envelope *output,
+				      birth_publication_reserve reserve, void *context,
+				      size_t outer) noexcept
+{
+	size_t request = sizeof(critical_native_recovery_envelope) +
+			 critical_command_copy_frame_bytes() +
+			 birth_envelope_vector_reserve_frames<uint8_t>() + 5 * sizeof(void *) +
+			 3 * sizeof(size_t);
+	if (!output || !birth_passive_envelope_heap(request, value, true) ||
+	    !birth_passive_admit(outer, request, reserve, context))
+		return false;
+	try
+	{
+		auto copied = value;
+		*output = std::move(copied);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+}
+
+struct quest_mobile_native_birth_owner::ordinary_flat_publication_budget
+{
+	size_t index = SIZE_MAX;
+	original_birth *owner = nullptr;
+	size_t outside = 0;
+	void *common_context = nullptr;
+	birth_publication_reserve relay = nullptr;
+	void *relay_context = nullptr;
+	bool denied = false;
+};
+
+bool quest_mobile_native_birth_owner::ordinary_flat_publication_source_current(size_t index) noexcept
+{
+	if (!nevent_is_game_thread() || index >= births.size() || !births[index])
+		return false;
+	const auto &b = *births[index];
+	const char *configured = persistence_mode_flatfile_root();
+	if (persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !configured ||
+	    !*configured || !b.sealed || !b.submitted || b.retired || !b.constructor_present ||
+	    !b.cash_role_present || shared_shop_command(b.command) ||
+	    !ordinary_wallet_command(b.command) ||
+	    b.cash_role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+	    b.reference.mobile_instance_id != b.image.reference.mobile_instance_id ||
+	    b.reference.birth_operation.bytes != b.image.reference.birth_operation.bytes ||
+	    b.command.operation_id.bytes != b.reference.birth_operation.bytes)
+		return false;
+	// Original privately installed warm capabilities remain immutable identity
+	// witnesses after the detached factory scope has ceased being current. Its
+	// detached-only current() predicate is intentionally never weakened.
+	if (b.ordinary_flat_source && b.ordinary_flat_source->state_ && b.npc_flat_factory_scope)
+	{
+		const auto &pin = *b.ordinary_flat_source->state_;
+		const auto &scope = *b.npc_flat_factory_scope;
+		const auto &source = b.reference.birth_source;
+		return pin.producer == &b && pin.selected_root == configured &&
+		       pin.selected_root == scope.root_ &&
+		       pin.birth.bytes == scope.operation_.bytes &&
+		       pin.runtime == scope.runtime_id_ && pin.instance == scope.native_id_ &&
+		       pin.slot == scope.source_.slot && pin.zone == scope.zone_ &&
+		       pin.room == scope.room_ && pin.rnum == scope.rnum_ &&
+		       pin.original_m_args == scope.original_m_args_ &&
+		       pin.lineage.bytes == scope.lineage_.bytes &&
+		       pin.epoch.bytes == scope.epoch_.bytes &&
+		       pin.birth.bytes == b.reference.birth_operation.bytes &&
+		       pin.runtime == b.runtime_id &&
+		       pin.instance == b.reference.mobile_instance_id && pin.zone == b.zone &&
+		       pin.room == b.room && pin.rnum == b.rnum && pin.slot == source.slot &&
+		       source.kind == economic_source_kind::npc_generation && !source.sequence &&
+		       source.source.bytes == pin.invocation.bytes &&
+		       source.generation.bytes == pin.invocation.bytes &&
+		       b.image.reference.birth_source.source.bytes == source.source.bytes &&
+		       b.image.reference.birth_source.generation.bytes == source.generation.bytes &&
+		       b.image.reference.birth_source.slot == source.slot &&
+		       b.image.reference.birth_source.kind == source.kind &&
+		       !b.image.reference.birth_source.sequence &&
+		       b.image.reference.mobile_vnum == b.reference.mobile_vnum &&
+		       b.image.reference.birthplace_vnum == b.reference.birthplace_vnum &&
+		       b.image.reference.reset_zone_vnum == b.reference.reset_zone_vnum &&
+		       b.image.reference.provenance == b.reference.provenance &&
+		       b.image.reference.mobile_revision == b.reference.mobile_revision &&
+		       b.image.reference.stock_revision == b.reference.stock_revision;
+	}
+	// Only the genuine original replay-registration owner installs this root;
+	// no DTO or persisted physical image fabricates a warm factory capability.
+	return b.ordinary_flat_replay_registered && b.ordinary_flat_recovery_root == configured &&
+	       !b.ordinary_flat_source && !b.npc_flat_factory_scope;
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_publication_root(size_t full,
+									     void *opaque) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_publication_budget *>(opaque);
+	size_t globals = 0, live = full;
+	constexpr size_t frames = 4 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool);
+	if (!zone_reset_item_owner::flat_current_global_storage_with_literal_pools(&globals) ||
+	    globals > live)
+		return false;
+	live -= globals; // Existing charge rejoins this same actual CURRENT G once.
+	if (budget.index >= births.size() || births[budget.index].get() != budget.owner ||
+	    !ordinary_flat_publication_source_current(budget.index) ||
+	    !birth_passive_add(live, budget.outside) || !birth_passive_add(live, frames) ||
+	    !charge(live))
+	{
+		budget.denied = true;
+		return false;
+	}
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_publication(size_t full,
+									void *opaque) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_publication_budget *>(opaque);
+	if (budget.denied || !ordinary_flat_publication_source_current(budget.index))
+		return false;
+	const bool admitted =
+		budget.relay ?
+			budget.relay(full, budget.relay_context) :
+			critical_native_mobile_birth_publication_owner::reserve_ordinary_bounded(
+				zone_reset_item_owner::ordinary_flat_submission_guard::callback(),
+				budget.common_context, full);
+	budget.denied |= !admitted;
+	return admitted;
+}
+
+bool quest_mobile_native_birth_owner::reserve_ordinary_flat_publication_globals(
+	size_t full, void *opaque) noexcept
+{
+	// Native/cache providers receive whole CURRENT global storage in outer, as
+	// their original contracts require. Normalize it out before the coordinator
+	// lender and actual NPC common guard rejoin the same CURRENT G exactly once.
+	// Prospective requests remain in full; this removes retained storage only.
+	size_t globals = 0;
+	if (!zone_reset_item_owner::flat_current_global_storage_with_literal_pools(&globals) ||
+	    full < globals)
+		return false;
+	return reserve_ordinary_flat_publication(full - globals, opaque);
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_service_live(size_t exclusive,
+								 size_t *output) noexcept
+{
+	size_t globals = 0;
+	if (!output ||
+	    !zone_reset_item_owner::flat_current_global_storage_with_literal_pools(&globals) ||
+	    !birth_passive_add(exclusive, globals))
+		return false;
+	*output = exclusive;
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::observe_ordinary_flat_globals(size_t *output,
+								    void *opaque) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_publication_budget *>(opaque);
+	return ordinary_flat_publication_source_current(budget.index) &&
+	       zone_reset_item_owner::flat_current_global_storage_with_literal_pools(output);
+}
+
+bool quest_mobile_native_birth_owner::settle_ordinary_flat_checkpoint(
+	size_t index, ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	if (index >= births.size() || !births[index])
+		return false;
+	auto &b = *births[index];
+	if (!b.checkpoint)
+		return true;
+	// Every full writer side already belongs to the closed birth registry.
+	// The actual context CAS retains both sides and original uncertainty policy.
+	if (!critical_native_mobile_birth_publication_owner::checkpoint_context_ordinary_bounded(
+		    b.checkpoint->expected, b.checkpoint->successor,
+		    zone_reset_item_owner::ordinary_flat_submission_guard::callback(),
+		    budget.common_context, outer, b.coordinator_generation))
+		return false;
+	b.envelope = std::move(b.checkpoint->successor);
+	b.recovery = std::move(b.checkpoint->context);
+	if (b.checkpoint->consumes_choice)
+	{
+		b.chosen_context.reset();
+		b.ordinary_flat_choice_started = false;
+	}
+	b.checkpoint.reset();
+	return true; // No callback/allocation after the genuine durable CAS.
+}
+
+economic_accounting_error quest_mobile_native_birth_owner::make_ordinary_flat_writer(
+	size_t index, const critical_native_recovery_envelope &expected,
+	const native_mobile_birth_recovery_context &next, void *writer_slot,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	auto *output = static_cast<std::unique_ptr<original_birth_checkpoint> *>(writer_slot);
+	if (!output || expected.revision == UINT64_MAX)
+		return economic_accounting_error::capacity;
+	constexpr size_t frames = 9 * sizeof(void *) + 6 * sizeof(size_t) +
+				  sizeof(std::unique_ptr<original_birth_checkpoint>) +
+				  birth_publication_writer_lifetime_frames;
+	size_t live = outer;
+	if (!birth_passive_add(live, frames) ||
+	    !birth_passive_admit(live, sizeof(original_birth_checkpoint),
+				 reserve_ordinary_flat_publication, &budget))
+		return economic_accounting_error::capacity;
+	try
+	{
+		auto writer = std::make_unique<original_birth_checkpoint>();
+		if (!birth_passive_add(live, sizeof(*writer)) ||
+		    !birth_publication_clone_envelope(expected, &writer->expected,
+						      reserve_ordinary_flat_publication, &budget,
+						      live) ||
+		    !birth_passive_envelope_heap(live, writer->expected) ||
+		    !birth_publication_clone_envelope(expected, &writer->successor,
+						      reserve_ordinary_flat_publication, &budget,
+						      live) ||
+		    !birth_passive_envelope_heap(live, writer->successor) ||
+		    !birth_publication_clone_context(next, &writer->context,
+						     reserve_ordinary_flat_publication, &budget,
+						     live) ||
+		    !birth_passive_context_heap(live, writer->context))
+			return economic_accounting_error::capacity;
+		++writer->successor.revision;
+		writer->consumes_choice = &next == births[index]->chosen_context.get();
+		const auto encoded = native_mobile_birth_cash_role_recovery_encode_bounded(
+			births[index]->command, writer->context, &writer->successor.attachment,
+			reserve_ordinary_flat_publication, &budget, live);
+		if (encoded != economic_accounting_error::ok)
+			return encoded;
+		// The complete original successor/progress policy is enforced by the
+		// genuine bounded coordinator CAS, before any action can run.
+		*output = std::move(writer);
+		return economic_accounting_error::ok;
+	}
+	catch (...)
+	{
+		return economic_accounting_error::capacity;
+	}
+}
+
+bool quest_mobile_native_birth_owner::checkpoint_ordinary_flat(
+	size_t index, const native_mobile_birth_recovery_context &next,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	auto &b = *births[index];
+	if (b.checkpoint)
+		return settle_ordinary_flat_checkpoint(index, budget, outer);
+	if (make_ordinary_flat_writer(index, b.envelope, next, &b.checkpoint, budget, outer) !=
+	    economic_accounting_error::ok)
+		return false;
+	return settle_ordinary_flat_checkpoint(index, budget, outer);
+}
+
+int quest_mobile_native_birth_owner::prepare_ordinary_flat_action(
+	size_t index, uint8_t kind, size_t row, size_t step,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	if (!settle_ordinary_flat_checkpoint(index, budget, outer))
+		return -1;
+	auto &b = *births[index];
+	try
+	{
+		const auto current = action_value(b.recovery, kind, row, step);
+		if (current.returned)
+			return current.succeeded ? 0 : -1;
+		if (current.started)
+			return b.action_not_attempted && b.pending_action == kind &&
+					       b.pending_row == row && b.pending_step == step ?
+				       1 :
+				       -1;
+		if (b.action_not_attempted || b.envelope.revision > UINT64_MAX - 2)
+			return -1;
+		constexpr size_t frames =
+			sizeof(native_mobile_birth_recovery_context) +
+			sizeof(native_mobile_birth_recovery_context) +
+			sizeof(std::array<std::unique_ptr<original_birth_checkpoint>, 4>) +
+			sizeof(std::unique_ptr<original_birth_checkpoint>) + 12 * sizeof(void *) +
+			8 * sizeof(size_t) + sizeof(native_mobile_birth_recovery_effect);
+		size_t live = outer;
+		if (!birth_passive_add(live, frames))
+			return -1;
+		native_mobile_birth_recovery_context started;
+		if (!birth_publication_clone_context(b.recovery, &started,
+						     reserve_ordinary_flat_publication, &budget,
+						     live) ||
+		    !birth_passive_context_heap(live, started))
+			return -1;
+		set_action(started, kind, row, step, { true, false, false, false });
+		std::unique_ptr<original_birth_checkpoint> intent;
+		if (make_ordinary_flat_writer(index, b.envelope, started, &intent, budget, live) !=
+		    economic_accounting_error::ok)
+			return -1;
+		size_t retained = 0;
+		if (!birth_publication_writer_heap(intent.get(), &retained) ||
+		    !birth_passive_add(live, retained))
+			return -1;
+		std::array<std::unique_ptr<original_birth_checkpoint>, 4> returned;
+		for (size_t bits = 0; bits < returned.size(); ++bits)
+		{
+			if ((bits & 2) && kind != ITEM_EFFECT &&
+			    !(kind == MOBILE_EFFECT && step == 3))
+				continue;
+			native_mobile_birth_recovery_context actual;
+			if (!birth_publication_clone_context(started, &actual,
+							     reserve_ordinary_flat_publication,
+							     &budget, live))
+				return -1;
+			set_action(actual, kind, row, step,
+				   { true, true, static_cast<bool>(bits & 1),
+				     static_cast<bool>(bits & 2) });
+			size_t attempt_live = live;
+			if (!birth_passive_context_heap(attempt_live, actual))
+				return -1;
+			const auto outcome = make_ordinary_flat_writer(index, intent->successor,
+								       actual, &returned[bits],
+								       budget, attempt_live);
+			if (outcome == economic_accounting_error::capacity ||
+			    outcome == economic_accounting_error::overflow)
+				return -1;
+			// Exactly as the original writer enumeration, retain only genuine
+			// typed legal outcomes; admission/allocation refusal aborts preparation.
+			if (outcome != economic_accounting_error::ok)
+				continue;
+			if (!birth_publication_writer_heap(returned[bits].get(), &retained) ||
+			    !birth_passive_add(live, retained))
+				return -1;
+		}
+		if (!returned[1] && !returned[3])
+			return -1;
+		b.checkpoint = std::move(intent);
+		b.returned_writers = std::move(returned);
+		b.pending_action = kind;
+		b.pending_row = row;
+		b.pending_step = step;
+		b.action_not_attempted = true;
+		return settle_ordinary_flat_checkpoint(index, budget, outer) ? 1 : -1;
+	}
+	catch (...)
+	{
+		return -1;
+	}
+}
+
+bool quest_mobile_native_birth_owner::finish_ordinary_flat_action(
+	size_t index, const native_mobile_birth_recovery_effect &actual,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	auto &b = *births[index];
+	if (!actual.started)
+		return false;
+	b.action_not_attempted = false;
+	if (!actual.returned)
+	{
+		b.blocked = true;
+		return false;
+	}
+	const size_t bits = static_cast<size_t>(actual.succeeded) |
+			    (static_cast<size_t>(actual.periodic) << 1);
+	if (!b.returned_writers[bits])
+	{
+		b.blocked = true;
+		return false;
+	}
+	b.checkpoint = std::move(b.returned_writers[bits]);
+	for (auto &writer : b.returned_writers)
+		writer.reset();
+	return settle_ordinary_flat_checkpoint(index, budget, outer) && actual.succeeded;
+}
+
+bool quest_mobile_native_birth_owner::install_ordinary_flat_cash_metadata(
+	size_t index, const flatfile_ordinary_native_birth_projection &current,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	auto &b = *births[index];
+	if (!b.character || !b.image.cash || !b.completed ||
+	    b.completion.disposition != critical_completion_disposition::execution ||
+	    (b.completion.outcome != critical_apply_outcome::applied &&
+	     b.completion.outcome != critical_apply_outcome::already_applied))
+		return false;
+	native_mobile_birth_cash_role_result result;
+	constexpr size_t frames =
+		sizeof(economic_frozen_intent) + sizeof(native_mobile_birth_cash_role_result) +
+		2 * sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_CASH_BINDING_METADATA_BYTES>) +
+		12 * sizeof(void *) + 6 * sizeof(size_t);
+	size_t local = outer;
+	if (!birth_passive_add(local, frames) ||
+	    !birth_passive_admit(local, 0, reserve_ordinary_flat_publication, &budget))
+		return false;
+	economic_frozen_intent intent;
+	if (economic_intent_decode_bounded(b.command.accounting_intent, &intent,
+					   reserve_ordinary_flat_publication, &budget,
+					   local) != economic_accounting_error::ok ||
+	    !birth_passive_add(local, intent.admission.facts.capacity()) ||
+	    economic_intent_verify_binding_bounded(b.command, intent,
+						   reserve_ordinary_flat_publication, &budget,
+						   local) != economic_accounting_error::ok)
+		return false;
+	const auto &mapping = current.wallet.mapping;
+	if (b.completion.result_size != NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES ||
+	    !native_mobile_birth_cash_role_result_decode(
+		    { b.completion.result_payload.data(), b.completion.result_size }, &result) ||
+	    result.role != native_mobile_birth_cash_role::ordinary_wallet ||
+	    result.mobile_instance_id != b.reference.mobile_instance_id ||
+	    result.cash_revision != b.image.cash->revision || !result.wallet_mapping_id ||
+	    result.wallet_mapping_id != mapping.account.authority_id ||
+	    critical_operation_id_is_zero(mapping.account.lineage) ||
+	    mapping.account.lineage.bytes != intent.admission.metadata.lineage.bytes ||
+	    critical_operation_id_is_zero(intent.admission.metadata.epoch))
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_CASH_BINDING_METADATA_BYTES> exact{}, observed{};
+	const auto put = [](uint8_t *out, uint64_t value) noexcept
+	{
+		for (size_t i = 0; i < 8; ++i)
+			out[i] = static_cast<uint8_t>(value >> (8 * i));
+	};
+	put(exact.data(), result.cash_revision);
+	put(exact.data() + 8, result.wallet_mapping_id);
+	std::copy(mapping.account.lineage.bytes.begin(), mapping.account.lineage.bytes.end(),
+		  exact.begin() + 16);
+	std::copy(intent.admission.metadata.epoch.bytes.begin(),
+		  intent.admission.metadata.epoch.bytes.end(), exact.begin() + 32);
+	auto &binding = b.character->native_mobile_binding;
+	std::copy(std::begin(binding.cash_revision_), std::end(binding.cash_revision_),
+		  observed.begin());
+	std::copy(std::begin(binding.wallet_mapping_id_), std::end(binding.wallet_mapping_id_),
+		  observed.begin() + 8);
+	std::copy(std::begin(binding.lineage_), std::end(binding.lineage_), observed.begin() + 16);
+	std::copy(std::begin(binding.birth_epoch_), std::end(binding.birth_epoch_),
+		  observed.begin() + 32);
+	if (observed != exact &&
+	    std::any_of(observed.begin(), observed.end(), [](uint8_t value) { return value != 0; }))
+		return false;
+	// Complete same-lock CURRENT has already authenticated original intent,
+	// delivered receipt, wallet mapping, epoch membership and full born image.
+	std::copy_n(exact.begin(), 8, binding.cash_revision_);
+	std::copy_n(exact.begin() + 8, 8, binding.wallet_mapping_id_);
+	std::copy_n(exact.begin() + 16, 16, binding.lineage_);
+	std::copy_n(exact.begin() + 32, 16, binding.birth_epoch_);
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::cleanup_ordinary_flat_refusal(
+	const critical_command &command, const critical_completion &completion, void *opaque,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_publication_budget *>(opaque);
+	if (!ordinary_flat_publication_source_current(budget.index))
+		return false;
+	auto &b = *births[budget.index];
+	using bytes_type = std::vector<uint8_t>;
+	using bytes_iterator = bytes_type::const_iterator;
+	// Same actual GNU13 byte-vector equality chain as the accepting image
+	// proof. The encoded private command remains alive during comparison.
+	constexpr size_t equality_frames =
+		2 * sizeof(const bytes_type *) + 2 * sizeof(size_t) + 3 * sizeof(bytes_iterator) +
+		3 * sizeof(bytes_iterator) +
+		3 * (sizeof(bytes_iterator) + sizeof(const uint8_t *const *) +
+		     sizeof(const uint8_t *)) +
+		3 * (sizeof(const bytes_type *) + sizeof(bytes_iterator) + sizeof(const uint8_t *) +
+		     sizeof(void *)) +
+		3 * sizeof(const uint8_t *) + 3 * sizeof(const uint8_t *) + sizeof(std::ptrdiff_t) +
+		2 * sizeof(const uint8_t *) + sizeof(size_t) + 2 * sizeof(const void *) +
+		sizeof(size_t) + sizeof(int) + 5 * sizeof(bool);
+	constexpr size_t frames = sizeof(std::vector<uint8_t>) + 10 * sizeof(void *) +
+				  5 * sizeof(size_t) + sizeof(decltype(b.stock.rbegin())) +
+				  sizeof(decltype(b.stock.rend())) + equality_frames;
+	size_t live = outer;
+	if (!birth_passive_add(live, frames) || !birth_passive_admit(live, 0, reserve, context))
+		return false;
+	try
+	{
+		std::vector<uint8_t> canonical;
+		if (reset_holds_birth(b) || !b.completed ||
+		    !same_completion(b.completion, completion) ||
+		    critical_command_encode_bounded(command, &canonical, reserve, context, live) !=
+			    critical_command_codec_result::ok ||
+		    !birth_passive_add(live, canonical.capacity()) ||
+		    !birth_passive_admit(live, 0, reserve, context) || canonical != b.canonical ||
+		    b.cold || b.mobile_started || b.mobile_consumed || b.binding_committed)
+			return false;
+		if (b.refusal_cleanup_returned)
+			return true;
+		if (b.refusal_cleanup_started)
+			return false;
+		for (const auto &item : b.stock)
+			if (item.published || item.enrollment_started)
+				return false;
+		b.refusal_cleanup_started = true;
+		for (auto item = b.stock.rbegin(); item != b.stock.rend(); ++item)
+			if (item->stage)
+			{
+				if (!quest_mobile_native_local_stock::detach(item->object,
+									     b.character) ||
+				    !item->stage->discard_unadmitted())
+					return false;
+				item->stage.reset();
+				item->object = nullptr;
+			}
+		if (b.character)
+		{
+			GET_CARRYING_W(b.character) = 0;
+			IS_CARRYING_N(b.character) = 0;
+			if (!b.mobile.discard_empty())
+				return false;
+			b.character = nullptr;
+			b.mobile_bytes = 0;
+		}
+		b.refusal_cleanup_returned = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_projection_matches(
+	size_t index, const flatfile_ordinary_native_birth_projection &current,
+	ordinary_flat_publication_budget &budget, size_t outer, bool copy_custody) noexcept
+{
+	auto &b = *births[index];
+	if (current.owner_revision != 1 || current.custody.size() != b.current_custody.size() ||
+	    current.custody.size() != b.image.items.size() ||
+	    !birth_publication_same_image(b.image, current.wallet.native,
+					  reserve_ordinary_flat_publication, &budget, outer))
+		return false;
+	for (size_t i = 0; i < current.custody.size(); ++i)
+	{
+		const auto &row = current.custody[i];
+		const auto &previous = b.current_custody[i];
+		const item_ownership_runtime_entry exact{
+			row.item_uid, row.root_item_uid, row.parent_item_uid,
+			row.owner,    row.item_revision, current.owner_revision,
+			row.vnum,     row.state
+		};
+		if (copy_custody)
+			b.current_custody[i] = exact;
+		else if (previous.item_uid != exact.item_uid ||
+			 previous.root_item_uid != exact.root_item_uid ||
+			 previous.parent_item_uid != exact.parent_item_uid ||
+			 !item_owner_identity_equal(previous.owner, exact.owner) ||
+			 previous.item_revision != exact.item_revision ||
+			 previous.owner_revision != exact.owner_revision ||
+			 previous.vnum != exact.vnum || previous.state != exact.state)
+			return false;
+	}
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::ordinary_flat_runtime_proof(
+	size_t index, const flatfile_ordinary_native_birth_projection &current,
+	ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	auto &b = *births[index];
+	P_char live = find_character_by_runtime_id(b.runtime_id);
+	if (!live || live != b.character || !actual_objects(b) || !b.mobile_consumed ||
+	    !b.runtime_applied ||
+	    !install_ordinary_flat_cash_metadata(index, current, budget, outer))
+		return false;
+	uint64_t revision = 0;
+	if (!item_ownership_runtime_peek_owner_revision({ item_owner_type::native_mobile,
+							  b.reference.mobile_instance_id, 0 },
+							&revision) ||
+	    revision != 1)
+		return false;
+	for (const auto &expected : b.current_custody)
+	{
+		item_ownership_runtime_entry actual{};
+		if (!item_ownership_runtime_lookup(expected.item_uid, &actual) ||
+		    actual.item_uid != expected.item_uid ||
+		    actual.root_item_uid != expected.root_item_uid ||
+		    actual.parent_item_uid != expected.parent_item_uid ||
+		    !item_owner_identity_equal(actual.owner, expected.owner) ||
+		    actual.item_revision != expected.item_revision ||
+		    actual.owner_revision != expected.owner_revision ||
+		    actual.vnum != expected.vnum || actual.state != expected.state)
+			return false;
+	}
+	constexpr size_t frames =
+		sizeof(quest_mobile_native_image) +
+		2 * sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+		sizeof(quest_mobile_native_reference) + 9 * sizeof(void *) + 7 * sizeof(size_t) +
+		sizeof(item_ownership_runtime_entry) + sizeof(uint64_t);
+	size_t local = outer;
+	if (!birth_passive_add(local, frames) ||
+	    !birth_passive_admit(local, 0, reserve_ordinary_flat_publication, &budget))
+		return false;
+	quest_mobile_native_reference bound;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> original{}, observed{};
+	if (quest_mobile_native_reference_copy_bounded(live, b.runtime_id, &bound,
+						       reserve_ordinary_flat_publication, &budget,
+						       local) != player_snapshot_codec_result::ok ||
+	    quest_mobile_native_reference_encode_bounded(
+		    bound, &observed, reserve_ordinary_flat_publication, &budget, local) !=
+		    player_snapshot_codec_result::ok ||
+	    quest_mobile_native_reference_encode_bounded(
+		    b.reference, &original, reserve_ordinary_flat_publication, &budget, local) !=
+		    player_snapshot_codec_result::ok ||
+	    observed != original)
+		return false;
+	quest_mobile_native_image after;
+	size_t heap = 0;
+	if (quest_mobile_native_capture_bounded(
+		    live, b.reference, quest_mobile_lifetime_state::live,
+		    b.reference.birth_operation, 1, &after, reserve_ordinary_flat_publication,
+		    &budget, local, &heap) != player_snapshot_capture_result::ok ||
+	    !birth_passive_add(local, heap))
+		return false;
+	return birth_publication_same_image(after, b.image, reserve_ordinary_flat_publication,
+					    &budget, local);
+}
+
+bool quest_mobile_native_birth_owner::retain_ordinary_flat_origin(
+	const critical_native_recovery_envelope &terminal, void *opaque,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	auto &budget = *static_cast<ordinary_flat_publication_budget *>(opaque);
+	const size_t index = budget.index;
+	if (!ordinary_flat_publication_source_current(index))
+		return false;
+	auto &b = *births[index];
+	if (terminal.revision != b.envelope.revision || terminal.phase != b.envelope.phase ||
+	    terminal.attachment != b.envelope.attachment ||
+	    terminal.phase != critical_native_recovery_phase::continuation_pending ||
+	    !b.physically_proven)
+		return false;
+	const std::string &root = b.ordinary_flat_source ?
+					  b.ordinary_flat_source->state_->selected_root :
+					  b.ordinary_flat_recovery_root;
+	constexpr size_t frames = sizeof(flatfile_identity_lock) + sizeof(flatfile_authority_lock) +
+				  sizeof(flatfile_ordinary_native_birth_projection) +
+				  sizeof(flatfile_authority_operation) +
+				  sizeof(std::vector<flatfile_authority_operation>) +
+				  sizeof(flatfile_authority_commit_outcome) + 12 * sizeof(void *) +
+				  10 * sizeof(size_t);
+	size_t live = outer, retained = 0, current_heap = 0;
+	if (!birth_passive_add(live, frames) || !birth_passive_admit(live, 0, reserve, context))
+		return false;
+	try
+	{
+		flatfile_identity_lock identity(reserve, context, live);
+		if (!identity.retained_bytes(&retained) || retained < sizeof(identity) ||
+		    !birth_passive_add(live, retained - sizeof(identity)) ||
+		    !identity.acquire_bounded(root, reserve, context, live))
+			return false;
+		// Acquisition can replace the actual retained root capacity. Recount it.
+		live = outer + frames;
+		if (!identity.retained_bytes(&retained) || retained < sizeof(identity) ||
+		    !birth_passive_add(live, retained - sizeof(identity)))
+			return false;
+		flatfile_authority_lock authority(reserve, context, live);
+		if (!authority.retained_bytes(&retained) || retained < sizeof(authority) ||
+		    !birth_passive_add(live, retained - sizeof(authority)) ||
+		    !authority.acquire_bounded(root, reserve, context, live))
+			return false;
+		live = outer + frames;
+		if (!identity.retained_bytes(&retained) || retained < sizeof(identity) ||
+		    !birth_passive_add(live, retained - sizeof(identity)) ||
+		    !authority.retained_bytes(&retained) || retained < sizeof(authority) ||
+		    !birth_passive_add(live, retained - sizeof(authority)) ||
+		    flatfile_authority_transaction_recover_bounded(root, authority, reserve,
+								   context, live) !=
+			    flatfile_authority_transaction_result::ok)
+			return false;
+		flatfile_ordinary_native_birth_projection current;
+		if (flatfile_native_mobile_birth_ordinary_publication_storage::
+			    read_current_locked_bounded(root, identity, authority, terminal,
+							b.completion, &current, reserve, context,
+							live, &current_heap) ||
+		    !birth_passive_add(live, current_heap))
+			return false;
+		// The mandatory transfer runs outside coordinator mutex and receives its
+		// real relay. Internal runtime helpers must use this SAME relay, rather
+		// than reacquiring via the publisher's own wrapper while it is pinned.
+		const auto saved_relay = budget.relay;
+		const auto saved_context = budget.relay_context;
+		budget.relay = reserve;
+		budget.relay_context = context;
+		const bool proven =
+			ordinary_flat_projection_matches(index, current, budget, live, false) &&
+			ordinary_flat_runtime_proof(index, current, budget, live);
+		budget.relay = saved_relay;
+		budget.relay_context = saved_context;
+		if (!proven)
+			return false;
+		flatfile_authority_operation operation;
+		size_t operation_heap = 0;
+		if (quest_mobile_native_flatfile_ordinary_origin_prepare_locked_bounded(
+			    root, authority, terminal, &operation, reserve, context, live,
+			    &operation_heap) ||
+		    !birth_passive_add(live, operation_heap) ||
+		    !birth_passive_admit(live, sizeof(flatfile_authority_operation), reserve,
+					 context))
+			return false;
+		std::vector<flatfile_authority_operation> operations;
+		operations.reserve(1);
+		if (!birth_passive_add(live, operations.capacity() *
+						     sizeof(flatfile_authority_operation)))
+			return false;
+		operations.push_back(std::move(operation));
+		flatfile_authority_commit_outcome outcome =
+			flatfile_authority_commit_outcome::not_published;
+		const auto committed =
+			flatfile_authority_transaction_commit_operations_with_outcome_bounded(
+				root, authority, operations, &outcome, reserve, context, live);
+		if (committed != flatfile_authority_transaction_result::ok ||
+		    outcome != flatfile_authority_commit_outcome::committed)
+		{
+			// Original publication uncertainty requires native bundle recovery and
+			// a PRESENT exact canonical recheck; never infer durable transfer from
+			// a failed reply, an absent image or a successful staging operation.
+			if (outcome == flatfile_authority_commit_outcome::not_published ||
+			    flatfile_authority_transaction_recover_bounded(root, authority, reserve,
+									   context, live) !=
+				    flatfile_authority_transaction_result::ok)
+				return false;
+		}
+		return identity.matches(root) && authority.matches(root) &&
+		       quest_mobile_native_flatfile_ordinary_origin_recheck_locked_bounded(
+			       root, authority, terminal, reserve, context, live) == 0;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::resume_ordinary_flat_cold_projection(
+	size_t index, ordinary_flat_publication_budget &budget, size_t outer) noexcept
+{
+	if (index >= births.size() || !births[index] || !nevent_is_game_thread())
+		return false;
+	auto &b = *births[index];
+	if (!ordinary_flat_publication_source_current(index) || b.shared_cold_affects || !b.cold ||
+	    !b.cold_rebuilding || !b.character || !b.runtime_id)
+		return false;
+	constexpr size_t frames =
+		sizeof(quest_mobile_native_image) + sizeof(quest_mobile_native_reference) +
+		17 * sizeof(void *) + 10 * sizeof(size_t) + 7 * sizeof(bool) +
+		sizeof(quest_mobile_native_item_progress) +
+		// Actual find_if/range closures and iterator begin/end/trip/tag carriers.
+		8 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+		sizeof(std::random_access_iterator_tag);
+	size_t base = outer, live = 0, observed_heap = 0;
+	if (!birth_passive_add(base, frames) || !reserve_ordinary_flat_publication(base, &budget))
+		return false;
+	try
+	{
+		// Cover every retained historical prefix, including a previous pure
+		// preparation budget refusal. No item/room/AF/event service precedes
+		// the complete prospective reservation on this retry.
+		if (b.mobile.publication_consumed_)
+		{
+			if (find_character_by_runtime_id(b.runtime_id) != b.character ||
+			    b.mobile.publication_runtime_id_ != b.runtime_id)
+				return false;
+		}
+		else if (b.mobile.character() != b.character ||
+			 find_character_by_runtime_id(b.runtime_id))
+			return false;
+		// Reject list corruption and foreign incarnations before inspecting the
+		// exact stage-owned graph. Partial restored ownership is not absence.
+		for (P_char slow = character_list, fast = character_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		for (P_char actual = character_list; actual; actual = actual->next)
+		{
+			if (actual == b.character)
+				continue;
+			quest_mobile_native_reference reference;
+			const auto *binding = actual->native_mobile_binding.encoded_reference_;
+			if (std::all_of(binding, binding + QUEST_MOBILE_NATIVE_REFERENCE_BYTES,
+					[](uint8_t value) { return value == 0; }))
+				continue;
+			if (!ordinary_flat_service_live(base, &live) ||
+			    quest_mobile_native_reference_decode_bounded(
+				    { binding, QUEST_MOBILE_NATIVE_REFERENCE_BYTES }, &reference,
+				    reserve_ordinary_flat_publication_globals, &budget,
+				    live) != player_snapshot_codec_result::ok ||
+			    reference.mobile_instance_id == b.reference.mobile_instance_id ||
+			    reference.birth_operation.bytes == b.reference.birth_operation.bytes)
+				return false;
+		}
+		for (const auto &item : b.stock)
+		{
+			size_t matches = 0;
+			for (P_obj actual = object_list; actual; actual = actual->next)
+				if (actual->obj_uid == item.uid)
+				{
+					if (actual != item.object || !item.published)
+						return false;
+					++matches;
+				}
+			if (matches != (item.published ? 1U : 0U))
+				return false;
+		}
+		quest_mobile_native_image observed;
+		if (!ordinary_flat_service_live(base, &live) ||
+		    quest_mobile_native_capture_bounded(
+			    b.character, b.reference, quest_mobile_lifetime_state::live,
+			    b.reference.birth_operation, 1, &observed,
+			    reserve_ordinary_flat_publication_globals, &budget, live,
+			    &observed_heap) != player_snapshot_capture_result::ok ||
+		    !birth_passive_add(base, observed_heap) ||
+		    !ordinary_flat_service_live(base, &live) ||
+		    !birth_publication_same_image(observed, b.image,
+						  reserve_ordinary_flat_publication_globals,
+						  &budget, live))
+			return false;
+		for (size_t row = 0; row < b.stock.size(); ++row)
+		{
+			auto &item = b.stock[row];
+			const auto &saved = b.recovery.items[row];
+			if (!saved.publication.succeeded || item.published)
+				continue;
+			if (!item.stage)
+				return false;
+			item.stage->retain_admitted();
+			if (item.stage->publish() != item.object)
+				return false;
+			item.published = true;
+		}
+		if (b.recovery.mobile_effects[0].succeeded)
+		{
+			P_char actual = nullptr;
+			const bool restored = ordinary_flat_service_live(base, &live) &&
+					      b.mobile.restore_published_bounded(
+						      b.room, b.recovery.mobile_effects,
+						      b.recovery.mobile_choices, &actual,
+						      observe_ordinary_flat_globals,
+						      reserve_ordinary_flat_publication_globals,
+						      &budget, live);
+			// Stage ownership is consumed before some service allocations return.
+			// Retain the actual partial actor even when this attempt refuses.
+			b.mobile_started = b.mobile.publication_consumed_;
+			b.mobile_consumed = b.mobile.publication_consumed_;
+			if (!restored || actual != b.character ||
+			    find_character_by_runtime_id(b.runtime_id) != b.character)
+				return false;
+		}
+		for (size_t row = 0; row < b.stock.size(); ++row)
+		{
+			auto &item = b.stock[row];
+			const auto &saved = b.recovery.items[row];
+			if (!saved.enrollment.succeeded || item.enrolled)
+				continue;
+			const auto literal = std::find_if(b.image.items.begin(),
+							  b.image.items.end(),
+							  [&](const auto &value)
+							  { return value.object_uid == item.uid; });
+			if (literal == b.image.items.end() || !item.stage)
+				return false;
+			if (!item.enrollment_returned)
+			{
+				bool returned = false, succeeded = false;
+				const bool restored =
+					ordinary_flat_service_live(base, &live) &&
+					quest_mobile_native_local_stock::restore_enrollment_bounded(
+						item.object, b.character, &returned, &succeeded,
+						observe_ordinary_flat_globals,
+						reserve_ordinary_flat_publication_globals, &budget,
+						live);
+				// Preserve actual service completion before a diagnostic refusal;
+				// a retry rebuilds only the still-pending private stage metadata.
+				if (returned && succeeded)
+				{
+					item.enrollment_started = true;
+					item.enrollment_returned = true;
+				}
+				if (!restored || !returned || !succeeded)
+					return false;
+			}
+			if (!ordinary_flat_service_live(base, &live) ||
+			    !item.stage->rebuild_enrollment_bounded(
+				    item.object, b.recipes[literal - b.image.items.begin()],
+				    { saved.next_step, saved.current_step_started, saved.admitted,
+				      saved.published },
+				    item.effects, reserve_ordinary_flat_publication_globals,
+				    &budget, live))
+				return false;
+			item.enrolled = true;
+			item.enrollment_started = true;
+			item.enrollment_returned = true;
+		}
+		// All historical services now have actual restored ownership. Future
+		// original pending actions still use their unchanged journal writers.
+		b.cold_rebuilding = false;
+		b.cold = false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::recover_ordinary_flat_cold(
+	size_t index, bool allow_reconstruction, ordinary_flat_publication_budget &budget,
+	size_t outer) noexcept
+{
+	if (!ordinary_flat_publication_source_current(index))
+		return false;
+	auto &b = *births[index];
+	constexpr size_t frames =
+		sizeof(flatfile_identity_lock) + sizeof(flatfile_authority_lock) +
+		sizeof(flatfile_ordinary_native_birth_projection) +
+		sizeof(critical_native_recovery_envelope) + 2 * sizeof(quest_mobile_native_image) +
+		sizeof(quest_mobile_native_reference) +
+		3 * sizeof(quest_mobile_native_constructor_digest) +
+		2 * sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+		sizeof(std::vector<P_obj>) + sizeof(std::vector<quest_mobile_native_item_binding>) +
+		sizeof(std::span<const quest_mobile_native_item_binding>) +
+		sizeof(std::span<const quest_mobile_native_item_effect>) +
+		sizeof(quest_mobile_native_item_progress) + 34 * sizeof(void *) +
+		26 * sizeof(size_t) + 12 * sizeof(bool) + 4 * sizeof(int) + 2 * sizeof(int64_t) +
+		16 * sizeof(void *) + 4 * sizeof(std::ptrdiff_t) +
+		4 * sizeof(std::random_access_iterator_tag);
+	size_t base = outer;
+	if (!birth_passive_add(base, frames) || !reserve_ordinary_flat_publication(base, &budget))
+		return false;
+	if (!b.cold)
+		return true;
+	if (!ordinary_flat_publication_source_current(index))
+		return false;
+	if (!b.constructor_present ||
+	    (b.constructor.wire_version !=
+		     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
+	     b.constructor.wire_version !=
+		     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION) ||
+	    !b.completed || !b.coordinator_generation ||
+	    native_mobile_birth_cash_role_recovery_validate_bounded(
+		    b.envelope, reserve_ordinary_flat_publication, &budget, base) !=
+		    economic_accounting_error::ok)
+		return false;
+	try
+	{
+		critical_native_recovery_envelope actual_carrier;
+		size_t carrier_live = base, current_coordinator = SIZE_MAX;
+		if (!critical_native_mobile_birth_publication_owner::copy_context_ordinary_bounded(
+			    b.command, &actual_carrier,
+			    zone_reset_item_owner::ordinary_flat_submission_guard::callback(),
+			    budget.common_context, carrier_live, &current_coordinator) ||
+		    actual_carrier.revision != b.envelope.revision ||
+		    actual_carrier.phase != b.envelope.phase ||
+		    actual_carrier.attachment != b.envelope.attachment ||
+		    !birth_passive_envelope_heap(carrier_live, actual_carrier) ||
+		    !critical_native_mobile_birth_publication_owner::observe_generation_bounded(
+			    b.envelope, &b.coordinator_generation,
+			    zone_reset_item_owner::ordinary_flat_submission_guard::callback(),
+			    budget.common_context, carrier_live, &current_coordinator))
+			return false;
+		const auto uncertain = [](const auto &action)
+		{ return action.started && (!action.returned || !action.succeeded); };
+		if (uncertain(b.recovery.whole_binding) || uncertain(b.recovery.reference_install))
+			return false;
+		for (const auto &effect : b.recovery.mobile_effects)
+			if (uncertain(effect))
+				return false;
+		for (const auto &row : b.recovery.items)
+		{
+			if (uncertain(row.publication) || uncertain(row.enrollment))
+				return false;
+			for (const auto &effect : row.effects)
+				if (uncertain(effect))
+					return false;
+		}
+		// Genuine whole CURRENT cut before any constructor or adoption. These
+		// actual locks remain retained through the complete native recovery.
+		const std::string &root = b.ordinary_flat_source ?
+						  b.ordinary_flat_source->state_->selected_root :
+						  b.ordinary_flat_recovery_root;
+		size_t live = carrier_live, retained = 0, identity_heap = 0, authority_heap = 0;
+		flatfile_identity_lock identity(reserve_ordinary_flat_publication, &budget, live);
+		if (!identity.retained_bytes(&retained) || retained < sizeof(identity) ||
+		    !birth_passive_add(live, retained - sizeof(identity)) ||
+		    !identity.acquire_bounded(root, reserve_ordinary_flat_publication, &budget,
+					      live) ||
+		    !identity.retained_bytes(&retained) || retained < sizeof(identity))
+			return false;
+		identity_heap = retained - sizeof(identity);
+		live = carrier_live;
+		if (!birth_passive_add(live, identity_heap))
+			return false;
+		flatfile_authority_lock authority(reserve_ordinary_flat_publication, &budget, live);
+		if (!authority.retained_bytes(&retained) || retained < sizeof(authority) ||
+		    !birth_passive_add(live, retained - sizeof(authority)) ||
+		    !authority.acquire_bounded(root, reserve_ordinary_flat_publication, &budget,
+					       live) ||
+		    !authority.retained_bytes(&retained) || retained < sizeof(authority))
+			return false;
+		authority_heap = retained - sizeof(authority);
+		live = carrier_live;
+		if (!birth_passive_add(live, identity_heap) ||
+		    !birth_passive_add(live, authority_heap) ||
+		    flatfile_authority_transaction_recover_bounded(
+			    root, authority, reserve_ordinary_flat_publication, &budget, live) !=
+			    flatfile_authority_transaction_result::ok)
+			return false;
+		flatfile_ordinary_native_birth_projection current;
+		size_t current_heap = 0;
+		if (flatfile_native_mobile_birth_ordinary_publication_storage::
+			    read_current_locked_bounded(root, identity, authority, b.envelope,
+							b.completion, &current,
+							reserve_ordinary_flat_publication, &budget,
+							live, &current_heap) ||
+		    !birth_passive_add(live, current_heap) ||
+		    !ordinary_flat_projection_matches(index, current, budget, live, true) ||
+		    !birth_ordinary_flat_cash_role_current_bounded(
+			    b, reserve_ordinary_flat_publication, &budget, live))
+			return false;
+		const size_t retained_cut = live;
+		const auto install_original_cash_metadata = [&]() noexcept {
+			return install_ordinary_flat_cash_metadata(index, current, budget,
+								   retained_cut);
+		};
+		if (b.cold_rebuilding)
+		{
+			quest_mobile_native_constructor_digest build, procedure, tail;
+			if (!native_mobile_birth_running_artifact_digest_bounded(
+				    &build, reserve_ordinary_flat_publication, &budget,
+				    retained_cut) ||
+			    build != b.constructor.build_digest ||
+			    !native_mobile_birth_procedure_capture_bounded(
+				    b.reference.mobile_vnum, build, &procedure,
+				    reserve_ordinary_flat_publication, &budget, retained_cut) ||
+			    procedure != b.constructor.procedure_after ||
+			    !native_mobile_birth_reset_tail_capture_bounded(
+				    b.reference.mobile_vnum, b.reference.birthplace_vnum, b.shop,
+				    &tail, reserve_ordinary_flat_publication, &budget,
+				    retained_cut) ||
+			    tail != b.constructor.reset_tail)
+				return false;
+			return resume_ordinary_flat_cold_projection(index, budget, retained_cut);
+		}
+		// Complete current world identity comes from actual native references,
+		// never prototype similarity, room occupancy or an invented runtime ID.
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> encoded;
+		if (quest_mobile_native_reference_encode_bounded(
+			    b.reference, &encoded, reserve_ordinary_flat_publication, &budget,
+			    retained_cut) != player_snapshot_codec_result::ok)
+			return false;
+		// Refuse corrupt global lists before scanning identity/UID membership.
+		for (P_char slow = character_list, fast = character_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		for (P_obj slow = object_list, fast = object_list; fast && fast->next;)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		P_char existing = nullptr;
+		for (P_char mob = character_list; mob; mob = mob->next)
+		{
+			quest_mobile_native_reference reference;
+			const auto *binding = mob->native_mobile_binding.encoded_reference_;
+			if (std::all_of(binding, binding + QUEST_MOBILE_NATIVE_REFERENCE_BYTES,
+					[](uint8_t value) { return value == 0; }))
+				continue;
+			if (quest_mobile_native_reference_decode_bounded(
+				    { binding, QUEST_MOBILE_NATIVE_REFERENCE_BYTES }, &reference,
+				    reserve_ordinary_flat_publication, &budget,
+				    retained_cut) != player_snapshot_codec_result::ok)
+				return false;
+			if (reference.mobile_instance_id != b.reference.mobile_instance_id &&
+			    reference.birth_operation.bytes != b.reference.birth_operation.bytes)
+				continue;
+			std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> found;
+			if (existing ||
+			    quest_mobile_native_reference_copy_bounded(
+				    mob, mob->runtime_id, &reference,
+				    reserve_ordinary_flat_publication, &budget,
+				    retained_cut) != player_snapshot_codec_result::ok ||
+			    quest_mobile_native_reference_encode_bounded(
+				    reference, &found, reserve_ordinary_flat_publication, &budget,
+				    retained_cut) != player_snapshot_codec_result::ok ||
+			    found != encoded)
+				return false;
+			existing = mob;
+		}
+		const bool consumed = b.recovery.mobile_effects[0].succeeded;
+		if (existing && !consumed)
+			return false;
+		if (existing)
+		{
+			const bool rolled =
+				b.constructor.wire_version ==
+					NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION &&
+				b.constructor.alchemist_choice !=
+					original_alchemist_choice::not_attempted;
+			if (!alchemist_choice_compatible(existing, b.constructor) ||
+			    existing->only.npc->alchemist_vial_roll_done != rolled)
+				return false;
+			quest_mobile_native_image observed;
+			size_t observed_heap = 0, observed_live = 0, comparison_live = retained_cut;
+			if (!ordinary_flat_service_live(retained_cut, &observed_live) ||
+			    quest_mobile_native_capture_bounded(
+				    existing, b.reference, quest_mobile_lifetime_state::live,
+				    b.reference.birth_operation, 1, &observed,
+				    reserve_ordinary_flat_publication_globals, &budget,
+				    observed_live,
+				    &observed_heap) != player_snapshot_capture_result::ok ||
+			    !birth_passive_add(comparison_live, observed_heap) ||
+			    !birth_publication_same_image(observed, b.image,
+							  reserve_ordinary_flat_publication,
+							  &budget, comparison_live))
+				return false;
+		}
+		for (const auto &item : b.stock)
+		{
+			P_obj found = nullptr;
+			for (P_obj object = object_list; object; object = object->next)
+				if (object->obj_uid == item.uid)
+				{
+					if (found || !existing ||
+					    !b.recovery.mobile_effects[0].succeeded)
+						return false;
+					found = object;
+				}
+			if (existing && !found)
+				return false;
+		}
+		quest_mobile_native_constructor_digest build;
+		if (!native_mobile_birth_running_artifact_digest_bounded(
+			    &build, reserve_ordinary_flat_publication, &budget, retained_cut) ||
+		    build != b.constructor.build_digest)
+			return false;
+		if (existing)
+		{
+			quest_mobile_native_constructor_digest procedure, tail;
+			if (!native_mobile_birth_procedure_capture_bounded(
+				    b.reference.mobile_vnum, build, &procedure,
+				    reserve_ordinary_flat_publication, &budget, retained_cut) ||
+			    procedure != b.constructor.procedure_after ||
+			    !native_mobile_birth_reset_tail_capture_bounded(
+				    b.reference.mobile_vnum, b.reference.birthplace_vnum, b.shop,
+				    &tail, reserve_ordinary_flat_publication, &budget,
+				    retained_cut) ||
+			    tail != b.constructor.reset_tail)
+				return false;
+		}
+		if (b.character || b.cold_adopted)
+			if (!clear_cold_projection(index))
+				return false;
+		if (existing)
+		{
+			b.cold_adopted = true;
+			for (size_t row = 0; row < b.stock.size(); ++row)
+			{
+				auto &item = b.stock[row];
+				const auto &progress = b.recovery.items[row];
+				const auto literal =
+					std::find_if(b.image.items.begin(), b.image.items.end(),
+						     [&](const auto &value)
+						     { return value.object_uid == item.uid; });
+				if (literal == b.image.items.end() ||
+				    !progress.publication.succeeded)
+					throw EILSEQ;
+				const size_t image_row =
+					static_cast<size_t>(literal - b.image.items.begin());
+				for (P_obj object = object_list; object; object = object->next)
+					if (object->obj_uid == item.uid)
+						item.object = object;
+				size_t request = sizeof(quest_mobile_native_item_stage);
+				if (!birth_passive_rows(request, progress.effects.size(),
+							sizeof(quest_mobile_native_item_effect)) ||
+				    !birth_passive_admit(retained_cut, request,
+							 reserve_ordinary_flat_publication,
+							 &budget))
+					throw ENOBUFS;
+				item.stage = std::make_unique<quest_mobile_native_item_stage>();
+				item.effects.resize(progress.effects.size());
+				for (size_t step = 0; step < progress.effects.size(); ++step)
+				{
+					const auto &effect = progress.effects[step];
+					item.effects[step] = { effect.started, effect.returned,
+							       effect.succeeded, effect.periodic };
+				}
+				size_t service_live = 0;
+				const quest_mobile_native_item_progress item_progress{
+					progress.next_step, progress.current_step_started,
+					progress.admitted, progress.published
+				};
+				const std::span<const quest_mobile_native_item_effect> item_effects(
+					item.effects);
+				if (!ordinary_flat_service_live(retained_cut, &service_live) ||
+				    !quest_mobile_native_item_stage::adopt_published_bounded(
+					    *literal, b.recipes[image_row], item.object,
+					    item_progress, item_effects, item.stage.get(),
+					    reserve_ordinary_flat_publication_globals, &budget,
+					    service_live))
+				{
+					item.stage
+						.reset(); // Strong failed adoption left the output empty.
+					throw EAGAIN;
+				}
+				item.adopted_metadata = true;
+				item.published = true;
+				item.enrolled = progress.enrollment.succeeded;
+				item.enrollment_started = progress.enrollment.started;
+				item.enrollment_returned = progress.enrollment.returned;
+			}
+			size_t service_live = 0;
+			if (!ordinary_flat_service_live(retained_cut, &service_live) ||
+			    !b.mobile.adopt_published_bounded(
+				    existing, existing->runtime_id, b.room, b.image, b.recovery,
+				    observe_ordinary_flat_globals,
+				    reserve_ordinary_flat_publication_globals, &budget,
+				    service_live))
+				throw EAGAIN;
+			b.character = existing;
+			b.runtime_id = existing->runtime_id;
+			b.mobile_started = true;
+			b.mobile_consumed = true;
+		}
+		else
+		{
+			// Drain/completion observers never reconstruct a new physical actor.
+			if (!allow_reconstruction)
+				return false;
+			size_t service_live = 0;
+			if (!ordinary_flat_service_live(retained_cut, &service_live) ||
+			    !b.mobile.restore_constructor_bounded(
+				    b.constructor, build, observe_ordinary_flat_globals,
+				    reserve_ordinary_flat_publication_globals, &budget,
+				    service_live))
+				return false;
+			b.character = b.mobile.character();
+			b.runtime_id = b.character->runtime_id;
+			b.mobile_bytes = sizeof(*b.character) + sizeof(*b.character->only.npc);
+			GET_BIRTHPLACE(b.character) = b.reference.birthplace_vnum;
+			apply_zone_modifier(b.character);
+			if (b.shop >= 0)
+				bind_shopkeeper(b.character, b.shop);
+			// These original pre-capture callback routes remain unfinished;
+			// cold replay never silently drops them or treats them as pure.
+			if (world[b.room].funct || (IS_SET(b.character->specials.act, ACT_SPEC) &&
+						    mob_index[b.rnum].func.mob))
+				throw EAGAIN;
+			if (!alchemist_choice_compatible(b.character, b.constructor) ||
+			    (b.constructor.wire_version ==
+				     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION &&
+			     !npc_alchemist_original_birth::restore_latch(
+				     b.character, static_cast<native_alchemist_vial_choice>(
+							  b.constructor.alchemist_choice))))
+				throw EAGAIN;
+			size_t forest_request = 0;
+			if (!birth_passive_rows(forest_request, b.image.items.size(),
+						sizeof(P_obj)) ||
+			    !birth_passive_admit(retained_cut, forest_request,
+						 reserve_ordinary_flat_publication, &budget))
+				throw ENOBUFS;
+			std::vector<P_obj> forest(b.image.items.size(), nullptr);
+			size_t reconstruction_live = retained_cut;
+			if (!birth_passive_rows(reconstruction_live, forest.capacity(),
+						sizeof(P_obj)))
+				throw EOVERFLOW;
+			for (auto &item : b.stock)
+			{
+				const auto literal =
+					std::find_if(b.image.items.begin(), b.image.items.end(),
+						     [&](const auto &value)
+						     { return value.object_uid == item.uid; });
+				if (literal == b.image.items.end())
+					throw EILSEQ;
+				const size_t row =
+					static_cast<size_t>(literal - b.image.items.begin());
+				size_t request = sizeof(quest_mobile_native_item_stage),
+				       stage_live = 0;
+				const auto &saved = b.recovery.items[&item - b.stock.data()];
+				if (!birth_passive_rows(request, saved.effects.size(),
+							sizeof(quest_mobile_native_item_effect)) ||
+				    !birth_passive_admit(reconstruction_live, request,
+							 reserve_ordinary_flat_publication,
+							 &budget))
+					throw ENOBUFS;
+				item.stage = std::make_unique<quest_mobile_native_item_stage>();
+				if (!ordinary_flat_service_live(reconstruction_live, &stage_live))
+					throw EOVERFLOW;
+				if (!quest_mobile_native_item_stage::restore_ordinary_bounded(
+					    *literal, b.recipes[row], item.stage.get(),
+					    reserve_ordinary_flat_publication_globals, &budget,
+					    stage_live))
+				{
+					item.stage
+						.reset(); // Strong failed restore retained no object.
+					throw EAGAIN;
+				}
+				item.object = item.stage->object();
+				if (!birth_passive_admit(reconstruction_live, 0,
+							 reserve_ordinary_flat_publication,
+							 &budget))
+					throw ENOBUFS;
+				item.effects.resize(saved.effects.size());
+				for (size_t step = 0; step < saved.effects.size(); ++step)
+				{
+					const auto &effect = saved.effects[step];
+					item.effects[step] = { effect.started, effect.returned,
+							       effect.succeeded, effect.periodic };
+				}
+				forest[row] = item.object;
+			}
+			// Final literal rows already include their final container weights.
+			// This private restore links that final image exactly; it does not
+			// rerun original G/E/P grouping, weight increments or enchantments.
+			int64_t carrying_weight = 0;
+			int64_t carrying_count = 0;
+			for (const auto &literal : b.image.items)
+				if (literal.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					carrying_weight += encumbrance_weight(literal.weight) /
+							   (literal.equipment_slot ? 2 : 1);
+					if (!literal.equipment_slot)
+						++carrying_count;
+				}
+			if (carrying_weight > INT_MAX || carrying_count > INT_MAX)
+				throw EILSEQ;
+			for (size_t offset = forest.size(); offset; --offset)
+			{
+				const size_t row = offset - 1;
+				P_obj object = forest[row];
+				const auto &literal = b.image.items[row];
+				if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					P_obj parent =
+						forest[static_cast<size_t>(literal.parent_index)];
+					object->loc_p = LOC_INSIDE;
+					object->loc.inside = parent;
+					object->next_content = parent->contains;
+					parent->contains = object;
+				}
+				else if (literal.equipment_slot)
+				{
+					const int slot = literal.equipment_slot - 1;
+					b.character->equipment[slot] = object;
+					object->loc_p = LOC_WORN;
+					object->loc.wearing = b.character;
+				}
+				else
+				{
+					object->loc_p = LOC_CARRIED;
+					object->loc.carrying = b.character;
+					object->next_content = b.character->carrying;
+					b.character->carrying = object;
+				}
+			}
+			GET_CARRYING_W(b.character) = static_cast<int>(carrying_weight);
+			IS_CARRYING_N(b.character) = static_cast<int>(carrying_count);
+			std::vector<quest_mobile_native_item_binding> inputs;
+			size_t inputs_request = 0;
+			if (!birth_passive_rows(inputs_request, b.stock.size(),
+						sizeof(quest_mobile_native_item_binding)) ||
+			    !birth_passive_admit(reconstruction_live, inputs_request,
+						 reserve_ordinary_flat_publication, &budget))
+				throw ENOBUFS;
+			inputs.reserve(b.stock.size());
+			for (const auto &item : b.stock)
+				inputs.push_back(item.stage->binding_input());
+			size_t bindings_live = reconstruction_live;
+			const std::span<const quest_mobile_native_item_binding> originals(inputs);
+			if (!birth_passive_rows(bindings_live, inputs.capacity(),
+						sizeof(quest_mobile_native_item_binding)) ||
+			    !shop_trade_original_procedure_binding_stage::
+				    prepare_native_birth_cold_flat_bounded(
+					    originals, b.bindings,
+					    reserve_ordinary_flat_publication, &budget,
+					    bindings_live) ||
+			    !b.bindings.valid_flat() ||
+			    !reserve_ordinary_flat_publication(bindings_live, &budget))
+				throw EAGAIN;
+			if (b.recovery.whole_binding.succeeded)
+			{
+				// Rebuild the actual process-local dispatch/chain only. The complete
+				// original SQL/absence cut above authorizes this checked batch; its
+				// original returned journal fact remains unchanged.
+				b.bindings.commit_flat_unchecked();
+			}
+			if (b.recovery.reference_install.succeeded)
+			{
+				std::memcpy(b.character->native_mobile_binding.encoded_reference_,
+					    encoded.data(), encoded.size());
+				if (!install_original_cash_metadata())
+					throw EAGAIN;
+			}
+			quest_mobile_native_image observed;
+			size_t observed_heap = 0, observed_live = 0,
+			       comparison_live = bindings_live;
+			if (!ordinary_flat_service_live(bindings_live, &observed_live) ||
+			    quest_mobile_native_capture_bounded(
+				    b.character, b.reference, quest_mobile_lifetime_state::live,
+				    b.reference.birth_operation, 1, &observed,
+				    reserve_ordinary_flat_publication_globals, &budget,
+				    observed_live,
+				    &observed_heap) != player_snapshot_capture_result::ok ||
+			    !birth_passive_add(comparison_live, observed_heap) ||
+			    !birth_publication_same_image(observed, b.image,
+							  reserve_ordinary_flat_publication,
+							  &budget, comparison_live) ||
+			    !reserve_ordinary_flat_publication(comparison_live, &budget))
+				throw EAGAIN;
+		}
+		if (b.recovery.reference_install.succeeded && !install_original_cash_metadata())
+			throw EAGAIN;
+		b.binding_committed = b.recovery.whole_binding.succeeded;
+		// Cold flags do not certify current runtime projection or physical proof.
+		// The original publish path must perform its complete fresh cut again.
+		b.runtime_applied = false;
+		b.physically_proven = false;
+		if (!existing)
+		{
+			// Retain the real projection BEFORE any actual affect/scheduler
+			// service starts; a partial refusal cannot enter discard cleanup.
+			b.cold_rebuilding = true;
+			return resume_ordinary_flat_cold_projection(index, budget, retained_cut);
+		}
+		b.cold = false;
+		return true;
+	}
+	catch (...)
+	{
+		if (!clear_cold_projection(index))
+			b.blocked = true;
+		(void)reserve_ordinary_flat_publication(base, &budget);
+		return false;
+	}
+}
+
+bool quest_mobile_native_birth_owner::publish_ordinary_flat(size_t index, bool allow_reconstruction,
+							    size_t outer_live) noexcept
+{
+	if (!ordinary_flat_publication_source_current(index) || reset_holds_birth(*births[index]))
+		return false;
+	auto &b = *births[index];
+	using guard_type = zone_reset_item_owner::ordinary_flat_submission_guard;
+	constexpr size_t frames =
+		sizeof(index) + sizeof(allow_reconstruction) + sizeof(outer_live) +
+		sizeof(ordinary_flat_publication_budget) +
+		sizeof(critical_native_recovery_envelope) + sizeof(critical_completion) +
+		sizeof(uint64_t) + sizeof(flatfile_identity_lock) +
+		sizeof(flatfile_authority_lock) +
+		2 * sizeof(flatfile_ordinary_native_birth_projection) +
+		2 * sizeof(quest_mobile_native_image) +
+		sizeof(native_mobile_birth_recovery_context) +
+		sizeof(native_mobile_birth_recovery_effect) +
+		sizeof(native_mobile_birth_recovery_choice) +
+		sizeof(quest_mobile_native_item_effect) +
+		2 * sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+		29 * sizeof(void *) + 22 * sizeof(size_t) + 12 * sizeof(bool) + 4 * sizeof(int) +
+		sizeof(std::unique_ptr<native_mobile_birth_recovery_context>) +
+		sizeof(std::unique_ptr<critical_native_recovery_envelope>) +
+		// Actual make_unique/default-member/unique lifetime precedes the clone
+		// services. The same allowance remains live for refusal cleanup/reset.
+		birth_publication_context_member_lifetime_frames +
+		birth_publication_unique_lifetime_frames<native_mobile_birth_recovery_context>() +
+		birth_publication_envelope_member_lifetime_frames +
+		birth_publication_unique_lifetime_frames<critical_native_recovery_envelope>();
+	size_t base = outer_live;
+	if (!birth_passive_add(base, frames) ||
+	    !birth_passive_add(base, guard_type::inline_bytes()) || !charge(base))
+		return false;
+	bool result = false, terminal_retired = false;
+	{
+		ordinary_flat_publication_budget budget{ index, &b };
+		guard_type guard(reserve_ordinary_flat_publication_root, &budget);
+		budget.common_context = guard.context();
+		if (guard.begin(base))
+			result = [&]() noexcept -> bool
+			{
+				try
+				{
+					if (!b.coordinator_generation || !b.completed)
+					{
+						// Both passive startup and an immediate completion handoff can lack
+						// an observed generation. Observe the actual full retained context,
+						// generation and receipt before the first accepting publication step.
+						critical_native_recovery_envelope actual;
+						critical_completion completion;
+						uint64_t generation = 0;
+						size_t current_coordinator = SIZE_MAX,
+						       observed_live = base;
+						if (!critical_native_mobile_birth_publication_owner::
+							    copy_context_ordinary_bounded(
+								    b.command, &actual,
+								    guard.callback(),
+								    guard.context(), observed_live,
+								    &current_coordinator) ||
+						    actual.revision != b.envelope.revision ||
+						    actual.phase != b.envelope.phase ||
+						    actual.attachment != b.envelope.attachment ||
+						    !birth_passive_envelope_heap(observed_live,
+										 actual) ||
+						    !critical_native_mobile_birth_publication_owner::
+							    observe_generation_bounded(
+								    b.envelope, &generation,
+								    guard.callback(),
+								    guard.context(), observed_live,
+								    &current_coordinator) ||
+						    !generation ||
+						    !critical_native_mobile_birth_publication_owner::
+							    completion_bounded(
+								    b.command.operation_id,
+								    &completion, guard.callback(),
+								    guard.context(), observed_live,
+								    &current_coordinator))
+							return false;
+						if (b.completed &&
+						    !same_completion(b.completion, completion) &&
+						    !same_economic_completion(b.completion,
+									      completion))
+							return false;
+						b.coordinator_generation = generation;
+						b.completion = completion;
+						b.completed = true;
+					}
+					if (b.completed && b.submitted &&
+					    b.completion.disposition ==
+						    critical_completion_disposition::never_admitted)
+					{
+						bool called = false, succeeded = false;
+						size_t current_coordinator = SIZE_MAX;
+						if (!b.coordinator_generation &&
+						    !critical_native_mobile_birth_publication_owner::
+							    observe_generation_bounded(
+								    b.envelope,
+								    &b.coordinator_generation,
+								    guard.callback(),
+								    guard.context(), base,
+								    &current_coordinator))
+							return false;
+						if (!critical_native_mobile_birth_publication_owner::
+							    cancel_refusal_ordinary_bounded(
+								    b.envelope, b.completion,
+								    b.coordinator_generation,
+								    cleanup_ordinary_flat_refusal,
+								    &budget, guard.callback(),
+								    guard.context(), base, &called,
+								    &succeeded))
+							return false;
+						terminal_retired = true;
+						births[index].reset();
+						return true; // No callback follows confirmed journal retirement.
+					}
+					if (!settle_ordinary_flat_checkpoint(index, budget, base) ||
+					    !b.completed || b.blocked ||
+					    !b.coordinator_generation || !b.submitted ||
+					    b.completion.disposition !=
+						    critical_completion_disposition::execution ||
+					    (b.completion.outcome !=
+						     critical_apply_outcome::applied &&
+					     b.completion.outcome !=
+						     critical_apply_outcome::already_applied))
+						return false;
+					if (b.cold &&
+					    !recover_ordinary_flat_cold(index, allow_reconstruction,
+									budget, base))
+						return false;
+					if (!b.recovery.receipt_present ||
+					    (b.envelope.phase == critical_native_recovery_phase::
+									 execution_pending &&
+					     !same_completion(b.recovery.receipt, b.completion)))
+					{
+						if (b.recovery.receipt_present &&
+						    !same_economic_completion(b.recovery.receipt,
+									      b.completion))
+							return false;
+						native_mobile_birth_recovery_context next;
+						if (!birth_publication_clone_context(
+							    b.recovery, &next,
+							    reserve_ordinary_flat_publication,
+							    &budget, base))
+							return false;
+						next.receipt_present = true;
+						next.receipt = b.completion;
+						if (next.stage ==
+						    native_mobile_birth_recovery_stage::captured)
+							next.stage =
+								native_mobile_birth_recovery_stage::
+									publishing;
+						size_t next_live = base;
+						if (!birth_passive_context_heap(next_live, next) ||
+						    !checkpoint_ordinary_flat(index, next, budget,
+									      next_live))
+							return false;
+					}
+					const std::string &root =
+						b.ordinary_flat_source ?
+							b.ordinary_flat_source->state_
+								->selected_root :
+							b.ordinary_flat_recovery_root;
+					{
+						size_t live = base, retained = 0, identity_heap = 0,
+						       authority_heap = 0;
+						flatfile_identity_lock identity(
+							reserve_ordinary_flat_publication, &budget,
+							live);
+						if (!identity.retained_bytes(&retained) ||
+						    retained < sizeof(identity) ||
+						    !birth_passive_add(
+							    live, retained - sizeof(identity)) ||
+						    !identity.acquire_bounded(
+							    root, reserve_ordinary_flat_publication,
+							    &budget, live) ||
+						    !identity.retained_bytes(&retained) ||
+						    retained < sizeof(identity))
+							return false;
+						identity_heap = retained - sizeof(identity);
+						live = base;
+						if (!birth_passive_add(live, identity_heap))
+							return false;
+						flatfile_authority_lock authority(
+							reserve_ordinary_flat_publication, &budget,
+							live);
+						if (!authority.retained_bytes(&retained) ||
+						    retained < sizeof(authority) ||
+						    !birth_passive_add(
+							    live, retained - sizeof(authority)) ||
+						    !authority.acquire_bounded(
+							    root, reserve_ordinary_flat_publication,
+							    &budget, live) ||
+						    !authority.retained_bytes(&retained) ||
+						    retained < sizeof(authority))
+							return false;
+						authority_heap = retained - sizeof(authority);
+						live = base;
+						if (!birth_passive_add(live, identity_heap) ||
+						    !birth_passive_add(live, authority_heap) ||
+						    flatfile_authority_transaction_recover_bounded(
+							    root, authority,
+							    reserve_ordinary_flat_publication,
+							    &budget, live) !=
+							    flatfile_authority_transaction_result::ok)
+							return false;
+						flatfile_ordinary_native_birth_projection current;
+						size_t current_heap = 0;
+						if (flatfile_native_mobile_birth_ordinary_publication_storage::
+							    read_current_locked_bounded(
+								    root, identity, authority,
+								    b.envelope, b.completion,
+								    &current,
+								    reserve_ordinary_flat_publication,
+								    &budget, live, &current_heap) ||
+						    !birth_passive_add(live, current_heap) ||
+						    !ordinary_flat_projection_matches(
+							    index, current, budget, live, true) ||
+						    !birth_ordinary_flat_cash_role_current_bounded(
+							    b, reserve_ordinary_flat_publication,
+							    &budget, live))
+							return false;
+						if (!b.mobile_consumed)
+						{
+							if (b.mobile_started || !b.character ||
+							    find_character_by_runtime_id(
+								    b.runtime_id) ||
+							    (!b.recovery.whole_binding.succeeded &&
+							     !b.bindings.valid_flat()))
+								return false;
+							quest_mobile_native_image before;
+							size_t before_heap = 0;
+							if (quest_mobile_native_capture_bounded(
+								    b.character, b.reference,
+								    quest_mobile_lifetime_state::live,
+								    b.reference.birth_operation, 1,
+								    &before,
+								    reserve_ordinary_flat_publication,
+								    &budget, live, &before_heap) !=
+							    player_snapshot_capture_result::ok)
+								return false;
+							size_t before_live = live;
+							if (!birth_passive_add(before_live,
+									       before_heap) ||
+							    !birth_publication_same_image(
+								    before, b.image,
+								    reserve_ordinary_flat_publication,
+								    &budget, before_live))
+								return false;
+							for (const auto &item : b.stock)
+								if (item.stage && !item.published)
+								{
+									for (P_obj object =
+										     object_list;
+									     object;
+									     object = object->next)
+										if (object ==
+											    item.object ||
+										    object->obj_uid ==
+											    item.uid)
+											return false;
+									item_ownership_runtime_entry
+										previous{};
+									if (item_ownership_runtime_lookup(
+										    item.uid,
+										    &previous))
+										return false;
+								}
+							std::array<
+								uint8_t,
+								QUEST_MOBILE_NATIVE_REFERENCE_BYTES>
+								encoded{};
+							if (quest_mobile_native_reference_encode_bounded(
+								    b.reference, &encoded,
+								    reserve_ordinary_flat_publication,
+								    &budget, before_live) !=
+							    player_snapshot_codec_result::ok)
+								return false;
+							if (!b.recovery.reference_install.succeeded)
+							{
+								for (uint8_t value :
+								     b.character
+									     ->native_mobile_binding
+									     .encoded_reference_)
+									if (value)
+										return false;
+							}
+							else if (std::memcmp(
+									 b.character
+										 ->native_mobile_binding
+										 .encoded_reference_,
+									 encoded.data(),
+									 encoded.size()))
+								return false;
+							int run = prepare_ordinary_flat_action(
+								index, BINDINGS, 0, 0, budget,
+								before_live);
+							if (run < 0)
+								return false;
+							if (run)
+							{
+								b.bindings.commit_flat_unchecked();
+								b.binding_committed = true;
+								if (!finish_ordinary_flat_action(
+									    index,
+									    { true, true, true,
+									      false },
+									    budget, before_live))
+									return false;
+							}
+							run = prepare_ordinary_flat_action(
+								index, REFERENCE, 0, 0, budget,
+								before_live);
+							if (run < 0)
+								return false;
+							if (run)
+							{
+								std::memcpy(
+									b.character
+										->native_mobile_binding
+										.encoded_reference_,
+									encoded.data(),
+									encoded.size());
+								if (!install_ordinary_flat_cash_metadata(
+									    index, current, budget,
+									    before_live) ||
+								    !finish_ordinary_flat_action(
+									    index,
+									    { true, true, true,
+									      false },
+									    budget, before_live))
+									return false;
+							}
+							if (!install_ordinary_flat_cash_metadata(
+								    index, current, budget,
+								    before_live))
+								return false;
+							for (size_t row = 0; row < b.stock.size();
+							     ++row)
+							{
+								auto &item = b.stock[row];
+								if (!item.stage)
+									return false;
+								item.stage->retain_admitted();
+								run = prepare_ordinary_flat_action(
+									index, ITEM_PUBLICATION,
+									row, 0, budget,
+									before_live);
+								if (run < 0)
+									return false;
+								if (run)
+								{
+									const bool published =
+										item.stage
+											->publish() ==
+										item.object;
+									item.published = published;
+									if (!finish_ordinary_flat_action(
+										    index,
+										    { true, true,
+										      published,
+										      false },
+										    budget,
+										    before_live))
+										return false;
+								}
+							}
+						}
+						for (size_t step = 0; step < 8; ++step)
+						{
+							const auto existing =
+								b.recovery.mobile_effects[step];
+							if (existing.returned && existing.succeeded)
+								continue;
+							const int choice_index = step == 2 ? 0 :
+										 step == 4 ? 1 :
+										 step == 5 ? 2 :
+										 step == 6 ? 3 :
+											     -1;
+							if (choice_index >= 0 &&
+							    !b.recovery.mobile_choices[choice_index]
+								     .chosen)
+							{
+								if (!b.chosen_context)
+								{
+									if (!birth_passive_admit(
+										    live,
+										    sizeof(native_mobile_birth_recovery_context),
+										    reserve_ordinary_flat_publication,
+										    &budget))
+										return false;
+									auto chosen = std::make_unique<
+										native_mobile_birth_recovery_context>();
+									size_t chosen_live = live;
+									if (!birth_passive_add(
+										    chosen_live,
+										    sizeof(*chosen)) ||
+									    !birth_publication_clone_context(
+										    b.recovery,
+										    chosen.get(),
+										    reserve_ordinary_flat_publication,
+										    &budget,
+										    chosen_live))
+										return false;
+									// Registry owns actual complete context before RNG. A refusal
+									// after the draw retains it until its durable CAS settles.
+									b.chosen_context =
+										std::move(chosen);
+								}
+								if (!b.chosen_context
+									     ->mobile_choices
+										     [choice_index]
+									     .chosen)
+								{
+									if (b.ordinary_flat_choice_started)
+										return false;
+									size_t choice_live = live;
+									if (!ordinary_flat_service_live(
+										    live,
+										    &choice_live))
+										return false;
+									const bool chosen = b.mobile.choose_publication_step_bounded(
+										step, b.character,
+										b.recovery
+											.mobile_effects
+												[3],
+										&b.chosen_context->mobile_choices
+											 [choice_index],
+										&b.ordinary_flat_choice_started,
+										observe_ordinary_flat_globals,
+										reserve_ordinary_flat_publication_globals,
+										&budget,
+										choice_live);
+									if (!chosen)
+										return false; // Keep started/actual returned choice, never reroll.
+								}
+								if (!checkpoint_ordinary_flat(
+									    index,
+									    *b.chosen_context,
+									    budget, live))
+									return false;
+								b.chosen_context.reset();
+								b.ordinary_flat_choice_started =
+									false;
+							}
+							const int run =
+								prepare_ordinary_flat_action(
+									index, MOBILE_EFFECT, 0,
+									step, budget, live);
+							if (run < 0)
+								return false;
+							if (!run)
+								continue;
+							native_mobile_birth_recovery_effect actual;
+							native_mobile_birth_recovery_choice choice;
+							P_char after = nullptr;
+							if (choice_index >= 0)
+								choice = b.recovery.mobile_choices
+										 [choice_index];
+							size_t service_live = live;
+							if (!ordinary_flat_service_live(
+								    live, &service_live))
+								return false;
+							const bool complete =
+								b.mobile.publication_step_bounded(
+									step, b.room, b.character,
+									choice, actual, &after,
+									observe_ordinary_flat_globals,
+									reserve_ordinary_flat_publication_globals,
+									&budget, service_live);
+							if (step == 0)
+							{
+								b.mobile_started = actual.started;
+								b.mobile_consumed =
+									actual.returned &&
+									actual.succeeded;
+							}
+							const bool settled =
+								finish_ordinary_flat_action(index,
+											    actual,
+											    budget,
+											    live);
+							if (!settled || !complete || !after ||
+							    after != b.character)
+								return false;
+						}
+						P_char actor =
+							find_character_by_runtime_id(b.runtime_id);
+						if (!actor || actor != b.character ||
+						    !actual_objects(b))
+							return false;
+						for (size_t row = 0; row < b.stock.size(); ++row)
+						{
+							auto &item = b.stock[row];
+							if (!item.stage)
+								continue;
+							int run = prepare_ordinary_flat_action(
+								index, ITEM_ENROLLMENT, row, 0,
+								budget, live);
+							if (run < 0)
+								return false;
+							if (run)
+							{
+								bool returned = false,
+								     succeeded = false;
+								size_t service_live = live;
+								if (!ordinary_flat_service_live(
+									    live, &service_live))
+									return false;
+								item.enrollment_started = true;
+								const bool complete = quest_mobile_native_local_stock::
+									enroll_bounded(
+										item.object, actor,
+										root, authority,
+										&returned,
+										&succeeded,
+										observe_ordinary_flat_globals,
+										reserve_ordinary_flat_publication_globals,
+										&budget,
+										service_live);
+								item.enrollment_returned = returned;
+								item.enrolled = succeeded;
+								const bool settled =
+									finish_ordinary_flat_action(
+										index,
+										{ true, returned,
+										  succeeded,
+										  false },
+										budget, live);
+								if (!settled || !complete)
+									return false;
+							}
+							for (size_t step = 0;
+							     step < item.effects.size(); ++step)
+							{
+								run = prepare_ordinary_flat_action(
+									index, ITEM_EFFECT, row,
+									step, budget, live);
+								if (run < 0)
+									return false;
+								if (!run)
+									continue;
+								auto &effect = item.effects[step];
+								size_t service_live = live;
+								if (!ordinary_flat_service_live(
+									    live, &service_live))
+									return false;
+								const bool complete =
+									item.stage->publication_step_bounded(
+										step, item.object,
+										effect,
+										reserve_ordinary_flat_publication_globals,
+										&budget,
+										service_live);
+								const bool settled =
+									finish_ordinary_flat_action(
+										index,
+										{ effect.started,
+										  effect.returned,
+										  effect.succeeded,
+										  effect.periodic },
+										budget, live);
+								actor = find_character_by_runtime_id(
+									b.runtime_id);
+								if (!settled || !complete ||
+								    !actor ||
+								    actor != b.character ||
+								    !actual_objects(b))
+									return false;
+							}
+						}
+						if (!b.runtime_applied)
+						{
+							size_t cache = 0, cache_live = live;
+							if (!item_ownership_runtime_cache_storage_bytes(
+								    &cache) ||
+							    !ordinary_flat_service_live(
+								    live, &cache_live))
+								return false;
+							const bool batch =
+								item_ownership_runtime_hydrate_many_atomic_bounded(
+									b.current_custody.data(),
+									b.current_custody.size(),
+									reserve_ordinary_flat_publication_globals,
+									&budget, cache_live);
+							// Actual rehash capacity survives refusal. Refresh on every return.
+							if (!item_ownership_runtime_cache_storage_bytes(
+								    &cache))
+								return false;
+							cache_live = live;
+							if (!batch || !ordinary_flat_service_live(
+									      live, &cache_live))
+								return false;
+							const bool owner = item_ownership_runtime_hydrate_owner_bounded(
+								{ item_owner_type::native_mobile,
+								  b.reference.mobile_instance_id,
+								  0 },
+								1,
+								reserve_ordinary_flat_publication_globals,
+								&budget, cache_live);
+							if (!item_ownership_runtime_cache_storage_bytes(
+								    &cache) ||
+							    !owner)
+								return false;
+							b.runtime_applied = true;
+						}
+						flatfile_ordinary_native_birth_projection final;
+						size_t final_heap = 0;
+						if (flatfile_native_mobile_birth_ordinary_publication_storage::
+							    read_current_locked_bounded(
+								    root, identity, authority,
+								    b.envelope, b.completion,
+								    &final,
+								    reserve_ordinary_flat_publication,
+								    &budget, live, &final_heap) ||
+						    !birth_passive_add(live, final_heap) ||
+						    !identity.matches(root) ||
+						    !authority.matches(root) ||
+						    !ordinary_flat_projection_matches(
+							    index, final, budget, live, false) ||
+						    !ordinary_flat_runtime_proof(index, final,
+										 budget, live))
+							return false;
+					} // Same-lock full physical/CURRENT proof is complete before final CAS/ACK.
+					b.physically_proven = true;
+					if (b.recovery.stage !=
+					    native_mobile_birth_recovery_stage::physically_proven)
+					{
+						native_mobile_birth_recovery_context next;
+						if (!birth_publication_clone_context(
+							    b.recovery, &next,
+							    reserve_ordinary_flat_publication,
+							    &budget, base))
+							return false;
+						next.runtime_applied = b.runtime_applied;
+						next.stage = native_mobile_birth_recovery_stage::
+							physically_proven;
+						size_t next_live = base;
+						if (!birth_passive_context_heap(next_live, next) ||
+						    !checkpoint_ordinary_flat(index, next, budget,
+									      next_live))
+							return false;
+					}
+					for (auto &item : b.stock)
+						if (item.stage)
+						{
+							if (!item.stage->release_published())
+							{
+								b.blocked = true;
+								return false;
+							}
+							item.stage.reset();
+						}
+					if (b.envelope.phase ==
+					    critical_native_recovery_phase::execution_pending)
+					{
+						if (!b.ack_successor)
+						{
+							if (b.envelope.revision == UINT64_MAX ||
+							    !birth_passive_admit(
+								    base,
+								    sizeof(critical_native_recovery_envelope),
+								    reserve_ordinary_flat_publication,
+								    &budget))
+								return false;
+							auto next = std::make_unique<
+								critical_native_recovery_envelope>();
+							size_t next_live = base;
+							if (!birth_passive_add(next_live,
+									       sizeof(*next)) ||
+							    !birth_publication_clone_envelope(
+								    b.envelope, next.get(),
+								    reserve_ordinary_flat_publication,
+								    &budget, next_live))
+								return false;
+							++next->revision;
+							next->phase =
+								critical_native_recovery_phase::
+									continuation_pending;
+							b.ack_successor = std::move(next);
+						}
+						if (!critical_native_mobile_birth_publication_owner::
+							    acknowledge_ordinary_bounded(
+								    b.envelope, b.completion,
+								    b.coordinator_generation,
+								    guard.callback(),
+								    guard.context(), base))
+							return false;
+						b.envelope = std::move(*b.ack_successor);
+						b.ack_successor.reset();
+					}
+					if (!critical_native_mobile_birth_publication_owner::
+						    retire_ordinary_bounded(
+							    b.envelope, b.coordinator_generation,
+							    retain_ordinary_flat_origin, &budget,
+							    guard.callback(), guard.context(),
+							    base))
+						return false;
+					terminal_retired = true;
+					births[index].reset();
+					return true; // Mandatory origin transfer preceded retirement/fence release.
+				}
+				catch (...)
+				{
+					return false;
+				}
+			}();
+	} // Failed/nonterminal paths end the genuine ROOT guard before recensus.
+	if (terminal_retired)
+		return result; // No callback follows durable retirement.
+	size_t survivors = outer_live;
+	(void)(birth_passive_add(survivors, sizeof(index) + sizeof(allow_reconstruction) +
+						    sizeof(outer_live) + sizeof(base) +
+						    sizeof(bool) + sizeof(result) +
+						    sizeof(terminal_retired) + sizeof(size_t) +
+						    sizeof(original_birth *)) &&
+	       charge(survivors));
+	return false;
+}
+
+// Fixed declared-source profile. Independent source review and native/emitted
+// qualification remain required before the accepting caller is selected.
+#include <thread>
+namespace
+{
+constexpr size_t birth_current_source_max(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+
+// This map prices source carriers, not compiler stack or retained heap. Each
+// range keeps its actual range reference, begin/end iterators and element
+// reference. Sequential calls reuse the maximum complete child closure.
+constexpr size_t birth_current_source_p = sizeof(void *);
+constexpr size_t birth_current_source_n = sizeof(size_t);
+constexpr size_t birth_current_source_b = sizeof(bool);
+constexpr size_t birth_current_source_thread =
+	3 * sizeof(std::thread::id) + 5 * birth_current_source_p +
+	3 * sizeof(std::thread::native_handle_type) + 2 * birth_current_source_b;
+constexpr size_t birth_current_source_vector = birth_current_source_p + birth_current_source_n;
+// vector<bool>::capacity creates two actual _Bit_const_iterator values and
+// invokes begin -> bit iterator ctor -> bit-base ctor. Each constructor has
+// receiver/pointer/unsigned-offset carriers; _M_end_addr and subtraction are
+// smaller sequential children. This is not ordinary pointer-vector capacity.
+constexpr size_t birth_current_source_bit_constructor =
+	2 * (2 * birth_current_source_p + sizeof(unsigned int));
+constexpr size_t birth_current_source_bit_begin = birth_current_source_p +
+						  sizeof(std::vector<bool>::const_iterator) +
+						  birth_current_source_bit_constructor;
+constexpr size_t birth_current_source_bit_vector = birth_current_source_p + birth_current_source_n +
+						   2 * sizeof(std::vector<bool>::const_iterator) +
+						   birth_current_source_bit_begin;
+constexpr size_t birth_current_source_range = 4 * birth_current_source_p;
+// GNU13 normal_iterator != -> base; begin/end -> iterator construction.
+constexpr size_t birth_current_source_iterator = birth_current_source_max(
+	4 * birth_current_source_p + birth_current_source_b, 4 * birth_current_source_p);
+// unique_ptr observer -> __uniq_ptr_impl::_M_ptr -> get<0> ->
+// __get_helper -> _Tuple_impl::_M_head -> _Head_base::_M_head.
+constexpr size_t birth_current_source_unique = 14 * birth_current_source_p + birth_current_source_b;
+constexpr size_t birth_current_source_shared = 6 * birth_current_source_p + birth_current_source_b;
+// string::capacity -> _M_is_local -> max(_M_data,_M_local_data),
+// local_data -> pointer_traits::pointer_to -> addressof -> __addressof.
+// The left _M_data result remains live during the right _M_local_data chain
+// in the permitted left-first comparison evaluation.
+constexpr size_t birth_current_source_string =
+	11 * birth_current_source_p + birth_current_source_n + birth_current_source_b;
+constexpr size_t birth_current_source_array =
+	4 * birth_current_source_p + 2 * birth_current_source_n;
+constexpr size_t birth_current_source_hash_size =
+	2 * birth_current_source_p + 2 * birth_current_source_n;
+constexpr size_t birth_current_source_strlen_boundary =
+	birth_current_source_p + birth_current_source_n;
+// optional::operator-> -> _Optional_base_impl::_M_get -> payload::_M_get
+// plus __addressof; operator bool -> _M_is_engaged is the smaller child.
+constexpr size_t birth_current_source_optional =
+	8 * birth_current_source_p + birth_current_source_b;
+constexpr size_t birth_current_source_errno = birth_current_source_p;
+constexpr size_t birth_current_source_add =
+	birth_current_source_p + birth_current_source_n + birth_current_source_b;
+constexpr size_t birth_current_source_rows = birth_current_source_p + 2 * birth_current_source_n +
+					     birth_current_source_b + birth_current_source_add;
+constexpr size_t birth_current_source_text =
+	2 * birth_current_source_p + birth_current_source_b +
+	birth_current_source_max(birth_current_source_string, birth_current_source_add);
+constexpr size_t birth_current_source_command =
+	2 * birth_current_source_p + 2 * birth_current_source_b +
+	birth_current_source_max(birth_current_source_rows, birth_current_source_vector);
+constexpr size_t birth_current_source_envelope =
+	2 * birth_current_source_p + 2 * birth_current_source_b + birth_current_source_command;
+constexpr size_t birth_current_source_context =
+	2 * birth_current_source_p + birth_current_source_b + birth_current_source_range +
+	birth_current_source_max(birth_current_source_rows, birth_current_source_iterator);
+constexpr size_t birth_current_source_image =
+	2 * birth_current_source_p + birth_current_source_b + 2 * birth_current_source_range +
+	birth_current_source_max(birth_current_source_text,
+				 birth_current_source_max(birth_current_source_rows,
+							  birth_current_source_iterator));
+constexpr size_t birth_current_source_recipes =
+	2 * birth_current_source_p + birth_current_source_b + birth_current_source_range +
+	birth_current_source_max(birth_current_source_rows, birth_current_source_iterator);
+constexpr size_t birth_current_source_stock = birth_current_source_recipes;
+constexpr size_t birth_current_source_body =
+	2 * birth_current_source_p + birth_current_source_b +
+	birth_current_source_max(
+		birth_current_source_image,
+		birth_current_source_max(
+			birth_current_source_envelope,
+			birth_current_source_max(
+				birth_current_source_context,
+				birth_current_source_max(
+					birth_current_source_recipes,
+					birth_current_source_max(birth_current_source_stock,
+								 birth_current_source_unique)))));
+
+// Genuine repository request-header readers: body/minimum/output/header,
+// errno path, bool return; no malloc request is made by these pure readers.
+constexpr size_t birth_current_source_malloc_header =
+	3 * birth_current_source_p + birth_current_source_n + birth_current_source_b +
+	birth_current_source_max(birth_current_source_add, birth_current_source_errno);
+constexpr size_t birth_current_source_scope =
+	birth_current_source_p + 2 * birth_current_source_n + birth_current_source_string;
+constexpr size_t birth_current_source_chain =
+	birth_current_source_p + 2 * birth_current_source_n + birth_current_source_vector;
+constexpr size_t birth_current_source_binding =
+	birth_current_source_p + 5 * birth_current_source_n + birth_current_source_b +
+	birth_current_source_range +
+	birth_current_source_max(
+		birth_current_source_scope,
+		birth_current_source_max(birth_current_source_chain,
+					 birth_current_source_max(birth_current_source_shared,
+								  birth_current_source_iterator)));
+constexpr size_t birth_current_source_mobile_pool =
+	birth_current_source_p + 2 * birth_current_source_n + 4 * birth_current_source_p +
+	birth_current_source_b +
+	birth_current_source_max(birth_current_source_thread,
+				 birth_current_source_max(birth_current_source_malloc_header,
+							  birth_current_source_add));
+constexpr size_t birth_current_source_mobile =
+	2 * birth_current_source_p + 2 * birth_current_source_n + 3 * birth_current_source_p +
+	birth_current_source_b + birth_current_source_mobile_pool;
+constexpr size_t birth_current_source_affects =
+	2 * birth_current_source_p + birth_current_source_n + birth_current_source_p +
+	birth_current_source_p + 2 * birth_current_source_n + birth_current_source_b +
+	birth_current_source_max(birth_current_source_unique,
+				 birth_current_source_max(birth_current_source_thread,
+							  birth_current_source_vector));
+// Both unchanged original item-stage getter bodies. Array strings are an
+// actual local; the ordinary branch's strlen parameter/result is a source
+// call boundary. Installed libc private/emitted implementation is not priced
+// by an invented envelope and remains a separate native qualification item.
+// Ordinary getter returns size_t, excluding getter returns bool. Both have
+// the same receiver/output-or-return/state/bytes source carrier partition.
+constexpr size_t birth_current_source_stage_common =
+	3 * birth_current_source_p + 2 * birth_current_source_n;
+constexpr size_t birth_current_source_stage_ordinary =
+	2 * birth_current_source_p + 3 * birth_current_source_n + 2 * birth_current_source_b +
+	2 * birth_current_source_p + sizeof(std::array<char *, 4>) + 2 * birth_current_source_n;
+constexpr size_t birth_current_source_stage_excluding =
+	3 * birth_current_source_n + birth_current_source_b + 3 * birth_current_source_p +
+	birth_current_source_n;
+constexpr size_t birth_current_source_stage =
+	birth_current_source_stage_common +
+	birth_current_source_max(birth_current_source_stage_ordinary,
+				 birth_current_source_stage_excluding) +
+	birth_current_source_max(
+		birth_current_source_scope,
+		birth_current_source_max(
+			birth_current_source_malloc_header,
+			birth_current_source_max(
+				birth_current_source_thread,
+				birth_current_source_max(
+					birth_current_source_shared,
+					birth_current_source_max(
+						birth_current_source_bit_vector,
+						birth_current_source_max(
+							birth_current_source_strlen_boundary,
+							birth_current_source_array))))));
+
+// Warm lambdas: captures are respectively 1,1,1,2,1,1,1,1,1,1,2,3,6
+// references. All thirteen closure objects coexist in the real getter.
+constexpr size_t birth_current_source_warm_captures = 22 * birth_current_source_p;
+constexpr size_t birth_current_source_warm_add =
+	2 * birth_current_source_p + birth_current_source_n + birth_current_source_b;
+constexpr size_t birth_current_source_warm_array =
+	birth_current_source_p + 2 * birth_current_source_n + birth_current_source_b +
+	birth_current_source_warm_add;
+constexpr size_t birth_current_source_warm_text =
+	2 * birth_current_source_p + birth_current_source_b +
+	birth_current_source_max(birth_current_source_string, birth_current_source_warm_add);
+constexpr size_t birth_current_source_warm_literal =
+	2 * birth_current_source_p + birth_current_source_b + birth_current_source_range +
+	birth_current_source_max(birth_current_source_warm_text,
+				 birth_current_source_max(birth_current_source_warm_array,
+							  birth_current_source_iterator));
+constexpr size_t birth_current_source_warm_binding =
+	2 * birth_current_source_p + birth_current_source_n + birth_current_source_b +
+	birth_current_source_max(birth_current_source_binding, birth_current_source_warm_add);
+constexpr size_t birth_current_source_warm_factory =
+	2 * birth_current_source_p + birth_current_source_n + birth_current_source_b +
+	birth_current_source_stage;
+constexpr size_t birth_current_source_warm_child =
+	3 * birth_current_source_p + birth_current_source_b +
+	birth_current_source_max(birth_current_source_warm_literal,
+				 birth_current_source_max(birth_current_source_warm_binding,
+							  birth_current_source_warm_factory));
+constexpr size_t birth_current_source_warm_context =
+	2 * birth_current_source_p + birth_current_source_b + birth_current_source_range +
+	birth_current_source_warm_array;
+constexpr size_t birth_current_source_warm_writer =
+	2 * birth_current_source_p + birth_current_source_b +
+	birth_current_source_max(birth_current_source_warm_context,
+				 birth_current_source_max(birth_current_source_envelope,
+							  birth_current_source_unique));
+// One owning ROOM family route is selected per retained warm root. Five real lambdas
+// capture 1,1,1,2,1 references; stage/state/output/bytes, range and retained
+// locals remain alive with the selected child getter. Both bodies are unchanged.
+constexpr size_t birth_current_source_room_getter =
+	9 * birth_current_source_p + 2 * birth_current_source_n + birth_current_source_b +
+	birth_current_source_range +
+	birth_current_source_max(
+		birth_current_source_stage,
+		birth_current_source_max(
+			birth_current_source_warm_literal,
+			birth_current_source_max(
+				birth_current_source_thread,
+				birth_current_source_max(birth_current_source_optional,
+							 birth_current_source_hash_size))));
+constexpr size_t birth_current_source_room =
+	2 * birth_current_source_p + birth_current_source_b + birth_current_source_room_getter;
+constexpr size_t birth_current_source_warm =
+	birth_current_source_warm_captures +
+	// output, registry, root reference and root-stage body pointer; bytes and
+	// publication_bytes; roots range plus one nested returned/item/child range.
+	4 * birth_current_source_p + 2 * birth_current_source_n + 2 * birth_current_source_range +
+	birth_current_source_b +
+	birth_current_source_max(
+		birth_current_source_room,
+		birth_current_source_max(
+			birth_current_source_warm_child,
+			birth_current_source_max(birth_current_source_warm_writer,
+						 birth_current_source_warm_context)));
+// Public output/bool return and owner output/bool return; saved errno, bytes,
+// literal selector and final warm total. Registry-body locals are dead before
+// warm_retained_size. Within a body, births range/body/writer capture/bindings
+// coexist with either stock range+stage or writer range+lambda receiver/arg.
+constexpr size_t birth_current_source_birth_outer = 2 * birth_current_source_p +
+						    2 * birth_current_source_n + sizeof(int) +
+						    3 * birth_current_source_b;
+constexpr size_t birth_current_source_birth_body =
+	birth_current_source_range + 2 * birth_current_source_p + birth_current_source_n +
+	birth_current_source_max(birth_current_source_range + birth_current_source_n,
+				 birth_current_source_range + 2 * birth_current_source_p);
+// The genuine prospective probe query and retained failed zombie-game query
+// occur after the original object-string/descriptor branch has ended. Two new
+// size_t locals coexist with common stage locals. Their complete pure source
+// closure is dominated by the unchanged ordinary branch's typed source peak;
+// this is source lifetime reuse, not a zero-private-storage assumption.
+constexpr size_t birth_current_source_probe =
+	5 * birth_current_source_p + birth_current_source_n + birth_current_source_b +
+	birth_current_source_max(birth_current_source_thread, birth_current_source_malloc_header);
+constexpr size_t birth_current_source_prospective_stage = birth_current_source_max(
+	birth_current_source_stage, birth_current_source_stage_common + 2 * birth_current_source_n +
+					    birth_current_source_probe);
+constexpr size_t birth_current_source_frames_value =
+	birth_current_source_birth_outer +
+	birth_current_source_max(
+		birth_current_source_warm,
+		birth_current_source_birth_body +
+			birth_current_source_max(
+				birth_current_source_body,
+				birth_current_source_max(
+					birth_current_source_mobile,
+					birth_current_source_max(
+						birth_current_source_affects,
+						birth_current_source_max(
+							birth_current_source_binding,
+							birth_current_source_prospective_stage)))));
+}
+
+bool quest_mobile_native_birth_current_source_frames(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || __cplusplus != 202002L || defined(_GLIBCXX_DEBUG) ||         \
+	defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) || !defined(__linux__) ||    \
+	!defined(__GLIBC__) || !defined(__x86_64__)
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+	    sizeof(std::thread::id) != 8 || sizeof(std::thread::native_handle_type) != 8 ||
+	    sizeof(std::vector<uint8_t>::const_iterator) != 8 ||
+	    sizeof(std::vector<bool>::const_iterator) != 16 || sizeof(unsigned int) != 4 ||
+	    sizeof(int) != 4 || sizeof(bool) != 1 || CHAR_BIT != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = birth_current_source_frames_value;
+	return true;
+#endif
 }

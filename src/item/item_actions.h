@@ -139,6 +139,19 @@ class item_action_adapter
 	// by the framework. Must not invoke gameplay callbacks or start new actions.
 	virtual void finish(const item_action_identity &, item_action_consumption,
 			    item_action_outcome) const noexcept = 0;
+	// Allocation-free CURRENT of the genuine complete concrete adapter,
+	// including its real privately owned heap. Shared control blocks and
+	// ability/action/event owners are counted by the framework separately.
+	// Unknown profiles refuse strongly; original gameplay methods stay intact.
+	virtual bool current_storage_bytes(size_t *output) const noexcept
+	{
+		(void)output;
+		return false;
+	}
+	virtual size_t current_storage_observer_frame_bytes() const noexcept
+	{
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
 };
 
 // Main/game-thread only. No definitions are installed at boot by this foundation.
@@ -231,5 +244,22 @@ void item_actions_source_leaving(P_obj);
 // Distinct callbacks let the scheduler prioritize active player devices only.
 void event_item_action_active(P_char, P_char, P_obj, void *);
 void event_item_action_passive(P_char, P_char, P_obj, void *);
+
+// Genuine fresh/unpublished read_object shell only. Executes the original
+// source-leaving body with authentic live no-match verification; arbitrary
+// reachable adapter finish callbacks remain a separate lower-provider HOLD.
+// outer excludes G and includes all actual probe/caller private retention.
+bool item_actions_source_leaving_native_birth_shell_bounded(P_obj, uint64_t, bool *,
+							    bool (*)(size_t *, void *) noexcept,
+							    bool (*)(size_t, void *) noexcept,
+							    void *, size_t) noexcept;
+// Full actual framework-owned pending/ability/active-actor trees, genuine shared
+// controls, concrete adapters and authenticated action-event payload owners.
+// Strong output under game-thread/ROOT exclusion; unknown profiles remain OPEN.
+// Admit the pure profile-query source closure before querying dynamic observer
+// allowance, then admit that actual allowance before the CURRENT storage query.
+size_t item_actions_native_birth_storage_profile_source_frame_bytes() noexcept;
+bool item_actions_native_birth_storage_observer_frame_bytes(size_t *) noexcept;
+bool item_actions_native_birth_current_storage_bytes(size_t *) noexcept;
 
 #endif

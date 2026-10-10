@@ -3260,4 +3260,18 @@ void do_deaths_door(P_char ch, char *arg, int cmd);
 // smoke.c
 void do_smoke(P_char ch, char *arg, int cmd);
 
+// Additive original property reads: outer includes genuine G once. Observe G
+// fresh for every admission and after diagnostics; numeric output stays strong
+// before original completion. returned records the original result even if a
+// later admission fails. A false fractional diagnostic may retain delivered
+// output; caller must not retry an already-started initializer.
+bool get_property_float_bounded(const char *, double, float *, bool *,
+				bool (*current_global)(size_t *, void *) noexcept,
+				bool (*reserve)(size_t, void *) noexcept, void *, size_t outer_live,
+				bool fussy = true) noexcept;
+bool get_property_int_bounded(const char *, int, int *, bool *,
+			      bool (*current_global)(size_t *, void *) noexcept,
+			      bool (*reserve)(size_t, void *) noexcept, void *, size_t outer_live,
+			      bool fuss = true) noexcept;
+
 #endif /* _SOJ_PROTOTYPES_H_ */

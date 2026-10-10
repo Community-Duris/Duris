@@ -1475,3 +1475,259 @@ bool quest_mobile_native_zombie_stage::prepare_bounded(
 	return false;
 #endif
 }
+
+#include <cerrno>
+#include <new>
+#include <stdexcept>
+// PRIVATE UNSEALED: genuine immediate CMD_SET_PERIODIC shell constructor.
+// Outer excludes G and this helper's retained shell_game_, but includes the
+// actual listed probe's private heap and the complete live caller prefix.
+namespace
+{
+struct shell_zombie_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	ZombieGame *const *private_game;
+	size_t exclusive = 0;
+	int refusal = 0;
+	bool fail(int error) noexcept
+	{
+		if (!refusal)
+			refusal = error;
+		errno = refusal;
+		return false;
+	}
+	~shell_zombie_budget()
+	{
+		if (refusal)
+			errno = refusal;
+	}
+	bool private_bytes(size_t *output) noexcept
+	{
+		size_t bytes = 0;
+		if (*private_game)
+		{
+			bytes = sizeof(ZombieGame);
+			if ((*private_game)->zombies.capacity() >
+			    (SIZE_MAX - bytes) / sizeof(P_char))
+				return fail(EOVERFLOW);
+			bytes += (*private_game)->zombies.capacity() * sizeof(P_char);
+		}
+		*output = bytes;
+		return true;
+	}
+	bool live(size_t *output, size_t pending = 0) noexcept
+	{
+		size_t global = 0, private_heap = 0;
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&global, context))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		if (!private_bytes(&private_heap))
+			return false;
+		if (private_heap > SIZE_MAX - exclusive ||
+		    pending > SIZE_MAX - exclusive - private_heap ||
+		    global > SIZE_MAX - exclusive - private_heap - pending)
+			return fail(EOVERFLOW);
+		*output = exclusive + private_heap + pending + global;
+		return true;
+	}
+	bool request(size_t pending = 0) noexcept
+	{
+		size_t full = 0;
+		if (!live(&full, pending))
+			return false;
+		const int saved = errno;
+		errno = 0;
+		if (!reserve(full, context))
+			return fail(errno ? errno : ENOBUFS);
+		errno = saved;
+		return true;
+	}
+};
+
+// Complete source carriers for the original constructor/load and genuine
+// GNU13 pointer-vector push_back/reallocation path. No heap for the empty
+// ZombieGame::zombies vector; its inline representation is in sizeof(game).
+constexpr size_t shell_zombie_constructor_frames =
+	// native_birth_zombie_initialize(obj), new expression, ZombieGame(obj), load.
+	sizeof(P_obj) + sizeof(void *) + 2 * sizeof(P_obj) + 2 * sizeof(void *) + sizeof(int) +
+	// std::vector<P_char> default ctor/base/impl/data ctor this carriers.
+	4 * sizeof(void *) +
+	// Actual vector<ZombieGame*>::push_back(const T&), allocator construct,
+	// _M_realloc_insert(pos,args), len/old start/finish/new start/finish/elements.
+	3 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + 6 * sizeof(void *) +
+	// _M_check_len(n,s): this/n/s/len + size/max_size/_S_max_size allocator/diffmax.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 6 * sizeof(void *) + 3 * sizeof(size_t) +
+	// _M_allocate -> allocator_traits::allocate -> new_allocator::allocate.
+	3 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	// Pointer relocation: _S_relocate/_S_nothrow_relocate, __relocate_a/a_1,
+	// n, memcpy source/destination/request; address/normal iterator carriers.
+	12 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(ptrdiff_t) + 3 * sizeof(void *) +
+	// Old allocation deallocate and _Vector_impl_data pointer replacement.
+	8 * sizeof(void *) + 3 * sizeof(size_t) +
+	// Real zg_count_zombies -> get_zgame_from_obj loop -> zombies_alive.
+	2 * sizeof(P_obj) + 2 * sizeof(ZombieGame *) + sizeof(size_t) + 2 * sizeof(void *) +
+	// Real real_mobile0(virt) original binary-search bot/top/mid carriers.
+	4 * sizeof(int);
+}
+
+bool quest_mobile_native_zombie_stage::shell_retained_private_storage_bytes(
+	size_t *output) const noexcept
+{
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+#if !defined(__linux__) || !defined(__LP64__) || !defined(_GLIBCXX_RELEASE) ||                   \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || \
+	defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	size_t bytes = 0;
+	if (shell_game_)
+	{
+		bytes = sizeof(ZombieGame);
+		if (shell_game_->zombies.capacity() > (SIZE_MAX - bytes) / sizeof(P_char))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		bytes += shell_game_->zombies.capacity() * sizeof(P_char);
+	}
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool quest_mobile_native_zombie_stage::initialize_shell_bounded(
+	P_obj object, quest_mobile_native_zombie_stage &output, int *periodic, bool *returned,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!periodic || !returned || !current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*returned = false;
+#if !defined(__linux__) || !defined(__LP64__) || !defined(_GLIBCXX_RELEASE) ||                   \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || \
+	defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	extern int top_of_mobt;
+	const int saved_errno = errno;
+	shell_zombie_budget budget{ current_global, reserve, context, &output.shell_game_ };
+	const size_t frames = sizeof(budget) + sizeof(object) + sizeof(&output) + sizeof(periodic) +
+			      sizeof(returned) + sizeof(current_global) + sizeof(reserve) +
+			      sizeof(context) + sizeof(outer_live) + 8 * sizeof(int) +
+			      3 * sizeof(size_t) + 3 * sizeof(bool) + 3 * sizeof(void *) +
+			      shell_zombie_constructor_frames;
+	if (frames > SIZE_MAX - outer_live)
+		return budget.fail(EOVERFLOW);
+	budget.exclusive = outer_live + frames;
+	if (!budget.request())
+		return false;
+	if (!nevent_is_game_thread() || !object || !object->obj_uid || output.shell_game_ ||
+	    !mob_index || top_of_mobt < 0 || ZombieGame::next_id <= 0 ||
+	    ZombieGame::next_id == INT_MAX)
+		return budget.fail(EINVAL);
+	// Authenticate the existing catalog before original effects, without moving
+	// the real_mobile0 call from its original position after registry/ID writes.
+	int matching = 0;
+	int previous = -1;
+	for (int number = 0; number <= top_of_mobt; ++number)
+	{
+		if (mob_index[number].virtual_number <= previous)
+			return budget.fail(EINVAL);
+		previous = mob_index[number].virtual_number;
+		if (mob_index[number].virtual_number == 87)
+			++matching;
+	}
+	if (matching != 1)
+		return budget.fail(EINVAL);
+	// Full original fractional property lookup/fuss/wizlog remains mandatory.
+	// The provider's completed-return marker survives later admission denial.
+	size_t property_outer = 0;
+	if (!budget.live(&property_outer))
+		return false;
+	int max_level = 0;
+	bool property_returned = false;
+	const bool property_ok = get_property_int_bounded("zombies.game.maxlevel", 99, &max_level,
+							  &property_returned, current_global,
+							  reserve, context, property_outer, true);
+	if (!property_ok || !property_returned)
+		return budget.fail(errno ? errno : EIO);
+	// These values are still evaluated in the actual original order, even though
+	// CMD_SET_PERIODIC does not consume max_level or the existing zombie count.
+	(void)max_level;
+	const int zombies = zg_count_zombies(object);
+	(void)zombies;
+	if (!budget.request(sizeof(ZombieGame)))
+		return false;
+	try
+	{
+		// Status then original constructor/load/ID issuance. Latch private ownership
+		// immediately after new, before any prospective registry request can refuse.
+		output.shell_game_ = native_birth_zombie_initialize(object);
+		size_t replacement = 0;
+		if (zgames.size() == zgames.capacity())
+		{
+			// Actual GNU13 _M_check_len(1) policy, used by push_back itself below.
+			if (zgames.size() == zgames.max_size())
+				return budget.fail(EOVERFLOW);
+			const size_t old = zgames.size(), extra = old ? old : 1;
+			size_t length = old + extra;
+			if (length < old || length > zgames.max_size())
+				length = zgames.max_size();
+			if (length > SIZE_MAX / sizeof(ZombieGame *))
+				return budget.fail(EOVERFLOW);
+			replacement = length * sizeof(ZombieGame *);
+		}
+		// Old registry allocation is already in fresh G; the true replacement and
+		// private game are admitted beside it, without reserve+publish substitution.
+		if (!budget.request(replacement))
+			return false;
+		ZombieGame *game = output.shell_game_;
+		zgames.push_back(game);
+		output.shell_game_ = nullptr; // Actual registry now owns it; G counts it once.
+		object->value[ZOMBIES_ID] = game->id;
+		mob_index[real_mobile0(87)].func.mob = zgame_mob_proc;
+		*periodic = TRUE;
+		*returned = true; // Original callback returned, before fallible fresh G.
+		if (!budget.request())
+			return false;
+		errno = saved_errno;
+		return true;
+	}
+	catch (const std::length_error &)
+	{
+		return budget.fail(EOVERFLOW);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return budget.fail(ENOMEM);
+	}
+	catch (...)
+	{
+		return budget.fail(EIO);
+	}
+#endif
+}
+
+// Exact original super_cannon local type remains in its owning translation
+// unit, including installed-ABI padding. The getter grants no callback permit.
+size_t native_mobile_birth_super_cannon_source_frame_bytes() noexcept
+{
+	return sizeof(P_obj) + sizeof(P_char) + sizeof(int) + sizeof(char *) +
+	       5 * MAX_STRING_LENGTH * sizeof(char) + sizeof(int) + sizeof(cannon_data) +
+	       sizeof(P_obj) + sizeof(int) +
+	       2 * sizeof(int); // initialize(obj), loop i, both returned int results
+}

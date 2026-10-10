@@ -777,3 +777,389 @@ void event_item_action_passive(P_char, P_char, P_obj, void *data)
 {
 	progress_action(data);
 }
+
+#include <thread>
+
+// The real read_object shell has a fresh persistence UID and has never been
+// offered to item-action selection. This additive companion executes the exact
+// original source-leaving body after verifying the corresponding live no-match
+// fact. A reachable arbitrary adapter::finish needs its own genuine provider.
+bool item_actions_source_leaving_native_birth_shell_bounded(
+	P_obj source, uint64_t expected_uid, bool *returned,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!source || !expected_uid || source->obj_uid != expected_uid || !returned || *returned ||
+	    !current_global || !reserve || !nevent_is_game_thread())
+		return false;
+	// The source query and original predicate both call the repository's only
+	// references_object override: device_adapter's fixed effect array walk.
+	// It is allocation-free. Other adapters inherit the literal false body.
+	// Original cancel_matching owns an actual empty selected vector, plus both
+	// pending/selected ranges, predicate closure and source-departure enum.
+	constexpr size_t frames =
+		6 * sizeof(void *) + sizeof(uint64_t) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+		sizeof(std::vector<std::shared_ptr<pending_item_action>>) +
+		2 * sizeof(decltype(pending)::iterator) +
+		2 * sizeof(std::vector<std::shared_ptr<pending_item_action>>::iterator) +
+		// Both original/query unordered-map range receivers/endpoints and
+		// structured bindings, predicate entry/closure, device receiver/uid/i.
+		11 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(size_t) +
+		sizeof(item_action_cancel_reason) +
+		// selected is genuinely empty: vector/_Vector_base destructors and
+		// allocator-aware _Destroy range scopes execute, but no shared_ptr
+		// element destructor or allocator deallocation is selected.
+		7 * sizeof(void *) +
+		// nevent_is_game_thread/require: actual id and equality operands.
+		5 * sizeof(std::thread::id) + 3 * sizeof(void *);
+	size_t global = 0;
+	if (!current_global(&global, context) || frames > SIZE_MAX - outer_live ||
+	    global > SIZE_MAX - outer_live - frames ||
+	    !reserve(outer_live + frames + global, context))
+		return false;
+	// Actual live table/adapter query, never a supplied assertion or inventory
+	// estimate. Authenticated caller provenance must establish why a match is
+	// source-unreachable for the genuine supported constructor initializer.
+	if (item_actions_object_busy(expected_uid))
+		return false;
+	item_actions_source_leaving(source);
+	*returned = true;
+	return current_global(&global, context);
+}
+
+#include <type_traits>
+
+extern P_nevent ne_schedule[PULSES_IN_TICK];
+extern P_nevent ne_schedule_tail[PULSES_IN_TICK];
+extern P_nevent current_nevent;
+
+namespace
+{
+using native_action_pending_map = decltype(pending);
+using native_action_ability_map = decltype(abilities);
+using native_action_actor_map = decltype(active_actors);
+using native_action_pending_iterator = native_action_pending_map::const_iterator;
+using native_action_ability_iterator = native_action_ability_map::const_iterator;
+using native_action_pending_control =
+	std::_Sp_counted_ptr_inplace<pending_item_action, std::allocator<void>,
+				     __gnu_cxx::__default_lock_policy>;
+using native_action_ability_control =
+	std::_Sp_counted_ptr_inplace<ability, std::allocator<void>,
+				     __gnu_cxx::__default_lock_policy>;
+using native_action_adapter_control =
+	std::_Sp_counted_deleter<item_action_adapter *, std::default_delete<item_action_adapter>,
+				 std::allocator<void>, __gnu_cxx::__default_lock_policy>;
+static_assert(std::is_same_v<native_action_pending_map::allocator_type,
+			     std::allocator<native_action_pending_map::value_type>>);
+static_assert(std::is_same_v<native_action_ability_map::allocator_type,
+			     std::allocator<native_action_ability_map::value_type>>);
+static_assert(std::is_same_v<native_action_actor_map::allocator_type,
+			     std::allocator<native_action_actor_map::value_type>>);
+static_assert(std::is_same_v<std::unique_ptr<item_action_adapter>::pointer, item_action_adapter *>);
+
+bool native_action_storage_add(size_t amount, size_t &bytes) noexcept
+{
+	if (amount > SIZE_MAX - bytes)
+		return false;
+	bytes += amount;
+	return true;
+}
+bool native_action_event_shape() noexcept
+{
+	bool current_seen = !current_nevent;
+	for (size_t bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+	{
+		P_nevent slow = ne_schedule[bucket], fast = slow, previous = nullptr;
+		while (fast && fast->next_sched)
+		{
+			slow = slow->next_sched;
+			fast = fast->next_sched->next_sched;
+			if (slow == fast)
+				return false;
+		}
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
+		{
+			if (event->element != bucket || event->prev_sched != previous)
+				return false;
+			if (event == current_nevent)
+				current_seen = true;
+			previous = event;
+		}
+		if (previous != ne_schedule_tail[bucket])
+			return false;
+	}
+	// The authenticated original destroy->payload/adapter/output/free graph
+	// cannot invoke the real shell/ROOT selecting caller. Its unlisted interval
+	// and post-release current pointer therefore cannot overlap this census.
+	// Never dereference a malformed/out-of-contract unlisted current pointer.
+	return current_seen;
+}
+action_payload *native_action_event_payload(P_nevent event,
+					    nevent_payload_destroy_type action_destroy) noexcept
+{
+	if (!event->data || event->data_destroy != action_destroy)
+		return nullptr;
+	// schedule_action uses genuine add_event_owned<action_payload>. Compare its
+	// exact installed typed delete function before the original payload cast.
+	// Cancellation preserves data_destroy even after clearing func, so actual
+	// queued canceled owners are retained and counted by this same identity.
+	return static_cast<action_payload *>(event->data);
+}
+bool native_action_registry_has(const ability *wanted) noexcept
+{
+	for (const auto &node : abilities)
+		if (node.second.get() == wanted)
+			return true;
+	return false;
+}
+bool native_action_registry_before(native_action_ability_iterator limit,
+				   const ability *wanted) noexcept
+{
+	for (auto it = abilities.cbegin(); it != limit; ++it)
+		if (it->second.get() == wanted)
+			return true;
+	return false;
+}
+bool native_action_pending_before(native_action_pending_iterator limit,
+				  const pending_item_action *wanted,
+				  const ability *selected) noexcept
+{
+	for (auto it = pending.cbegin(); it != limit; ++it)
+		if (it->second && (it->second.get() == wanted ||
+				   (selected && it->second->selected.get() == selected)))
+			return true;
+	return false;
+}
+bool native_action_payload_before(P_nevent limit, const pending_item_action *wanted,
+				  const ability *selected,
+				  nevent_payload_destroy_type action_destroy) noexcept
+{
+	for (size_t bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
+		{
+			if (event == limit)
+				return false;
+			const action_payload *payload =
+				native_action_event_payload(event, action_destroy);
+			if (payload && payload->entry &&
+			    (payload->entry.get() == wanted ||
+			     (selected && payload->entry->selected.get() == selected)))
+				return true;
+		}
+	return false;
+}
+bool native_action_ability_current(const ability *selected, size_t &bytes) noexcept
+{
+	size_t adapter_bytes = 0;
+	if (!selected || !selected->adapter ||
+	    !selected->adapter->current_storage_bytes(&adapter_bytes) ||
+	    !native_action_storage_add(sizeof(native_action_ability_control), bytes) ||
+	    !native_action_storage_add(sizeof(native_action_adapter_control), bytes) ||
+	    !native_action_storage_add(adapter_bytes, bytes))
+		return false;
+	// Every genuine ability construction receives exclusive unique_ptr ownership;
+	// separate abilities cannot share one adapter/control allocation. Existing
+	// pending selections share the SAME ability owner and are deduplicated below.
+	return true;
+}
+} // namespace
+
+size_t item_actions_native_birth_storage_profile_source_frame_bytes() noexcept
+{
+	// Complete finite source closure of the profile query below, including its
+	// actual game-thread/event-shape/typed map walks and pure virtual profile
+	// getters. Known derived getters contain sizeof-only expressions; unknown
+	// default's real false-CURRENT profile is likewise allocation-free.
+	return 3 * sizeof(size_t) + sizeof(void *) +
+	       // Profile map ranges/bindings and payload wheel bucket/event/payload.
+	       4 * sizeof(native_action_pending_iterator) +
+	       2 * sizeof(native_action_ability_iterator) + 7 * sizeof(void *) + sizeof(P_nevent) +
+	       sizeof(action_payload *) + sizeof(bool) +
+	       // event_shape: current_seen,bucket,slow,fast,previous,event.
+	       sizeof(bool) + sizeof(size_t) + 4 * sizeof(P_nevent) +
+	       // event_payload input and typed result; max operands/receiver/result.
+	       sizeof(P_nevent) + sizeof(action_payload *) + 6 * sizeof(void *) +
+	       3 * sizeof(size_t) +
+	       // map begin/end and tree iterators/increment/comparison; shared_ptr get
+	       // receivers/results; adapter profile receiver/return (sizeof-only body).
+	       14 * sizeof(void *) + 4 * sizeof(native_action_pending_iterator) +
+	       2 * sizeof(native_action_ability_iterator) + sizeof(size_t) +
+	       // Actual thread get_id/id construction/equality return/operand scopes.
+	       5 * sizeof(std::thread::id) + 4 * sizeof(void *) +
+	       // Genuine getter's own pointer return, caller's actual identity local,
+	       // typed event_payload argument and profile-getter size_t return.
+	       add_event_owned_payload_destroy_observer_frame_bytes<action_payload>() +
+	       2 * sizeof(nevent_payload_destroy_type) + sizeof(size_t);
+}
+
+bool item_actions_native_birth_storage_observer_frame_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread() || !native_action_event_shape())
+		return false;
+	const nevent_payload_destroy_type action_destroy =
+		add_event_owned_payload_destroy<action_payload>();
+	size_t adapter_frame = 0;
+	for (const auto &node : abilities)
+	{
+		if (!node.second || !node.second->adapter)
+			return false;
+		adapter_frame =
+			std::max(adapter_frame,
+				 node.second->adapter->current_storage_observer_frame_bytes());
+	}
+	for (const auto &node : pending)
+	{
+		if (!node.second || !node.second->selected || !node.second->selected->adapter)
+			return false;
+		adapter_frame = std::max(
+			adapter_frame,
+			node.second->selected->adapter->current_storage_observer_frame_bytes());
+	}
+	for (size_t bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
+		{
+			const action_payload *payload =
+				native_action_event_payload(event, action_destroy);
+			if (!payload)
+			{
+				if (event->func == event_item_action_active ||
+				    event->func == event_item_action_passive)
+					return false;
+				continue;
+			}
+			if (!payload->entry || !payload->entry->selected ||
+			    !payload->entry->selected->adapter)
+				return false;
+			adapter_frame = std::max(adapter_frame,
+						 payload->entry->selected->adapter
+							 ->current_storage_observer_frame_bytes());
+		}
+	// Actual CURRENT declarations and ALL nested duplicate-owner walks. These
+	// are iterative even for genuine shared selections, not a new allocation
+	// registry/vector or a snapshot of asserted live bytes.
+	const size_t own =
+		sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(native_action_ability_iterator) +
+		2 * sizeof(native_action_pending_iterator) + sizeof(P_nevent) +
+		sizeof(action_payload *) +
+		// registry_has/before, pending_before, payload_before: their genuine
+		// argument pointers/iterator limits, local typed iterators/bucket/event/
+		// payload, range bindings and shared pointer receiver/result scopes.
+		12 * sizeof(void *) + 4 * sizeof(native_action_ability_iterator) +
+		4 * sizeof(native_action_pending_iterator) + sizeof(size_t) + sizeof(P_nevent) +
+		sizeof(action_payload *) +
+		// ability_current selected/bytes ref/adapter_bytes, add(amount,bytes ref),
+		// node-count multiplication request and observer profile return carriers.
+		5 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+		// Complete actual map-range/iterator/get helper declared source scopes.
+		24 * sizeof(void *) + 8 * sizeof(native_action_pending_iterator) +
+		8 * sizeof(native_action_ability_iterator) +
+		item_actions_native_birth_storage_profile_source_frame_bytes() +
+		// CURRENT's real identity local and both nested payload-walk argument
+		// copies, plus genuine getter return/profile-query source carriers.
+		4 * sizeof(nevent_payload_destroy_type) + sizeof(size_t);
+	if (adapter_frame > SIZE_MAX - own)
+		return false;
+	*output = own + adapter_frame;
+	return true;
+#endif
+}
+
+bool item_actions_native_birth_current_storage_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread() || !native_action_event_shape())
+		return false;
+	const nevent_payload_destroy_type action_destroy =
+		add_event_owned_payload_destroy<action_payload>();
+	// Pure true owner inventory, separate from shared pool/wheel/controller G.
+	// map nodes use the genuine installed default allocator/rebind type; actual
+	// make_shared controls include their owned object inline exactly once.
+	size_t bytes = sizeof(config) + sizeof(next_action_id) + sizeof(abilities) +
+		       sizeof(pending) + sizeof(active_actors) + sizeof(telemetry) +
+		       sizeof(telemetry_generation);
+	if (abilities.size() >
+		    (SIZE_MAX - bytes) /
+			    sizeof(std::_Rb_tree_node<native_action_ability_map::value_type>) ||
+	    !native_action_storage_add(
+		    abilities.size() *
+			    sizeof(std::_Rb_tree_node<native_action_ability_map::value_type>),
+		    bytes) ||
+	    pending.size() >
+		    (SIZE_MAX - bytes) /
+			    sizeof(std::_Rb_tree_node<native_action_pending_map::value_type>) ||
+	    !native_action_storage_add(
+		    pending.size() *
+			    sizeof(std::_Rb_tree_node<native_action_pending_map::value_type>),
+		    bytes) ||
+	    active_actors.size() >
+		    (SIZE_MAX - bytes) /
+			    sizeof(std::_Rb_tree_node<native_action_actor_map::value_type>) ||
+	    !native_action_storage_add(
+		    active_actors.size() *
+			    sizeof(std::_Rb_tree_node<native_action_actor_map::value_type>),
+		    bytes))
+		return false;
+	for (auto it = abilities.cbegin(); it != abilities.cend(); ++it)
+	{
+		if (!it->second)
+			return false;
+		if (!native_action_registry_before(it, it->second.get()) &&
+		    !native_action_ability_current(it->second.get(), bytes))
+			return false;
+	}
+	for (auto it = pending.cbegin(); it != pending.cend(); ++it)
+	{
+		if (!it->second || !it->second->selected)
+			return false;
+		if (!native_action_pending_before(it, it->second.get(), nullptr) &&
+		    !native_action_storage_add(sizeof(native_action_pending_control), bytes))
+			return false;
+		if (!native_action_registry_has(it->second->selected.get()) &&
+		    !native_action_pending_before(it, nullptr, it->second->selected.get()) &&
+		    !native_action_ability_current(it->second->selected.get(), bytes))
+			return false;
+	}
+	for (size_t bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
+		{
+			const action_payload *payload =
+				native_action_event_payload(event, action_destroy);
+			if (!payload)
+			{
+				if (event->func == event_item_action_active ||
+				    event->func == event_item_action_passive)
+					return false;
+				continue;
+			}
+			if (!payload->entry || !payload->entry->selected ||
+			    !native_action_storage_add(sizeof(action_payload), bytes))
+				return false;
+			if (!native_action_pending_before(pending.cend(), payload->entry.get(),
+							  nullptr) &&
+			    !native_action_payload_before(event, payload->entry.get(), nullptr,
+							  action_destroy) &&
+			    !native_action_storage_add(sizeof(native_action_pending_control),
+						       bytes))
+				return false;
+			if (!native_action_registry_has(payload->entry->selected.get()) &&
+			    !native_action_pending_before(pending.cend(), nullptr,
+							  payload->entry->selected.get()) &&
+			    !native_action_payload_before(event, nullptr,
+							  payload->entry->selected.get(),
+							  action_destroy) &&
+			    !native_action_ability_current(payload->entry->selected.get(), bytes))
+				return false;
+		}
+	*output = bytes;
+	return true;
+#endif
+}

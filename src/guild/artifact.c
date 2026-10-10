@@ -5403,3 +5403,176 @@ int artifact_native_birth_location_bounded(const std::string &root,
 	return redis_invalidate_artifact_cache_bounded(reserve, context, live);
 #endif
 }
+
+// Native-flat only; caller authenticates the genuine live shell/UID and keeps
+// all true G/probe-private storage in its actual relay. Original SQL/default
+// methods remain untouched and SQL-native qualification is explicitly absent.
+int artifact_native_birth_shell_remove_owned_bounded(P_obj arti, int pid, bool *returned,
+						     bool *succeeded,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer) noexcept
+{
+	if (!returned || !succeeded || !reserve || *returned || *succeeded ||
+	    !nevent_is_game_thread())
+		return EINVAL;
+#ifndef __NO_MYSQL__
+	(void)arti;
+	(void)pid;
+	(void)context;
+	(void)outer;
+	return ENOTSUP; // Refuse native SQL BEFORE all original extraction mutation.
+#else
+	if (persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return ENOTSUP;
+	struct work
+	{
+		std::string root, error;
+		int vnum = -1, type = 0, status = 0;
+		time_t now = 0;
+		bool lock_returned = false, repository_returned = false;
+		bool repository_succeeded = false;
+	};
+	// Full wrapper/strlen/constructor/lock observer/diagnostic/destruction
+	// source scopes. Actual lock inline/state/root are owned by its constructor
+	// and retained_bytes, never charged a second time inside work.
+	constexpr size_t own_frames = sizeof(work) + sizeof(std::string) + 7 * sizeof(void *) +
+				      sizeof(int) + 9 * sizeof(size_t) + 3 * sizeof(bool) +
+				      4 * sizeof(void *) + sizeof(time_t) + 8 * sizeof(void *) +
+				      4 * sizeof(size_t);
+	// Reuse the genuine error-provider's authenticated GNU13 constructor,
+	// assign/append/move/destructor closure. Own its three nested max argument
+	// pairs and the actual profile/results before any root/error string method.
+	const size_t string_frames = flatfile_diagnostic_string_source_frame_bytes();
+	constexpr size_t string_query_frames = 6 * sizeof(void *) + 4 * sizeof(size_t);
+	if (string_frames > SIZE_MAX - own_frames - string_query_frames)
+		return EOVERFLOW;
+	const size_t frames = own_frames + string_query_frames + string_frames;
+	if (frames > SIZE_MAX - outer || !reserve(outer + frames, context))
+		return ENOBUFS;
+	work w;
+	w.vnum = arti ? OBJ_VNUM(arti) : -1;
+	if (!updateArtis)
+	{
+		*returned = true;
+		*succeeded = false;
+		return 0;
+	}
+	if (!arti || !IS_ARTIFACT(arti))
+	{
+		if (!diagnostic_logit_bounded(
+			    reserve, context, outer + frames, LOG_ARTIFACT,
+			    "remove_owned_artifact_sql: called with non-artifact '%s' %d.",
+			    arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1))
+			return ENOBUFS;
+		*returned = true;
+		*succeeded = false;
+		return 0;
+	}
+	try
+	{
+		w.type = IS_IOUN(arti)	 ? ARTIFACT_IOUN :
+			 IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+					   ARTIFACT_MAJOR;
+		// Original remove_owned_artifact_sql supplies time(NULL) to the
+		// repository BEFORE local authority-lock acquisition or recovery.
+		// Preserve that timestamp even if the actual lock acquisition waits.
+		w.now = time(nullptr);
+		const char *configured_root = persistence_mode_flatfile_root();
+		if (!configured_root)
+			return EINVAL;
+		const size_t root_size = strlen(configured_root);
+		const size_t root_request = root_size > 15 ? root_size + 1 : 0;
+		if (root_size == SIZE_MAX || root_request > SIZE_MAX - outer - frames ||
+		    !reserve(outer + frames + root_request, context))
+			return ENOBUFS;
+		// Actual configured native host, not a supplied authority/root DTO.
+		w.root = std::string(configured_root, root_size);
+		size_t root_actual = w.root.capacity() > 15 ? w.root.capacity() + 1 : 0;
+		if (root_actual > root_request)
+			return EOVERFLOW;
+		size_t live = outer + frames + root_actual;
+		// The original repository refuses these semantic arguments before
+		// constructing/acquiring its local lock; preserve the wrapper's exact
+		// failure diagnostic and completed false result without touching files.
+		if (w.root.empty() || w.vnum <= 0 || w.type < 1 || w.type > 3 || w.now < 0)
+		{
+			if (!diagnostic_logit_bounded(
+				    reserve, context, live, LOG_ARTIFACT,
+				    "remove_owned_artifact_sql: flat artifact update failed: %s",
+				    "invalid or missing artifact authority"))
+				return ENOBUFS;
+			*returned = true;
+			*succeeded = false;
+			return 0;
+		}
+		flatfile_authority_lock lock(reserve, context, live);
+		size_t lock_actual = 0;
+		if (!lock.retained_bytes(&lock_actual) || lock_actual > SIZE_MAX - live)
+			return errno ? errno : ENOMEM;
+		live += lock_actual;
+		// Genuine original local lock acquisition precedes recovery/catalog.
+		const bool acquired = lock.acquire_with_error_bounded(
+			w.root, &w.error, &w.lock_returned, reserve, context, live);
+		if (!w.lock_returned)
+			return errno ? errno : ENOBUFS;
+		if (!lock.retained_bytes(&lock_actual))
+			return EOVERFLOW;
+		const size_t error_actual = w.error.capacity() > 15 ? w.error.capacity() + 1 : 0;
+		if (lock_actual > SIZE_MAX - outer - frames - root_actual ||
+		    error_actual > SIZE_MAX - outer - frames - root_actual - lock_actual)
+			return ENOBUFS;
+		live = outer + frames + root_actual + lock_actual + error_actual;
+		if (!acquired)
+		{
+			if (!diagnostic_logit_bounded(
+				    reserve, context, live, LOG_ARTIFACT,
+				    "remove_owned_artifact_sql: flat artifact update failed: %s",
+				    w.error.empty() ? "invalid or missing artifact authority" :
+						      w.error.c_str()))
+				return ENOBUFS;
+			*returned = true;
+			*succeeded = false;
+			return 0;
+		}
+		w.status = flatfile_artifact_remove_owned_with_error_bounded(
+			w.root, lock, w.vnum, pid, w.type, static_cast<int64_t>(w.now), &w.error,
+			&w.repository_returned, &w.repository_succeeded, reserve, context, live);
+		if (!w.repository_returned)
+			return w.status ? w.status : ENOBUFS;
+		const size_t final_error = w.error.capacity() > 15 ? w.error.capacity() + 1 : 0;
+		if (final_error > SIZE_MAX - outer - frames - root_actual - lock_actual)
+			return ENOBUFS;
+		live = outer + frames + root_actual + lock_actual + final_error;
+		if (!w.repository_succeeded)
+		{
+			if (!diagnostic_logit_bounded(
+				    reserve, context, live, LOG_ARTIFACT,
+				    "remove_owned_artifact_sql: flat artifact update failed: %s",
+				    w.error.empty() ? "invalid or missing artifact authority" :
+						      w.error.c_str()))
+				return ENOBUFS;
+			*returned = true;
+			*succeeded = false;
+			return 0;
+		}
+		// Preserve original ignored queue acceptance. Resource completion is
+		// distinct from its bool; the existing bounded cache service exposes it.
+		const int invalidated =
+			redis_invalidate_artifact_cache_bounded(reserve, context, live);
+		if (invalidated)
+			return invalidated;
+		*returned = true;
+		*succeeded = true;
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+#endif
+}

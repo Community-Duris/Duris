@@ -1385,3 +1385,220 @@ bool quest_mobile_native_original_proclib::probe_bounded(
 	}
 #endif
 }
+
+#include <thread>
+namespace
+{
+struct immediate_proclib_budget
+{
+	P_obj object;
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t exclusive;
+	int refusal = 0;
+	bool fail(int error) noexcept
+	{
+		if (!refusal)
+			refusal = error;
+		errno = refusal;
+		return false;
+	}
+	~immediate_proclib_budget()
+	{
+		if (refusal)
+			errno = refusal;
+	}
+	bool live(size_t *output, bool with_global) noexcept
+	{
+		size_t private_heap = 0, global = 0;
+		const int saved = errno;
+		errno = 0;
+		if (!obj_native_birth_shell_private_storage_bytes(object, &private_heap))
+			return fail(errno ? errno : EIO);
+		if (with_global && !current_global(&global, context))
+			return fail(errno ? errno : EIO);
+		if (private_heap > SIZE_MAX - exclusive ||
+		    global > SIZE_MAX - (exclusive + private_heap))
+			return fail(EOVERFLOW);
+		*output = exclusive + private_heap + global;
+		errno = saved;
+		return true;
+	}
+	bool request() noexcept
+	{
+		size_t full = 0;
+		return live(&full, true) && relay(full, this);
+	}
+	static bool global(size_t *output, void *opaque) noexcept
+	{
+		auto &self = *static_cast<immediate_proclib_budget *>(opaque);
+		const int saved = errno;
+		errno = 0;
+		if (!self.current_global(output, self.context))
+			return self.fail(errno ? errno : EIO);
+		errno = saved;
+		return true;
+	}
+	static bool relay(size_t desired, void *opaque) noexcept
+	{
+		auto &self = *static_cast<immediate_proclib_budget *>(opaque);
+		const int saved = errno;
+		errno = 0;
+		if (!self.reserve(desired, self.context))
+			return self.fail(errno ? errno : ENOBUFS);
+		errno = saved;
+		return true;
+	}
+};
+constexpr size_t immediate_proclib_random_frames =
+	// random.c: number(from,to), rnd64(scope,state,result,t), rotl(x,k).
+	2 * sizeof(int) + 2 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint64_t) +
+	sizeof(int) +
+	// Actual numeric_limits max result and array.data/_M_ptr this/result carriers
+	// if a genuine original constructor random capsule is active.
+	sizeof(uint64_t) + 3 * sizeof(void *);
+constexpr size_t immediate_proclib_private_observer_frames =
+	// DB actual observer object/output/bytes/Floyd cursors/range pointer, followed
+	// by shell_private_request(body,minimum,output,actual allocation header).
+	2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(extra_descr_data *) + 3 * sizeof(void *) +
+	sizeof(size_t) + 5 * sizeof(std::thread::id) + sizeof(void *);
+constexpr size_t immediate_proclib_binding_notification_frames =
+	// Both original notification bodies can coexist on the actual flat dispatch:
+	// number/before/after/vnum/found iterator and lower_bound empty comparator.
+	2 * (2 * sizeof(int) + 2 * sizeof(obj_proc_type) + sizeof(void *) + 1) +
+	// lower_bound(first,last,value,comp), iterator adaptor constructor and stored
+	// empty comparison object; original __lower_bound(first,last,value,comp,len,
+	// half,middle), distance(first,last) -> __distance(first,last,random tag).
+	3 * sizeof(void *) + 1 + 2 * sizeof(void *) + 2 + 4 * sizeof(void *) + 1 +
+	2 * sizeof(ptrdiff_t) + 4 * sizeof(void *) + sizeof(std::random_access_iterator_tag) +
+	// normal iterator/base/operator*/+/-/++/advance, three real empty predicate
+	// calls/adaptors. Sum the actual source carriers; no fake heap or rows.
+	16 * sizeof(void *) + 5 * sizeof(ptrdiff_t) + 3 * sizeof(int) + 3;
+constexpr size_t immediate_proclib_frames =
+	sizeof(immediate_proclib_budget) + sizeof(P_obj) + 2 * sizeof(char *) + sizeof(int *) +
+	sizeof(bool *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(size_t) + sizeof(size_t) +
+	sizeof(int) + sizeof(int) + 2 * sizeof(bool) + sizeof(obj_proc_type) +
+	sizeof(nevent_schedule_result) + 2 * sizeof(bool) +
+	// Real private/current/request/relay source paths + get_scheduled(obj,func,e).
+	10 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(int) + sizeof(P_obj) +
+	sizeof(event_func) + sizeof(P_nevent) + immediate_proclib_random_frames +
+	immediate_proclib_private_observer_frames + immediate_proclib_binding_notification_frames;
+}
+
+// Complete original immediate add for the real read_object shell constructor.
+// Outer excludes actual probe-private and G; the genuine stage helper lifetime
+// suppresses its private observation. Caller latches started before invoking.
+bool proclibObj_add_bounded(P_obj object, char *name, char *arguments, int *result, bool *returned,
+			    bool (*current_global)(size_t *, void *) noexcept,
+			    bool (*reserve)(size_t, void *) noexcept, void *context,
+			    size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || !defined(__linux__) || !defined(__GLIBC__) ||                \
+	!defined(__x86_64__) || !defined(MEMCHK) || MEMCHK != 1
+	(void)object;
+	(void)name;
+	(void)arguments;
+	(void)result;
+	(void)returned;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!object || !name || !result || !returned || !current_global || !reserve ||
+	    !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (immediate_proclib_frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	immediate_proclib_budget budget{ object, current_global, reserve, context,
+					 outer_live + immediate_proclib_frames };
+	if (!budget.request())
+		return false;
+	size_t lower = 0, index = 0;
+	if (!budget.live(&lower, false))
+		return false;
+	errno = 0;
+	const int prepared = quest_mobile_native_original_proclib::prepare_bounded(
+		object, name, arguments, &index, immediate_proclib_budget::global,
+		immediate_proclib_budget::relay, &budget, lower);
+	const int preparation_errno = errno;
+	// Recense every actual returned preparation, including attached descriptor,
+	// before any fallback, probe, RNG, scheduler or bridge change.
+	if (!budget.request())
+		return false;
+	if (prepared)
+	{
+		if (preparation_errno != EINVAL)
+			return budget.fail(preparation_errno ? preparation_errno : EIO);
+		*result = prepared;
+		*returned = true;
+		errno = preparation_errno;
+		return true;
+	}
+	bool periodic = false;
+	if (!get_scheduled(object, proclib_obj_event))
+	{
+		if (!budget.live(&lower, false) ||
+		    !quest_mobile_native_original_proclib::probe_bounded(
+			    object, index, &periodic, immediate_proclib_budget::global,
+			    immediate_proclib_budget::relay, &budget, lower))
+			return false;
+		if (!budget.request())
+			return false;
+		if (periodic)
+		{
+			// Genuine original single draw, retained by the caller's started uncertainty;
+			// a scheduling refusal never permits executing this add again.
+			const int delay = PULSE_MOBILE + number(-4, 4);
+			nevent_schedule_result scheduled{};
+			bool schedule_returned = false, schedule_succeeded = false;
+			if (!budget.live(&lower, true) ||
+			    !nevent_schedule_object_bounded(
+				    proclib_obj_event, delay, object, &scheduled,
+				    &schedule_returned, &schedule_succeeded,
+				    immediate_proclib_budget::relay, &budget, lower))
+				return false;
+			if (!budget.request())
+				return false;
+			// Original add_event ignores the schedule verdict and continues the binding.
+		}
+	}
+	if (object->R_num >= 0 && obj_index[object->R_num].func.obj != proclib_obj_cmd_bridge)
+	{
+		const auto before = obj_index[object->R_num].func.obj;
+		if (before)
+		{
+			bool chain_returned = false;
+			if (!budget.live(&lower, false) ||
+			    !proclib_chain_install_native_birth_bounded(
+				    object->R_num, before, &chain_returned,
+				    immediate_proclib_budget::global,
+				    immediate_proclib_budget::relay, &budget, lower))
+				return false;
+			if (!budget.request())
+				return false;
+		}
+		obj_index[object->R_num].func.obj = proclib_obj_cmd_bridge;
+		shop_trade_original_procedure_binding_stage::observe_normal_binding(
+			object->R_num, before, proclib_obj_cmd_bridge);
+	}
+	*result = 0;
+	*returned = true;
+	return budget.request();
+#endif
+}

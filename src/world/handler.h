@@ -157,4 +157,16 @@ bool char_to_room_native_birth_bounded(P_char, int, bool *, bool *,
 				       bool (*)(size_t *, void *) noexcept,
 				       bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
+// Full original TRUE extraction of the genuine listed read_object container
+// shell. Caller owns ROOT/game-thread/existing constructor provenance, latches
+// shell_probe_started before invocation, and retains all partial state on false.
+// Incoming outer includes G exactly once, excludes genuinely handed-off private
+// probe allocations. Actual helper owns them fresh through unlink and DB free.
+// SQL-native refuses before mutation; original/default extract_obj unchanged.
+// Returned/absent latch only after full original free and pointer/UID census.
+bool extract_obj_native_birth_shell_bounded(P_obj, uint64_t, bool *, bool *,
+					    bool (*)(size_t *, void *) noexcept,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
+
 #endif
