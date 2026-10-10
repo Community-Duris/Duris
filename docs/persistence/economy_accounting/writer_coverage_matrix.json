@@ -369,7 +369,7 @@
       "src/item/lockpick_retirement_continuation.h": "bd74b154fdcddccc539ebee24cf43442ff859457dc94faa6148491b9a1d96bc2",
       "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
       "src/item/ordinary_drop_recovery.c": "d879d78608e4c8914582d50b3e0e657affe756fca0a817877452bff0aa8856d4",
-      "src/item/quest_reward_continuation.h": "5d00eddbab2b36ff66ffd714b757bf87a88d3f6f7dda85a556eaa6c015ed4ae3",
+      "src/item/quest_reward_continuation.h": "85137766303a568055c3679094cdb5b845c262fda8dfbb0461408da0f30b5965",
       "src/item/smith_native_command.h": "8ac9b42d86c9fb5176279bd1d594e903274cecb0dd1ac8a0f0011564d20761c8",
       "src/item/smith_native_compound.h": "4672004a7fd0a3e98a92e761c5d8415fe051e0365a114bbc4c5c2274f1429139",
       "src/item/smith_native_compound_codec.h": "a64a8ef47776f5e148e6b8f370491bc39a230e25c64b4579f296bb4767803e9c",
