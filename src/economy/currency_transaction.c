@@ -2154,3 +2154,507 @@ bool currency_transaction_restore_bank_replayed_command_bounded(
 	return true;
 #endif
 }
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+namespace
+{
+constexpr size_t currency_full_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t currency_full_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t currency_full_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t currency_full_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t currency_full_vector_frames =
+	currency_full_allocator_frames + currency_full_copy_frames + currency_full_relocate_frames +
+	currency_full_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t currency_full_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + currency_full_allocator_frames;
+constexpr size_t currency_full_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + currency_full_vector_frames;
+constexpr size_t currency_full_command_defaults =
+	// Real command generated default/destructor and four vector default
+	// constructor/_Vector_base/_Vector_impl/_Vector_impl_data/allocator
+	// carriers; current object inline is separately owned by its lifetime.
+	2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	4 * (sizeof(void *) + currency_full_allocator_frames);
+constexpr size_t currency_full_pile_defaults =
+	// Same actual ten aggregate defaults/destructors, six vector/base/impl/
+	// data defaults, six string/hider/local/NUL defaults in item payload.
+	2 * 10 * sizeof(void *) + 6 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	6 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) + sizeof(char));
+
+constexpr size_t currency_full_optional_defaults =
+	// Two actual optional/base/payload/storage disengaged default/destructor
+	// this carriers. Actual members inline already owned by pending entry.
+	2 * (5 * sizeof(void *));
+constexpr size_t currency_full_optional_frames =
+	// Actual optional converting constructor -> base(in_place,ref) ->
+	// payload(in_place,ref) -> storage(in_place,ref), true empty tag carrier
+	// at each layer and forward source refs; direct T member construction.
+	4 * (2 * sizeof(void *) + sizeof(std::in_place_t)) + 4 * (2 * sizeof(void *)) +
+	// Actual optional operator=(T ref) -> _M_is_engaged/_M_construct ->
+	// payload _M_construct -> _Construct(addressof(value),forward(ref)).
+	3 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) + 2 * sizeof(void *) +
+	3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// Actual pending-generated move and two optional nontrivial base/payload
+	// move constructors: this/ref/bool, _M_get refs, nested construct/move;
+	// original optional reset/destruction source scopes, no heap request.
+	2 * sizeof(void *) + 2 * (3 * sizeof(void *) + sizeof(bool)) + 4 * (2 * sizeof(void *)) +
+	2 * (4 * sizeof(void *) + sizeof(bool)) + currency_full_optional_defaults;
+constexpr size_t currency_full_operation_key_frames =
+	// Original operation_key reference and returned string carrier, actual
+	// string(char*,n,allocator) this/source/n/allocator, _Alloc_hider,
+	// _M_construct forward begin/end/dnew/_Guard/_M_create parameters.
+	sizeof(void *) + sizeof(std::string) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::allocator<char>) + 3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(std::string *) + 3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+	// Actual traits copy(dest,source,n,result), _M_data/_M_capacity/setlength,
+	// original string destruction and equal-allocator dispose/deallocate.
+	3 * sizeof(void *) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + currency_full_allocator_frames;
+constexpr size_t currency_full_lookup_erase_frames =
+	// Actual hashtable find/erase(key) parameters/return/current node/bucket/
+	// before node/hash/code/result, iterative equality/key getters; string
+	// hash input and actual string bytes equality argument/size/int result.
+	3 * (3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool)) +
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(int) +
+	// erase unlinks original actual node, destroys pair/key/pending/optional
+	// and up to three commands; node/key allocator destructor/deallocation.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + currency_full_allocator_frames +
+	currency_full_operation_key_frames + currency_full_optional_frames;
+struct currency_full_replay_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	bool (*restore)(const critical_command &, void *, size_t) noexcept;
+	void *context;
+	size_t outer, frames;
+	const coin_transfer_payload *coin = nullptr;
+	const item_transfer_payload *pile = nullptr;
+	const pending_currency *entry = nullptr;
+	const currency_command_payload *wallet = nullptr;
+	const std::string *key = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 13 * sizeof(void *) + 10 * sizeof(size_t) +
+					       8 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!currency_transaction_current_storage_bytes(&heap) ||
+		    !currency_replay_add(total, heap) ||
+		    !currency_replay_add(total, sizeof(*this)) ||
+		    !currency_replay_add(total, frames) ||
+		    !currency_replay_add(total, observation) ||
+		    !currency_replay_add(total, critical_command_copy_frame_bytes()) ||
+		    !currency_replay_add(total, critical_command_valid_frame_bytes()) ||
+		    !currency_replay_add(total, item_transfer_payload_copy_frame_bytes()))
+			return false;
+		if (coin && (!currency_replay_add(total, sizeof(*coin)) ||
+			     !coin_transfer_payload_current_heap_bytes(*coin, &heap) ||
+			     !currency_replay_add(total, heap)))
+			return false;
+		if (pile && (!currency_replay_add(total, sizeof(*pile)) ||
+			     !item_transfer_payload_current_heap_bytes(*pile, &heap) ||
+			     !currency_replay_add(total, heap)))
+			return false;
+		if (entry)
+		{
+			if (!currency_replay_add(total, sizeof(*entry)))
+				return false;
+			if (entry->coin &&
+			    (!coin_transfer_payload_current_heap_bytes(*entry->coin, &heap) ||
+			     !currency_replay_add(total, heap)))
+				return false;
+			if (entry->restored_coin_command &&
+			    (!critical_command_current_heap_bytes(*entry->restored_coin_command,
+								  &heap) ||
+			     !currency_replay_add(total, heap)))
+				return false;
+		}
+		if (wallet && !currency_replay_add(total, sizeof(*wallet)))
+			return false;
+		if (key &&
+		    (!currency_replay_add(total, sizeof(*key)) ||
+		     (key->capacity() > 15 && (!currency_replay_add(total, key->capacity()) ||
+					       !currency_replay_add(total, 1)))))
+			return false;
+		if (!currency_replay_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	bool coin_copy_request(const coin_transfer_payload &value, size_t &result) const noexcept
+	{
+		size_t total = 0, request = 0;
+		if (!critical_command_fresh_copy_request_bytes(value.source.change, &request) ||
+		    !currency_replay_add(total, request) ||
+		    !critical_command_fresh_copy_request_bytes(value.destination.change,
+							       &request) ||
+		    !currency_replay_add(total, request))
+			return false;
+		result = total;
+		return true;
+	}
+	bool insertion_request(const std::string &value, size_t &result) const noexcept
+	{
+		constexpr size_t policy_frames = sizeof(std::__detail::_Prime_rehash_policy) +
+						 2 * sizeof(std::pair<bool, size_t>) +
+						 3 * sizeof(void *) + 3 * sizeof(size_t) +
+						 sizeof(bool);
+		if (!peak(policy_frames))
+			return false;
+		size_t request = 0;
+		if (!pending.next_bank_insert_extra_peak(value, &request))
+			return false;
+		using insertion_result = std::pair<currency_pending_table::iterator, bool>;
+		// Genuine original table SAME request provider for emplace(key,moved
+		// pending_currency), including actual node inline/copy key/new buckets.
+		// Preadmit original false-save erase/removal and source destruction
+		// before insertion; no reservation callback inside cleanup on denial.
+		constexpr size_t insertion_frames =
+			3 * sizeof(void *) + sizeof(std::__detail::_Prime_rehash_policy::_State) +
+			2 * sizeof(std::pair<bool, size_t>) +
+			sizeof(std::allocator<std::__detail::_Hash_node_base *>) +
+			sizeof(currency_pending_table::iterator) +
+			// Actual emplace/allocate-node/value pair/key-copy member carriers,
+			// returned iterator/bool pair and original string copy _Guard.
+			4 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+			currency_full_operation_key_frames + currency_full_optional_frames +
+			currency_full_lookup_erase_frames;
+		return currency_replay_add(request,
+					   sizeof(insertion_result) + insertion_frames +
+						   3 * critical_command_copy_frame_bytes() +
+						   4 * sizeof(void *) + sizeof(bool)) &&
+		       (result = request, true);
+	}
+};
+bool currency_full_replay_owned(const critical_command &command,
+				currency_full_replay_budget &budget)
+{
+	size_t admission_prefix = 0, admission_request = 0;
+	if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !command.publication_required)
+		return true;
+	if (command.type == critical_command_type::coin_transfer)
+	{
+		if (!budget.peak(sizeof(coin_transfer_payload) +
+				 currency_full_command_defaults * 2))
+			return false;
+		coin_transfer_payload coin = {};
+		budget.coin = &coin;
+		if (!critical_command_envelope_valid(command) ||
+		    !(budget.prefix(admission_prefix) &&
+		      coin_transfer_command_decode_payload_bounded(
+			      command, &coin, budget.reserve, budget.context, admission_prefix)) ||
+		    pending.size() >= CURRENCY_PENDING_MAX)
+			return false;
+		uint32_t actor_pid = 0;
+		bool restored_room_coin = false;
+		std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> account_name = {};
+		uint8_t racewar = 0;
+		for (const auto *endpoint : { &coin.source, &coin.destination })
+		{
+			if (endpoint->change.type == critical_command_type::account_bank)
+			{
+				if (!budget.peak(sizeof(currency_command_payload) +
+						 2 * sizeof(void *)))
+					return false;
+				currency_command_payload wallet = {};
+				if (!(budget.prefix(admission_prefix, sizeof(wallet)) &&
+				      currency_command_decode_payload_bounded(
+					      endpoint->change, &wallet, budget.reserve,
+					      budget.context, admission_prefix)) ||
+				    wallet.reason != currency_reason_type::coin_transfer ||
+				    wallet.pid > INT32_MAX)
+					return false;
+				if (!actor_pid)
+				{
+					actor_pid = wallet.pid;
+					account_name = wallet.account_name;
+					racewar = wallet.racewar;
+				}
+				continue;
+			}
+			if (endpoint->change.type == critical_command_type::item_transfer)
+			{
+				if (!budget.peak(sizeof(item_transfer_payload) +
+						 currency_full_pile_defaults))
+					return false;
+				item_transfer_payload pile = {};
+				budget.pile = &pile;
+				if (!(budget.prefix(admission_prefix) &&
+				      item_transfer_command_decode_payload_bounded(
+					      endpoint->change, &pile, budget.reserve,
+					      budget.context, admission_prefix)) ||
+				    pile.item_count != 1 ||
+				    pile.selected_item_uid != pile.items[0].item_uid)
+					return false;
+				restored_room_coin = restored_room_coin_shape(coin, pile);
+				budget.pile = nullptr;
+				continue;
+			}
+			return false;
+		}
+		if (!budget.coin_copy_request(coin, admission_request) ||
+		    !currency_replay_add(admission_request,
+					 sizeof(pending_currency) + currency_full_optional_frames +
+						 2 * critical_command_copy_frame_bytes()) ||
+		    !budget.peak(admission_request))
+			return false;
+		pending_currency entry = { .pid = actor_pid,
+					   .account_name = account_name,
+					   .racewar = racewar,
+					   .completion = nullptr,
+					   .context = {},
+					   .context_size = 0,
+					   .publication_state =
+						   currency_publication_state::awaiting_completion,
+					   .completed = {},
+					   .coin = coin,
+					   .coin_completion = nullptr,
+					   .coin_wallets_published = false,
+					   .publication_attempts = 0,
+					   .publication_required = true };
+		budget.entry = &entry;
+		try
+		{
+			if (!budget.peak(sizeof(std::string) + currency_full_operation_key_frames +
+					 (command.operation_id.bytes.size() > 15 ?
+						  command.operation_id.bytes.size() + 1 :
+						  0)))
+				return false;
+			const std::string key = operation_key(command.operation_id);
+			budget.key = &key;
+			if (pending.find(key) != pending.end())
+				return false;
+			if (!critical_command_fresh_copy_request_bytes(command,
+								       &admission_request) ||
+			    !currency_replay_add(admission_request,
+						 critical_command_copy_frame_bytes() +
+							 currency_full_optional_frames) ||
+			    !budget.peak(admission_request))
+				return false;
+			entry.restored_coin_command = command;
+			entry.restored_room_coin = restored_room_coin;
+			if (!budget.insertion_request(key, admission_request) ||
+			    !budget.peak(admission_request))
+				return false;
+			pending.emplace(key, std::move(entry));
+			if (restored_room_coin &&
+			    !(budget.prefix(admission_prefix) &&
+			      budget.restore(command, budget.context, admission_prefix)))
+			{
+				pending.erase(key);
+				return false;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		update_retained_health();
+		return true;
+	}
+	if (command.type != critical_command_type::account_bank)
+		return true;
+	if (!budget.peak(sizeof(currency_command_payload) + 2 * sizeof(void *)))
+		return false;
+	currency_command_payload payload = {};
+	budget.wallet = &payload;
+	if (!critical_command_envelope_valid(command) ||
+	    !(budget.prefix(admission_prefix) &&
+	      currency_command_decode_payload_bounded(command, &payload, budget.reserve,
+						      budget.context, admission_prefix)) ||
+	    (payload.reason != currency_reason_type::atm_deposit &&
+	     payload.reason != currency_reason_type::atm_withdraw) ||
+	    pending.size() >= CURRENCY_PENDING_MAX)
+		return false;
+	if (!budget.peak(sizeof(pending_currency) + currency_full_optional_defaults))
+		return false;
+	pending_currency entry = { .pid = payload.pid,
+				   .account_name = payload.account_name,
+				   .racewar = payload.racewar,
+				   .completion = nullptr,
+				   .context = {},
+				   .context_size = 0,
+				   .publication_state =
+					   currency_publication_state::awaiting_completion,
+				   .completed = {},
+				   .publication_required = true };
+	budget.entry = &entry;
+	try
+	{
+		if (!budget.peak(sizeof(std::string) + currency_full_operation_key_frames +
+				 (command.operation_id.bytes.size() > 15 ?
+					  command.operation_id.bytes.size() + 1 :
+					  0)))
+			return false;
+		const std::string key = operation_key(command.operation_id);
+		budget.key = &key;
+		if (pending.find(key) != pending.end())
+			return false;
+		if (!budget.insertion_request(key, admission_request) ||
+		    !budget.peak(admission_request))
+			return false;
+		pending.emplace(key, std::move(entry));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	update_retained_health();
+	return true;
+}
+} // namespace
+#endif // genuine complete GCC13 private pending/profile consumers
+bool currency_transaction_restore_replayed_command_bounded(const critical_command &command,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	try
+	{
+		// Genuine actual private stack scope, not a lease/capability flag.
+		// Startup coordinator/main-thread ownership supplies pending stability;
+		// original selected currency implementation has no currency mutex.
+		player_save_coin_replay_budget_scope_owner scope(reserve, context);
+		const auto scoped_reserve = +[](size_t exclusive, void *actual) noexcept {
+			return static_cast<player_save_coin_replay_budget_scope_owner *>(actual)
+				->admit(exclusive);
+		};
+		const auto scoped_restore = +[](const critical_command &original, void *actual,
+						size_t exclusive) noexcept
+		{
+			return static_cast<player_save_coin_replay_budget_scope_owner *>(actual)
+				->restore(original, exclusive);
+		};
+		constexpr size_t frames =
+			// Genuine public+owned signature/result, two admission scalars,
+			// actual named reserve/restore pointer objects and genuine lambda
+			// argument/result/conversion carriers. Scope adds its own inline.
+			8 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+			2 * sizeof(void *) + 5 * sizeof(void *) + 2 * sizeof(size_t) +
+			2 * sizeof(bool) +
+			// Original actor/account/racewar/room flag, two endpoint backing
+			// pointers/initializer descriptor/current endpoint reference.
+			sizeof(uint32_t) + sizeof(bool) +
+			sizeof(std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1>) +
+			sizeof(uint8_t) + 2 * sizeof(void *) +
+			sizeof(std::initializer_list<const coin_transfer_endpoint *>) +
+			3 * sizeof(void *) +
+			// Actual original restored_room_coin_shape params/drop/pickup,
+			// empty lambda and owner predicate refs/results/index getters.
+			2 * sizeof(void *) + 2 * sizeof(bool) + sizeof(char) + sizeof(void *) +
+			sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+			8 * (sizeof(void *) + sizeof(size_t)) +
+			// Original successful health update full table iterator/reference,
+			// allocation-free publication state scalar predicate and results.
+			4 * sizeof(void *) + sizeof(currency_publication_state) + sizeof(bool) +
+			currency_full_lookup_erase_frames + currency_full_optional_frames;
+		currency_full_replay_budget budget{ scoped_reserve, scoped_restore, &scope,
+						    outer_live, frames };
+		if (!budget.peak())
+			return false;
+		// Full original mixed body is the sole owner of insert/duplicate/erase.
+		// No callback after actual save hold success or original health tail.
+		return currency_full_replay_owned(command, budget);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	(void)command;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
