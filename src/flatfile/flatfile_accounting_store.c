@@ -2287,3 +2287,68 @@ flatfile_ordinary_native_birth_receipt_storage::verify_retained_history_current_
 		},
 		error);
 }
+
+flatfile_accounting_status flatfile_accounting_storage::stage_ordinary_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record,
+	std::vector<flatfile_authority_operation> *operations, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			validate_append(operations, 2);
+			require(critical_command_envelope_valid(record.command));
+			require(!root.empty() && lock.matches(root));
+			auto value =
+				load_context(root, bucket_for(record.command.operation_id), error);
+			try
+			{
+				(void)lookup_in(root, value, record.command, error);
+				throw failure{ status::already_exists };
+			}
+			catch (const failure &lookup)
+			{
+				if (lookup.code != status::not_found)
+					throw;
+			}
+			auto bytes = encode_record(record);
+			auto &index = value.index;
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(record.command.accounting_intent, &intent));
+			require(intent.admission.metadata.lineage.bytes == index.lineage.bytes);
+			require(index.entries.size() < FLATFILE_ACCOUNTING_BUCKET_RECORDS &&
+					bytes.size() <=
+						FLATFILE_ACCOUNTING_BUCKET_MAX_BYTES - index.bytes,
+				status::capacity);
+			uint32_t segment = last_segment(index);
+			std::vector<uint8_t> records;
+			if (!value.active.empty() && value.active.size() + bytes.size() <=
+							     FLATFILE_ACCOUNTING_SEGMENT_MAX_BYTES)
+				records.assign(value.active.begin() + header_bytes + 32,
+					       value.active.end());
+			else if (!value.active.empty())
+				++segment;
+			require(segment < FLATFILE_ACCOUNTING_BUCKET_SEGMENTS, status::capacity);
+			entry item{ record.command.operation_id, digest(bytes), segment,
+				    static_cast<uint32_t>(records.size()),
+				    static_cast<uint32_t>(bytes.size()) };
+			raw(records, bytes);
+			index.entries.push_back(item);
+			index.bytes += bytes.size();
+			std::sort(index.entries.begin(), index.entries.end(),
+				  [](const auto &a, const auto &b)
+				  { return a.id.bytes < b.id.bytes; });
+			auto encoded_index = encode_index(index);
+			auto encoded_segment = encode_segment(index, segment, records);
+			require_room(*operations, 16 + segment_name(index.bucket, segment).size() +
+							  index_name(index.bucket).size() +
+							  encoded_segment.size() +
+							  encoded_index.size());
+			auto result = *operations;
+			append(result, segment_name(index.bucket, segment),
+			       std::move(encoded_segment));
+			append(result, index_name(index.bucket), std::move(encoded_index));
+			*operations = std::move(result);
+		},
+		error);
+}
