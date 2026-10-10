@@ -155,4 +155,12 @@ player_item_snapshot_clone_bounded(const player_item_snapshot &, player_item_sna
 				   bool (*reserve)(size_t, void *) noexcept, void *context,
 				   size_t outer_live) noexcept;
 
+// Passive complete CURRENT player_snapshot heap observation for supported
+// libstdc++13 C++11 LP64 ABI. Counts all retained capacities and nested live
+// strings/items/pets/death evidence, including empty reserved vectors. Excludes
+// the snapshot inline object, allocator metadata and observer call frames.
+// Caller keeps this snapshot stable throughout; no locks, callbacks, validation,
+// authority or route selection. False/null/unsupported leaves output unchanged.
+bool player_snapshot_current_heap_bytes(const player_snapshot &, size_t *) noexcept;
+
 #endif
