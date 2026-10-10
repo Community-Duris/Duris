@@ -656,4 +656,18 @@ bool item_transfer_native_mobile_recovery_shape_valid_bounded(const item_transfe
 // Pure source-declared CURRENT observer scopes; excludes heap and copy/codec requests.
 size_t item_transfer_payload_current_heap_observer_frame_bytes() noexcept;
 
+// Narrow original item_owner_key_bounded SOURCE, no custody/admission authority.
+// Fixed query P+B is admitted before each direct pure query; accessor return N
+// and caller locals remain caller-owned. Full SOURCE + initial real candidate are
+// transiently preadmitted before entry. ONLY supplement remains in child outer_live:
+// the original child owns its actual fixed/leaf/hash workspace and SOURCE once.
+// No whole item codec/copy envelope, storage scan, heap baseline or held lock.
+// Unsupported profiles/null preserve output. Caller refreshes CURRENT afterward.
+bool item_owner_key_source_frame_bytes(size_t *output) noexcept;
+bool item_owner_key_source_supplement_frame_bytes(size_t *output) noexcept;
+bool item_owner_key_initial_inline_bytes(size_t *output) noexcept;
+constexpr size_t item_owner_key_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
 #endif
