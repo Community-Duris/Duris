@@ -15,6 +15,7 @@
  */
 
 #include "core/prototypes.h"
+#include "account/character_identity.h"
 #include "world/character_maintenance.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
@@ -7359,6 +7360,16 @@ struct quest_mobile_native_item_stage::implementation
 	bool shell_probe_started = false;
 	P_obj shell_probe_object = nullptr;
 	uint64_t shell_probe_uid = 0;
+	// Only the actual native helper lifetime temporarily owns probe-private.
+	bool shell_probe_helper_owns_private = false;
+	quest_mobile_native_zombie_stage shell_probe_zombie;
+	// Actual returned provider/draw observations survive a later budget refusal.
+	// These retain known effects; they never authorize retrying a started probe.
+	bool shell_probe_constructor_returned = false;
+	bool shell_probe_initializer_started = false, shell_probe_initializer_returned = false;
+	int shell_probe_initializer_periodic = FALSE;
+	bool shell_probe_general_delay_chosen = false;
+	int shell_probe_general_delay = 0;
 };
 bool quest_mobile_native_item_stage::original_reset_target(int rnum, P_obj *selected,
 							   bool *pending) noexcept
@@ -13281,6 +13292,15 @@ bool quest_mobile_native_item_stage::retained_bytes_excluding_literal_pools(
 					return false;
 		}
 	}
+	if (!s.shell_probe_helper_owns_private)
+	{
+		size_t probe_private = 0, game_private = 0;
+		if ((s.shell_probe_object && !obj_native_birth_shell_private_storage_bytes(
+						     s.shell_probe_object, &probe_private)) ||
+		    !s.shell_probe_zombie.shell_retained_private_storage_bytes(&game_private) ||
+		    !cold_birth_add(bytes, probe_private) || !cold_birth_add(bytes, game_private))
+			return false;
+	}
 	// Pooled object/affect slots are covered by CURRENT shared pool observer.
 	// Only original genuine successful published/object-null cut transfers BODY
 	// out of private retention; metadata/scope/private game remain until release.
@@ -13973,7 +13993,10 @@ size_t quest_mobile_native_item_stage::npc_retained_observation_source_frames() 
 	constexpr size_t scope_heap = sizeof(const quest_mobile_native_npc_flat_factory_scope *) +
 				      sizeof(size_t) +
 				      sizeof(size_t); // retained_heap_bytes this/bytes/return
-	return common + std::max(ordinary, excluding) + scope_heap;
+	return common + std::max(ordinary, excluding) + scope_heap +
+	       obj_native_birth_shell_private_storage_observer_frame_bytes() + 2 * sizeof(size_t) +
+	       sizeof(const quest_mobile_native_zombie_stage *) + sizeof(size_t *) +
+	       sizeof(size_t) + sizeof(bool);
 }
 
 bool quest_mobile_native_npc_flat_factory_scope::same_owner(
@@ -14957,6 +14980,9 @@ struct quest_mobile_native_item_stage::ordinary_item_constructor_budget
 	const std::vector<extra_descr_data *> *pre_descriptions = nullptr;
 	const std::vector<int> *pre_delays = nullptr;
 	const std::vector<bool> *pre_requested = nullptr;
+	P_obj *shell_probe = nullptr;
+	const quest_mobile_native_zombie_stage *shell_zombie = nullptr;
+	size_t scheduler_other_globals = 0;
 	bool lower_owns_private = false;
 	mobile_constructor_budget request_owner;
 	ordinary_item_constructor_budget(bool (*g)(size_t *, void *) noexcept,
@@ -15053,6 +15079,21 @@ struct quest_mobile_native_item_stage::ordinary_item_constructor_budget
 		if (description && (!string_heap(bytes, description->keyword) ||
 				    !string_heap(bytes, description->description)))
 			return false;
+		if (shell_probe && *shell_probe)
+		{
+			size_t probe_private = 0;
+			if (!obj_native_birth_shell_private_storage_bytes(*shell_probe,
+									  &probe_private) ||
+			    !add(bytes, probe_private))
+				return false;
+		}
+		if (shell_zombie)
+		{
+			size_t game_private = 0;
+			if (!shell_zombie->shell_retained_private_storage_bytes(&game_private) ||
+			    !add(bytes, game_private))
+				return false;
+		}
 		if (candidate && !candidate->empty())
 		{
 			size_t retained = 0;
@@ -15094,6 +15135,25 @@ struct quest_mobile_native_item_stage::ordinary_item_constructor_budget
 		if (admitted)
 			errno = saved_errno;
 		return admitted;
+	}
+	static bool scheduler_relay(size_t desired, void *opaque) noexcept
+	{
+		auto &self = *static_cast<ordinary_item_constructor_budget *>(opaque);
+		size_t global = 0, pool = 0, queues = 0;
+		const int saved = errno;
+		errno = 0;
+		if (!self.current_global(&global, self.context) ||
+		    !nevent_object_schedule_pool_storage_bytes(&pool) ||
+		    !diagnostic_output_storage_bytes(&queues) || pool > global ||
+		    queues > global - pool || desired < self.scheduler_other_globals)
+			return self.request_owner.fail(errno ? errno : EIO);
+		const size_t other = global - pool - queues,
+			     base = desired - self.scheduler_other_globals;
+		if (other > SIZE_MAX - base)
+			return self.request_owner.fail(EOVERFLOW);
+		errno = saved;
+		// Lower already refreshes real pool/output; replace only its old G-P-Q.
+		return relay(base + other, opaque);
 	}
 	bool init(size_t full) noexcept { return request_owner.init(full); }
 	bool request(size_t extra = 0) noexcept { return request_owner.request(extra); }
@@ -16267,4 +16327,2255 @@ bool quest_mobile_native_stage::shared_shopkeeper_affect_retained_bytes(
 	// row count and future events are not private CURRENT heap in this observer.
 	*output = bytes;
 	return true;
+}
+
+#include <thread>
+namespace
+{
+// Read the actual repository allocation request, not a text-length estimate.
+// The real shell constructor and helper lifetime establish pointer ownership.
+bool shell_private_request(const void *body, size_t minimum, size_t *bytes) noexcept
+{
+	if (!bytes)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!body)
+		return true;
+#if defined(MEMCHK) && MEMCHK == 1
+	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	if (header->body != body || header->size < minimum || !header->tag || header->tag[0] != 'M')
+	{
+		errno = EIO;
+		return false;
+	}
+	if (header->size > SIZE_MAX - *bytes ||
+	    sizeof(ALLOCATION_HEADER) > SIZE_MAX - (*bytes + header->size))
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	*bytes += header->size + sizeof(ALLOCATION_HEADER);
+	return true;
+#else
+	(void)minimum;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+}
+
+size_t obj_native_birth_shell_private_storage_observer_frame_bytes() noexcept
+{
+	// Actual DB observer object/output/bytes/Floyd/range carriers, selected
+	// request body/minimum/output/header. Actual GNU13 get_id return, id
+	// constructor argument/this, equality's two by-value ids and native id
+	// return are summed, even though these source lifetimes can reuse storage.
+	return 2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(extra_descr_data *) +
+	       3 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(std::thread::id) + sizeof(void *);
+}
+
+bool obj_native_birth_shell_private_storage_bytes(P_obj object, size_t *output) noexcept
+{
+	if (!object || !output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+#if !defined(MEMCHK) || MEMCHK != 1 || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(__linux__) || !defined(__GLIBC__) || !defined(__x86_64__)
+	errno = ENOTSUP;
+	return false;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t bytes = 0;
+	if (((object->str_mask & STRUNG_KEYS) && !shell_private_request(object->name, 1, &bytes)) ||
+	    ((object->str_mask & STRUNG_DESC1) &&
+	     !shell_private_request(object->description, 1, &bytes)) ||
+	    ((object->str_mask & STRUNG_DESC2) &&
+	     !shell_private_request(object->short_description, 1, &bytes)) ||
+	    ((object->str_mask & STRUNG_DESC3) &&
+	     !shell_private_request(object->action_description, 1, &bytes)))
+		return false;
+	const extra_descr_data *slow = object->ex_description, *fast = slow;
+	while (fast && fast->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+		{
+			errno = EIO;
+			return false;
+		}
+	}
+	for (const auto *description = object->ex_description; description;
+	     description = description->next)
+		if (!shell_private_request(description, sizeof(extra_descr_data), &bytes) ||
+		    !shell_private_request(description->keyword, 1, &bytes) ||
+		    !shell_private_request(description->description, 1, &bytes))
+			return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+namespace
+{
+constexpr size_t shell_private_observer_frames =
+	// public observer: object/output, bytes, Floyd slow/fast, range descriptor;
+	2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(extra_descr_data *) +
+	// selected request helper: body/minimum/output and actual header pointer.
+	3 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(std::thread::id) + sizeof(void *);
+
+// These are the actual synchronous project-source free tails selected below.
+// The supported installed native allocator policy supplies the libc free leaf;
+// this term does not invent an allocator request for a deallocation.
+constexpr size_t shell_free_project_leaf_frames =
+	// str_free(const char*) -> __free(void*,file,line) -> delmem(...,header).
+	sizeof(const char *) + sizeof(char *) + 2 * sizeof(void *) + sizeof(int) +
+	3 * sizeof(void *) + sizeof(int) +
+	// allocation_header_from_body(body,header_address); decrement(tag,size,i).
+	2 * sizeof(void *) + sizeof(const char *) + sizeof(size_t) + sizeof(int) +
+	// At most two obj_affect_remove frames: extra2 can remove TAG_ALTERED_EXTRA2,
+	// whose own branch cannot recurse; real get/recalculate scopes have no heap.
+	2 * (sizeof(P_obj) + 3 * sizeof(obj_affect *) + sizeof(P_nevent)) + sizeof(P_obj) +
+	sizeof(obj_affect *) + sizeof(P_obj) + sizeof(int) + sizeof(obj_affect *) +
+	// release_obj_mem -> mm_release(pool,mem) -> mm_set_next -> memcpy args.
+	sizeof(P_obj) + sizeof(mm_ds *) + sizeof(void *) + 2 * sizeof(char *) + sizeof(size_t) +
+	2 * sizeof(void *) + sizeof(size_t) +
+	// Original barb CMD_BARB_REMOVE before any other callback branch: parameters,
+	// actual locals and three-reference lambda closure, actual inline messages.
+	sizeof(P_obj) + 3 * sizeof(P_char) + sizeof(int) + sizeof(char *) + sizeof(time_t) +
+	4 * sizeof(int) + sizeof(proc_data *) + sizeof(affected_type *) + 3 * sizeof(void *) +
+	sizeof(damage_messages);
+struct shell_free_budget
+{
+	P_obj object = nullptr;
+	bool (*current_global)(size_t *, void *) noexcept = nullptr;
+	bool (*reserve)(size_t, void *) noexcept = nullptr;
+	void *context = nullptr;
+	size_t exclusive = 0, diagnostic_other_globals = 0;
+	int refusal = 0;
+	bool fail(int code) noexcept
+	{
+		if (!refusal)
+			refusal = code;
+		errno = refusal;
+		return false;
+	}
+	~shell_free_budget()
+	{
+		if (refusal)
+			errno = refusal;
+	}
+	bool private_bytes(size_t *output) noexcept
+	{
+		if (!object)
+		{
+			*output = 0;
+			return true;
+		}
+		const int saved = errno;
+		errno = 0;
+		if (!obj_native_birth_shell_private_storage_bytes(object, output))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		return true;
+	}
+	bool excluding_global(size_t *output) noexcept
+	{
+		size_t retained = 0;
+		if (!private_bytes(&retained))
+			return false;
+		if (retained > SIZE_MAX - exclusive)
+			return fail(EOVERFLOW);
+		*output = exclusive + retained;
+		return true;
+	}
+	bool live(size_t *output) noexcept
+	{
+		size_t value = 0, global = 0;
+		if (!excluding_global(&value))
+			return false;
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&global, context))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		if (global > SIZE_MAX - value)
+			return fail(EOVERFLOW);
+		*output = value + global;
+		return true;
+	}
+	bool request() noexcept
+	{
+		size_t value = 0;
+		if (!live(&value))
+			return false;
+		return relay(value, this);
+	}
+	bool diagnostic_live(size_t *output) noexcept
+	{
+		size_t global = 0, queues = 0;
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&global, context) || !diagnostic_output_storage_bytes(&queues))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		if (queues > global)
+			return fail(EIO);
+		diagnostic_other_globals = global - queues;
+		size_t value = 0;
+		if (!excluding_global(&value))
+			return false;
+		if (global > SIZE_MAX - value)
+			return fail(EOVERFLOW);
+		*output = value + global;
+		return true;
+	}
+	static bool diagnostic_relay(size_t desired, void *opaque) noexcept
+	{
+		auto &self = *static_cast<shell_free_budget *>(opaque);
+		size_t global = 0, queues = 0;
+		const int saved = errno;
+		errno = 0;
+		if (!self.current_global(&global, self.context) ||
+		    !diagnostic_output_storage_bytes(&queues))
+			return self.fail(errno ? errno : EIO);
+		errno = saved;
+		if (queues > global || desired < self.diagnostic_other_globals)
+			return self.fail(EIO);
+		// The actual diagnostic provider already refreshes Q inside received desired.
+		// Replace only the original G-Q with fresh G-Q; Q remains present exactly once.
+		const size_t other = global - queues,
+			     base = desired - self.diagnostic_other_globals;
+		if (other > SIZE_MAX - base)
+			return self.fail(EOVERFLOW);
+		return relay(base + other, opaque);
+	}
+	static bool global(size_t *output, void *opaque) noexcept
+	{
+		auto &self = *static_cast<shell_free_budget *>(opaque);
+		const int saved = errno;
+		errno = 0;
+		if (!self.current_global(output, self.context))
+			return self.fail(errno ? errno : EIO);
+		errno = saved;
+		return true;
+	}
+	static bool relay(size_t desired, void *opaque) noexcept
+	{
+		auto &self = *static_cast<shell_free_budget *>(opaque);
+		const int saved = errno;
+		errno = 0;
+		if (!self.reserve(desired, self.context))
+			return self.fail(errno ? errno : ENOBUFS);
+		errno = saved;
+		return true;
+	}
+};
+constexpr size_t shell_free_entry_frames =
+	sizeof(shell_free_budget) + sizeof(P_obj) + sizeof(bool *) +
+	sizeof(bool (*)(size_t *, void *) noexcept) + sizeof(bool (*)(size_t, void *) noexcept) +
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(extra_descr_data *) + sizeof(obj_affect *) +
+	3 * sizeof(size_t) + sizeof(bool) + sizeof(int) +
+	// actual budget methods: this/output/value/global/saved/desired/opaque/refs;
+	8 * sizeof(void *) + 11 * sizeof(size_t) + 5 * sizeof(int) + shell_private_observer_frames +
+	shell_free_project_leaf_frames;
+}
+
+// Genuine original listed shell extraction owns this object even after unlink.
+// Outer EXCLUDES both private probe requests and the actual full global census.
+// The same helper lifetime must suppress the stage's private-probe observation.
+// A refusal retains an authentic remaining object; original extraction must never
+// be retried after its started latch. Returned latches after actual pool release.
+bool free_obj_native_birth_shell_bounded(P_obj object, bool *returned,
+					 bool (*current_global)(size_t *, void *) noexcept,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+#if !defined(MEMCHK) || MEMCHK != 1 || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI
+	(void)object;
+	(void)returned;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!returned || !current_global || !reserve || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (shell_free_entry_frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	shell_free_budget budget{ object, current_global, reserve, context,
+				  outer_live + shell_free_entry_frames };
+	if (!budget.request())
+		return false;
+	if (!object)
+	{
+		size_t live = 0;
+		if (!budget.diagnostic_live(&live) ||
+		    !diagnostic_logit_bounded(shell_free_budget::diagnostic_relay, &budget, live,
+					      LOG_DEBUG, "free_obj called with no obj!"))
+			return false;
+		*returned = true;
+		return budget.request();
+	}
+	size_t live = 0;
+	bool cancellation_returned = false;
+	if (!budget.excluding_global(&live) ||
+	    !disarm_obj_nevents_native_birth_shell_bounded(object, &cancellation_returned,
+							   shell_free_budget::global,
+							   shell_free_budget::relay, &budget, live))
+		return false;
+	// Full original affect removal runs only after genuine complete disarming, so
+	// event_obj_affect's payload callback/cancel branch cannot be selected here.
+	while (auto *affect = object->affects)
+		obj_affect_remove(object, affect);
+
+	// Original release order, with authentic remaining-state writes needed by a
+	// subsequent refused diagnostic/observer. Successful released object is unseen.
+	if ((object->str_mask & STRUNG_KEYS) && object->name)
+	{
+		str_free(object->name);
+		object->name = nullptr;
+		object->str_mask &= ~STRUNG_KEYS;
+	}
+	if ((object->str_mask & STRUNG_DESC1) && object->description)
+	{
+		str_free(object->description);
+		object->description = nullptr;
+		object->str_mask &= ~STRUNG_DESC1;
+	}
+	if ((object->str_mask & STRUNG_DESC2) && object->short_description)
+	{
+		str_free(object->short_description);
+		object->short_description = nullptr;
+		object->str_mask &= ~STRUNG_DESC2;
+	}
+	if ((object->str_mask & STRUNG_DESC3) && object->action_description)
+	{
+		str_free(object->action_description);
+		object->action_description = nullptr;
+		object->str_mask &= ~STRUNG_DESC3;
+	}
+	if (object->R_num >= 0 && obj_index[object->R_num].func.obj == barb)
+		barb(object, nullptr, CMD_BARB_REMOVE, nullptr);
+	object->str_mask = 0;
+	for (auto *description = object->ex_description; description;
+	     description = object->ex_description)
+	{
+		auto *next = description->next;
+		if (description->keyword)
+		{
+			str_free(description->keyword);
+			description->keyword = nullptr;
+		}
+		else
+		{
+			if (!budget.diagnostic_live(&live) ||
+			    !diagnostic_debug_bounded(shell_free_budget::diagnostic_relay, &budget,
+						      live,
+						      "extra description with null keyword for %s",
+						      object->short_description))
+				return false;
+		}
+		if (description->description)
+		{
+			str_free(description->description);
+			description->description = nullptr;
+		}
+		FREE(description);
+		object->ex_description = next;
+	}
+	object->ex_description = nullptr;
+	release_obj_mem(object);
+	budget.object = nullptr;
+	*returned = true;
+	// Global observation is permitted after free, but never reads the released
+	// probe. A false result with returned=true is still an actual completed free.
+	return budget.request();
+#endif
+}
+
+bool quest_mobile_native_item_stage::schedule_original_shell_event_bounded(
+	P_obj object, event_func_type callback, int delay,
+	ordinary_item_constructor_budget &budget) noexcept
+{
+	size_t full = 0, global = 0, pool = 0, queues = 0;
+	if (!budget.full_private_prefix(&full) || !budget.current_global(&global, budget.context) ||
+	    !nevent_object_schedule_pool_storage_bytes(&pool) ||
+	    !diagnostic_output_storage_bytes(&queues) || pool > global || queues > global - pool)
+		return budget.request_owner.fail(errno ? errno : EIO);
+	budget.scheduler_other_globals = global - pool - queues;
+	nevent_schedule_result scheduled;
+	bool returned = false, succeeded = false;
+	bool okay = false;
+	{
+		ordinary_item_constructor_budget::lower_call lower(budget);
+		errno = 0;
+		okay = nevent_schedule_object_bounded(
+			callback, delay, object, &scheduled, &returned, &succeeded,
+			ordinary_item_constructor_budget::scheduler_relay, &budget, full);
+	}
+	// Any real event already joined its genuine global pool and owner list before
+	// scheduler diagnostics. The started shell retains it on later refusal;
+	// neither draw nor scheduler action can be repeated by a retry.
+	if (!okay || !returned)
+		return budget.request_owner.fail(errno ? errno : EIO);
+	// Original read_object ignores an add_event result. A returned normal failure
+	// is preserved; reserve/profile interruptions above never become that result.
+	(void)succeeded;
+	return budget.request();
+}
+
+// PRIVATE UNSEALED. Genuine original read_object/weight/extract sequence.
+// A started real shell attempt is retained through refusal, never retried.
+#if defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) && defined(__LP64__) &&       \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && defined(MEMCHK) && MEMCHK == 1
+namespace
+{
+constexpr size_t shell_native_random_frames = 2 * sizeof(int) + 2 * sizeof(void *) +
+					      2 * sizeof(uint64_t) + sizeof(uint64_t) +
+					      sizeof(int) + sizeof(uint64_t) + 3 * sizeof(void *);
+constexpr size_t shell_native_pool_uid_frames =
+	// mm_try_reserve_free_slot: pool, maximum/pages/howmuch/slots/waste,
+	// mmap result/head/index/slot; real mmap arguments/return. mm_try_get
+	// retains pool/mem through mm_next and the exact memcpy source carriers.
+	sizeof(mm_ds *) + 5 * sizeof(size_t) + 2 * sizeof(char *) + sizeof(size_t) +
+	sizeof(char *) + sizeof(void *) + sizeof(size_t) + 3 * sizeof(int) + sizeof(off_t) +
+	sizeof(void *) + sizeof(mm_ds *) + sizeof(char *) + sizeof(const char *) + sizeof(size_t) +
+	sizeof(char *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	// mm_set_next(object,offset,next) and memset(body,0,size) source carriers.
+	2 * sizeof(char *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	sizeof(void *) + sizeof(int) + sizeof(size_t) + sizeof(void *) +
+	// Real UID leaf holds range_mutex lock_guard through next/range update;
+	// lock_guard ctor/dtor, mutex lock/unlock and installed gthread pointers.
+	sizeof(std::lock_guard<std::mutex>) + sizeof(uint64_t) + 6 * sizeof(void *) +
+	2 * sizeof(int) + 2 * sizeof(void *) +
+	// reset_order_prepend -> valid -> list_shape/identity -> stamp. The two
+	// list loops are sequential; all named original cursors/scalars are summed.
+	sizeof(P_obj) + 6 * sizeof(P_obj) + sizeof(uint64_t) + 2 * sizeof(P_obj) + sizeof(P_obj) +
+	sizeof(P_obj) + sizeof(unsigned char) + 5 * sizeof(std::thread::id) + sizeof(void *);
+constexpr size_t shell_native_raw_string_frames =
+	// __try_malloc(size,tag,file,line), allocation pointer; genuine MEMCHK1
+	// init_mem_used/increment_mem_used and strcmp(tag,tag) scalar call sources.
+	sizeof(size_t) + 2 * sizeof(const char *) + sizeof(int) + sizeof(ALLOCATION_HEADER *) +
+	sizeof(int) + sizeof(const char *) + sizeof(size_t) + sizeof(int) +
+	2 * sizeof(const char *) + sizeof(int) +
+	// Actual strn_cmp prefix, lowercase/ctype leaf results, memcpy and memset.
+	2 * sizeof(const char *) + sizeof(unsigned int) + 2 * sizeof(int) + 2 * sizeof(int) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(void *) + sizeof(int) +
+	sizeof(size_t) + sizeof(void *) +
+	// Pending description destructor: receiver, exact FREE/delmem counters,
+	// header_address/decrement/free leaf arguments; no diagnostic allocation.
+	sizeof(void *) + 3 * sizeof(void *) + sizeof(int) + 2 * sizeof(void *) +
+	sizeof(const char *) + sizeof(size_t) + sizeof(int) + sizeof(void *);
+constexpr size_t shell_constructor_added_budget_frames =
+	// New probe/game branches in private_bytes: two exact retained outputs.
+	2 * sizeof(size_t) +
+	// New private zombie getter: this/output/bytes, vector capacity receiver;
+	// actual game-thread id query remains part of this admitted source closure.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(const std::vector<P_char> *) +
+	5 * sizeof(std::thread::id) + sizeof(void *) +
+	// Fresh scheduler relay: desired/context/self/global/pool/queues/saved,
+	// other/base and request_owner::fail(this,code).
+	sizeof(size_t) + 2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int) +
+	2 * sizeof(size_t) + sizeof(void *) + sizeof(int);
+constexpr size_t shell_native_proc_frames =
+	// invoke_object_special and actual player-pet restriction/bridge carriers.
+	2 * sizeof(P_obj) + 2 * sizeof(P_char) + sizeof(int) + sizeof(char *) + sizeof(P_obj) +
+	sizeof(P_char) + sizeof(P_obj) + sizeof(size_t) + sizeof(P_char) + sizeof(P_obj) +
+	sizeof(P_char) + sizeof(int) + sizeof(char *) + sizeof(obj_proc_type) +
+	// spell_pool exact local 9-pointer table, spell pointer, current time/rannum,
+	// original initializer and number/rnd64/rotl.
+	10 * sizeof(void *) + 2 * sizeof(int) + sizeof(P_obj) + 2 * sizeof(int) +
+	shell_native_random_frames +
+	// blood_stains buf and both four-pointer description tables, time return.
+	MAX_STRING_LENGTH * sizeof(char) + 8 * sizeof(const char *) + sizeof(time_t) +
+	sizeof(P_obj) + sizeof(P_char) + sizeof(int) + sizeof(char *) +
+	// vecna original three-room table and original numeric initializer.
+	3 * sizeof(int) + 2 * sizeof(P_obj) + sizeof(P_char) + sizeof(int) + sizeof(char *) +
+	// item_switch exact locals and proclib_obj_proc original prologue predicate.
+	MAX_STRING_LENGTH * sizeof(char) + 3 * sizeof(int) + sizeof(P_char) + sizeof(P_obj) +
+	sizeof(P_obj) + sizeof(P_char) + sizeof(int) + sizeof(char *) + sizeof(P_obj) +
+	sizeof(P_char) + sizeof(int) + sizeof(char *) +
+	// Original isname(str,namelist): four ints and real fixed tstr, ctype results.
+	2 * sizeof(const char *) + 4 * sizeof(int) + MAX_STRING_LENGTH * sizeof(char) +
+	2 * sizeof(int) +
+	// Original convertObj ITEM_CONTAINER + common numeric/affect tail.
+	sizeof(P_obj) + 5 * sizeof(int) + 2 * sizeof(long) + MAX_STRING_LENGTH * sizeof(char);
+}
+#endif
+
+bool quest_mobile_native_item_stage::read_original_shell_bounded(
+	bool *returned, bool (*current_global)(size_t *, void *) noexcept,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!returned || !state_ || !current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*returned = false;
+#if !defined(__linux__) || !defined(__GLIBC__) || !defined(__x86_64__) || !defined(__LP64__) ||    \
+	!defined(MEMCHK) || MEMCHK != 1 || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	auto &s = *state_;
+	const int saved_errno = errno;
+	ordinary_item_constructor_budget budget{ current_global, reserve, context };
+	budget.shell_probe = &s.shell_probe_object;
+	budget.shell_zombie = &s.shell_probe_zombie;
+	const size_t frames =
+		sizeof(budget) + sizeof(object_template) + sizeof(ordinary_item_template_reader) +
+		sizeof(object_template_description) + MAX_STRING_LENGTH * sizeof(char) +
+		24 * sizeof(void *) + 17 * sizeof(size_t) + 12 * sizeof(bool) + 12 * sizeof(int) +
+		sizeof(nevent_schedule_result) + sizeof(nevent_handle) +
+		shell_native_pool_uid_frames + shell_native_raw_string_frames +
+		shell_constructor_added_budget_frames + ordinary_item_budget_source_frames +
+		ordinary_item_string_source_frames +
+		ordinary_item_vector_source_frames<object_template_description>() +
+		obj_native_birth_shell_private_storage_observer_frame_bytes() +
+		shell_native_proc_frames + native_mobile_birth_super_cannon_source_frame_bytes() +
+		shell_native_random_frames + sizeof(std::initializer_list<obj_proc_type>) +
+		8 * sizeof(obj_proc_type) + 6 * sizeof(void *) + 2 * sizeof(bool);
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	if (!budget.init(outer_live + frames))
+		return false;
+	if (!nevent_is_game_thread() || !s.shell_probe_started ||
+	    !s.shell_probe_helper_owns_private || s.shell_probe_object || !s.flat_factory ||
+	    !s.npc_flat_scope || s.index != obj_index || s.rnum < 0 || s.rnum > top_of_objt ||
+	    !obj_f || !dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+	    dead_obj_pool->next_off != offsetof(obj_data, next) ||
+	    bool(dead_obj_pool->head) != bool(dead_obj_pool->tail) ||
+	    obj_index[s.rnum].virtual_number != s.vnum || obj_index[s.rnum].pos != s.position)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const auto incumbent = obj_index[s.rnum].func.obj;
+	bool supported = false;
+	for (const auto function :
+	     { static_cast<obj_proc_type>(nullptr), spell_pool, super_cannon, vecna_deathportal,
+	       blood_stains, zombies_game, item_switch, proclib_obj_proc })
+		supported |= incumbent == function ||
+			     (incumbent == proclib_obj_cmd_bridge &&
+			      proclib_recovery_chain_stage::predecessor_matches(s.rnum, function));
+	if (!supported)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t full_source = 0;
+	if (!budget.full_private_prefix(&full_source) ||
+	    !s.npc_flat_scope->current_bounded(ordinary_item_constructor_budget::relay, &budget,
+					       full_source))
+		return false;
+	try
+	{
+		ordinary_item_template_reader reader{ obj_f, budget };
+		const object_template prototype =
+			parse_ordinary_item_template_bounded(s.rnum, reader);
+		budget.prototype = &prototype;
+		if (prototype.R_num != s.rnum || prototype.type != ITEM_CONTAINER)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		size_t pool_request = 0;
+		if (!dead_obj_pool->head)
+		{
+			if (dead_obj_pool->chunk_size <= 0)
+			{
+				errno = EINVAL;
+				return false;
+			}
+			if (static_cast<size_t>(dead_obj_pool->chunk_size) > SIZE_MAX / 4096)
+			{
+				errno = EOVERFLOW;
+				return false;
+			}
+			pool_request = static_cast<size_t>(dead_obj_pool->chunk_size) * 4096;
+		}
+		if (!budget.request(pool_request))
+			return false;
+		errno = 0;
+		if (!mm_try_reserve_free_slot(dead_obj_pool))
+			return budget.request_owner.fail(errno ? errno : ENOMEM);
+		if (!budget.request())
+			return false;
+		errno = 0;
+		P_obj obj = static_cast<P_obj>(mm_try_get(dead_obj_pool));
+		if (!obj)
+			return budget.request_owner.fail(errno ? errno : EIO);
+		memset(obj, 0, sizeof(*obj));
+		s.shell_probe_object = obj; // Real slot retained BEFORE any later callback.
+		obj->R_num = prototype.R_num;
+		obj->type = prototype.type;
+		obj->material = prototype.material;
+		obj->craftsmanship = prototype.craftsmanship;
+		obj->extra_flags = prototype.extra_flags;
+		obj->wear_flags = prototype.wear_flags;
+		obj->extra2_flags = prototype.extra2_flags;
+		obj->anti_flags = prototype.anti_flags;
+		obj->anti2_flags = prototype.anti2_flags;
+		memcpy(&obj->value, &prototype.value, sizeof(obj->value));
+		obj->weight = prototype.weight;
+		obj->cost = prototype.cost;
+		obj->condition = prototype.condition;
+		obj->bitvector = prototype.bitvector;
+		obj->bitvector2 = prototype.bitvector2;
+		obj->bitvector3 = prototype.bitvector3;
+		obj->bitvector4 = prototype.bitvector4;
+		obj->bitvector5 = prototype.bitvector5;
+		memcpy(&obj->affected, &prototype.affected, sizeof(obj->affected));
+		obj->trap_eff = prototype.trap_eff;
+		obj->trap_dam = prototype.trap_dam;
+		obj->trap_charge = prototype.trap_charge;
+		obj->trap_level = prototype.trap_level;
+		obj->obj_uid = static_cast<unsigned long>(persistence_next_item_uid());
+		s.shell_probe_uid = obj->obj_uid;
+		SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		obj->loc_p = LOC_NOWHERE;
+		obj->loc.room = NOWHERE;
+		++obj_index[s.rnum].number;
+		reset_order_prepend(obj);
+		if (object_list)
+			object_list->prev = obj;
+		obj->next = object_list;
+		object_list = obj;
+		// Same original cache order and nullable semantics, actual request headers.
+		const auto share = [&](const std::string &text, char *&cached,
+				       char *&target) noexcept -> bool
+		{
+			if (!cached && !text.empty())
+			{
+				if (text.size() == SIZE_MAX ||
+				    text.size() + 1 > SIZE_MAX - birth_mobile_malloc_header())
+					return budget.request_owner.fail(EOVERFLOW);
+				const size_t bytes = text.size() + 1;
+				if (!budget.request(bytes + birth_mobile_malloc_header()))
+					return false;
+				errno = 0;
+				char *value = static_cast<char *>(
+					__try_malloc(bytes, MEM_TAG_STRING, __FILE__, __LINE__));
+				if (!value)
+					return budget.request_owner.fail(errno ? errno : ENOMEM);
+				memcpy(value, text.c_str(), bytes);
+				cached = value;
+			}
+			target = cached;
+			return true;
+		};
+		if (!share(prototype.name, obj_index[s.rnum].keys, obj->name) ||
+		    !share(prototype.short_description, obj_index[s.rnum].desc2,
+			   obj->short_description) ||
+		    !share(prototype.description, obj_index[s.rnum].desc1, obj->description) ||
+		    !share(prototype.action_description, obj_index[s.rnum].desc3,
+			   obj->action_description))
+			return false;
+		for (const auto &description : prototype.descriptions)
+		{
+			struct pending_description
+			{
+				ordinary_item_constructor_budget &budget;
+				extra_descr_data *value = nullptr;
+				~pending_description()
+				{
+					if (value)
+					{
+						if (value->keyword)
+							FREE(value->keyword);
+						if (value->description)
+							FREE(value->description);
+						FREE(value);
+					}
+					budget.transient_heap = 0;
+				}
+			} pending{ budget };
+			if (!budget.request(sizeof(extra_descr_data) +
+					    birth_mobile_malloc_header()))
+				return false;
+			errno = 0;
+			pending.value = static_cast<extra_descr_data *>(__try_malloc(
+				sizeof(extra_descr_data), MEM_TAG_EXDESCD, __FILE__, __LINE__));
+			if (!pending.value)
+				return budget.request_owner.fail(errno ? errno : ENOMEM);
+			memset(pending.value, 0, sizeof(*pending.value));
+			budget.transient_heap =
+				sizeof(extra_descr_data) + birth_mobile_malloc_header();
+			const auto duplicate = [&](const std::string &text,
+						   char *&target) noexcept -> bool
+			{
+				if (text.empty())
+					return true;
+				if (text.size() == SIZE_MAX ||
+				    text.size() + 1 > SIZE_MAX - birth_mobile_malloc_header())
+					return budget.request_owner.fail(EOVERFLOW);
+				const size_t bytes = text.size() + 1;
+				if (!budget.request(bytes + birth_mobile_malloc_header()))
+					return false;
+				errno = 0;
+				target = static_cast<char *>(
+					__try_malloc(bytes, MEM_TAG_STRING, __FILE__, __LINE__));
+				if (!target)
+					return budget.request_owner.fail(errno ? errno : ENOMEM);
+				memcpy(target, text.c_str(), bytes);
+				return ordinary_item_constructor_budget::add(
+					budget.transient_heap,
+					bytes + birth_mobile_malloc_header());
+			};
+			if (!duplicate(description.keyword, pending.value->keyword) ||
+			    !duplicate(description.description, pending.value->description))
+				return false;
+			extra_descr_data *new_descr = pending.value;
+			char empty_args[] = "";
+			int parsed = -1;
+			bool add_returned = false;
+			if (new_descr->keyword && !strn_cmp("_proclib_", new_descr->keyword, 9))
+			{
+				size_t lower_outer = 0, global = 0, private_probe = 0;
+				if (!budget.full_private_prefix(&lower_outer) ||
+				    !current_global(&global, context) ||
+				    !obj_native_birth_shell_private_storage_bytes(obj,
+										  &private_probe) ||
+				    global > lower_outer || private_probe > lower_outer - global)
+					return false;
+				lower_outer -= global + private_probe;
+				bool added = false;
+				{
+					ordinary_item_constructor_budget::lower_call lower(budget);
+					errno = 0;
+					added = proclibObj_add_bounded(
+						obj, new_descr->keyword + 9,
+						new_descr->description ? new_descr->description :
+									 empty_args,
+						&parsed, &add_returned,
+						ordinary_item_constructor_budget::global,
+						ordinary_item_constructor_budget::relay, &budget,
+						lower_outer);
+				}
+				if (!added || !add_returned)
+					return budget.request_owner.fail(errno ? errno : EIO);
+			}
+			if (!parsed)
+			{
+				FREE(new_descr->keyword);
+				new_descr->keyword = nullptr;
+				if (new_descr->description)
+				{
+					FREE(new_descr->description);
+					new_descr->description = nullptr;
+				}
+				FREE(new_descr);
+				pending.value = nullptr;
+				budget.transient_heap = 0;
+				continue;
+			}
+			// Resource interruption never enters this ordinary plaintext fallback.
+			new_descr->next = obj->ex_description;
+			obj->ex_description = new_descr;
+			pending.value = nullptr;
+			budget.transient_heap = 0;
+		}
+		if (obj->type == ITEM_SWITCH && !obj_index[s.rnum].func.obj)
+		{
+			obj_index[s.rnum].func.obj = item_switch;
+			shop_trade_original_procedure_binding_stage::observe_normal_binding(
+				s.rnum, nullptr, item_switch);
+		}
+		// Preserve the inherited original unconditional event-head reset, including
+		// its separately recorded pre-reset immediate-library event behavior.
+		obj->nevents = nullptr;
+		obj->nevents_tail = nullptr;
+		if (obj_index[s.rnum].func.obj)
+		{
+			if (!budget.request())
+				return false;
+			int periodic = FALSE;
+			bool initialized = false;
+			const auto current = obj_index[s.rnum].func.obj;
+			s.shell_probe_initializer_started = true;
+			if (current == zombies_game ||
+			    (current == proclib_obj_cmd_bridge &&
+			     proclib_recovery_chain_stage::predecessor_matches(s.rnum,
+									       zombies_game)))
+			{
+				size_t lower_outer = 0, global = 0;
+				if (!budget.full_private_prefix(&lower_outer) ||
+				    !current_global(&global, context) || global > lower_outer)
+					return false;
+				lower_outer -= global;
+				bool okay = false;
+				{
+					ordinary_item_constructor_budget::lower_call lower(budget);
+					errno = 0;
+					okay = quest_mobile_native_zombie_stage::
+						initialize_shell_bounded(
+							obj, s.shell_probe_zombie, &periodic,
+							&initialized,
+							ordinary_item_constructor_budget::global,
+							ordinary_item_constructor_budget::relay,
+							&budget, lower_outer);
+				}
+				s.shell_probe_initializer_returned = initialized;
+				if (initialized)
+					s.shell_probe_initializer_periodic = periodic;
+				if (!okay || !initialized)
+					return budget.request_owner.fail(errno ? errno : EIO);
+			}
+			else
+			{
+				// Actual supported original callback, not a predicted periodic boolean.
+				periodic = invoke_object_special(obj, nullptr, CMD_SET_PERIODIC,
+								 nullptr);
+				initialized = true;
+				s.shell_probe_initializer_periodic = periodic;
+				s.shell_probe_initializer_returned = true;
+			}
+			if (periodic)
+			{
+				const int delay =
+					PULSE_MOBILE + number(-4, 4); // Exactly one original draw.
+				s.shell_probe_general_delay = delay;
+				s.shell_probe_general_delay_chosen = true;
+				if (!schedule_original_shell_event_bounded(obj, event_object_proc,
+									   delay, budget))
+					return false;
+			}
+		}
+		if (isname("random_exit", obj->name) &&
+		    !schedule_original_shell_event_bounded(obj, event_random_exit, 3, budget))
+			return false;
+		// A genuine ITEM_CONTAINER shell cannot be the ITEM_SPELLBOOK branch.
+		convertObj(obj);
+		s.shell_probe_constructor_returned = true;
+		*returned = true;
+		if (!budget.request())
+			return false;
+		errno = saved_errno;
+		return true;
+	}
+	catch (const template_read_failure &failure)
+	{
+		return budget.request_owner.fail(static_cast<int>(failure.error));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return budget.request_owner.fail(ENOMEM);
+	}
+	catch (...)
+	{
+		return budget.request_owner.fail(errno ? errno : EIO);
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::capture_container_shell_bounded(
+	quest_mobile_native_container_shell *output,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!state_ || !output || output->valid_ || !current_global || !reserve ||
+	    !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	auto &s = *state_;
+	if (s.admitted || s.published || s.metadata_borrowed_world || s.shell_probe_started ||
+	    !s.object || s.object->type != ITEM_CONTAINER || s.index != obj_index || s.rnum < 0 ||
+	    s.rnum > top_of_objt || s.object->R_num != s.rnum || s.object->obj_uid != s.uid ||
+	    find_birth_live_object(s.object, s.uid) || !s.flat_factory || !s.npc_flat_scope)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	// These helper/callback carriers exist through both actual constructor and
+	// extraction calls. Their inputs do not mint a source or publication permit.
+	struct handoff
+	{
+		implementation &state;
+		explicit handoff(implementation &value) noexcept
+			: state(value)
+		{
+			state.shell_probe_helper_owns_private = true;
+		}
+		~handoff() { state.shell_probe_helper_owns_private = false; }
+	};
+	const size_t frames = sizeof(handoff) + sizeof(this) + sizeof(output) +
+			      sizeof(current_global) + sizeof(reserve) + sizeof(context) +
+			      sizeof(outer_live) + 6 * sizeof(size_t) + 4 * sizeof(bool) +
+			      sizeof(int32_t) + 2 * sizeof(P_obj) + sizeof(uint64_t) +
+			      obj_native_birth_shell_private_storage_observer_frame_bytes();
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const size_t full = outer_live + frames;
+	size_t initial_global = 0;
+	if (!current_global(&initial_global, context) || initial_global > full)
+	{
+		if (!errno)
+			errno = EIO;
+		return false;
+	}
+	errno = 0;
+	if (!reserve(full, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	s.shell_probe_started = true;
+	s.shell_probe_constructor_returned = false;
+	s.shell_probe_initializer_started = false;
+	s.shell_probe_initializer_returned = false;
+	s.shell_probe_initializer_periodic = FALSE;
+	s.shell_probe_general_delay_chosen = false;
+	s.shell_probe_general_delay = 0;
+	handoff private_transfer{ s };
+	bool constructor_returned = false;
+	if (!read_original_shell_bounded(&constructor_returned, current_global, reserve, context,
+					 full) ||
+	    !constructor_returned)
+		return false;
+	int32_t weight = 0;
+	if (s.shell_probe_object)
+	{
+		// Genuine returned native body and original weight, before real extraction.
+		weight = s.shell_probe_object->weight;
+		if (!s.shell_probe_uid)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		bool extraction_returned = false, absent = false;
+		size_t fresh_global = 0;
+		if (!current_global(&fresh_global, context))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+		const size_t exclusive = full - initial_global;
+		if (fresh_global > SIZE_MAX - exclusive)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		const size_t extraction_outer = exclusive + fresh_global;
+		errno = 0;
+		if (!reserve(extraction_outer, context))
+		{
+			if (!errno)
+				errno = ENOBUFS;
+			return false;
+		}
+		const bool extracted = extract_obj_native_birth_shell_bounded(
+			s.shell_probe_object, s.shell_probe_uid, &extraction_returned, &absent,
+			current_global, reserve, context, extraction_outer);
+		// Actual pool-release marker is authoritative even if final G admission
+		// refuses. Never leave a freed pointer available to a stage census.
+		if (extraction_returned)
+		{
+			s.shell_probe_object = nullptr;
+			s.shell_probe_uid = 0;
+		}
+		if (!extracted || !extraction_returned || !absent)
+			return false;
+	}
+	s.shell_probe_object = nullptr;
+	s.shell_probe_uid = 0;
+	s.shell_probe_started = false;
+	output->target_ = s.object;
+	output->target_rnum_ = s.rnum;
+	output->shell_weight_ = weight;
+	output->valid_ = true;
+	return true;
+}
+
+#include <stdexcept>
+namespace
+{
+// Actual three original validation sets use their genuine allocator requests.
+// A rehash keeps old bucket bytes in heap until the real deallocation occurs.
+struct mobile_adoption_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t exclusive = 0, heap = 0, image_heap = 0;
+	const std::vector<uint8_t> *observed_bytes = nullptr, *original_bytes = nullptr;
+	int refusal = 0;
+	bool fail(int error) noexcept
+	{
+		if (!refusal)
+			refusal = error;
+		errno = refusal;
+		return false;
+	}
+	~mobile_adoption_budget()
+	{
+		if (refusal)
+			errno = refusal;
+	}
+	bool init(size_t full) noexcept
+	{
+		size_t globals = 0;
+		if (!current_global || !reserve)
+			return fail(EINVAL);
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&globals, context))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		if (globals > full)
+			return fail(EINVAL);
+		exclusive = full - globals;
+		return request(0);
+	}
+	bool live(size_t *output, size_t extra = 0) noexcept
+	{
+		if (!output)
+			return fail(EINVAL);
+		size_t globals = 0, result = exclusive;
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&globals, context))
+			return fail(errno ? errno : EIO);
+		errno = saved;
+		const size_t parts[]{ globals,
+				      heap,
+				      image_heap,
+				      extra,
+				      observed_bytes ? observed_bytes->capacity() : 0,
+				      original_bytes ? original_bytes->capacity() : 0 };
+		for (size_t part : parts)
+		{
+			if (part > SIZE_MAX - result)
+				return fail(EOVERFLOW);
+			result += part;
+		}
+		*output = result;
+		return true;
+	}
+	bool request(size_t extra) noexcept
+	{
+		size_t full = 0;
+		if (!live(&full, extra))
+			return false;
+		const int saved = errno;
+		errno = 0;
+		if (!reserve(full, context))
+			return fail(errno ? errno : ENOBUFS);
+		errno = saved;
+		return true;
+	}
+};
+template <class T> class mobile_adoption_allocator
+{
+    public:
+	using value_type = T;
+	mobile_adoption_budget *budget = nullptr;
+	explicit mobile_adoption_allocator(mobile_adoption_budget *b = nullptr) noexcept
+		: budget(b)
+	{
+	}
+	template <class U>
+	mobile_adoption_allocator(const mobile_adoption_allocator<U> &other) noexcept
+		: budget(other.budget)
+	{
+	}
+	T *allocate(size_t count)
+	{
+		constexpr size_t frames =
+			// allocate this/count/bytes/result, genuine std allocator/traits/new
+			// this/count/hint/alignment/results, plus live/request source scopes.
+			10 * sizeof(void *) + 10 * sizeof(size_t) + 3 * sizeof(bool) +
+			6 * sizeof(size_t) + sizeof(std::initializer_list<size_t>);
+		if (!budget)
+		{
+			errno = EINVAL;
+			throw std::bad_alloc{};
+		}
+		if (count > SIZE_MAX / sizeof(T))
+		{
+			budget->fail(EOVERFLOW);
+			throw std::bad_alloc{};
+		}
+		const size_t bytes = count * sizeof(T);
+		if (bytes > SIZE_MAX - budget->heap || frames > SIZE_MAX - bytes)
+		{
+			budget->fail(EOVERFLOW);
+			throw std::bad_alloc{};
+		}
+		if (!budget->request(bytes + frames))
+			throw std::bad_alloc{};
+		T *result = nullptr;
+		try
+		{
+			result = std::allocator<T>{}.allocate(count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			budget->fail(ENOMEM);
+			throw;
+		}
+		budget->heap += bytes; // Strong actual allocation handoff, no callback follows.
+		return result;
+	}
+	void deallocate(T *value, size_t count) noexcept
+	{
+		if (!budget || count > SIZE_MAX / sizeof(T))
+			std::terminate();
+		const size_t bytes = count * sizeof(T);
+		if (bytes > budget->heap)
+			std::terminate();
+		std::allocator<T>{}.deallocate(value, count);
+		budget->heap -= bytes;
+	}
+	template <class U> bool operator==(const mobile_adoption_allocator<U> &other) const noexcept
+	{
+		return budget == other.budget;
+	}
+};
+template <class T> using mobile_adoption_set =
+	std::unordered_set<T, std::hash<T>, std::equal_to<T>, mobile_adoption_allocator<T>>;
+}
+
+bool quest_mobile_native_stage::adopt_published_bounded(
+	P_char actual, uint64_t actual_runtime_id, int room_rnum,
+	const quest_mobile_native_image &original,
+	const native_mobile_birth_recovery_context &context,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *budget_context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)actual;
+	(void)actual_runtime_id;
+	(void)room_rnum;
+	(void)original;
+	(void)context;
+	(void)current_global;
+	(void)reserve;
+	(void)budget_context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	constexpr size_t frames =
+		sizeof(mobile_adoption_budget) + 2 * sizeof(mobile_adoption_set<P_char>) +
+		sizeof(mobile_adoption_set<P_nevent>) + sizeof(quest_mobile_native_image) +
+		2 * sizeof(std::vector<uint8_t>) +
+		2 * sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+		2 * sizeof(quest_mobile_native_reference) + sizeof(std::array<size_t, 4>) +
+		sizeof(std::array<event_func_type, 4>) + sizeof(std::array<size_t, 4>) +
+		// Actual input/scalar/iterator/range/event/reference/canonical carriers;
+		16 * sizeof(void *) + 16 * sizeof(size_t) + sizeof(uint64_t) + 3 * sizeof(int) +
+		8 * sizeof(bool) + 3 * sizeof(player_snapshot_codec_result) +
+		// Genuine live request's parts/range/begin/end and current-global calls.
+		6 * sizeof(size_t) + 6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool);
+	if (!reserve || !current_global)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	mobile_adoption_budget budget{ current_global, reserve, budget_context };
+	if (!budget.init(outer_live + frames))
+		return false;
+	size_t live = 0;
+
+	if (!nevent_is_game_thread() || character_ || publication_next_step_ ||
+	    publication_step_started_ || publication_consumed_ || publication_runtime_id_ ||
+	    !actual || !actual_runtime_id || actual->runtime_id != actual_runtime_id ||
+	    find_character_by_runtime_id(actual_runtime_id) != actual || !IS_NPC(actual) ||
+	    !actual->only.npc || !IS_ALIVE(actual) || actual->desc || !mob_index || !world ||
+	    room_rnum < 0 || room_rnum > top_of_world ||
+	    original.state != quest_mobile_lifetime_state::live || !original.cash ||
+	    original.cash->revision != 1 ||
+	    original.last_transition_operation.bytes != original.reference.birth_operation.bytes ||
+	    world[room_rnum].number != original.reference.birthplace_vnum)
+		return false;
+	try
+	{
+		size_t prefix = 0;
+		bool gap = false;
+		for (size_t step = 0; step < context.mobile_effects.size(); ++step)
+		{
+			const auto &effect = context.mobile_effects[step];
+			if (effect.periodic && (step != 3 || !effect.returned || !effect.succeeded))
+				return false;
+			if (!effect.started)
+			{
+				if (effect.returned || effect.succeeded || effect.periodic)
+					return false;
+				gap = true;
+			}
+			else
+			{
+				if (gap || !effect.returned || !effect.succeeded)
+					return false;
+				++prefix;
+			}
+		}
+		if (!prefix || !context.mobile_publication.started ||
+		    !context.mobile_publication.consumed ||
+		    context.mobile_publication.returned != (prefix == 8) ||
+		    !context.whole_binding.started || !context.whole_binding.returned ||
+		    !context.whole_binding.succeeded || !context.reference_install.started ||
+		    !context.reference_install.returned || !context.reference_install.succeeded)
+			return false;
+		constexpr std::array<size_t, 4> schedule_steps{ 2, 4, 5, 6 };
+		for (size_t index = 0; index < schedule_steps.size(); ++index)
+		{
+			const auto &choice = context.mobile_choices[index];
+			const auto step = schedule_steps[index];
+			if ((!choice.chosen && (choice.requested || choice.delay)) ||
+			    (choice.chosen &&
+			     (prefix < step ||
+			      (choice.requested ? choice.delay <= 0 : choice.delay != 0))) ||
+			    (prefix > step && !choice.chosen) ||
+			    (index == 0 && choice.chosen && !choice.requested) ||
+			    (index == 1 && choice.chosen &&
+			     choice.requested != context.mobile_effects[3].periodic))
+				return false;
+		}
+		if (actual->only.npc->R_num < 0 || actual->only.npc->R_num > top_of_mobt ||
+		    mob_index[actual->only.npc->R_num].virtual_number !=
+			    original.reference.mobile_vnum ||
+		    mob_index[actual->only.npc->R_num].number <= 0)
+			return false;
+		size_t matching = 0;
+		mobile_adoption_set<P_char> global_seen(0, std::hash<P_char>{},
+							std::equal_to<P_char>{},
+							mobile_adoption_allocator<P_char>(&budget));
+		for (P_char ch = character_list; ch; ch = ch->next)
+		{
+			if (!global_seen.insert(ch).second)
+				return false;
+			if (ch == actual || ch->runtime_id == actual_runtime_id)
+			{
+				if (ch != actual)
+					return false;
+				++matching;
+			}
+			quest_mobile_native_reference bound;
+			if (ch != actual)
+			{
+				bool absent = true;
+				for (uint8_t byte : ch->native_mobile_binding.encoded_reference_)
+					absent &= byte == 0;
+				if (absent)
+					continue; // Authentic private bytes, not a codec refusal.
+				if (!budget.live(&live) ||
+				    quest_mobile_native_reference_copy_bounded(
+					    ch, ch->runtime_id, &bound, reserve, budget_context,
+					    live) != player_snapshot_codec_result::ok ||
+				    bound.mobile_instance_id ==
+					    original.reference.mobile_instance_id)
+					return false;
+			}
+		}
+		if (matching != 1)
+			return false;
+		quest_mobile_native_reference bound;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> observed_reference{},
+			original_reference{};
+		if (!budget.live(&live) ||
+		    quest_mobile_native_reference_copy_bounded(actual, actual_runtime_id, &bound,
+							       reserve, budget_context, live) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_reference_encode_bounded(bound, &observed_reference,
+								 reserve, budget_context, live) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_reference_encode_bounded(
+			    original.reference, &original_reference, reserve, budget_context,
+			    live) != player_snapshot_codec_result::ok ||
+		    observed_reference != original_reference)
+			return false;
+		const bool room_done = prefix > 1;
+		if (actual->in_room != (room_done ? room_rnum : NOWHERE) ||
+		    (!room_done && actual->next_in_room))
+			return false;
+		size_t room_matches = 0;
+		mobile_adoption_set<P_char> room_seen(0, std::hash<P_char>{},
+						      std::equal_to<P_char>{},
+						      mobile_adoption_allocator<P_char>(&budget));
+		for (int room = 0; room <= top_of_world; ++room)
+			for (P_char ch = world[room].people; ch; ch = ch->next_in_room)
+			{
+				if (!room_seen.insert(ch).second)
+					return false;
+				if (ch == actual)
+				{
+					if (!room_done || room != room_rnum)
+						return false;
+					++room_matches;
+				}
+			}
+		if (room_matches != (room_done ? 1U : 0U))
+			return false;
+		const std::array<event_func_type, 4> callbacks{ event_mob_mundane, event_mob_proc,
+								event_patrol_move,
+								event_mob_skin_spell };
+		std::array<size_t, 4> active{};
+		P_nevent mundane = nullptr;
+		mobile_adoption_set<P_nevent> seen(0, std::hash<P_nevent>{},
+						   std::equal_to<P_nevent>{},
+						   mobile_adoption_allocator<P_nevent>(&budget));
+		P_nevent previous = nullptr;
+		for (P_nevent event = actual->nevents; event; event = event->next_char_nev)
+		{
+			if (!seen.insert(event).second || event->prev_char_nev != previous)
+				return false;
+			previous = event;
+			for (size_t index = 0; index < callbacks.size(); ++index)
+				if (event->func == callbacks[index] && event->ch == actual)
+				{
+					if (event->owner_runtime_id != actual_runtime_id ||
+					    event->obj || event->victim ||
+					    (event->data && index != 2) ||
+					    !nevent_handle_is_active(
+						    nevent_handle_from_event(event)))
+						return false;
+					++active[index];
+					if (index == 0)
+						mundane = event;
+				}
+		}
+		for (size_t index = 0; index < schedule_steps.size(); ++index)
+		{
+			const bool required = prefix > schedule_steps[index] &&
+					      context.mobile_choices[index].requested;
+			if (active[index] != (required ? 1U : 0U))
+				return false;
+		}
+		if ((mundane &&
+		     (actual->world_activity_mundane_event != mundane ||
+		      actual->world_activity_mundane_event_sequence != mundane->sequence)) ||
+		    (!mundane && (actual->world_activity_mundane_event ||
+				  actual->world_activity_mundane_event_sequence)) ||
+		    actual->character_maintenance_in_world != room_done)
+			return false;
+		quest_mobile_native_image observed;
+		std::vector<uint8_t> observed_bytes, original_bytes;
+		budget.observed_bytes = &observed_bytes;
+		budget.original_bytes = &original_bytes;
+		if (!budget.live(&live) ||
+		    quest_mobile_native_capture_bounded(
+			    actual, original.reference, quest_mobile_lifetime_state::live,
+			    original.reference.birth_operation, original.cash->revision, &observed,
+			    reserve, budget_context, live,
+			    &budget.image_heap) != player_snapshot_capture_result::ok ||
+		    !budget.live(&live) ||
+		    quest_mobile_native_image_encode_bounded(observed, &observed_bytes, reserve,
+							     budget_context, live) !=
+			    player_snapshot_codec_result::ok ||
+		    !budget.live(&live) ||
+		    quest_mobile_native_image_encode_bounded(original, &original_bytes, reserve,
+							     budget_context, live) !=
+			    player_snapshot_codec_result::ok ||
+		    observed_bytes != original_bytes)
+			return false;
+		// Actual world/event/body proof precedes fixed progress hydration.
+		// No callback/event/count/UID or caller-visible body changes occur.
+		publication_next_step_ = prefix;
+		publication_runtime_id_ = actual_runtime_id;
+		publication_consumed_ = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return budget.fail(ENOMEM);
+	}
+	catch (const std::length_error &)
+	{
+		return budget.fail(EOVERFLOW);
+	}
+	catch (...)
+	{
+		return budget.fail(errno ? errno : EIO);
+	}
+#endif
+}
+
+bool quest_mobile_native_stage::publication_step_bounded(
+	size_t step, int room_rnum, P_char expected,
+	const native_mobile_birth_recovery_choice &choice,
+	native_mobile_birth_recovery_effect &effect, P_char *live_after,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Full original eight-step state machine. The budget relay acquires the
+	// genuine coordinator lender only during each request and releases it
+	// before these native effects. Its ROOT observer owns native globals.
+	constexpr size_t frames = sizeof(this) + sizeof(step) + sizeof(room_rnum) +
+				  sizeof(expected) + sizeof(&choice) + sizeof(&effect) +
+				  sizeof(live_after) + sizeof(current_global) + sizeof(reserve) +
+				  sizeof(context) + sizeof(outer_live) + sizeof(size_t) +
+				  3 * sizeof(P_char) + sizeof(int) + 6 * sizeof(bool) +
+				  sizeof(nevent_schedule_result);
+	if (!reserve || outer_live > SIZE_MAX - frames || !reserve(outer_live + frames, context))
+		return false;
+	const size_t live = outer_live + frames;
+	if (!nevent_is_game_thread() || !live_after || !expected || step >= 8 ||
+	    step != publication_next_step_ || publication_step_started_ || effect.started ||
+	    mobile_probe_mode || !world || room_rnum < 0 || room_rnum > top_of_world)
+		return false;
+	P_char mob = step ? find_character_by_runtime_id(publication_runtime_id_) : character_;
+	if (mob != expected || !IS_NPC(mob) || !mob->only.npc || !IS_ALIVE(mob))
+		return false;
+	if (step && !publication_consumed_)
+		return false;
+	const int nr = mob->only.npc->R_num;
+	if (nr < 0 || nr > top_of_mobt)
+		return false;
+	if (step == 0)
+	{
+		if (mob->in_room != NOWHERE || mob->next || mob->next_in_room || mob->desc ||
+		    mob->nevents || mob->nevents_tail || mob->character_maintenance_in_world ||
+		    !mob->runtime_id || find_character_by_runtime_id(mob->runtime_id) ||
+		    mob_index[nr].number == INT_MAX)
+			return false;
+		for (P_char current = character_list; current; current = current->next)
+			if (current == mob)
+				return false;
+	}
+	// Shared cold AF refusal is a separate owned service. Never rewrite the
+	// original room-step started/returned/succeeded facts to represent it.
+	if (shared_affect_checkpoint_ && step >= 2 && !shared_affect_complete_)
+		return false;
+	if (shared_affect_checkpoint_ && step <= 1 && !shared_affect_before_room_ready_)
+		return false;
+	// The existing ordinary flat producer rejects room/special callbacks.
+	// Keep that same accepted domain; no unbounded callback is selected.
+	if (world[room_rnum].funct ||
+	    (IS_SET(mob->specials.act, ACT_SPEC) && mob_index[nr].func.mob))
+		return false;
+	if (step == 1 && (mob->desc || mob->following || mob->followers || mob->group ||
+			  mob->linked || mob->linking || mob->obj_linked || GET_OPPONENT(mob)))
+		return false;
+	const bool scheduled_step = step == 2 || step == 4 || step == 5 || step == 6;
+	if (scheduled_step &&
+	    (!choice.chosen || (choice.requested ? choice.delay <= 0 : choice.delay != 0)))
+		return false;
+	if ((step == 2 && !choice.requested) ||
+	    (step == 3 && IS_SET(mob->specials.act, ACT_SPEC) && !mob_index[nr].func.mob))
+		return false;
+	// This stage owns the once-only latch independently of caller observations.
+	publication_step_started_ = true;
+	effect.started = true;
+	*live_after = nullptr;
+	bool budget_complete = true;
+	try
+	{
+		switch (step)
+		{
+		case 0:
+			// All allocation precedes consumption. Failure is retained started uncertainty.
+			{
+				bool returned = false, registered = false;
+				if (!register_character_runtime_id_bounded(
+					    mob, &returned, &registered, reserve, context, live) ||
+				    !returned || !registered)
+					return false;
+				publication_runtime_id_ = mob->runtime_id;
+				mob->next = character_list;
+				character_list = mob;
+				++mob_index[nr].number;
+				character_ = nullptr;
+				publication_consumed_ = true;
+				effect.succeeded = true;
+				break;
+			}
+		case 1:
+		{
+			bool returned = false, succeeded = false;
+			const bool complete = char_to_room_native_birth_bounded(
+				mob, room_rnum, &returned, &succeeded, current_global, reserve,
+				context, live);
+			effect.returned = returned;
+			effect.succeeded = succeeded;
+			if (!complete)
+			{
+				if (!returned)
+					return false;
+				budget_complete = false;
+			}
+			break;
+		}
+		case 2:
+		{
+			bool returned = false, succeeded = false;
+			const bool complete = world_activity_schedule_mundane_after_bounded(
+				mob, choice.delay, &returned, &succeeded, reserve, context, live);
+			effect.returned = returned;
+			effect.succeeded = succeeded;
+			if (!complete)
+			{
+				if (!returned)
+					return false;
+				budget_complete = false;
+			}
+			effect.succeeded = world_activity_mundane_event(mob).event != nullptr;
+			break;
+		}
+		case 3:
+			if (IS_SET(mob->specials.act, ACT_SPEC))
+			{
+				effect.periodic = mob_index[nr].func.mob(mob, nullptr,
+									 CMD_SET_PERIODIC, nullptr);
+			}
+			effect.succeeded = true;
+			break;
+		case 4:
+		{
+			nevent_schedule_result scheduled{};
+			bool returned = false, succeeded = false;
+			if (choice.requested)
+			{
+				const bool complete = nevent_schedule_character_bounded(
+					event_mob_proc, choice.delay, mob, &scheduled, &returned,
+					&succeeded, reserve, context, live);
+				effect.returned = returned;
+				effect.succeeded = succeeded;
+				if (!complete)
+				{
+					if (!returned)
+						return false;
+					budget_complete = false;
+				}
+			}
+			else
+				effect.succeeded = true;
+			break;
+		}
+		case 5:
+		{
+			nevent_schedule_result scheduled{};
+			bool returned = false, succeeded = false;
+			if (choice.requested)
+			{
+				const bool complete = nevent_schedule_character_bounded(
+					event_patrol_move, choice.delay, mob, &scheduled, &returned,
+					&succeeded, reserve, context, live);
+				effect.returned = returned;
+				effect.succeeded = succeeded;
+				if (!complete)
+				{
+					if (!returned)
+						return false;
+					budget_complete = false;
+				}
+			}
+			else
+				effect.succeeded = true;
+			break;
+		}
+		case 6:
+		{
+			nevent_schedule_result scheduled{};
+			bool returned = false, succeeded = false;
+			if (choice.requested)
+			{
+				const bool complete = nevent_schedule_character_bounded(
+					event_mob_skin_spell, choice.delay, mob, &scheduled,
+					&returned, &succeeded, reserve, context, live);
+				effect.returned = returned;
+				effect.succeeded = succeeded;
+				if (!complete)
+				{
+					if (!returned)
+						return false;
+					budget_complete = false;
+				}
+			}
+			else
+				effect.succeeded = true;
+			break;
+		}
+		case 7:
+		{
+			bool returned = false, succeeded = false;
+			const bool complete = character_maintenance_enter_bounded(
+				mob, &returned, &succeeded, reserve, context, live);
+			effect.returned = returned;
+			effect.succeeded = succeeded;
+			if (!complete)
+			{
+				if (!returned)
+					return false;
+				budget_complete = false;
+			}
+			effect.succeeded = mob->character_maintenance_in_world;
+			break;
+		}
+		}
+		// Returned is actual function return, independently of success or extraction.
+		effect.returned = true;
+		P_char found = find_character_by_runtime_id(publication_runtime_id_);
+		if (found != mob)
+			effect.succeeded = false;
+		*live_after = found;
+		if (effect.returned && effect.succeeded)
+		{
+			++publication_next_step_;
+			publication_step_started_ = false;
+		}
+		return budget_complete && effect.returned && effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_stage::restore_published_bounded(
+	int room, std::span<const native_mobile_birth_recovery_effect> effects,
+	std::span<const native_mobile_birth_recovery_choice> choices, P_char *live_after,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	constexpr size_t frames = sizeof(this) + sizeof(room) + sizeof(effects) + sizeof(choices) +
+				  sizeof(live_after) + sizeof(current_global) + sizeof(reserve) +
+				  sizeof(context) + sizeof(outer_live) + 8 * sizeof(size_t) +
+				  8 * sizeof(void *) + sizeof(std::array<uint8_t, 8>) +
+				  sizeof(std::array<uint8_t, 4>) + sizeof(std::array<int32_t, 4>) +
+				  sizeof(std::array<size_t, 4>) +
+				  sizeof(std::array<event_func_type, 4>) +
+				  sizeof(nevent_schedule_result) + 8 * sizeof(bool) + sizeof(int);
+	if (!reserve || outer_live > SIZE_MAX - frames || !reserve(outer_live + frames, context))
+		return false;
+	const size_t live = outer_live + frames;
+	if (!live_after || !nevent_is_game_thread() || effects.size() != 8 || choices.size() != 4 ||
+	    !world || !mob_index || room < 0 || room > top_of_world || mobile_probe_mode ||
+	    publication_step_started_)
+		return false;
+	size_t prefix = 0;
+	std::array<uint8_t, 8> encoded_effects{};
+	std::array<uint8_t, 4> encoded_choices{};
+	std::array<int32_t, 4> delays{};
+	bool gap = false;
+	for (size_t step = 0; step < effects.size(); ++step)
+	{
+		const auto &effect = effects[step];
+		if (effect.periodic && (step != 3 || !effect.returned || !effect.succeeded))
+			return false;
+		if (!effect.started)
+		{
+			if (effect.returned || effect.succeeded || effect.periodic)
+				return false;
+			gap = true;
+		}
+		else
+		{
+			if (gap || !effect.returned || !effect.succeeded)
+				return false;
+			++prefix;
+		}
+		encoded_effects[step] = effect.started | (effect.returned << 1) |
+					(effect.succeeded << 2) | (effect.periodic << 3);
+	}
+	if (!prefix)
+		return false;
+	constexpr std::array<size_t, 4> scheduled_steps{ 2, 4, 5, 6 };
+	for (size_t i = 0; i < choices.size(); ++i)
+	{
+		const auto &choice = choices[i];
+		if ((!choice.chosen && (choice.requested || choice.delay)) ||
+		    (choice.chosen &&
+		     (prefix < scheduled_steps[i] ||
+		      (choice.requested ? choice.delay <= 0 : choice.delay != 0))) ||
+		    (prefix > scheduled_steps[i] && !choice.chosen) ||
+		    (i == 0 && choice.chosen && !choice.requested) ||
+		    (i == 1 && choice.chosen && choice.requested != effects[3].periodic))
+			return false;
+		encoded_choices[i] = choice.chosen | (choice.requested << 1);
+		delays[i] = choice.delay;
+	}
+	if (shared_affect_checkpoint_ && prefix != shared_affect_historical_prefix_)
+		return false;
+	if (restoration_active_)
+	{
+		if (restoration_room_ != room || restoration_prefix_ != prefix ||
+		    restoration_effects_ != encoded_effects ||
+		    restoration_choices_ != encoded_choices || restoration_delays_ != delays)
+			return false;
+	}
+	else
+	{
+		if (!character_ || publication_consumed_ || publication_runtime_id_ ||
+		    publication_next_step_)
+			return false;
+		restoration_room_ = room;
+		restoration_prefix_ = prefix;
+		restoration_effects_ = encoded_effects;
+		restoration_choices_ = encoded_choices;
+		restoration_delays_ = delays;
+		restoration_active_ = true;
+	}
+	P_char mob = publication_consumed_ ? find_character_by_runtime_id(publication_runtime_id_) :
+					     character_;
+	if (!mob || !IS_NPC(mob) || !mob->only.npc || !IS_ALIVE(mob) || !mob->runtime_id)
+		return false;
+	const int nr = mob->only.npc->R_num;
+	if (nr < 0 || nr > top_of_mobt)
+		return false;
+	*live_after = publication_consumed_ ? mob : nullptr;
+	try
+	{
+		if (!publication_consumed_)
+		{
+			if (mob->in_room != NOWHERE || mob->next || mob->next_in_room ||
+			    mob->desc || mob->nevents || mob->nevents_tail ||
+			    mob->character_maintenance_in_world ||
+			    find_character_by_runtime_id(mob->runtime_id) ||
+			    mob_index[nr].number == INT_MAX)
+				return false;
+			for (P_char current = character_list; current; current = current->next)
+				if (current == mob || current->runtime_id == mob->runtime_id)
+					return false;
+			// The registry emplace has a strong allocation guarantee. All fixed
+			// world/count ownership is consumed once immediately after it succeeds.
+			bool returned = false, registered = false;
+			if (!register_character_runtime_id_bounded(mob, &returned, &registered,
+								   reserve, context, live) ||
+			    !returned || !registered)
+				return false;
+			if (find_character_by_runtime_id(mob->runtime_id) != mob)
+				return false;
+			publication_runtime_id_ = mob->runtime_id;
+			mob->next = character_list;
+			character_list = mob;
+			++mob_index[nr].number;
+			character_ = nullptr;
+			publication_consumed_ = true;
+			*live_after = mob;
+		}
+		if (prefix > 1 && !quest_mobile_native_room_restore_owner::restore_bounded(
+					  mob, room, &restoration_room_step_, current_global,
+					  reserve, context, live))
+			return false;
+		if (shared_affect_checkpoint_ && prefix > 1 &&
+		    !finish_shared_shopkeeper_affects_after_room(mob, room))
+			return false;
+		if (prefix == 1 && (mob->in_room != NOWHERE || restoration_room_step_))
+			return false;
+		const std::array<event_func_type, 4> callbacks{ event_mob_mundane, event_mob_proc,
+								event_patrol_move,
+								event_mob_skin_spell };
+		for (size_t i = 0; i < callbacks.size(); ++i)
+		{
+			const bool required = prefix > scheduled_steps[i] && choices[i].requested;
+			if (!required)
+				continue;
+			P_nevent found = nullptr;
+			for (P_nevent slow = mob->nevents, fast = mob->nevents;
+			     fast && fast->next_char_nev;)
+			{
+				slow = slow->next_char_nev;
+				fast = fast->next_char_nev->next_char_nev;
+				if (slow == fast)
+					return false;
+			}
+			for (P_nevent event = mob->nevents; event; event = event->next_char_nev)
+			{
+				if (event->func != callbacks[i])
+					continue;
+				if (found || event->ch != mob ||
+				    event->owner_runtime_id != mob->runtime_id || event->obj ||
+				    event->victim || (event->data && i != 2) ||
+				    !nevent_handle_is_active(nevent_handle_from_event(event)))
+					return false;
+				found = event;
+			}
+			if (!found)
+			{
+				if (restoration_events_[i])
+					return false; // Never replay a consumed rearm.
+				nevent_schedule_result scheduled{};
+				bool returned = false, succeeded = false;
+				const bool complete = nevent_schedule_character_bounded(
+					callbacks[i], choices[i].delay, mob, &scheduled, &returned,
+					&succeeded, reserve, context, live);
+				// Record actual consumed rearm before any diagnostic refusal.
+				if (returned && succeeded && scheduled.was_scheduled())
+				{
+					restoration_events_[i] = true;
+					if (i == 0)
+						world_activity_record_mundane_event(
+							mob, scheduled.handle);
+				}
+				if (!complete || !returned || !succeeded ||
+				    !scheduled.was_scheduled())
+					return false;
+				found = scheduled.handle.event;
+				if (i == 0)
+					world_activity_record_mundane_event(mob, scheduled.handle);
+			}
+			if (i == 0 &&
+			    (mob->world_activity_mundane_event != found ||
+			     mob->world_activity_mundane_event_sequence != found->sequence))
+				return false;
+			restoration_events_[i] = true;
+		}
+		if (prefix > 7 && !mob->character_maintenance_in_world)
+			return false;
+		publication_next_step_ = prefix;
+		return true;
+	}
+	catch (...)
+	{
+		// The body and every actual completed substep remain in this stage.
+		// Historical effect/choice observations are never modified here.
+		*live_after = publication_consumed_ ?
+				      find_character_by_runtime_id(publication_runtime_id_) :
+				      nullptr;
+		return false;
+	}
+}
+
+bool quest_mobile_native_item_stage::capture_recipe_bounded(
+	const player_item_snapshot &literal, native_mobile_birth_item_recipe *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) const noexcept
+{
+	if (!state_ || !output || !reserve || !nevent_is_game_thread())
+		return false;
+	const auto &s = *state_;
+	if (!s.object || s.admitted || s.published || !s.general_initialized ||
+	    s.current_step_started || s.next_step || literal.object_uid != s.uid ||
+	    literal.vnum != s.vnum || s.libraries.size() != s.requested.size() ||
+	    s.libraries.size() != s.library_delays.size() ||
+	    s.libraries.size() != s.parsed_descriptions.size() ||
+	    !std::in_range<int16_t>(s.object->trap_eff) ||
+	    !std::in_range<int16_t>(s.object->trap_dam) ||
+	    !std::in_range<int16_t>(s.object->trap_charge) ||
+	    !std::in_range<int16_t>(s.object->trap_level))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	errno = ENOTSUP;
+	return false;
+#else
+	// Caller retains actual old recipe/stage/image and whole G once. This
+	// local candidate stays private until the original final strong move.
+	const size_t frames =
+		sizeof(native_mobile_birth_item_recipe) +
+		sizeof(native_mobile_birth_library_recipe) +
+		sizeof(native_mobile_birth_recipe_allocation_profile) + sizeof(this) +
+		sizeof(&literal) + sizeof(output) + sizeof(reserve) + sizeof(context) +
+		sizeof(outer_live) + sizeof(&s) + 7 * sizeof(size_t) + sizeof(uint32_t) +
+		5 * sizeof(void *) + 4 * sizeof(bool) +
+		2 * sizeof(std::span<const player_item_snapshot>) +
+		2 * sizeof(std::span<const native_mobile_birth_item_recipe>) +
+		ordinary_item_vector_source_frames<native_mobile_birth_library_recipe>();
+	size_t live = outer_live;
+	if (!cold_birth_add(live, frames) || !reserve(live, context))
+		return false;
+	try
+	{
+		if (!original_birth_literal_matches_bounded(s.object, literal, reserve, context,
+							    live))
+			return false;
+		native_mobile_birth_item_recipe candidate;
+		candidate.object_uid = s.uid;
+		candidate.binding_form = s.original_proc == proclib_obj_cmd_bridge ?
+						 native_mobile_birth_binding_form::bridge :
+						 native_mobile_birth_binding_form::direct;
+		if (!original_birth_procedure_tag(s.effective_proc, &candidate.procedure))
+			return false;
+		candidate.general_periodic = s.general_periodic;
+		candidate.general_delay = s.general_delay;
+		candidate.random_exit_requested = s.random_exit_requested;
+		candidate.trap_eff = static_cast<int16_t>(s.object->trap_eff);
+		candidate.trap_dam = static_cast<int16_t>(s.object->trap_dam);
+		candidate.trap_charge = static_cast<int16_t>(s.object->trap_charge);
+		candidate.trap_level = static_cast<int16_t>(s.object->trap_level);
+		if (s.libraries.size() > SIZE_MAX / sizeof(native_mobile_birth_library_recipe))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		size_t request = live;
+		if (!cold_birth_add(request, s.libraries.size() *
+						     sizeof(native_mobile_birth_library_recipe)) ||
+		    !reserve(request, context))
+			return false;
+		candidate.libraries.reserve(s.libraries.size());
+		if (!cold_birth_add(live, candidate.libraries.capacity() *
+						  sizeof(native_mobile_birth_library_recipe)))
+			return false;
+		for (size_t i = 0; i < s.libraries.size(); ++i)
+		{
+			native_mobile_birth_library_recipe library;
+			if (!quest_mobile_native_original_proclib::retained_library(
+				    s.libraries[i], &library.library))
+				return false;
+			uint32_t index = 0;
+			const auto *description = s.object->ex_description;
+			while (description && description != s.parsed_descriptions[i])
+			{
+				if (index >= literal.extra_descriptions.size())
+					return false;
+				description = description->next;
+				++index;
+			}
+			if (!description || index >= literal.extra_descriptions.size())
+				return false;
+			library.extra_description_index = index;
+			library.periodic_requested = s.requested[i];
+			library.delay = s.library_delays[i];
+			candidate.libraries.push_back(library);
+		}
+		size_t validation = live;
+		if (!cold_birth_add(validation,
+				    native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+		    !reserve(validation, context))
+			return false;
+		if (!native_mobile_birth_recipe_valid({ &literal, 1 }, { &candidate, 1 }))
+			return false;
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_item_stage::restore_ordinary_bounded(
+	const player_item_snapshot &literal, const native_mobile_birth_item_recipe &recipe,
+	quest_mobile_native_item_stage *output, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)literal;
+	(void)recipe;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	if (!reserve || !nevent_is_game_thread() || mysql_enabled ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	size_t globals = 0, fixed = outer_live;
+	if (!cold_birth_current_globals(&globals) || outer_live < globals ||
+	    !cold_birth_add(fixed, sizeof(cold_birth_stage_budget)) ||
+	    !cold_birth_add(fixed, sizeof(quest_mobile_native_item_stage)) ||
+	    !cold_birth_add(fixed, sizeof(std::unique_ptr<implementation>)) ||
+	    !cold_birth_add(fixed, sizeof(native_mobile_birth_literal_stage)) ||
+	    !cold_birth_add(
+		    fixed,
+		    // Genuine strict/bound catalog selector and actual original binding proof.
+		    sizeof(const object_template *) + sizeof(obj_proc_type) + sizeof(bool) +
+			    2 * sizeof(int) + sizeof(decltype(recovery_object_templates.cbegin())) +
+			    sizeof(decltype(recovery_object_templates.cend())) +
+			    // lower_bound, __lower_bound and iterator distance/advance source carriers.
+			    8 * sizeof(void *) + 6 * sizeof(std::ptrdiff_t) + 4 * sizeof(int) +
+			    2 * sizeof(std::random_access_iterator_tag) + 3 * sizeof(bool)) ||
+	    !reserve(fixed, context))
+		return false;
+	cold_birth_stage_budget budget{ reserve, context, fixed - globals };
+
+	if (!output || output->state_ || !nevent_is_game_thread() ||
+	    !cold_birth_recipe_valid_bounded(literal, recipe, budget) || !obj_index)
+		return false;
+	quest_mobile_native_item_stage candidate;
+	try
+	{
+		obj_proc_type effective;
+		if (!original_birth_procedure(recipe.procedure, &effective))
+			return false;
+		const object_template *strict = cold_birth_strict_flat_template(literal.vnum);
+		const object_template *prototype = nullptr;
+		bool rebind = false;
+		if (strict && strict->R_num >= 0 && strict->R_num <= top_of_objt &&
+		    obj_index[strict->R_num].virtual_number == literal.vnum)
+		{
+			const auto original = obj_index[strict->R_num].func.obj;
+			const bool direct = recipe.binding_form ==
+						    native_mobile_birth_binding_form::direct &&
+					    original == effective;
+			const bool bridge =
+				recipe.binding_form == native_mobile_birth_binding_form::bridge &&
+				original == proclib_obj_cmd_bridge &&
+				proclib_recovery_chain_stage::predecessor_matches(strict->R_num,
+										  effective);
+			if (direct || bridge)
+				prototype = strict;
+		}
+		if (!prototype)
+			prototype = cold_birth_bound_flat_template(literal, recipe);
+		if (!prototype && strict && strict->R_num >= 0 && strict->R_num <= top_of_objt &&
+		    obj_index[strict->R_num].virtual_number == literal.vnum &&
+		    recipe.binding_form == native_mobile_birth_binding_form::bridge &&
+		    obj_index[strict->R_num].func.obj != proclib_obj_cmd_bridge &&
+		    obj_index[strict->R_num].func.obj == effective)
+		{
+			// Original explicit bare-predecessor reconstruction, selected from actual
+			// sealed/current binding equality before any candidate allocation.
+			prototype = strict;
+			rebind = true;
+		}
+		if (!prototype || prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    obj_index[prototype->R_num].virtual_number != literal.vnum)
+			return false;
+		const int nr = prototype->R_num;
+		const auto original = obj_index[nr].func.obj;
+
+		size_t arrays = 0;
+		if (!cold_birth_stage_array_bytes(recipe.libraries.size(), &arrays) ||
+		    !cold_birth_add(arrays, sizeof(implementation)) || !budget.admit(arrays))
+			return false;
+		auto state = std::make_unique<implementation>();
+		state->bounded_cold_literal = true;
+		budget.heap = arrays;
+		state->index = obj_index;
+		state->rnum = nr;
+		state->vnum = literal.vnum;
+		state->position = obj_index[nr].pos;
+		state->uid = literal.object_uid;
+		state->original_proc = original;
+		state->effective_proc = effective;
+		state->restored_bridge_request = rebind;
+		state->general_periodic = recipe.general_periodic;
+		state->general_delay = recipe.general_delay;
+		state->random_exit_requested = recipe.random_exit_requested;
+		state->general_initialized = true;
+		state->libraries.reserve(recipe.libraries.size());
+		state->parsed_descriptions.reserve(recipe.libraries.size());
+		state->requested.reserve(recipe.libraries.size());
+		state->library_delays.reserve(recipe.libraries.size());
+		native_mobile_birth_literal_stage literal_stage;
+		if (!native_mobile_birth_literal_stage::prepare_bounded(
+			    *prototype, literal, literal_stage, reserve, context, budget.live(),
+			    &state->bounded_literal_raw_heap))
+			return false;
+		if (!cold_birth_add(budget.heap, state->bounded_literal_raw_heap))
+			return false;
+		state->object = std::exchange(literal_stage.object_, nullptr);
+		state->pool = std::exchange(literal_stage.pool_, nullptr);
+		state->affect_pool = std::exchange(literal_stage.affect_pool_, nullptr);
+		candidate.state_ = state.release();
+		auto &s = *candidate.state_;
+		P_obj object = s.object;
+		object->trap_eff = recipe.trap_eff;
+		object->trap_dam = recipe.trap_dam;
+		object->trap_charge = recipe.trap_charge;
+		object->trap_level = recipe.trap_level;
+		SET_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
+		size_t description_index = 0;
+		for (auto *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (description_index >= literal.extra_descriptions.size())
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			if (literal.extra_descriptions[description_index].spellbook)
+				s.allocated_spell_description = description;
+			++description_index;
+		}
+		if (description_index != literal.extra_descriptions.size())
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		for (const auto &saved : recipe.libraries)
+		{
+			size_t index;
+			if (!quest_mobile_native_original_proclib::retained_index(saved.library,
+										  &index))
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			auto *description = object->ex_description;
+			for (uint32_t i = 0; description && i < saved.extra_description_index; ++i)
+				description = description->next;
+			if (!description)
+			{
+				candidate.discard_unadmitted();
+				return false;
+			}
+			s.libraries.push_back(index);
+			s.parsed_descriptions.push_back(description);
+			s.requested.push_back(saved.periodic_requested);
+			s.library_delays.push_back(saved.delay);
+			s.library_event_requested = s.library_event_requested ||
+						    saved.periodic_requested;
+		}
+		s.parsed_proclib = !s.libraries.empty();
+		if (!original_birth_literal_matches_bounded(object, literal, reserve, context,
+							    budget.live()) ||
+		    obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
+		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		if (effective == zombies_game &&
+		    !quest_mobile_native_zombie_stage::restore_bounded(object, s.zombie, reserve,
+								       context, budget.live()))
+		{
+			candidate.discard_unadmitted();
+			return false;
+		}
+		// No allocating/callback work follows the last original retained owner.
+		output->state_ = candidate.state_;
+		candidate.state_ = nullptr;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		candidate.discard_unadmitted();
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		candidate.discard_unadmitted();
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_stage::choose_publication_step_bounded(
+	size_t step, P_char expected, const native_mobile_birth_recovery_effect &probe,
+	native_mobile_birth_recovery_choice *output, bool *started,
+	bool (*current_global)(size_t *, void *) noexcept, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// Actual RNG leaf number/rnd64/rotl scope is fixed and allocation-free; the
+	// activity-controlled refresh in step2 is covered by its complete provider.
+	constexpr size_t random_frames =
+		// Actual number(from,to), rnd64(scope,state,result,t), rotl(x,k), plus
+		// numeric_limits::max and array.data/_M_ptr receiver/return carriers.
+		2 * sizeof(int) + 2 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint64_t) +
+		sizeof(int) + sizeof(uint64_t) + 3 * sizeof(void *);
+	const size_t frames = sizeof(this) + sizeof(step) + sizeof(expected) + sizeof(&probe) +
+			      sizeof(output) + sizeof(started) + sizeof(current_global) +
+			      sizeof(reserve) + sizeof(context) + sizeof(outer_live) +
+			      sizeof(size_t) + sizeof(native_mobile_birth_recovery_choice) +
+			      sizeof(int) + 2 * sizeof(bool) + random_frames;
+	size_t live = outer_live;
+	if (!started || !current_global || !reserve)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (*started)
+		return false;
+	if (!cold_birth_add(live, frames))
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	if (!reserve(live, context))
+	{
+		if (!errno)
+			errno = ENOBUFS;
+		return false;
+	}
+	if (!output || !expected || !nevent_is_game_thread() || !publication_consumed_ ||
+	    publication_step_started_ || step != publication_next_step_ ||
+	    find_character_by_runtime_id(publication_runtime_id_) != expected ||
+	    !IS_NPC(expected) || !expected->only.npc)
+		return false;
+	if (shared_affect_checkpoint_ && step >= 2 && !shared_affect_complete_)
+		return false;
+	try
+	{
+		native_mobile_birth_recovery_choice choice;
+		choice.chosen = true;
+		if (step != 2 && step != 4 && step != 5 && step != 6)
+			return false;
+		if (step == 4 && (!probe.started || !probe.returned || !probe.succeeded))
+			return false;
+		*started = true; // Actual native choice call, before refresh or RNG.
+		switch (step)
+		{
+		case 2:
+			choice.requested = true;
+			// Original draw remains after room insertion and before the special probe.
+			{
+				int delay = 0;
+				bool returned = false;
+				const bool complete = world_activity_mundane_delay_bounded(
+					expected, false, true, &delay, &returned, current_global,
+					reserve, context, live);
+				if (!returned)
+					return false;
+				choice.delay = delay;
+				*output =
+					choice; // Real draw retained even if post-observation refuses.
+				return complete;
+			}
+		case 4:
+			if (!probe.started || !probe.returned || !probe.succeeded)
+				return false;
+			choice.requested = probe.periodic;
+			if (choice.requested)
+				choice.delay = PULSE_MOBILE + number(-4, 4);
+			break;
+		case 5:
+			choice.requested = IS_ACT(expected, ACT_PATROL);
+			if (choice.requested)
+				choice.delay = WAIT_SEC;
+			break;
+		case 6:
+			choice.requested = IS_AFFECTED(expected, AFF_STONE_SKIN | AFF_BIOFEEDBACK);
+			if (choice.requested)
+				choice.delay = number(1, 5);
+			break;
+		default:
+			return false;
+		}
+		*output = choice;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

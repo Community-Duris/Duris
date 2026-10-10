@@ -8852,3 +8852,279 @@ bool quest_mobile_native_local_stock::restore_enrollment_bounded(
 		return budget.finish(false);
 	}
 }
+
+#include "guild/artifact_native_birth.h"
+#include "world/ferry.h"
+#include <list>
+extern std::list<Ferry *> ferry_list;
+
+namespace
+{
+size_t native_birth_shell_ferry_iteration_source_frame_bytes() noexcept
+{
+	using iterator = std::list<Ferry *>::iterator;
+	static_assert(std::is_same_v<iterator, std::_List_iterator<Ferry *>>);
+	// Actual selecting proof uses prefix ++; original ferryact.c:318 uses
+	// postfix ++. Both walk the same real list without copying its storage.
+	return sizeof(size_t) +
+	       // Two walk receivers/object arguments and both actual local iterators.
+	       2 * sizeof(P_obj) + 2 * sizeof(iterator) +
+	       // list::begin/end: two this receivers, returned iterators and their
+	       // node-pointer/this constructor scopes (stl_list.h).
+	       6 * sizeof(void *) + 2 * sizeof(iterator) +
+	       // C++20 != rewrites operator==: two const-reference operands/result.
+	       2 * sizeof(void *) + sizeof(bool) +
+	       // iterator::* -> node::_M_valptr -> aligned_membuf::_M_ptr/_M_addr:
+	       // four receivers, three pointer results, real Ferry*& result.
+	       8 * sizeof(void *) +
+	       // Prefix this/reference-result; postfix this/int/__tmp/value-result.
+	       3 * sizeof(void *) + sizeof(int) + 2 * sizeof(iterator);
+}
+struct native_birth_shell_extraction_budget
+{
+	P_obj probe;
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t base;
+	bool private_bytes(size_t *output) const noexcept
+	{
+		return probe && obj_native_birth_shell_private_storage_bytes(probe, output);
+	}
+	bool init(size_t outer, size_t frame) noexcept
+	{
+		size_t global = 0, private_heap = 0;
+		if (frame > SIZE_MAX - outer || !reserve(outer + frame, context) ||
+		    !current_global(&global, context) || global > outer ||
+		    !private_bytes(&private_heap) || private_heap > SIZE_MAX - outer - frame ||
+		    !reserve(outer + frame + private_heap, context))
+			return false;
+		// Genuine incoming G is included once; the actual stage handed the
+		// private probe allocations to this helper for its whole live interval.
+		base = outer - global + frame;
+		return true;
+	}
+	bool live_without_global(size_t *output) const noexcept
+	{
+		size_t private_heap = 0;
+		if (!private_bytes(&private_heap) || private_heap > SIZE_MAX - base)
+			return false;
+		*output = base + private_heap;
+		return true;
+	}
+	bool finish(bool status) const noexcept
+	{
+		size_t global = 0, private_heap = 0;
+		const bool globals_ok = current_global && current_global(&global, context);
+		const bool private_ok = !probe || private_bytes(&private_heap);
+		return status && globals_ok && private_ok;
+	}
+	static bool nested_reserve(size_t requested, void *opaque) noexcept
+	{
+		const auto &owner =
+			*static_cast<const native_birth_shell_extraction_budget *>(opaque);
+		size_t global = 0, private_heap = 0;
+		if (!owner.current_global(&global, owner.context) ||
+		    !owner.private_bytes(&private_heap) || global > SIZE_MAX - requested ||
+		    private_heap > SIZE_MAX - requested - global)
+			return false;
+		return owner.reserve(requested + global + private_heap, owner.context);
+	}
+};
+bool native_birth_shell_list_proof(P_obj expected, uint64_t uid) noexcept
+{
+	P_obj slow = object_list, fast = object_list;
+	while (fast && fast->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	P_obj previous = nullptr;
+	bool found = false;
+	for (P_obj item = object_list; item; item = item->next)
+	{
+		if (item->prev != previous || (item->next && item->next->prev != item))
+			return false;
+		if (item == expected)
+		{
+			if (found || item->obj_uid != uid)
+				return false;
+			found = true;
+		}
+		else if (item->obj_uid == uid)
+			return false;
+		previous = item;
+	}
+	return found;
+}
+bool native_birth_shell_absent(P_obj old_pointer, uint64_t uid) noexcept
+{
+	// Pointer/UID comparisons only; never dereference the released object.
+	P_obj slow = object_list, fast = object_list;
+	while (fast && fast->next)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	for (P_obj item = object_list; item; item = item->next)
+		if (item == old_pointer || item->obj_uid == uid)
+			return false;
+	return true;
+}
+} // namespace
+
+bool extract_obj_native_birth_shell_bounded(P_obj actual_probe, uint64_t expected_uid,
+					    bool *returned, bool *absent,
+					    bool (*current_global)(size_t *, void *) noexcept,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	if (!returned || !absent || returned == absent || *returned || *absent || !current_global ||
+	    !reserve || !nevent_is_game_thread() || !actual_probe || !expected_uid)
+		return false;
+#ifndef __NO_MYSQL__
+	(void)context;
+	(void)outer_live;
+	return false; // Genuine preaction SQL refusal; default SQL extraction untouched.
+#else
+	if (persistence_mode_requires_mysql() ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	// Prospectively own the complete local source closure before observing
+	// actual list/private storage. Includes original full forgetting/list/index
+	// tails, both proof walks, nested relays and lower outcome witnesses.
+	constexpr size_t own_frame =
+		sizeof(native_birth_shell_extraction_budget) + 9 * sizeof(void *) +
+		sizeof(uint64_t) + sizeof(size_t) + 3 * sizeof(size_t) + 5 * sizeof(bool) +
+		sizeof(int) + 12 * sizeof(P_obj) + sizeof(bool) +
+		// The separately typed source profile owns both genuine Ferry walks.
+		// current/private/init/live/finish/nested callback argument/result scopes.
+		12 * sizeof(void *) + 11 * sizeof(size_t) + 6 * sizeof(bool) +
+		// world-recovery/floor-drop/quest index scalar original source carriers.
+		6 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(int) + sizeof(uint64_t) +
+		// observe_extraction(object), reset_order_valid's actual previous ordinal,
+		// live/pending objects, slow/fast/prior, nested list_shape's four pointers,
+		// identity(object) and remove_pending(object). The two complete walks
+		// are iterative; their declared source carriers are finite regardless
+		// of the genuine current live/pending list cardinality.
+		12 * sizeof(P_obj) + sizeof(uint64_t) +
+		// Actual game-thread id result and two equality operands/reference args.
+		5 * sizeof(std::thread::id) + 4 * sizeof(void *);
+	// This actual lower query is called by init/live/finish and the reserve-only
+	// artifact relay. Its declared source carriers must be owned before the
+	// first private request/header census, including outcome-only censuses.
+	const size_t private_observer_frame =
+		obj_native_birth_shell_private_storage_observer_frame_bytes();
+	const size_t ferry_frame = native_birth_shell_ferry_iteration_source_frame_bytes();
+	// Actual three size_t profile locals plus both getter return carriers.
+	constexpr size_t profile_queries = 5 * sizeof(size_t);
+	if (private_observer_frame > SIZE_MAX - own_frame - profile_queries ||
+	    ferry_frame > SIZE_MAX - own_frame - profile_queries - private_observer_frame)
+		return false;
+	const size_t frame = own_frame + profile_queries + private_observer_frame + ferry_frame;
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	if (!native_birth_shell_list_proof(actual_probe, expected_uid))
+		return false;
+	// These are genuine full read_object ITEM_CONTAINER invariants, not a
+	// detached/template substitution: real pool/UID/index/list, no publication.
+	// Its authenticated supported original special/proclib CMD_SET_PERIODIC
+	// branches do not attach containment/hitches or ferry/action ownership.
+	if (!obj_index || actual_probe->R_num < 0 || actual_probe->R_num > top_of_objt ||
+	    !IS_SET(actual_probe->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE) ||
+	    actual_probe->type != ITEM_CONTAINER || actual_probe->loc_p != LOC_NOWHERE ||
+	    actual_probe->contains || actual_probe->hitched_to ||
+	    obj_index[actual_probe->R_num].number <= 0)
+		return false;
+	for (auto iterator = ferry_list.begin(); iterator != ferry_list.end(); ++iterator)
+		if (*iterator && (*iterator)->obj == actual_probe)
+			return false; // Genuine fresh probe is never Ferry::init's owned ship.
+	native_birth_shell_extraction_budget budget{ actual_probe, current_global, reserve, context,
+						     0 };
+	if (!budget.init(outer_live, frame))
+		return budget.finish(false);
+	try
+	{
+		size_t live = 0;
+		bool actions_returned = false, disarm_returned = false;
+		bool artifact_returned = false, artifact_succeeded = false, free_returned = false;
+		int artifact_status = 0;
+		// Full original extract_obj(obj,TRUE) order. Authenticated NOWHERE root
+		// means original room/carried/worn/inside detach branches cannot execute;
+		// genuine constructor contains/hitched are NULL, hence no child or link
+		// callback is silently discarded under this accepted source provenance.
+		world_recovery_capture_forget_object(actual_probe);
+		if (!budget.live_without_global(&live) ||
+		    !item_actions_source_leaving_native_birth_shell_bounded(
+			    actual_probe, expected_uid, &actions_returned, current_global, reserve,
+			    context, live) ||
+		    !actions_returned)
+			return budget.finish(false);
+		ferry_forget_object(actual_probe); // Actual original zero-match body.
+		if (actual_probe->obj_uid > 0)
+			redis_remove_floor_drop(actual_probe->obj_uid);
+		actual_probe->contains = nullptr;
+		if (!budget.live_without_global(&live) ||
+		    !disarm_obj_nevents_native_birth_shell_bounded(actual_probe, &disarm_returned,
+								   current_global, reserve, context,
+								   live) ||
+		    !disarm_returned)
+			return budget.finish(false);
+		if (IS_ARTIFACT(actual_probe))
+		{
+			artifact_status = artifact_native_birth_shell_remove_owned_bounded(
+				actual_probe, -1, &artifact_returned, &artifact_succeeded,
+				native_birth_shell_extraction_budget::nested_reserve, &budget,
+				budget.base);
+			if (artifact_status || !artifact_returned)
+				return budget.finish(false);
+			// Original extract_obj intentionally ignores completed original
+			// remove_owned_artifact_sql FALSE and proceeds with all free tails.
+			(void)artifact_succeeded;
+		}
+		quest_mobile_native_item_observe_extraction(actual_probe);
+		if (object_list == actual_probe)
+		{
+			object_list = actual_probe->next;
+			if (object_list)
+				object_list->prev = nullptr;
+		}
+		else
+		{
+			if (actual_probe->prev)
+				actual_probe->prev->next = actual_probe->next;
+			if (actual_probe->next)
+				actual_probe->next->prev = actual_probe->prev;
+		}
+		actual_probe->prev = nullptr;
+		actual_probe->next = nullptr;
+		if (actual_probe->R_num >= 0)
+			--obj_index[actual_probe->R_num].number;
+		// Genuine DB free cursor now owns all remaining probe-private bytes.
+		// No handler relay may add them or dereference the object during this
+		// handoff; the original free tail performs its second disarm call.
+		budget.probe = nullptr;
+		const bool freed = free_obj_native_birth_shell_bounded(actual_probe, &free_returned,
+								       current_global, reserve,
+								       context, budget.base);
+		if (!free_returned)
+		{
+			budget.probe = actual_probe; // Still genuinely retained on partial free.
+			return budget.finish(false);
+		}
+		// Full original extraction returned. Latch before any fallible pure
+		// observer, and prove absence only from the live list pointer/UID census.
+		*returned = true;
+		*absent = native_birth_shell_absent(actual_probe, expected_uid);
+		return budget.finish(freed && *absent);
+	}
+	catch (...)
+	{
+		return budget.finish(false); // No rewind/retry of a started actual shell.
+	}
+#endif
+}

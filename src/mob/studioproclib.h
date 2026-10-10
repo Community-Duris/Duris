@@ -45,6 +45,21 @@ void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
 // special callback, description/flag mutation, binding or periodic scheduling.
 bool proclib_saved_binding_eligible(P_obj, bool *eligible) noexcept;
 
+// Full genuine immediate real read_object add. Outer excludes actual private
+// probe requests and G. Returned distinguishes normal original result from a
+// retained partial constructor; the caller's started latch prohibits retries.
+bool proclibObj_add_bounded(P_obj, char *, char *, int *, bool *,
+			    bool (*)(size_t *, void *) noexcept, bool (*)(size_t, void *) noexcept,
+			    void *, size_t) noexcept;
+// Actual old chain retention, for the existing whole global census once.
+bool proclib_chain_native_storage_bytes(size_t *) noexcept;
+// Admit this real source closure before calling the pure storage query.
+size_t proclib_chain_native_storage_observer_frame_bytes() noexcept;
+bool proclib_chain_install_native_birth_bounded(int, obj_proc_type, bool *,
+						bool (*)(size_t *, void *) noexcept,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept;
+
 class quest_mobile_native_item_stage;
 enum class native_mobile_birth_library : uint8_t;
 // Original parser/descriptor preparation only; native probes, events and
@@ -53,6 +68,11 @@ class quest_mobile_native_original_proclib
 {
     private:
 	friend class quest_mobile_native_item_stage;
+	friend bool proclibObj_add_bounded(P_obj, char *, char *, int *, bool *,
+					   bool (*)(size_t *, void *) noexcept,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
+
 	static int prepare(P_obj, char *name, char *arguments, size_t *library_index);
 	static bool probe(P_obj, size_t library_index, bool *periodic) noexcept;
 	// Full original five-parser preparation and original known-library periodic

@@ -135,4 +135,15 @@ bool nevent_cancel_character_maintenance_bounded(nevent_handle, nevent_cancel_re
 size_t nevent_native_reschedule_flush_source_observer_frame_bytes() noexcept;
 bool nevent_native_reschedule_flush_source_frame_bytes(size_t *) noexcept;
 
+// Full original disarm of actual newly constructed shell events, including
+// deferred vector growth and object/schedule/pool tails. Caller holds genuine
+// game-thread/ROOT lifecycle exclusion and authentic constructor provenance.
+// outer excludes true G, includes probe private allocations. Returned latches
+// before final pure G recensus; false never permits retry of a started shell.
+// Arbitrary payload/character-bound event callbacks remain a lower-provider HOLD.
+bool disarm_obj_nevents_native_birth_shell_bounded(P_obj, bool *,
+						   bool (*)(size_t *, void *) noexcept,
+						   bool (*)(size_t, void *) noexcept, void *,
+						   size_t) noexcept;
+
 #endif /* _SOJ_EVENTS_H_ */

@@ -8569,3 +8569,209 @@ bool diagnostic_original_logit_working_bytes(const char *filename, size_t *outpu
 	return true;
 #endif
 }
+
+#include <thread>
+
+namespace
+{
+// Formatter children hold a fixed entry global; delivery children refresh their
+// own actual output queues/pager. Replace only the remaining foreign globals
+// for delivery, preventing both stale output allowances and duplicate charging.
+struct original_wizlog_global_relay
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t entry_global;
+	size_t entry_foreign;
+	bool output_owned = false;
+	bool interrupted = false;
+
+	bool observe(size_t *global, size_t *foreign) const noexcept
+	{
+		size_t output = 0;
+		if (!current_global(global, context) || !diagnostic_output_storage_bytes(&output) ||
+		    output > *global)
+			return false;
+		*foreign = *global - output;
+		return true;
+	}
+	bool reset(bool output_child) noexcept
+	{
+		output_owned = output_child;
+		if (!observe(&entry_global, &entry_foreign))
+			return interrupted = true, false;
+		return true;
+	}
+	static bool admit(size_t requested, void *opaque) noexcept
+	{
+		auto &relay = *static_cast<original_wizlog_global_relay *>(opaque);
+		size_t global = 0, foreign = 0;
+		if (!relay.observe(&global, &foreign))
+			return relay.interrupted = true, false;
+		const size_t before = relay.output_owned ? relay.entry_foreign : relay.entry_global;
+		const size_t now = relay.output_owned ? foreign : global;
+		if (requested < before || now > SIZE_MAX - (requested - before))
+			return relay.interrupted = true, false;
+		if (!relay.reserve(requested - before + now, relay.context))
+			return relay.interrupted = true, false;
+		return true;
+	}
+};
+struct original_wizlog_workspace
+{
+	va_list args;
+	char *buffer = nullptr;
+	size_t payload = 0, foreign = 0, live = 0;
+	original_wizlog_global_relay relay;
+};
+using original_wizlog_observer_fn = bool (*)(size_t *, void *) noexcept;
+using original_wizlog_reserve_fn = bool (*)(size_t, void *) noexcept;
+// observe(this,global,foreign)/output/result; reset(this,output_child)/result;
+// admit(requested,opaque)/relay-reference/global/foreign/before/now/result.
+// Same genuine game-thread query and generated scope law as property reads.
+constexpr size_t original_wizlog_thread_source_frames =
+	3 * sizeof(std::thread::id) + 5 * sizeof(void *) +
+	3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+// Genuine observer's public const string data and capacity descendants:
+// data -> _M_data; capacity -> _M_is_local -> _M_data/_M_local_data ->
+// pointer_to -> std::addressof -> std::__addressof. No string copy/heap.
+constexpr size_t original_wizlog_string_data_source_frames = 4 * sizeof(void *);
+constexpr size_t original_wizlog_string_capacity_source_frames =
+	12 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t original_wizlog_string_heap_source_frames =
+	2 * sizeof(void *) + 2 * sizeof(uintptr_t) + sizeof(bool) +
+	original_wizlog_string_data_source_frames +
+	2 * original_wizlog_string_capacity_source_frames;
+constexpr size_t original_wizlog_queue_storage_source_frames =
+	4 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool) +
+	// One actual header helper result is multiplied by two retained headers;
+	// strlen owns its actual argument/result, not a copied queue/node.
+	sizeof(size_t) + sizeof(void *) + sizeof(size_t);
+constexpr size_t original_wizlog_output_observer_source_frames =
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+	original_wizlog_thread_source_frames +
+	std::max(original_wizlog_string_heap_source_frames,
+		 original_wizlog_queue_storage_source_frames);
+constexpr size_t original_wizlog_relay_source_frames =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	std::max(sizeof(void *) + 2 * sizeof(bool),
+		 2 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool)) +
+	// Actual global/output observer and reserve invocation arguments/results.
+	3 * sizeof(void *) + 2 * sizeof(bool) + sizeof(size_t) + sizeof(void *) + sizeof(bool);
+// The existing bounded formatter owns its workspace/real malloc. Its remaining
+// actual public parameters and safe_prefix/safe_suffix plus two vsnprintf,
+// strlen and memcpy invocation scopes, malloc and va_copy/end source arguments
+// must be admitted here; libc implementation/emitted qualification stays OPEN.
+constexpr size_t original_wizlog_formatter_remaining_source_frames =
+	9 * sizeof(void *) + sizeof(original_wizlog_reserve_fn) + sizeof(size_t) + sizeof(bool) +
+	// Each actual fortified vsnprintf wrapper + chk + dynamic object-size.
+	2 * (7 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(int)) +
+	2 * (sizeof(void *) + sizeof(size_t)) +
+	// Each fortified memcpy wrapper + chk + dynamic object-size.
+	2 * (7 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(int)) + sizeof(size_t) +
+	sizeof(void *) + 6 * sizeof(void *);
+// Public returned/context/format, genuine callback types, level/outer/result;
+// local formatted and original descriptor, actual fractional buf vararg carrier.
+// finish(work,returned,completed)/result/admitted have their own real scopes.
+constexpr size_t original_wizlog_frames =
+	sizeof(original_wizlog_workspace) + 3 * sizeof(void *) +
+	sizeof(original_wizlog_observer_fn) + sizeof(original_wizlog_reserve_fn) + sizeof(int) +
+	sizeof(size_t) + sizeof(bool) + sizeof(bool) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	3 * sizeof(bool) +
+	// Actual original va_start(args,format), va_end(args), finish free(buffer).
+	4 * sizeof(void *) + original_wizlog_relay_source_frames +
+	original_wizlog_formatter_remaining_source_frames + original_wizlog_thread_source_frames +
+	original_wizlog_output_observer_source_frames;
+
+bool original_wizlog_finish(original_wizlog_workspace &work, bool *returned,
+			    bool completed) noexcept
+{
+	if (work.buffer)
+		free(work.buffer);
+	work.buffer = nullptr;
+	work.payload = 0;
+	if (completed)
+		*returned = true;
+	// Recount genuine survivors AFTER release on every formatted return, even
+	// after a prior recipient interruption. Never replay output to regain budget.
+	if (!work.relay.reset(false) || work.relay.entry_global > SIZE_MAX - work.foreign ||
+	    original_wizlog_frames > SIZE_MAX - work.foreign - work.relay.entry_global)
+		return false;
+	work.live = work.foreign + work.relay.entry_global + original_wizlog_frames;
+	const bool admitted = original_wizlog_global_relay::admit(work.live, &work.relay);
+	return completed && admitted;
+}
+}
+
+bool diagnostic_wizlog_bounded(int level, bool *returned,
+			       bool (*current_global)(size_t *, void *) noexcept,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer_live, const char *format, ...) noexcept
+{
+	if (returned)
+		*returned = false;
+	if (!returned || !current_global || !reserve || !format)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (original_wizlog_frames > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + original_wizlog_frames, context))
+		return false;
+	// Admit the genuine query source carriers before entering its call chain.
+	if (!nevent_is_game_thread())
+		return false;
+	original_wizlog_workspace work{ {}, nullptr, 0,
+					0,  0,	     { current_global, reserve, context, 0, 0 } };
+	if (!work.relay.reset(false) || work.relay.entry_global > outer_live)
+		return false;
+	work.foreign = outer_live - work.relay.entry_global;
+	work.live = outer_live + original_wizlog_frames;
+	va_start(work.args, format);
+	const bool formatted = diagnostic_format_variadic_message_bounded(
+		"&+C*** WIZLOG:&n ", "\r\n", format, work.args, &work.buffer,
+		original_wizlog_global_relay::admit, &work.relay, work.live, &work.payload);
+	va_end(work.args);
+	if (!formatted)
+	{
+		// Original formatter's negative vsnprintf or failed malloc yields null
+		// and wizlog completes normally. Callback/observer interruption does not.
+		return original_wizlog_finish(work, returned, !work.relay.interrupted);
+	}
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act, PLR_WIZLOG))
+		{
+			// Actual original default send_to_char is a no-op without desc.
+			if (!d->character->desc)
+				continue;
+			if (!work.relay.reset(true) ||
+			    work.relay.entry_global > SIZE_MAX - work.foreign ||
+			    original_wizlog_frames >
+				    SIZE_MAX - work.foreign - work.relay.entry_global ||
+			    work.payload > SIZE_MAX - work.foreign - work.relay.entry_global -
+						   original_wizlog_frames)
+			{
+				return original_wizlog_finish(work, returned, false);
+			}
+			work.live = work.foreign + work.relay.entry_global +
+				    original_wizlog_frames + work.payload;
+			if (!diagnostic_wizlog_send_to_char_bounded(
+				    work.buffer, d->character, original_wizlog_global_relay::admit,
+				    &work.relay, work.live))
+			{
+				return original_wizlog_finish(work, returned, false);
+			}
+		}
+	}
+	return original_wizlog_finish(work, returned, true);
+#else
+	(void)level;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

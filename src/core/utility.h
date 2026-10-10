@@ -77,4 +77,13 @@ size_t diagnostic_original_logit_preflight_object_bytes() noexcept;
 bool diagnostic_original_logit_working_bytes(const char *, size_t *, const char *, ...) noexcept
 	__attribute__((format(printf, 3, 4)));
 
+// Full original level/WIZLOG selection, variadic formatting and fanout order.
+// outer contains genuine G INCLUDING all current registered output once; child
+// output census replaces its own allowance, relay replaces only foreign G.
+// returned records original completion (including null formatter outcome).
+// False before completion can retain actual earlier output; never retry it.
+bool diagnostic_wizlog_bounded(int, bool *, bool (*)(size_t *, void *) noexcept,
+			       bool (*)(size_t, void *) noexcept, void *, size_t, const char *,
+			       ...) noexcept __attribute__((format(printf, 7, 8)));
+
 #endif // _UTILITY_H_

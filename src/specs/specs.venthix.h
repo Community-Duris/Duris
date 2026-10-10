@@ -40,6 +40,14 @@ class quest_mobile_native_zombie_stage
 {
     private:
 	friend class quest_mobile_native_item_stage;
+	// Actual failed immediate listed-shell construction, distinct from the
+	// original deferred reservation game_. No automatic uncertain cleanup.
+	ZombieGame *shell_game_ = nullptr;
+	bool shell_retained_private_storage_bytes(size_t *) const noexcept;
+	static bool initialize_shell_bounded(P_obj, quest_mobile_native_zombie_stage &, int *,
+					     bool *, bool (*)(size_t *, void *) noexcept,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t) noexcept;
 	ZombieGame *game_ = nullptr;
 	int mob_rnum_ = -1;
 	P_index original_mob_index_ = nullptr;
@@ -78,5 +86,7 @@ void zgame_clear_zombies(P_obj obj);
 int zg_count_zombies(P_obj obj);
 int zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg);
 ZombieGame *get_zgame_from_obj(P_obj obj);
+
+size_t native_mobile_birth_super_cannon_source_frame_bytes() noexcept;
 
 #endif

@@ -3923,3 +3923,20 @@ Full selecting startup, physical ownership, producer/publication/drain, native32
 gameplay/persistence/recovery/R1–R8/release remain OPEN. Tests stay deferred to
 major-plan readiness; inactive/CLOSED, incomplete coverage, release BLOCKED and
 goal ACTIVE. No major-plan completion is claimed.
+
+
+## Complete bounded native producer and prerequisites integrated - 2026-10-10
+
+[Source checkpoint](COMPLETE_BOUNDED_NATIVE_PRODUCER_SOURCE_2026-10-10.md)
+joins the complete original producer with actual shell extraction/cancellation,
+flat artifact removal, property and full WIZLOG providers in25 maintained files.
+Original capture/identity/forest/progress/publication/terminal/receipt/retirement
+laws and default/inactive bodies survive. Independent128/normalized130/actual
+formatted25 token/PP/inverse reviews pass; all previously questioned bounded
+lower declarations pair with their already-maintained definitions. Registry470
+pins/931 unchanged policies/2911 census entries/2853 mapped sites/protected Plan5
+WIP persist, with no new writers. Two newer remote documentation commits are
+preserved. Full selecting startup/physical first admission/foreign ownership/host
+publication/drain/native32MiB/gameplay/persistence/recovery/R1-R8/release remain
+OPEN. Tests stay batched at major-plan readiness; inactive/CLOSED, coverage
+incomplete, release BLOCKED and goal ACTIVE. No major-plan completion is claimed.

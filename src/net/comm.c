@@ -6953,3 +6953,379 @@ bool critical_mixed_startup_replay_owner::restore_currency(const critical_comman
 	// Pipeline scope ends before any original other-family callback proceeds;
 	// lifecycle and real coordinator init ownership persist across the replay.
 }
+
+// Additive WIZLOG selected-path named source carriers. Default DEBUG and sender
+// algorithms remain exact; emitted/libc-private qualification is separate.
+#include <thread>
+#include <sys/types.h>
+namespace
+{
+using wizlog_source_reserve_fn = bool (*)(size_t, void *) noexcept;
+constexpr size_t wizlog_source_P = sizeof(void *), wizlog_source_N = sizeof(size_t),
+		 wizlog_source_I = sizeof(int), wizlog_source_B = sizeof(bool),
+		 wizlog_source_U = sizeof(uintptr_t);
+constexpr size_t wizlog_source_thread = 3 * sizeof(std::thread::id) + 5 * wizlog_source_P +
+					3 * sizeof(std::thread::native_handle_type) +
+					2 * wizlog_source_B;
+constexpr size_t wizlog_source_strlen = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_strnlen = wizlog_source_P + 2 * wizlog_source_N;
+constexpr size_t wizlog_source_max = 3 * wizlog_source_P;
+constexpr size_t wizlog_source_snprintf =
+	7 * wizlog_source_P + 4 * wizlog_source_N + 4 * wizlog_source_I;
+constexpr size_t wizlog_source_vsnprintf = wizlog_source_snprintf;
+constexpr size_t wizlog_source_memcpy = 7 * wizlog_source_P + 4 * wizlog_source_N + wizlog_source_I;
+constexpr size_t wizlog_source_strcpy = 7 * wizlog_source_P + 2 * wizlog_source_N + wizlog_source_I;
+constexpr size_t wizlog_source_strncat =
+	7 * wizlog_source_P + 4 * wizlog_source_N + wizlog_source_I;
+constexpr size_t wizlog_source_memset =
+	5 * wizlog_source_P + 4 * wizlog_source_N + 3 * wizlog_source_I;
+constexpr size_t wizlog_source_compare = 2 * wizlog_source_P + wizlog_source_I;
+constexpr size_t wizlog_source_reserve_call = wizlog_source_N + wizlog_source_P + wizlog_source_B;
+// Filled with independently reviewed actual GCC13 selected string definitions.
+constexpr size_t wizlog_source_ceval = wizlog_source_B;
+constexpr size_t wizlog_source_string_move_ref = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_string_addressof = 4 * wizlog_source_P;
+constexpr size_t wizlog_source_string_pointer_to =
+	2 * wizlog_source_P + wizlog_source_string_addressof;
+constexpr size_t wizlog_source_string_local_data =
+	2 * wizlog_source_P + wizlog_source_string_pointer_to;
+constexpr size_t wizlog_source_string_data_internal = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_string_data_public =
+	2 * wizlog_source_P + wizlog_source_string_data_internal;
+constexpr size_t wizlog_source_string_data_set = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_string_size = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_string_length_set = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_string_capacity_set = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_string_allocator = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_string_is_local = wizlog_source_P + wizlog_source_B +
+						 wizlog_source_string_data_internal +
+						 wizlog_source_string_local_data;
+constexpr size_t wizlog_source_string_capacity =
+	wizlog_source_P + wizlog_source_N + wizlog_source_string_is_local;
+constexpr size_t wizlog_source_string_traits_assign = 2 * wizlog_source_P + wizlog_source_ceval;
+constexpr size_t wizlog_source_string_set_length =
+	wizlog_source_P + wizlog_source_N + wizlog_source_string_length_set +
+	wizlog_source_string_data_internal + wizlog_source_string_traits_assign + sizeof(char);
+constexpr size_t wizlog_source_string_init_local = wizlog_source_P + wizlog_source_ceval;
+constexpr size_t wizlog_source_allocator_default = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_allocator_copy = 4 * wizlog_source_P;
+constexpr size_t wizlog_source_allocator_destroy = 2 * wizlog_source_P;
+constexpr size_t wizlog_source_hider_construct =
+	3 * wizlog_source_P + wizlog_source_string_move_ref + wizlog_source_allocator_copy;
+constexpr size_t wizlog_source_hider_destroy = wizlog_source_P + wizlog_source_allocator_destroy;
+constexpr size_t wizlog_source_string_default =
+	wizlog_source_P + sizeof(std::allocator<char>) + wizlog_source_allocator_default +
+	wizlog_source_hider_construct + wizlog_source_allocator_destroy +
+	wizlog_source_string_local_data + wizlog_source_string_init_local +
+	wizlog_source_string_set_length;
+constexpr size_t wizlog_source_string_empty_destroy = wizlog_source_P + wizlog_source_P +
+						      wizlog_source_string_is_local +
+						      wizlog_source_hider_destroy;
+constexpr size_t wizlog_source_traits_max_size = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_string_max_size = wizlog_source_P + wizlog_source_N +
+						 wizlog_source_string_allocator +
+						 wizlog_source_traits_max_size;
+constexpr size_t wizlog_source_new_max_size = wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_new_allocate = 3 * wizlog_source_P + wizlog_source_N +
+					      wizlog_source_new_max_size + wizlog_source_P +
+					      wizlog_source_N;
+constexpr size_t wizlog_source_allocator_allocate =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_ceval + wizlog_source_new_allocate;
+constexpr size_t wizlog_source_traits_allocate =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_allocator_allocate;
+constexpr size_t wizlog_source_string_allocate =
+	3 * wizlog_source_P + wizlog_source_N + wizlog_source_traits_allocate;
+// Actual installed GCC13 default C++20 sized delete. No char aligned-new branch.
+constexpr size_t wizlog_source_new_deallocate =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_allocator_deallocate =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_ceval + wizlog_source_new_deallocate;
+constexpr size_t wizlog_source_traits_deallocate =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_allocator_deallocate;
+constexpr size_t wizlog_source_string_destroy =
+	wizlog_source_P + wizlog_source_N + wizlog_source_string_allocator +
+	wizlog_source_string_data_internal + wizlog_source_traits_deallocate;
+constexpr size_t wizlog_source_string_dispose =
+	wizlog_source_P + wizlog_source_string_is_local + wizlog_source_string_destroy;
+// char_traits calls __builtin_strlen/memcpy directly; glibc fortify does not wrap
+// these spellings. Constant-evaluation source returns false on actual runtime.
+constexpr size_t wizlog_source_string_traits_length =
+	wizlog_source_P + wizlog_source_N + wizlog_source_ceval + wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_string_traits_copy = 3 * wizlog_source_P + wizlog_source_N +
+						    wizlog_source_ceval + 3 * wizlog_source_P +
+						    wizlog_source_N;
+constexpr size_t wizlog_source_string_copy =
+	2 * wizlog_source_P + wizlog_source_N +
+	std::max(wizlog_source_string_traits_assign, wizlog_source_string_traits_copy);
+constexpr size_t wizlog_source_string_check_length = 2 * wizlog_source_P + 2 * wizlog_source_N +
+						     wizlog_source_string_max_size +
+						     wizlog_source_string_size;
+constexpr size_t wizlog_source_string_create =
+	3 * wizlog_source_P + wizlog_source_N + 3 * wizlog_source_string_max_size +
+	wizlog_source_string_allocator + wizlog_source_string_allocate;
+constexpr size_t wizlog_source_string_mutate_at_end =
+	3 * wizlog_source_P + 5 * wizlog_source_N + 2 * wizlog_source_string_size +
+	wizlog_source_string_capacity + wizlog_source_string_create + wizlog_source_string_copy +
+	wizlog_source_string_data_internal + wizlog_source_string_copy +
+	wizlog_source_string_dispose + wizlog_source_string_data_set +
+	wizlog_source_string_capacity_set;
+constexpr size_t wizlog_source_string_append_impl =
+	3 * wizlog_source_P + 2 * wizlog_source_N + wizlog_source_string_size +
+	wizlog_source_string_capacity +
+	std::max(wizlog_source_string_data_internal + wizlog_source_string_size +
+			 wizlog_source_string_copy,
+		 wizlog_source_string_size + wizlog_source_string_mutate_at_end) +
+	wizlog_source_string_set_length;
+constexpr size_t wizlog_source_string_append =
+	3 * wizlog_source_P + 3 * wizlog_source_P + wizlog_source_N +
+	wizlog_source_string_traits_length + wizlog_source_string_check_length +
+	wizlog_source_string_append_impl;
+constexpr size_t wizlog_source_string_clear = wizlog_source_P + wizlog_source_string_set_length;
+constexpr size_t wizlog_source_string_empty =
+	wizlog_source_P + wizlog_source_B + wizlog_source_string_size;
+
+constexpr size_t wizlog_source_context =
+	6 * wizlog_source_P + wizlog_source_N + 12 * wizlog_source_P + 6 * wizlog_source_P;
+constexpr size_t wizlog_source_string_heap = 2 * wizlog_source_P + 2 * wizlog_source_U +
+					     wizlog_source_B + wizlog_source_string_data_public +
+					     2 * wizlog_source_string_capacity;
+constexpr size_t wizlog_source_queue_storage = 4 * wizlog_source_P + 5 * wizlog_source_N +
+					       wizlog_source_B + wizlog_source_N +
+					       wizlog_source_strlen;
+constexpr size_t wizlog_source_output_observer =
+	4 * wizlog_source_P + 2 * wizlog_source_N + wizlog_source_B + wizlog_source_thread +
+	std::max(wizlog_source_string_heap, wizlog_source_queue_storage);
+constexpr size_t wizlog_source_queue_projection =
+	4 * wizlog_source_P + 5 * wizlog_source_N + 2 * wizlog_source_B + wizlog_source_strnlen +
+	wizlog_source_N + wizlog_source_max + wizlog_source_N;
+constexpr size_t wizlog_source_pager_projection = 3 * wizlog_source_P + 3 * wizlog_source_N +
+						  wizlog_source_B + 2 * wizlog_source_max +
+						  2 * wizlog_source_N;
+// Actual __malloc/getmem and __realloc/changemem/header, init_mem_used,
+// increment/decrement accounting and actual malloc/realloc source calls.
+// MEMCHK1 excludes the memory-log FILE/fprintf branch, not allocator failure.
+constexpr size_t wizlog_source_memory_malloc =
+	3 * wizlog_source_P + wizlog_source_N + wizlog_source_I + 4 * wizlog_source_P +
+	wizlog_source_N + wizlog_source_I + wizlog_source_I + wizlog_source_memset +
+	wizlog_source_P + wizlog_source_N + wizlog_source_I + wizlog_source_compare +
+	wizlog_source_N + wizlog_source_P + wizlog_source_memset;
+constexpr size_t wizlog_source_memory_realloc =
+	3 * wizlog_source_P + wizlog_source_N + wizlog_source_I + 4 * wizlog_source_P +
+	wizlog_source_N + wizlog_source_I + 3 * wizlog_source_P +
+	2 * (wizlog_source_P + wizlog_source_N + wizlog_source_I + wizlog_source_compare) +
+	2 * wizlog_source_P + wizlog_source_N;
+constexpr size_t wizlog_source_write_queue =
+	3 * wizlog_source_P + 6 * wizlog_source_N + wizlog_source_I + wizlog_source_B +
+	wizlog_source_strnlen + wizlog_source_strlen +
+	std::max(wizlog_source_memory_malloc, wizlog_source_memory_realloc) + wizlog_source_memcpy;
+// Exact original logit scalar and declared-call source, separately from the
+// provider-owned timestamp/path arrays, va_lists and real formatted requests.
+constexpr size_t wizlog_source_logit_named = 4 * wizlog_source_P + sizeof(time_t);
+constexpr size_t wizlog_source_original_formatter =
+	8 * wizlog_source_P + wizlog_source_I + 2 * wizlog_source_N + 6 * wizlog_source_P +
+	2 * wizlog_source_vsnprintf + 2 * wizlog_source_memcpy + 2 * wizlog_source_strlen +
+	wizlog_source_N + wizlog_source_P;
+constexpr size_t wizlog_source_log_directory =
+	2 * wizlog_source_P + wizlog_source_N + wizlog_source_B + wizlog_source_strlen +
+	wizlog_source_memcpy + 2 * wizlog_source_P + wizlog_source_I + wizlog_source_P +
+	sizeof(mode_t) + wizlog_source_I + wizlog_source_P;
+// Parent/child logit named frames coexist on LOG_EXIT fopen failure. Their
+// formatter/path/output phases are alternatives. Timestamp and output calls
+// are genuine time/bzero/localtime/asctime/strcpy/strcat/strcasecmp/fopen/errno/
+// rewind/fputs/fclose/free. Original va_start/end plus real fallback filename
+// variadic carrier remain source-owned; no synthetic diagnostic is emitted.
+constexpr size_t wizlog_source_logit_calls =
+	wizlog_source_P + sizeof(time_t) + wizlog_source_P + wizlog_source_N + 4 * wizlog_source_P +
+	2 * wizlog_source_strcpy + wizlog_source_strlen + 4 * wizlog_source_compare +
+	3 * wizlog_source_P + wizlog_source_P + wizlog_source_P + 2 * wizlog_source_P +
+	wizlog_source_I + wizlog_source_P + wizlog_source_I + wizlog_source_P + 4 * wizlog_source_P;
+constexpr size_t wizlog_source_fatal_logit =
+	2 * wizlog_source_logit_named + 2 * wizlog_source_logit_calls +
+	std::max(wizlog_source_original_formatter, wizlog_source_log_directory) +
+	wizlog_source_I; // original exit(1)
+// Actual preflight scan object is obtained from its real provider and separately
+// admitted before working_bytes. The scan is not guessed or replaced by a DTO.
+constexpr size_t wizlog_source_logit_preflight =
+	3 * wizlog_source_P + wizlog_source_B + 2 * wizlog_source_N + 5 * wizlog_source_P +
+	wizlog_source_vsnprintf + wizlog_source_snprintf + 3 * wizlog_source_compare +
+	wizlog_source_P + wizlog_source_N + wizlog_source_B + 3 * wizlog_source_max +
+	4 * wizlog_source_N + wizlog_source_thread + wizlog_source_N;
+// Original two default wrappers, final sender args/locals, renderer early-return
+// params, actual empty contexts/string, and real branch helper scopes.
+constexpr size_t wizlog_source_original_sender =
+	2 * wizlog_source_P + 2 * wizlog_source_P + wizlog_source_I + 3 * wizlog_source_P +
+	wizlog_source_I + wizlog_source_P + 3 * wizlog_source_B + 2 * wizlog_source_N +
+	wizlog_source_B + 4 * wizlog_source_P + wizlog_source_N + wizlog_source_B +
+	wizlog_source_context + wizlog_source_string_default + wizlog_source_string_empty_destroy +
+	std::max(wizlog_source_snprintf + wizlog_source_write_queue,
+		 2 * wizlog_source_N + wizlog_source_P + 3 * wizlog_source_strlen +
+			 3 * wizlog_source_string_empty + 2 * wizlog_source_string_size +
+			 wizlog_source_string_clear + wizlog_source_string_data_public +
+			 wizlog_source_strcpy + wizlog_source_string_append +
+			 wizlog_source_strncat);
+// Primary callback/args, frame local, real descriptor scanner and predicates,
+// branch reference/length, genuine callback and observer call carriers.
+constexpr size_t wizlog_source_leaf =
+	3 * wizlog_source_P + sizeof(wizlog_source_reserve_fn) + 2 * wizlog_source_N +
+	4 * wizlog_source_B + wizlog_source_P + std::max(wizlog_source_P, wizlog_source_N) +
+	wizlog_source_reserve_call + wizlog_source_P + wizlog_source_B +
+	wizlog_source_output_observer + wizlog_source_thread + wizlog_source_logit_preflight +
+	wizlog_source_fatal_logit + wizlog_source_original_sender +
+	std::max(wizlog_source_queue_projection,
+		 wizlog_source_string_heap + wizlog_source_string_size +
+			 wizlog_source_string_capacity + wizlog_source_string_max_size +
+			 wizlog_source_strlen + wizlog_source_pager_projection) +
+	wizlog_source_max;
+} // genuine selected WIZLOG source allowance
+
+bool diagnostic_wizlog_send_to_char_bounded(const char *message, P_char ch,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer_live) noexcept
+{
+	if (!reserve || !message || !ch || !ch->desc || !IS_TRUSTED(ch) ||
+	    !IS_SET(ch->specials.act, PLR_WIZLOG))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || __cplusplus != 202002L ||         \
+	MEMCHK != 1 || !defined(__USE_FORTIFY_LEVEL) || __USE_FORTIFY_LEVEL != 3
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	struct workspace
+	{
+		size_t storage, live, peak, without_prefix_live, without_prefix_peak, pager_heap;
+		size_t logit_scan, logit_peak, logit_current;
+		diagnostic_queue_phase queue, without_prefix;
+		diagnostic_pager_phase pager;
+		char prefix[30];
+	};
+	// Actual default context temporary + recipient copy + empty rendered string.
+	// Preserve returns before every owning renderer allocation; trusted/Public
+	// skips PC logging, default chat/resolve flags skip their callbacks entirely.
+	const size_t frame = sizeof(workspace) + 2 * sizeof(OutputContext) + sizeof(std::string) +
+			     sizeof(((workspace *)nullptr)->prefix) + wizlog_source_leaf;
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	// Frame includes genuine thread query before its actual call chain.
+	if (!nevent_is_game_thread())
+		return false;
+	workspace work{};
+	if (!diagnostic_output_storage_bytes(&work.storage) || outer_live < work.storage)
+		return false;
+	bool registered = false;
+	for (P_desc d = descriptor_list; d; d = d->next)
+		if (d == ch->desc)
+		{
+			registered = true;
+			break;
+		}
+	if (!registered)
+		return false;
+	bool selected = false;
+	for (P_desc d = descriptor_list; d; d = d->next)
+		if (d->connected == CON_PLAYING && d->character && IS_TRUSTED(d->character) &&
+		    IS_SET(d->character->specials.act, PLR_WIZLOG) && d->character->desc &&
+		    d->character == ch)
+		{
+			selected = true;
+			break;
+		}
+	if (!selected)
+		return false;
+	work.live = outer_live + frame;
+	work.peak = work.live;
+	const bool paging = executing_ch == ch && IS_SET(ch->specials.act, PLR_PAGING_ON);
+	if (!paging)
+	{
+		// Admit the real provider scan before preflight; the exact original fatal
+		// bodies and LOG_FILE recursion are inspected, never emitted here.
+		work.logit_scan = diagnostic_original_logit_preflight_object_bytes();
+		if (work.logit_scan > SIZE_MAX - work.live ||
+		    !reserve(work.live + work.logit_scan, context))
+			return false;
+		if (!diagnostic_original_logit_working_bytes(LOG_EXIT, &work.logit_current,
+							     "Failed to malloc memory"))
+			return false;
+		work.logit_peak = work.logit_current;
+		if (!diagnostic_original_logit_working_bytes(LOG_EXIT, &work.logit_current,
+							     "Failed to realloc memory"))
+			return false;
+		work.logit_peak = std::max(work.logit_peak, work.logit_current);
+		if (!diagnostic_original_logit_working_bytes(LOG_EXIT, &work.logit_current,
+							     "changemem: memory failed check!"))
+			return false;
+		work.logit_peak = std::max(work.logit_peak, work.logit_current);
+		const auto &queue = ch->desc->output;
+		work.queue = { queue.bytes, queue.entries,
+			       queue.tail ? strlen(queue.tail->text) : 0, queue.tail != nullptr,
+			       queue.overflowed };
+		work.without_prefix = work.queue;
+		work.without_prefix_live = work.live;
+		work.without_prefix_peak = work.peak;
+		if (!diagnostic_queue_request(work.without_prefix, message,
+					      work.without_prefix_live, work.without_prefix_peak))
+			return false;
+		if (SWITCHED(ch))
+		{
+			snprintf(work.prefix, sizeof(work.prefix), "&+M@&+W%s&n: ", J_NAME(ch));
+			// Original private recursion guard may skip this prefix. Admit BOTH exact
+			// alternatives; neither can invoke an unadmitted allocator afterward.
+			if (!diagnostic_queue_request(work.queue, work.prefix, work.live,
+						      work.peak))
+				return false;
+		}
+		if (!diagnostic_queue_request(work.queue, message, work.live, work.peak))
+			return false;
+		work.peak = std::max(work.peak, work.without_prefix_peak);
+	}
+	else
+	{
+		if (!diagnostic_string_heap(pager_original, &work.pager_heap))
+			return false;
+		work.pager = { output_length ? pager_original.size() : 0, pager_original.capacity(),
+			       work.pager_heap, pager_original.max_size() };
+		const size_t length = strlen(message);
+		// bWarningAdded is intentionally left in the original function. Its true
+		// branch requests nothing; admit the complete false branch before calling it.
+		if (work.pager.size && length < MAX_COMMAND_OUTPUT - work.pager.size)
+		{
+			if (!diagnostic_pager_append(work.pager, length, work.live, work.peak))
+				return false;
+			// If original visible capacity was exhausted, fallback resets output_length
+			// to the PRE-append original size; this successful-fit branch cannot then
+			// append the warning. Those allocation phases are alternatives.
+		}
+		else if (length >= MAX_COMMAND_OUTPUT - output_length && work.pager.size)
+		{
+			static constexpr char warning[] =
+				"\r\n\r\n&+W *** ...and the list goes on... ***&n\r\n";
+			if (!diagnostic_pager_append(work.pager, sizeof(warning) - 1, work.live,
+						     work.peak))
+				return false;
+		}
+	}
+	// Actual queue heap phases and possible fatal logit are admitted together
+	// BEFORE the original sender/allocator. Parent logit body is freed before
+	// recursive LOG_FILE; provider peak preserves that exact lifetime.
+	if (!paging)
+	{
+		if (work.logit_peak > SIZE_MAX - work.peak)
+			return false;
+		work.peak += work.logit_peak;
+	}
+	if (!reserve(work.peak, context))
+		return false;
+	try
+	{
+		// Exact original default/Public function keeps all original static flags,
+		// limits, merges, paging/fallback, counters and recipient behavior unchanged.
+		send_to_char(message, ch);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

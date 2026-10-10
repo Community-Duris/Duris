@@ -557,3 +557,186 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		return;
 	}
 }
+
+#include "core/utility.h"
+#include "world/events.h"
+#include <errno.h>
+#include <thread>
+
+namespace
+{
+struct original_property_read_budget
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t foreign;
+	size_t frames;
+
+	bool live(size_t *output) const noexcept
+	{
+		size_t global = 0;
+		if (!current_global(&global, context) || global > SIZE_MAX - foreign ||
+		    frames > SIZE_MAX - foreign - global)
+			return false;
+		*output = foreign + global + frames;
+		return true;
+	}
+	bool admit() const noexcept
+	{
+		size_t total = 0;
+		return live(&total) && reserve(total, context);
+	}
+};
+using original_property_observer_fn = bool (*)(size_t *, void *) noexcept;
+using original_property_reserve_fn = bool (*)(size_t, void *) noexcept;
+// live(this,output)/global/result and admit(this)/total/result. Callback
+// invocation arguments/result are separate from the callback's owning body.
+// Actual bound-thread query: returned/argument ids, native handles, equality,
+// one genuine lvalue copy and trivial parameter cleanup; no prvalue copy.
+constexpr size_t original_property_thread_source_frames =
+	3 * sizeof(std::thread::id) + 5 * sizeof(void *) +
+	3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+constexpr size_t original_property_budget_source_frames =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) + sizeof(size_t) + sizeof(void *) +
+	sizeof(bool);
+// Installed bits/stdlib-bsearch.h: key/base/comparator/p/result pointers,
+// nmemb/size/l/u/idx, comparison. Genuine repository comparator and strcmp
+// invocation each own two pointers and one int; no recursive multiplication.
+constexpr size_t original_property_bsearch_source_frames =
+	4 * sizeof(void *) + sizeof(__compar_fn_t) + 5 * sizeof(size_t) + sizeof(int) +
+	2 * (2 * sizeof(void *) + sizeof(int));
+constexpr size_t original_property_float_lookup_source_frames =
+	2 * sizeof(void *) + sizeof(double) + sizeof(bool) + sizeof(float) +
+	original_property_bsearch_source_frames;
+// Public key/output/returned/context and genuine function-pointer types, default,
+// outer/fussy/result; initial_global and local result. Actual libc implementation
+// and emitted frames retain their separate qualification boundary.
+constexpr size_t original_property_float_frames =
+	sizeof(original_property_read_budget) + 4 * sizeof(void *) +
+	sizeof(original_property_observer_fn) + sizeof(original_property_reserve_fn) +
+	sizeof(double) + 2 * sizeof(size_t) + 2 * sizeof(bool) + sizeof(float) +
+	original_property_budget_source_frames + original_property_float_lookup_source_frames +
+	original_property_thread_source_frames;
+// The original fractional branch owns this precise 500-byte buffer while its
+// actual wizlog formatter/fanout executes. Integral/missing paths still execute
+// the original float lookup; no integral-only precondition is introduced.
+constexpr size_t original_property_int_frames =
+	sizeof(original_property_read_budget) + sizeof(char[500]) + 4 * sizeof(void *) +
+	sizeof(original_property_observer_fn) + sizeof(original_property_reserve_fn) + sizeof(int) +
+	3 * sizeof(size_t) + sizeof(float) + 5 * sizeof(bool) +
+	original_property_budget_source_frames +
+	// Actual FORTIFY_SOURCE=3 snprintf wrapper, chk invocation and dynamic
+	// object-size builtin, including genuine key/promoted float forwarding.
+	7 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(double) + 4 * sizeof(int) +
+	// Original narrowed default, comparison and final cast expressions.
+	2 * sizeof(int) + 2 * sizeof(float) + original_property_thread_source_frames;
+}
+
+bool get_property_float_bounded(const char *key, double default_value, float *output,
+				bool *returned, bool (*current_global)(size_t *, void *) noexcept,
+				bool (*reserve)(size_t, void *) noexcept, void *context,
+				size_t outer_live, bool fussy) noexcept
+{
+	if (returned)
+		*returned = false;
+	if (!key || !output || !returned || !current_global || !reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (original_property_float_frames > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + original_property_float_frames, context))
+		return false;
+	// Admit the genuine query source carriers before entering its call chain.
+	if (!nevent_is_game_thread())
+		return false;
+	size_t initial_global = 0;
+	if (!current_global(&initial_global, context) || initial_global > outer_live)
+		return false;
+	original_property_read_budget budget{ current_global, reserve, context,
+					      outer_live - initial_global,
+					      original_property_float_frames };
+	if (!budget.admit())
+		return false;
+	// The original bsearch, comparison, missing-key conversion and disabled
+	// 0 && fussy diagnostic branch execute unchanged in the actual overload.
+	const float result = get_property(key, default_value, fussy);
+	*output = result;
+	*returned = true;
+	return budget.admit();
+#else
+	(void)default_value;
+	(void)context;
+	(void)outer_live;
+	(void)fussy;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool get_property_int_bounded(const char *key, int default_value, int *output, bool *returned,
+			      bool (*current_global)(size_t *, void *) noexcept,
+			      bool (*reserve)(size_t, void *) noexcept, void *context,
+			      size_t outer_live, bool fuss) noexcept
+{
+	if (returned)
+		*returned = false;
+	if (!key || !output || !returned || !current_global || !reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (original_property_int_frames > SIZE_MAX - outer_live ||
+	    !reserve(outer_live + original_property_int_frames, context))
+		return false;
+	// Admit the genuine query source carriers before entering its call chain.
+	if (!nevent_is_game_thread())
+		return false;
+	size_t initial_global = 0;
+	if (!current_global(&initial_global, context) || initial_global > outer_live)
+		return false;
+	original_property_read_budget budget{ current_global, reserve, context,
+					      outer_live - initial_global,
+					      original_property_int_frames };
+	if (!budget.admit())
+		return false;
+	size_t live = 0;
+	if (!budget.live(&live))
+		return false;
+	float float_prop = 0;
+	bool float_returned = false;
+	if (!get_property_float_bounded(key, (float)default_value, &float_prop, &float_returned,
+					current_global, reserve, context, live, fuss))
+		return false;
+	bool completed = true;
+	if (float_prop != ((float)((int)float_prop)))
+	{
+		char buf[500];
+		snprintf(buf, 500,
+			 "(int)get_property() called for \"%s\" which has a float value of %f.",
+			 key, float_prop);
+		if (!budget.live(&live))
+			return false;
+		bool diagnostic_returned = false;
+		completed = diagnostic_wizlog_bounded(58, &diagnostic_returned, current_global,
+						      reserve, context, live, "%s", buf);
+		if (!diagnostic_returned)
+			return false;
+	}
+	*output = (int)float_prop;
+	*returned = true;
+	// Preserve original successful completion if an ensuing fresh observer or
+	// admission fails. Never rerun a partially delivered fractional diagnostic.
+	// Even a completed child followed by refusal needs the actual final census.
+	if (!budget.live(&live))
+		return false;
+	return completed && reserve(live, context);
+#else
+	(void)default_value;
+	(void)context;
+	(void)outer_live;
+	(void)fuss;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

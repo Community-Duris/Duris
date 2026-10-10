@@ -677,3 +677,162 @@ bool proclib_recovery_chain_stage::prepare_bounded(
 	}
 #endif
 }
+
+#include <thread>
+bool proclib_chain_native_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread() || proclib_chain_top < 0 ||
+	    proclib_chain_cap < proclib_chain_top || (proclib_chain_cap && !proclib_chain) ||
+	    (!proclib_chain_cap && proclib_chain))
+	{
+		errno = EIO;
+		return false;
+	}
+	constexpr size_t fixed =
+		sizeof(proclib_chain) + sizeof(proclib_chain_top) + sizeof(proclib_chain_cap);
+	if (static_cast<size_t>(proclib_chain_cap) > (SIZE_MAX - fixed) / sizeof(proclib_chain_ent))
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	*output = fixed + static_cast<size_t>(proclib_chain_cap) * sizeof(proclib_chain_ent);
+	return true;
+}
+
+// Full original immediate chain installation, not cold batch replacement.
+// G owns the actual old chain once. The real realloc prospective request admits
+// new storage alongside that old storage until the actual realloc returns.
+bool proclib_chain_install_native_birth_bounded(int rnum, obj_proc_type previous, bool *returned,
+						bool (*current_global)(size_t *, void *) noexcept,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || !defined(__linux__) || !defined(__GLIBC__) ||                \
+	!defined(__x86_64__)
+	(void)rnum;
+	(void)previous;
+	(void)returned;
+	(void)current_global;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!returned || !current_global || !reserve || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	// Entry + actual original install(i,newcap,grown) + current observer + request
+	// lambda's live/global/extra/error, closures and actual realloc argument/result.
+	constexpr size_t frames =
+		2 * sizeof(int) + sizeof(obj_proc_type) + sizeof(bool *) + 2 * sizeof(void *) +
+		sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(int) +
+		sizeof(proclib_chain_ent *) + 4 * sizeof(void *) + 5 * sizeof(size_t) +
+		2 * sizeof(int) + sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+		// The closure captures current,reserve,context,outer by reference.
+		4 * sizeof(void *) +
+		// Actual pure chain observer output/fixed and GNU13 get_id/id/equality
+		// carrier chain. No allocation exists for the checked fixed measurement.
+		sizeof(size_t *) + sizeof(size_t) + 5 * sizeof(std::thread::id) + sizeof(void *);
+	if (frames > SIZE_MAX - outer_live)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	const size_t exclusive = outer_live + frames;
+	auto request = [&](size_t extra = 0) noexcept
+	{
+		size_t global = 0, live = exclusive;
+		const int saved = errno;
+		errno = 0;
+		if (!current_global(&global, context))
+		{
+			if (!errno)
+				errno = EIO;
+			return false;
+		}
+		if (global > SIZE_MAX - live || extra > SIZE_MAX - (live + global))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		live += global + extra;
+		errno = 0;
+		if (!reserve(live, context))
+		{
+			if (!errno)
+				errno = ENOBUFS;
+			return false;
+		}
+		errno = saved;
+		return true;
+	};
+	size_t storage = 0;
+	if (!proclib_chain_native_storage_bytes(&storage) || !request())
+		return false;
+	if (rnum < 0 || !previous || previous == proclib_obj_cmd_bridge)
+	{
+		*returned = true;
+		return request();
+	}
+	for (int i = 0; i < proclib_chain_top; ++i)
+		if (proclib_chain[i].rnum == rnum)
+		{
+			*returned = true;
+			return request();
+		}
+	if (proclib_chain_top == proclib_chain_cap)
+	{
+		if (proclib_chain_cap > INT_MAX / 2)
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		const int newcap = proclib_chain_cap ? proclib_chain_cap * 2 : 32;
+		if (static_cast<size_t>(newcap) > SIZE_MAX / sizeof(proclib_chain_ent))
+		{
+			errno = EOVERFLOW;
+			return false;
+		}
+		if (!request(static_cast<size_t>(newcap) * sizeof(proclib_chain_ent)))
+			return false;
+		auto *grown = static_cast<proclib_chain_ent *>(realloc(
+			proclib_chain, static_cast<size_t>(newcap) * sizeof(proclib_chain_ent)));
+		if (!grown)
+		{
+			// The real original helper simply returns on realloc failure, and its caller
+			// still installs the bridge. Preserve that actual original return outcome.
+			*returned = true;
+			return request();
+		}
+		proclib_chain = grown;
+		proclib_chain_cap = newcap;
+	}
+	proclib_chain[proclib_chain_top].rnum = rnum;
+	proclib_chain[proclib_chain_top].prev = previous;
+	++proclib_chain_top;
+	*returned = true;
+	return request();
+#endif
+}
+
+size_t proclib_chain_native_storage_observer_frame_bytes() noexcept
+{
+	// Actual output parameter and fixed request scalar in the pure chain query.
+	// Sum the cap-conversion result and both bool return carriers as well.
+	// The genuine GNU13 nevent_is_game_thread -> this_thread::get_id -> id
+	// construction -> __gthread_self -> pthread_self and id equality path uses
+	// five native/id value carriers plus the constructor receiver.  errno's
+	// selected accessor returns an int pointer on the refusal-only branch.
+	// Sequential branches are deliberately summed; no heap is invented here.
+	return sizeof(size_t *) + 2 * sizeof(size_t) + 2 * sizeof(bool) +
+	       5 * sizeof(std::thread::id) + sizeof(void *) + sizeof(int *);
+}

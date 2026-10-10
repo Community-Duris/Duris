@@ -260,4 +260,10 @@ void escape_act_dollars(char *dst, size_t dst_size, const char *src);
 bool diagnostic_output_storage_bytes(size_t *) noexcept;
 bool diagnostic_send_to_char_bounded(const char *, P_char, bool (*)(size_t, void *) noexcept,
 				     void *, size_t outer_live) noexcept;
+
+// Original WIZLOG recipients need not opt into DEBUG. Same strong admission
+// and output-observer contract as the diagnostic leaf above; the selecting
+// wizlog caller retains its original level predicate and descriptor order.
+bool diagnostic_wizlog_send_to_char_bounded(const char *, P_char, bool (*)(size_t, void *) noexcept,
+					    void *, size_t outer_live) noexcept;
 #endif /* _SOJ_COMM_H_ */
