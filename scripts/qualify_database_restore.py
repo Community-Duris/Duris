@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Complete migration-history and aggregate value-domain restore verification."""
+from dataclasses import replace
 import json
 import os
 import sys
@@ -9,14 +10,24 @@ import economic_restore_evidence
 
 def require_completed_history(rows):
     """Accept only complete immutable histories supported by the boot gate."""
-    manifests = (
-        migrations.load_manifest(),
-        migrations.load_manifest(
-            migrations.ROOT / "migrations/migration_manifest.staging_0045.json"),
-        migrations.load_manifest(
-            migrations.ROOT / "migrations/migration_manifest.master_0031.json"),
+    count = len(rows)
+    if count not in (64, 65):
+        raise RuntimeError("restore_migration_history_incomplete_or_unknown")
+    selectors = (
+        "migration_manifest.json", "migration_manifest.staging_0045.json",
+        "migration_manifest.master_0031.json",
     )
-    for manifest in manifests:
+    if count == 65:
+        selectors += (
+            "migration_manifest.nullable_default_0065.json",
+            "migration_manifest.staging_0045_nullable_default_0065.json",
+            "migration_manifest.master_0031_nullable_default_0065.json",
+        )
+    for selector in selectors:
+        manifest = migrations.load_manifest(migrations.ROOT / "migrations" / selector)
+        if len(manifest.migrations) < count:
+            continue
+        manifest = replace(manifest, migrations=manifest.migrations[:count])
         try:
             pending = migrations.validate_applied_prefix(manifest, rows)
         except migrations.MigrationContractError:

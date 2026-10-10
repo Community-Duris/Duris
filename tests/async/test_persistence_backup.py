@@ -6,6 +6,7 @@ MariaDB dump bytes only; the separate integration suite exercises real MariaDB.
 Run: python3 tests/async/test_persistence_backup.py
 """
 import contextlib
+from dataclasses import replace
 import gzip
 import io
 import json
@@ -22,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import persistence_backup as backup
 import persistence_restore as restore
+import migration_runner as migrations
+import qualify_database_restore as database_restore
 
 
 def policy(base):
@@ -1032,6 +1035,98 @@ print(json.dumps({'code':code}));sys.exit(0 if code=='accepted' else 2)
             self.assertEqual(len(backup.generations(self.p["root"])), 1)
 
 class RestoreTests(Fixture):
+    def test_restore_accepts_exact_schema64_and_six_schema65_histories(self):
+        selectors = (
+            ("migration_manifest.json", "a0920c9e76246161f9e3dae66a020dbb770ccacbcaaf5a684d4f45fe64d2ab7f"),
+            ("migration_manifest.staging_0045.json", "fca49b0d040627d255f43f2170f4af69d9cdd3dc74f4e13461780358ba3cf84e"),
+            ("migration_manifest.master_0031.json", "d94d73d733186351a5ed2df7890679ebabe344b92e3a4d14a4ed7e8f29ea28e3"),
+            ("migration_manifest.nullable_default_0065.json", "55ab85c769d0f271c0c01b2ec55ac01217548d8062be3f837692bf05987b57ba"),
+            ("migration_manifest.staging_0045_nullable_default_0065.json", "9e81f924525c9e089a92559d1429e83f7e1c05cead3ca652a89eb68ec5534f97"),
+            ("migration_manifest.master_0031_nullable_default_0065.json", "45b830b94d19c1ab6ff017e33125e0426099a3a2508fb2d0a19b573ece5c0e02"),
+        )
+        histories = set()
+        for selector, checksum in selectors:
+            manifest = migrations.load_manifest(ROOT / "migrations" / selector)
+            rows = [migrations.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations]
+            self.assertEqual(len(rows), 65)
+            self.assertEqual(migrations.history_checksum(rows), checksum)
+            for count in (64, 65):
+                history = rows[:count]
+                with self.subTest(selector=selector, count=count):
+                    output = "\n".join("\t".join(map(str, (
+                        row.migration_id, row.sequence, row.description,
+                        row.apply_checksum, row.verify_checksum, row.compatibility,
+                        row.runner_version))) for row in history)
+                    executor = object.__new__(migrations.MysqlExecutor)
+                    executor.sql = mock.Mock(side_effect=[output,
+                        f"{count}\t{migrations.history_checksum(history)}"])
+                    database_restore.require_completed_history(executor.applied())
+                    self.assertEqual(executor.sql.call_count, 2)
+                    histories.add(migrations.history_checksum(history))
+        self.assertEqual(len(histories), 9)
+
+    def test_restore_history_rejects_partial_mixed_and_all_receipt_field_edits(self):
+        selectors = (
+            "migration_manifest.json", "migration_manifest.staging_0045.json",
+            "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
+            "migration_manifest.staging_0045_nullable_default_0065.json",
+            "migration_manifest.master_0031_nullable_default_0065.json",
+        )
+        histories = []
+        for selector in selectors:
+            manifest = migrations.load_manifest(ROOT / "migrations" / selector)
+            histories.append([migrations.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations])
+        edits = {"migration_id": "unknown", "sequence": 2, "description": "edited",
+                 "apply_checksum": "0" * 64, "verify_checksum": "0" * 64,
+                 "compatibility": "unknown", "runner_version": 2}
+        for selector, rows in zip(selectors, histories):
+            candidates = [("empty", []), ("partial63", rows[:63]),
+                          ("overflow66", rows + [rows[-1]]),
+                          ("missing_middle", rows[:30] + rows[31:]),
+                          ("reordered", [rows[1], rows[0]] + rows[2:])]
+            candidates += [(field, [replace(rows[0], **{field: value})] + rows[1:])
+                           for field, value in edits.items()]
+            candidates += [("edited_terminal", rows[:-1] +
+                            [replace(rows[-1], verify_checksum="0" * 64)])]
+            for label, history in candidates:
+                with self.subTest(selector=selector, mutation=label):
+                    # Even an attacker-recomputed count/hash cannot replace exact receipts.
+                    migrations.validate_history_state(history, len(history),
+                                                       migrations.history_checksum(history))
+                    with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                        database_restore.require_completed_history(history)
+        mixed = list(histories[0])
+        mixed[44] = histories[1][44]
+        with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+            database_restore.require_completed_history(mixed)
+        mixed = list(histories[0])
+        mixed[30] = histories[2][30]
+        with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+            database_restore.require_completed_history(mixed)
+
+    def test_restore_history_requires_exact_recorded_state(self):
+        manifest = migrations.load_manifest()
+        rows = [migrations.AppliedMigration(
+            step.migration_id, step.sequence, step.description,
+            step.apply_checksum, step.verify_checksum, step.compatibility,
+            manifest.runner_version) for step in manifest.migrations]
+        output = "\n".join("\t".join(map(str, (
+            row.migration_id, row.sequence, row.description, row.apply_checksum,
+            row.verify_checksum, row.compatibility, row.runner_version))) for row in rows)
+        for state in ("", "65", "64\t" + migrations.history_checksum(rows),
+                      "65\t" + "0" * 64, "65\t" + migrations.history_checksum(rows[:-1])):
+            with self.subTest(state=state):
+                executor = object.__new__(migrations.MysqlExecutor)
+                executor.sql = mock.Mock(side_effect=[output, state])
+                with self.assertRaises(migrations.MigrationContractError):
+                    database_restore.require_completed_history(executor.applied())
+
     def setUp(self):
         super().setUp()
         backup.mkdir(self.p["restore_root"])
