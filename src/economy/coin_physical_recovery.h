@@ -69,4 +69,12 @@ struct st_mysql;
 bool coin_physical_recovery_restore_room(st_mysql *connection, uint64_t uid) noexcept;
 #endif
 
+// Complete original passive classification including full immutable intent,
+// wallet/pile command, real room drop/pickup and literal shape checks.
+// Strong output; no native construction, save hold, publication or ACK.
+// Authentic inputs/prior outputs/all sibling owners remain full outer state.
+bool coin_physical_recovery_identity_bounded(const critical_command &, int *, uint64_t *,
+					     bool (*)(size_t, void *) noexcept, void *,
+					     size_t outer_live) noexcept;
+
 #endif
