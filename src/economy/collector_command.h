@@ -105,4 +105,22 @@ bool collector_command_decode_payload_bounded(const critical_command &, collecto
 					      size_t outer_live,
 					      bool *capacity_refused = nullptr) noexcept;
 
+// Complete original payload decoder SOURCE preentry is transient. Retain only
+// the disjoint uncovered SOURCE supplement in actual caller outer through the
+// unchanged bounded child; input/output/prior heap and caller frames stay own.
+bool collector_command_decode_payload_source_frame_bytes(size_t *) noexcept;
+bool collector_command_decode_payload_source_supplement_frame_bytes(size_t *) noexcept;
+bool collector_command_decode_payload_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t collector_command_decode_payload_source_query_frame_bytes() noexcept
+{
+	// Public query output P, complete/supplement2N and returnedB; source-parts
+	// output pair2P, returnedB and policy returnedB. Remaining carriers:
+	// account/item pairs and owned/levels/extra locals; two genuine native
+	// critical-source getter results, policy and checked-add arguments; the
+	// account-only and item-owner nested fixed queries. Sequential
+	// getters reuse this same complete fixed source graph.
+	return 3 * sizeof(void *) + 11 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) + currency_account_key_source_query_frame_bytes() +
+	       item_owner_key_source_query_frame_bytes();
+}
 #endif
