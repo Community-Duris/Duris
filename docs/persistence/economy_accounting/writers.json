@@ -66857,8 +66857,8 @@
       "src/item/craft_pouch_mutation.h": "5b5cf9a2f17e637a5f783ce986694e3b8ef810ed1fb6ae86c6b321b25f13f4d5",
       "src/flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.c": "ff3e16ee54163330c612035702fe94b4cc6707a928455bfb0907475b0b0c9d82",
       "src/flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.h": "31790a5b5eca0f8ea10473ed97a0335fa2c73978ec4deb1ca5e47bdd236dfba4",
-      "src/economy/coin_transfer_command.c": "29567bf101db18da297b51c3e8b5a6ac6cfda7ba358feb7bf1c753e11196e3e9",
-      "src/economy/coin_transfer_command.h": "abc6cacabc1e29b070c5d5dbeb744bad9c6f0e4274f3d28d943a0289ab8fe129"
+      "src/economy/coin_transfer_command.c": "bef11515cfc6ddc2d46c5e74dd2e047ad5665875bbf90fa2ceb3c6dfe329b41e",
+      "src/economy/coin_transfer_command.h": "2a13f56918b17edae53889ed560e2c657795becf23699d7c86376f56d5973b4d"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
