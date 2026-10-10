@@ -169,6 +169,8 @@
       "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
+      "src/combat/chaos_pouch_ledger.c": "b20948bc55f7c08b5fbe945f24b402b404c1a27a46bf84c1a123d47b53755e98",
+      "src/combat/chaos_pouch_ledger.h": "11c06fc005fe91f66d460e3ddf10ad704bdd0d5e01358c9f53f30c439fb161f2",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
