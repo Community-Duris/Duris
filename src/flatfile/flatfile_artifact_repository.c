@@ -1443,3 +1443,473 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_resurrection(
 							    accepted_at_usec, false, items,
 							    mutation, error);
 }
+
+#include <cerrno>
+
+namespace
+{
+struct native_artifact_budget
+{
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	size_t base;
+	bool admit(size_t extra) const noexcept
+	{
+		// Actual this/extra, callback's size/context and boolean result carriers.
+		constexpr size_t call_carriers = sizeof(native_artifact_budget *) +
+						 2 * sizeof(size_t) + sizeof(void *) +
+						 2 * sizeof(bool);
+		if (extra > SIZE_MAX - call_carriers || extra + call_carriers > SIZE_MAX - base ||
+		    !reserve || !reserve(base + extra + call_carriers, context))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		return true;
+	}
+};
+bool native_artifact_policy() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&       \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(SHA_LONG) == 4;
+#else
+	return false;
+#endif
+}
+// Same installed low-level SHA256 leaf as the native-origin companion. These
+// fixed workspace/assembly/C fallback terms refer to that retained source pin;
+// no EVP context or implicit digest allocation is used.
+int native_artifact_hash(const uint8_t *data, size_t size, uint8_t *digest,
+			 const native_artifact_budget &budget, size_t retained) noexcept
+{
+#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&      \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	constexpr size_t assembly = 2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) +
+				    (256 * 4 - 1) + 2 * sizeof(void *);
+	constexpr size_t c_small = 16 * sizeof(unsigned) + 12 * sizeof(unsigned) +
+				   sizeof(unsigned) + sizeof(int) + sizeof(void *);
+	constexpr size_t c_normal = 16 * sizeof(unsigned) + 11 * sizeof(unsigned) +
+				    2 * sizeof(int) + 2 * sizeof(void *);
+	constexpr size_t update =
+		4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned) + sizeof(int);
+	constexpr size_t final = 3 * sizeof(void *) + sizeof(size_t) + sizeof(unsigned long) +
+				 sizeof(unsigned) + sizeof(int);
+	constexpr size_t sha_frames =
+		std::max(assembly, std::max(c_small, c_normal)) +
+		std::max(sizeof(void *) + sizeof(int), std::max(update, final));
+	// Own data/digest/budget reference, length AND retained parameter, return
+	// status and real valid bool coexist with the admitted SHA workspace.
+	constexpr size_t objects = sizeof(SHA256_CTX) + 3 * sizeof(void *) + 2 * sizeof(size_t) +
+				   sizeof(int) + sizeof(bool) + sha_frames;
+	if (retained > SIZE_MAX - objects || !budget.admit(retained + objects))
+		return ENOBUFS;
+	SHA256_CTX state;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	const bool valid = SHA256_Init(&state) == 1 && SHA256_Update(&state, data, size) == 1 &&
+			   SHA256_Final(digest, &state) == 1;
+#pragma GCC diagnostic pop
+	return valid ? 0 : EIO;
+#else
+	(void)data;
+	(void)size;
+	(void)digest;
+	(void)budget;
+	(void)retained;
+	return ENOTSUP;
+#endif
+}
+int native_artifact_load(const std::string &root, const flatfile_authority_lock &lock,
+			 artifact_catalog *catalog, const native_artifact_budget &budget) noexcept
+{
+	if (root.empty() || !lock.matches(root) || !catalog)
+		return EINVAL;
+	// Actual load arguments (four references/pointers) and recovered result
+	// coexist with the nested original recovery; no working struct substitutes
+	// for these source-declared carriers.
+	constexpr size_t recovery_carriers =
+		4 * sizeof(void *) + sizeof(flatfile_authority_transaction_result);
+	if (recovery_carriers > SIZE_MAX - budget.base)
+		return ENOBUFS;
+	const auto recovered = flatfile_authority_transaction_recover_bounded(
+		root, lock, budget.reserve, budget.context, budget.base + recovery_carriers);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return errno == ENOBUFS ? ENOBUFS : errno == ENOMEM ? ENOMEM : EIO;
+	struct work
+	{
+		std::string directory;
+		std::string name;
+		std::vector<uint8_t> bytes;
+		artifact_catalog candidate;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		uint32_t version = 0, payload_size = 0, count = 0;
+		uint64_t revision = 0;
+	};
+	if (root.size() > SIZE_MAX - 8)
+		return ENOBUFS;
+	const size_t directory_size = root.size() + 8;
+	// Empty GCC13 string assign allocates max(requested,2*15)+1 beyond SSO.
+	const size_t directory_request =
+		directory_size > 15 ? std::max(directory_size, size_t(30)) + 1 : 0;
+	constexpr size_t name_request = sizeof("artifact_catalog") - 1 > 15 ? 31 : 0;
+	// Four argument carriers; recovered/loaded results; directory_size,
+	// directory_request, retained, directory_actual and record_request; both
+	// actual decoder objects, payload pointer and hash return; real range
+	// reference/begin/end/record and owned byte. The decoder::number largest
+	// instantiation contributes this/value pointers, uint64 bits/index/bool.
+	constexpr size_t load_carriers =
+		4 * sizeof(void *) + sizeof(flatfile_authority_transaction_result) +
+		sizeof(flatfile_read_result) + 5 * sizeof(size_t) + 2 * sizeof(decoder) +
+		sizeof(const uint8_t *) + sizeof(int) + 2 * sizeof(void *) +
+		2 * sizeof(std::vector<flatfile_artifact_record>::iterator) + sizeof(uint8_t) +
+		2 * sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool);
+	size_t retained = sizeof(work) + load_carriers;
+	if (directory_request > SIZE_MAX - retained ||
+	    name_request > SIZE_MAX - retained - directory_request)
+		return ENOBUFS;
+	retained += directory_request + name_request;
+	if (!budget.admit(retained))
+		return ENOBUFS;
+	try
+	{
+		work w;
+		w.directory.reserve(directory_size);
+		w.directory.assign(root);
+		w.directory.append("/domains");
+		w.name.assign(catalog_filename);
+		const size_t directory_actual =
+			w.directory.capacity() > 15 ? w.directory.capacity() + 1 : 0;
+		if (directory_actual > directory_request)
+			return EOVERFLOW;
+		const auto loaded = flatfile_read_bounded(w.directory, w.name,
+							  catalog_maximum_bytes, &w.bytes,
+							  budget.reserve, budget.context,
+							  budget.base + retained);
+		if (loaded == flatfile_read_result::not_found)
+			return ENOENT;
+		if (loaded != flatfile_read_result::ok)
+			return loaded == flatfile_read_result::invalid ? EBADMSG :
+			       errno				       ? errno :
+									 EIO;
+		if (w.bytes.capacity() > SIZE_MAX - retained)
+			return ENOBUFS;
+		retained += w.bytes.capacity();
+		constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+		if (w.bytes.size() < header_size || memcmp(w.bytes.data(), catalog_magic.data(), 8))
+			return EBADMSG;
+		decoder header{ w.bytes.data() + 8, w.bytes.size() - 8 };
+		if (!header.number(&w.version) || !header.number(&w.payload_size) ||
+		    !header.number(&w.revision) || w.version != catalog_version || !w.revision ||
+		    w.payload_size != w.bytes.size() - header_size)
+			return EBADMSG;
+		const uint8_t *payload_bytes = w.bytes.data() + header_size;
+		decoder payload{ payload_bytes, w.payload_size };
+		if (!payload.number(&w.count) || w.count > record_maximum ||
+		    w.payload_size != 4 + size_t(w.count) * 53)
+			return EBADMSG;
+		const int hashed = native_artifact_hash(payload_bytes, w.payload_size,
+							w.digest.data(), budget, retained);
+		if (hashed)
+			return hashed;
+		if (CRYPTO_memcmp(w.bytes.data() + 24, w.digest.data(), w.digest.size()))
+			return EBADMSG;
+		const size_t record_request = size_t(w.count) * sizeof(flatfile_artifact_record);
+		if (record_request > SIZE_MAX - retained ||
+		    !budget.admit(retained + record_request))
+			return ENOBUFS;
+		w.candidate.revision = w.revision;
+		w.candidate.records.reserve(w.count);
+		w.candidate.records.resize(w.count);
+		for (auto &record : w.candidate.records)
+		{
+			uint8_t owned = 0;
+			if (!payload.number(&record.vnum) || !payload.number(&owned) || owned > 1 ||
+			    !payload.number(&record.location_type) ||
+			    !payload.number(&record.location) || !payload.number(&record.timer) ||
+			    !payload.number(&record.type) || !payload.number(&record.last_update) ||
+			    !payload.number(&record.bind_owner_pid) ||
+			    !payload.number(&record.bind_timer) ||
+			    !payload.number(&record.revision))
+				return EBADMSG;
+			record.owned = owned != 0;
+		}
+		if (payload.offset != payload.size || !valid_records(w.candidate.records))
+			return EBADMSG;
+		*catalog = std::move(w.candidate);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}
+template <typename T>
+void native_artifact_number(std::vector<uint8_t> &bytes, size_t &offset, T value) noexcept
+{
+	using U = std::make_unsigned_t<T>;
+	U bits = static_cast<U>(value);
+	for (size_t index = 0; index < sizeof(T); ++index)
+	{
+		bytes[offset++] = static_cast<uint8_t>(bits & 0xff);
+		bits >>= 8;
+	}
+}
+int native_artifact_encode(const artifact_catalog &catalog, std::vector<uint8_t> *output,
+			   const native_artifact_budget &budget) noexcept
+{
+	if (!output || !catalog.revision || !valid_records(catalog.records))
+		return EBADMSG;
+	struct work
+	{
+		std::vector<uint8_t> payload, file;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		size_t offset = 0;
+	};
+	constexpr size_t header = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	const size_t payload_size = 4 + catalog.records.size() * 53;
+	const size_t file_size = header + payload_size;
+	if (file_size > catalog_maximum_bytes)
+		return EBADMSG;
+	// Actual catalog/output/budget reference carriers, payload_size/file_size/
+	// retained, hash result, record range and header index/byte ranges. The
+	// largest native_artifact_number<T> contributes vector/offset references,
+	// uint64 value/bits, index and void return (no payload storage allocation).
+	constexpr size_t encode_carriers =
+		3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int) + 2 * sizeof(void *) +
+		2 * sizeof(std::vector<flatfile_artifact_record>::const_iterator) + sizeof(size_t) +
+		2 * (3 * sizeof(void *) + sizeof(uint8_t)) + 2 * sizeof(void *) +
+		2 * sizeof(uint64_t) + sizeof(size_t);
+	const size_t retained = sizeof(work) + encode_carriers + payload_size + file_size;
+	if (!budget.admit(retained))
+		return ENOBUFS;
+	try
+	{
+		work w;
+		w.payload.reserve(payload_size);
+		w.payload.resize(payload_size);
+		w.file.reserve(file_size);
+		w.file.resize(file_size);
+		native_artifact_number<uint32_t>(w.payload, w.offset, catalog.records.size());
+		for (const auto &record : catalog.records)
+		{
+			native_artifact_number(w.payload, w.offset, record.vnum);
+			native_artifact_number<uint8_t>(w.payload, w.offset, record.owned ? 1 : 0);
+			native_artifact_number(w.payload, w.offset, record.location_type);
+			native_artifact_number(w.payload, w.offset, record.location);
+			native_artifact_number(w.payload, w.offset, record.timer);
+			native_artifact_number(w.payload, w.offset, record.type);
+			native_artifact_number(w.payload, w.offset, record.last_update);
+			native_artifact_number(w.payload, w.offset, record.bind_owner_pid);
+			native_artifact_number(w.payload, w.offset, record.bind_timer);
+			native_artifact_number(w.payload, w.offset, record.revision);
+		}
+		const int hashed = native_artifact_hash(w.payload.data(), w.payload.size(),
+							w.digest.data(), budget, retained);
+		if (hashed)
+			return hashed;
+		for (size_t index = 0; index < catalog_magic.size(); ++index)
+			w.file[index] = catalog_magic[index];
+		w.offset = 8;
+		native_artifact_number(w.file, w.offset, catalog_version);
+		native_artifact_number<uint32_t>(w.file, w.offset, payload_size);
+		native_artifact_number(w.file, w.offset, catalog.revision);
+		for (uint8_t byte : w.digest)
+			w.file[w.offset++] = byte;
+		for (uint8_t byte : w.payload)
+			w.file[w.offset++] = byte;
+		output->swap(w.file);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}
+} // namespace
+
+int flatfile_artifact_get_bounded(const std::string &root, const flatfile_authority_lock &lock,
+				  int32_t vnum, flatfile_artifact_record *record,
+				  flatfile_scratch_reserve_fn reserve, void *context,
+				  size_t outer) noexcept
+{
+	if (!record || vnum <= 0 || !reserve)
+		return EINVAL;
+	if (!native_artifact_policy())
+		return ENOTSUP;
+	artifact_catalog catalog;
+	// Real own arguments, budget object, loaded/result status and subsequent
+	// original range reference, const iterators and element reference. Sum the
+	// finite declared scopes conservatively before nested calls.
+	constexpr size_t get_carriers = 5 * sizeof(void *) + sizeof(int32_t) + sizeof(size_t) +
+					sizeof(native_artifact_budget) + 2 * sizeof(int) +
+					2 * sizeof(void *) +
+					2 * sizeof(std::vector<flatfile_artifact_record>::iterator);
+	if (sizeof(catalog) > SIZE_MAX - get_carriers ||
+	    sizeof(catalog) + get_carriers > SIZE_MAX - outer)
+		return ENOBUFS;
+	native_artifact_budget budget{ reserve, context, outer + sizeof(catalog) + get_carriers };
+	if (!budget.admit(0))
+		return ENOBUFS;
+	const int loaded = native_artifact_load(root, lock, &catalog, budget);
+	if (loaded)
+		return loaded;
+	for (const auto &candidate : catalog.records)
+		if (candidate.vnum == vnum)
+		{
+			*record = candidate;
+			return 0;
+		}
+	return ENOENT;
+}
+
+int flatfile_artifact_gameplay_update_bounded(const std::string &root,
+					      const flatfile_authority_lock &lock, int32_t vnum,
+					      bool owned, int32_t location_type, int32_t location,
+					      int64_t timer, int32_t type, int64_t last_update,
+					      bool *returned, bool *succeeded,
+					      flatfile_scratch_reserve_fn reserve, void *context,
+					      size_t outer) noexcept
+{
+	if (!returned || !succeeded || !reserve || vnum <= 0 || location_type < 1 ||
+	    location_type > 5 || timer < 0 || type < 1 || type > 3 || last_update < 0)
+		return EINVAL;
+	if (*returned || *succeeded)
+		return EALREADY;
+	if (!native_artifact_policy())
+		return ENOTSUP;
+	struct work
+	{
+		artifact_catalog catalog;
+		std::vector<uint8_t> bytes;
+		std::string directory, name;
+		bool published = false;
+	};
+	// Both actual budget objects, own six pointer/reference arguments, four
+	// int32 and two int64 args, owned/outer, status/write_error/return, heap,
+	// next/request/path_length/path_request/atomic and actual found iterator.
+	// The original insert's temporary record and lambda argument/return carriers
+	// are included while old and fresh catalog vector storage coexist.
+	constexpr size_t update_carriers =
+		2 * sizeof(native_artifact_budget) + 6 * sizeof(void *) + 4 * sizeof(int32_t) +
+		2 * sizeof(int64_t) + sizeof(bool) + sizeof(size_t) + 3 * sizeof(int) +
+		6 * sizeof(size_t) + sizeof(std::vector<flatfile_artifact_record>::iterator) +
+		sizeof(bool) + sizeof(flatfile_artifact_record) + sizeof(void *) + sizeof(int32_t) +
+		sizeof(bool);
+	if (sizeof(work) > SIZE_MAX - update_carriers ||
+	    sizeof(work) + update_carriers > SIZE_MAX - outer)
+		return ENOBUFS;
+	native_artifact_budget budget{ reserve, context, outer + sizeof(work) + update_carriers };
+	if (!budget.admit(0))
+		return ENOBUFS;
+	try
+	{
+		work w;
+		int status = native_artifact_load(root, lock, &w.catalog, budget);
+		if (status)
+			return status;
+		size_t heap = w.catalog.records.capacity() * sizeof(flatfile_artifact_record);
+		auto found =
+			std::lower_bound(w.catalog.records.begin(), w.catalog.records.end(), vnum,
+					 [](const flatfile_artifact_record &candidate,
+					    int32_t sought) { return candidate.vnum < sought; });
+		if (found != w.catalog.records.end() && found->vnum == vnum)
+		{
+			if (found->owned == owned && found->location_type == location_type &&
+			    found->location == location && found->timer == timer &&
+			    found->type == type && found->last_update == last_update)
+			{
+				*returned = true;
+				*succeeded = true;
+				return 0;
+			}
+			if (found->revision == UINT64_MAX)
+				return EBADMSG;
+			found->owned = owned;
+			found->location_type = location_type;
+			found->location = location;
+			found->timer = timer;
+			found->type = type;
+			found->last_update = last_update;
+			++found->revision;
+		}
+		else
+		{
+			const size_t next = w.catalog.records.size() +
+					    std::max(w.catalog.records.size(), size_t(1));
+			if (next > SIZE_MAX / sizeof(flatfile_artifact_record))
+				return ENOBUFS;
+			const size_t request = next * sizeof(flatfile_artifact_record);
+			if (request > SIZE_MAX - heap || !budget.admit(heap + request))
+				return ENOBUFS;
+			w.catalog.records.insert(found, { vnum, owned, location_type, location,
+							  timer, type, last_update, 0, 0, 1 });
+			heap = w.catalog.records.capacity() * sizeof(flatfile_artifact_record);
+		}
+		if (w.catalog.revision == UINT64_MAX)
+			return EBADMSG;
+		++w.catalog.revision;
+		native_artifact_budget encode_budget = budget;
+		if (heap > SIZE_MAX - encode_budget.base)
+			return ENOBUFS;
+		encode_budget.base += heap;
+		status = native_artifact_encode(w.catalog, &w.bytes, encode_budget);
+		if (status)
+			return status;
+		if (w.bytes.capacity() > SIZE_MAX - heap)
+			return ENOBUFS;
+		heap += w.bytes.capacity();
+		if (root.size() > SIZE_MAX - 8)
+			return ENOBUFS;
+		const size_t path_length = root.size() + 8;
+		const size_t path_request =
+			path_length > 15 ? std::max(path_length, size_t(30)) + 1 : 0;
+		// catalog_filename is sixteen characters: fresh GCC13 SSO15 grows to
+		// thirty plus its terminator. Admit it BEFORE assign and retain its actual
+		// request in every following atomic writer prefix.
+		constexpr size_t name_request = 31;
+		if (path_request > SIZE_MAX - name_request ||
+		    path_request + name_request > SIZE_MAX - heap ||
+		    !budget.admit(heap + path_request + name_request))
+			return ENOBUFS;
+		w.directory.reserve(path_length);
+		w.directory.assign(root);
+		w.directory.append("/domains");
+		w.name.assign(catalog_filename);
+		heap += path_request + name_request;
+		const size_t atomic = flatfile_atomic_write_working_bytes();
+		if (atomic > SIZE_MAX - heap || !budget.admit(heap + atomic))
+			return ENOBUFS;
+		// Publish and latch its actual outcome before any allocating tail. A failed
+		// fsync following rename is returned=true/succeeded=false and cannot replay.
+		errno = 0;
+		const bool written = flatfile_atomic_write_with_publication(
+			w.directory, w.name, w.bytes, nullptr, &w.published);
+		const int write_error = errno;
+		*returned = true;
+		*succeeded = written;
+		return written ? 0 : write_error ? write_error : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}

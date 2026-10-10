@@ -2702,3 +2702,90 @@ economic_accounting_error native_mobile_birth_cash_role_recovery_validate_bounde
 		return economic_accounting_error::corrupt_evidence;
 	return economic_accounting_error::ok;
 }
+
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_original_command_decode_status_bounded(
+	std::span<const uint8_t> bytes, critical_command *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_command_heap_bytes) noexcept
+{
+	// Reuse the SAME complete original preflight before the command codec can
+	// allocate. This is the original terminal extraction, not a framing parser.
+	if (!output)
+		return error::corrupt_evidence;
+	if (!recovery_storage_policy())
+		return error::unresolved;
+	struct workspace
+	{
+		wire_view view;
+		critical_command original;
+		native_mobile_birth_recovery_context progress;
+		size_t command_heap = 0, context_heap = 0, live = 0;
+		error checked = error::ok;
+		critical_command_codec_result decoded = critical_command_codec_result::ok;
+	};
+	size_t base = outer_live;
+	constexpr size_t own = sizeof(workspace) + sizeof(recovery_reservation) +
+			       5 * sizeof(void *) + 3 * sizeof(size_t) +
+			       sizeof(std::span<const uint8_t>);
+	if (!recovery_add(base, own) || !recovery_admit(base, 0, reserve, context))
+		return error::capacity;
+	recovery_reservation admission{ reserve, context };
+	reserve = &recovery_reservation::forward;
+	context = &admission;
+	try
+	{
+		workspace work;
+		work.checked = recovery_preflight_bounded(nullptr, bytes, &work.view,
+							  recovery_policy::ordinary_cash_role,
+							  reserve, context, base);
+		if (work.checked != error::ok)
+			return work.checked;
+		work.decoded = critical_command_decode_bounded(work.view.command.data(),
+							       work.view.command.size(),
+							       &work.original, reserve, context,
+							       base, &work.command_heap);
+		if (admission.refused)
+			return error::capacity;
+		if (work.decoded != critical_command_codec_result::ok)
+			return work.decoded == critical_command_codec_result::overflow ?
+				       error::capacity :
+			       work.decoded == critical_command_codec_result::unsupported_version ?
+				       error::invalid_version :
+				       error::corrupt_evidence;
+		if (work.original.payload_version != NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+			return error::invalid_version;
+		work.live = base;
+		if (!recovery_add(work.live, work.command_heap))
+			return error::capacity;
+		work.checked = native_mobile_birth_cash_role_recovery_decode_status_bounded(
+			work.original, bytes, &work.progress, reserve, context, work.live,
+			&work.context_heap);
+		if (admission.refused)
+			return error::capacity;
+		if (work.checked != error::ok)
+			return work.checked;
+		// The real decoded context heap is still retained during the original
+		// terminal predicate. Account its full all_of/find_if_not predicate and
+		// iterator carriers, complete/successful/item_done scopes before entry.
+		constexpr size_t terminal_frames =
+			6 * (3 * sizeof(void *) + sizeof(bool)) +
+			4 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(size_t) +
+			sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag) +
+			4 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+		if (!recovery_add(work.live, work.context_heap) ||
+		    !recovery_admit(work.live, terminal_frames, reserve, context))
+			return error::capacity;
+		if (!body_terminal(work.progress))
+			return error::unresolved;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*output = std::move(work.original);
+		if (retained_command_heap_bytes)
+			*retained_command_heap_bytes = work.command_heap;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+}

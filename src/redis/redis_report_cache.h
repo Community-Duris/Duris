@@ -32,4 +32,10 @@ char *redis_get_artifact_list(int type, bool godlist);
 bool redis_invalidate_artifact_list(int type, bool godlist);
 bool redis_invalidate_artifact_cache(void);
 
+// Full cache CURRENT once: original fixed report keys plus original actual
+// queue/local map/worker-held shared allocations. Strong scalar output.
+bool redis_report_cache_retained_bytes(size_t *) noexcept;
+int redis_invalidate_artifact_cache_bounded(bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept;
+
 #endif

@@ -147,4 +147,17 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_resurrection(
 	const std::vector<player_item_snapshot> &items,
 	flatfile_artifact_transfer_mutation *mutation, std::string *error);
 
+// Passive complete-catalog companions; authentic borrowed root lock, no new
+// journal authority. Caller includes all current inputs/outputs in outer and
+// retains peaks through return. Pinned GCC13/OpenSSL profile; errno-style result.
+// Strong get output. Update latches real returned/succeeded before later tails;
+// already returned is EALREADY, uncertain atomic write must never replay.
+int flatfile_artifact_get_bounded(const std::string &, const flatfile_authority_lock &, int32_t,
+				  flatfile_artifact_record *, flatfile_scratch_reserve_fn, void *,
+				  size_t) noexcept;
+int flatfile_artifact_gameplay_update_bounded(const std::string &, const flatfile_authority_lock &,
+					      int32_t, bool, int32_t, int32_t, int64_t, int32_t,
+					      int64_t, bool *, bool *, flatfile_scratch_reserve_fn,
+					      void *, size_t) noexcept;
+
 #endif
