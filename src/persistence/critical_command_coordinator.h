@@ -354,6 +354,23 @@ struct critical_native_birth_recovery_validators
 	bool (*publication)(const critical_native_recovery_envelope &,
 			    const critical_completion &) noexcept = nullptr;
 	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	// Optional full original owning initial companions, exact family dispatch.
+	// Existing five-field aggregate initialization/readiness remains unchanged.
+	// Missing companions refuse ONLY the new bounded submission provider.
+	// Callbacks must prospectively own full codec/caller storage and use the
+	// given actual held-coordinator reserve relay; they grant no source permit.
+	bool (*initial_bounded)(const critical_native_recovery_envelope &,
+				bool (*)(size_t, void *) noexcept, void *,
+				size_t) noexcept = nullptr;
+	bool (*cash_role_initial_bounded)(const critical_native_recovery_envelope &,
+					  bool (*)(size_t, void *) noexcept, void *,
+					  size_t) noexcept = nullptr;
+	bool (*shared_shop_valid_bounded)(const critical_native_recovery_envelope &,
+					  bool (*)(size_t, void *) noexcept, void *,
+					  size_t) noexcept = nullptr;
+	bool (*shared_shop_initial_bounded)(const critical_native_recovery_envelope &,
+					    bool (*)(size_t, void *) noexcept, void *,
+					    size_t) noexcept = nullptr;
 };
 
 // Separate type22 checks; missing callbacks refuse admission and replay.
@@ -441,6 +458,22 @@ class critical_native_mobile_birth_publication_owner final
 	friend class quest_mobile_native_birth_owner;
 	// Typed v2/v3 admission and exact same-phase progress CAS. Raw v1 remains readable.
 	static critical_submit_result submit(critical_native_recovery_envelope);
+	// Complete original typed-birth submit from a const input reference.
+	// Caller owns authentic input/current registry/journal/old output and
+	// all first-observer profiles in outer, excluding ALL retained coordinator.
+	// Every callback runs under the original actual coordinator unique_lock,
+	// with fresh full CURRENT C added exactly once through its genuine lender.
+	// Reserve must not reacquire coordinator/journal. Registered ROOT requires
+	// its exact callback+active guard; closed birth charge is not that permit.
+	// Full nullable family companions are required only for this new provider;
+	// original SQL/inactive/ordinary unsupported-flat predicates stay intact.
+	// Output is only a complete genuine same-lock snapshot after successful
+	// census, never a lease, logical zero, admission or activation authority.
+	// Actual selection and the ROOT/birth shared-scope join remain separate.
+	static critical_submit_result submit_bounded(const critical_native_recovery_envelope &,
+						     bool (*)(size_t, void *) noexcept, void *,
+						     size_t outer,
+						     size_t *current_coordinator_bytes) noexcept;
 	static bool copy_context(const critical_command &,
 				 critical_native_recovery_envelope *) noexcept;
 	// Exact retained shared carrier plus generation from one mutex observation.

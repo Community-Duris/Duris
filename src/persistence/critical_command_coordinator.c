@@ -8741,3 +8741,284 @@ bool critical_mixed_startup_replay_owner::reserve_coordinator_cut(
 	// caller charges this bridge/identity frame before entering this method.
 	return critical_room_shared_budget_lender::reserve(init_lock_, reserve, context, outer);
 }
+
+namespace
+{
+// These are real nullable paired companions of the original full initial
+// dispatch. Historical callbacks/readiness stay mandatory and unchanged; no
+// readiness flag, raw accept result or old allocating predicate is substituted.
+bool native_birth_submit_initial_bounded(const critical_native_recovery_envelope &envelope,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer) noexcept
+{
+	if (native_birth_shared_shop_command(envelope.command))
+		return native_birth_validators.shared_shop_initial_bounded &&
+		       native_birth_validators.shared_shop_initial_bounded(envelope, reserve,
+									   context, outer);
+	return envelope.command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ?
+		       (native_birth_validators.cash_role_initial_bounded &&
+			native_birth_validators.cash_role_initial_bounded(envelope, reserve,
+									  context, outer)) :
+		       (native_birth_validators.initial_bounded &&
+			native_birth_validators.initial_bounded(envelope, reserve, context, outer));
+}
+
+// Complete original native_matches + critical_command_equal algorithms. Both
+// original command encodes now pass through their genuine bounded encoders;
+// the first actual encoded capacity remains owned through the second call.
+// No reserve around the original allocating equality function is used.
+bool native_birth_submit_matches_bounded(const operation_state &state,
+					 const critical_native_recovery_envelope &envelope,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer) noexcept
+{
+	if (!state.native || state.native->revision != envelope.revision ||
+	    state.native->phase != envelope.phase ||
+	    state.native->attachment != envelope.attachment)
+		return false;
+	std::vector<uint8_t> left_encoded;
+	std::vector<uint8_t> right_encoded;
+	size_t live = outer;
+	// Own the two output vector objects and this helper's params/local/return.
+	// Existing nested encoder frame profiles remain caller-owned and unqualified.
+	if (!room_storage_add(live, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_storage_add(live, 4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) ||
+	    !reserve || !reserve(live, context))
+		return false;
+	if (critical_command_encode_bounded(state.command, &left_encoded, reserve, context, live) !=
+	    critical_command_codec_result::ok)
+		return false;
+	if (!room_storage_add(live, left_encoded.capacity()))
+		return false;
+	return critical_command_encode_bounded(envelope.command, &right_encoded, reserve, context,
+					       live) == critical_command_codec_result::ok &&
+	       left_encoded == right_encoded;
+}
+
+size_t native_birth_submit_source_frames() noexcept
+{
+	// Actual new submit parameters, returned disposition and source-frame
+	// query. Existing full room_* workspace/lender/census/codec call profiles
+	// stay caller-owned; this function explicitly grants no first-call closure.
+	// New initial dispatch parameters/return coexist with its real selected
+	// bounded companion, whose own complete profile is that callback's duty.
+	return 4 * sizeof(void *) + sizeof(size_t) + sizeof(critical_submit_result) +
+	       sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+}
+} // namespace: original mobile birth full bounded submit companions
+
+critical_submit_result critical_native_mobile_birth_publication_owner::submit_bounded(
+	const critical_native_recovery_envelope &original, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer, size_t *current_coordinator_bytes) noexcept
+{
+	if (!reserve || !current_coordinator_bytes ||
+	    !native_birth_typed_command(original.command) || original.revision != 1 ||
+	    original.phase != critical_native_recovery_phase::execution_pending)
+		return critical_submit_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return critical_submit_result::overloaded;
+#else
+	room_submit_workspace work(reserve, context, outer, current_coordinator_bytes);
+	// Caller owns its complete input/current/journal/registry prefix. Real new
+	// source parameter/helper carriers are additive; workspace itself and its
+	// current private heaps remain owned by the existing complete local prefix.
+	if (!room_storage_add(work.outer, native_birth_submit_source_frames()))
+		return critical_submit_result::overloaded;
+	try
+	{
+		// All complete canonical proofs and genuine clone allocations now run
+		// under the original mutex so the FIRST request contains actual current
+		// coordinator ownership. Original pure predicate order remains unchanged.
+		work.lock.lock();
+		if (!room_submit_admit(work))
+			return room_submit_rollback(work);
+		if (!room_submit_local_prefix(work) ||
+		    !room_checkpoint_size_bounded(original, &work.retained,
+						  room_submit_reserve_locked, &work, work.partial))
+			return work.denied ?
+				       room_submit_rollback(work) :
+				       room_submit_return(work, critical_submit_result::invalid);
+		// Complete original carrier copy, all vector request sizes genuine. The
+		// authentic original belongs to caller outer and remains live throughout.
+		work.fresh = 0;
+		if (!room_checkpoint_heap(original, true, work.fresh) ||
+		    !room_submit_admit(work, work.fresh))
+			return room_submit_rollback(work);
+		work.envelope = original;
+		if (!room_submit_admit(work))
+			return room_submit_rollback(work);
+		// Preserve the complete original native execution family dispatch.
+		// Shared SHOP bypasses extension support only through its original
+		// installed shared executor and complete shared recovery validity.
+		// Ordinary birth STILL needs the actually selected legacy/extension
+		// support; an ordinary worker callback alone grants no admission.
+		if (!room_submit_local_prefix(work))
+			return room_submit_rollback(work);
+		if (native_birth_shared_shop_command(work.envelope.command))
+		{
+			if (!shared_native_apply_callback ||
+			    !native_birth_validators.shared_shop_valid_bounded ||
+			    !native_birth_validators.shared_shop_valid_bounded(
+				    work.envelope, room_submit_reserve_locked, &work, work.partial))
+				return work.denied ?
+					       room_submit_rollback(work) :
+					       room_submit_return(work,
+								  critical_submit_result::invalid);
+		}
+		else if (!(critical_command_valid(work.envelope.command) ||
+			   (work.envelope.command.schema_version ==
+				    CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			    critical_command_envelope_valid(work.envelope.command) &&
+			    extension_validator_callback && extension_validator_bounded_callback &&
+			    extension_validator_bounded_callback(work.envelope.command,
+								 room_submit_reserve_locked, &work,
+								 work.partial))))
+			return work.denied ?
+				       room_submit_rollback(work) :
+				       room_submit_return(work, critical_submit_result::invalid);
+		// Exact original typed-birth readiness then full initial dispatch.
+		// The mutually exclusive zone/auction predicates are false for this
+		// original private typed-birth wrapper, just as in native_recovery_submit.
+		if (!room_submit_local_prefix(work) || !native_birth_validators_ready() ||
+		    !native_birth_submit_initial_bounded(work.envelope, room_submit_reserve_locked,
+							 &work, work.partial))
+			return work.denied ?
+				       room_submit_rollback(work) :
+				       room_submit_return(work, critical_submit_result::invalid);
+		if (!health.initialized || !health.accepting || stop_requested ||
+		    !native_replay_observer_callback)
+			return room_submit_return(work, critical_submit_result::unavailable);
+		// operation_key's 16 bytes require an actual 17-byte GCC13 string request;
+		// assignment also owns its returned temporary string until the full expression.
+		work.extra = sizeof(std::string);
+		if (!room_storage_add(work.extra, original.command.operation_id.bytes.size() + 1) ||
+		    !room_submit_admit(work, work.extra))
+			return room_submit_rollback(work);
+		work.identity = operation_key(work.envelope.command.operation_id);
+		if (!room_submit_admit(work))
+			return room_submit_rollback(work);
+		work.completed = completed_cache.find(work.identity);
+		if (work.completed != completed_cache.end())
+			return room_submit_return(work, critical_submit_result::identity_conflict);
+		work.found = operations.find(work.identity);
+		if (work.found != operations.end())
+		{
+			if (!room_submit_local_prefix(work) ||
+			    !native_birth_submit_matches_bounded(*work.found->second, work.envelope,
+								 room_submit_reserve_locked, &work,
+								 work.partial))
+				return work.denied ?
+					       room_submit_rollback(work) :
+					       room_submit_return(
+						       work,
+						       critical_submit_result::identity_conflict);
+			++work.found->second->attachments;
+			++health.attached;
+			return room_submit_return(work, critical_submit_result::attached);
+		}
+		if (operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
+		    work.retained > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+		{
+			++health.overloads;
+			return room_submit_return(work, critical_submit_result::overloaded);
+		}
+		if (!room_submit_admit(work, sizeof(operation_state) +
+						     sizeof(std::unique_ptr<operation_state>)))
+			return room_submit_rollback(work);
+		work.state = std::make_unique<operation_state>();
+		if (!room_submit_admit(work))
+			return room_submit_rollback(work);
+		work.state->command = std::move(work.envelope.command);
+		if (!room_submit_admit(work,
+				       sizeof(native_operation_context) +
+					       sizeof(std::unique_ptr<native_operation_context>)))
+			return room_submit_rollback(work);
+		work.state->native = std::make_unique<native_operation_context>();
+		work.state->native->revision = work.envelope.revision;
+		work.state->native->phase = work.envelope.phase;
+		work.state->native->attachment = std::move(work.envelope.attachment);
+		work.state->retained_bytes = work.retained;
+		work.state->queued_at_usec = now_usec();
+		work.state->attempt = 1;
+		work.state->attachments = 0;
+		work.state->phase = critical_operation_phase::awaiting_durability;
+		work.state->retain_until_publication = true;
+		work.state->admission_failure_queued = false;
+		// Genuine remove_fences owns both optional-NRVO array objects and its
+		// string_view. Admit cleanup BEFORE insertion can create rollback work;
+		// retain this allowance through every later prefix. Never call reserve
+		// while cleaning up after denial or a genuine allocation exception.
+		work.rollback_cleanup_reserved = true;
+		if (!operations.next_unique_insert_extra_peak(work.identity, 0, &work.extra) ||
+		    !room_submit_admit(work, work.extra))
+			return room_submit_rollback(work);
+		operations.emplace(work.identity, std::move(work.state));
+		work.inserted = true;
+		if (!room_submit_admit(work) ||
+		    !pending_admission.push_back_extra_peak(work.identity, &work.extra) ||
+		    !room_submit_admit(work, work.extra))
+			return room_submit_rollback(work);
+		pending_admission.push_back(work.identity);
+		pending_admission_bytes += work.retained;
+		work.admission_queued = true;
+		if (!room_submit_admit(work))
+			return room_submit_rollback(work);
+		// Genuine original add_fences, with admission between the real map's
+		// absent-key/default queue construction and that real queue's push.
+		work.found = operations.find(work.identity);
+		for (work.key_index = 0; work.key_index < work.found->second->command.keys.size();
+		     ++work.key_index)
+		{
+			if (!room_submit_admit(work, sizeof(std::string) +
+							     2 * sizeof(std::array<char, 9>)))
+				return room_submit_rollback(work);
+			work.fence_key =
+				entity_key(work.found->second->command.keys[work.key_index]);
+			work.fence_found = fences.find(work.fence_key);
+			if (work.fence_found == fences.end())
+			{
+				if (!native_identity_queue::initial_heap_bytes(&work.fresh) ||
+				    !fences.next_unique_insert_extra_peak(
+					    work.fence_key, work.fresh, &work.extra) ||
+				    !room_submit_admit(work, work.extra))
+					return room_submit_rollback(work);
+				// Original entity_key result is an rvalue and invokes this exact
+				// genuine table/default-mapped construction path.
+				work.fence_queue = &fences[std::move(work.fence_key)];
+				if (!room_submit_admit(work))
+					return room_submit_rollback(work);
+			}
+			else
+				work.fence_queue = &work.fence_found->second;
+			if (!work.fence_queue->push_back_extra_peak(work.identity, &work.extra) ||
+			    !room_submit_admit(work, work.extra))
+				return room_submit_rollback(work);
+			work.fence_queue->push_back(work.identity);
+			if (!room_submit_admit(work))
+				return room_submit_rollback(work);
+		}
+		health.fenced_keys = fences.size();
+		// Actual fixed diagnostic return/argument objects (NRVO optional) and
+		// recorder's unique_lock, before the original nonallocating accepted tail.
+		if (!room_submit_admit(work, 2 * sizeof(persistence_trace_event) +
+						     sizeof(std::unique_lock<std::mutex>)))
+			return room_submit_rollback(work);
+		persistence_trace_record(
+			persistence_command_trace(operations.at(work.identity)->command,
+						  persistence_trace_stage::command_admitted));
+		++health.accepted;
+		update_depth();
+		admission_available.notify_one();
+		return room_submit_return(work, critical_submit_result::awaiting_durability);
+	}
+	catch (...)
+	{
+		// Only genuine standard-library exceptions enter here. A failed lock owns
+		// no coordinator state and must not perform an unlocked census or rollback.
+		if (!work.lock.owns_lock())
+			return critical_submit_result::unavailable;
+		return room_submit_rollback(work);
+	}
+#endif
+}
