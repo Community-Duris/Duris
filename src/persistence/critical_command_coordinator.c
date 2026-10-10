@@ -9271,3 +9271,947 @@ bool critical_native_mobile_birth_publication_owner::copy_context_ordinary_bound
 	}
 #endif
 }
+
+namespace
+{
+// Full ordinary NMB4 publication, distinct from historical/shared and ROOM.
+// Every allocating request below is lent fresh CURRENT coordinator storage
+// under its genuine mutex and the registered ROOT callback/common guard.
+bool ordinary_birth_publication_command(const critical_command &command) noexcept
+{
+	return native_birth_typed_command(command) &&
+	       command.payload_version == NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION &&
+	       !native_birth_shared_shop_command(command);
+}
+
+// Conservative full new helper source-carrier bundle. Summing all named
+// allocation-free policy/helper frames retains every overlapping caller frame
+// across nested callbacks; this is source accounting, not a native stack profile.
+constexpr size_t ordinary_birth_publication_helper_source_frames =
+	sizeof(void *) + sizeof(uint8_t) + sizeof(void *) + sizeof(uint8_t) + sizeof(void *) +
+	sizeof(uint8_t) + sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + sizeof(bool) + 5 * sizeof(void *) +
+	2 * sizeof(std::vector<native_mobile_birth_recovery_item>::const_iterator) +
+	2 * sizeof(std::vector<native_mobile_birth_recovery_effect>::const_iterator) +
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+	2 * sizeof(void *) + 2 * sizeof(native_mobile_birth_recovery_action) + sizeof(bool) +
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + 4 * sizeof(void *) +
+	2 * sizeof(std::vector<native_mobile_birth_recovery_item>::const_iterator) + sizeof(bool) +
+	3 * sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) + sizeof(bool) +
+	sizeof(critical_command_codec_result) + 3 * sizeof(void *) + sizeof(bool) +
+	3 * sizeof(void *) + sizeof(bool) + sizeof(critical_command_codec_result) +
+	3 * sizeof(void *) + sizeof(bool) + sizeof(economic_accounting_error) + 3 * sizeof(void *) +
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) + sizeof(bool) +
+	sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(void *) + sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) +
+	2 * sizeof(std::array<char, 9>) + sizeof(std::string_view);
+
+struct ordinary_birth_publication_workspace
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, provider_frames, live = 0, current = 0, extra = 0, prospective = 0;
+	size_t original_retained = 0, successor_retained = 0, reserved = 0;
+	uint64_t generation = 0;
+	bool prior_uncertain = false, cleaned = false, same = false;
+	std::unique_lock<std::mutex> lock{ coordinator_mutex, std::defer_lock };
+	std::string identity;
+	critical_native_recovery_envelope frozen, prepared;
+	critical_completion receipt{};
+	native_mobile_birth_recovery_context before, after;
+	std::span<const uint8_t> attachment;
+	decltype(operations)::iterator found;
+	operation_state *pinned = nullptr;
+	critical_command_journal_result result = critical_command_journal_result::io_failure;
+
+	static bool context_heap(const native_mobile_birth_recovery_context &value,
+				 size_t &bytes) noexcept
+	{
+		if (!room_storage_array(bytes, value.items.capacity(),
+					sizeof(native_mobile_birth_recovery_item)))
+			return false;
+		for (const auto &item : value.items)
+			if (!room_storage_array(bytes, item.effects.capacity(),
+						sizeof(native_mobile_birth_recovery_effect)))
+				return false;
+		return true;
+	}
+	static bool relay(size_t exclusive_live, void *opaque) noexcept
+	{
+		auto &work = *static_cast<ordinary_birth_publication_workspace *>(opaque);
+		return critical_room_shared_budget_lender::reserve(
+			work.lock, work.reserve, work.context, exclusive_live, &work.current);
+	}
+	static bool outside_relay(size_t exclusive_live, void *opaque) noexcept
+	{
+		auto &work = *static_cast<ordinary_birth_publication_workspace *>(opaque);
+		// The native callback is outside the mutex. Each nested budget request
+		// acquires the REAL mutex solely for its fresh same-lock census/lender,
+		// then releases it before returning to the native owner. No stored
+		// current snapshot, thread flag or lockless zero acts as a loan.
+		size_t full = exclusive_live;
+		if (!room_storage_add(full, sizeof(std::unique_lock<std::mutex>)) ||
+		    !room_storage_add(full, 2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)))
+			return false;
+		try
+		{
+			std::unique_lock<std::mutex> actual_lock(coordinator_mutex);
+			return critical_room_shared_budget_lender::reserve(
+				actual_lock, work.reserve, work.context, full, &work.current);
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+	bool admit(size_t request = 0) noexcept
+	{
+		live = outer;
+		// Actual complete workspace and provider argument/return carriers. The
+		// admit and relay frames own their this/reference/opaque pointers,
+		// two size parameters and two bool return objects separately. Full
+		// underlying native/library/census profiles remain caller-owned.
+		if (!room_storage_add(live, sizeof(*this)) ||
+		    !room_storage_add(live, provider_frames) ||
+		    !room_storage_add(live, ordinary_birth_publication_helper_source_frames) ||
+		    !room_storage_add(live,
+				      3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool)) ||
+		    !room_storage_string(live, identity) ||
+		    !room_checkpoint_heap(frozen, false, live) ||
+		    !room_checkpoint_heap(prepared, false, live) || !context_heap(before, live) ||
+		    !context_heap(after, live) || !room_storage_add(live, request))
+			return false;
+		return relay(live, this);
+	}
+	bool clone(const critical_native_recovery_envelope &source,
+		   critical_native_recovery_envelope &target) noexcept
+	{
+		// GCC13 vector copies request their full source size. The complete
+		// old target capacity and any other live clone remain in admit().
+		prospective = 3 * sizeof(void *) + sizeof(bool);
+		if (!room_checkpoint_heap(source, true, prospective) || !admit(prospective))
+			return false;
+		try
+		{
+			target = source;
+			return admit(3 * sizeof(void *) + sizeof(bool));
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+};
+
+bool ordinary_birth_publication_equal(const critical_command &left, const critical_command &right,
+				      ordinary_birth_publication_workspace &work) noexcept
+{
+	struct equal_workspace
+	{
+		std::vector<uint8_t> left, right;
+		size_t live = 0;
+	} proof;
+	proof.live = work.live;
+	if (!room_storage_add(proof.live, sizeof(proof)) ||
+	    !room_storage_add(proof.live, 3 * sizeof(void *) + sizeof(bool)) ||
+	    !ordinary_birth_publication_workspace::relay(proof.live, &work))
+		return false;
+	if (critical_command_encode_bounded(left, &proof.left,
+					    ordinary_birth_publication_workspace::relay, &work,
+					    proof.live) != critical_command_codec_result::ok ||
+	    !room_storage_add(proof.live, proof.left.capacity()))
+		return false;
+	return critical_command_encode_bounded(right, &proof.right,
+					       ordinary_birth_publication_workspace::relay, &work,
+					       proof.live) == critical_command_codec_result::ok &&
+	       proof.left == proof.right;
+}
+
+bool ordinary_birth_publication_matches(const operation_state &state,
+					const critical_native_recovery_envelope &expected,
+					ordinary_birth_publication_workspace &work) noexcept
+{
+	return state.native && state.native->revision == expected.revision &&
+	       state.native->phase == expected.phase &&
+	       state.native->attachment == expected.attachment &&
+	       work.admit(3 * sizeof(void *) + sizeof(bool)) &&
+	       ordinary_birth_publication_equal(state.command, expected.command, work);
+}
+
+bool ordinary_birth_publication_size(const critical_native_recovery_envelope &envelope,
+				     size_t *retained,
+				     ordinary_birth_publication_workspace &work) noexcept
+{
+	// Complete native_envelope_size domain and canonical hard-size policy.
+	if (!retained || !native_transport_command(envelope.command) ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
+	    !envelope.command.publication_required || !envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
+	    envelope.attachment.empty() ||
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return false;
+	struct size_workspace
+	{
+		std::vector<uint8_t> encoded;
+		size_t live = 0;
+	} proof;
+	proof.live = work.live;
+	if (!room_storage_add(proof.live, sizeof(proof)) ||
+	    !room_storage_add(proof.live, 3 * sizeof(void *) + sizeof(bool)) ||
+	    !ordinary_birth_publication_workspace::relay(proof.live, &work) ||
+	    critical_command_encode_bounded(envelope.command, &proof.encoded,
+					    ordinary_birth_publication_workspace::relay, &work,
+					    proof.live) != critical_command_codec_result::ok ||
+	    proof.encoded.size() >
+		    CRITICAL_COORDINATOR_MAX_BYTES - NATIVE_COORDINATOR_ENVELOPE_OVERHEAD ||
+	    envelope.attachment.size() > CRITICAL_COORDINATOR_MAX_BYTES -
+						 NATIVE_COORDINATOR_ENVELOPE_OVERHEAD -
+						 proof.encoded.size())
+		return false;
+	*retained = proof.encoded.size() + envelope.attachment.size() +
+		    NATIVE_COORDINATOR_ENVELOPE_OVERHEAD;
+	return true;
+}
+
+uint8_t ordinary_publication_bits(const native_mobile_birth_recovery_action &a) noexcept
+{
+	return static_cast<uint8_t>((a.started ? 1 : 0) | (a.returned ? 2 : 0) |
+				    (a.succeeded ? 4 : 0));
+}
+
+uint8_t ordinary_publication_bits(const native_mobile_birth_recovery_mobile &a) noexcept
+{
+	return static_cast<uint8_t>((a.started ? 1 : 0) | (a.returned ? 2 : 0) |
+				    (a.consumed ? 4 : 0));
+}
+
+uint8_t ordinary_publication_bits(const native_mobile_birth_recovery_effect &a) noexcept
+{
+	return static_cast<uint8_t>((a.started ? 1 : 0) | (a.returned ? 2 : 0) |
+				    (a.succeeded ? 4 : 0) | (a.periodic ? 8 : 0));
+}
+
+bool ordinary_publication_complete(const native_mobile_birth_recovery_action &a) noexcept
+{
+	return a.started && a.returned && a.succeeded;
+}
+
+bool ordinary_publication_complete(const native_mobile_birth_recovery_mobile &a) noexcept
+{
+	return a.started && a.returned && a.consumed;
+}
+
+bool ordinary_publication_completion_equal(const critical_completion &a,
+					   const critical_completion &b) noexcept
+{
+	return a.operation_id.bytes == b.operation_id.bytes && a.outcome == b.outcome &&
+	       a.durable_revision == b.durable_revision && a.error_code == b.error_code &&
+	       a.attempt == b.attempt && a.queued_at_usec == b.queued_at_usec &&
+	       a.started_at_usec == b.started_at_usec &&
+	       a.completed_at_usec == b.completed_at_usec && a.failure_stage == b.failure_stage &&
+	       a.result_size == b.result_size && a.result_payload == b.result_payload &&
+	       a.recovery_correlation == b.recovery_correlation && a.disposition == b.disposition;
+}
+
+bool ordinary_publication_successful(const critical_completion &receipt) noexcept
+{
+	return receipt.outcome == critical_apply_outcome::applied ||
+	       receipt.outcome == critical_apply_outcome::already_applied;
+}
+
+bool ordinary_publication_receipt_core_equal(const critical_completion &a,
+					     const critical_completion &b) noexcept
+{
+	return ordinary_publication_successful(a) && ordinary_publication_successful(b) &&
+	       a.operation_id.bytes == b.operation_id.bytes &&
+	       a.durable_revision == b.durable_revision && a.error_code == b.error_code &&
+	       a.failure_stage == b.failure_stage && a.result_size == b.result_size &&
+	       a.result_payload == b.result_payload &&
+	       a.disposition == critical_completion_disposition::execution &&
+	       b.disposition == critical_completion_disposition::execution;
+}
+
+bool ordinary_publication_item_done_fields(const native_mobile_birth_recovery_item &item,
+					   size_t effect_count) noexcept
+{
+	return item.admitted && item.published && ordinary_publication_complete(item.publication) &&
+	       ordinary_publication_complete(item.enrollment) && !item.current_step_started &&
+	       item.next_step == effect_count;
+}
+
+bool ordinary_publication_item_done(const native_mobile_birth_recovery_item &item) noexcept
+{
+	return ordinary_publication_item_done_fields(item, item.effects.size());
+}
+
+bool ordinary_publication_body_terminal(const native_mobile_birth_recovery_context &value) noexcept
+{
+	return value.receipt_present && ordinary_publication_successful(value.receipt) &&
+	       value.stage == native_mobile_birth_recovery_stage::physically_proven &&
+	       ordinary_publication_complete(value.whole_binding) &&
+	       ordinary_publication_complete(value.reference_install) &&
+	       ordinary_publication_complete(value.mobile_publication) && value.runtime_applied &&
+	       std::all_of(value.items.begin(), value.items.end(), ordinary_publication_item_done);
+}
+
+bool ordinary_publication_no_progress(const native_mobile_birth_recovery_context &value) noexcept
+{
+	if (value.stage != native_mobile_birth_recovery_stage::captured ||
+	    ordinary_publication_bits(value.whole_binding) ||
+	    ordinary_publication_bits(value.reference_install) ||
+	    ordinary_publication_bits(value.mobile_publication) || value.runtime_applied)
+		return false;
+	for (const auto &e : value.mobile_effects)
+		if (ordinary_publication_bits(e))
+			return false;
+	for (const auto &choice : value.mobile_choices)
+		if (choice.chosen || choice.requested || choice.delay)
+			return false;
+	for (const auto &item : value.items)
+	{
+		if (item.next_step || item.current_step_started || item.admitted ||
+		    item.published || ordinary_publication_bits(item.publication) ||
+		    ordinary_publication_bits(item.enrollment))
+			return false;
+		for (const auto &e : item.effects)
+			if (ordinary_publication_bits(e))
+				return false;
+	}
+	return true;
+}
+
+bool ordinary_publication_successor_action(const native_mobile_birth_recovery_action &a,
+					   const native_mobile_birth_recovery_action &b) noexcept
+{
+	if (a == b)
+		return true;
+	if (!a.started)
+		return b.started && !b.returned && !b.succeeded;
+	if (!a.returned)
+		return b.started && b.returned;
+	return false;
+}
+
+bool ordinary_publication_successor_mobile(const native_mobile_birth_recovery_mobile &a,
+					   const native_mobile_birth_recovery_mobile &b) noexcept
+{
+	if (a == b)
+		return true;
+	if (!a.started)
+		return b.started && !b.returned && !b.consumed;
+	if (a.returned || (a.consumed && !b.consumed) || !b.started)
+		return false;
+	return !b.returned || b.consumed == a.consumed;
+}
+
+bool ordinary_publication_successor_effect(const native_mobile_birth_recovery_effect &a,
+					   const native_mobile_birth_recovery_effect &b) noexcept
+{
+	if (a == b)
+		return true;
+	return ordinary_publication_successor_action({ a.started, a.returned, a.succeeded },
+						     { b.started, b.returned, b.succeeded }) &&
+	       (!a.returned || a.periodic == b.periodic);
+}
+
+bool ordinary_publication_successor_context(const native_mobile_birth_recovery_context &a,
+					    const native_mobile_birth_recovery_context &b) noexcept
+{
+	if ((a.receipt_present && !b.receipt_present) ||
+	    (a.receipt_present && !ordinary_publication_completion_equal(a.receipt, b.receipt) &&
+	     !ordinary_publication_receipt_core_equal(a.receipt, b.receipt)) ||
+	    b.stage < a.stage ||
+	    static_cast<unsigned>(b.stage) > static_cast<unsigned>(a.stage) + 1 ||
+	    (a.runtime_applied && !b.runtime_applied) ||
+	    !ordinary_publication_successor_action(a.whole_binding, b.whole_binding) ||
+	    !ordinary_publication_successor_action(a.reference_install, b.reference_install) ||
+	    !ordinary_publication_successor_mobile(a.mobile_publication, b.mobile_publication) ||
+	    a.items.size() != b.items.size())
+		return false;
+	for (size_t i = 0; i < a.mobile_effects.size(); ++i)
+		if (!ordinary_publication_successor_effect(a.mobile_effects[i],
+							   b.mobile_effects[i]))
+			return false;
+	for (size_t i = 0; i < a.mobile_choices.size(); ++i)
+		if (a.mobile_choices[i].chosen && a.mobile_choices[i] != b.mobile_choices[i])
+			return false;
+	for (size_t i = 0; i < a.items.size(); ++i)
+	{
+		const auto &left = a.items[i];
+		const auto &right = b.items[i];
+		if (left.object_uid != right.object_uid || right.next_step < left.next_step ||
+		    right.next_step > static_cast<uint64_t>(left.next_step) + 1 ||
+		    (left.admitted && !right.admitted) || (left.published && !right.published) ||
+		    !ordinary_publication_successor_action(left.publication, right.publication) ||
+		    !ordinary_publication_successor_action(left.enrollment, right.enrollment) ||
+		    left.effects.size() != right.effects.size())
+			return false;
+		for (size_t step = 0; step < left.effects.size(); ++step)
+			if (!ordinary_publication_successor_effect(left.effects[step],
+								   right.effects[step]))
+				return false;
+		if (left.current_step_started && !right.current_step_started &&
+		    right.next_step != left.next_step + 1)
+			return false;
+	}
+	return true;
+}
+
+bool ordinary_birth_publication_decode(const critical_native_recovery_envelope &envelope,
+				       native_mobile_birth_recovery_context &output,
+				       ordinary_birth_publication_workspace &work) noexcept
+{
+	if (!envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
+	    !work.admit(3 * sizeof(void *) + sizeof(bool)))
+		return false;
+	work.attachment = envelope.attachment;
+	return native_mobile_birth_cash_role_recovery_decode_status_bounded(
+		       envelope.command, work.attachment, &output,
+		       ordinary_birth_publication_workspace::relay, &work,
+		       work.live) == economic_accounting_error::ok &&
+	       (envelope.revision != 1 ||
+		(envelope.phase == critical_native_recovery_phase::execution_pending &&
+		 !output.receipt_present && ordinary_publication_no_progress(output))) &&
+	       (envelope.phase == critical_native_recovery_phase::execution_pending ||
+		ordinary_publication_body_terminal(output)) &&
+	       work.admit(3 * sizeof(void *) + sizeof(bool));
+}
+
+bool ordinary_birth_publication_successor(const critical_native_recovery_envelope &expected,
+					  const critical_native_recovery_envelope &successor,
+					  ordinary_birth_publication_workspace &work) noexcept
+{
+	if (expected.revision == UINT64_MAX || successor.revision != expected.revision + 1 ||
+	    !work.admit(3 * sizeof(void *) + sizeof(bool)) ||
+	    !ordinary_birth_publication_equal(expected.command, successor.command, work) ||
+	    !ordinary_birth_publication_decode(expected, work.before, work) ||
+	    !ordinary_birth_publication_decode(successor, work.after, work))
+		return false;
+	if (expected.phase == critical_native_recovery_phase::continuation_pending ||
+	    successor.phase == critical_native_recovery_phase::continuation_pending)
+		return successor.phase == critical_native_recovery_phase::continuation_pending &&
+		       expected.attachment == successor.attachment &&
+		       ordinary_publication_body_terminal(work.after);
+	return ordinary_publication_successor_context(work.before, work.after);
+}
+
+bool ordinary_birth_publication_terminal(const critical_native_recovery_envelope &expected,
+					 ordinary_birth_publication_workspace &work) noexcept
+{
+	return expected.revision > 1 &&
+	       expected.phase == critical_native_recovery_phase::continuation_pending &&
+	       work.admit(2 * sizeof(void *) + sizeof(bool)) &&
+	       ordinary_birth_publication_decode(expected, work.before, work) &&
+	       ordinary_publication_body_terminal(work.before);
+}
+
+bool ordinary_birth_publication_receipt(const critical_native_recovery_envelope &expected,
+					const critical_completion &receipt,
+					ordinary_birth_publication_workspace &work) noexcept
+{
+	return work.admit(3 * sizeof(void *) + sizeof(bool)) &&
+	       ordinary_birth_publication_decode(expected, work.before, work) &&
+	       ordinary_publication_body_terminal(work.before) &&
+	       ordinary_publication_receipt_core_equal(work.before.receipt, receipt);
+}
+
+bool ordinary_birth_publication_charge(ordinary_birth_publication_workspace &work) noexcept
+{
+	// Exactly the original native_context_checkpoint charge policy. No ROOM
+	// role predicate or partial transaction stand-in establishes identity.
+	if (work.found->second->ordinary_flat_transaction)
+	{
+		work.extra = work.found->second->ordinary_flat_transaction_bytes;
+		if (!work.extra || work.successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+		    work.extra > CRITICAL_COORDINATOR_MAX_BYTES - work.successor_retained)
+			return false;
+		work.original_retained = work.found->second->retained_bytes;
+		work.successor_retained += work.extra;
+	}
+	if (work.found->second->flat_transaction)
+	{
+		work.extra = work.found->second->flat_transaction_bytes;
+		if (!work.extra || work.successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+		    work.extra > CRITICAL_COORDINATOR_MAX_BYTES - work.successor_retained)
+			return false;
+		work.original_retained = work.found->second->retained_bytes;
+		work.successor_retained += work.extra;
+	}
+	if (work.found->second->room_flat_transaction)
+	{
+		work.extra = work.found->second->room_flat_transaction_bytes;
+		if (!work.extra || work.successor_retained > CRITICAL_COORDINATOR_MAX_BYTES ||
+		    work.extra > CRITICAL_COORDINATOR_MAX_BYTES - work.successor_retained)
+			return false;
+		work.original_retained = work.found->second->retained_bytes;
+		work.successor_retained += work.extra;
+	}
+	work.reserved = std::max(work.found->second->retained_bytes, work.successor_retained);
+	return work.reserved <=
+	       CRITICAL_COORDINATOR_MAX_BYTES -
+		       (health.retained_bytes - work.found->second->retained_bytes);
+}
+
+void ordinary_birth_publication_pin(ordinary_birth_publication_workspace &work) noexcept
+{
+	work.pinned = work.found->second.get();
+	work.pinned->publication_checkpointing = true;
+	++publication_checkpoints_inflight;
+	++guarded_publications_inflight;
+}
+
+void ordinary_birth_publication_unpin(ordinary_birth_publication_workspace &work) noexcept
+{
+	--guarded_publications_inflight;
+	--publication_checkpoints_inflight;
+	publication_checkpoint_finished.notify_all();
+	work.found = operations.find(work.identity);
+}
+
+bool ordinary_birth_publication_pinned(const ordinary_birth_publication_workspace &work) noexcept
+{
+	return work.found != operations.end() && coordinator_generation == work.generation &&
+	       work.found->second.get() == work.pinned &&
+	       work.found->second->publication_checkpointing && work.found->second->native &&
+	       work.found->second->native->revision == work.frozen.revision &&
+	       work.found->second->native->phase == work.frozen.phase &&
+	       work.found->second->native->attachment == work.frozen.attachment;
+}
+
+void ordinary_birth_publication_journal(ordinary_birth_publication_workspace &work,
+					bool retire) noexcept
+{
+	try
+	{
+		// Genuine coor->journal order only for the complete bounded provider.
+		// Native transfer/cleanup callbacks remain outside coordinator ownership.
+		work.lock.lock();
+		if (!work.admit(2 * sizeof(void *) + sizeof(bool) +
+				sizeof(std::lock_guard<std::mutex>)))
+			work.result = critical_command_journal_result::quota_exceeded;
+		else if (retire)
+			work.result = critical_command_journal_retire_native_recovery_bounded(
+				work.frozen, ordinary_birth_publication_workspace::relay, &work,
+				work.live);
+		else
+			work.result = critical_command_journal_replace_native_recovery_bounded(
+				work.frozen, work.prepared,
+				ordinary_birth_publication_workspace::relay, &work, work.live);
+		work.lock.unlock();
+	}
+	catch (...)
+	{
+		// The pinned operation must reach its original uncertainty/unpin tail
+		// even when the new journal ownership acquisition fails.
+		if (work.lock.owns_lock())
+			work.lock.unlock();
+	}
+}
+} // namespace: full bounded ordinary publication helpers
+
+bool critical_native_mobile_birth_publication_owner::checkpoint_context_ordinary_bounded(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	uint64_t expected_generation) noexcept
+{
+	if (!reserve || !ordinary_birth_publication_command(expected.command) ||
+	    successor.phase != expected.phase || expected.revision == UINT64_MAX ||
+	    successor.revision != expected.revision + 1)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_publication_workspace work{ reserve, context, outer,
+						   4 * sizeof(void *) + sizeof(size_t) +
+							   sizeof(uint64_t) + sizeof(bool) };
+	try
+	{
+		work.lock.lock();
+		if (!work.admit(sizeof(std::string) + expected.command.operation_id.bytes.size() +
+				1) ||
+		    !ordinary_birth_publication_size(expected, &work.original_retained, work) ||
+		    !ordinary_birth_publication_equal(expected.command, successor.command, work) ||
+		    !ordinary_birth_publication_size(successor, &work.successor_retained, work) ||
+		    !work.clone(expected, work.frozen) || !work.clone(successor, work.prepared))
+			return false;
+		if (!work.admit(sizeof(std::string) +
+				work.frozen.command.operation_id.bytes.size() + 1))
+			return false;
+		work.identity = operation_key(work.frozen.command.operation_id);
+		if (!work.admit())
+			return false;
+		work.found = operations.find(work.identity);
+		if (!health.initialized || stop_requested || work.found == operations.end() ||
+		    !ordinary_birth_publication_matches(*work.found->second, work.frozen, work) ||
+		    work.found->second->publication_checkpointing ||
+		    work.found->second->native_ack_uncertain || !coordinator_generation ||
+		    coordinator_generation_exhausted ||
+		    (expected_generation && coordinator_generation != expected_generation) ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    (work.frozen.phase == critical_native_recovery_phase::execution_pending ?
+			     !operation_is_publication_pending(*work.found->second) :
+			     (work.found->second->phase !=
+				      critical_operation_phase::native_continuation_pending ||
+			      !work.found->second->native_physical_released)) ||
+		    !native_birth_validators_ready() ||
+		    !ordinary_birth_publication_decode(work.frozen, work.before, work) ||
+		    !ordinary_birth_publication_successor(work.frozen, work.prepared, work) ||
+		    !ordinary_birth_publication_charge(work) ||
+		    !work.admit(sizeof(std::array<char, 9>) * 2 + sizeof(std::string_view)))
+			return false;
+		work.prior_uncertain = work.found->second->native_context_uncertain;
+		work.found->second->retained_bytes = work.reserved;
+		work.generation = coordinator_generation;
+		ordinary_birth_publication_pin(work);
+		update_depth();
+		work.lock.unlock();
+		ordinary_birth_publication_journal(work, false);
+		work.lock.lock();
+		ordinary_birth_publication_unpin(work);
+		if (!ordinary_birth_publication_pinned(work))
+			return false;
+		work.found->second->publication_checkpointing = false;
+		if (work.result != critical_command_journal_result::ok)
+		{
+			work.found->second->native_context_uncertain =
+				work.prior_uncertain ||
+				work.result == critical_command_journal_result::append_uncertain;
+			if (!work.found->second->native_context_uncertain)
+				work.found->second->retained_bytes = work.original_retained;
+			update_depth();
+			return false;
+		}
+		// Original scalar/body move only: no callback, codec or allocation after CAS.
+		work.found->second->native->revision = work.prepared.revision;
+		work.found->second->native->attachment = std::move(work.prepared.attachment);
+		work.found->second->retained_bytes = work.successor_retained;
+		work.found->second->native_context_uncertain = false;
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_native_mobile_birth_publication_owner::acknowledge_ordinary_bounded(
+	const critical_native_recovery_envelope &expected, const critical_completion &receipt,
+	uint64_t generation, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer) noexcept
+{
+	if (!reserve || !generation || !ordinary_birth_publication_command(expected.command) ||
+	    expected.phase != critical_native_recovery_phase::execution_pending ||
+	    expected.revision == UINT64_MAX ||
+	    receipt.operation_id.bytes != expected.command.operation_id.bytes ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied) ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    receipt.durable_revision != 1 || receipt.error_code ||
+	    receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != NATIVE_MOBILE_BIRTH_CASH_ROLE_RESULT_BYTES)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_publication_workspace work{ reserve, context, outer,
+						   4 * sizeof(void *) + sizeof(size_t) +
+							   sizeof(uint64_t) + sizeof(bool) };
+	try
+	{
+		work.lock.lock();
+		if (!work.admit(sizeof(std::string) + expected.command.operation_id.bytes.size() +
+				1) ||
+		    !work.clone(expected, work.frozen) || !work.clone(work.frozen, work.prepared))
+			return false;
+		++work.prepared.revision;
+		work.prepared.phase = critical_native_recovery_phase::continuation_pending;
+		work.receipt = receipt;
+		work.generation = generation;
+		if (!work.admit(sizeof(std::string) +
+				work.frozen.command.operation_id.bytes.size() + 1))
+			return false;
+		work.identity = operation_key(work.frozen.command.operation_id);
+		if (!work.admit())
+			return false;
+		work.found = operations.find(work.identity);
+		if (work.found == operations.end() || !health.initialized || stop_requested ||
+		    coordinator_generation != generation || coordinator_generation_exhausted ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !operation_is_publication_pending(*work.found->second) ||
+		    !work.found->second->retain_until_publication ||
+		    work.found->second->publication_checkpointing ||
+		    work.found->second->native_context_uncertain ||
+		    !ordinary_birth_publication_matches(*work.found->second, work.frozen, work) ||
+		    !native_receipt_equal(work.found->second->publication_completion,
+					  work.receipt) ||
+		    !native_birth_validators_ready() ||
+		    !ordinary_birth_publication_receipt(work.frozen, work.receipt, work) ||
+		    !ordinary_birth_publication_successor(work.frozen, work.prepared, work) ||
+		    !work.admit(2 * sizeof(std::array<char, 9>) + sizeof(std::string_view)))
+			return false;
+		work.prior_uncertain = work.found->second->native_ack_uncertain;
+		ordinary_birth_publication_pin(work);
+		work.lock.unlock();
+		ordinary_birth_publication_journal(work, false);
+		work.lock.lock();
+		ordinary_birth_publication_unpin(work);
+		if (!ordinary_birth_publication_pinned(work) ||
+		    !operation_is_publication_pending(*work.found->second))
+			return false;
+		work.found->second->publication_checkpointing = false;
+		if (work.result != critical_command_journal_result::ok)
+		{
+			work.found->second->native_ack_uncertain =
+				work.prior_uncertain ||
+				work.result == critical_command_journal_result::append_uncertain;
+			return false;
+		}
+		work.found->second->native->revision = work.prepared.revision;
+		work.found->second->native->phase = work.prepared.phase;
+		work.found->second->phase = critical_operation_phase::native_continuation_pending;
+		work.found->second->native_ack_uncertain = false;
+		work.found->second->native_physical_released = true;
+		// Genuine NMB4 constructor fences survive physical ACK. No command cache
+		// or save hold can replace its later original origin transfer/retirement.
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_native_mobile_birth_publication_owner::retire_ordinary_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t expected_generation,
+	bool (*durable_transfer)(const critical_native_recovery_envelope &, void *,
+				 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+	void *transfer_context, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer) noexcept
+{
+	if (!reserve || !durable_transfer || !expected_generation ||
+	    !ordinary_birth_publication_command(expected.command) ||
+	    !native_birth_origin_command(expected.command) ||
+	    expected.phase != critical_native_recovery_phase::continuation_pending)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_publication_workspace work{ reserve, context, outer,
+						   5 * sizeof(void *) + sizeof(uint64_t) +
+							   sizeof(size_t) + sizeof(bool) };
+	try
+	{
+		work.lock.lock();
+		if (!work.admit() ||
+		    !ordinary_birth_publication_size(expected, &work.original_retained, work) ||
+		    !work.clone(expected, work.frozen) ||
+		    !work.admit(sizeof(std::string) +
+				work.frozen.command.operation_id.bytes.size() + 1))
+			return false;
+		// Freeze complete caller BODY/command before transfer can release it.
+		work.identity = operation_key(work.frozen.command.operation_id);
+		if (!work.admit())
+			return false;
+		work.found = operations.find(work.identity);
+		if (!health.initialized || stop_requested || work.found == operations.end() ||
+		    !ordinary_birth_publication_matches(*work.found->second, work.frozen, work) ||
+		    work.found->second->publication_checkpointing ||
+		    work.found->second->native_ack_uncertain || !coordinator_generation ||
+		    coordinator_generation_exhausted ||
+		    coordinator_generation != expected_generation ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    work.found->second->phase !=
+			    critical_operation_phase::native_continuation_pending ||
+		    !work.found->second->native_physical_released ||
+		    !native_birth_validators_ready() ||
+		    !ordinary_birth_publication_decode(work.frozen, work.before, work) ||
+		    !ordinary_birth_publication_terminal(work.frozen, work) ||
+		    !ordinary_birth_publication_charge(work) ||
+		    !work.admit(2 * sizeof(std::array<char, 9>) + sizeof(std::string_view)))
+			return false;
+		work.prior_uncertain = work.found->second->native_context_uncertain;
+		work.found->second->retained_bytes = work.reserved;
+		work.generation = coordinator_generation;
+		ordinary_birth_publication_pin(work);
+		update_depth();
+		work.lock.unlock();
+		// Mandatory genuine original terminal transfer is outside the mutex.
+		// Lost/failed transfer retains original context and advancement fences.
+		// The callback owns its full live prefix and fresh coordinator admission.
+		if (durable_transfer(work.frozen, transfer_context,
+				     ordinary_birth_publication_workspace::outside_relay, &work,
+				     work.live))
+			ordinary_birth_publication_journal(work, true);
+		work.lock.lock();
+		ordinary_birth_publication_unpin(work);
+		if (!ordinary_birth_publication_pinned(work))
+			return false;
+		work.found->second->publication_checkpointing = false;
+		if (work.result != critical_command_journal_result::ok)
+		{
+			work.found->second->native_context_uncertain =
+				work.prior_uncertain ||
+				work.result == critical_command_journal_result::append_uncertain;
+			if (!work.found->second->native_context_uncertain)
+				work.found->second->retained_bytes = work.original_retained;
+			update_depth();
+			return false;
+		}
+		// All fallible work precedes confirmed retirement. Original fence
+		// release and operation destruction require no reserve/encode/callback.
+		remove_fences(work.identity, work.found->second->command);
+		operations.erase(work.found);
+		++health.completed;
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+bool ordinary_birth_publication_refusal_matches(const operation_state &state,
+						ordinary_birth_publication_workspace &work) noexcept
+{
+	return operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+	       state.retain_until_publication && state.native &&
+	       state.native->revision == work.frozen.revision &&
+	       state.native->phase == work.frozen.phase &&
+	       state.native->attachment == work.frozen.attachment &&
+	       native_receipt_equal(state.admission_failure_completion, work.receipt);
+}
+}
+
+bool critical_native_mobile_birth_publication_owner::cancel_refusal_ordinary_bounded(
+	const critical_native_recovery_envelope &original, const critical_completion &expected,
+	uint64_t generation,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &, void *,
+			       bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+	void *cleanup_context, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer, bool *cleanup_called, bool *cleanup_succeeded) noexcept
+{
+	if (cleanup_called)
+		*cleanup_called = false;
+	if (cleanup_succeeded)
+		*cleanup_succeeded = false;
+	if (!native_cleanup || !reserve || !cleanup_called || !cleanup_succeeded ||
+	    cleanup_called == cleanup_succeeded || !generation ||
+	    !ordinary_birth_publication_command(original.command) ||
+	    expected.operation_id.bytes != original.command.operation_id.bytes ||
+	    !critical_completion_disposition_valid(expected) ||
+	    expected.disposition != critical_completion_disposition::never_admitted)
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_publication_workspace work{ reserve, context, outer,
+						   8 * sizeof(void *) + sizeof(uint64_t) +
+							   sizeof(size_t) + sizeof(bool) };
+	try
+	{
+		work.lock.lock();
+		work.receipt = expected;
+		work.generation = generation;
+		if (!work.admit() || !work.clone(original, work.frozen) ||
+		    !work.admit(sizeof(std::string) +
+				work.frozen.command.operation_id.bytes.size() + 1))
+			return false;
+		work.identity = operation_key(work.frozen.command.operation_id);
+		if (!work.admit())
+			return false;
+		work.found = operations.find(work.identity);
+		if (work.found == operations.end() ||
+		    work.found->second->publication_checkpointing || !health.initialized ||
+		    coordinator_generation != generation || coordinator_generation_exhausted ||
+		    stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !ordinary_birth_publication_refusal_matches(*work.found->second, work) ||
+		    !ordinary_birth_publication_matches(*work.found->second, work.frozen, work) ||
+		    !work.admit(2 * sizeof(std::array<char, 9>) + sizeof(std::string_view)))
+			return false;
+		ordinary_birth_publication_pin(work);
+		work.lock.unlock();
+		// Caller markers and both callback contexts survive genuine owner cleanup.
+		// Record effects before later locking/rechecks; false must not replay them.
+		*cleanup_called = true;
+		work.cleaned = native_cleanup(work.frozen.command, work.receipt, cleanup_context,
+					      ordinary_birth_publication_workspace::outside_relay,
+					      &work, work.live);
+		*cleanup_succeeded = work.cleaned;
+		work.lock.lock();
+		ordinary_birth_publication_unpin(work);
+		if (work.found == operations.end() || coordinator_generation != generation ||
+		    work.found->second.get() != work.pinned)
+			return false;
+		work.same = work.found->second->publication_checkpointing &&
+			    ordinary_birth_publication_refusal_matches(*work.found->second, work);
+		work.found->second->publication_checkpointing = false;
+		if (!work.cleaned || !work.same || !health.initialized ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()))
+			return false;
+		// Exact delivered never-admitted owner has no durable frame to retire.
+		// Original cleanup tail performs no allocation, budget or codec callback.
+		remove_fences(work.identity, work.found->second->command);
+		operations.erase(work.found);
+		update_depth();
+		work_available.notify_all();
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+// Genuine unlocked caller bridge. Each nested request obtains CURRENT C under
+// the actual mutex and the existing registered ROOT/common-guard lender, then
+// releases the mutex before any caller effect. This is never a stored lease.
+bool critical_native_mobile_birth_publication_owner::reserve_ordinary_bounded(
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t exclusive_live) noexcept
+{
+	if (!reserve)
+		return false;
+	size_t live = exclusive_live;
+	if (!room_storage_add(live, sizeof(std::unique_lock<std::mutex>)) ||
+	    !room_storage_add(live, 3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)))
+		return false;
+	try
+	{
+		std::unique_lock<std::mutex> actual_lock(coordinator_mutex);
+		return critical_room_shared_budget_lender::reserve(actual_lock, reserve, context,
+								   live);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
