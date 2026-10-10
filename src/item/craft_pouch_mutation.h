@@ -25,4 +25,15 @@ bool craft_pouch_mutation_decode(std::span<const uint8_t> encoded, craft_pouch_m
 bool craft_pouch_mutation_from_payload(const item_transfer_payload &payload,
 				       craft_pouch_mutation *mutation);
 
+// Complete original canonical pouch wire companions. Outer retains authentic
+// input, prior output and all other caller-owned live storage. Each actual
+// nested codec/singleton/candidate allocation is prospectively owned; no native
+// effects or replay authority. from_payload is a separate owning dependency.
+bool craft_pouch_mutation_encode_bounded(const craft_pouch_mutation &, std::vector<uint8_t> *,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+bool craft_pouch_mutation_decode_bounded(std::span<const uint8_t>, craft_pouch_mutation *,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+
 #endif

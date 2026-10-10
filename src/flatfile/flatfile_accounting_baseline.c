@@ -1,3 +1,7 @@
+#include "flatfile/flatfile_native_mobile_birth_ordinary_baseline_history.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include <type_traits>
+#include <utility>
 #include "flatfile/flatfile_accounting_baseline.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_accounting_staging_view.h"
@@ -716,6 +720,147 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::verify_structur
 			const auto book = load(root, lock, lineage, epoch);
 			need(economic_account_key_equal(book.opening, opening));
 			(void)load_indexes(root, book);
+		},
+		error);
+}
+
+namespace
+{
+// The actual retained membership is supplied only inside this private reader,
+// immediately after its owning passive metadata decoder. No DTO entry point.
+head ordinary_baseline_load_book_passive(const std::string &root,
+					 const critical_operation_id &lineage,
+					 const flatfile_economic_epoch &retained)
+{
+	const auto &epoch = retained.epoch;
+	const flatfile_accounting_staging_view *view = nullptr;
+	need(retained.baseline_initialization !=
+	     flatfile_baseline_initialization::never_initialized);
+	auto encoded = read(root, prefix(lineage, epoch) + "head.ebc", 656, view);
+	auto in = unwrap(encoded, "DUREBC1");
+	head value;
+	value.lineage = in.id();
+	value.epoch = in.id();
+	checked(economic_account_key_decode(in.take(ECONOMIC_ACCOUNT_KEY_BYTES), &value.opening));
+	value.revision = in.number();
+	value.last_operation = in.id();
+	for (auto &digest : value.indexes)
+		digest = in.fixed<32>();
+	in.done();
+	need(value.lineage.bytes == lineage.bytes && value.epoch.bytes == epoch.bytes &&
+	     value.opening.kind == economic_account_kind::opening &&
+	     value.opening.lineage.bytes == lineage.bytes &&
+	     !critical_operation_id_is_zero(value.last_operation));
+	if (retained.baseline_initialization == flatfile_baseline_initialization::initialized)
+	{
+		need(economic_account_key_equal(value.opening, retained.baseline_opening));
+		if (!value.revision)
+			need(value.last_operation.bytes ==
+			     retained.baseline_initializing_operation.bytes);
+	}
+	// Legacy v1 may be read structurally; it cannot prove a new initialization.
+	return value;
+}
+}
+
+flatfile_accounting_status
+flatfile_native_mobile_birth_ordinary_baseline_history_storage::verify_initial_absence_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_native_mobile_birth_ordinary_baseline_absence *output, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(output && !root.empty() && lock.matches(root));
+			need(native_mobile_birth_cash_role_recovery_initial(original));
+			quest_mobile_native_image image;
+			std::vector<native_mobile_birth_item_recipe> recipes;
+			native_mobile_birth_cash_role_recipe role;
+			economic_frozen_intent intent;
+			checked(native_mobile_birth_cash_role_command_decode(
+				original.command, &image, &recipes, &role));
+			need(role.role == native_mobile_birth_cash_role::ordinary_wallet);
+			checked(economic_intent_decode(original.command.accounting_intent,
+						       &intent));
+			checked(economic_intent_verify_binding(original.command, intent));
+			need(intent.admission.metadata.source_event.has_value());
+
+			std::vector<uint64_t> born;
+			born.reserve(image.items.size());
+			for (const auto &literal : image.items)
+				born.push_back(literal.object_uid);
+			std::sort(born.begin(), born.end());
+			need(std::adjacent_find(born.begin(), born.end()) == born.end() &&
+			     (born.empty() || born.front()));
+
+			flatfile_native_mobile_birth_ordinary_retained_metadata metadata;
+			authority(read_metadata_locked(root, lock, &metadata, error));
+			need(metadata.control.lineage.bytes ==
+			     intent.admission.metadata.lineage.bytes);
+			// INITIAL belongs to actual selected epoch. Retired epochs still
+			// participate below; selection never filters historical UID owners.
+			need(!critical_operation_id_is_zero(metadata.control.active_epoch) &&
+			     metadata.control.active_epoch.bytes ==
+				     intent.admission.metadata.epoch.bytes);
+			flatfile_native_mobile_birth_ordinary_baseline_absence observed;
+			observed.lineage = metadata.control.lineage;
+			observed.lineage_revision = metadata.control.revision;
+			observed.epochs_digest = metadata.control.epochs_digest;
+			observed.born_uids = born.size();
+			for (const auto &retained : metadata.epochs)
+			{
+				if (retained.baseline_initialization ==
+				    flatfile_baseline_initialization::never_initialized)
+				{
+					// The authentic native catalog marker plus original full
+					// namespace fence is required. Missing book alone is unsafe.
+					empty_namespace(root, prefix(metadata.control.lineage,
+								     retained.epoch));
+					++observed.never_initialized_namespaces;
+				}
+				else
+				{
+					// Unknown v1 initialization must have actual retained book
+					// evidence; the original structural decoder remains readable.
+					// Initialized v2/v3 retains exact opening/creator binding.
+					const auto book = ordinary_baseline_load_book_passive(
+						root, metadata.control.lineage, retained);
+					const auto indexes = load_indexes(root, book);
+					for (const auto &entries : indexes)
+					{
+						for (const auto &entry : entries)
+						{
+							++observed.reservations_verified;
+							if (entry.kind == 2)
+							{
+								need(!std::binary_search(
+									     born.begin(),
+									     born.end(), entry.id),
+								     status::already_exists);
+								++observed.item_reservations_verified;
+							}
+						}
+						++observed.indexes_verified;
+					}
+					if (retained.baseline_initialization ==
+					    flatfile_baseline_initialization::initialized)
+						++observed.initialized_books;
+					else
+					{
+						need(retained.baseline_initialization ==
+						     flatfile_baseline_initialization::
+							     legacy_unknown);
+						++observed.legacy_books;
+					}
+				}
+				++observed.epochs_verified;
+			}
+			need(observed.epochs_verified == metadata.control.epoch_count &&
+			     lock.matches(root));
+			static_assert(std::is_nothrow_copy_assignable_v<
+				      flatfile_native_mobile_birth_ordinary_baseline_absence>);
+			*output = observed;
 		},
 		error);
 }
