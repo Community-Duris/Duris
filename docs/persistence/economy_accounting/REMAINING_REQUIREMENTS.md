@@ -4281,3 +4281,19 @@ protected Plan5 WIP authenticate. Actual factory/publication/item/adoption/start
 stdio/conversion/emitted/global32MiB/native/recovery/R1–R8 remain OPEN. Tests
 deferred major-plan batch. Inactive/CLOSED, coverage incomplete, release BLOCKED,
 goal ACTIVE. No major-plan or runtime gate completion is claimed.
+
+
+## Original procedure-library preparation and probe implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_PROCLIB_PREPARATION_PROBE_ADMISSION_2026-10-10.md)
+supplies actual five-parser/native periodic companions with fresh-global and
+prospective allocation admission, original zero-success status, strong output
+and final attachment ordering. Complete original default/registry/policy bodies
+remain unchanged. Independent RAW/installed source review authenticates41members,
+two inverses/15 current dependencies/13 supplied header captures/formatting.
+Fresh reviewer installed-library correspondence remains unavailable. 458existing
+pins/two updates/noadds/931policies/protected Plan5 WIP/source-proven coordinates
+pass. Genuine private-budget diagnostic reachability is a source deduction only.
+Actual caller/item/factory/publication/startup/libc/emitted/global32MiB/native/
+recovery/R1-R8 remain OPEN; tests deferred major-plan batch. Inactive/CLOSED,
+coverage incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
