@@ -196,6 +196,122 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+
+## RB original Quest failure authenticated; narrow publication inventory correction selected - 2026-10-10
+
+The fixed RB selection remains F5bc1bbffe2f5ae0f1fa52fedc644b6defc6296ca,
+actual parent8c73c8d0e2b9bd1fbb6efc40acce3a151c6d881f, selected by
+0d85b1a487a3920a0f41d309b977121eba78c28b. No source repin or live expansion.
+Architecture sealed its original 215-payload-plus-INDEX packet and reports one
+2894-byte successful normal default. Root Architecture source/design/verifier/
+default review remains PENDING; original root Architecture RB default NOT_RUN.
+Its sealed packet, original attempt, stdout, stderr, receipts and findings stay
+immutable. Architecture has no second assignment while that review is pending.
+
+Quest's complete original failed handoff is independently metadata-authenticated.
+The full original11610-byte stdlib/read-only Git verifier and23843-byte authored
+note were read. All56 fresh whole providers,112 exact finite source ranges,
+seven complete additive transforms/inverses,78 precise provider equalities,
+250 streaming hash-only historical controls and113 new external delivery seals
+authenticate independently. Range bytes are authenticated; complete finite source
+semantic/design review remains PENDING and no native/transitive approval follows.
+No old CLOSED PINS/verifier/default/receipt content was parsed or dispatched.
+
+Original Quest normal default ONCE failed at2026-10-10T17:53:48.191375Z through
+17:53:51.748414Z: exit1, actual stdout0 and stderr63, SHA256
+dec2247a06c7114726de862a6003714196fb1197a9d5db880c3d85dcb49d3378.
+Exact diagnostic is observer publication scope with the original Windows CRLF.
+The959-byte expectation was not produced and is not a passing receipt. Root
+original Quest RB default NOT_RUN and will not dispatch the known failed script.
+Its guard erroneously expects the whole F/P commit to contain only four selected
+C/H files plus one handoff. Actual fixed F/P contains TEN paths: four selected
+C/H providers and six docs/registry files. Full raw diff and original blob objects
+independently authenticate the ten-path inventory. Selected source-provider scope
+and complete published commit inventory are distinct; no upstream defect inferred.
+
+Original four-file packet and absent success receipt are independently preserved
+in original-attempt-packet-preservation. Before the later preservation delegation,
+Quest's separate finalizer added a1663-byte failure wrapper and updated canonical
+INDEX992; original INDEX664 remains exact. Original note/PINS/verifier did not
+change. Neither post-attempt wrapper nor final five-file inventory is a passing
+original packet. First finalizer LF/CRLF assertion stopped before writes; both
+helper versions and failure finding remain. No finalizer dispatched a verifier.
+Original principals are immutable: NOTE23843/d91ddca2c3d013901e68767b18f2849da3f96807ca353e8fbea9393e69c1c748;
+PINS448481/a6f2a3a41509462c813a99b81c197c89b1cfb9105f1b070d60109e7aae129407;
+VERIFY11610/bd2ccd778625b3f834eaabceddedfd8ce79b06cde12cf7dbd3fbd6a3cb3917da;
+originalINDEX664/6a9bf8390f630f4e1d16b929b0688ee7f34218360638fe9f0d0508586e2a2ef4.
+
+One narrow additive private D: metadata correction is selected ONLY for the
+existing Quest chat: PUBLISHED_PURE_RETAINED_BIRTH_AFFECT_PUBLICATION_INVENTORY_CORRECTION_2026-10-10.txt.
+Concrete output: standalone note, original-state and post-attempt custody seals,
+exact full ten-path publication inventory/raw diff/blob authentication, seven
+existing transforms/inverses and78 existing equalities,250 streaming historical
+controls, finite metadata assessment, strict INDEX, fully audited deterministic
+stdlib/read-only Git verifier and separate original NEW normal default ONCE
+binary stdout/stderr/exit/receipt plus root independent review. Future benefit:
+honest complete commit scope and failure custody for genuine RB integration prep.
+Authenticate the original failed attempt and original receipt absence separately
+from the later failure wrapper. Do not turn expectation959 into actual stdout.
+Do not import, dispatch or execute the original failed verifier, copied verifier,
+author/finalizer helper or any old CLOSED script. No exec/eval/compile/dynamic
+imports, normalization, original rewrite/reseal, rerun or successful relabeling.
+New correction default belongs to its separate packet and exclusive attempt only.
+
+Actual inputs: fixed Q/S/F/P Git objects, original failed note/PINS/verifier/INDEX
+and exact preserved copies, original attempt/result and binary streams, separate
+expectation, post-attempt wrapper/INDEX, complete-publication-inventory and current
+external delivery seals. Original RB1-RB4 design/ownership/error/partition scope
+stays fixed; no source-law/category repair, new case or algorithm review is assigned
+by this metadata correction. Missing stable caller/alias/global/native/emitted/
+ABI/allocator/library/fault/host32MiB/producer/publication/recovery/ACK inputs block
+execution only. RB1-RB4/component/native UNEXECUTED; commands UNAVAILABLE; storage
+expressions UNEVALUATED. Root finite source/design review remains separate PENDING.
+Primary owns maintained implementation/contracts/authority/admission/math and
+qualification; Plan5 owns backend/recovery/release; Quest owns private D: only.
+No maintained edits/imports/commits/merges/Goal mutation/compiler/preprocessor/ELF/
+build/native/product/DB/operational/deploy/activation/production actions.
+
+Root evidence D:/Dev/Temp/coordinator-pure-retained-birth-affect-review-20261010
+contains quest-failure-metadata-authentication.json, quest-verifier-audit.json,
+quest-range-controls.json and independently captured required source reading.
+Two root auditor setup findings are preserved: absent original handoff provider
+record schema and str.replace misclassified by the AST mutation filter. Both
+stopped before audit outputs; neither dispatched a worker/default/native action.
+Corrected independent auditor authenticates original and post-attempt custody.
+
+Actual Quest Goal now BLOCKED updatedAt1791655328, same original goal_id/objective,
+after its reported three-consecutive-turn impasse audit. Root read-only native
+Goal store independently confirms blocked updated_at_ms1791655328681 and unchanged
+objective. ACTIVE transition17:38 and original BLOCKED1791411827 remain historical
+snapshots. No restoration to a stale state or Goal resumption is authorized here.
+Root BLOCKED1791410483 and Architecture BLOCKED1791446642 remain unchanged. No
+root/worker Goal replacement/resumption/pause/completion is performed.
+
+Current published primaryf3846d344b2678f94e8e1bb28ab2a56d099b47fb, actualparent0d85,
+provides passive SHOP/Collector replay source, previously authenticated16 whole
+transforms/four fixed RB current equalities. Full2905 C semantic/profile/caller/
+transitive/global/native qualification QUEUED_NOT_PERFORMED; private claims
+REPORTED_ONLY. Queue sole RB reviews and this narrow correction first, then
+activity/scheduler500 C, flat diagnostics1478 C, passive item/spell/registration/
+commerce/native capture/identity/lifecycle/ROOT-cold/warm/constructor/procedure/
+spellbook/zombie and genuine producer/first-admission/integrated qualification.
+No private adoption, source absence or native pass inferred. Required original09a/
+NMB3/custody/coin/receiver/host/save/Smith/restitution/current-origin/source-history/
+outbox/ACK/pause32MiB and Plan5 SQL0065/schema65/history/measurement/backup/restore/
+recovery/release remain owner-held. Reassess further selection at paired handoff.
+
+This additive publication changes only three owned coordination docs; exact
+insertion inverse restores actualf384. Root remains clean selecting0d85; no root
+RB default attempted or coordinator source advance. All original RC2821/1045 and
+TC11637/1434/defaults/principals/history/QuestTC1036 findings remain immutable.
+Actual Aclean5c53/Q2b92 parents93d606+759dc/current three owned hashes and historical
+copies/excursion/archive/setup/sleep-only container/jobs/services/build/failures
+are preserved without runtime action. Broad Plans1-5/R1-R8/applicable backend/
+gameplay/persistence/recovery/blockers/owner completion audit OPEN; accounting
+inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat ACTIVE
+until broad completion audit or user pause. All Git fetch/merge/commit/push use
+gc.auto=0; no reset/revert/kill/delete/restart/pruning/housekeeping.
+
 ## RC pair reviewed CLOSED; pure retained Birth and affect pair selected - 2026-10-10
 
 Both original RC packets independently SOURCE/DESIGN/METADATA PASS
