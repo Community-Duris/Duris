@@ -145,4 +145,13 @@ bool shop_trade_command_build_recovery(critical_command *command,
 				       critical_source_site source_site,
 				       critical_deadline_class deadline_class);
 
+// Complete original v1-v8 decoder and full expected-command/fence proof.
+// Outer owns authentic command/input/output and caller frames. Private owner
+// census charges each real copy/buffer and old/new request before allocation.
+// Strong output/optional actual transferred UID heap; no execution authority.
+bool shop_trade_command_decode_payload_bounded(
+	const critical_command &, shop_trade_payload *,
+	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
+	size_t outer_live_scratch, size_t *retained_payload_heap_bytes = nullptr) noexcept;
+
 #endif
