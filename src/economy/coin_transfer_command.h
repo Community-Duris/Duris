@@ -90,4 +90,19 @@ bool coin_transfer_payload_valid_bounded(const coin_transfer_payload &, const ch
 					 bool (*)(size_t, void *) noexcept, void *context,
 					 size_t outer_live) noexcept;
 
+// Complete original coin canonical builder and decoder, both wallet and real
+// pile endpoints, original full embedded command parse and normalize rules.
+// Input/prior output/caller/all sibling heaps remain authentic outer state.
+bool coin_transfer_command_build_bounded(critical_command *, const critical_operation_id &,
+					 const coin_transfer_payload &, critical_source_site,
+					 critical_deadline_class, const char **error,
+					 bool (*)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+bool coin_transfer_command_decode_payload_bounded(const critical_command &, coin_transfer_payload *,
+						  bool (*)(size_t, void *) noexcept, void *context,
+						  size_t outer_live,
+						  size_t *retained_heap_bytes = nullptr) noexcept;
+// Strong allocation-free physical current heap, excluding payload inline.
+bool coin_transfer_payload_current_heap_bytes(const coin_transfer_payload &, size_t *) noexcept;
+
 #endif

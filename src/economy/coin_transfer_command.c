@@ -725,3 +725,584 @@ bool coin_transfer_payload_valid_bounded(const coin_transfer_payload &payload, c
 		return false;
 	}
 }
+
+#include <type_traits>
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+namespace
+{
+constexpr size_t coin_wire_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t coin_wire_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t coin_wire_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t coin_wire_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t coin_wire_vector_frames =
+	coin_wire_allocator_frames + coin_wire_copy_frames + coin_wire_relocate_frames +
+	coin_wire_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t coin_wire_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + coin_wire_allocator_frames;
+constexpr size_t coin_wire_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + coin_wire_vector_frames;
+template <typename T, typename Comparator> constexpr size_t coin_wire_sort_leaf_frames()
+{
+	// Same real GCC13 sort/partition/insertion/heap/copy/adjacent call scopes
+	// as UID sorting. Values and comparator carriers use their genuine types.
+	// Original key less/equal this-free argument/result scopes and revision
+	// lambda this/left/right/result plus its nested key less call.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+constexpr size_t coin_wire_command_default_frames =
+	// Real command generated default/destructor and four vector default
+	// constructor/_Vector_base/_Vector_impl/_Vector_impl_data/allocator
+	// carriers; current object inline is separately owned by its lifetime.
+	2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	4 * (sizeof(void *) + coin_wire_allocator_frames);
+constexpr size_t coin_wire_critical_codec_frames =
+	// Original encoder, working-bytes and bounded-encode parameter/return/
+	// wire_bytes/status scopes, loop key+revision refs/endpoints/pad locals.
+	10 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(critical_command_codec_result) +
+	6 * sizeof(void *) + 2 * sizeof(unsigned int) +
+	// append_le genuine widest uint64_t value plus byte loop and vector
+	// reference; array begin/end and data query sources.
+	sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	// Actual original decoder/bounded counterpart fixed scalar locals:
+	// encoded/size/destination/reserve/context/outer/heap output, live,
+	// offset/type/source/3 counts/auction flag/limit/required/intent locals.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(critical_command_codec_result) +
+	2 * sizeof(size_t) + 2 * sizeof(uint16_t) + 3 * sizeof(uint32_t) + sizeof(bool) +
+	sizeof(size_t) + sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(uint32_t) +
+	// Key/revision loop indices and padding, prospective request/extra,
+	// retained scalar and original bad_alloc reference. Object carriers
+	// decoded/key/revision are admitted by existing real decoder itself.
+	2 * sizeof(uint32_t) + 2 * sizeof(size_t) + 4 * sizeof(size_t) + sizeof(size_t) +
+	sizeof(void *) +
+	// Genuine widest read_le input/size/offset/value/decoded/index/return;
+	// decode_add/admit/heap actual parameters/locals/query scopes.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+	10 * sizeof(void *) + 9 * sizeof(size_t) + 3 * sizeof(bool) +
+	// vector constructions/destruction/calls, allocator and all fitting
+	// insert/assign/append profiles, original command nonthrow final move.
+	coin_wire_command_default_frames + coin_wire_vector_frames + 4 * coin_wire_move_frames;
+using coin_wire_key_iterator = std::vector<critical_entity_key>::iterator;
+using coin_wire_key_const_iterator = std::vector<critical_entity_key>::const_iterator;
+using coin_wire_key_equal_predicate = decltype(&critical_entity_key_equal);
+using coin_wire_key_equal_wrapper =
+	__gnu_cxx::__ops::_Iter_comp_iter<coin_wire_key_equal_predicate>;
+constexpr size_t coin_wire_unique_erase_frames =
+	// unique(first,last,function): two iterators, actual function pointer,
+	// returned iterator. __iter_comp_iter: pointer argument and returned
+	// wrapper; wrapper constructor: this and pointer, real move refs.
+	2 * sizeof(coin_wire_key_iterator) + sizeof(coin_wire_key_equal_predicate) +
+	sizeof(coin_wire_key_iterator) + sizeof(coin_wire_key_equal_predicate) +
+	sizeof(coin_wire_key_equal_wrapper) + sizeof(void *) +
+	sizeof(coin_wire_key_equal_predicate) + 2 * (2 * sizeof(void *)) +
+	// __unique parameters, dest and return; __adjacent_find parameters,
+	// next and return. These pass the actual function-pointer wrapper.
+	4 * sizeof(coin_wire_key_iterator) + sizeof(coin_wire_key_equal_wrapper) +
+	4 * sizeof(coin_wire_key_iterator) + sizeof(coin_wire_key_equal_wrapper) +
+	// wrapper::operator(): this/two by-value iterators/bool; authentic
+	// critical_entity_key_equal: two key references and bool return.
+	sizeof(void *) + 2 * sizeof(coin_wire_key_iterator) + sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(bool) +
+	// Actual dereference (two), prefix increment (two), iterator equality
+	// (two refs, bool, two base calls), move reference pair, and trivial
+	// key assignment source/destination refs on the retained unique path.
+	2 * (2 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(bool) +
+	2 * (2 * sizeof(void *)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	// Range erase: this/two const iterators, begin/cbegin locals and
+	// return iterator; _M_erase: this/two iterators/return. last is the
+	// original vector end, so the MOVE3 branch is genuinely not reached.
+	sizeof(void *) + 3 * sizeof(coin_wire_key_const_iterator) +
+	2 * sizeof(coin_wire_key_iterator) + sizeof(void *) + 3 * sizeof(coin_wire_key_iterator) +
+	// Two iterator conversions (this/input ref plus base call), both
+	// subtraction calls (two refs/ptrdiff plus two base calls), both
+	// iterator addition calls (this/ptrdiff, temporary pointer, returned
+	// iterator, constructor this/input ref), and begin/cbegin/end getters.
+	2 * (4 * sizeof(void *)) + 2 * (6 * sizeof(void *) + sizeof(std::ptrdiff_t)) +
+	2 * (4 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(coin_wire_key_iterator)) +
+	3 * (3 * sizeof(void *) + sizeof(coin_wire_key_iterator)) +
+	// _M_erase comparisons/base/end-minus-last; _M_erase_at_end this,
+	// pointer and n; allocator getter this/return ref; allocator _Destroy
+	// two pointers/ref -> _Destroy two pointers -> trivial __destroy pair.
+	2 * (6 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(void *) + 6 * sizeof(void *) +
+	sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool);
+constexpr size_t coin_wire_equal_frames =
+	// Original vector== and equal(first,last,first2,equal-function) closure:
+	// vector refs/sizes/begins, equal/aux/aux1/__equal parameters/result,
+	// real binary function-pointer comparator conversion/call and iterators.
+	2 * sizeof(void *) + sizeof(bool) + 8 * (sizeof(void *) + sizeof(size_t)) +
+	4 * (4 * sizeof(void *) + sizeof(bool)) + 4 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(int) + 2 * sizeof(void *) + sizeof(bool) +
+	6 * (2 * sizeof(void *));
+struct coin_wire_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *built = nullptr, *change = nullptr, *expected = nullptr;
+	const std::vector<uint8_t> *encoded = nullptr;
+	const coin_transfer_payload *decoded = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 11 * sizeof(void *) + 8 * sizeof(size_t) +
+					       6 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!coin_value_add(total, sizeof(*this)) || !coin_value_add(total, frames) ||
+		    !coin_value_add(total, observation) ||
+		    !coin_value_add(total, critical_command_copy_frame_bytes()) ||
+		    !coin_value_add(total, critical_command_valid_frame_bytes()))
+			return false;
+		// Actual scalar observer lambda captures total and heap by reference;
+		// its this/argument/result scopes are included in observation.
+		const auto command = [&](const critical_command *value) noexcept
+		{
+			return !value || (coin_value_add(total, sizeof(*value)) &&
+					  critical_command_current_heap_bytes(*value, &heap) &&
+					  coin_value_add(total, heap));
+		};
+		if (!command(built) || !command(change) || !command(expected))
+			return false;
+		if (encoded && (!coin_value_add(total, sizeof(*encoded)) ||
+				!coin_value_vector_heap(*encoded, total)))
+			return false;
+		if (decoded && (!coin_value_add(total, sizeof(*decoded)) ||
+				!coin_transfer_payload_current_heap_bytes(*decoded, &heap) ||
+				!coin_value_add(total, heap)))
+			return false;
+		if (!coin_value_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count) const noexcept
+	{
+		size_t request = coin_wire_vector_frames;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!coin_value_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !coin_value_add(request, next * sizeof(T)))
+				return false;
+		}
+		return coin_value_add(request,
+				      2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		size_t levels = 0, remaining = count,
+		       request = coin_wire_sort_leaf_frames<T, Comparator>();
+		while (remaining > 1)
+		{
+			remaining >>= 1;
+			++levels;
+		}
+		constexpr size_t recursion =
+			3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator);
+		return 2 * levels + 1 <= SIZE_MAX / recursion &&
+		       coin_value_add(request, (2 * levels + 1) * recursion) &&
+		       coin_value_add(request,
+				      sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool)) &&
+		       peak(request);
+	}
+};
+bool coin_wire_append_u32_owned(std::vector<uint8_t> *output, uint32_t value,
+				coin_wire_budget &budget)
+{
+	for (unsigned int byte = 0; byte < 4; ++byte)
+	{
+		if (!budget.growth(*output, 1))
+			return false;
+		output->push_back(static_cast<uint8_t>(value >> (byte * 8)));
+	}
+	return true;
+}
+
+bool coin_wire_append_endpoint_owned(critical_command *command,
+				     const coin_transfer_endpoint &endpoint, uint64_t index,
+				     coin_wire_budget &budget)
+{
+	size_t admission_prefix = 0, admission_request = 0;
+	if (!critical_command_fresh_copy_request_bytes(endpoint.change, &admission_request) ||
+	    !coin_value_add(admission_request,
+			    sizeof(critical_command) + critical_command_copy_frame_bytes()) ||
+	    !budget.peak(admission_request))
+		return false;
+	critical_command change = endpoint.change;
+	budget.change = &change;
+	if (!(budget.prefix(admission_prefix) &&
+	      critical_operation_id_derive_bounded(
+		      command->operation_id, COIN_TRANSFER_OPERATION_DOMAIN, index,
+		      &change.operation_id, budget.reserve, budget.context, admission_prefix)))
+		return false;
+	change.source_site = command->source_site;
+	change.deadline_class = command->deadline_class;
+	// The parent receives the admission timestamp. Subcommands are deterministic
+	// ledger identities, not separately admitted work.
+	change.accepted_at_usec = 1;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + coin_wire_command_default_frames))
+		return false;
+	std::vector<uint8_t> encoded;
+	budget.encoded = &encoded;
+	if (!(budget.prefix(admission_prefix) &&
+	      critical_command_normalize_bounded(&change, budget.reserve, budget.context,
+						 admission_prefix)) ||
+	    (!budget.prefix(admission_prefix, coin_wire_critical_codec_frames) ?
+		     critical_command_codec_result::overflow :
+		     critical_command_encode_bounded(change, &encoded, budget.reserve,
+						     budget.context, admission_prefix)) !=
+		    critical_command_codec_result::ok)
+		return false;
+	for (int32_t amount : endpoint.before)
+		if (!coin_wire_append_u32_owned(&command->payload, static_cast<uint32_t>(amount),
+						budget))
+			return false;
+	for (int32_t amount : endpoint.after)
+		if (!coin_wire_append_u32_owned(&command->payload, static_cast<uint32_t>(amount),
+						budget))
+			return false;
+	if (!coin_wire_append_u32_owned(&command->payload, static_cast<uint32_t>(encoded.size()),
+					budget))
+		return false;
+	if (!budget.growth(command->payload, encoded.size()))
+		return false;
+	command->payload.insert(command->payload.end(), encoded.begin(), encoded.end());
+	if (!budget.growth(command->keys, change.keys.size()))
+		return false;
+	command->keys.insert(command->keys.end(), change.keys.begin(), change.keys.end());
+	budget.change = nullptr;
+	budget.encoded = nullptr;
+	return command->payload.size() <= CRITICAL_COMMAND_MAX_PAYLOAD_BYTES;
+}
+
+bool coin_wire_read_endpoint_owned(const critical_command &command, size_t *offset,
+				   coin_transfer_endpoint *endpoint, coin_wire_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (*offset > command.payload.size() ||
+	    command.payload.size() - *offset < ENDPOINT_HEADER_BYTES)
+		return false;
+	const uint8_t *data = command.payload.data() + *offset;
+	for (size_t index = 0; index < 4; ++index)
+	{
+		const uint32_t before = read_u32(data + index * 4);
+		const uint32_t after = read_u32(data + 16 + index * 4);
+		if (before > INT32_MAX || after > INT32_MAX)
+			return false;
+		endpoint->before[index] = static_cast<int32_t>(before);
+		endpoint->after[index] = static_cast<int32_t>(after);
+	}
+	const size_t size = read_u32(data + 32);
+	*offset += ENDPOINT_HEADER_BYTES;
+	if (size > command.payload.size() - *offset ||
+	    (!budget.prefix(admission_prefix, coin_wire_critical_codec_frames) ?
+		     critical_command_codec_result::overflow :
+		     critical_command_decode_bounded(command.payload.data() + *offset, size,
+						     &endpoint->change, budget.reserve,
+						     budget.context, admission_prefix, nullptr)) !=
+		    critical_command_codec_result::ok)
+		return false;
+	*offset += size;
+	return true;
+}
+
+bool coin_wire_coin_transfer_command_build_owned(critical_command *command,
+						 const critical_operation_id &operation_id,
+						 const coin_transfer_payload &payload,
+						 critical_source_site source_site,
+						 critical_deadline_class deadline_class,
+						 const char **error, coin_wire_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (error)
+		*error = "invalid command identity";
+	if (!command || critical_operation_id_is_zero(operation_id) ||
+	    !(budget.prefix(admission_prefix) &&
+	      coin_transfer_payload_valid_bounded(payload, error, budget.reserve, budget.context,
+						  admission_prefix)))
+		return false;
+	if (error)
+		*error = "coin command encoding failed";
+	try
+	{
+		if (!budget.peak(sizeof(critical_command) + coin_wire_command_default_frames))
+			return false;
+		critical_command built = {};
+		budget.built = &built;
+		built.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		built.operation_id = operation_id;
+		built.type = critical_command_type::coin_transfer;
+		built.payload_version = COIN_TRANSFER_PAYLOAD_VERSION;
+		built.source_site = source_site;
+		built.deadline_class = deadline_class;
+		built.accepted_at_usec = 1;
+		if (!coin_wire_append_endpoint_owned(&built, payload.source, 0, budget) ||
+		    !coin_wire_append_endpoint_owned(&built, payload.destination, 1, budget))
+			return false;
+		if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+			    built.keys.size()))
+			return false;
+		std::sort(built.keys.begin(), built.keys.end(), critical_entity_key_less);
+		if (!budget.peak(coin_wire_unique_erase_frames))
+			return false;
+		built.keys.erase(std::unique(built.keys.begin(), built.keys.end(),
+					     critical_entity_key_equal),
+				 built.keys.end());
+		// Wallet and custody revisions can share a player key but describe
+		// different domains. Keep their exact fences in the endpoint commands.
+		if (!budget.peak(critical_command_valid_frame_bytes() +
+				 critical_command_copy_frame_bytes()))
+			return false;
+		if (!critical_command_valid(built))
+			return false;
+		built.accepted_at_usec = 0;
+		*command = std::move(built);
+		if (error)
+			*error = nullptr;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool coin_wire_coin_transfer_command_decode_payload_owned(const critical_command &command,
+							  coin_transfer_payload *payload,
+							  coin_wire_budget &budget,
+							  size_t *retained_heap)
+{
+	if (!payload || command.type != critical_command_type::coin_transfer ||
+	    command.payload_version != COIN_TRANSFER_PAYLOAD_VERSION ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    !command.expected_revisions.empty())
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(coin_transfer_payload) +
+				 2 * coin_wire_command_default_frames + 3 * sizeof(void *) +
+				 sizeof(void *)))
+			return false;
+		coin_transfer_payload decoded;
+		budget.decoded = &decoded;
+		size_t offset = 0;
+		size_t admission_prefix = 0, admission_retained = 0;
+		if (!coin_wire_read_endpoint_owned(command, &offset, &decoded.source, budget) ||
+		    !coin_wire_read_endpoint_owned(command, &offset, &decoded.destination,
+						   budget) ||
+		    offset != command.payload.size())
+			return false;
+		if (!budget.peak(sizeof(critical_command) + coin_wire_command_default_frames))
+			return false;
+		critical_command expected = {};
+		budget.expected = &expected;
+		if (!(budget.prefix(admission_prefix) &&
+		      coin_transfer_command_build_bounded(
+			      &expected, command.operation_id, decoded, command.source_site,
+			      command.deadline_class, nullptr, budget.reserve, budget.context,
+			      admission_prefix)) ||
+		    !budget.peak(coin_wire_equal_frames) || expected.payload != command.payload ||
+		    expected.keys.size() != command.keys.size() ||
+		    !std::equal(expected.keys.begin(), expected.keys.end(), command.keys.begin(),
+				critical_entity_key_equal))
+			return false;
+		if (!coin_transfer_payload_current_heap_bytes(decoded, &admission_retained) ||
+		    !budget.peak(2 * critical_command_copy_frame_bytes() + 3 * sizeof(void *)))
+			return false;
+		*payload = std::move(decoded);
+		if (retained_heap)
+			*retained_heap = admission_retained;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+} // namespace
+#endif // genuine GCC13 private owning profile and consumers
+bool coin_transfer_payload_current_heap_bytes(const coin_transfer_payload &payload,
+					      size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+	size_t total = 0, heap = 0;
+	if (!critical_command_current_heap_bytes(payload.source.change, &heap) ||
+	    !coin_value_add(total, heap) ||
+	    !critical_command_current_heap_bytes(payload.destination.change, &heap) ||
+	    !coin_value_add(total, heap))
+		return false;
+	*bytes = total;
+	return true;
+}
+bool coin_transfer_command_build_bounded(critical_command *command,
+					 const critical_operation_id &operation_id,
+					 const coin_transfer_payload &payload,
+					 critical_source_site source_site,
+					 critical_deadline_class deadline_class, const char **error,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Public/owned build and full append endpoint arguments/results,
+		// original new prefix/request, range loops amount/begin/end and
+		// true append_u32 owned parameters/byte/return/catch-reference.
+		12 * sizeof(void *) + 2 * sizeof(critical_source_site) +
+		2 * sizeof(critical_deadline_class) + 4 * sizeof(size_t) + 4 * sizeof(bool) +
+		4 * sizeof(void *) + sizeof(uint64_t) + 4 * sizeof(size_t) + 2 * sizeof(int32_t) +
+		4 * sizeof(void *) + sizeof(uint32_t) + sizeof(unsigned int) + sizeof(bool) +
+		3 * sizeof(void *) + sizeof(void *) + sizeof(bool);
+	coin_wire_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+	return coin_wire_coin_transfer_command_build_owned(
+		command, operation_id, payload, source_site, deadline_class, error, budget);
+#else
+	(void)command;
+	(void)operation_id;
+	(void)payload;
+	(void)source_site;
+	(void)deadline_class;
+	(void)error;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
+bool coin_transfer_command_decode_payload_bounded(const critical_command &command,
+						  coin_transfer_payload *payload,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live,
+						  size_t *retained_heap) noexcept
+{
+	if (!reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Public/owned decoder and endpoint reader arguments/result plus
+		// original offset/data/index/before/after/size, real read_u32 byte,
+		// three admission scalars and original bad_alloc catch reference.
+		9 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) + 4 * sizeof(void *) +
+		sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(uint32_t) +
+		sizeof(void *) + sizeof(uint32_t) + sizeof(unsigned int) + 3 * sizeof(size_t) +
+		sizeof(void *);
+	coin_wire_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<coin_transfer_payload>);
+	return coin_wire_coin_transfer_command_decode_payload_owned(command, payload, budget,
+								    retained_heap);
+#else
+	(void)command;
+	(void)payload;
+	(void)context;
+	(void)outer_live;
+	(void)retained_heap;
+	return false;
+#endif
+}
