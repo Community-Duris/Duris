@@ -49,6 +49,8 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
     ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
     ROOT / "migrations" / "immutable" / "0062_economic_pending_claim_consumption.sql",
+    ROOT / "migrations" / "immutable" / "0063_quest_mobile_native_birth_origin.sql",
+    ROOT / "migrations" / "immutable" / "0065_zone_reset_item_birth_origin.sql",
 )
 
 ROOT_FIELDS = {
@@ -178,6 +180,7 @@ NATIVE_FLATFILE_AUTHORITY_STORES = {
 CORE_TRANSACTION_RECOVERY_STORES = {
 	"database:sql_room_item_payload",
     "database:item_uid_allocator",
+    "database:zone_reset_item_birth_origin",
     "database:critical_operation_inbox",
     "database:critical_outbox",
     "database:critical_outbox_delivery_dedupe",

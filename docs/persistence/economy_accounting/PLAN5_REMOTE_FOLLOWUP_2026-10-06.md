@@ -3174,3 +3174,8 @@ Notebook nonblocking; curator import/application/adoption/ack unclaimed.
 Inactive behavior, wallet-root ITEM_MONEY exclusions and declined inactive spell
 change stay. No branch switch, primary push, activation, production mutation,
 audit correction, deployment, merge or cross-chat message. Full goal stays active.
+
+
+## 2026-10-10 — schema65 lifecycle coverage
+
+Owned base 52d348be72d51687aaeeb8b833aeecfa5af3a2d2; tested primary 7262df8aad407bc194fb4a880211fc30ef8943cc; composed tree 5a0f0d578aae7a843197a1063b40cfabe3901bc2. Lifecycle now registers231 tables and protects/retains reset birth origins with pending controller/export decisions. Existing lifecycle module23/23 passed; default runtime source exit0 preserves64 and registers unmeasured65; explicit65 exit2 is required refusal. Source-only proof; no native/DB execution. Report: PLAN5_SCHEMA65_LIFECYCLE_COVERAGE_2026-10-10.md. Evidence: D:/Dev/Tests/Duris/accounting-plan5/schema65-lifecycle-20261010; seal SHA256 06baeec160c02f9fa7ecb46077e133bd08b350a314385d23a0551f8aded5d64f. Restore-history and profile-dispatch fixes remain separate assigned work. Curator-ready publication, no import/adoption/acknowledgment claim.

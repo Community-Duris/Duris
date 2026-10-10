@@ -52,6 +52,9 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0059_quest_mobile_native.sql",
     ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
     ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
+    ROOT / "migrations" / "immutable" / "0062_economic_pending_claim_consumption.sql",
+    ROOT / "migrations" / "immutable" / "0063_quest_mobile_native_birth_origin.sql",
+    ROOT / "migrations" / "immutable" / "0065_zone_reset_item_birth_origin.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -113,7 +116,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 228)
+        self.assertEqual(report["database_tables"], 231)
         self.assertEqual(report["non_database_stores"], 51)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
@@ -129,6 +132,35 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertIn("database:season_reset_state", entry["dependencies"])
         self.assertIn("database:item_current_owner", entry["dependencies"])
         self.assertIn("database:economic_accounting_item_reference", entry["dependencies"])
+
+    def test_zone_reset_birth_origin_has_complete_retained_coverage(self) -> None:
+        entry = self.entry("database:zone_reset_item_birth_origin")
+        self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
+        self.assertEqual(entry["controller_decision"]["status"], "pending")
+        self.assertEqual(entry["export_rule"]["disposition"], "pending")
+        self.assertEqual(entry["export_rule"]["decision"]["status"], "pending")
+        self.assertEqual(entry["export_rule"]["subject_route"], "operation_domain")
+        self.assertEqual(set(entry["export_rule"]["excluded_fields"]),
+                         {"canonical_origin", "terminal_publication_context"})
+        self.assertTrue(entry["protected_record"])
+        self.assertEqual(entry["season_action"], "retain")
+        self.assertEqual(entry["terminal_action"], "retain")
+        self.assertEqual(entry["active_retention"], "pending_controller_decision")
+        self.assertEqual(entry["archive_retention"], "pending_controller_decision")
+        schema = ROOT / "migrations/immutable/0065_zone_reset_item_birth_origin.sql"
+        self.assertIn(schema, VALIDATOR_MODULE.DEFAULT_SCHEMA_FILES)
+        result = self.run_validator(schema_files=())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["database_tables"], 231)
+        with tempfile.TemporaryDirectory() as temporary:
+            missing = json.loads(json.dumps(self.manifest))
+            missing["entries"] = [row for row in missing["entries"]
+                                  if row["id"] != entry["id"]]
+            self.assert_rejected(self.run_validator(self.write_manifest(
+                Path(temporary), missing)), "missing=['zone_reset_item_birth_origin']")
+            entry["dependencies"] = []
+            self.assert_rejected(self.run_validator(self.write_manifest(
+                Path(temporary), self.manifest)), "omits schema dependencies")
 
     def test_spell_receipts_are_protected_recovery_evidence(self) -> None:
         entry = self.entry("file:player-spell-receipts")
@@ -258,12 +290,13 @@ class LifecycleManifestTest(unittest.TestCase):
             "database:critical_outbox_delivery_dedupe", "file:player_save_journal",
             "database:item_uid_allocator",
             "database:sql_room_item_payload",
+            "database:zone_reset_item_birth_origin",
             "file:critical_command_journal", "file:persistence_fallback",
             "file:persistence_fallback_quarantine", "file:flatfile-authority-journal",
         }
         stores = {row["id"] for row in self.manifest["entries"]
                   if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
-        self.assertEqual(len(stores), 36)
+        self.assertEqual(len(stores), 38)
         for entry_id in sorted(stores):
             for field, value in (("protected_record", False), ("season_action", "reset_delete"),
                                  ("terminal_action", "deactivate")):
