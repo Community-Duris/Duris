@@ -164,6 +164,15 @@ class economic_gameplay_authority
 		const native_mobile_birth_cash_role_recipe &, critical_source_site,
 		uint64_t accepted_at_usec, critical_command *) noexcept;
 
+	// Distinct ordinary-wallet preparation for configured client-free flat
+	// primary and the installed regular projection. The original producer
+	// separately proves its real source, constructor and sealed image. Uses
+	// the same role-aware compiler; no SQL fallback, admission or publication.
+	static economic_accounting_error prepare_native_mobile_birth_ordinary_wallet_flat(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const native_mobile_birth_cash_role_recipe &, critical_source_site,
+		uint64_t accepted_at_usec, critical_command *) noexcept;
+
 	// Fresh shared role only, using the same installed regular SQL projection.
 	// The original birth owner proves source/stage/constructor/checkpoint facts;
 	// no replay rebind, SHOP clock, admission or publication follows here.
