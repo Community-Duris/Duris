@@ -9022,3 +9022,252 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 	}
 #endif
 }
+
+namespace
+{
+// Genuine ordinary birth observations. The original shared SHOP copier and
+// ROOM owner are untouched. Every prospective request uses the actual lock,
+// registered callback and common guard, adding fresh CURRENT C exactly once.
+struct ordinary_birth_observation_workspace
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, live = 0, current = 0, extra = 0;
+	std::unique_lock<std::mutex> lock{ coordinator_mutex, std::defer_lock };
+	std::string identity;
+	critical_native_recovery_envelope copy;
+	decltype(operations)::iterator operation;
+	decltype(completed_cache)::iterator completed;
+	const operation_state *state = nullptr;
+	critical_native_recovery_phase phase = critical_native_recovery_phase::execution_pending;
+
+	static bool relay(size_t exclusive_live, void *opaque) noexcept
+	{
+		auto &work = *static_cast<ordinary_birth_observation_workspace *>(opaque);
+		return critical_room_shared_budget_lender::reserve(
+			work.lock, work.reserve, work.context, exclusive_live, &work.current);
+	}
+	bool admit(size_t prospective = 0) noexcept
+	{
+		live = outer;
+		// Whole actual workspace plus these simultaneous source carriers:
+		// provider: input/output/reserve/context/current-output pointers,
+		//           outer size and bool return (5 pointers + size + bool);
+		// admit:    implicit this pointer, prospective size and bool return;
+		// relay:    exclusive size, opaque pointer, work reference and bool return.
+		// Total: 8 pointers + 3 sizes + 3 bools, outside the workspace itself.
+		// Existing full lender/census/allocator/codec native profiles remain
+		// caller-owned and unqualified; no first-admission closure is claimed.
+		if (!room_storage_add(live, sizeof(*this)) ||
+		    !room_storage_add(live,
+				      8 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) ||
+		    (identity.capacity() > 15 &&
+		     !room_storage_add(live, identity.capacity() + 1)) ||
+		    !room_checkpoint_heap(copy, false, live) ||
+		    !room_storage_add(live, prospective))
+			return false;
+		return relay(live, this);
+	}
+};
+
+bool ordinary_birth_observation_command(const critical_command &command) noexcept
+{
+	return native_birth_typed_command(command) && !native_birth_shared_shop_command(command);
+}
+
+// Complete original critical_command_equal algorithm, using both genuine
+// bounded encoders. First actual capacity stays live through the second encode.
+bool ordinary_birth_observation_equal(const critical_command &left, const critical_command &right,
+				      ordinary_birth_observation_workspace &work) noexcept
+{
+	std::vector<uint8_t> left_encoded;
+	std::vector<uint8_t> right_encoded;
+	size_t live = work.live;
+	if (!room_storage_add(live, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_storage_add(live, 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) ||
+	    !ordinary_birth_observation_workspace::relay(live, &work))
+		return false;
+	if (critical_command_encode_bounded(left, &left_encoded,
+					    ordinary_birth_observation_workspace::relay, &work,
+					    live) != critical_command_codec_result::ok ||
+	    !room_storage_add(live, left_encoded.capacity()))
+		return false;
+	return critical_command_encode_bounded(right, &right_encoded,
+					       ordinary_birth_observation_workspace::relay, &work,
+					       live) == critical_command_codec_result::ok &&
+	       left_encoded == right_encoded;
+}
+} // namespace: ordinary birth full bounded observations
+
+bool critical_native_mobile_birth_publication_owner::observe_generation_bounded(
+	const critical_native_recovery_envelope &expected, uint64_t *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	size_t *current_coordinator_bytes) noexcept
+{
+	if (!output || !reserve || !current_coordinator_bytes ||
+	    !ordinary_birth_observation_command(expected.command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_observation_workspace work{ reserve, context, outer };
+	try
+	{
+		work.lock.lock();
+		// Assignment owns an actual return string beside the stored key; the
+		// supported binary identity requests 17 chars, before construction.
+		if (!work.admit(sizeof(std::string) + expected.command.operation_id.bytes.size() +
+				1))
+			return false;
+		work.identity = operation_key(expected.command.operation_id);
+		if (!work.admit())
+			return false;
+		work.operation = operations.find(work.identity);
+		// Complete original typed-birth generation observation. No receipt,
+		// native-phase, uncertainty or readiness gate is invented here.
+		if (work.operation == operations.end() ||
+		    !work.operation->second->retain_until_publication ||
+		    !native_birth_submit_matches_bounded(
+			    *work.operation->second, expected,
+			    ordinary_birth_observation_workspace::relay, &work, work.live) ||
+		    !health.initialized || !coordinator_generation ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    work.operation->second->publication_checkpointing ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !work.admit())
+			return false;
+		*output = coordinator_generation;
+		*current_coordinator_bytes = work.current;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_native_mobile_birth_publication_owner::completion_bounded(
+	const critical_operation_id &operation_id, critical_completion *completion,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	size_t *current_coordinator_bytes) noexcept
+{
+	if (!reserve || !completion || !current_coordinator_bytes ||
+	    critical_operation_id_is_zero(operation_id))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_observation_workspace work{ reserve, context, outer };
+	try
+	{
+		work.lock.lock();
+		if (!work.admit(sizeof(std::string) + operation_id.bytes.size() + 1))
+			return false;
+		work.identity = operation_key(operation_id);
+		if (!work.admit())
+			return false;
+		work.operation = operations.find(work.identity);
+		// Original pending-publication-first, completed-cache-second lookup.
+		// Family selection is proved from the genuine retained/cache command;
+		// the operation ID creates no native/world/receipt or ACK authority.
+		if (work.operation != operations.end() &&
+		    operation_is_publication_pending(*work.operation->second))
+		{
+			if (!ordinary_birth_observation_command(work.operation->second->command))
+				return false;
+			*completion = work.operation->second->publication_completion;
+			*current_coordinator_bytes = work.current;
+			return true;
+		}
+		work.completed = completed_cache.find(work.identity);
+		if (work.completed == completed_cache.end() ||
+		    !ordinary_birth_observation_command(work.completed->second.command))
+			return false;
+		*completion = work.completed->second.completion;
+		*current_coordinator_bytes = work.current;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool critical_native_mobile_birth_publication_owner::copy_context_ordinary_bounded(
+	const critical_command &command, critical_native_recovery_envelope *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	size_t *current_coordinator_bytes) noexcept
+{
+	if (!output || !reserve || !current_coordinator_bytes ||
+	    !ordinary_birth_observation_command(command))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	ordinary_birth_observation_workspace work{ reserve, context, outer };
+	try
+	{
+		work.lock.lock();
+		if (!work.admit(sizeof(std::string) + command.operation_id.bytes.size() + 1))
+			return false;
+		work.identity = operation_key(command.operation_id);
+		if (!work.admit())
+			return false;
+		work.operation = operations.find(work.identity);
+		// Original native_context_copy predicates and the actual phase1/phase2
+		// union. No generation, retain, lifecycle or validator gate is added.
+		if (!health.initialized || stop_requested || work.operation == operations.end() ||
+		    !work.operation->second->native ||
+		    work.operation->second->publication_checkpointing ||
+		    work.operation->second->native_context_uncertain ||
+		    work.operation->second->native_ack_uncertain ||
+		    !ordinary_birth_observation_equal(command, work.operation->second->command,
+						      work))
+			return false;
+		work.state = work.operation->second.get();
+		work.phase = work.state->native->phase;
+		if (work.phase == critical_native_recovery_phase::execution_pending ?
+			    !operation_is_publication_pending(*work.state) :
+			    (work.phase != critical_native_recovery_phase::continuation_pending ||
+			     work.state->phase !=
+				     critical_operation_phase::native_continuation_pending ||
+			     !work.state->native_physical_released))
+			return false;
+		// Full original native_envelope field copy from genuine current vectors.
+		// Admit each real fresh request before allocation, then census actual
+		// capacities. Old caller output stays live in outer until final success.
+		work.extra = 0;
+		if (work.state->command.keys.size() > SIZE_MAX / sizeof(critical_entity_key) ||
+		    work.state->command.expected_revisions.size() >
+			    SIZE_MAX / sizeof(critical_expected_revision) ||
+		    !room_storage_add(work.extra, work.state->command.keys.size() *
+							  sizeof(critical_entity_key)) ||
+		    !room_storage_add(work.extra, work.state->command.expected_revisions.size() *
+							  sizeof(critical_expected_revision)) ||
+		    !room_storage_add(work.extra, work.state->command.payload.size()) ||
+		    !room_storage_add(work.extra, work.state->command.accounting_intent.size()) ||
+		    !room_storage_add(work.extra, work.state->native->attachment.size()) ||
+		    !work.admit(work.extra))
+			return false;
+		work.copy.command = work.state->command;
+		work.copy.revision = work.state->native->revision;
+		work.copy.phase = work.phase;
+		work.copy.attachment = work.state->native->attachment;
+		if (!work.admit())
+			return false;
+		*output = std::move(work.copy);
+		*current_coordinator_bytes = work.current;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
