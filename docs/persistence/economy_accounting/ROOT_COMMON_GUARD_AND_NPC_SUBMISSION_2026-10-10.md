@@ -1,0 +1,13 @@
+# Genuine ROOT guard and NPC submission join
+
+The existing registered ROOT callback could not accept a distinct birth callback and context. A private common ROOT guard now supplies the same genuine dispatcher/address for bounded warm callers, scope begin/end, all three original observer registrations and NPC submission. Every migrated callback pair uses that common member. Warm cleanup authenticates both memberships and preserves original retained max/rebase behavior. Strict transaction identity checks remain unchanged; no fake warm root or execution authority is introduced.
+
+The actual NPC caller admits guard storage once before construction and invokes the full const-reference coordinator provider with the real ROOT callback/context. Its birth context outlives the guard; both outlive the returned submit and released coordinator lender/lock. The dispatcher removes only authentic borrowed CURRENT C, adds fresh seven-global storage once and forwards a complete prefix. The original aggregate owns retained birth/warm storage, journal and outside-or-borrowed C. No locked callback reacquires the coordinator.
+
+Actual accepted/blocked disposition is latched before fallible outside recensus. After scope/context/query storage dies, an immediate fresh charge sets a separate checked outcome. Failure keeps the actual result and stops that pulse before generation, completion or publication. The original SQL alternative, scalar result tail, seven original ROOT algorithms and inactive/safety behavior remain intact. Nullable companions and original unsupported execution gates still apply.
+
+Independent full RAW and final formatted source reviews passed: all51 NPC artifacts/19 captures and29 ROOT artifacts/15 captures, four complete inverses, original pulse and ROOT algorithms, full tokens/preprocessing and protected unrelated WIP. Registry437 genuine pins/931 unchanged policies, zero new writers/unmapped sites.
+
+First complete baseline, transitive global/primitive/allocator/observer profiles and native whole32MiB qualification remain open. Genuine validator registration, bounded observations, execution/publication/recovery/terminal ACK and original release qualification are not closed by this join. Native/build/gameplay/persistence/recovery tests remain deferred to major-plan readiness. Accounting stays inactive, admission CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+Evidence: tmp/root-npc-common-join-integrated-20261010. Immutable ROOT proposal manifest5f6f607c75877ead3a808d9b3665bb03aa3ff2db1a7a7084ed13ece29e2537f0; NPC submit proposal manifestff9b8571a3091f94702e24c2e7b5c09f9e78bf611cfa38c2f9e5d5c68cee1794. The final source freeze records all four exact hashes against417a5ec8a.

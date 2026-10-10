@@ -7,6 +7,7 @@
 struct obj_data;
 class critical_zone_reset_item_publication_owner;
 class zone_reset_item_owner;
+class quest_mobile_native_birth_owner;
 class critical_room_startup_budget_owner;
 class flatfile_authority_lock;
 class quest_mobile_native_item_stage;
@@ -137,6 +138,53 @@ bool zone_reset_room_item_recovery_pending() noexcept;
 
 class zone_reset_item_owner final
 {
+	struct warm_command_scratch;
+	// One real scope identity and one registered reserve pair across ROOT warm
+	// preparation and the original ordinary NPC submission. No factory authority.
+	struct flat_common_budget_guard final
+	{
+		warm_command_scratch *warm = nullptr;
+		bool (*complete_prefix)(size_t, void *) noexcept = nullptr;
+		void *original_context = nullptr;
+		bool active = false;
+	};
+	static bool reserve_flat_common_budget(size_t, void *) noexcept;
+	// Only the genuine birth owner may construct this stack guard. Its callback
+	// context outlives it; its actual lifetime encloses the complete submit call,
+	// including release of the coordinator mutex and its CURRENT-C lender.
+	struct ordinary_flat_submission_guard final
+	{
+	    public:
+		~ordinary_flat_submission_guard() noexcept;
+		ordinary_flat_submission_guard(const ordinary_flat_submission_guard &) = delete;
+		ordinary_flat_submission_guard &
+		operator=(const ordinary_flat_submission_guard &) = delete;
+		ordinary_flat_submission_guard(ordinary_flat_submission_guard &&) = delete;
+		ordinary_flat_submission_guard &
+		operator=(ordinary_flat_submission_guard &&) = delete;
+		static size_t inline_bytes() noexcept
+		{
+			return sizeof(ordinary_flat_submission_guard);
+		}
+		// Caller has admitted this fixed guard once BEFORE construction; each full
+		// prefix already owns it. Dispatcher adds CURRENT G and its own carriers.
+		bool begin(size_t full_prefix) noexcept;
+		static auto callback() noexcept -> bool (*)(size_t, void *) noexcept
+		{
+			return zone_reset_item_owner::reserve_flat_common_budget;
+		}
+		void *context() noexcept { return &budget_; }
+
+	    private:
+		friend class ::quest_mobile_native_birth_owner;
+		ordinary_flat_submission_guard(bool (*complete_prefix)(size_t, void *) noexcept,
+					       void *original_context) noexcept
+		{
+			budget_.complete_prefix = complete_prefix;
+			budget_.original_context = original_context;
+		}
+		flat_common_budget_guard budget_;
+	};
 	// Genuine stack-only startup accounting owner. Only the actual coordinator
 	// startup implementation may use this provider after original guards/reset.
 	friend class critical_room_startup_budget_owner;
@@ -169,6 +217,7 @@ class zone_reset_item_owner final
 		// every surviving owner/request/frame through the real boot lender.
 		// Scalar handoff only; no boot reserve may follow outside registration.
 		bool handoff_preallowed_while_locked() noexcept;
+		flat_common_budget_guard budget_;
 		bool global_scope_ = false;
 	};
 	// Genuine caller invokes only after its actual guard/descriptor lifetimes
@@ -247,7 +296,6 @@ class zone_reset_item_owner final
 	struct warm_checkpoint;
 	struct warm_root;
 	static bool warm_bindings_current(const warm_root &) noexcept;
-	struct warm_command_scratch;
 	static bool flat_current_global_storage(size_t *) noexcept;
 	// Opt-in complete policy; immutable genuine registration pairs global pool
 	// ownership with all actual flat ROOT/publication/NPC private-stage censuses.
@@ -257,7 +305,6 @@ class zone_reset_item_owner final
 						  size_t caller_extra = 0) noexcept;
 	static bool begin_flat_command_scope(warm_command_scratch &) noexcept;
 	static bool begin_warm_command_scratch(warm_root &, size_t caller_extra = 0) noexcept;
-	static bool reserve_warm_command_scratch(size_t, void *) noexcept;
 	static bool rebase_warm_command_scratch(warm_command_scratch &, size_t) noexcept;
 	static bool retain_warm_command_output(warm_command_scratch &,
 					       const critical_native_recovery_envelope &,
