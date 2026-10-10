@@ -1647,3 +1647,298 @@ economic_accounting_error coin_transfer_accounting_intent_bounded(
 	return economic_accounting_error::capacity;
 #endif
 }
+
+#include <type_traits>
+namespace
+{
+constexpr size_t coin_accounting_identity_defaults =
+	// Original identity aggregate plus full payload two-command defaults,
+	// admission/metadata/optional/facts-vector defaults and destruction.
+	2 * sizeof(void *) + coin_accounting_command_defaults + coin_accounting_facts_defaults +
+	2 * sizeof(void *) + 2 * sizeof(void *);
+constexpr size_t coin_accounting_bytes_equal_frames =
+	// Actual vector<uint8_t> equality: two refs/bool, size/begin/end
+	// getters; std::equal/__equal_aux/__equal_aux1/__equal<true> pointer
+	// parameters/results, ptrdiff n, actual memcmp args/int return.
+	2 * sizeof(void *) + sizeof(bool) + 6 * (sizeof(void *) + sizeof(void *)) +
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(int);
+constexpr size_t coin_accounting_intent_decode_frames =
+	// Actual public bounded decode parameters, fixed/source/peak scalars,
+	// original meta reference/status and bad_alloc references. Original
+	// full private result DTO and source DTO/object-byte provider belong
+	// to existing actual bounded decoder, not duplicated here.
+	5 * sizeof(void *) + sizeof(size_t) + sizeof(economic_accounting_error) +
+	3 * sizeof(size_t) + sizeof(void *) + 2 * sizeof(economic_accounting_error) +
+	2 * sizeof(void *) + coin_accounting_facts_defaults +
+	// Original get(span,offset,width): real by-value span, two lengths,
+	// value/index/result; zero(span): real span, byte and bool. read_array:
+	// span/offset/array ref plus actual copy pointer/iterator closures.
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+	sizeof(size_t) + sizeof(std::span<const uint8_t>) + sizeof(uint8_t) + sizeof(bool) +
+	sizeof(std::span<const uint8_t>) + sizeof(size_t) + sizeof(void *) +
+	coin_accounting_copy_frames +
+	// source-event decode scalar/read-array/valid/error scopes; original
+	// real source-event DTOs already in decode_object_bytes() preadmission.
+	4 * sizeof(void *) + 3 * sizeof(std::span<const uint8_t>) + 5 * sizeof(size_t) +
+	2 * sizeof(uint64_t) + 2 * sizeof(uint16_t) + 2 * sizeof(economic_accounting_error) +
+	5 * sizeof(void *) + 3 * sizeof(bool) +
+	// Actual encoded subspan/size/index queries, optional assignment,
+	// full original frozen-intent valid metadata checks and array equal.
+	6 * (sizeof(void *) + sizeof(size_t)) + 4 * sizeof(void *) + sizeof(bool) +
+	5 * sizeof(void *) + 4 * sizeof(bool) + sizeof(std::ptrdiff_t) +
+	coin_accounting_bytes_equal_frames +
+	// Exact original facts.assign forward range and final intent move:
+	// fitting/growing vector closure plus metadata/optional generated
+	// references and genuine one-vector nonthrow move assignment.
+	coin_accounting_vector_frames + coin_accounting_move_frames + 6 * sizeof(void *);
+struct coin_accounting_supported_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const identity *value = nullptr;
+	const item_transfer_payload *pile = nullptr;
+	const critical_command *projection = nullptr, *private_projection = nullptr;
+	const std::vector<uint8_t> *expected = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 12 * sizeof(void *) + 9 * sizeof(size_t) +
+					       7 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!coin_accounting_add(total, sizeof(*this)) ||
+		    !coin_accounting_add(total, frames) ||
+		    !coin_accounting_add(total, observation) ||
+		    !coin_accounting_add(total, critical_command_copy_frame_bytes()) ||
+		    !coin_accounting_add(total, critical_command_valid_frame_bytes()) ||
+		    !coin_accounting_add(total, item_transfer_payload_copy_frame_bytes()))
+			return false;
+		if (value && (!coin_accounting_add(total, sizeof(*value)) ||
+			      !coin_transfer_payload_current_heap_bytes(value->payload, &heap) ||
+			      !coin_accounting_add(total, heap) ||
+			      !coin_accounting_vector_heap(value->intent.admission.facts, total)))
+			return false;
+		if (pile && (!coin_accounting_add(total, sizeof(*pile)) ||
+			     !item_transfer_payload_current_heap_bytes(*pile, &heap) ||
+			     !coin_accounting_add(total, heap)))
+			return false;
+		const auto command = [&](const critical_command *current) noexcept
+		{
+			return !current || (coin_accounting_add(total, sizeof(*current)) &&
+					    critical_command_current_heap_bytes(*current, &heap) &&
+					    coin_accounting_add(total, heap));
+		};
+		if (!command(projection) || !command(private_projection))
+			return false;
+		if (expected && (!coin_accounting_add(total, sizeof(*expected)) ||
+				 !coin_accounting_vector_heap(*expected, total)))
+			return false;
+		if (!coin_accounting_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+bool coin_accounting_authority_owned(const coin_transfer_endpoint &endpoint, uint64_t *authority,
+				     coin_accounting_supported_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (endpoint.change.type == critical_command_type::account_bank)
+	{
+		if (!budget.peak(sizeof(currency_command_payload) + 2 * sizeof(void *)))
+			return false;
+		currency_command_payload change = {};
+		if (!((budget.prefix(admission_prefix, sizeof(change)) &&
+		       currency_command_decode_payload_bounded(endpoint.change, &change,
+							       budget.reserve, budget.context,
+							       admission_prefix))))
+			return false;
+		*authority = change.pid;
+		return true;
+	}
+	if (!budget.peak(sizeof(item_transfer_payload) + coin_accounting_pile_defaults))
+		return false;
+	item_transfer_payload change = {};
+	budget.pile = &change;
+	if (!(endpoint.change.type == critical_command_type::item_transfer &&
+	      (budget.prefix(admission_prefix) && item_transfer_command_decode_payload_bounded(
+							  endpoint.change, &change, budget.reserve,
+							  budget.context, admission_prefix)) &&
+	      change.item_count == 1 && change.selected_item_uid == change.items[0].item_uid))
+		return false;
+	budget.pile = nullptr;
+	*authority = change.selected_item_uid;
+	return true;
+}
+
+bool coin_accounting_projection_owned(const critical_command &root, critical_command *output,
+				      coin_accounting_supported_budget &budget)
+{
+	size_t admission_request = 0;
+	if (!critical_command_fresh_copy_request_bytes(root, &admission_request) ||
+	    !coin_accounting_add(admission_request,
+				 sizeof(critical_command) + critical_command_copy_frame_bytes()) ||
+	    !budget.peak(admission_request))
+		return false;
+	auto projection = root;
+	budget.private_projection = &projection;
+	projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	projection.accounting_intent.clear();
+	projection.publication_required = false;
+	if (!budget.peak(critical_command_copy_frame_bytes()))
+		return false;
+	*output = std::move(projection);
+	budget.private_projection = nullptr;
+	return true;
+}
+
+bool coin_accounting_decode_owned(const critical_command &root,
+				  coin_accounting_supported_budget &budget)
+{
+	size_t admission_prefix = 0;
+	uint64_t admission_authority = 0;
+	if (!(root.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	      root.type == critical_command_type::coin_transfer &&
+	      critical_command_envelope_valid(root)))
+		return false;
+	if (!budget.peak(sizeof(identity) + coin_accounting_identity_defaults))
+		return false;
+	identity value;
+	budget.value = &value;
+	if (!((budget.prefix(admission_prefix) &&
+	       coin_transfer_command_decode_payload_bounded(root, &value.payload, budget.reserve,
+							    budget.context, admission_prefix))))
+		return false;
+	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+						      &value.payload.destination };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		if (endpoint_account_kind(endpoint) == economic_account_kind::wallet)
+		{
+			auto *change = index ? &value.destination_change : &value.source_change;
+			if (!((budget.prefix(admission_prefix) &&
+			       currency_command_decode_payload_bounded(
+				       endpoint.change, change, budget.reserve, budget.context,
+				       admission_prefix)) &&
+			      change->reason == currency_reason_type::coin_transfer &&
+			      change->pid > 0 && change->pid <= INT32_MAX &&
+			      endpoint.change.keys.size() == 2 &&
+			      endpoint.change.expected_revisions.size() == 2 &&
+			      endpoint.change.keys[0].type == critical_entity_type::player &&
+			      endpoint.change.keys[0].id == change->pid &&
+			      endpoint.change.expected_revisions[0].revision != UINT64_MAX &&
+			      endpoint.change.expected_revisions[1].revision != UINT64_MAX))
+				return false;
+			if (!(std::all_of(change->bank_delta.amount.begin(),
+					  change->bank_delta.amount.end(),
+					  [](int64_t amount) { return amount == 0; })))
+				return false;
+		}
+	}
+	const std::span<const uint8_t> admission_wire = root.accounting_intent;
+	if (!budget.prefix(admission_prefix, coin_accounting_intent_decode_frames) ||
+	    economic_intent_decode_bounded(admission_wire, &value.intent, budget.reserve,
+					   budget.context,
+					   admission_prefix) != economic_accounting_error::ok)
+		return false;
+	const auto &facts = value.intent.admission.facts;
+	if (!(facts.size() == ECONOMIC_COIN_TRANSFER_FACT_BYTES))
+		return false;
+	const auto &metadata = value.intent.admission.metadata;
+	value.source = { metadata.lineage, endpoint_account_kind(value.payload.source),
+			 little_u64(facts, 0), 0 };
+	value.destination = { metadata.lineage, endpoint_account_kind(value.payload.destination),
+			      little_u64(facts, 8), 0 };
+	if (value.source.kind == economic_account_kind::pile)
+		if (!((coin_accounting_authority_owned(value.payload.source, &admission_authority,
+						       budget) &&
+		       value.source.authority_id == admission_authority)))
+			return false;
+	if (value.destination.kind == economic_account_kind::pile)
+		if (!((coin_accounting_authority_owned(value.payload.destination,
+						       &admission_authority, budget) &&
+		       value.destination.authority_id == admission_authority)))
+			return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + coin_accounting_facts_defaults))
+		return false;
+	std::vector<uint8_t> expected;
+	budget.expected = &expected;
+	{
+		if (!budget.peak(sizeof(critical_command) + coin_accounting_command_defaults / 2))
+			return false;
+		critical_command admission_projected = {};
+		budget.projection = &admission_projected;
+		if (!coin_accounting_projection_owned(root, &admission_projected, budget) ||
+		    !budget.prefix(admission_prefix) ||
+		    coin_transfer_accounting_intent_bounded(
+			    admission_projected, metadata.epoch, value.source, value.destination,
+			    &expected, budget.reserve, budget.context,
+			    admission_prefix) != economic_accounting_error::ok)
+			return false;
+		budget.projection = nullptr;
+	}
+	if (!budget.peak(coin_accounting_bytes_equal_frames))
+		return false;
+	if (!(expected == root.accounting_intent))
+		return false;
+	return true;
+}
+
+bool coin_accounting_supported_owned(const critical_command &root,
+				     coin_accounting_supported_budget &budget) noexcept
+{
+	try
+	{
+		return coin_accounting_decode_owned(root, budget);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // namespace
+bool coin_transfer_accounting_command_supported_bounded(const critical_command &root,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Both public/owned support and complete decode signatures/results,
+		// actual prefix/authority, endpoints[]/loop/endpoint/change/facts/
+		// metadata references, actual wire span and projection clone helper.
+		9 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(uint64_t) +
+		2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+		sizeof(std::span<const uint8_t>) + 3 * sizeof(void *) + sizeof(bool) +
+		sizeof(size_t) +
+		// Original authority helper parameters/results/prefix and endpoint
+		// account-kind function parameters/result, fixed little_u64 span,
+		// offset/value/index/result and actual array/span indexing calls.
+		4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+		sizeof(economic_account_kind) + sizeof(std::span<const uint8_t>) +
+		2 * sizeof(size_t) + 2 * sizeof(uint64_t) + 4 * (sizeof(void *) + sizeof(size_t)) +
+		// Complete original wallet all_of predicate and real generated
+		// aggregate source/destination key assignment temporaries (two).
+		coin_accounting_intent_fixed_calls + 2 * sizeof(economic_account_key) +
+		4 * sizeof(void *);
+	coin_accounting_supported_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+	return coin_accounting_supported_owned(root, budget);
+#else
+	(void)root;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}

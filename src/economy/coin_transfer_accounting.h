@@ -75,4 +75,11 @@ coin_transfer_accounting_intent_bounded(const critical_command &, const critical
 					std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
 					void *, size_t outer_live) noexcept;
 
+// Complete original immutable schema-2 coin proof, including both endpoints,
+// facts/authority, actual full admission projection and canonical intent rebuild.
+// Inputs, old outputs and all sibling owner storage remain authentic outer.
+bool coin_transfer_accounting_command_supported_bounded(const critical_command &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t outer_live) noexcept;
+
 #endif
