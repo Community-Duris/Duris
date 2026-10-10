@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <span>
 #include <string>
 #include <vector>
@@ -771,5 +772,39 @@ void player_save_pipeline_reset_for_tests(void);
 // no readiness, hold, admission or authority. Do not call while holding the
 // same pipeline mutex; owning bounded relays use the genuine locked provider.
 bool player_save_pipeline_literal_replay_storage_bytes(size_t *) noexcept;
+
+// Genuine same-lock passive currency replay memory owner. Only the complete
+// mixed currency replay counterpart can construct it. Outer excludes this
+// literal pool and this live scope; includes authentic currency/coordinator/
+// journal/input/other pipeline and execution-guard owners. Scope adds physical
+// CURRENT pool under its actual pipeline mutex exactly once at every cut.
+// Reserve MUST NOT acquire pipeline/coordinator/journal or mutate replay owners.
+// Startup/main-thread coordinator ownership supplies currency pending stability.
+// Scope is required before first allocating proof, including wallet-only replay.
+// Original selected functions and backend/activation gates remain unchanged.
+class player_save_coin_replay_budget_scope_owner final
+{
+    private:
+	friend bool currency_transaction_restore_replayed_command_bounded(const critical_command &,
+									  bool (*)(size_t,
+										   void *) noexcept,
+									  void *, size_t) noexcept;
+	player_save_coin_replay_budget_scope_owner(bool (*)(size_t, void *) noexcept, void *);
+	~player_save_coin_replay_budget_scope_owner() noexcept;
+	player_save_coin_replay_budget_scope_owner(
+		const player_save_coin_replay_budget_scope_owner &) = delete;
+	player_save_coin_replay_budget_scope_owner &
+	operator=(const player_save_coin_replay_budget_scope_owner &) = delete;
+	bool locked() const noexcept;
+	bool prefix(size_t exclusive, size_t &full) const noexcept;
+	bool admit(size_t exclusive) const noexcept;
+	static bool reserve_exclusive(size_t exclusive, void *context) noexcept;
+	bool restore(const critical_command &, size_t exclusive_outer) const noexcept;
+	bool restore_obligation(const critical_command &, int, uint64_t,
+				size_t exclusive_outer) const;
+	std::unique_lock<std::mutex> lock_;
+	bool (*reserve_)(size_t, void *) noexcept;
+	void *context_;
+};
 
 #endif

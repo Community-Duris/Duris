@@ -9656,3 +9656,384 @@ bool player_save_pipeline_literal_replay_storage_bytes(size_t *bytes) noexcept
 		return false;
 	}
 }
+
+namespace
+{
+bool coin_save_exclusive_add(size_t outer, size_t extra, size_t &result) noexcept
+{
+	if (extra > SIZE_MAX - outer)
+		return false;
+	result = outer + extra;
+	return true;
+}
+constexpr size_t coin_save_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t coin_save_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t coin_save_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t coin_save_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t coin_save_vector_frames =
+	coin_save_allocator_frames + coin_save_copy_frames + coin_save_relocate_frames +
+	coin_save_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t coin_save_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + coin_save_allocator_frames;
+constexpr size_t coin_save_vector_constructor_frames =
+	2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+	sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	8 * (sizeof(void *) + sizeof(size_t)) + coin_save_vector_frames;
+constexpr size_t coin_save_command_default_frames =
+	// Real command generated default/destructor and four vector default
+	// constructor/_Vector_base/_Vector_impl/_Vector_impl_data/allocator
+	// carriers; current object inline is separately owned by its lifetime.
+	2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	4 * (sizeof(void *) + coin_save_allocator_frames);
+constexpr size_t coin_save_critical_codec_frames =
+	// Original encoder, working-bytes and bounded-encode parameter/return/
+	// wire_bytes/status scopes, loop key+revision refs/endpoints/pad locals.
+	10 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(critical_command_codec_result) +
+	6 * sizeof(void *) + 2 * sizeof(unsigned int) +
+	// append_le genuine widest uint64_t value plus byte loop and vector
+	// reference; array begin/end and data query sources.
+	sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) +
+	// Actual original decoder/bounded counterpart fixed scalar locals:
+	// encoded/size/destination/reserve/context/outer/heap output, live,
+	// offset/type/source/3 counts/auction flag/limit/required/intent locals.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(critical_command_codec_result) +
+	2 * sizeof(size_t) + 2 * sizeof(uint16_t) + 3 * sizeof(uint32_t) + sizeof(bool) +
+	sizeof(size_t) + sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(uint32_t) +
+	// Key/revision loop indices and padding, prospective request/extra,
+	// retained scalar and original bad_alloc reference. Object carriers
+	// decoded/key/revision are admitted by existing real decoder itself.
+	2 * sizeof(uint32_t) + 2 * sizeof(size_t) + 4 * sizeof(size_t) + sizeof(size_t) +
+	sizeof(void *) +
+	// Genuine widest read_le input/size/offset/value/decoded/index/return;
+	// decode_add/admit/heap actual parameters/locals/query scopes.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(uint64_t) + sizeof(size_t) + sizeof(bool) +
+	10 * sizeof(void *) + 9 * sizeof(size_t) + 3 * sizeof(bool) +
+	// vector constructions/destruction/calls, allocator and all fitting
+	// insert/assign/append profiles, original command nonthrow final move.
+	coin_save_command_default_frames + coin_save_vector_frames + 4 * coin_save_move_frames;
+
+constexpr size_t coin_save_vector_defaults = 5 * sizeof(void *) + sizeof(std::allocator<uint8_t>);
+constexpr size_t coin_save_vector_move_frames = coin_save_move_frames;
+constexpr size_t coin_save_bytes_equal_frames =
+	2 * sizeof(void *) + sizeof(bool) + 6 * (sizeof(void *) + sizeof(void *)) +
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(int);
+constexpr size_t coin_save_lock_frames =
+	// Actual unique_lock constructor(this,mutex ref), addressof arg/result,
+	// unique_lock::lock this, mutex::lock this/error int, gthread mutex
+	// argument/int-return. Destructor/unlock and real mutex getter/owns.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(int) +
+	sizeof(void *) + sizeof(int) + 3 * sizeof(void *) + sizeof(int) + 2 * sizeof(void *) +
+	sizeof(bool) + 2 * sizeof(void *);
+constexpr size_t coin_save_pool_observation_frames =
+	// Prefix/admit/exclusive bridge parameters/results/live/pool scalars,
+	// actual locked pool observer pointer/scalar/range refs/iterators;
+	// genuine 13 and 2 pointer initializer backing arrays and descriptors.
+	9 * sizeof(void *) + 9 * sizeof(size_t) + 5 * sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + 4 * sizeof(void *) + 13 * sizeof(void *) +
+	2 * sizeof(std::initializer_list<const std::vector<uint8_t> *>) + 2 * sizeof(void *) +
+	2 * sizeof(std::initializer_list<const std::string *>) +
+	6 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t coin_save_map_lookup_frames =
+	// Genuine map count/find (this,key,size/iterator-return), tree find
+	// (this,key,j,iterator-return), iterative lower_bound(this,x,y,key,
+	// iterator-return), _S_key + key-of-value / node-value / less comparator.
+	// No allocation, recursion, insertion or rebalance is reached.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(void *)) + 2 * (4 * sizeof(void *)) +
+	2 * (5 * sizeof(void *)) + 2 * (6 * sizeof(void *) + sizeof(bool)) +
+	// Actual begin/end/root/left/right getters, iterator constructor,
+	// iterator equality input refs/bool and key comparison arguments.
+	8 * (2 * sizeof(void *)) + 2 * sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) +
+	sizeof(bool);
+constexpr size_t coin_save_hold_frames =
+	// Original install_hold pid/op/generation and bool return, nonzero and
+	// byte, actual detail mutex lock_guard, owner iterator/available pointer,
+	// hold ref/range pointers, fixed actual assignment temporary held_pid.
+	sizeof(int) + 2 * sizeof(void *) + sizeof(bool) + sizeof(bool) + sizeof(uint8_t) +
+	sizeof(std::lock_guard<std::mutex>) + coin_save_lock_frames + sizeof(void *) +
+	sizeof(void *) + 3 * sizeof(void *) +
+	sizeof(player_save_execution_guard::detail::held_pid) + 4 * sizeof(void *) +
+	// Four-element operation byte-array equality and generation limit getter.
+	coin_save_bytes_equal_frames + sizeof(uint64_t) +
+	// Separate original mismatch poison owns a fresh lock_guard after
+	// install_hold has returned. Keep this existing conservative sum EXACT:
+	// the dead install_hold carriers may cover that distinct poison branch.
+	// Its full source-attributed notification profile is proved below.
+	sizeof(std::lock_guard<std::mutex>) + coin_save_lock_frames + coin_save_map_lookup_frames;
+// Actual duplicate-generation mismatch alone reaches poison_integrity.
+// install_hold success has NO changed_locked call; do not attribute the
+// adjacent install_live_publication_hold notification to this replay route.
+constexpr size_t coin_save_poison_notification_frames =
+	// poison_integrity owns its actual new guard lock after install_hold's
+	// local lock/iterators/held_pid temporary have died. No map lookup here.
+	sizeof(std::lock_guard<std::mutex>) + coin_save_lock_frames +
+	// changed_locked: numeric_limits<uint64_t>::max returned scalar; its
+	// no-argument void call has no parameter/local object. ownership_event
+	// returns an actual reference carrier. Nonzero epoch proves its static
+	// condition variable was initialized by begin_ownership_epoch BEFORE
+	// epoch publication; no first-use constructor/heap request on this path.
+	sizeof(uint64_t) + sizeof(void *) +
+	// Installed GCC13 public condition_variable::notify_all (out-of-line
+	// primary GCC13.3 implementation): this pointer, no explicit local.
+	sizeof(void *) +
+	// Actual std::__condvar::notify_all: this pointer and local int __e.
+	sizeof(void *) + sizeof(int) +
+	// Actual __gthread_cond_broadcast: condition pointer + int result;
+	// pthread_cond_broadcast declaration boundary: pointer + int result.
+	// No __gthread_active_p is called by this unconditional broadcast path.
+	sizeof(void *) + sizeof(int) + sizeof(void *) + sizeof(int);
+static_assert(coin_save_hold_frames >= coin_save_poison_notification_frames,
+	      "Existing hold allowance covers the separate poison notification carriers");
+constexpr size_t coin_save_capacity_frames =
+	// Complete original literal_inventory_capacity_locked parameters/ref,
+	// original_body_bytes/amount/extra/held_extra/auction_extra, all fixed
+	// actual initializer lists: 2 identity refs and 9 body refs plus descriptors.
+	sizeof(size_t) + sizeof(void *) + sizeof(bool) + sizeof(void *) + 5 * sizeof(size_t) +
+	2 * sizeof(void *) + 9 * sizeof(void *) +
+	sizeof(std::initializer_list<const std::string *>) +
+	sizeof(std::initializer_list<const std::vector<uint8_t> *>) + 4 * sizeof(void *) +
+	8 * (sizeof(void *) + sizeof(size_t)) +
+	// Original smith_profile enum parameter/bool return.
+	sizeof(literal_checkpoint_profile) + sizeof(bool);
+constexpr size_t coin_save_restore_frames =
+	// Original/new obligation parameters/result, real profile/exclusive
+	// prefix/scalar, slot/candidate refs and both generation locals.
+	4 * sizeof(void *) + sizeof(int) + sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(bool) +
+	sizeof(literal_checkpoint_profile) + sizeof(size_t) + 3 * sizeof(void *) +
+	2 * sizeof(uint64_t) +
+	// Actual prefix lambda closure this/frozen ref/outer, arguments/results
+	// and local live scalar. Command/frozen input frames remain caller-owned.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(size_t) + sizeof(void *) + sizeof(bool) +
+	sizeof(size_t) + coin_save_bytes_equal_frames + coin_save_capacity_frames +
+	coin_save_hold_frames + coin_save_vector_move_frames;
+} // namespace
+
+player_save_coin_replay_budget_scope_owner::player_save_coin_replay_budget_scope_owner(
+	bool (*reserve)(size_t, void *) noexcept, void *context)
+	: lock_(pipeline_mutex)
+	, reserve_(reserve)
+	, context_(context)
+{
+}
+player_save_coin_replay_budget_scope_owner::~player_save_coin_replay_budget_scope_owner() noexcept =
+	default;
+bool player_save_coin_replay_budget_scope_owner::locked() const noexcept
+{
+	return lock_.mutex() == &pipeline_mutex && lock_.owns_lock();
+}
+bool player_save_coin_replay_budget_scope_owner::prefix(size_t exclusive,
+							size_t &result) const noexcept
+{
+	if (!locked() || !reserve_)
+		return false;
+	size_t pool = 0, total = exclusive;
+	if (!coin_save_literal_pool_current_locked(&pool) || !coin_save_pool_add(total, pool) ||
+	    !coin_save_pool_add(total, sizeof(*this)) ||
+	    !coin_save_pool_add(total, coin_save_lock_frames + coin_save_pool_observation_frames))
+		return false;
+	result = total;
+	return true;
+}
+bool player_save_coin_replay_budget_scope_owner::admit(size_t exclusive) const noexcept
+{
+	size_t live = 0;
+	return prefix(exclusive, live) && reserve_(live, context_);
+}
+bool player_save_coin_replay_budget_scope_owner::reserve_exclusive(size_t exclusive,
+								   void *context) noexcept
+{
+	const auto *scope = static_cast<player_save_coin_replay_budget_scope_owner *>(context);
+	return scope && scope->admit(exclusive);
+}
+bool player_save_coin_replay_budget_scope_owner::restore_obligation(const critical_command &command,
+								    int pid, uint64_t root_uid,
+								    size_t outer_live) const
+{
+	const auto profile = literal_checkpoint_profile::ordinary_drop;
+	constexpr size_t frames = coin_save_restore_frames;
+	size_t admission_prefix = 0;
+	if (!coin_save_exclusive_add(
+		    outer_live, frames + sizeof(std::vector<uint8_t>) + coin_save_vector_defaults,
+		    admission_prefix) ||
+	    !admit(admission_prefix))
+		return false;
+	std::vector<uint8_t> frozen;
+	const auto prefix = [this, &frozen, outer_live](size_t extra, size_t &output) noexcept
+	{
+		size_t live = outer_live;
+		if (!coin_save_pool_add(live, coin_save_restore_frames + sizeof(frozen)) ||
+		    !coin_save_pool_add(live, frozen.capacity()) ||
+		    !coin_save_pool_add(live, extra))
+			return false;
+		output = live;
+		return true;
+	};
+	if (pid <= 0 || !root_uid ||
+	    (!prefix(coin_save_critical_codec_frames, admission_prefix) ?
+		     critical_command_codec_result::overflow :
+		     critical_command_encode_bounded(
+			     command, &frozen, reserve_exclusive,
+			     const_cast<player_save_coin_replay_budget_scope_owner *>(this),
+			     admission_prefix)) != critical_command_codec_result::ok)
+		return false;
+	// The real enclosing scope owns this same pipeline_mutex unique_lock.
+	if (!locked())
+		return false;
+	// The typed caller classified the original immutable room operation.
+	// Registration remains closed before any execution owner starts.
+	if (!health.initialized || stop_requested || execution_started)
+		return false;
+	literal_inventory_checkpoint *slot = nullptr;
+	for (auto &candidate : literal_inventory_checkpoints)
+	{
+		if (!prefix(coin_save_hold_frames + coin_save_bytes_equal_frames,
+			    admission_prefix) ||
+		    !admit(admission_prefix))
+			return false;
+		if (candidate.token.pid == pid ||
+		    (candidate.held && candidate.operation_id.bytes == command.operation_id.bytes))
+		{
+			uint64_t generation = 0;
+			if (candidate.profile != profile || !candidate.restored_sql_drop ||
+			    !candidate.held || candidate.token.pid != pid ||
+			    candidate.token.root_uid != root_uid ||
+			    candidate.operation_id.bytes != command.operation_id.bytes ||
+			    candidate.payload != frozen ||
+			    !player_save_execution_guard::install_hold(pid, command.operation_id,
+								       &generation))
+				return false;
+			if (generation != candidate.execution_hold_generation)
+			{
+				player_save_execution_guard::poison_integrity();
+				return false;
+			}
+			return true;
+		}
+		if (!candidate.token.pid && !slot)
+			slot = &candidate;
+	}
+	if (!slot || !literal_inventory_capacity_locked(frozen.size()))
+		return false;
+	uint64_t generation = 0;
+	if (!prefix(coin_save_hold_frames + coin_save_capacity_frames +
+			    coin_save_vector_move_frames,
+		    admission_prefix) ||
+	    !admit(admission_prefix))
+		return false;
+	if (!player_save_execution_guard::install_hold(pid, command.operation_id, &generation))
+		return false;
+	// All fallible command allocation/validation precedes guard installation.
+	slot->execution_hold_generation = generation;
+	slot->profile = profile;
+	slot->token.pid = pid;
+	slot->token.root_uid = root_uid;
+	slot->payload = std::move(frozen);
+	slot->operation_id = command.operation_id;
+	slot->held = true;
+	slot->restored_sql_drop = true;
+	return true;
+}
+
+bool player_save_coin_replay_budget_scope_owner::restore(const critical_command &command,
+							 size_t outer_live) const noexcept
+{
+	try
+	{
+		constexpr size_t frames = 5 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int) +
+					  sizeof(uint64_t) + 3 * sizeof(bool) + sizeof(void *);
+		size_t admission_prefix = 0;
+		if (!coin_save_exclusive_add(outer_live, frames, admission_prefix) ||
+		    !admit(admission_prefix))
+			return false;
+		int pid = 0;
+		uint64_t uid = 0;
+		if (!coin_physical_recovery_identity_bounded(
+			    command, &pid, &uid, reserve_exclusive,
+			    const_cast<player_save_coin_replay_budget_scope_owner *>(this),
+			    admission_prefix))
+			return false;
+		return restore_obligation(command, pid, uid, admission_prefix);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
