@@ -1,3 +1,6 @@
+#if defined(__linux__)
+#include <malloc.h>
+#endif
 #include "world/zone_reset_room_nesting.h"
 #include "economy/native_mobile_birth_recovery.h"
 
@@ -13787,4 +13790,229 @@ bool shop_trade_original_procedure_binding_stage::prepare_native_birth_npc_flat_
 	errno = ENOTSUP;
 	return false;
 #endif
+}
+
+namespace
+{
+constexpr size_t birth_mobile_malloc_header() noexcept
+{
+#ifdef MEMCHK
+	return sizeof(ALLOCATION_HEADER);
+#else
+	return 0;
+#endif
+}
+bool birth_mobile_malloc_storage(const void *body, size_t expected, size_t *output) noexcept
+{
+	if (!body || !output)
+		return false;
+#ifdef MEMCHK
+	const auto *header = reinterpret_cast<const ALLOCATION_HEADER *>(
+		static_cast<const char *>(body) - sizeof(ALLOCATION_HEADER));
+	if (header->body != body || header->size < expected ||
+	    header->size > SIZE_MAX - sizeof(ALLOCATION_HEADER))
+		return false;
+	*output = header->size + sizeof(ALLOCATION_HEADER);
+#else
+	*output = expected;
+#endif
+	return true;
+}
+}
+
+bool quest_mobile_native_mobile_pool_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#ifndef MM_STATS
+	return false;
+#else
+	if (!dead_mob_pool)
+	{
+		*output = 0;
+		return true;
+	}
+	extern mm_ds *dead_obj_affect_pool;
+	if (dead_mob_pool == dead_obj_pool || dead_mob_pool == dead_obj_affect_pool ||
+	    dead_mob_pool->size != sizeof(char_data) ||
+	    dead_mob_pool->next_off != offsetof(char_data, next) ||
+	    dead_mob_pool->chunk_size <= 0 ||
+	    static_cast<size_t>(dead_mob_pool->chunk_size) > SIZE_MAX / 4096 ||
+	    static_cast<size_t>(dead_mob_pool->chunk_size) * 4096 < sizeof(char_data) ||
+	    (!dead_mob_pool->head != !dead_mob_pool->tail) ||
+	    dead_mob_pool->pages_owned > SIZE_MAX / 4096 ||
+	    dead_mob_pool->bytes_wasted > dead_mob_pool->pages_owned * 4096 ||
+	    dead_mob_pool->objs_used >
+		    (dead_mob_pool->pages_owned * 4096 - dead_mob_pool->bytes_wasted) /
+			    sizeof(char_data))
+		return false;
+	extern mm_ds_list *mmds_list;
+	for (const mm_ds_list *slow = mmds_list, *fast = mmds_list; fast && fast->next;)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	const mm_ds_list *selected = nullptr;
+	for (const mm_ds_list *entry = mmds_list; entry; entry = entry->next)
+		if (entry->mmds == dead_mob_pool)
+		{
+			if (selected)
+				return false;
+			selected = entry;
+		}
+	size_t bytes = 0, request = 0;
+	if (!selected || !birth_mobile_malloc_storage(dead_mob_pool, sizeof(mm_ds), &bytes) ||
+	    !birth_mobile_malloc_storage(selected, sizeof(mm_ds_list), &request) ||
+	    !cold_birth_add(bytes, request) || dead_mob_pool->pages_owned > SIZE_MAX / 4096 ||
+	    !cold_birth_add(bytes, dead_mob_pool->pages_owned * 4096))
+		return false;
+	*output = bytes;
+	return true;
+#endif
+}
+
+bool quest_mobile_native_mobile_catalog_string_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	size_t bytes = 0;
+	// mob_f is the actual fopen allocation opened by boot, never a reopened
+	// source. Its glibc allocation extent includes the private lock/wide-data
+	// tails; sizeof(FILE) alone does not cover that retained object. Server
+	// MEMCHK headers do not apply to these libc-owned malloc allocations.
+	if (mob_f)
+	{
+#if defined(__linux__) && defined(__GLIBC__)
+		const size_t file_storage = malloc_usable_size(mob_f);
+		if (file_storage < sizeof(FILE) || !cold_birth_add(bytes, file_storage))
+			return false;
+		if (mob_f->_IO_buf_base)
+		{
+			if (!mob_f->_IO_buf_end || mob_f->_IO_buf_end < mob_f->_IO_buf_base)
+				return false;
+			const auto file_begin = reinterpret_cast<uintptr_t>(mob_f);
+			const auto buffer_begin = reinterpret_cast<uintptr_t>(mob_f->_IO_buf_base);
+			const size_t extent =
+				static_cast<size_t>(mob_f->_IO_buf_end - mob_f->_IO_buf_base);
+			if (buffer_begin < file_begin || buffer_begin - file_begin >= sizeof(FILE))
+			{
+				// This checkout never installs a borrowed user buffer on mob_f.
+				// A foreign buffer is a violated source ownership contract.
+				if (mob_f->_flags & 1)
+					return false; // glibc _IO_USER_BUF
+				const size_t buffer_storage =
+					malloc_usable_size(mob_f->_IO_buf_base);
+				if (buffer_storage < extent ||
+				    !cold_birth_add(bytes, buffer_storage))
+					return false;
+			}
+		}
+#else
+		return false; // Existing retained-file allocation policy is unavailable.
+#endif
+	}
+	if (!mob_index)
+	{
+		*output = bytes;
+		return true;
+	}
+	if (top_of_mobt < 0)
+		return false;
+	// The four original cached columns exclusively retain each fread_string
+	// allocation; every NPC borrows those texts. Their per-NPC aliases never
+	// add another allocation. MEMCHK observes the actual allocation requests.
+	for (int rnum = 0; rnum <= top_of_mobt; ++rnum)
+	{
+		const std::array<const char *, 4> strings{ mob_index[rnum].keys,
+							   mob_index[rnum].desc2,
+							   mob_index[rnum].desc1,
+							   mob_index[rnum].desc3 };
+		for (const char *text : strings)
+			if (text)
+			{
+				const size_t length = std::char_traits<char>::length(text);
+				size_t request = 0;
+				if (length == SIZE_MAX ||
+				    !birth_mobile_malloc_storage(text, length + 1, &request) ||
+				    !cold_birth_add(bytes, request))
+					return false;
+			}
+	}
+	*output = bytes;
+	return true;
+}
+
+bool quest_mobile_native_published_npc_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+	for (P_char slow = character_list, fast = character_list; fast && fast->next;)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+			return false;
+	}
+	size_t bytes = 0;
+	for (P_char mob = character_list; mob; mob = mob->next)
+		if (IS_NPC(mob))
+		{
+			size_t request = 0;
+			if (!mob->only.npc ||
+			    !birth_mobile_malloc_storage(mob->only.npc, sizeof(npc_only_data),
+							 &request) ||
+			    !cold_birth_add(bytes, request))
+				return false;
+		}
+	*output = bytes;
+	return true;
+}
+
+// Only the actual still-detached preparation retains this malloc. Its char_data
+// slot and every cached prototype text belong to the paired whole-native ROOT
+// observer. Consumption clears character_ before any later service request,
+// so published only.npc is immediately owned by the genuine list census.
+bool quest_mobile_native_stage::retained_bytes_excluding_mobile_pool(size_t *output) const noexcept
+{
+	if (!output || !nevent_is_game_thread())
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!character_)
+	{
+		*output = 0;
+		errno = 0;
+		return true;
+	}
+	size_t pool = 0, request = 0;
+	if (publication_consumed_ || !dead_mob_pool || !IS_NPC(character_) ||
+	    !character_->only.npc || !quest_mobile_native_mobile_pool_storage_bytes(&pool) ||
+	    !birth_mobile_malloc_storage(character_->only.npc, sizeof(npc_only_data), &request))
+	{
+		errno = EIO;
+		return false;
+	}
+	// A list alias violates the stage ownership contract, never genuine absence.
+	for (P_char slow = character_list, fast = character_list; fast && fast->next;)
+	{
+		slow = slow->next;
+		fast = fast->next->next;
+		if (slow == fast)
+		{
+			errno = EIO;
+			return false;
+		}
+	}
+	for (P_char live = character_list; live; live = live->next)
+		if (live == character_)
+		{
+			errno = EIO;
+			return false;
+		}
+	*output = request;
+	errno = 0;
+	return true;
 }

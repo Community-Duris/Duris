@@ -4188,3 +4188,18 @@ batch. Independent source/test review, whole inverses, formatting, AST syntax,
 456pins/931 unchanged policies and protected Plan5 WIP pass. Native runtime,
 producer/global budget/recovery/R1-R8 remain OPEN; inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE. No major plan completion is claimed.
+
+
+## Bounded native capture witnesses and mobile storage implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_NATIVE_CAPTURE_WITNESS_STORAGE_2026-10-10.md)
+supplies full original native capture/forest and procedure/reset/studio witness
+companions, fixed SHA source accounting and authentic pool/catalog/NPC/stage
+retention. Complete RAW chain and installed source review passed with typed
+resource results, full platform guards and preserved original algorithms.
+Ten whole inverses/newline aliases/formatting/17 dependencies authenticate;
+458 pins/two studio additions/931 unchanged policies/2,853 mapped sites and
+protected Plan 5 WIP pass. Existing image/reference checksum dependency and
+actual constructor/caller/ROOT/global32MiB/native/R1-R8 qualification remain
+OPEN. Tests deferred to major-plan batch. Inactive/CLOSED, coverage incomplete,
+release BLOCKED, goal ACTIVE; this completes no major plan or runtime gate.

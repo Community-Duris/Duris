@@ -1,3 +1,5 @@
+#include <cerrno>
+#include <openssl/sha.h>
 /*
    ***************************************************************************
    *  File: studioproc.c                                      Part of Duris *
@@ -3536,4 +3538,187 @@ bool studioproc_native_mobile_birth_definition(int32_t vnum,
 	*definition = candidate;
 	*predecessor = actual_predecessor;
 	return true;
+}
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&      \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+namespace
+{
+
+// Exact authenticated OpenSSL3.0.13 source inventory shared with the original
+// native reference/artifact companions: AVX2 block workspace/alignment and
+// C small/normal leaves, with reached Init/Update/Final source carriers.
+constexpr size_t native_studio_sha_assembly =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t native_studio_sha_c_small = 16 * sizeof(unsigned) + 12 * sizeof(unsigned) +
+					     sizeof(unsigned) + sizeof(int) + sizeof(void *);
+constexpr size_t native_studio_sha_c_normal =
+	16 * sizeof(unsigned) + 11 * sizeof(unsigned) + 2 * sizeof(int) + 2 * sizeof(void *);
+constexpr size_t native_studio_sha_update =
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned) + sizeof(int);
+constexpr size_t native_studio_sha_final = 3 * sizeof(void *) + sizeof(size_t) +
+					   sizeof(unsigned long) + sizeof(unsigned) + sizeof(int);
+constexpr size_t native_studio_sha_leaf_frames =
+	std::max(native_studio_sha_assembly,
+		 std::max(native_studio_sha_c_small, native_studio_sha_c_normal)) +
+	std::max(sizeof(void *) + sizeof(int),
+		 std::max(native_studio_sha_update, native_studio_sha_final));
+
+class native_birth_studio_bounded_hash
+{
+	SHA256_CTX context{};
+	bool healthy = SHA256_Init(&context) == 1;
+
+    public:
+	bool bytes(const void *data, size_t length) noexcept
+	{
+		healthy = healthy && (!length || data) &&
+			  SHA256_Update(&context, data, length) == 1;
+		return healthy;
+	}
+	bool integer(uint64_t value) noexcept
+	{
+		std::array<uint8_t, 8> wire{};
+		for (size_t i = 0; i < wire.size(); ++i)
+			wire[i] = static_cast<uint8_t>(value >> (i * 8));
+		return bytes(wire.data(), wire.size());
+	}
+	bool text(const char *value) noexcept
+	{
+		if (!integer(value ? 1 : 0))
+			return false;
+		if (!value)
+			return true;
+		const size_t length = strnlen(value, MAX_STRING_LENGTH + 1);
+		return length <= MAX_STRING_LENGTH && integer(length) && bytes(value, length);
+	}
+	bool counter(int slot) noexcept
+	{
+		return slot >= 0 && slot < sp_ncounters && slot < SP_MAX_COUNTERS &&
+		       sp_cname[slot] && text(sp_cname[slot]);
+	}
+	bool finish(native_mobile_birth_procedure_digest *output) noexcept
+	{
+		native_mobile_birth_procedure_digest candidate{};
+		if (!healthy || SHA256_Final(candidate.data(), &context) != 1)
+			return false;
+		*output = candidate;
+		return true;
+	}
+};
+}
+
+#pragma GCC diagnostic pop
+#endif
+
+bool studioproc_native_mobile_birth_definition_bounded(
+	int32_t vnum, native_mobile_birth_procedure_digest *definition, mob_proc_type *predecessor,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&      \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	// Complete original selected definition/counter/predecessor semantics.
+	// Fixed SHA state consumes the exact original canonical byte stream.
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	constexpr size_t frames =
+		native_studio_sha_leaf_frames + sizeof(native_birth_studio_bounded_hash) +
+		2 * sizeof(native_mobile_birth_procedure_digest) + sizeof(std::array<uint8_t, 8>) +
+		20 * sizeof(int) + 16 * sizeof(void *) + 8 * sizeof(size_t) + 4 * sizeof(bool) +
+		sizeof(std::initializer_list<int>) + sizeof(mob_proc_type) + sizeof("NMP-STUDIO-1");
+	if (!reserve || frames > SIZE_MAX - outer_live || !reserve(outer_live + frames, context))
+		return false;
+	if (!definition || !predecessor || vnum <= 0 || !sp_on_game_thread())
+		return false;
+	const sp_rec *record = sp_find(SP_T_MOB, vnum);
+	if (!record || record->target != SP_T_MOB || record->vnum != vnum ||
+	    record->num_trigs < 0 || record->num_trigs > SP_MAX_TRIGS)
+		return false;
+	native_birth_studio_bounded_hash hash;
+	constexpr char domain[] = "NMP-STUDIO-1";
+	if (!hash.bytes(domain, sizeof(domain) - 1) || !hash.integer(record->target) ||
+	    !hash.integer(record->vnum) || !hash.integer(record->num_trigs) ||
+	    !hash.integer(record->events))
+		return false;
+	const sp_trig *trigger = record->trigs;
+	for (int i = 0; i < record->num_trigs; ++i)
+	{
+		if (!trigger || trigger->num_conds < 0 || trigger->num_conds > SP_MAX_CONDS ||
+		    trigger->num_actions < 0 || trigger->num_actions > SP_MAX_ACTIONS)
+			return false;
+		for (const int value : { trigger->event, trigger->chance, trigger->arg,
+					 trigger->arg2, trigger->cmdnum, trigger->trig_index,
+					 trigger->num_conds, trigger->num_actions })
+			if (!hash.integer(static_cast<uint64_t>(static_cast<int64_t>(value))))
+				return false;
+		if (!hash.text(trigger->keywords))
+			return false;
+		for (int c = 0; c < trigger->num_conds; ++c)
+		{
+			const auto &condition = trigger->conds[c];
+			for (const int value :
+			     { condition.kind, condition.neg, condition.op, condition.num,
+			       condition.num2, condition.who, condition.slot })
+				if (!hash.integer(
+					    static_cast<uint64_t>(static_cast<int64_t>(value))))
+					return false;
+			if (!hash.text(condition.text) ||
+			    (condition.kind == SP_C_COUNTER && !hash.counter(condition.slot)))
+				return false;
+		}
+		for (int a = 0; a < trigger->num_actions; ++a)
+		{
+			const auto &action = trigger->actions[a];
+			for (const int value :
+			     { action.op, action.num, action.num2, action.dnum, action.dsize,
+			       action.dbonus, action.who, action.scope, action.dtype, action.save,
+			       action.savehalf, action.cooldown, action.slot, action.count,
+			       action.dur, action.state, action.apply, action.amod,
+			       action.affword })
+				if (!hash.integer(
+					    static_cast<uint64_t>(static_cast<int64_t>(value))))
+					return false;
+			if (!hash.integer(action.affbit) || !hash.text(action.text) ||
+			    !hash.text(action.text2) || !hash.text(action.text3))
+				return false;
+			if ((action.op == SP_A_SET || action.op == SP_A_ADD ||
+			     action.op == SP_A_RSET || action.op == SP_A_RADD) &&
+			    !hash.counter(action.slot))
+				return false;
+		}
+		trigger = trigger->next;
+	}
+	if (trigger)
+		return false;
+	native_mobile_birth_procedure_digest candidate{};
+	if (!hash.finish(&candidate))
+		return false;
+	const mob_proc_type actual_predecessor = record->prev_mob;
+	*definition = candidate;
+	*predecessor = actual_predecessor;
+	return true;
+#else
+	(void)vnum;
+	(void)definition;
+	(void)predecessor;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	errno = ENOTSUP;
+	return false;
+#endif
 }

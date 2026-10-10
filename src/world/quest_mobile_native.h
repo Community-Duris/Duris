@@ -155,4 +155,20 @@ player_snapshot_codec_result quest_mobile_native_image_decode_bounded(
 	bool (*)(size_t, void *) noexcept, void *, size_t outer_live,
 	size_t *retained_image_heap_bytes = nullptr) noexcept;
 
+// Full original physical forest/cash capture with prospective admission.
+// Caller serializes the actual native graph and owns input/prior output/ROOT
+// storage in outer_live. Both outputs are strong on every refusal. The retained
+// heap excludes the inline image. Historical overload preserves unknown cash.
+player_snapshot_capture_result
+quest_mobile_native_capture_bounded(P_char, const quest_mobile_native_reference &,
+				    quest_mobile_lifetime_state, const critical_operation_id &,
+				    quest_mobile_native_image *, bool (*)(size_t, void *) noexcept,
+				    void *, size_t, size_t *retained_image_heap = nullptr) noexcept;
+player_snapshot_capture_result
+quest_mobile_native_capture_bounded(P_char, const quest_mobile_native_reference &,
+				    quest_mobile_lifetime_state, const critical_operation_id &,
+				    uint64_t cash_revision, quest_mobile_native_image *,
+				    bool (*)(size_t, void *) noexcept, void *, size_t,
+				    size_t *retained_image_heap = nullptr) noexcept;
+
 #endif

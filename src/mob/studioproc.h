@@ -1,3 +1,4 @@
+#include <cstddef>
 /*
    ***************************************************************************
    *  File: studioproc.h                                      Part of Duris *
@@ -189,5 +190,13 @@ int studioproc_room(int room, P_char actor, int cmd, char *arg);
 
 /* total triggers loaded; 0 == engine idle (cheap guard for the hooks) */
 extern int studioproc_count;
+
+// Complete original parsed witness with fixed SHA context and admitted source
+// carriers. No procedure execution or authority; both outputs strong.
+bool studioproc_native_mobile_birth_definition_bounded(int32_t,
+						       native_mobile_birth_procedure_digest *,
+						       mob_proc_type *,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
 
 #endif /* _STUDIOPROC_H_ */
