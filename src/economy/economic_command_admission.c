@@ -295,3 +295,36 @@ bool economic_flatfile_room_command_admission_supported_bounded(
 		command.type == critical_command_type::item_transfer) &&
 	       economic_room_command_admission_supported_bounded(command, reserve, context, outer);
 }
+
+bool economic_ordinary_native_command_admission_supported_bounded(
+	const critical_command &command, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept
+{
+	// Complete original NMB4 ordinary branch, without changing registration.
+	// The original selected flat allowlist still decides whether this route is
+	// available. A codec proof alone cannot grant submission or activation.
+	if (!reserve || command.type != critical_command_type::native_mobile_birth ||
+	    command.payload_version != NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return false;
+	struct admission_workspace
+	{
+		quest_mobile_native_image original;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+	};
+	// Charge the genuine simultaneous outputs before constructing them. Caller
+	// owns command/context/prior outputs. The full owning decoder admits its
+	// real transient allocations and retains all these outputs through return.
+	constexpr size_t frame = sizeof(admission_workspace) + sizeof(const critical_command *) +
+				 sizeof(reserve) + sizeof(context) + sizeof(outer_live) +
+				 sizeof(size_t) + sizeof(bool) + sizeof(economic_accounting_error);
+	if (frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	admission_workspace work;
+	return native_mobile_birth_cash_role_command_decode_bounded(
+		       command, &work.original, &work.recipes, &work.role, reserve, context,
+		       outer_live + frame) == economic_accounting_error::ok &&
+	       work.role.role == native_mobile_birth_cash_role::ordinary_wallet;
+}
