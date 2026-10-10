@@ -66872,7 +66872,15 @@
       "src/flatfile/flatfile_player_snapshot_file.h": "53c7611327d78fd883dcd7074d845eaaf6ce7c7559731cc130a722c4d8fd3f06",
       "src/flatfile/flatfile_identity_repository.h": "f60e5de55bb9f0c07fd96cc30577dddf56f63530fec834b2992bcdb533bbf3c9",
       "src/flatfile/flatfile_initialized_world_owner.c": "f8f19c02f55d8025e1af43a3c664dc0c42d786f24a66514e5d18cc5ae5c64fb0",
-      "src/flatfile/flatfile_initialized_world_owner.h": "932e77dc4411d6fe4c4880ff1bdd51c9d24085fdba60e673a6d980ee158ecbdb"
+      "src/flatfile/flatfile_initialized_world_owner.h": "932e77dc4411d6fe4c4880ff1bdd51c9d24085fdba60e673a6d980ee158ecbdb",
+      "src/guild/artifact.c": "b46ab30f74e4406801f6f16344c27fb0299c48fe1320ceea6c2aa759d5c344b8",
+      "src/guild/artifact_native_birth.h": "30e562edadce8a50d50ed1b5d2549961a579018263f294ccebe67f02915d938b",
+      "src/flatfile/flatfile_artifact_repository.c": "da14a9421323329d53c953218bd1f35f7ff3fde54112806125981b1fa8a0a345",
+      "src/flatfile/flatfile_artifact_repository.h": "9e74837932ca16105eb30498e46b426a8a44f8623b5ac86232b6c22c318d79a2",
+      "src/redis/redis_cache_store.c": "f63f882e473750d93be4dc36eb804a51f65a8cd52b4ea3bbadd458266bc8e9b5",
+      "src/redis/redis_cache_store.h": "b431c65c0e9a4ae6c0b3e848e3e856d05df3efe6ac242e4dcce8bd80b24a9a0c",
+      "src/redis/redis_report_cache.c": "489ee4e0ef74bc965ad29e8c314d3e5677aa4eaf9b616c3887ac9355b20f2162",
+      "src/redis/redis_report_cache.h": "3fbf991880742815b69bdcb15e69501128ee31c410893c01ec757581192934fc"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

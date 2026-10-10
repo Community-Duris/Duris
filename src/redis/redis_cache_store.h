@@ -54,4 +54,13 @@ void redis_cache_store_cancel(void);
 struct redis_cache_store_health redis_cache_store_health_copy(void);
 void redis_cache_store_reset_for_tests(void);
 
+// Same-thread borrowed mutex permits this actual CURRENT observer during the
+// ROOT reserve callback. Register only the report-cache enclosing observer.
+bool redis_cache_store_retained_bytes(size_t *) noexcept;
+// Current cache is counted by ROOT once, outside outer. Before any job/key/deque
+// request callback admits full simultaneous new working storage. False queue
+// acceptance remains ordinary success; errno is resource/profile failure.
+int redis_cache_store_delete_bounded(const char *, bool *, bool (*)(size_t, void *) noexcept,
+				     void *, size_t) noexcept;
+
 #endif
