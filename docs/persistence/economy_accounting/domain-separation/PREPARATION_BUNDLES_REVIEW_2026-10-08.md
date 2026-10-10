@@ -2934,6 +2934,20 @@ allocator/native/full aggregate qualification NOT PERFORMED. Private RAW/review/
 token/preprocessor/policy/source-pin and correction-history claims REPORTED ONLY.
 Genuine R/U capabilities EXIST, private/unselected; no missing custody/count-leaf claim.
 
+Late publication successors, separate from fixed OC scope: player-list decoder
+6d47edf601a2db3faebf40406927e4cc382fe04c / parent U1aad, quest continuation
+41a617657457c1e9535428fbb7033af16a037b5d / parent6d47 and native quest cost codec
+285fda20cf9d1f83dd87c8ea03fd4f62efd2faed / parent41a6 are published. Full handoffs,
+new public declarations and five whole source forward/inverses authenticate;
+all17 whole OC/OR/ROOT/coordinator/journal controls are unchanged and original
+source bytes in those five providers survive by insertion only. Full505 player C/
+706 continuation header/494 cost C new semantic review NOT PERFORMED. Private
+RAW/correction/token/preprocessor/profile/policy/source-pin claims REPORTED ONLY;
+no complete decoder/crypto/ABI/allocator/request math/native/full caller qualification
+follows. Genuine bounded codec leaves EXIST, queued at OC handoff only; full
+item/craft/coin closure, host/mixed startup/sibling/selection and legal native
+qualification remain open. No active OC expansion/reassignment/repin or old seal rerun.
+
 One bounded active delivery per chat now selected, fixed U1aad/R8aaf and R8aaf/Ffc405:
 - Architecture: PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_AUTHORITY_BOUNDARY_2026-10-10.txt
 - Quest: PUBLISHED_ORDINARY_NATIVE_BIRTH_CUSTODY_REFERENCE_ACCEPTANCE_DELTA_2026-10-10.txt
@@ -3008,8 +3022,8 @@ compiler/result/recovery, diagnostics/service/scheduler/placement/activity and f
 caller/native/crypto/ABI/allocator qualification remain separate, no second task.
 Primary retains maintained implementation/math/admission/authority/contracts/
 qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release. Root publishes
-only three owned coordination docs; exact inserted-section inverse restores primary
-U1aad. No maintained-source delta/private artifact import/commit/compiler/preprocessor/
+only three owned coordination docs. Original insertion restores primary U1aad;
+merged publication insertion restores late primary285fda20cf9d1f83dd87c8ea03fd4f62efd2faed. No maintained-source delta/private artifact import/commit/compiler/preprocessor/
 native/product/DB/deploy/activation/production mutation or other-chat messages.
 Preserve CLOSED OR/RR/BR/SS/SG/PC/PD/SC/RK/RF/GG/CG/CK/SAME-lock original pins/receipts/
 history and root OR cash wording/publication-base clarification, SS two-sentence/five
