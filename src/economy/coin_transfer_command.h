@@ -79,4 +79,15 @@ bool coin_transfer_command_destination_after_source(const coin_transfer_payload 
 						    const coin_transfer_result &result,
 						    critical_command *destination);
 
+// Complete original two-endpoint coin value predicates; genuine full item
+// decoder and real wallet/pile delta, topology, snapshot and conservation laws.
+// Input/prior identity/caller/all sibling owners remain authentic outer state.
+bool coin_transfer_endpoint_valid_bounded(const coin_transfer_endpoint &, bool source,
+					  critical_entity_key *, const char **error,
+					  bool (*)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept;
+bool coin_transfer_payload_valid_bounded(const coin_transfer_payload &, const char **error,
+					 bool (*)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+
 #endif
