@@ -615,7 +615,13 @@ Genuine bounded build/decode/current-heap leaves reduce source dependencies; no
 missing-current-build-leaf claim or full caller/receiver/compiler/native qualification
 follows. Queue at fixed CV handoff only; no selected D/N expansion/reassignment/repin.
 Original65fc insertion history and normal merged primary6d9 remain preserved; whole
-current inserted-section inverse restores actual primary6d9, with no source delta.
+current inserted-section inverse restores actual primary in publication-verified.json.
+Late binding digest3eb743ae253fff42096baa1b2f309d6191b2945f / parent6d9 EXISTS,
+private/unselected. Full handoff/new10 header lines/two whole insertion-only inverses/
+twelve whole adjacent providers authenticate in late-binding-authentication.json.
+Full386 new C semantic review NOT PERFORMED; full crypto/math/SQL/ABI/allocator/native/
+aggregate qualification NOT PERFORMED; private RAW/review/profile/preprocessor/policy/
+pins REPORTED ONLY. Queue at fixed CV handoff only; no expansion/reassignment/repin.
 
 Evolving queue:
 1. Selected CV exact two-endpoint map/four blueprints only; reassess genuine successors
