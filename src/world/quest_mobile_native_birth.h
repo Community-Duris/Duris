@@ -19,6 +19,15 @@ bool quest_mobile_native_birth_restore_shared_shop_bounded(const critical_native
 							   bool (*)(size_t, void *) noexcept,
 							   void *, size_t outer_live) noexcept;
 
+// Complete passive ordinary NMB4 registration from the genuine configured-root
+// startup owner. Caller retains actual init-lock/lender/input prefix; its real
+// observer owns existing registry storage once. No warm source pin, native
+// reconstruction, UID/RNG, world publication, activation or ACK is issued here.
+bool quest_mobile_native_birth_restore_ordinary_bounded(const critical_native_recovery_envelope &,
+							const std::string &configured_recovery_root,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t outer_live) noexcept;
+
 void quest_mobile_native_birth_replay_ready(bool) noexcept;
 void quest_mobile_native_birth_completions(const critical_completion *, size_t) noexcept;
 void quest_mobile_native_birth_pulse(bool prepare_original_resets) noexcept;
@@ -138,6 +147,14 @@ class quest_mobile_native_birth_ordinary_execution_lease final
 
 class quest_mobile_native_birth_owner final
 {
+	friend bool quest_mobile_native_birth_restore_ordinary_bounded(
+		const critical_native_recovery_envelope &, const std::string &,
+		bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+	static bool restore_ordinary_flat_bounded(const critical_native_recovery_envelope &,
+						  const std::string &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept;
+
 	friend class item_native_quest_publication_owner;
 	friend class quest_mobile_published_world_owner;
 	// Exact boot owner only, after its full original-session SQL/custody/world

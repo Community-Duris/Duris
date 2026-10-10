@@ -16696,3 +16696,18 @@ RAW/installed reviews authenticate57+78+83+36members/eleven source inverses,
 sites/protected Plan5 WIP. Full mixed host/foreign CURRENT/native32MiB/recovery/
 R1-R8 and release stay OPEN. Tests deferred to major-plan batch; accounting
 inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Ordinary native passive registration implemented - 2026-10-10
+
+[Source checkpoint](ORDINARY_NATIVE_PASSIVE_REGISTRATION_2026-10-10.md) adds the
+complete original ordinary NMB4 recovery registrar/configured-root callback,
+original duplicate/source/UID/stock checks, prospective copies/capacities and
+real private-to-registry ownership with refusal rollback. Four omitted genuine
+empty-vector cleanup paths are corrected without invented heap storage. Original
+selected/default/inactive paths survive. Independent RAW/installed source reviews
+authenticate 76+74+9 members/full inverses/36 current dependencies/22 fresh GCC13
+headers/463 pins/two updates/931 unchanged policies/seven matrix relocations and
+protected Plan5 WIP. Full startup/accepting publication/extraction/native32MiB/
+gameplay/persistence/recovery/R1-R8 gates remain OPEN. Tests deferred to major-plan
+batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
