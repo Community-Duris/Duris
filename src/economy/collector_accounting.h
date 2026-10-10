@@ -92,4 +92,36 @@ size_t collector_purchase_accounting_replay_observer_frame_bytes() noexcept;
 bool collector_purchase_accounting_replay_heap_bytes(const economic_frozen_intent &,
 						     size_t *) noexcept;
 
+// Complete original purchase proof and canonical-intent reconstruction using
+// the genuine fixed binding proof. Caller owns command/prior outputs/siblings.
+// Strong output on refusal; prior original/bounded methods stay exact. These
+// additive methods remain unselected; full source profiles are a separate join.
+economic_accounting_error collector_purchase_accounting_intent_fixed_bounded(
+	const critical_command &, const critical_operation_id &, const economic_account_key &,
+	const economic_account_key &, const collector::record &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+economic_accounting_error collector_purchase_accounting_decode_fixed_bounded(
+	const critical_command &, economic_frozen_intent *, collector_command_payload *,
+	collector::record *, economic_account_key *, economic_account_key *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+
+// Pure complete route SOURCE/descendant-entry and own actual initial budget
+// profiles. Unsupported/null/overflow leaves output unchanged. Inputs/prior
+// outputs remain parent-owned; native/emitted/external qualification is separate.
+bool collector_purchase_accounting_intent_fixed_source_frame_bytes(size_t *) noexcept;
+bool collector_purchase_accounting_intent_fixed_initial_inline_bytes(size_t *) noexcept;
+bool collector_purchase_accounting_decode_fixed_source_frame_bytes(size_t *) noexcept;
+bool collector_purchase_accounting_decode_fixed_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t collector_purchase_accounting_fixed_source_query_frame_bytes() noexcept
+{
+	// The decode getter calls its genuine intent getter once: two payload query
+	// chains, then decode/proof/freeze chains; actual public getter locals,
+	// policy results, checked-add formals and each initial getter(P+2B).
+	return 2 * collector_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes() + 10 * sizeof(void *) +
+	       14 * sizeof(size_t) + 16 * sizeof(bool);
+}
+
 #endif
