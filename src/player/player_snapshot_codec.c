@@ -1796,10 +1796,16 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			       [&](auto &row)
 			       {
 				       uint16_t field = 0;
-				       if (!in.number(field) ||
-					   field > static_cast<uint16_t>(
-							   player_status_field::last_ip) ||
-					   !in.number(row.signed_value) ||
+				       if (!in.number(field))
+					       return false;
+				       if (field >
+					   static_cast<uint16_t>(player_status_field::last_ip))
+				       {
+					       in.result =
+						       player_snapshot_codec_result::invalid_value;
+					       return false;
+				       }
+				       if (!in.number(row.signed_value) ||
 					   !in.number(row.unsigned_value) ||
 					   !in.boolean(row.is_unsigned))
 					       return false;
@@ -1810,10 +1816,16 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			       [&](auto &row)
 			       {
 				       uint8_t field = 0;
-				       if (!in.number(field) ||
-					   field > static_cast<uint8_t>(
-							   player_status_string_field::poof_out) ||
-					   !in.string(row.value))
+				       if (!in.number(field))
+					       return false;
+				       if (field > static_cast<uint8_t>(
+							   player_status_string_field::poof_out))
+				       {
+					       in.result =
+						       player_snapshot_codec_result::invalid_value;
+					       return false;
+				       }
+				       if (!in.string(row.value))
 					       return false;
 				       row.field = static_cast<player_status_string_field>(field);
 				       return true;
@@ -3495,10 +3507,16 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 			       [&](auto &row)
 			       {
 				       uint16_t field = 0;
-				       if (!in.number(field) ||
-					   field > static_cast<uint16_t>(
-							   player_status_field::last_ip) ||
-					   !in.number(row.signed_value) ||
+				       if (!in.number(field))
+					       return false;
+				       if (field >
+					   static_cast<uint16_t>(player_status_field::last_ip))
+				       {
+					       in.result =
+						       player_snapshot_codec_result::invalid_value;
+					       return false;
+				       }
+				       if (!in.number(row.signed_value) ||
 					   !in.number(row.unsigned_value) ||
 					   !in.boolean(row.is_unsigned))
 					       return false;
@@ -3509,10 +3527,16 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 			       [&](auto &row)
 			       {
 				       uint8_t field = 0;
-				       if (!in.number(field) ||
-					   field > static_cast<uint8_t>(
-							   player_status_string_field::poof_out) ||
-					   !in.string(row.value))
+				       if (!in.number(field))
+					       return false;
+				       if (field > static_cast<uint8_t>(
+							   player_status_string_field::poof_out))
+				       {
+					       in.result =
+						       player_snapshot_codec_result::invalid_value;
+					       return false;
+				       }
+				       if (!in.string(row.value))
 					       return false;
 				       row.field = static_cast<player_status_string_field>(field);
 				       return true;

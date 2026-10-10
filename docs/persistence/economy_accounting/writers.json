@@ -66545,7 +66545,7 @@
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
       "src/player/player_save_pipeline.c": "f98d015bb85837d3dd62afc5c0d9ada428ab429aea8f11078e9a4b119f98b638",
       "src/player/player_save_pipeline.h": "815af3816dcec077029293a15214884eb929c3f3a6555bc6adedc5f930634dd2",
-      "src/player/player_snapshot_codec.c": "d52379ce1d4fa21224604676b59bfaba6847bcdbf73442a99df0458a422f2f03",
+      "src/player/player_snapshot_codec.c": "4353b4f432d8955d5030a4e35ba432eb979dc02bf42157de0b7e8c94c4a706e8",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
       "src/specs/specs.library.c": "5bc33e9cabe77028942a93129567a2f4041900d2f952d5bae35790815341009e",
@@ -66884,7 +66884,8 @@
       "src/account/character_identity.c": "a2bde31e9458217bbbefc2e8f0148092d7b38a9c4bf63f40be7037d34ad17549",
       "src/account/character_identity.h": "a79f84fe9984b730dfd22180dd3cbb91d316f0f93a9cf6eef5b56234673dbe59",
       "src/world/character_maintenance.c": "b298ddcecf918824a6056ac7a6c16df3027c27f5feeab12f522e1735dd9ac746",
-      "src/world/character_maintenance.h": "038c7a2e9537586e25db99136e9b1e9f3bccdc27eea16a14dae193addd91891b"
+      "src/world/character_maintenance.h": "038c7a2e9537586e25db99136e9b1e9f3bccdc27eea16a14dae193addd91891b",
+      "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
