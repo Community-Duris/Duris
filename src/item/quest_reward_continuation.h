@@ -719,4 +719,710 @@ catch (const std::bad_alloc &)
 	return false;
 }
 
+// Unselected full continuation parser companions. The authentic outer owns
+// input, destination (including both prior string heaps), and caller storage.
+#include <new>
+#include <utility>
+namespace duris_quest_continuation_bounded_detail
+{
+using reserve_fn = bool (*)(size_t, void *) noexcept;
+inline bool add(size_t &value, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - value)
+		return false;
+	value += extra;
+	return true;
+}
+inline bool string_heap(const std::string &value, size_t &bytes) noexcept
+{
+	return value.capacity() <= 15 ||
+	       (value.capacity() < SIZE_MAX && add(bytes, value.capacity() + 1));
+}
+// Source-declared GCC13 C++20 allocator/traits/new_allocator allocate and
+// deallocate parameters, returns; max_size references/results and real locals.
+constexpr size_t allocator_frames = 3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) +
+				    sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+				    4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+				    sizeof(size_t) + 4 * (sizeof(void *) + sizeof(size_t)) +
+				    2 * sizeof(size_t);
+// assign(s,n), _M_replace, _M_mutate, _M_create; old/new size, p/how_much,
+// capacity/r, length checks; _S_copy/traits::copy, memcpy and char assign;
+// dispose/destroy, data/capacity/set-length and final NUL.
+// Fitting _M_replace calls _M_disjunct(this,s). Both actual less pointer
+// temporaries can coexist through the full || expression; their operator()
+// has this/x/y/result and is_constant_evaluated result. Data/size queries.
+constexpr size_t disjunct_frames = 2 * sizeof(void *) + sizeof(bool) +
+				   2 * sizeof(std::less<const char *>) +
+				   2 * (3 * sizeof(void *) + 2 * sizeof(bool)) +
+				   2 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(size_t);
+constexpr size_t string_assign_frames =
+	disjunct_frames + 3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	5 * sizeof(size_t) + 6 * (sizeof(void *) + sizeof(size_t)) + sizeof(bool) +
+	3 * sizeof(void *) + 5 * sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	allocator_frames + 2 * (3 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) +
+	sizeof(size_t) + 2 * sizeof(void *) + sizeof(char) + 6 * sizeof(void *) +
+	3 * sizeof(size_t) + sizeof(bool) + sizeof(char);
+// Actual two default string constructors/allocator hiders/local-data/length;
+// two move assignments: this/source/reference return, equal_allocs/data/capacity,
+// allocator-on-move references/tags, data/capacity/local/clear queries, short
+// char copy; final two destructors/dispose/destroy and allocator deallocation.
+constexpr size_t string_lifetime_frames =
+	2 * (6 * sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(std::allocator<char>)) +
+	sizeof(void *) +
+	2 * (3 * sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	     6 * sizeof(void *) + 2 * sizeof(std::allocator<char>) + 2 * sizeof(bool) +
+	     12 * (sizeof(void *) + sizeof(size_t)) + string_assign_frames) +
+	2 * (5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + allocator_frames);
+// find(char,pos): this,char,pos,ret,size,data,n,p; traits::find input,n,char,
+// pointer result and builtin memchr input/char/n/result. Definition iteration
+// begin/end and dereference; fixed array size/begin/end/subscript references.
+constexpr size_t query_frames = sizeof(void *) + sizeof(char) + 4 * sizeof(size_t) +
+				2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+				sizeof(char) + 2 * sizeof(void *) + sizeof(int) + sizeof(size_t) +
+				8 * (sizeof(void *) + sizeof(size_t)) + 4 * sizeof(void *);
+// Full original parser source variables, including all mutually exclusive
+// loop/extension/XP scopes (sum, not an inferred compiler stack bound).
+constexpr size_t parser_frames =
+	// Parameters, closure objects for read32/read64, version, offset,
+	// reward_record_bytes/reward_bytes/extension_header_bytes.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) + sizeof(uint32_t) +
+	4 * sizeof(size_t) +
+	// Root index/prior, reward index + copied goal, credited index/prior,
+	// pid/name/definition lengths and includes_player.
+	5 * sizeof(size_t) + sizeof(quest_reward_goal) + 3 * sizeof(uint32_t) + sizeof(bool) +
+	// XP index, award reference, recipient/prior; reward/recipient/index,
+	// recipient_found/award_found; definition iteration begin/end/character.
+	7 * sizeof(size_t) + sizeof(void *) + 2 * sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(unsigned char) +
+	// read32 and read64 call this/offset/local value/byte/returned scalar.
+	2 * (sizeof(void *) + 2 * sizeof(size_t)) + 2 * sizeof(uint32_t) + 2 * sizeof(uint64_t);
+// v6 tail's copy_n and copy/copy_move_a/a1/a2/copy_m, actual pointer iterators,
+// counts/returned iterators, niter/miter/wrap and memmove carriers. All three
+// fixed arrays use the same nonallocating chain, one prospectively charged chain.
+constexpr size_t fixed_copy_frames = 3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+				     3 * sizeof(void *) + sizeof(size_t) +
+				     5 * (4 * sizeof(void *)) + 5 * (2 * sizeof(void *)) +
+				     sizeof(ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) +
+				     2 * sizeof(bool) + 2 * sizeof(std::random_access_iterator_tag);
+// array::operator==, begin/end, equal/aux/aux1/equal<true>, __niter_base
+// argument/results, actual __simple/__len and __memcmp/builtin memcmp.
+constexpr size_t fixed_equal_frames = 2 * sizeof(void *) + sizeof(bool) + 3 * (2 * sizeof(void *)) +
+				      4 * (3 * sizeof(void *) + sizeof(bool)) +
+				      3 * (2 * sizeof(void *)) + sizeof(size_t) +
+				      2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(int));
+// Dynamic span constructor first/count, extent constructor extent,
+// to_address(ptr) input/returned pointer; subspan this/offset/count/returned
+// span, size/extent/data this/return carriers.
+constexpr size_t span_frames = 2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) +
+			       sizeof(void *) + 2 * sizeof(size_t) +
+			       sizeof(std::span<const uint8_t>) +
+			       3 * (sizeof(void *) + sizeof(size_t));
+// Additional source-event reader integer/take/subspan/block/id scopes beyond
+// the genuine provider's object bytes, plus original typed48 result decoder,
+// returned aggregate and get_u16/get_u64 scalar loop/return scopes; zero-id
+// zero-id's direct fixed range loop and fixed-array comparison queries.
+constexpr size_t fee_scalar_frames =
+	sizeof(size_t) + sizeof(item_transfer_result) + 2 * sizeof(std::span<const uint8_t>) +
+	8 * sizeof(void *) + 6 * sizeof(size_t) + 2 * sizeof(uint64_t) + sizeof(bool) +
+	sizeof(item_transfer_result) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	2 * sizeof(uint64_t) + sizeof(unsigned int) + sizeof(void *) + sizeof(uint16_t) +
+	3 * sizeof(void *) + sizeof(bool) + sizeof(uint8_t) + fixed_copy_frames +
+	fixed_equal_frames + span_frames;
+struct budget
+{
+	const quest_reward_continuation &value;
+	reserve_fn reserve;
+	void *context;
+	size_t outer;
+	size_t frames;
+	bool peak(size_t extra) const noexcept
+	{
+		size_t bytes = outer;
+		// This method, add/string_heap query/return carriers, observer locals,
+		// and the actual reserve call's argument/result carriers.
+		constexpr size_t observation =
+			9 * sizeof(void *) + 5 * sizeof(size_t) + 4 * sizeof(bool);
+		return add(bytes, sizeof(*this)) && add(bytes, sizeof(value)) &&
+		       add(bytes, frames) && string_heap(value.character_name, bytes) &&
+		       string_heap(value.definition_id, bytes) && add(bytes, observation) &&
+		       add(bytes, extra) && reserve && reserve(bytes, context);
+	}
+	bool assign(std::string &destination, const char *data, size_t length) const
+	{
+		constexpr size_t own = 3 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+		size_t request = string_assign_frames + own;
+		if (length > destination.capacity())
+		{
+			size_t next = length;
+			const size_t capacity = destination.capacity();
+			// Exact supported _M_create growth, preserving old heap until
+			// the successful allocation/copy completes.
+			if (capacity > SIZE_MAX / 2)
+				return false;
+			if (next < 2 * capacity)
+				next = 2 * capacity;
+			if (next > destination.max_size())
+				next = destination.max_size();
+			if (next == SIZE_MAX || !add(request, next + 1))
+				return false;
+		}
+		if (!peak(request))
+			return false;
+		destination.assign(data, length);
+		return true;
+	}
+};
+inline bool initial(reserve_fn reserve, void *context, size_t outer, size_t frames) noexcept
+{
+	constexpr size_t own = 3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+	return add(outer, sizeof(quest_reward_continuation)) && add(outer, sizeof(budget)) &&
+	       add(outer, frames) && add(outer, own) && reserve && reserve(outer, context);
+}
+} // namespace duris_quest_continuation_bounded_detail
+
+inline bool quest_fee_reward_continuation_decode_bounded(const uint8_t *, size_t,
+							 quest_reward_continuation *,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t) noexcept;
+
+inline bool quest_reward_continuation_decode_bounded(const uint8_t *data, size_t size,
+						     quest_reward_continuation *decoded,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)data;
+	(void)size;
+	(void)decoded;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return false;
+#else
+	try
+	{
+		if (data && size >= 4 && data[0] == 6 && !data[1] && !data[2] && !data[3])
+		{
+			// Only the actual dispatch parameters survive this nested call;
+			// the ordinary candidate and its closures have not been constructed.
+			size_t nested = outer;
+			constexpr size_t dispatch =
+				5 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+			if (!duris_quest_continuation_bounded_detail::add(nested, dispatch) ||
+			    !reserve || !reserve(nested, context))
+				return false;
+			return quest_fee_reward_continuation_decode_bounded(
+				data, size, decoded, reserve, context, nested);
+		}
+		if (!data || !decoded || size < 40 || size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+			return false;
+
+		using namespace duris_quest_continuation_bounded_detail;
+		size_t frames = parser_frames + query_frames + string_lifetime_frames;
+		if (!initial(reserve, context, outer, frames))
+			return false;
+		auto read32 = [&](size_t offset)
+		{
+			uint32_t value = 0;
+			for (size_t byte = 0; byte < 4; ++byte)
+				value |= static_cast<uint32_t>(data[offset + byte]) << (byte * 8);
+			return value;
+		};
+		auto read64 = [&](size_t offset)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < 8; ++byte)
+				value |= static_cast<uint64_t>(data[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const uint32_t version = read32(0);
+		if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5)
+			return false;
+		quest_reward_continuation value;
+		const budget owner{ value, reserve, context, outer, frames };
+		value.version = version;
+		value.player_pid = read32(4);
+		value.quester_id = read32(8);
+		value.completion_index = read32(12);
+		value.mobile_vnum = read32(16);
+		value.room_vnum = read32(20);
+		value.completed_at = read64(24);
+		value.root_count = read32(32);
+		if (!value.player_pid || value.quester_id > INT32_MAX ||
+		    value.completion_index > INT32_MAX || !value.mobile_vnum ||
+		    value.mobile_vnum > INT32_MAX || !value.room_vnum ||
+		    value.room_vnum > INT32_MAX || !value.completed_at ||
+		    value.completed_at > INT64_MAX || !value.root_count ||
+		    value.root_count > value.roots.size() ||
+		    size < 40 + static_cast<size_t>(value.root_count) * sizeof(uint64_t))
+			return false;
+		size_t offset = 36;
+		for (size_t index = 0; index < value.root_count; ++index, offset += 8)
+		{
+			value.roots[index] = read64(offset);
+			if (!value.roots[index])
+				return false;
+			for (size_t prior = 0; prior < index; ++prior)
+				if (value.roots[prior] == value.roots[index])
+					return false;
+		}
+		value.reward_count = read32(offset);
+		offset += 4;
+		if (value.reward_count > value.rewards.size())
+			return false;
+		const size_t reward_record_bytes = version >= 4 ? 16 : (version >= 3 ? 12 : 8);
+		const size_t reward_bytes =
+			static_cast<size_t>(value.reward_count) * reward_record_bytes;
+		if (size - offset < reward_bytes || (version == 1 && size - offset != reward_bytes))
+			return false;
+		for (size_t index = 0; index < value.reward_count;
+		     ++index, offset += reward_record_bytes)
+		{
+			value.rewards[index] = { read32(offset), read32(offset + 4),
+						 version >= 3 ? read32(offset + 8) : 0,
+						 version >= 4 ? read32(offset + 12) : 0 };
+			const auto goal = value.rewards[index];
+			if ((goal.type != 1 && goal.type != 3 && goal.type != 4 &&
+			     goal.type != 5) ||
+			    goal.number > INT32_MAX || goal.frozen_amount > INT32_MAX ||
+			    (goal.type != 4 && !goal.number) ||
+			    (goal.flags & ~QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION) ||
+			    (goal.type != 4 && goal.flags) || (version < 3 && goal.flags) ||
+			    (version >= 4 ? (goal.type == 5 ? (!goal.frozen_amount ||
+							       goal.frozen_amount > goal.number) :
+							      goal.frozen_amount != 0) :
+					    goal.frozen_amount != 0))
+				return false;
+		}
+		if (version >= 2)
+		{
+			constexpr size_t extension_header_bytes = 6 * sizeof(uint32_t);
+			if (size - offset < extension_header_bytes)
+				return false;
+			value.zone_number = read32(offset);
+			value.player_level = static_cast<int32_t>(read32(offset + 4));
+			value.player_racewar = static_cast<int32_t>(read32(offset + 8));
+			value.party_size = read32(offset + 12);
+			value.strongest_party_level = static_cast<int32_t>(read32(offset + 16));
+			value.credited_count = read32(offset + 20);
+			offset += extension_header_bytes;
+			if (!value.zone_number || value.zone_number > INT32_MAX ||
+			    value.player_level < 0 || value.strongest_party_level < 0 ||
+			    !value.credited_count ||
+			    value.credited_count > QUEST_REWARD_MAX_CREDITED_PIDS ||
+			    value.party_size != value.credited_count ||
+			    size - offset <
+				    static_cast<size_t>(value.credited_count) * sizeof(uint32_t) +
+					    2 * sizeof(uint32_t))
+				return false;
+			bool includes_player = false;
+			for (size_t index = 0; index < value.credited_count;
+			     ++index, offset += sizeof(uint32_t))
+			{
+				const uint32_t pid = read32(offset);
+				if (!pid)
+					return false;
+				for (size_t prior = 0; prior < index; ++prior)
+					if (value.credited_pids[prior] == pid)
+						return false;
+				value.credited_pids[index] = pid;
+				includes_player = includes_player || pid == value.player_pid;
+			}
+			if (!includes_player)
+				return false;
+			const uint32_t name_length = read32(offset);
+			offset += sizeof(uint32_t);
+			if (!name_length || name_length > QUEST_REWARD_MAX_CHARACTER_NAME_BYTES ||
+			    size - offset < static_cast<size_t>(name_length) + sizeof(uint32_t))
+				return false;
+			if (!owner.assign(value.character_name,
+					  reinterpret_cast<const char *>(data + offset),
+					  name_length))
+				return false;
+			if (value.character_name.find('\0') != std::string::npos)
+				return false;
+			offset += name_length;
+			const uint32_t definition_length = read32(offset);
+			offset += sizeof(uint32_t);
+			if (!definition_length ||
+			    definition_length > QUEST_REWARD_MAX_DEFINITION_ID_BYTES ||
+			    size < offset + static_cast<size_t>(definition_length))
+				return false;
+			if (!owner.assign(value.definition_id,
+					  reinterpret_cast<const char *>(data + offset),
+					  definition_length))
+				return false;
+			for (unsigned char character : value.definition_id)
+				if (character < 0x21 || character > 0x7e)
+					return false;
+			offset += definition_length;
+			if (version >= 5)
+			{
+				if (value.credited_pids[0] != value.player_pid)
+					return false;
+				if (size - offset < sizeof(uint32_t))
+					return false;
+				value.xp_award_count = read32(offset);
+				offset += sizeof(uint32_t);
+				if (value.xp_award_count > value.xp_awards.size() ||
+				    size != offset + static_cast<size_t>(value.xp_award_count) * 3 *
+							     sizeof(uint32_t))
+					return false;
+				for (size_t index = 0; index < value.xp_award_count;
+				     ++index, offset += 3 * sizeof(uint32_t))
+				{
+					auto &award = value.xp_awards[index];
+					award = { read32(offset), read32(offset + 4),
+						  read32(offset + 8) };
+					if (!award.recipient_pid ||
+					    award.reward_index >= value.reward_count ||
+					    !award.amount ||
+					    award.amount >
+						    value.rewards[award.reward_index].number ||
+					    value.rewards[award.reward_index].type != 5U)
+						return false;
+					if (award.recipient_pid == value.player_pid &&
+					    award.amount !=
+						    value.rewards[award.reward_index].frozen_amount)
+						return false;
+					bool recipient_found = false;
+					for (size_t recipient = 0; recipient < value.credited_count;
+					     ++recipient)
+						recipient_found = recipient_found ||
+								  value.credited_pids[recipient] ==
+									  award.recipient_pid;
+					if (!recipient_found)
+						return false;
+					for (size_t prior = 0; prior < index; ++prior)
+						if (value.xp_awards[prior].recipient_pid ==
+							    award.recipient_pid &&
+						    value.xp_awards[prior].reward_index ==
+							    award.reward_index)
+							return false;
+				}
+				for (size_t reward = 0; reward < value.reward_count; ++reward)
+					if (value.rewards[reward].type == 5U)
+						for (size_t recipient = 0;
+						     recipient < value.credited_count; ++recipient)
+						{
+							bool award_found = false;
+							for (size_t index = 0;
+							     index < value.xp_award_count; ++index)
+								award_found =
+									award_found ||
+									(value.xp_awards[index]
+											 .recipient_pid ==
+										 value.credited_pids
+											 [recipient] &&
+									 value.xp_awards[index]
+											 .reward_index ==
+										 reward);
+							if (!award_found)
+								return false;
+						}
+			}
+			if (version < 5 && size != offset)
+				return false;
+		}
+		else if (size != offset)
+			return false;
+		// This preflight is the last fallible action. The real default-allocator
+		// move has no allocation; prior destination heaps may move into value and
+		// remain covered by caller outer through its destruction.
+		if (!owner.peak(0))
+			return false;
+		*decoded = std::move(value);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
+inline bool quest_fee_reward_continuation_decode_bounded(const uint8_t *data, size_t size,
+							 quest_reward_continuation *decoded,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)data;
+	(void)size;
+	(void)decoded;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return false;
+#else
+	try
+	{
+		if (!data || !decoded || size < 40 || size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+			return false;
+
+		using namespace duris_quest_continuation_bounded_detail;
+		size_t frames = parser_frames + query_frames + string_lifetime_frames;
+		if (!add(frames, fee_scalar_frames) ||
+		    !add(frames, economic_source_event_decode_object_bytes()))
+			return false;
+		if (!initial(reserve, context, outer, frames))
+			return false;
+		auto read32 = [&](size_t offset)
+		{
+			uint32_t value = 0;
+			for (size_t byte = 0; byte < 4; ++byte)
+				value |= static_cast<uint32_t>(data[offset + byte]) << (byte * 8);
+			return value;
+		};
+		auto read64 = [&](size_t offset)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < 8; ++byte)
+				value |= static_cast<uint64_t>(data[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const uint32_t version = read32(0);
+		if (version != 6)
+			return false;
+		quest_reward_continuation value;
+		const budget owner{ value, reserve, context, outer, frames };
+		value.version = version;
+		value.player_pid = read32(4);
+		value.quester_id = read32(8);
+		value.completion_index = read32(12);
+		value.mobile_vnum = read32(16);
+		value.room_vnum = read32(20);
+		value.completed_at = read64(24);
+		value.root_count = read32(32);
+		if (!value.player_pid || value.quester_id > INT32_MAX ||
+		    value.completion_index > INT32_MAX || !value.mobile_vnum ||
+		    value.mobile_vnum > INT32_MAX || !value.room_vnum ||
+		    value.room_vnum > INT32_MAX || !value.completed_at ||
+		    value.completed_at > INT64_MAX || value.root_count ||
+		    value.root_count > value.roots.size() ||
+		    size < 40 + static_cast<size_t>(value.root_count) * sizeof(uint64_t))
+			return false;
+		size_t offset = 36;
+		for (size_t index = 0; index < value.root_count; ++index, offset += 8)
+		{
+			value.roots[index] = read64(offset);
+			if (!value.roots[index])
+				return false;
+			for (size_t prior = 0; prior < index; ++prior)
+				if (value.roots[prior] == value.roots[index])
+					return false;
+		}
+		value.reward_count = read32(offset);
+		offset += 4;
+		if (value.reward_count > value.rewards.size())
+			return false;
+		const size_t reward_record_bytes = version >= 4 ? 16 : (version >= 3 ? 12 : 8);
+		const size_t reward_bytes =
+			static_cast<size_t>(value.reward_count) * reward_record_bytes;
+		if (size - offset < reward_bytes || (version == 1 && size - offset != reward_bytes))
+			return false;
+		for (size_t index = 0; index < value.reward_count;
+		     ++index, offset += reward_record_bytes)
+		{
+			value.rewards[index] = { read32(offset), read32(offset + 4),
+						 version >= 3 ? read32(offset + 8) : 0,
+						 version >= 4 ? read32(offset + 12) : 0 };
+			const auto goal = value.rewards[index];
+			if ((goal.type != 1 && goal.type != 3 && goal.type != 4 &&
+			     goal.type != 5) ||
+			    goal.number > INT32_MAX || goal.frozen_amount > INT32_MAX ||
+			    (goal.type != 4 && !goal.number) ||
+			    (goal.flags & ~QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION) ||
+			    (goal.type != 4 && goal.flags) || (version < 3 && goal.flags) ||
+			    (version >= 4 ? (goal.type == 5 ? (!goal.frozen_amount ||
+							       goal.frozen_amount > goal.number) :
+							      goal.frozen_amount != 0) :
+					    goal.frozen_amount != 0))
+				return false;
+		}
+		if (version >= 2)
+		{
+			constexpr size_t extension_header_bytes = 6 * sizeof(uint32_t);
+			if (size - offset < extension_header_bytes)
+				return false;
+			value.zone_number = read32(offset);
+			value.player_level = static_cast<int32_t>(read32(offset + 4));
+			value.player_racewar = static_cast<int32_t>(read32(offset + 8));
+			value.party_size = read32(offset + 12);
+			value.strongest_party_level = static_cast<int32_t>(read32(offset + 16));
+			value.credited_count = read32(offset + 20);
+			offset += extension_header_bytes;
+			if (!value.zone_number || value.zone_number > INT32_MAX ||
+			    value.player_level < 0 || value.strongest_party_level < 0 ||
+			    !value.credited_count ||
+			    value.credited_count > QUEST_REWARD_MAX_CREDITED_PIDS ||
+			    value.party_size != value.credited_count ||
+			    size - offset <
+				    static_cast<size_t>(value.credited_count) * sizeof(uint32_t) +
+					    2 * sizeof(uint32_t))
+				return false;
+			bool includes_player = false;
+			for (size_t index = 0; index < value.credited_count;
+			     ++index, offset += sizeof(uint32_t))
+			{
+				const uint32_t pid = read32(offset);
+				if (!pid)
+					return false;
+				for (size_t prior = 0; prior < index; ++prior)
+					if (value.credited_pids[prior] == pid)
+						return false;
+				value.credited_pids[index] = pid;
+				includes_player = includes_player || pid == value.player_pid;
+			}
+			if (!includes_player)
+				return false;
+			const uint32_t name_length = read32(offset);
+			offset += sizeof(uint32_t);
+			if (!name_length || name_length > QUEST_REWARD_MAX_CHARACTER_NAME_BYTES ||
+			    size - offset < static_cast<size_t>(name_length) + sizeof(uint32_t))
+				return false;
+			if (!owner.assign(value.character_name,
+					  reinterpret_cast<const char *>(data + offset),
+					  name_length))
+				return false;
+			if (value.character_name.find('\0') != std::string::npos)
+				return false;
+			offset += name_length;
+			const uint32_t definition_length = read32(offset);
+			offset += sizeof(uint32_t);
+			if (!definition_length ||
+			    definition_length > QUEST_REWARD_MAX_DEFINITION_ID_BYTES ||
+			    size < offset + static_cast<size_t>(definition_length))
+				return false;
+			if (!owner.assign(value.definition_id,
+					  reinterpret_cast<const char *>(data + offset),
+					  definition_length))
+				return false;
+			for (unsigned char character : value.definition_id)
+				if (character < 0x21 || character > 0x7e)
+					return false;
+			offset += definition_length;
+			if (version >= 5)
+			{
+				if (value.credited_pids[0] != value.player_pid)
+					return false;
+				if (size - offset < sizeof(uint32_t))
+					return false;
+				value.xp_award_count = read32(offset);
+				offset += sizeof(uint32_t);
+				if (value.xp_award_count > value.xp_awards.size() ||
+				    size < offset + static_cast<size_t>(value.xp_award_count) * 3 *
+							    sizeof(uint32_t))
+					return false;
+				for (size_t index = 0; index < value.xp_award_count;
+				     ++index, offset += 3 * sizeof(uint32_t))
+				{
+					auto &award = value.xp_awards[index];
+					award = { read32(offset), read32(offset + 4),
+						  read32(offset + 8) };
+					if (!award.recipient_pid ||
+					    award.reward_index >= value.reward_count ||
+					    !award.amount ||
+					    award.amount >
+						    value.rewards[award.reward_index].number ||
+					    value.rewards[award.reward_index].type != 5U)
+						return false;
+					if (award.recipient_pid == value.player_pid &&
+					    award.amount !=
+						    value.rewards[award.reward_index].frozen_amount)
+						return false;
+					bool recipient_found = false;
+					for (size_t recipient = 0; recipient < value.credited_count;
+					     ++recipient)
+						recipient_found = recipient_found ||
+								  value.credited_pids[recipient] ==
+									  award.recipient_pid;
+					if (!recipient_found)
+						return false;
+					for (size_t prior = 0; prior < index; ++prior)
+						if (value.xp_awards[prior].recipient_pid ==
+							    award.recipient_pid &&
+						    value.xp_awards[prior].reward_index ==
+							    award.reward_index)
+							return false;
+				}
+				for (size_t reward = 0; reward < value.reward_count; ++reward)
+					if (value.rewards[reward].type == 5U)
+						for (size_t recipient = 0;
+						     recipient < value.credited_count; ++recipient)
+						{
+							bool award_found = false;
+							for (size_t index = 0;
+							     index < value.xp_award_count; ++index)
+								award_found =
+									award_found ||
+									(value.xp_awards[index]
+											 .recipient_pid ==
+										 value.credited_pids
+											 [recipient] &&
+									 value.xp_awards[index]
+											 .reward_index ==
+										 reward);
+							if (!award_found)
+								return false;
+						}
+			}
+			if (version < 5 && size != offset)
+				return false;
+		}
+		else if (size != offset)
+			return false;
+		constexpr size_t tail_fixed =
+			4 + 16 + ECONOMIC_SOURCE_EVENT_BYTES + 8 + 16 + ITEM_TRANSFER_RESULT_BYTES;
+		if (size - offset < tail_fixed || data[offset] != 'Q' || data[offset + 1] != 'R' ||
+		    data[offset + 2] != 'F' || data[offset + 3] != '6')
+			return false;
+		offset += 4;
+		std::copy_n(data + offset, 16, value.action_operation.bytes.begin());
+		offset += 16;
+		if (economic_source_event_decode({ data + offset, ECONOMIC_SOURCE_EVENT_BYTES },
+						 &value.action_source) !=
+		    economic_accounting_error::ok)
+			return false;
+		offset += ECONOMIC_SOURCE_EVENT_BYTES;
+		value.action_mobile_instance_id = read64(offset);
+		offset += 8;
+		std::copy_n(data + offset, 16, value.triggering_acceptance.bytes.begin());
+		offset += 16;
+		if (size - offset != ITEM_TRANSFER_RESULT_BYTES ||
+		    critical_operation_id_is_zero(value.action_operation) ||
+		    critical_operation_id_is_zero(value.triggering_acceptance) ||
+		    value.action_operation.bytes == value.triggering_acceptance.bytes ||
+		    value.action_source.kind != economic_source_kind::quest_action ||
+		    value.action_source.source.bytes != value.action_operation.bytes ||
+		    value.action_source.slot != value.completion_index ||
+		    !value.action_source.sequence || !value.action_mobile_instance_id ||
+		    value.action_mobile_instance_id == UINT64_MAX)
+			return false;
+		std::copy_n(data + offset, ITEM_TRANSFER_RESULT_BYTES,
+			    value.original_acceptance_result.begin());
+		item_transfer_result result{};
+		if (!item_transfer_command_decode_result(value.original_acceptance_result.data(),
+							 value.original_acceptance_result.size(),
+							 &result) ||
+		    !result.root_item_uid || !result.item_count || result.corpse_revision ||
+		    result.collector_catalog_changed)
+			return false;
+		// This preflight is the last fallible action. The real default-allocator
+		// move has no allocation; prior destination heaps may move into value and
+		// remain covered by caller outer through its destruction.
+		if (!owner.peak(0))
+			return false;
+		*decoded = std::move(value);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
 #endif
