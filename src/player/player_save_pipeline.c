@@ -9594,3 +9594,65 @@ bool player_save_restored_publication_owner::consume_acknowledged_flat_shop_rest
 	return true;
 #endif
 }
+
+namespace
+{
+bool coin_save_pool_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+// Caller genuinely owns pipeline_mutex. This is the physical current of the
+// complete literal checkpoint pool, not the other pipeline workers/queues or
+// execution-guard owner. Actual reserved logical numbers are not extra heaps.
+bool coin_save_literal_pool_current_locked(size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	size_t total = sizeof(literal_inventory_checkpoints) +
+		       sizeof(flat_shop_inventory_generation) +
+		       sizeof(literal_inventory_generation);
+	for (const auto &slot : literal_inventory_checkpoints)
+	{
+		for (const auto *body :
+		     { &slot.held_before, &slot.held_after, &slot.held_attachment,
+		       &slot.held_attachment_successor, &slot.payload, &slot.original_shop_body,
+		       &slot.original_native_quest_before, &slot.original_native_quest_after,
+		       &slot.original_auction_before, &slot.original_auction_after,
+		       &slot.restored_auction_attachment, &slot.restored_native_quest_attachment,
+		       &slot.flat_shop_journal_command })
+			if (!coin_save_pool_add(total, body->capacity()))
+				return false;
+		for (const auto *identity : { &slot.flat_shop_root, &slot.flat_shop_account })
+		{
+			const size_t capacity = identity->capacity();
+			if (capacity > 15 &&
+			    (!coin_save_pool_add(total, capacity) || !coin_save_pool_add(total, 1)))
+				return false;
+		}
+	}
+	*bytes = total;
+	return true;
+#else
+	return false;
+#endif
+}
+} // namespace
+bool player_save_pipeline_literal_replay_storage_bytes(size_t *bytes) noexcept
+{
+	if (!bytes)
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		return coin_save_literal_pool_current_locked(bytes);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}

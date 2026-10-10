@@ -764,4 +764,12 @@ bool player_save_pipeline_target_save_login_fenced(int pid);
 bool player_save_pipeline_save_admitted(int pid);
 void player_save_pipeline_reset_for_tests(void);
 
+// Passive exact current physical literal checkpoint pool observation under
+// pipeline_mutex. Includes complete pool inline, its 13 byte-vector capacities,
+// two string heaps per slot and both generations. Excludes all other pipeline
+// workers/queues/mutex/health and save execution-guard storage. Strong output;
+// no readiness, hold, admission or authority. Do not call while holding the
+// same pipeline mutex; owning bounded relays use the genuine locked provider.
+bool player_save_pipeline_literal_replay_storage_bytes(size_t *) noexcept;
+
 #endif
