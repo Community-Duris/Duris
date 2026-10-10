@@ -806,6 +806,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/track.o \
 				 economy/tradeskill.o \
 				 economy/smith_native_producer.o \
+				 item/smith_native_compound_owner.o \
 				 combat/trap.o \
 				 kingdom/kingdom.o \
 				 kingdom/kingdom_geometry.o \
