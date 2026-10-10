@@ -66493,8 +66493,8 @@
       "src/economy/shop_trade_transaction.h": "38b1f15d83a6342fbfc27fdfa9c8731791f1a1a9e101c556070a657113861020",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
-      "src/flatfile/flatfile_accounting_authority.c": "52b1d753fdb163c4573911e1ca5eacb059c4ef8646627e395e7bbb35fc1853e3",
-      "src/flatfile/flatfile_accounting_authority.h": "b1ee766e803a9717fb80938051f31aed67c6350e4b7f1c2e743f7d01f878f523",
+      "src/flatfile/flatfile_accounting_authority.c": "8bbb409295143a45ae77431c56c8b0e449668dcd41dd30be6efa376de9c0fc43",
+      "src/flatfile/flatfile_accounting_authority.h": "fbc4a15e02f592da91e48edbf71bf7b2328fbfba81f5cf9b1c1ed41f7682f572",
       "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
       "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
       "src/flatfile/flatfile_accounting_coin_transaction.c": "bca1d94e6092234a6b11445ee42629417c05b6fb16da5f38f95c4aacf97c1d3b",
@@ -66837,7 +66837,8 @@
       "src/economy/currency_command.c": "6a17b573574ae842c5df655382b484aad4a0344f69cf75db0fcff0954f344b7c",
       "src/economy/currency_command.h": "5e3cb5657e0fdbfb0e0c10f68b05f8eb3a23be4a8b9a93968a21d13ec50846b7",
       "src/player/player_death_restitution_adapter.c": "4bfc78c342ec657aa4f30dd61bd50670f48df54bbd0d7e8ed86e477c993f0d18",
-      "src/player/player_death_restitution_adapter.h": "a52ea0c72af1809dad588dc79b1852e6e380d7675baec074eb371b98f1dafc6e"
+      "src/player/player_death_restitution_adapter.h": "a52ea0c72af1809dad588dc79b1852e6e380d7675baec074eb371b98f1dafc6e",
+      "src/flatfile/flatfile_native_mobile_wallet.h": "2465dab1e202bf4ab2b2480cd1b61d633fa08fa556ead1b7610fad086487f15c"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
