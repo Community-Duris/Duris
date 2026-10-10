@@ -163,4 +163,14 @@ player_item_snapshot_clone_bounded(const player_item_snapshot &, player_item_sna
 // authority or route selection. False/null/unsupported leaves output unchanged.
 bool player_snapshot_current_heap_bytes(const player_snapshot &, size_t *) noexcept;
 
+// Complete original full snapshot decoder under genuine prospective storage
+// admission. All versions, components, pets, death/evidence and validation are
+// retained. Outer includes authentic encoded input, prior output and all other
+// caller owners; excludes this callee's private workspace. Returned heap counts
+// actual complete nested capacities, excluding the inline snapshot. Strong
+// snapshot and scalar outputs; no authority or runtime route selection.
+player_snapshot_codec_result player_snapshot_decode_bounded(
+	const uint8_t *, size_t, player_snapshot *, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live, size_t *retained_snapshot_heap = nullptr) noexcept;
+
 #endif

@@ -2741,3 +2741,973 @@ bool player_snapshot_current_heap_bytes(const player_snapshot &snapshot, size_t 
 	*output = bytes;
 	return true;
 }
+
+namespace
+{
+// These source-owned carriers complement the existing exact GCC13 vector and
+// string request profiles. They do not claim emitted stack or allocator metadata.
+struct snapshot_bounded_workspace;
+struct snapshot_bounded_frame
+{
+	snapshot_bounded_workspace &owner;
+	snapshot_bounded_frame *previous;
+	size_t bytes;
+	snapshot_bounded_frame(snapshot_bounded_workspace &, size_t) noexcept;
+	~snapshot_bounded_frame();
+};
+struct snapshot_bounded_workspace
+{
+	decoder raw;
+	player_snapshot snapshot = {};
+	std::vector<size_t> depths;
+	std::unordered_set<uint64_t> captured, observed;
+	std::unordered_set<std::string> operations;
+	std::__detail::_Prime_rehash_policy captured_policy, observed_policy, operations_policy;
+	std::string operation;
+	item_list_reserve_fn reserve;
+	void *context;
+	size_t outer;
+	snapshot_bounded_frame *frames = nullptr;
+	size_t transferred_heap = 0;
+	template <typename K>
+	bool set_heap(const std::unordered_set<K> &set, size_t &bytes) const noexcept
+	{
+		constexpr bool cached = std::is_same_v<K, std::string>;
+		using node = std::__detail::_Hash_node<K, cached>;
+		if (set.size() > SIZE_MAX / sizeof(node) ||
+		    !item_list_add(bytes, set.size() * sizeof(node)))
+			return false;
+		if (set.bucket_count() > 1 &&
+		    (set.bucket_count() > SIZE_MAX / sizeof(void *) ||
+		     !item_list_add(bytes, set.bucket_count() * sizeof(void *))))
+			return false;
+		if constexpr (cached)
+			for (const auto &key : set)
+				if (!item_list_string_heap(key, bytes))
+					return false;
+		return true;
+	}
+	bool peak(size_t extra) noexcept
+	{
+		size_t bytes = outer, heap = 0;
+		if (!player_snapshot_current_heap_bytes(snapshot, &heap) ||
+		    !item_list_add(bytes, sizeof(*this)) || !item_list_add(bytes, heap) ||
+		    !item_list_vector_heap(depths, bytes) || !set_heap(captured, bytes) ||
+		    !set_heap(observed, bytes) || !set_heap(operations, bytes) ||
+		    !item_list_string_heap(operation, bytes))
+		{
+			errno = ENOBUFS;
+			return false;
+		}
+		for (auto *frame = frames; frame; frame = frame->previous)
+			if (!item_list_add(bytes, frame->bytes))
+			{
+				errno = ENOBUFS;
+				return false;
+			}
+		// Actual observer loops, arithmetic results, query returns and arguments.
+		constexpr size_t observer = snapshot_clone_observation_frames + 9 * sizeof(void *) +
+					    6 * sizeof(size_t) + 5 * sizeof(bool) +
+					    3 * (sizeof(void *) + sizeof(size_t));
+		const bool accepted = item_list_add(bytes, observer) &&
+				      item_list_add(bytes, extra) && reserve &&
+				      reserve(bytes, context);
+		if (!accepted)
+			errno = ENOBUFS;
+		return accepted;
+	}
+	bool refuse() noexcept
+	{
+		errno = ENOBUFS;
+		raw.result = player_snapshot_codec_result::allocation_failure;
+		return false;
+	}
+};
+snapshot_bounded_frame::snapshot_bounded_frame(snapshot_bounded_workspace &work,
+					       size_t count) noexcept
+	: owner(work)
+	, previous(work.frames)
+	, bytes(count)
+{
+	owner.frames = this;
+}
+snapshot_bounded_frame::~snapshot_bounded_frame()
+{
+	owner.frames = previous;
+}
+struct snapshot_bounded_decoder
+{
+	snapshot_bounded_workspace &owner;
+	const uint8_t *&data;
+	size_t &size, &offset, &rows;
+	player_snapshot_codec_result &result;
+	explicit snapshot_bounded_decoder(snapshot_bounded_workspace &work) noexcept
+		: owner(work)
+		, data(work.raw.data)
+		, size(work.raw.size)
+		, offset(work.raw.offset)
+		, rows(work.raw.rows)
+		, result(work.raw.result)
+	{
+	}
+	template <typename T> bool number(T &value)
+	{
+		// Original number's this/value, unsigned bits, index, offset/query result.
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       sizeof(std::make_unsigned_t<T>) + 3 * sizeof(size_t) +
+				       sizeof(bool);
+		if (!owner.peak(own))
+			return owner.refuse();
+		snapshot_bounded_frame frame(owner, own);
+		return owner.raw.number(value);
+	}
+	bool boolean(bool &value)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       sizeof(uint8_t) + sizeof(bool);
+		if (!owner.peak(own))
+			return owner.refuse();
+		snapshot_bounded_frame frame(owner, own);
+		uint8_t encoded = 0;
+		if (!number(encoded))
+			return false;
+		if (encoded > 1)
+		{
+			result = player_snapshot_codec_result::invalid_value;
+			return false;
+		}
+		value = encoded != 0;
+		return true;
+	}
+	template <typename T> bool emplace(std::optional<T> &value)
+	{
+		// optional::emplace/_M_reset/_M_construct/_Construct/construct_at,
+		// actual this/value/location/return carriers and placement-new. All
+		// contained default string/vector construction is allocation-free.
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       7 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+				       item_list_nontrivial_frames;
+		if (!owner.peak(own))
+			return owner.refuse();
+		snapshot_bounded_frame frame(owner, own);
+		value.emplace();
+		return true;
+	}
+	template <typename T> bool resize(std::vector<T> &values, size_t count)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       4 * sizeof(size_t) + sizeof(bool);
+		if (!owner.peak(own))
+			return owner.refuse();
+		snapshot_bounded_frame frame(owner, own);
+		size_t request = item_list_vector_frames + item_list_nontrivial_frames;
+		if (count > values.capacity())
+		{
+			const size_t added = count - values.size();
+			size_t next = values.size();
+			if (!item_list_add(next, std::max(values.size(), added)) ||
+			    next > values.max_size())
+				next = values.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !item_list_add(request, next * sizeof(T)))
+			{
+				return owner.refuse();
+			}
+		}
+		if (!owner.peak(request))
+			return owner.refuse();
+		values.resize(count);
+		return true;
+	}
+	bool string(std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 3 * sizeof(void *) +
+				       4 * sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+		if (!owner.peak(own))
+		{
+			return owner.refuse();
+		}
+		snapshot_bounded_frame frame(owner, own);
+		uint32_t length = 0;
+		if (!number(length))
+			return false;
+		if (length > maximum)
+		{
+			owner.raw.result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		if (owner.raw.size - owner.raw.offset < length)
+		{
+			owner.raw.result = player_snapshot_codec_result::truncated;
+			return false;
+		}
+		size_t request = 0;
+		if (length > value.capacity())
+		{
+			// GCC13 _M_create(capacity,oldcapacity), actual doubling/clipping.
+			size_t next = length;
+			if (next < 2 * value.capacity())
+				next = 2 * value.capacity();
+			if (next > value.max_size())
+				next = value.max_size();
+			if (next == SIZE_MAX)
+			{
+				return owner.refuse();
+			}
+			request = next + 1;
+		}
+		if (!item_list_add(request, item_list_string_frames) || !owner.peak(request))
+		{
+			return owner.refuse();
+		}
+		value.assign(reinterpret_cast<const char *>(owner.raw.data + owner.raw.offset),
+			     length);
+		owner.raw.offset += length;
+		return true;
+	}
+
+	template <typename T, typename Read>
+	bool vector(std::vector<T> &values, Read read, bool object_rows = false)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 4 * sizeof(void *) +
+				       2 * sizeof(Read) + sizeof(uint32_t) + sizeof(bool) +
+				       2 * sizeof(size_t);
+		if (!owner.peak(own))
+			return owner.refuse();
+		snapshot_bounded_frame frame(owner, own);
+		uint32_t count = 0;
+		if (!number(count))
+			return false;
+		if (count > PLAYER_SNAPSHOT_MAX_ROWS || rows > PLAYER_SNAPSHOT_MAX_ROWS - count ||
+		    (object_rows && (count > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+				     owner.raw.objects > PLAYER_SNAPSHOT_MAX_OBJECTS - count)))
+		{
+			result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		rows += count;
+		if (object_rows)
+			owner.raw.objects += count;
+		if (!resize(values, count))
+			return false;
+		for (T &value : values)
+			if (!read(value))
+				return false;
+		return true;
+	}
+};
+bool snapshot_bounded_decode_index_rows(snapshot_bounded_decoder &in,
+					std::vector<player_index_value_snapshot> &rows)
+{
+	constexpr size_t own =
+		sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) + sizeof(void *) + sizeof(bool);
+	if (!in.owner.peak(own))
+		return in.owner.refuse();
+	snapshot_bounded_frame frame(in.owner, own);
+
+	return in.vector(rows,
+			 [&](auto &row) {
+				 return in.number(row.index) && in.number(row.value) &&
+					in.number(row.auxiliary);
+			 });
+}
+bool snapshot_bounded_decode_items(snapshot_bounded_decoder &in,
+				   std::vector<player_item_snapshot> &items)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 3 * sizeof(void *) +
+			       2 * sizeof(void *) + sizeof(int32_t *) + sizeof(int64_t *) +
+			       sizeof(uint64_t *) + sizeof(std::array<int16_t, 2> *) +
+			       sizeof(int16_t *) + sizeof(bool);
+	if (!in.owner.peak(own))
+	{
+		in.owner.raw.result = player_snapshot_codec_result::allocation_failure;
+		return false;
+	}
+	snapshot_bounded_frame frame(in.owner, own);
+	return in.vector(
+		items,
+		[&](player_item_snapshot &row)
+		{
+			if (!in.number(row.parent_index) || !in.number(row.equipment_slot) ||
+			    !in.number(row.object_uid) || !in.number(row.generated_key) ||
+			    !in.number(row.vnum) || !in.number(row.type) ||
+			    !in.number(row.string_mask) || !in.string(row.name) ||
+			    !in.string(row.short_description) || !in.string(row.description) ||
+			    !in.string(row.action_description))
+				return false;
+			for (int32_t &value : row.values)
+				if (!in.number(value))
+					return false;
+			for (int64_t &timer : row.timers)
+				if (!in.number(timer))
+					return false;
+			if (!in.number(row.wear_flags) || !in.number(row.extra_flags) ||
+			    !in.number(row.anti_flags) || !in.number(row.anti2_flags) ||
+			    !in.number(row.extra2_flags) || !in.number(row.weight) ||
+			    !in.number(row.material) || !in.number(row.cost) ||
+			    !in.number(row.condition) || !in.number(row.craftsmanship))
+				return false;
+			for (uint64_t &bitvector : row.bitvectors)
+				if (!in.number(bitvector))
+					return false;
+			for (auto &affect : row.affects)
+				for (int16_t &value : affect)
+					if (!in.number(value))
+						return false;
+			if (!in.vector(row.dynamic_affects,
+				       [&](auto &affect) {
+					       return in.number(affect.type) &&
+						      in.number(affect.data) &&
+						      in.number(affect.extra2);
+				       }))
+				return false;
+			return in.vector(row.extra_descriptions,
+					 [&](auto &description)
+					 {
+						 return in.string(description.keyword) &&
+							in.string(description.description) &&
+							in.boolean(description.spellbook) &&
+							in.vector(description.spell_ids,
+								  [&](int32_t &skill_id)
+								  { return in.number(skill_id); });
+					 });
+		},
+		true);
+}
+bool snapshot_bounded_decode_death(snapshot_bounded_decoder &in, player_death_snapshot &death)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+			       2 * sizeof(void *) + 2 * sizeof(uint8_t) + 2 * sizeof(void *) +
+			       sizeof(bool);
+	if (!in.owner.peak(own))
+		return in.owner.refuse();
+	snapshot_bounded_frame frame(in.owner, own);
+
+	for (uint8_t &byte : death.operation_id.bytes)
+		if (!in.number(byte))
+			return false;
+	if (!in.number(death.corpse_room_vnum) || !in.number(death.wallet_revision))
+		return false;
+	for (int32_t &amount : death.wallet_before)
+		if (!in.number(amount))
+			return false;
+	return in.number(death.wallet_pile_uid) &&
+	       snapshot_bounded_decode_items(in, death.corpse) &&
+	       in.vector(death.custody,
+			 [&](auto &row)
+			 {
+				 uint8_t state = 0, owner = 0;
+				 if (!in.number(row.item.item_uid) ||
+				     !in.number(row.item.root_item_uid) ||
+				     !in.number(row.item.parent_item_uid) ||
+				     !in.number(row.item.expected_item_revision) ||
+				     !in.number(row.item.vnum) || !in.number(state) ||
+				     !in.number(owner) || !in.number(row.owner.id) ||
+				     !in.number(row.owner.context_id) ||
+				     !in.number(row.owner_revision))
+					 return false;
+				 row.item.expected_state = static_cast<item_custody_state>(state);
+				 row.owner.type = static_cast<item_owner_type>(owner);
+				 return true;
+			 }) &&
+	       in.vector(death.unresolved_operations,
+			 [&](auto &id)
+			 {
+				 for (uint8_t &byte : id.bytes)
+					 if (!in.number(byte))
+						 return false;
+				 return true;
+			 });
+}
+bool snapshot_bounded_decode_evidence(snapshot_bounded_decoder &in,
+				      player_death_conflict_evidence &evidence)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+			       5 * sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(uint32_t) +
+			       sizeof(bool);
+	if (!in.owner.peak(own))
+		return in.owner.refuse();
+	snapshot_bounded_frame frame(in.owner, own);
+
+	for (auto *table : { &evidence.player_items, &evidence.player_item_affects,
+			     &evidence.player_item_extra_descr, &evidence.item_current_owner,
+			     &evidence.item_owner_revision })
+	{
+		uint32_t columns = 0, rows = 0;
+		if (!in.number(columns))
+			return false;
+		if (!columns || columns > PLAYER_DEATH_EVIDENCE_MAX_COLUMNS)
+		{
+			in.result = columns ? player_snapshot_codec_result::limit_exceeded :
+					      player_snapshot_codec_result::invalid_value;
+			return false;
+		}
+		if (!in.resize(table->columns, columns))
+			return false;
+		for (auto &column : table->columns)
+			if (!in.string(column, PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES))
+				return false;
+		if (!in.number(rows))
+			return false;
+		if (rows > PLAYER_SNAPSHOT_MAX_ROWS || in.rows > PLAYER_SNAPSHOT_MAX_ROWS - rows)
+		{
+			in.result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		// Each cell needs at least a NULL/present byte. Reject impossible lengths
+		// before allocating the rectangular row vectors.
+		if (static_cast<size_t>(rows) * columns > in.size - in.offset)
+		{
+			in.result = player_snapshot_codec_result::truncated;
+			return false;
+		}
+		in.rows += rows;
+		if (!in.resize(table->rows, rows))
+			return false;
+		for (auto &row : table->rows)
+		{
+			if (!in.resize(row, columns))
+				return false;
+			for (auto &cell : row)
+			{
+				bool present = false;
+				if (!in.boolean(present))
+					return false;
+				if (present)
+				{
+					if (!in.emplace(cell))
+						return false;
+					if (!in.string(*cell, PLAYER_SNAPSHOT_MAX_BYTES))
+						return false;
+				}
+			}
+		}
+	}
+	// Complete original allocation-free evidence validation; retain its
+	// budget/row scalars, five-table initializer, consume/has-columns
+	// closures, required-name arrays and iterator/cell arguments.
+	if (!in.owner.peak(2 * sizeof(size_t) + 5 * sizeof(void *) + 2 * sizeof(void *) +
+			   9 * sizeof(void *) + 9 * sizeof(void *) + 4 * sizeof(size_t) +
+			   3 * sizeof(bool)))
+		return in.owner.refuse();
+	in.result = validate_evidence(evidence);
+	return in.result == player_snapshot_codec_result::ok;
+}
+
+bool snapshot_bounded_relationships(snapshot_bounded_workspace &work,
+				    const std::vector<player_item_snapshot> &items)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 3 * sizeof(void *) +
+			       sizeof(size_t) + sizeof(int32_t) + sizeof(bool);
+	if (!work.peak(own))
+		return work.refuse();
+	snapshot_bounded_frame frame(work, own);
+	size_t request = item_list_vector_frames + item_list_move_frames +
+			 item_list_size_constructor_frames + sizeof(std::vector<size_t>) +
+			 sizeof(size_t) + 4 * (3 * sizeof(void *) + sizeof(size_t)) +
+			 sizeof(size_t) + sizeof(bool) + sizeof(char);
+	if (items.size() > SIZE_MAX / sizeof(size_t) ||
+	    !item_list_add(request, items.size() * sizeof(size_t)) || !work.peak(request))
+		return work.refuse();
+	work.depths = std::vector<size_t>(items.size(), 1);
+	auto &depths = work.depths;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const int32_t parent = items[index].parent_index;
+		if (parent < PLAYER_SNAPSHOT_NO_PARENT || parent >= static_cast<int32_t>(index))
+			return false;
+		if (parent >= 0)
+		{
+			depths[index] = depths[parent] + 1;
+			if (depths[index] > PLAYER_SNAPSHOT_MAX_DEPTH)
+				return false;
+		}
+	}
+	// Original scratch dies on return. No retained depth allocation is output.
+	std::vector<size_t>().swap(depths);
+	return true;
+}
+template <typename K>
+bool snapshot_bounded_insert(snapshot_bounded_workspace &work, std::unordered_set<K> &set,
+			     std::__detail::_Prime_rehash_policy &policy, K &&key)
+{
+	using node = std::__detail::_Hash_node<K, std::is_same_v<K, std::string>>;
+	// Full concrete source path from captured libstdc++13 hashtable.h/policy.h.
+	// Each line names declared parameter/local/return carriers; these source
+	// scopes conservatively coexist, without claiming emitted stack bytes.
+	constexpr size_t library =
+		// unordered_set::find/insert, _Insert::insert/_M_insert/_M_insert_unique_aux:
+		5 * (2 * sizeof(void *) + sizeof(void *)) +
+		// _M_insert_unique: this/k/v/node_gen, loop iterator, hash/bucket,
+		// _Scoped_node's genuine two pointers, pos and pair<iterator,bool>:
+		4 * sizeof(void *) + sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) +
+		sizeof(void *) + sizeof(std::pair<void *, bool>) +
+		// _M_insert_unique_node: this/node, bkt/code/n_elt, saved-state ref,
+		// rehash pair, returned iterator. _M_rehash this/count/state/tag:
+		3 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::pair<bool, size_t>) +
+		sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(char) +
+		// _M_rehash_aux unique: this/count/tag,new_buckets,p,next,bbegin,bkt:
+		4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(char) +
+		// bucket allocate/deallocate: this/count, allocator, ptr,p,return,
+		// old buckets ptr/count and deallocate allocator/ptr; actual memset:
+		9 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(std::allocator<void *>) +
+		3 * sizeof(void *) + sizeof(size_t) +
+		// node allocate: this/forward key,nptr,n,return; node generator,
+		// builder, forward/addressof/construct and placement-new carriers:
+		5 * sizeof(void *) + 10 * sizeof(void *) + sizeof(size_t) +
+		// find/find_before_node: this/key,code,bucket,iterator/prev/p,
+		// node next/key extraction/hash/equal/bucket modulus/returned values:
+		6 * sizeof(void *) + 3 * sizeof(size_t) +
+		10 * (2 * sizeof(void *) + sizeof(void *)) + 2 * sizeof(bool) +
+		// erase/erase(iterator)/_M_erase: this,key,code,bkt,prev,node,next,
+		// node destructor/deallocate incl pointer_traits and erase result:
+		10 * sizeof(void *) + 5 * sizeof(size_t) + 4 * sizeof(void *) +
+		item_list_allocator_frames + snapshot_clone_string_move_frames;
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 4 * sizeof(void *) +
+			       sizeof(std::__detail::_Prime_rehash_policy) +
+			       sizeof(std::pair<bool, size_t>) + 6 * sizeof(size_t) +
+			       6 * sizeof(bool) + library;
+	if (!work.peak(own))
+		return work.refuse();
+	snapshot_bounded_frame frame(work, own);
+	if (set.find(key) != set.end())
+		return false;
+	auto proposed = policy;
+	const auto rehash = proposed._M_need_rehash(set.bucket_count(), set.size(), 1);
+	size_t request = sizeof(node);
+	if (rehash.first && (rehash.second > SIZE_MAX / sizeof(void *) ||
+			     !item_list_add(request, rehash.second * sizeof(void *))))
+		return work.refuse();
+	if (!work.peak(request))
+		return work.refuse();
+	const bool inserted = set.insert(std::move(key)).second;
+	if (inserted)
+		policy = proposed;
+	return inserted;
+}
+bool snapshot_bounded_operation(snapshot_bounded_workspace &work, const critical_operation_id &id)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+			       sizeof(size_t) + sizeof(bool) +
+			       snapshot_clone_string_constructor_frames + sizeof(std::string) +
+			       snapshot_clone_string_move_frames;
+	size_t request = own;
+	if (id.bytes.size() > 15 && !item_list_add(request, id.bytes.size() + 1))
+		return work.refuse();
+	if (!work.peak(request))
+		return work.refuse();
+	snapshot_bounded_frame frame(work, own);
+	work.operation =
+		std::string(reinterpret_cast<const char *>(id.bytes.data()), id.bytes.size());
+	return snapshot_bounded_insert(work, work.operations, work.operations_policy,
+				       std::move(work.operation));
+}
+
+bool snapshot_bounded_valid_death(snapshot_bounded_workspace &work, const player_snapshot &snapshot)
+{
+	constexpr size_t own = sizeof(snapshot_bounded_frame) + 3 * sizeof(void *) +
+			       7 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int32_t) +
+			       2 * sizeof(bool);
+	if (!work.peak(own))
+		return work.refuse();
+	snapshot_bounded_frame frame(work, own);
+
+	if (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	    snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+	    snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+	    snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
+		return !snapshot.death;
+	if (!snapshot.death || snapshot.save_intent != RENT_DEATH ||
+	    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL || !snapshot.items.empty() ||
+	    std::any_of(snapshot.pets.begin(), snapshot.pets.end(),
+			[](const auto &pet) { return pet.hold_reason == pet_hold_reason::none; }))
+		return false;
+	const auto &death = *snapshot.death;
+	if (player_snapshot_is_death_evidence_schema(snapshot.schema_version) !=
+	    death.conflict_evidence.has_value())
+		return false;
+	if (!nonzero_operation(death.operation_id) || death.corpse_room_vnum <= 0 ||
+	    !death.wallet_revision || death.corpse.empty() ||
+	    !snapshot_bounded_relationships(work, death.corpse))
+		return false;
+	const auto &corpse = death.corpse.front();
+	if (corpse.vnum != VOBJ_CORPSE || corpse.type != ITEM_CORPSE ||
+	    corpse.values[CORPSE_PID] != snapshot.pid || corpse.values[CORPSE_SAVEID] <= 0 ||
+	    !(corpse.values[CORPSE_FLAGS] & PC_CORPSE))
+		return false;
+	bool has_wallet = false;
+	for (int32_t amount : death.wallet_before)
+	{
+		if (amount < 0)
+			return false;
+		has_wallet = has_wallet || amount != 0;
+	}
+	if (has_wallet != (death.wallet_pile_uid != 0))
+		return false;
+	auto &captured = work.captured;
+	for (size_t index = 0; index < death.corpse.size(); ++index)
+	{
+		const auto &item = death.corpse[index];
+		if (!item.object_uid ||
+		    !snapshot_bounded_insert(work, captured, work.captured_policy,
+					     uint64_t(item.object_uid)) ||
+		    (index && item.parent_index == PLAYER_SNAPSHOT_NO_PARENT))
+			return false;
+		if (item.object_uid == death.wallet_pile_uid)
+		{
+			if (item.vnum != VOBJ_COINS || item.type != ITEM_MONEY ||
+			    item.parent_index != 0)
+				return false;
+			for (size_t denomination = 0; denomination < death.wallet_before.size();
+			     ++denomination)
+				if (item.values[denomination] != death.wallet_before[denomination])
+					return false;
+		}
+	}
+	if (has_wallet && (death.wallet_pile_uid == death.corpse.front().object_uid ||
+			   !captured.count(death.wallet_pile_uid)))
+		return false;
+	captured.erase(death.corpse.front().object_uid); // Lifecycle owns the corpse itself.
+	auto &observed = work.observed;
+	for (const auto &row : death.custody)
+	{
+		if (!row.item.item_uid ||
+		    !snapshot_bounded_insert(work, observed, work.observed_policy,
+					     uint64_t(row.item.item_uid)) ||
+		    row.item.vnum <= 0 ||
+		    row.item.expected_state > item_custody_state::quarantined ||
+		    row.owner.type > item_owner_type::native_mobile ||
+		    (row.owner.type == item_owner_type::native_mobile &&
+		     (!row.owner.id || row.owner.id == UINT64_MAX || row.owner.context_id)))
+			return false;
+		if (row.item.expected_state == item_custody_state::absent)
+		{
+			if (row.item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
+			    row.owner.type != item_owner_type::unknown || row.owner.id ||
+			    row.owner.context_id || row.owner_revision)
+				return false;
+		}
+		else if (!row.item.expected_item_revision ||
+			 row.item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+			 !row.item.root_item_uid || row.owner.type == item_owner_type::unknown)
+			return false;
+		captured.erase(row.item.item_uid);
+	}
+	if (!captured.empty())
+		return false;
+
+	for (const auto &id : death.unresolved_operations)
+		if (!nonzero_operation(id) || id.bytes == death.operation_id.bytes ||
+		    !snapshot_bounded_operation(work, id))
+			return false;
+	return true;
+}
+} // namespace
+
+player_snapshot_codec_result
+player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
+			       player_snapshot *snapshot_out,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer_live, size_t *retained_snapshot_heap) noexcept
+{
+	if (!encoded || !encoded_size || !snapshot_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (encoded_size > PLAYER_SNAPSHOT_MAX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+
+	if (!snapshot_clone_policy_supported() || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    sizeof(std::string) != 32 || sizeof(std::vector<uint8_t>) != 24)
+	{
+		errno = ENOTSUP;
+		return player_snapshot_codec_result::limit_exceeded;
+	}
+	// All concrete source owners and main's metadata/range/return carriers are
+	// admitted before construction; per-call closures are owned by vector().
+	constexpr size_t own =
+		sizeof(snapshot_bounded_frame) + sizeof(snapshot_bounded_decoder) +
+		6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(uint64_t) + 2 * sizeof(uint32_t) +
+		sizeof(bool) + 5 * sizeof(void *) + sizeof(player_snapshot_codec_result) +
+		// Actual callback field/reason/base/bitvector and fixed receipt-copy
+		// iterator/count source scopes (no heap allocation or guessed slack).
+		sizeof(uint16_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(bool) +
+		sizeof(uint64_t *) + 4 * sizeof(void *) + 2 * sizeof(size_t);
+	constexpr size_t construction = item_list_nontrivial_frames + 17 * item_list_move_frames +
+					3 * snapshot_clone_string_move_frames;
+	size_t initial = outer_live;
+	if (!reserve || !item_list_add(initial, sizeof(snapshot_bounded_workspace)) ||
+	    !item_list_add(initial, own) || !item_list_add(initial, construction) ||
+	    !reserve(initial, context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	try
+	{
+		snapshot_bounded_workspace work{ { encoded, encoded_size },
+						 {},
+						 {},
+						 {},
+						 {},
+						 {},
+						 {},
+						 {},
+						 {},
+						 {},
+						 reserve,
+						 context,
+						 outer_live };
+		snapshot_bounded_frame frame(work, own);
+		snapshot_bounded_decoder in(work);
+		auto &snapshot = work.snapshot;
+		uint64_t encoded_bound = 0;
+		if (!in.number(snapshot.schema_version))
+			return in.result;
+		const uint32_t raw_wire_version = snapshot.schema_version;
+		const bool ward_fields = raw_wire_version >= 20 && raw_wire_version <= 32;
+		const uint32_t wire_version =
+			ward_fields ? raw_wire_version - PLAYER_SNAPSHOT_WARD_WIRE_OFFSET :
+				      raw_wire_version;
+		snapshot.schema_version = wire_version;
+		if (wire_version == 1 || wire_version == 3 || wire_version == 5 ||
+		    wire_version == 7)
+			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		if (wire_version == 2 || wire_version == 4 || wire_version == 6 ||
+		    wire_version == 8)
+			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+		    snapshot.schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION &&
+		    snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+		    snapshot.schema_version !=
+			    PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+		    !player_snapshot_is_death_request_schema(snapshot.schema_version) &&
+		    !player_snapshot_is_death_evidence_schema(snapshot.schema_version))
+			return player_snapshot_codec_result::unsupported_version;
+		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
+		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
+		    !in.number(snapshot.room_vnum) || !in.number(encoded_bound))
+			return in.result;
+		snapshot.encoded_size_bound = encoded_bound;
+		if (!work.peak(sizeof(void *) + sizeof(bool) + sizeof(uint32_t)))
+			return player_snapshot_codec_result::allocation_failure;
+		if (!valid_metadata(snapshot))
+			return player_snapshot_codec_result::invalid_value;
+		if (!in.vector(snapshot.status_integers,
+			       [&](auto &row)
+			       {
+				       uint16_t field = 0;
+				       if (!in.number(field) ||
+					   field > static_cast<uint16_t>(
+							   player_status_field::last_ip) ||
+					   !in.number(row.signed_value) ||
+					   !in.number(row.unsigned_value) ||
+					   !in.boolean(row.is_unsigned))
+					       return false;
+				       row.field = static_cast<player_status_field>(field);
+				       return true;
+			       }) ||
+		    !in.vector(snapshot.status_strings,
+			       [&](auto &row)
+			       {
+				       uint8_t field = 0;
+				       if (!in.number(field) ||
+					   field > static_cast<uint8_t>(
+							   player_status_string_field::poof_out) ||
+					   !in.string(row.value))
+					       return false;
+				       row.field = static_cast<player_status_string_field>(field);
+				       return true;
+			       }))
+			return in.result;
+		for (int32_t &value : snapshot.conditions)
+			if (!in.number(value))
+				return in.result;
+		for (int32_t &value : snapshot.quest_values)
+			if (!in.number(value))
+				return in.result;
+		if (!snapshot_bounded_decode_index_rows(in, snapshot.languages) ||
+		    !snapshot_bounded_decode_index_rows(in, snapshot.introductions) ||
+		    !snapshot_bounded_decode_index_rows(in, snapshot.timers) ||
+		    !snapshot_bounded_decode_index_rows(in, snapshot.undead_slots) ||
+		    !snapshot_bounded_decode_index_rows(in, snapshot.forged_items) ||
+		    !in.vector(snapshot.granted_commands,
+			       [&](int32_t &command) { return in.number(command); }) ||
+		    !in.vector(snapshot.skills,
+			       [&](auto &row) {
+				       return in.number(row.skill_id) && in.number(row.learned) &&
+					      in.number(row.taught);
+			       }) ||
+		    !in.vector(snapshot.affects,
+			       [&](auto &row)
+			       {
+				       if (!in.number(row.type) || !in.number(row.duration) ||
+					   !in.number(row.flags) || !in.number(row.modifier) ||
+					   !in.number(row.location) || !in.number(row.level))
+					       return false;
+				       for (uint64_t &bitvector : row.bitvectors)
+					       if (!in.number(bitvector))
+						       return false;
+				       if (ward_fields && (!in.number(row.ward_source_uid) ||
+							   !in.number(row.ward_full_duration) ||
+							   !in.number(row.ward_capacity) ||
+							   !in.number(row.ward_capacity_max) ||
+							   !in.number(row.ward_refresh_remaining) ||
+							   !in.number(row.ward_source_type) ||
+							   !in.number(row.ward_source_worn) ||
+							   !in.number(row.ward_active)))
+					       return false;
+				       return in.string(row.wear_off_character) &&
+					      in.string(row.wear_off_room);
+			       }) ||
+		    !snapshot_bounded_decode_items(in, snapshot.items) ||
+		    !in.vector(snapshot.pets,
+			       [&](auto &pet)
+			       {
+				       if (wire_version >= 7 && !in.number(pet.pet_uid))
+					       return false;
+				       const bool base =
+					       in.number(pet.mob_vnum) && in.number(pet.order) &&
+					       in.number(pet.hit) && in.number(pet.max_hit) &&
+					       in.number(pet.mana) && in.number(pet.max_mana) &&
+					       in.number(pet.vitality) &&
+					       in.number(pet.max_vitality) &&
+					       in.number(pet.charm_duration) &&
+					       in.number(pet.room_vnum) &&
+					       snapshot_bounded_decode_items(in, pet.items);
+				       if (!base || wire_version < 3)
+					       return base;
+				       uint32_t reason = 0;
+				       if (!in.string(pet.restore_state,
+						      PET_RESTORE_STATE_MAX_BYTES) ||
+					   !in.number(reason))
+					       return false;
+				       pet.hold_reason = static_cast<pet_hold_reason>(reason);
+				       return true;
+			       }) ||
+		    !in.vector(snapshot.shapes,
+			       [&](auto &row)
+			       {
+				       return in.number(row.mob_vnum) &&
+					      in.number(row.times_researched) &&
+					      in.number(row.last_researched) &&
+					      in.number(row.last_shapechanged);
+			       }) ||
+		    !in.vector(
+			    snapshot.trophies, [&](auto &row)
+			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
+		    !in.boolean(snapshot.recipes_are_external))
+			return in.result;
+		if (wire_version >= 5 &&
+		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
+			return in.result;
+		if (player_snapshot_has_quest_receipt_schema(wire_version) &&
+		    !in.vector(snapshot.quest_xp_receipts,
+			       [&](auto &receipt)
+			       {
+				       if (in.size - in.offset <
+					   receipt.offering_operation.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
+					       return false;
+				       }
+				       std::copy_n(in.data + in.offset,
+						   receipt.offering_operation.bytes.size(),
+						   receipt.offering_operation.bytes.begin());
+				       in.offset += receipt.offering_operation.bytes.size();
+				       return in.number(receipt.reward_index) &&
+					      in.number(receipt.amount);
+			       }))
+			return in.result;
+		if (player_snapshot_has_spell_receipt_schema(wire_version) &&
+		    !in.vector(snapshot.spell_effect_receipts,
+			       [&](auto &receipt)
+			       {
+				       if (in.size - in.offset < receipt.operation_id.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
+					       return false;
+				       }
+				       std::copy_n(in.data + in.offset,
+						   receipt.operation_id.bytes.size(),
+						   receipt.operation_id.bytes.begin());
+				       in.offset += receipt.operation_id.bytes.size();
+				       return in.number(receipt.effect_id);
+			       }))
+			return in.result;
+		if (player_snapshot_has_craft_receipt_schema(wire_version) &&
+		    !in.vector(snapshot.craft_receipts,
+			       [&](auto &receipt)
+			       {
+				       if (in.size - in.offset < receipt.operation_id.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
+					       return false;
+				       }
+				       std::copy_n(in.data + in.offset,
+						   receipt.operation_id.bytes.size(),
+						   receipt.operation_id.bytes.begin());
+				       in.offset += receipt.operation_id.bytes.size();
+				       return in.number(receipt.discipline) &&
+					      in.number(receipt.experience);
+			       }))
+			return in.result;
+		if (player_snapshot_is_death_request_schema(snapshot.schema_version) ||
+		    player_snapshot_is_death_evidence_schema(snapshot.schema_version))
+		{
+			if (!in.emplace(snapshot.death))
+				return in.result;
+			if (!snapshot_bounded_decode_death(in, *snapshot.death))
+				return in.result;
+			if (player_snapshot_is_death_evidence_schema(snapshot.schema_version))
+			{
+				if (!in.emplace(snapshot.death->conflict_evidence))
+					return in.result;
+				if (!snapshot_bounded_decode_evidence(
+					    in, *snapshot.death->conflict_evidence))
+					return in.result;
+			}
+		}
+		// Original allocation-free metadata/receipt validators retain their
+		// actual snapshot/receipt references, nested prior/index counters,
+		// nonzero-operation iterators and algorithm predicate return scopes.
+		if (!work.peak(10 * sizeof(void *) + 7 * sizeof(size_t) +
+			       sizeof(player_component_mask_t) + 5 * sizeof(bool)))
+			return player_snapshot_codec_result::allocation_failure;
+		if (!snapshot_bounded_valid_death(work, snapshot) ||
+		    !valid_quest_xp_receipts(snapshot) || !valid_spell_effect_receipts(snapshot) ||
+		    !valid_craft_receipts(snapshot))
+			return in.result == player_snapshot_codec_result::allocation_failure ?
+				       in.result :
+				       player_snapshot_codec_result::invalid_value;
+		if (in.offset != in.size)
+			return player_snapshot_codec_result::invalid_value;
+		if (!snapshot_bounded_relationships(work, snapshot.items))
+			return in.result == player_snapshot_codec_result::allocation_failure ?
+				       in.result :
+				       player_snapshot_codec_result::invalid_value;
+		for (const player_pet_snapshot &pet : snapshot.pets)
+			if (!snapshot_bounded_relationships(work, pet.items))
+				return in.result == player_snapshot_codec_result::allocation_failure ?
+					       in.result :
+					       player_snapshot_codec_result::invalid_value;
+
+		if (!player_snapshot_current_heap_bytes(snapshot, &work.transferred_heap) ||
+		    !work.peak(construction))
+		{
+			errno = ENOBUFS;
+			return player_snapshot_codec_result::allocation_failure;
+		}
+		static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+		// Strong-output commit: no callback, allocation or fallible operation
+		// follows. Prior destination remains included in caller outer through
+		// the admitted move/destruction tail.
+		*snapshot_out = std::move(snapshot);
+		if (retained_snapshot_heap)
+			*retained_snapshot_heap = work.transferred_heap;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
