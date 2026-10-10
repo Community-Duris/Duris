@@ -72,4 +72,21 @@ bool shop_trade_recovery_manifest_encode(const shop_trade_recovery_manifest &,
 bool shop_trade_recovery_manifest_decode(std::span<const uint8_t>,
 					 shop_trade_recovery_manifest *out);
 
+// Full original SRM8 shape/codec companions. Caller outer includes authentic
+// input, old output inline/heaps and caller frames. Actual six UID capacities,
+// canonical re-encoding and fixed empty-forest digest workspace remain owned
+// through every nested handoff. Outputs/scalars are strong on refusal; no SHOP,
+// native, publication or recovery authority is granted and no route is selected.
+bool shop_trade_recovery_manifest_shape_valid_bounded(const shop_trade_recovery_manifest &,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept;
+bool shop_trade_recovery_manifest_encode_bounded(
+	const shop_trade_recovery_manifest &, std::vector<uint8_t> *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes = nullptr) noexcept;
+bool shop_trade_recovery_manifest_decode_bounded(
+	std::span<const uint8_t>, shop_trade_recovery_manifest *,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_manifest_heap_bytes = nullptr) noexcept;
+
 #endif
