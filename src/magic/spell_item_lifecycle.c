@@ -1004,3 +1004,109 @@ void spell_simulacrum_anguis(int /*level*/, P_char ch, char * /*arg*/, int /*typ
 
 	submit_conjured_weapon(ch, blade, conjured_weapon_kind::simulacrum_anguis);
 }
+
+bool spell_item_lifecycle_restore_replayed_command_bounded(const critical_command &command,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *reserve_context,
+							   size_t outer_live) noexcept
+{
+	constexpr size_t frames = sizeof(item_transfer_payload) +
+				  sizeof(soulbind_movement_context) + 4 * sizeof(void *) +
+				  4 * sizeof(size_t) + sizeof(bool);
+	struct actual_budget
+	{
+		bool (*reserve)(size_t, void *) noexcept;
+		void *context;
+		size_t outer;
+		const item_transfer_payload *payload;
+		bool current(size_t extra = 0) const noexcept
+		{
+			size_t bytes = 0, heap = 0;
+			if (!reserve ||
+			    !item_movement_transaction_replay_current_storage_bytes(&bytes) ||
+			    (payload && !item_transfer_payload_current_heap_bytes(*payload, &heap)))
+				return false;
+			for (size_t part : { outer, frames, sizeof(actual_budget), heap, extra })
+			{
+				if (part > SIZE_MAX - bytes)
+					return false;
+				bytes += part;
+			}
+			return reserve(bytes, context);
+		}
+		static bool relay(size_t child, void *opaque) noexcept
+		{
+			return static_cast<actual_budget *>(opaque)->current(child);
+		}
+	} budget{ reserve, reserve_context, outer_live, nullptr };
+	if (!budget.current())
+		return false;
+	bool completed = false;
+	try
+	{
+		{
+			item_transfer_payload payload{};
+			budget.payload = &payload;
+			do
+			{
+				if (command.type != critical_command_type::item_transfer ||
+				    !command.publication_required)
+				{
+					completed = true;
+					break;
+				}
+				if (!item_transfer_command_decode_payload_bounded(
+					    command, &payload, actual_budget::relay, &budget, 0) ||
+				    !budget.current())
+					break;
+				if (payload.reason != item_transfer_reason::soulbind ||
+				    payload.continuation.kind !=
+					    item_transfer_continuation_kind::soulbind_transfer)
+				{
+					completed = true;
+					break;
+				}
+				if (payload.continuation.data.size() != 1 ||
+				    payload.continuation.data[0] > 1 ||
+				    !payload.selected_item_uid ||
+				    payload.from_owner.id > UINT32_MAX ||
+				    payload.to_owner.id > UINT32_MAX)
+					break;
+				const soulbind_movement_context context = {
+					payload.selected_item_uid,
+					static_cast<uint32_t>(payload.from_owner.id),
+					static_cast<uint32_t>(payload.to_owner.id),
+					-1,
+					-1,
+					payload.continuation.data[0]
+				};
+				size_t heap = 0;
+				if (!item_transfer_payload_current_heap_bytes(payload, &heap) ||
+				    outer_live > SIZE_MAX - frames - sizeof(budget) ||
+				    heap > SIZE_MAX - outer_live - frames - sizeof(budget))
+					break;
+				// Publication companion performs its own fresh pending observation;
+				// this outer therefore includes only our real surviving private state.
+				completed =
+					item_movement_transaction_restore_replayed_publication_bounded(
+						command, soulbind_transfer_publication, &context,
+						sizeof(context), reserve, reserve_context,
+						outer_live + frames + sizeof(budget) + heap);
+			} while (false);
+			budget.payload = nullptr;
+		}
+	}
+	catch (...)
+	{
+		budget.payload = nullptr;
+		completed = false;
+	}
+	// All private payload storage is dead. Pure readback is required on every
+	// outcome, and never introduces a fallible callback after attachment.
+	size_t observed = 0;
+	const bool current = item_movement_transaction_replay_current_storage_bytes(&observed);
+	if (!completed)
+		budget.current();
+	(void)current;
+	return completed;
+}
