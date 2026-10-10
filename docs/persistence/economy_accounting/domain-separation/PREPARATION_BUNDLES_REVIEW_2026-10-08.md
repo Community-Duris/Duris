@@ -2847,6 +2847,167 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Pulse caller pair reviewed CLOSED; startup guard and journal handoff pair selected - 2026-10-09
+
+Both original PUBLISHED_FLAT_ROOM_PULSE_CALLER_AUTHORITY_BOUNDARY_2026-10-09.txt
+and PUBLISHED_FLAT_ROOM_PULSE_CALLER_ACCEPTANCE_DELTA_2026-10-09.txt are independently
+SOURCE/DESIGN/METADATA PASS; PC reviews CLOSED at original F
+218fcb564f0a8386e71ba096ead9e3513684dec9 / actual parent B
+7f861da69f0fc5fbf41e3c90c5d73217402eb804. Original selection charter O
+6a8e8f1a46ede1da0046ef119311d7f12c5b2761 / actual parent N
+402cc698f1b15c994f2e5adccfeaa671a801aa8e, original driver/locked companions
+and each packet's distinct finite context remain sealed. No current-source repin.
+Root evidence D:/Dev/Temp/coordinator-pulse-caller-review-20261009 authenticates
+raw providers, full definitions/catches/scopes/inline methods, original equalities,
+whole source inverses, eight caller-extra/default-zero reductions, strict indexes,
+minimal CLOSED references and fully audited pure stdlib/read-only Git verifiers.
+Both original receipts were independently reproduced exactly before coordinator
+advance. Architecture corrected receipt independently reproduced afterward too.
+Quest passes without correction:28 providers,129 complete functions,16 scopes,
+two inline methods,46 original equalities,two whole inverses,eight conversion
+inverses,two N continuities,15 minimal principals/three indices and four-payload
+index. Architecture:44 providers,187 cuts,42 original equalities,eight changed
+definitions/eight default-zero reductions,two new definitions,27 scopes,52 real
+provider controls,15 continuities,two whole inverses/four diffs,constructor/header
+zero reductions,original pruning tail,six minimal principals/three censuses and
+one finite assessment;243 indexed payloads plus INDEX,244 files total.
+
+Architecture correction is exactly two list sentences: caller_extra is admitted
+before the earlier prospective admission charge, distinct from the later first
+SHARED charge after actual seven-owner observer registration. Detailed PC1,
+source/PINS/verifier/raw providers/cuts/diffs/reductions/context remain byte-exact.
+All244 original files are byte-exact in the distinct preserved history sibling:
+D:/Dev/Temp/published-flat-room-pulse-caller-authority-boundary-20261009-original-pre-charge-wording-correction.
+Root authenticates every original file against the captured original INDEX and
+principals, whole two-sentence note inverse, receipt-only principals.note delta,
+INDEX-only note/receipt entries. Only note/receipt/INDEX changed;241 files unchanged.
+Original architecture note36837/e9132fcd4517e31de1e28f234f87552927837e5b35928a01ff3fda625761fac4,
+receipt2258/4a291f5c14070b93c410458fc25dfd49e43903ca6408a3aea81a38c4f745547e,
+INDEX42431/151b61dbce45561f4c2f5aafb5bc39f57e0987000c4789dc9e59c7d594a1cbda
+remain sealed in history. Current principal seals:
+- Architecture INDEX.json: 42431/fbf30a1f66417baf1ff8f7565bcccbf582970aa5cafbc93b04f92b0de90be982
+- Architecture PINS.json: 275474/05a91d458ed58a1aad84ebcdbf512259497797a3bdaf414a58e886ff78bfa8eb
+- Architecture PUBLISHED_FLAT_ROOM_PULSE_CALLER_AUTHORITY_BOUNDARY_2026-10-09.txt: 36885/f4528658882a4cc03a4fb92424848ee0116b950560a0ccaca08c17862b622cbc
+- Architecture VERIFICATION.json: 2258/6338003993fd0857fad02b8eb6cc9ce93ca2b03208b9dd6c5ad98f6e635558af
+- Architecture verify.py: 35265/7ae6466a18d07b5619edee0bb84f6c1a70f994d52b40ee631dea7928512cdd11
+- Quest INDEX.json: 669/83436b8f6e50062a26354ee7120b5db4a4f34f0f5e9f53d47b9a479f5fc3dabd
+- Quest PINS.json: 11730767/e1dbe7fcb5606725f29263932b8592f05674a618f7b7ef2e23c6270b15cfa2aa
+- Quest PUBLISHED_FLAT_ROOM_PULSE_CALLER_ACCEPTANCE_DELTA_2026-10-09.txt: 34805/f372a0e2ddd149d1bf539b011a8dc6c2d4e6988fbbbe85bd91866d1203045af3
+- Quest VERIFICATION.json: 4593/ee9dace723322f5918c4d6b80b17b05e25721250d0a315c7d455c4eaa1414670
+- Quest verify.py: 24917/ad9b2ab8bbc959572a021764ea13c38d6f07dd1da81f9e1b60e878db51ef3571
+
+PC preserves actual replay-ready/game-thread/backend/registry/source/slot/sealing
+and selected-authority gates; earlier prospective versus first SHARED admission,
+factory/publication/output/held capacities and actual CURRENT rebase. Returned
+keeps-operation submission and full receipt/output facts are rooted before later
+false. Missing generation still permits actual receipt lookup; ACK/removal require
+genuine generation. Never-admitted cleanup and completed publication preserve real
+started/returned/called/succeeded/custody/checkpoint/ACK/retired facts; no native
+rerun or replacement of partially live bodies. End actual lender before guard/end.
+Provider/frame/output death precedes first-declared guard, then original registry
+pruning; scalar clear -> exact global end -> outside charge. All PC1-PC4 component/
+native UNEXECUTED,genuine commands UNAVAILABLE; no runtime/math/ABI/allocator/full
+aggregate qualification. This is optional preparation review, not primary adoption.
+
+Current published successors, separately assessed at this delivery boundary:
+- Persistent journal J f22da6f0ec8fbd513aca48c390b2043b1e8a4b37 / actual parent O6a:
+  genuine mutex-published complete path/directory/mutex/quota/health/native flag,
+  full uncertainty carrier/rewrite storage and atomic CURRENT metadata. SIZE_MAX
+  refuses unauthenticated publication. Actual preparation_capacity selects full
+  persistent J only when the coordinator observer is registered, replacing rather
+  than adding the original rewrite-only projection. Startup explicit metadata and
+  separately counted uncertainty prefixes remain genuine caller responsibilities.
+- Private passive ROOM receiver R760f4735d00b6c0ad4ab00fd617d2614430e64db / parent J:
+  full original typed/canonical/revision/phase/continuation proof, actual owning
+  tables/queues/fences, held-lock lender and rollback/current residual capacity.
+  Actual valid_bounded is distinct from initial_bounded. This provider EXISTS;
+  complete startup caller/host bounded observers and accepted shared-shop NMB4
+  restoration remain dependent open. ROOM+legacy alone is not full accepted set.
+- Genuine startup guard G91e3a461396c63dbd29df4612a7033d6db026418 / parent R:
+  real full-seven scalar scope, held-init full caller+coordinator reserve, exact
+  future observer registration after unlock, scope end/outside charge and actual
+  post-guard refresh. Destructor ends scope without charge while init may be held.
+  Actual complete startup initializer/host caller selection remains unqualified.
+Root reads all three full handoffs/headers/changed C, bounded full aggregate/global/
+lender controls, authenticates six whole forward/inverses,15 complete PC/original
+controls,six whole adjacent providers and three prior owned sections preserved.
+Whole original journal/aggregate C-prefix preservation is NOT claimed. Full
+original scanner/decoder/coordinator/native/table/deque/request math/ABI/allocator/
+aggregate qualification NOT PERFORMED; primary RAW/token/policy/preprocessor/review
+and private source-pin claims REPORTED ONLY. Genuine J/R/G leaves EXIST, unselected.
+
+One bounded active delivery per chat selected now, fixed G91/R760 and Jf22/O6a:
+- Architecture: PUBLISHED_STARTUP_GUARD_JOURNAL_HANDOFF_AUTHORITY_BOUNDARY_2026-10-09.txt
+- Quest: PUBLISHED_STARTUP_GUARD_JOURNAL_HANDOFF_ACCEPTANCE_DELTA_2026-10-09.txt
+Complete zone_reset_item_owner C/H startup_budget_guard begin/reserve/destructor/
+finish_after_unlock/refresh_after_startup; critical_command_journal C/H persistent
+publisher/getter/metadata snapshot and actual init/shutdown/rewrite transitions;
+item_movement_transaction C/H actual preparation_capacity projection selection,
+full global begin/end/register/reset/exclusive-prefix semantics; genuine held-lock
+lender registered versus unregistered startup forwarding controls. Full raw source
+inverses and complete required helper/owner lifetimes, minimal CLOSED PC/SC refs.
+Future benefit: implementation-ready held-init prefix -> unlock -> registration/
+full journal storage handoff and native refusal/retry acceptance, preventing C/J
+double counting, outside-lock observation under held locks or post-guard omission.
+No second active task/full replay receiver inventory/primary math duplication.
+
+Four SG legal acceptance cuts only:
+SG1 Genuine game-thread/ABI/non-SQL/actual reset-before-replay/no registered outside
+coordinator observer and authentic full-seven address/scope before first charge;
+actual init-lock descriptor remains owned by driver. No boot-root/source authority.
+SG2 Held real lender CURRENT coordinator once, actual full caller+metadata prefix,
+uncertainty carrier split and guard/provider/formal/global lifetimes. Unregistered
+startup lender forwards full prefix directly, without borrow subtraction; registered
+runtime lender has genuine borrowed CURRENT law. SIZE_MAX/partial capacities/cache
+refusal preserved. No outside coordinator/journal locking observation under held locks.
+SG3 After actual unlock, exact future current_coordinator_storage observer and
+reserve_warm_command_scratch pair registration -> exact global end -> fresh outside
+global/coordinator/full persistent journal charge. Full J replaces rewrite-only once.
+No callback/admission between registration and end. Registration versus final charge
+false retain actual distinct outcomes; no invented ready/activation/atomic snapshot.
+SG4 Destructor ends only its real scalar scope, without charge even if init held;
+actual lock/descriptor/guard death precedes post-startup refresh of real surviving
+metadata/uncertainty/formal capacities. SQL/unregistered/inactive controls and every
+actual return/current retention remain. Global end has no invented borrow gate.
+No synthetic pointer/flag/lender/generation/phase/receipt/native marker, constant
+observer/reserve, accepting stub, copied fixture or maintained math/admission edit.
+All SG1-SG4 component/native UNEXECUTED,genuine commands UNAVAILABLE. Private D:
+strict INDEX,deterministic audited stdlib/read-only Git verifier/exact receipt,root
+independent review. Missing genuine full mixed startup driver/host observers/NMB4
+accepted-set integration/full selector/admission/legal owner/fault/restart/capture/
+current native ELF/schema/full caller aggregate/ABI/allocator inputs block dependent
+execution only, not useful source preparation. Primary retains shared implementation,
+math/admission/authorities/contracts/qualification; Plan5 backend/SQL0065/schema65/
+32MiB/recovery/release. Reassess successors at handoff without expanding or repinning.
+
+Evolving queue: selected SG map/four blueprints first; next genuine complete mixed
+startup/ROOM and legacy/shared-shop receivers/7f rollback/N402 replay/persistent
+metadata and uncertainty handoff/full selection/admission/capture/legal failures.
+Private pulse/submit/driver/lender/locked companions/J/R/G providers are available,
+not missing-leaf claims. Separately retain paired ROOT/publication/NPC pool-slot
+ownership/four cold routes/detach/adopt/enroll/light once-only markers; financial
+command/compiler/result/recovery; diagnostics/service/scheduler/placement/activity;
+full native/caller aggregate/allocator/ABI qualification. No adoption waits/busywork.
+Preserve all CLOSED PC/PD/SC/RK/RF/GG/CG/CK/SAME-lock original pins/receipts/history,
+scanner unchecked-close correction/242 originals,lifecycle hydration-allocation
+clarification (mutation may allocate pre-admitted nodes/no budget callbacks; only
+post-hydration native tail no allocations),CURRENT/warm/constructor declaration-
+order correction/141 originals,terminal TR UNEXECUTED/factory CURRENT-RETAINED history/
+immutable and every earlier seal. Preserve isolated checkouts/jobs/services/build
+evidence and quest unpublished f4e20219113fdaee7d3ead787418d89683e05590. Oct7
+e7c381c7/Pasted text.txt genuine newer human provenance answer remains pending as
+observed; actual newer human instructions take priority. Prior component PASS/QP04
+FAIL/private-ready SQL-flat build reports root UNREVIEWED,no current ELF/gameplay/
+SQL capture proof. No reset/revert/kill/delete/restart/additional product/DB work.
+
+Actual Goal BLOCKED unchanged1791410483,no replacement/resumption/completion.
+Broad Plans1-5/R1-R8/backend/gameplay/persistence/recovery/owner completion audit open.
+Root only three owned docs/read-only source/metadata,no private artifact import/
+commit/compiler/preprocessor/native/product/DB/deploy/activation/production mutation
+or other-chat messages. Accounting inactive/admission CLOSED/coverage incomplete/
+release BLOCKED. Heartbeat ACTIVE until broad audit/user pause,quiet unchanged/non-
+actionable state; notify meaningful progress/failure/completion/required user action.
+
 ## Publication driver pair reviewed CLOSED; private flat pulse caller pair selected - 2026-10-09
 
 Both original PUBLISHED_FLAT_ROOM_PUBLICATION_DRIVER_AUTHORITY_BOUNDARY_2026-10-09.txt
