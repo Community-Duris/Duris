@@ -3748,3 +3748,102 @@ bool item_transfer_collector_context_decode_bounded(const uint8_t *encoded, size
 		return false;
 	}
 }
+
+namespace
+{
+// Pinned OpenSSL3.0.13 Linux x86_64 SHA256 allocator-free source closure.
+constexpr size_t item_key_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t item_key_sha_c_small_frames = 16 * sizeof(unsigned int) +
+					       12 * sizeof(unsigned int) + sizeof(unsigned int) +
+					       sizeof(int) + sizeof(const uint8_t *);
+constexpr size_t item_key_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+						11 * sizeof(unsigned int) + 2 * sizeof(int) +
+						2 * sizeof(void *);
+constexpr size_t item_key_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t item_key_sha_update_frames = 2 * sizeof(void *) + sizeof(size_t) +
+					      2 * sizeof(void *) + sizeof(unsigned int) +
+					      sizeof(size_t) + sizeof(int);
+constexpr size_t item_key_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+					     sizeof(unsigned long) + sizeof(unsigned int) +
+					     sizeof(int);
+[[maybe_unused]] constexpr size_t item_key_sha_frames =
+	std::max(item_key_sha_assembly_frames,
+		 std::max(item_key_sha_c_small_frames, item_key_sha_c_normal_frames)) +
+	std::max(item_key_sha_init_frames,
+		 std::max(item_key_sha_update_frames, item_key_sha_final_frames));
+}
+
+// Same original identity bytes and little-endian digest projection. No source,
+// admission or custody authority, native state, RNG or retained heap.
+bool item_owner_key_bounded(const item_owner_identity &owner, critical_entity_key *key,
+			    bool (*reserve)(size_t, void *) noexcept, void *context,
+			    size_t outer_live) noexcept
+{
+	constexpr size_t parameters = 4 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	constexpr size_t fixed_frames =
+		parameters + sizeof(size_t) + sizeof(critical_entity_key) +
+		// Original identity predicate owner-reference/result; entity conversion
+		// type parameter and returned type; genuine braced key assignment carrier.
+		sizeof(void *) + sizeof(bool) + sizeof(item_owner_type) +
+		sizeof(critical_entity_type) + sizeof(critical_entity_key) +
+		// Actual add/admit argument/result scopes, no allocation.
+		4 * sizeof(size_t) + 3 * sizeof(void *) + 2 * sizeof(bool);
+	size_t base = outer_live;
+	if (!key || !reserve || !payload_clone_add(base, fixed_frames) || !reserve(base, context) ||
+	    !item_owner_identity_valid(owner))
+		return false;
+	critical_entity_key candidate{};
+	if (owner.id && !owner.context_id)
+	{
+		candidate = { entity_type_for_owner(owner.type), owner.id };
+		*key = candidate;
+		return true;
+	}
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) &&     \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&  \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned int) != 4 || sizeof(unsigned long) != 8)
+		return false;
+	struct workspace
+	{
+		std::array<uint8_t, 17> encoded{};
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		SHA256_CTX digest_context;
+		uint64_t identity = 0;
+		bool hashed = false;
+	};
+	constexpr size_t leaf_frames =
+		// Original encode_owner(output,owner), nested put_u64(output,value,byte).
+		2 * sizeof(void *) + sizeof(void *) + sizeof(uint64_t) + sizeof(unsigned int) +
+		// Original get_u64(input,value,byte) and distinct returned uint64 carrier.
+		sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(unsigned int) +
+		// Array data/_S_ptr parameter-return scopes and size this/result.
+		4 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(size_t);
+	if (!payload_clone_add(base, sizeof(workspace)) ||
+	    !payload_clone_add(base, leaf_frames + item_key_sha_frames) || !reserve(base, context))
+		return false;
+	workspace work;
+	encode_owner(work.encoded.data(), owner);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	work.hashed = SHA256_Init(&work.digest_context) == 1 &&
+		      SHA256_Update(&work.digest_context, work.encoded.data(),
+				    work.encoded.size()) == 1 &&
+		      SHA256_Final(work.digest.data(), &work.digest_context) == 1;
+#pragma GCC diagnostic pop
+	if (!work.hashed)
+		return false;
+	work.identity = get_u64(work.digest.data());
+	if (!work.identity)
+		work.identity = 1;
+	candidate = { entity_type_for_owner(owner.type), work.identity };
+	*key = candidate;
+	return true;
+#else
+	return false;
+#endif
+}

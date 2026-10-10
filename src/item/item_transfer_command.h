@@ -487,4 +487,11 @@ bool item_transfer_collector_context_decode_bounded(const uint8_t *, size_t,
 						    bool (*reserve)(size_t, void *) noexcept,
 						    void *context, size_t outer_live) noexcept;
 
+// Exact original owner key companion; fixed-context SHA preserves the original
+// 17-byte owner wire and little-endian first digest word. Outer owns authentic
+// owner/output and caller storage. Strong output; no semantic authority.
+bool item_owner_key_bounded(const item_owner_identity &, critical_entity_key *,
+			    bool (*reserve)(size_t, void *) noexcept, void *context,
+			    size_t outer_live) noexcept;
+
 #endif
