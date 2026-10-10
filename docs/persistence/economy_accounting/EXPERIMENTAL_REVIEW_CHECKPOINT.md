@@ -3562,3 +3562,18 @@ Evidence: tmp/npc-freeze-integrated-20261010. Immutable source packet: tmp/ordin
 ## Bounded real empty-inventory owner projection implemented - 2026-10-10
 
 [Source checkpoint](BOUNDED_EMPTY_INVENTORY_OWNER_HYDRATION_2026-10-10.md) supplies complete original single-owner validity/monotonicrevision projection with prospective actual bucket/node admission and strong owner contents. Zero-item bounded batch cannot establish real ownerrevision1; the new companion does so without a fake item. Refresh actual cache storage on every return because admitted bucket growth survives later refusal. Full31/twoRAWinstalledinverses/originalCprefix/tenoriginals/fourcurrentcaptures/14ABIheaders/tokenlogicalPP/protected3 SOURCE PASS. Registry443pins/twochangedexistingpins/931unchangedpolicies/2853mappedunique/zero newunmapped. Actual producer consumption and full joined source/native/library/allocator/emitted32MiB/R1-R8 remain OPEN. Tests deferred major-plan batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Ordinary bounded publication coordinator implemented - 2026-10-10
+
+[Source checkpoint](ORDINARY_BOUNDED_PUBLICATION_COORDINATOR_2026-10-10.md)
+supplies all four genuine ordinary checkpoint/ACK/retirement/refusal companions
+with complete original NMB4 authority, receipt, CAS, uncertainty and fence laws.
+Native effects remain outside the mutex; fresh nested/private relay requests use
+the actual mutex and existing ROOT/common-guard lender, CURRENT C once. Durable
+origin precedes retirement; successful cleanup cannot replay. Full96/195 and
+installed whole inverses/tokens/logicalPP/originalCprefix/exact private relay/
+443pins/twochangedexistingpins/931unchangedpolicies/2853mappedunique/protected3
+SOURCE PASS. Actual producer selection and joined native/library/global32MiB/
+R1-R8 remain OPEN. Tests deferred major-plan batch; inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE.

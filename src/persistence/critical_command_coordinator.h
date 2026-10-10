@@ -505,6 +505,49 @@ class critical_native_mobile_birth_publication_owner final
 						  bool (*)(size_t, void *) noexcept, void *,
 						  size_t outer,
 						  size_t *current_coordinator_bytes) noexcept;
+	// Complete ordinary NMB4-only context CAS, physical ACK, delivered refusal
+	// cleanup and original terminal transfer/retirement. Caller outer includes
+	// all genuine inputs, prior outputs, registry/journal and external ROOT
+	// storage; it excludes all retained coordinator storage. Every nested
+	// reserve borrows fresh CURRENT C once under its actual mutex and the exact
+	// registered ROOT callback/common guard. Original SQL/shared/ROOM unchanged.
+	// Outside callbacks receive the full scratch prefix and a genuine relay
+	// acquiring coordinator only for each budget request; they must use it for
+	// all nested allocations and must not hold coordinator/journal themselves.
+	// Cleanup markers/context survive owner destruction; false after a called
+	// successful cleanup cannot authorize repeating that effect. Terminal
+	// transfer is mandatory before durable retirement and fence release.
+	// No callback/encode/allocation follows confirmed durable retirement.
+	// Selection, native frame qualification and activation remain separate.
+	// Fresh budget bridge for genuine outside publication/capture requests.
+	// outer excludes all coordinator storage; actual mutex and original lender
+	// add CURRENT C exactly once and authenticate the registered ROOT guard.
+	// Callback must not acquire coordinator/journal; caller holds neither.
+	// Admission provides no operation, delivery, publication or ACK authority.
+	static bool reserve_ordinary_bounded(bool (*)(size_t, void *) noexcept, void *,
+					     size_t exclusive_live) noexcept;
+	static bool checkpoint_context_ordinary_bounded(const critical_native_recovery_envelope &,
+							const critical_native_recovery_envelope &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t outer,
+							uint64_t expected_generation = 0) noexcept;
+	static bool acknowledge_ordinary_bounded(const critical_native_recovery_envelope &,
+						 const critical_completion &, uint64_t,
+						 bool (*)(size_t, void *) noexcept, void *,
+						 size_t outer) noexcept;
+	static bool retire_ordinary_bounded(const critical_native_recovery_envelope &, uint64_t,
+					    bool (*)(const critical_native_recovery_envelope &,
+						     void *, bool (*)(size_t, void *) noexcept,
+						     void *, size_t) noexcept,
+					    void *transfer_context,
+					    bool (*)(size_t, void *) noexcept, void *budget_context,
+					    size_t outer) noexcept;
+	static bool cancel_refusal_ordinary_bounded(
+		const critical_native_recovery_envelope &, const critical_completion &, uint64_t,
+		bool (*)(const critical_command &, const critical_completion &, void *,
+			 bool (*)(size_t, void *) noexcept, void *, size_t) noexcept,
+		void *cleanup_context, bool (*)(size_t, void *) noexcept, void *budget_context,
+		size_t outer, bool *cleanup_called, bool *cleanup_succeeded) noexcept;
 	static bool checkpoint_context(const critical_native_recovery_envelope &,
 				       const critical_native_recovery_envelope &) noexcept;
 	static bool observe_generation(const critical_native_recovery_envelope &,
