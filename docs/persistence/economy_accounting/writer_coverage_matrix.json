@@ -435,8 +435,8 @@
       "src/net/comm.h": "f7d70e14e2c44badc0cb008548652299ccd0c2baede65ec3e2d83ceafbffe643",
       "src/persistence/critical_command.c": "511309582fe9260b9c9799387fb539559361812a5cc823dce871c38d8e1633db",
       "src/persistence/critical_command.h": "370de28bca9b6e4d23a40c1b57da964c631aae8c10f5e0ccc851fe58de7db333",
-      "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
-      "src/persistence/critical_command_coordinator.c": "90d039335f708617ee7b4ee48cebdb38fa54b67bdadef5a0e3d6f485892e19e5",
+      "src/persistence/critical_command_completion.h": "8dbacd59c00c75801ffd1aebe15b3d48ec26cfc73bd9f400c28fceb818a720c7",
+      "src/persistence/critical_command_coordinator.c": "fa6eaccb4465001390d7fb1a3576f90d7092ff5639c7c95345c54827bb155357",
       "src/persistence/critical_command_coordinator.h": "638d57ab3a05fe6e3b3f6e34fb43a8f094cde22298231a0a6c316544576fd473",
       "src/persistence/critical_command_journal.c": "8a48252e4256d6b897f787b574527705174ca1b176d73a1ab57d380b5a78d2a6",
       "src/persistence/critical_command_journal.h": "2cc2f8da5182773a1e2daa589e69daa2b81896e8742874d5a0ad0807d606ad8a",
@@ -54001,7 +54001,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4376
+          4378
         ],
         "file": "src/persistence/critical_command_coordinator.c",
         "function": "critical_native_mobile_birth_publication_owner::submit",

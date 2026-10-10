@@ -110,7 +110,9 @@ class critical_completion_storage_queue final : public std::deque<critical_compl
 	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 		if (!output)
 			return false;
-		const auto &actual = storage_base::_M_impl;
+		const auto &actual =
+			this->std::_Deque_base<critical_completion,
+					       std::allocator<critical_completion>>::_M_impl;
 		if (!actual._M_map || !actual._M_map_size ||
 		    actual._M_map_size > SIZE_MAX / sizeof(critical_completion *))
 			return false;
