@@ -259,6 +259,11 @@ class quest_mobile_native_birth_owner final
 	static critical_submit_result submit_ordinary_flat_envelope(size_t, size_t,
 								    bool *) noexcept;
 
+	struct ordinary_flat_observation_budget;
+	static bool reserve_ordinary_flat_observation(size_t, void *) noexcept;
+	static bool ordinary_flat_observation_source_current(size_t) noexcept;
+	static bool observe_ordinary_flat_post_submit(size_t, size_t) noexcept;
+
 	static bool capture_ordinary_flat_source_pin(size_t) noexcept;
 	static bool ordinary_flat_execution_source_current(
 		const quest_mobile_native_birth_ordinary_execution_lease &, const void *) noexcept;
