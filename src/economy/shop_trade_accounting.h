@@ -85,4 +85,31 @@ bool shop_trade_accounting_account_current_heap_bytes(const economic_account_key
 						      size_t *) noexcept;
 size_t shop_trade_accounting_decoded_heap_observer_frame_bytes() noexcept;
 
+// Complete original SHOP proof with the genuine fixed primitive binding child.
+// Outer owns inputs, prior outputs and foreign state. The caller transiently
+// preadmits full SOURCE/initial before entry; this new child owns its real local
+// SOURCE and workspace thereafter. Outputs remain unchanged on every refusal.
+economic_accounting_error shop_trade_accounting_decode_fixed_bounded(
+	const critical_command &, economic_frozen_intent *, shop_trade_payload *,
+	economic_account_key *, economic_account_key *, economic_account_key *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool shop_trade_accounting_decode_fixed_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_accounting_decode_fixed_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_accounting_decode_fixed_source_query_frame_bytes() noexcept
+{
+	// Real out/policy/results and seven getter size_t locals; own-source
+	// helper output/current/total and checked-add scopes; lower SOURCE getters
+	// are selected directly. Required constexpr composition eliminates the
+	// accessors' nested runtime query graph; actual caller N is separate.
+	return 5 * sizeof(void *) + 12 * sizeof(size_t) + 8 * sizeof(bool) +
+	       shop_trade_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes();
+}
+constexpr size_t shop_trade_accounting_decode_fixed_initial_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif
