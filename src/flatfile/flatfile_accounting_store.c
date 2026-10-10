@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_ordinary_native_birth_receipt.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h"
 #include "economy/native_mobile_birth_cash_role_result.h"
 #include <type_traits>
 #include <utility>
@@ -1630,9 +1631,12 @@ flatfile_ordinary_native_birth_receipt_storage::verify_retained_current_locked(
 			}
 			// The original passive full-set reader does not recover/repair/append;
 			// this owner holds the SAME root lock around the entire synchronous read.
+			flatfile_native_mobile_birth_ordinary_reference_current reference_counts;
 			const auto references_error =
-				flatfile_item_accounting_reference_verify_operation(
-					root, operation, references, error);
+				flatfile_native_mobile_birth_ordinary_reference_history_storage::
+					verify_current_operation_locked(root, lock, operation,
+									references,
+									&reference_counts, error);
 			require(references_error == flatfile_item_accounting_status::ok,
 				references_error == flatfile_item_accounting_status::capacity ?
 					status::capacity :

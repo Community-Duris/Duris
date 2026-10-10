@@ -1138,3 +1138,133 @@ flatfile_item_accounting_status flatfile_native_mobile_birth_ordinary_reference_
 		return status::io_error;
 	}
 }
+
+flatfile_item_accounting_status
+flatfile_native_mobile_birth_ordinary_reference_history_storage::verify_current_operation_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation,
+	std::span<const economic_accounting_item_reference> expected,
+	flatfile_native_mobile_birth_ordinary_reference_current *output,
+	std::string *error) noexcept
+{
+	using status = flatfile_item_accounting_status;
+	if (root.empty() || !output || !lock.matches(root) ||
+	    critical_operation_id_is_zero(operation))
+		return status::invalid;
+	try
+	{
+		std::vector<economic_accounting_item_reference> sorted(expected.begin(),
+								       expected.end());
+		std::sort(sorted.begin(), sorted.end(),
+			  [](const auto &a, const auto &b) { return a.line_index < b.line_index; });
+		for (size_t index = 0; index < sorted.size(); ++index)
+		{
+			const auto &row = sorted[index];
+			if (!economic_accounting_item_reference_validate(row) ||
+			    row.operation_id.bytes != operation.bytes ||
+			    row.legacy_operation_id.bytes != operation.bytes ||
+			    (index && sorted[index - 1].line_index == row.line_index))
+				return status::invalid;
+		}
+		using key = std::pair<std::array<uint8_t, 16>, uint16_t>;
+		std::set<key> operation_lines, legacy_events;
+		std::set<uint16_t> matched;
+		const std::string directory = item_refs_directory(root);
+		flatfile_native_mobile_birth_ordinary_reference_current observed;
+		bool selected_missing = false;
+		for (unsigned int bucket = 0; bucket < 256; ++bucket)
+		{
+			const auto shard = static_cast<uint8_t>(bucket);
+			std::vector<uint8_t> existing;
+			const auto loaded =
+				flatfile_read(directory, bucket_filename(shard),
+					      FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					      &existing, error);
+			if (loaded == flatfile_read_result::not_found)
+			{
+				selected_missing |= shard == operation.bytes[0];
+				++observed.missing_buckets;
+				++observed.buckets_verified;
+				continue;
+			}
+			if (loaded != flatfile_read_result::ok)
+				return read_status(loaded);
+			if (existing.size() % FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+				return status::invalid;
+			for (size_t offset = 0; offset < existing.size();
+			     offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+			{
+				const auto bytes = std::span<const uint8_t>(existing).subspan(
+					offset, FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+				economic_accounting_item_reference row;
+				const auto decoded =
+					flatfile_item_accounting_reference_decode(bytes, &row);
+				if (decoded != status::ok)
+					return decoded;
+				if (row.legacy_operation_id.bytes[0] != shard)
+					return status::invalid;
+				std::vector<uint8_t> canonical;
+				auto encoded =
+					flatfile_item_accounting_reference_encode(row, &canonical);
+				if (encoded != status::ok)
+					return encoded;
+				if (canonical.size() != bytes.size() ||
+				    !std::equal(canonical.begin(), canonical.end(),
+						bytes.begin()) ||
+				    !operation_lines.emplace(row.operation_id.bytes, row.line_index)
+					     .second ||
+				    !legacy_events
+					     .emplace(row.legacy_operation_id.bytes,
+						      row.legacy_event_index)
+					     .second)
+					return status::invalid;
+				const bool root_match = row.operation_id.bytes == operation.bytes;
+				const bool legacy_match = row.legacy_operation_id.bytes ==
+							  operation.bytes;
+				if (root_match || legacy_match)
+				{
+					// A foreign legacy identity can place an extra root row in
+					// any shard. Both root and legacy must match the full typed
+					// ordinary-birth expectation, even for a zero-stock birth.
+					if (!root_match || !legacy_match)
+						return status::invalid;
+					const auto found = std::lower_bound(
+						sorted.begin(), sorted.end(), row.line_index,
+						[](const auto &value, uint16_t line)
+						{ return value.line_index < line; });
+					if (found == sorted.end() ||
+					    found->line_index != row.line_index ||
+					    !matched.insert(row.line_index).second)
+						return status::invalid;
+					std::vector<uint8_t> expected_bytes;
+					encoded = flatfile_item_accounting_reference_encode(
+						*found, &expected_bytes);
+					if (encoded != status::ok)
+						return encoded;
+					if (canonical != expected_bytes)
+						return status::invalid;
+					++observed.root_records;
+					++observed.legacy_records;
+				}
+				++observed.retained_records;
+			}
+			++observed.buckets_verified;
+		}
+		if (observed.buckets_verified != 256 || !lock.matches(root))
+			return status::invalid;
+		if (observed.root_records != expected.size() ||
+		    observed.legacy_records != expected.size() || matched.size() != expected.size())
+			return selected_missing && !expected.empty() ? status::not_found :
+								       status::invalid;
+		*output = observed;
+		return status::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+}
