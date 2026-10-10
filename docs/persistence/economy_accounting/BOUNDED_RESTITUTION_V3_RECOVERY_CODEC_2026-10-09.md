@@ -1,0 +1,7 @@
+# Complete genuine bounded restitution v3 recovery codec - 2026-10-09
+
+The genuine v3 command decoder and standalone plan validator preserve all original wire reads, both complete validation passes, artifact authority, UID/parent/order/duplicate rules and original key/time/digest predicates. Actual string/vector requests, simultaneous item/row/validator capacities and the complete bounded IST1 item state are prospectively admitted. Fixed-context SHA uses the supported real source profile. Failure preserves both outputs; successful ownership transfer has no later fallible callback.
+
+Independent complete RAW and final formatted source review, exact whole original/IST1 prefix and inverses, token/logical-preprocessor comparisons, allocator/crypto source dependencies and protected work passed. All 406 source pins authenticate, with 931 unchanged writer policies and zero new/unmapped sites. Evidence: tmp/restitution-v3-integrated-20261009.
+
+Original selected methods remain unchanged. Status-cache ownership, the runtime validation and actual offline/save/login fence, full host dispatch and mixed startup qualification remain unfinished. These providers are unselected, and no isolated source review establishes native recovery or release acceptance. Native checks remain batched until major-plan readiness. Accounting inactive, admission CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
