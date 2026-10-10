@@ -607,3 +607,13 @@ flatfile_accounting_native_mobile_birth_ordinary_transaction::ordinary_wallet_re
 {
 	return state_ && state_->current_verified ? &state_->ordinary_result : nullptr;
 }
+
+unsigned int flatfile_native_mobile_birth_ordinary_publication_storage::read_current_locked(
+	const std::string &root, const flatfile_identity_lock &identity,
+	const flatfile_authority_lock &lock, const critical_native_recovery_envelope &original,
+	const critical_completion &receipt,
+	flatfile_ordinary_native_birth_projection *output) noexcept
+{
+	return flatfile_accounting_native_mobile_birth_ordinary_transaction::read_current_locked(
+		root, identity, lock, original, receipt, output);
+}
