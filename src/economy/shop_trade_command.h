@@ -154,4 +154,22 @@ bool shop_trade_command_decode_payload_bounded(
 	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
 	size_t outer_live_scratch, size_t *retained_payload_heap_bytes = nullptr) noexcept;
 
+// Complete selected original v1-v8 decoder SOURCE. Pure strong scalar outputs;
+// caller input/output and prior heaps stay outer. Pre-admit full SOURCE+initial
+// transiently, then retain ONLY supplement through the unchanged bounded decoder.
+// Original budget owns workspaces/real capacities/old+new requests exactly once.
+// No source profile is admission, custody, execution or accounting authority.
+bool shop_trade_command_decode_payload_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_command_decode_payload_source_supplement_frame_bytes(size_t *) noexcept;
+bool shop_trade_command_decode_payload_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_command_decode_payload_source_query_frame_bytes() noexcept
+{
+	// Public output/result; helper output/selector/result and four true scalar
+	// locals; add(ref,amount,bool) and selected-policy bool. Conservative SUM
+	// of the genuine one account and two manifest query chains; no scan/heap.
+	// The caller separately owns the accessor's returned size_t carrier.
+	return 3 * sizeof(void *) + 5 * sizeof(size_t) + 5 * sizeof(bool) +
+	       currency_account_key_source_query_frame_bytes() +
+	       2 * shop_trade_recovery_manifest_source_query_frame_bytes();
+}
 #endif
