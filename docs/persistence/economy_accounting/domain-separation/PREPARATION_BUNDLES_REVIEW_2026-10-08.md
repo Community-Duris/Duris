@@ -2848,6 +2848,164 @@ F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished an
 heartbeat ACTIVE through the continuing broader completion audit.
 
 
+## RB pair CLOSED with preserved correction; original activity and scheduler pair selected - 2026-10-10
+
+Architecture original RB remains SOURCE/DESIGN/METADATA PASS CLOSED_NO_CORRECTION,
+root2894 ONCE at clean selecting0d85 NOT_RERUN. Quest original RB closes only
+CLOSED_WITH_ADDITIVE_PUBLICATION_INVENTORY_CORRECTION. Original failed author
+default ONCE exit1/stdout0/stderr63,expectation959,original INDEX664/copy/principals,
+later failure wrapper1663/INDEX992 and all findings/history remain immutable.
+Root original failed Quest default NOT_RUN and never dispatched. No original
+normalization/reseal/relabel/rerun/repin or CLOSED proof reopening follows.
+
+Separate Quest correction independently SOURCE/DESIGN/METADATA PASS CLOSED.
+Full15238-byte standalone stdlib/read-only Git verifier and5689-byte note read
+and audited BEFORE root original NEW correction normal default ONCE at unchanged
+clean0d85: exact965-byte binary stdout matches original separate new author stdout,
+SHA2566af14bbf0fcc48acae8285312359ef59805475f329495b25c978362abe0fdd06,
+exit0/stderr0. Strict four payloads plus INDEX,actual TEN F/P publication paths,
+nine modified/one added/nineteen present genuine mode/blob objects,four selected
+source providers,56 fresh whole providers,112 original ranges,seven unchanged
+transforms/inverses,78 equalities,113 original delivery seals and20 new seals
+authenticate. Of250 streaming-only historical controls,248 current paths remain
+exact and TWO use exact pre-excursion preserved copies; current changed bodies
+are separately sealed. No old failed or CLOSED program/helper is imported,
+dispatched or executed. Original packet,new correction and historical copies
+remain unchanged. Root/worker checkouts and actual Goal states unchanged at
+the new root default boundary. ALL root RB defaults sealed BEFORE source advance.
+
+Separate root D:/Dev/Temp/coordinator-pure-retained-birth-affect-review-20261010
+contains quest-correction-source-authentication.json,whole correction-verifier
+audit,original new root attempt/binary stdout/stderr/exit and
+quest-correction-authentication.json. Original RB source/design review of
+209978 additional bytes plus14 exact prior root readings remains finite only.
+RB1-RB4/component/native UNEXECUTED; genuine commands UNAVAILABLE; storage/ABI/
+allocator/library/emitted expressions UNEVALUATED. Full external every-return
+survivor/shared-holder partition,financial/transitive/global/native32MiB/full-host/
+producer/publication/recovery/ACK qualification remain OPEN. No native inference.
+Original PENDING-at-seal notes and all historical findings remain exact.
+
+One bounded next private delivery per authorized existing chat is selected:
+fixed A2e7570f402b25f1b31a90105970d020c3d4d802b / actual sole parent
+821eaa386e9c2f3fb592f1610da05540534d96c2. These are complete original/additive
+src/world/world_activity.c/h and src/world/new_events.c/events.h providers.
+Architecture: PUBLISHED_ORIGINAL_ACTIVITY_SCHEDULER_AUTHORITY_BOUNDARY_2026-10-10.txt.
+Quest: PUBLISHED_ORIGINAL_ACTIVITY_SCHEDULER_ACCEPTANCE_DELTA_2026-10-10.txt.
+Concrete output: one exact actual policy/ownership/partial-outcome map,exactly
+AS1-AS4 legal future acceptance blueprints,finite available-source assessment,
+strict INDEX,fully audited deterministic stdlib/read-only Git verifier and one
+original NEW normal-default binary stdout/stderr/exit/receipt for root review.
+Future benefit: genuine caller preparation that preserves original delay/RNG
+and mutation outcomes while admitting actual scheduler/source observers without
+duplicate CURRENT ownership or an invented accepting global/thread/phase fixture.
+
+Root read full47-line published handoff,full new500 C lines and both complete
+header diffs; four general whole forward/inverse transforms and four exact
+current-provider equalities authenticate in activity-scheduler-selection-
+authentication.json. Complete necessary original algorithm/helper/alias/owner/
+library source review is bounded worker preparation,not blanket root approval.
+Private original library/token/preprocessing/registry claims remain REPORTED_ONLY.
+Handoff reports no compiler/executable tests or major completion. No live repin.
+
+Inputs: full fixed four C/H providers,full original mundane_delay policy and
+controlled_rooms/config/ready/zone/encounter/tier/grace/exemption/timing helpers,
+actual activity_enter_budget/native init/controlled-enter/wake/finish and storage
+checked-add/getter definitions. Full original pending-reschedule type/map/bucket/
+sequence/lifecycle predicate and collected/fallback/apply/merge/flush/clear/working
+allowance definitions; genuine P_nevent owners,vector-array,pending tree and list
+links. Actual diagnostic output retained observer and selected global callback
+interface remain genuine controls. Full original number/rnd64/rotl/state source
+is necessary RNG formation context,not a substitute generator or permission.
+Complete real signatures,bodies,catches,inline methods and lexical owners required.
+Captured genuine GNU13 sort/heap/insertion/comparison/iterator/vector/tree/hash/
+allocator source controls may be used only with exact hash/version/package MD5/
+provenance and captured-versus-live distinction. Do not reread live installed
+providers or infer missing out-of-line/emitted/libc/runtime equivalence. If such
+captures are unavailable,identify exact gaps rather than invent library frames.
+No compiler/preprocessor/STL/sizeof/storage or arithmetic evaluation.
+
+AS1 Full original delay policy: actual entry null/returned/callback/game-thread
+guard precedes supported GNU13/CXX11/nondebug branch. Keep quick retry,legacy
+occupied-zone base,enabled/ready/character controlled-presence refresh,direct/
+adjacent reasons,grace,encounter/zone wakes,exemption/timing and tier branches.
+Original quick retry publishes PULSE_VIOLENCE and returned=true before final
+fallible admission. Normal path admits before exactly one original number(-4,4)
+draw,then stores max(1,base+draw) and returned=true before final admission.
+Caller owns a genuine started latch before invocation. False with returned=true
+preserves the actual selected delay; retry only its checkpoint,never reroll or
+roll back mutated owners. Initial/header/profile refusals and partial controlled
+refresh remain distinct. Do not label delay/returned as a universal strong tail.
+
+AS2 Actual global relay: observe genuine current_global plus activity/pending/
+diagnostic owners; authenticate ordered subtraction guards and replace each
+original owned category ONCE. Requested initial_foreign removal and freshly
+observed foreign inclusion use actual checked add. Admit observer-frame allowance
+BEFORE pure map traversal,then admit actual dynamic flush frames. Existing array
+inline,old/new heap,real lower budget and persistent globals retain actual owners.
+Exceptions perform only original best-effort budget.admit observation then false;
+no invented all-success callback,additional final recheck or rollback policy.
+Callbacks cannot be invoked under held coordinator/journal locks. Full outer
+caller/input/prior-output/callback-private/sibling/global survivors require fresh
+genuine census AFTER EVERY success/failure; these leaves do not supply that census.
+
+AS3 Pure original scheduler observer: exact eligible sequence/lifecycle predicate
+and genuine target bucket drive counts; all stale requests still participate in
+complete pending-tree cleanup depth. Keep full sort/introsort/right-recursion/
+partition/heap/insertion/comparison/move source closures,original threshold/depth
+limits and real cleanup null-child route distinct from eligible counts. Preserve
+count/logarithm/SIZE_MAX overflow checks,vector growth/relocation/deallocation/
+destruction and conservative alternative source-frame envelopes. Dynamic vector
+array inline and prospective old/new heaps remain original working-profile
+obligations; do not charge them again as source frames or claim exact native stack.
+Pure output scalar transfers only on success; unsupported/null/thread/overflow
+routes leave prior output unchanged. Original flush is not executed by this packet.
+
+AS4 Complete source-versus-execution limits and true partial lifetimes: retain
+actual controlled-map node/bucket insertion,rehash,rollback cleanup and original
+pending/global observers under their profile. Source expressions and original
+type assertions remain UNEVALUATED,never substitute frame literals for complete
+helpers. Preserve actual RNG state,controlled map mutations,queue stale/fallback
+paths,diagnostics and caller started/returned checkpoint boundary. Stored values,
+private source friendship or profile selection grant no recovered identity THEN
+authority in SAME interval,admission,producer/native/publication/recovery/ACK.
+No synthetic lock/thread/owner/readiness/phase/constant observer/accepting fixture,
+copied STL/allocator/financial model,source-law/category repair or native action.
+
+AS1-AS4/component/native UNEXECUTED; genuine commands UNAVAILABLE. Missing actual
+stable integrated selecting caller/global/alias/profile/library/emitted/ABI/
+allocator/libc/fault/RNG/native32MiB/full-host/producer/publication/recovery/ACK
+inputs block dependent execution only. Full native birth/startup/flat diagnostic/
+currency/commerce/SQL/Smith/coin algorithms are outside this finite task. Necessary
+original helpers may be read fresh fixed published source without reopening
+completed leaf proofs. Minimal CLOSED note+INDEX context only; no old CLOSED
+PINS/verifier/default/receipt parsing/import/execution. All old seals unchanged.
+
+Primary owns maintained implementation/contracts/authority/admission/math and
+qualification;Plan5 backend/recovery/release;workers private D packets only.
+No maintained edits/imports/commits/merges/compiler/preprocessor/ELF/build/native/
+product/DB/runtime/deploy/activation/production or Goal mutation. One active
+delivery each,no second task/live expansion/repin/CLOSED reopen/adoption wait/
+restart on timeout. Reassess flat diagnostic/failure completion,passive item-spell/
+registration/commerce,currency/restitution profiles and native capture/identity/
+lifecycle/ROOT-cold/warm/constructor/procedure/spellbook/zombie/genuine integrated
+qualification at this handoff. Required original09a/NMB3/custody/coin/receiver/
+host/save/Smith/applicable restitution/source/origin/history/outbox/ACK/pause32MiB
+and Plan5SQL0065/schema65/measurement/history/backup/restore/recovery/release persist.
+
+All second Quest historical replay48eb/2b92+8490/current hash versus exact old
+copies/stash/archive/container/jobs/failures/execution evidence remain preserved
+as detailed below,not accepted native/RB qualification. Actual root Goal BLOCKED
+1791410483,Architecture BLOCKED1791446642,Quest BLOCKED1791655328681ms unchanged
+IDs/objectives;no replacement/resumption/restoration/pause/completion. Historical
+Oct7 attachment remains historical;genuinely newer human instructions priority.
+Root publishes exactly three owned coordination docs;full insertion inverse
+restores actual bb826cd5ccdc6aeda0277ecd54dae22ac33a7e34. No maintained/private
+artifact delta/import. Root advances only AFTER every root original RB receipt
+is sealed. Broad Plans1-5/R1-R8/applicable backend/gameplay/persistence/recovery/
+blocker/owner-completion audit OPEN;accounting inactive/admission CLOSED/coverage
+incomplete/release BLOCKED. Heartbeat ACTIVE until broad audit/user pause.
+All Git fetch/merge/commit/push gc.auto=0;no destructive/housekeeping actions.
+
 ## RB Architecture independently CLOSED; Quest inventory correction and second replay preserved - 2026-10-10
 
 This additive status supersedes live state only. Fixed RB F
