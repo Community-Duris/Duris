@@ -14,6 +14,7 @@ struct flatfile_economic_locator
 {
 	// 1: wallet PID; 2: bank name; 4: auction ID; 5: claim PID;
 	// 6: shopkeeper owner ID (shop ID + 1, including shop ID zero).
+	// 7: native-mobile UID, only with ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT.
 	uint16_t kind = 0;
 	uint64_t native_id = 0;
 	std::string name;

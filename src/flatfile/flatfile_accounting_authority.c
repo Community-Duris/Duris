@@ -1,4 +1,8 @@
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_native_mobile_wallet.h"
+#include "flatfile/quest_mobile_native_flatfile.h"
+#include <type_traits>
+#include <utility>
 #include "flatfile/flatfile_accounting_staging_view.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
@@ -397,9 +401,15 @@ void name_valid(const std::string &name)
 void locator_valid(economic_account_kind kind, uint64_t context,
 		   const flatfile_economic_locator &locator, bool creating = false)
 {
-	if (kind == economic_account_kind::wallet ||
-	    kind == economic_account_kind::auction_escrow ||
-	    kind == economic_account_kind::pending_claim || kind == economic_account_kind::treasury)
+	if (kind == economic_account_kind::wallet &&
+	    context == ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT)
+	{
+		need(flatfile_native_mobile_wallet_locator_valid(kind, context, locator), EINVAL);
+	}
+	else if (kind == economic_account_kind::wallet ||
+		 kind == economic_account_kind::auction_escrow ||
+		 kind == economic_account_kind::pending_claim ||
+		 kind == economic_account_kind::treasury)
 	{
 		const uint64_t limit = kind == economic_account_kind::treasury ?
 					       uint64_t{ UINT32_MAX } + 1 :
@@ -1954,4 +1964,139 @@ unsigned int economic_flatfile_lock_authority_bounded(
 		return EILSEQ;
 	}
 #endif
+}
+
+// Pure exact native-wallet namespace, sharing the original native-key framing.
+bool flatfile_native_mobile_wallet_locator_valid(economic_account_kind kind, uint64_t context,
+						 const flatfile_economic_locator &locator) noexcept
+{
+	return kind == economic_account_kind::wallet &&
+	       context == ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT &&
+	       locator.kind == FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR && locator.native_id &&
+	       locator.native_id != UINT64_MAX && locator.name.empty();
+}
+
+bool flatfile_native_mobile_wallet_key_encode(
+	economic_account_kind kind, uint64_t context, const flatfile_economic_locator &locator,
+	std::array<uint8_t, FLATFILE_NATIVE_MOBILE_WALLET_KEY_BYTES> *output) noexcept
+{
+	if (!output || !flatfile_native_mobile_wallet_locator_valid(kind, context, locator))
+		return false;
+	std::array<uint8_t, FLATFILE_NATIVE_MOBILE_WALLET_KEY_BYTES> candidate{};
+	size_t offset = 0;
+	const auto put = [&](uint64_t value, size_t width)
+	{
+		for (size_t index = 0; index < width; ++index)
+			candidate[offset++] = static_cast<uint8_t>(value >> (index * 8));
+	};
+	put(static_cast<uint16_t>(kind), 2);
+	put(context, 8);
+	put(locator.kind, 2);
+	put(locator.native_id, 8);
+	*output = candidate;
+	return true;
+}
+
+bool flatfile_native_mobile_wallet_key_decode(std::span<const uint8_t> input,
+					      flatfile_native_mobile_wallet_key *output) noexcept
+{
+	if (!output || input.size() != FLATFILE_NATIVE_MOBILE_WALLET_KEY_BYTES)
+		return false;
+	size_t offset = 0;
+	const auto get = [&](size_t width)
+	{
+		uint64_t value = 0;
+		for (size_t index = 0; index < width; ++index)
+			value |= uint64_t(input[offset++]) << (index * 8);
+		return value;
+	};
+	// Namespace values only: no mapping account/lineage/authority is fabricated.
+	flatfile_native_mobile_wallet_key candidate;
+	candidate.kind = static_cast<economic_account_kind>(get(2));
+	candidate.context = get(8);
+	candidate.locator_kind = static_cast<uint16_t>(get(2));
+	candidate.native_id = get(8);
+	if (candidate.kind != economic_account_kind::wallet ||
+	    candidate.context != ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT ||
+	    candidate.locator_kind != FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR ||
+	    !candidate.native_id || candidate.native_id == UINT64_MAX)
+		return false;
+	*output = candidate;
+	return true;
+}
+
+unsigned int flatfile_native_mobile_wallet_storage::observe_current_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &active_epoch, const economic_account_key &wallet,
+	const quest_mobile_native_reference &reference,
+	flatfile_native_mobile_wallet_current *output) noexcept
+{
+	return guarded(
+		[&]
+		{
+			need(output && !root.empty() && lock.matches(root) &&
+				     !critical_operation_id_is_zero(active_epoch) &&
+				     economic_account_key_valid(wallet) &&
+				     wallet.kind == economic_account_kind::wallet &&
+				     wallet.context_id == ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT &&
+				     wallet.authority_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS &&
+				     quest_mobile_native_reference_valid(reference),
+			     EINVAL);
+			std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> expected{},
+				current{};
+			need(quest_mobile_native_reference_encode(reference, &expected) ==
+				     player_snapshot_codec_result::ok,
+			     EINVAL);
+			flatfile_economic_mapping_request request;
+			request.account = wallet;
+			request.locator.kind = FLATFILE_NATIVE_MOBILE_WALLET_LOCATOR;
+			request.locator.native_id = reference.mobile_instance_id;
+			flatfile_economic_authority_snapshot authority;
+			const auto authority_error =
+				economic_flatfile_read_current_authority_locked(
+					root, lock, wallet.lineage, active_epoch, { &request, 1 },
+					&authority, nullptr);
+			need(!authority_error, authority_error);
+			need(authority.mappings.size() == 1 &&
+				     economic_account_key_equal(authority.mappings.front().account,
+								wallet) &&
+				     flatfile_native_mobile_wallet_locator_valid(
+					     authority.mappings.front().account.kind,
+					     authority.mappings.front().account.context_id,
+					     authority.mappings.front().locator) &&
+				     authority.mappings.front().locator.native_id ==
+					     reference.mobile_instance_id &&
+				     authority.mappings.front().creating_operation.bytes ==
+					     reference.birth_operation.bytes &&
+				     critical_operation_id_is_zero(
+					     authority.mappings.front().retiring_operation),
+			     ESTALE);
+			quest_mobile_native_flatfile_row row;
+			const auto native_error = quest_mobile_native_flatfile_read_locked(
+				root, lock, reference.mobile_instance_id, &row);
+			need(!native_error, static_cast<unsigned int>(native_error));
+			need(row.present &&
+				     row.mobile_instance_id == reference.mobile_instance_id &&
+				     row.image.state == quest_mobile_lifetime_state::live &&
+				     row.image.cash && row.image.cash->revision,
+			     ESTALE);
+			need(quest_mobile_native_reference_encode(row.image.reference, &current) ==
+					     player_snapshot_codec_result::ok &&
+				     current == expected,
+			     ESTALE);
+			int64_t copper = 0;
+			need(economic_coin_value(row.image.cash->denominations.amount, &copper) ==
+				     economic_accounting_error::ok,
+			     EILSEQ);
+			flatfile_native_mobile_wallet_current candidate;
+			candidate.active_epoch = authority.epoch;
+			candidate.lineage_revision = authority.lineage_revision;
+			candidate.mapping = std::move(authority.mappings.front());
+			candidate.native = std::move(row.image);
+			need(lock.matches(root), EINVAL);
+			static_assert(std::is_nothrow_move_assignable_v<
+				      flatfile_native_mobile_wallet_current>);
+			*output = std::move(candidate);
+		},
+		nullptr);
 }
