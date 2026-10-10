@@ -194,4 +194,42 @@ size_t player_item_snapshot_current_heap_observer_frame_bytes() noexcept;
 // Pure selected outer-vector source scopes; excludes heap, row copies and subtree workspaces.
 size_t player_item_snapshot_vector_operation_frame_bytes() noexcept;
 
+// Pure complete SOURCE supplements for the actual bounded list encoder,
+// allocation-free wire preflight and ORIGINAL full item-list decoder. Retain
+// SOURCE in caller outer across those calls; their existing object/heap policy
+// remains unchanged. Initial-inline is a separate transient prospective entry
+// query; caller input/prior output objects are excluded. Strong scalar outputs.
+bool player_item_snapshot_list_encode_source_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_preflight_source_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_decode_source_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_encode_initial_inline_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_preflight_initial_inline_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_decode_initial_inline_bytes(size_t *) noexcept;
+// These two authentic named graphs are independent of allocating codec work:
+// whole-list member lifetime and actual public list CURRENT/heap observer.
+bool player_item_snapshot_list_lifetime_source_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_current_heap_source_frame_bytes(size_t *) noexcept;
+// Each pure getter owns output pointer/bool return and its real policy bool
+// result. Caller first admits this accessor's size_t result too. No observation.
+constexpr size_t player_item_snapshot_list_encode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t player_item_snapshot_list_preflight_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t player_item_snapshot_list_decode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t player_item_snapshot_list_lifetime_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t player_item_snapshot_list_current_heap_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif

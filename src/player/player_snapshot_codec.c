@@ -4070,3 +4070,290 @@ size_t player_item_snapshot_vector_operation_frame_bytes() noexcept
 	       item_list_nontrivial_frames + snapshot_clone_vector_constructor_frames +
 	       sizeof(size_t);
 }
+
+// Actual unversioned item-list source paths. All queries are passive, pure,
+// strong-output and allocation-free. Existing codecs and requests stay exact.
+namespace
+{
+bool item_codec_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(bool) == 1 &&
+	       sizeof(std::allocator<char>) == 1 &&
+	       sizeof(std::allocator<player_item_snapshot>) == 1 &&
+	       sizeof(std::allocator<player_item_dynamic_affect_snapshot>) == 1 &&
+	       sizeof(std::allocator<player_item_extra_description_snapshot>) == 1 &&
+	       sizeof(std::allocator<int32_t>) == 1 &&
+	       sizeof(std::vector<uint8_t>) == 3 * sizeof(void *) &&
+	       sizeof(std::vector<player_item_snapshot>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<player_item_snapshot>::const_iterator) == sizeof(void *) &&
+	       sizeof(std::vector<player_item_extra_description_snapshot>::const_iterator) ==
+		       sizeof(void *) &&
+	       sizeof(std::ptrdiff_t) == 8 &&
+	       std::is_nothrow_move_constructible_v<player_item_snapshot> &&
+	       std::is_nothrow_move_constructible_v<player_item_extra_description_snapshot>;
+#else
+	return false;
+#endif
+}
+template <class T> constexpr size_t item_codec_empty_vector_source = 6 * sizeof(void *);
+template <class T> constexpr size_t item_codec_move_vector_source =
+	// vector/base/impl/data + allocator/new_allocator const-copy; two move
+	// reference/return scopes and genuine data pointer() reset. No allocation.
+	6 * 2 * sizeof(void *) + 2 * 2 * sizeof(void *) + sizeof(T *);
+constexpr size_t item_codec_deallocate_source =
+	// _M_deallocate -> traits -> allocator -> new_allocator -> sized delete;
+	// _M_get_Tp_allocator and actual C++20 constant-evaluation predicates.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(void *) + 2 * sizeof(bool);
+template <class T> constexpr size_t item_codec_destroy_vector_source =
+	// vector/base destructor this, allocator/new_allocator cleanup this;
+	// _Destroy(range,a), _Destroy(range), selected aux range and returned void.
+	4 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	item_codec_deallocate_source +
+	(std::is_trivially_destructible_v<T> ?
+		 0 :
+		 // aux<false> cur, _Destroy(ptr), destroy_at, addressof/__addressof and
+		 // generated selected T destructor this. Member cleanup is separate below.
+		 sizeof(void *) + sizeof(void *) + sizeof(void *) + 4 * sizeof(void *) +
+			 sizeof(void *));
+// Genuine basic_string local-data -> pointer_to -> addressof -> __addressof.
+constexpr size_t item_codec_string_local_source = 4 * 2 * sizeof(void *);
+constexpr size_t item_codec_string_init_source =
+	// init_local_buf this/i/char + genuine is_constant_evaluated result chain.
+	sizeof(void *) + sizeof(size_t) + sizeof(char) + 2 * sizeof(bool);
+constexpr size_t item_codec_string_set_length_source =
+	// set_length(this,n), length(this,n), data(this,pointer result),
+	// char_traits::assign destination/source refs and actual char() zero.
+	2 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(char) + 2 * sizeof(bool); // Actual char_traits::assign constant-evaluation query.
+constexpr size_t item_codec_string_default_source =
+	// string this; hider this/data/allocator ref, real default allocator object,
+	// allocator/new_allocator default and const-copy, actual std::move refs.
+	sizeof(void *) + 3 * sizeof(void *) + sizeof(std::allocator<char>) + 2 * sizeof(void *) +
+	4 * sizeof(void *) + 2 * sizeof(void *) + item_codec_string_local_source +
+	item_codec_string_init_source + item_codec_string_set_length_source;
+constexpr size_t item_codec_string_move_source =
+	// string(this,source), hider+allocator copy, two actual move refs,
+	// get_allocator, is_local/data/local-data, length, data/capacity/length
+	// setters, use_local_data and reset set_length. Both local/nonlocal bodies.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 4 * sizeof(void *) + 2 * 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	item_codec_string_local_source + item_codec_string_init_source +
+	3 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + sizeof(void *) +
+	sizeof(void *) + item_codec_string_local_source + item_codec_string_set_length_source +
+	// char_traits::copy and its runtime memcpy input/return declarations.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + 2 * sizeof(bool);
+constexpr size_t item_codec_string_destroy_source =
+	// string/dispose/is_local/destroy this, capacity scalar, data/local leaf;
+	// actual allocator deallocation. No assign/copy/allocation graph alias.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	item_codec_string_local_source + item_codec_deallocate_source;
+constexpr size_t item_codec_lifetime_source =
+	// Actual outer list and three nested vector types. Object storage and
+	// capacities remain caller/codec-owned; these are only real source scopes.
+	item_codec_empty_vector_source<player_item_snapshot> +
+	item_codec_empty_vector_source<player_item_dynamic_affect_snapshot> +
+	item_codec_empty_vector_source<player_item_extra_description_snapshot> +
+	item_codec_empty_vector_source<int32_t> +
+	item_codec_move_vector_source<player_item_snapshot> +
+	item_codec_move_vector_source<player_item_dynamic_affect_snapshot> +
+	item_codec_move_vector_source<player_item_extra_description_snapshot> +
+	item_codec_move_vector_source<int32_t> +
+	item_codec_destroy_vector_source<player_item_snapshot> +
+	item_codec_destroy_vector_source<player_item_dynamic_affect_snapshot> +
+	item_codec_destroy_vector_source<player_item_extra_description_snapshot> +
+	item_codec_destroy_vector_source<int32_t> +
+	// Generated row/description default and move ctor this/source; destructor
+	// this; all six real string members use their separate selected graphs.
+	2 * sizeof(void *) + 2 * 2 * sizeof(void *) + 2 * sizeof(void *) +
+	6 * (item_codec_string_default_source + item_codec_string_move_source +
+	     item_codec_string_destroy_source) +
+	// Equal-allocator outer vector move assignment is an actual list transfer.
+	item_list_move_frames;
+template <class T> constexpr size_t item_codec_decode_number_source =
+	2 * sizeof(void *) + sizeof(std::make_unsigned_t<T>) + sizeof(size_t) + sizeof(bool);
+template <class T> constexpr size_t item_codec_encode_number_source =
+	sizeof(void *) + sizeof(T) + sizeof(std::make_unsigned_t<T>) + sizeof(size_t) +
+	sizeof(uint8_t);
+constexpr size_t item_codec_numbers_source =
+	item_codec_decode_number_source<int32_t> + item_codec_decode_number_source<int16_t> +
+	item_codec_decode_number_source<uint64_t> + item_codec_decode_number_source<int64_t> +
+	item_codec_decode_number_source<int8_t> + item_codec_decode_number_source<uint8_t> +
+	item_codec_decode_number_source<uint32_t>;
+constexpr size_t item_codec_value_fill_source =
+	// Actual relationship vector<size_t>(n,1) value-fill graph, not default_n:
+	// _M_fill_initialize(this,n,value) and _M_get_Tp_allocator(this/ref-return).
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	// Genuine std::allocator specialization __uninitialized_fill_n_a owns
+	// first/n/value/allocator/ref-return and is_constant_evaluated results.
+	4 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+	// uninitialized_fill_n first/n/value/return/__can_fill and the true
+	// __uninitialized_fill_n<true>::__uninit_fill_n first/n/value/return.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) +
+	// fill_n and actual RA __fill_n_a first/n/value/return/tag;
+	// __size_to_integer n/result, __fill_a first/last/value and
+	// scalar __fill_a1 first/last/value with genuine size_t __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(size_t) + 3 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_codec_relationship_source =
+	// Original valid_item_relationships(items), index,parent,return; the real
+	// vector(size,1,allocator) constructor, value temporary and fill/cleanup.
+	sizeof(void *) + sizeof(size_t) + sizeof(int32_t) + sizeof(bool) +
+	item_list_size_constructor_frames + sizeof(size_t) + item_list_allocator_frames +
+	item_codec_value_fill_source + item_codec_destroy_vector_source<size_t>;
+constexpr size_t item_codec_preflight_source =
+	// Public encoded/profile pointers, size/result; all eight actual closure
+	// objects' reference captures: add1,append3,number1,storage3,skip2,
+	// product2,count5,string5. Decoder/profile inline is a separate query.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+	22 * sizeof(void *) + sizeof(size_t) + 6 * sizeof(uint32_t) + sizeof(bool) +
+	sizeof(void *) +
+	// Actual add/append/number/storage/skip/product/count/string operators.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) + 4 * sizeof(size_t) +
+	sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(bool) + sizeof(void *) + sizeof(uint32_t) + sizeof(bool) +
+	item_codec_decode_number_source<uint32_t> + item_codec_decode_number_source<uint8_t> +
+	// decoder::boolean and numeric_limits::max/std::max ref/result scopes.
+	2 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool) + sizeof(size_t) + 3 * sizeof(void *);
+constexpr size_t item_codec_live_scan_source =
+	// Real vector encoder preflight public/signature/status; scan/profile
+	// generated default source this. scan's index,row/depth/ancestor/parent,
+	// actual affects/descriptions loops and fixed array query declarations.
+	2 * sizeof(void *) + sizeof(player_snapshot_codec_result) + 2 * sizeof(void *) +
+	6 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(int32_t) + sizeof(bool) +
+	// add(this,total,amount), append(this,count,next,capacity,peak),
+	// numbers(this,bytes,byte), count(this,value,width,total,objects),
+	// string(this,value,length) and their actual bool return carriers.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(void *) + 4 * sizeof(size_t) +
+	sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	2 * sizeof(size_t) + 2 * sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	6 * (sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *);
+constexpr size_t item_codec_decode_source =
+	// Original public input/output,size/result and bad_alloc catch reference;
+	// actual decode_items in/items refs, its lambda closure/operator, decoder
+	// vector<T,Read> params/count/iterators/row/result for all four actual T.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+	sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) +
+	4 * (6 * sizeof(void *) + sizeof(uint32_t) + 2 * sizeof(bool)) +
+	// Selected row/affect/description/spell lambda this/value/result and
+	// fixed-array loops' actual reference/begin/end source carriers.
+	4 * (2 * sizeof(void *) + sizeof(bool)) + 5 * 3 * sizeof(void *) +
+	item_codec_numbers_source + 2 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool) +
+	// decoder::string this/value/maximum/length/result; real string mutation.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(uint32_t) + sizeof(bool) +
+	item_list_string_frames +
+	// Actual resize/grow/relocate/cleanup/default row member paths. Existing
+	// named ordinary GNU13 graphs apply to these selected typed operations.
+	item_list_vector_frames + item_codec_lifetime_source +
+	// Nontrivial default_n_1 and relocate_a_1/object construction/destruction
+	// source: first/n/cur/return, actual source/dest/allocator/addressof.
+	3 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(void *) + sizeof(size_t) +
+	6 * sizeof(void *) + 3 * sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(void *) + item_codec_relationship_source;
+constexpr size_t item_codec_encode_source =
+	// Bounded signature and its actual admit capture3P/add empty closure;
+	// admit operator this/extra/result, add this/total/amount/result;
+	// profile default source, status/peak/public return and typed catches.
+	4 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + sizeof(char) + sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	sizeof(void *) + 2 * sizeof(player_snapshot_codec_result) + sizeof(size_t) +
+	sizeof(void *) + item_codec_live_scan_source +
+	// Real working_bytes profile/output, growth/validation and add empty
+	// closure/operator. initializer_list< size_t > max's actual three values,
+	// list object, begin/end/iterator/result and less iterator-predicate graph.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(char) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) + 3 * sizeof(size_t) + sizeof(std::initializer_list<size_t>) +
+	12 * sizeof(void *) + sizeof(__gnu_cxx::__ops::_Iter_less_iter) + 3 * sizeof(bool) +
+	// Original encoder input/output/result/validation/catch and encode_items
+	// args; four actual vector-write/row/description/affect/spell lambdas.
+	2 * sizeof(void *) + 2 * sizeof(player_snapshot_codec_result) + sizeof(void *) +
+	2 * sizeof(void *) + 4 * 6 * sizeof(void *) + 4 * 2 * sizeof(void *) +
+	5 * 2 * sizeof(void *) + sizeof(int32_t) + sizeof(int64_t) + sizeof(uint64_t) +
+	sizeof(int16_t) + item_codec_encode_number_source<int32_t> +
+	item_codec_encode_number_source<int16_t> + item_codec_encode_number_source<uint64_t> +
+	item_codec_encode_number_source<int64_t> + item_codec_encode_number_source<int8_t> +
+	item_codec_encode_number_source<uint8_t> + item_codec_encode_number_source<uint32_t> +
+	// encoder::boolean and string; genuine string size/normal iterators are
+	// the real inputs to byte-vector insert, never a string-copy substitute.
+	sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) + 6 * sizeof(void *) +
+	sizeof(size_t) + item_list_vector_frames + item_list_move_frames +
+	item_codec_empty_vector_source<uint8_t> + item_codec_destroy_vector_source<uint8_t> +
+	item_codec_relationship_source + item_codec_decode_source;
+constexpr size_t item_codec_current_heap_source =
+	// Public value/out/bytes/return/policy; item_list_heap's two formal refs,
+	// actual row/description refs and two typed begin/end iterator pairs.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + 8 * sizeof(void *) + sizeof(bool) +
+	// Four actual vector_heap<T> signatures/capacity this/value and one
+	// checked add; string_heap signature/capacity and genuine const closure.
+	4 * (3 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 11 * sizeof(void *) +
+	sizeof(bool) +
+	// Two real normal iterator types: begin/end ctor, comparison/base,
+	// increment and dereference. No row-copy or codec-profile alias.
+	2 * (8 * sizeof(void *) + 6 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *));
+}
+
+bool player_item_snapshot_list_encode_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_codec_encode_source;
+	return true;
+}
+bool player_item_snapshot_list_preflight_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_codec_preflight_source;
+	return true;
+}
+bool player_item_snapshot_list_decode_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_codec_decode_source;
+	return true;
+}
+bool player_item_snapshot_list_lifetime_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_codec_lifetime_source;
+	return true;
+}
+bool player_item_snapshot_list_current_heap_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_codec_current_heap_source;
+	return true;
+}
+bool player_item_snapshot_list_encode_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = 0; // Bounded encode admits profile/scan before either is constructed.
+	return true;
+}
+bool player_item_snapshot_list_preflight_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = sizeof(decoder) + sizeof(player_item_snapshot_list_allocation_profile);
+	return true;
+}
+bool player_item_snapshot_list_decode_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = sizeof(decoder) + sizeof(std::vector<player_item_snapshot>);
+	return true;
+}

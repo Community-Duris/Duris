@@ -60,4 +60,31 @@ player_snapshot_codec_result quest_mobile_native_reference_decode_bounded(
 	std::span<const uint8_t>, quest_mobile_native_reference *,
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
 
+// Pure actual bounded reference SOURCE and prospective first-entry contracts.
+// Admit the fixed query and its returned size_t before any getter. Complete
+// SOURCE is transient before entry; only source_supplement remains in outer.
+// Existing bounded controllers retain every already-owned source/inline term.
+// Input/prior output belong to the caller. Strong scalar outputs; no authority.
+bool quest_mobile_native_reference_encode_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_decode_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_decode_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_encode_initial_inline_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_decode_initial_inline_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_valid_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_valid_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_reference_valid_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t quest_mobile_native_reference_valid_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t quest_mobile_native_reference_encode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t quest_mobile_native_reference_decode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+
 #endif

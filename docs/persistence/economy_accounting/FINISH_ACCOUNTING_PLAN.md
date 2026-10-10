@@ -18331,3 +18331,13 @@ and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Item list and native reference source contracts implemented - 2026-10-10
+
+[Source checkpoint](ITEM_LIST_NATIVE_REFERENCE_SOURCE_CONTRACTS_2026-10-10.md) installs the complete lower list/reference SOURCE, lifetime and query APIs required by the reviewed image/intent and checkpoint successors.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory476/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
