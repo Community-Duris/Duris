@@ -1,4 +1,9 @@
 #include "flatfile/flatfile_item_accounting_reference.h"
+#include "flatfile/flatfile_native_mobile_birth_ordinary_reference_history.h"
+#include "economy/native_mobile_birth_cash_role_command.h"
+#include <array>
+#include <set>
+#include <utility>
 #include "flatfile/flatfile_store.h"
 
 #include <algorithm>
@@ -872,4 +877,126 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_verify_operat
 		return status::io_error;
 	}
 #endif
+}
+
+flatfile_item_accounting_status
+flatfile_native_mobile_birth_ordinary_reference_history_storage::verify_initial_absence_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_native_mobile_birth_ordinary_reference_absence *output,
+	std::string *error) noexcept
+{
+	using status = flatfile_item_accounting_status;
+	if (root.empty() || !output || !lock.matches(root))
+		return status::invalid;
+	try
+	{
+		if (!native_mobile_birth_cash_role_recovery_initial(original))
+			return status::invalid;
+		quest_mobile_native_image image;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		economic_frozen_intent intent;
+		if (native_mobile_birth_cash_role_command_decode(original.command, &image, &recipes,
+								 &role) !=
+			    economic_accounting_error::ok ||
+		    role.role != native_mobile_birth_cash_role::ordinary_wallet ||
+		    economic_intent_decode(original.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original.command, intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event)
+			return status::invalid;
+		std::vector<uint64_t> born;
+		born.reserve(image.items.size());
+		for (const auto &literal : image.items)
+			born.push_back(literal.object_uid);
+		std::sort(born.begin(), born.end());
+		if (std::adjacent_find(born.begin(), born.end()) != born.end() ||
+		    (!born.empty() && !born.front()))
+			return status::invalid;
+
+		// Match the ORIGINAL SQL primary/unique keys, including duplicates that
+		// cross legacy bucket boundaries. UID/after_revision is only a nonunique
+		// SQL history index; do not invent a new uniqueness rule for it.
+		using reference_key = std::pair<std::array<uint8_t, 16>, uint16_t>;
+		std::set<reference_key> operation_lines, legacy_events;
+		const std::string directory = item_refs_directory(root);
+		flatfile_native_mobile_birth_ordinary_reference_absence observed;
+		observed.born_uids = born.size();
+		for (unsigned int bucket = 0; bucket < 256; ++bucket)
+		{
+			const auto shard = static_cast<uint8_t>(bucket);
+			const std::string filename = bucket_filename(shard);
+			std::vector<uint8_t> existing;
+			const auto loaded =
+				flatfile_read(directory, filename,
+					      FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					      &existing, error);
+			if (loaded == flatfile_read_result::not_found)
+			{
+				++observed.missing_buckets;
+				++observed.buckets_verified;
+				continue;
+			}
+			if (loaded != flatfile_read_result::ok)
+				return read_status(loaded);
+			if (existing.size() % FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+				return status::invalid;
+			for (size_t offset = 0; offset < existing.size();
+			     offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+			{
+				const auto bytes = std::span<const uint8_t>(existing).subspan(
+					offset, FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+				economic_accounting_item_reference reference{};
+				const auto decoded = flatfile_item_accounting_reference_decode(
+					bytes, &reference);
+				if (decoded != status::ok)
+					return decoded;
+				if (reference.legacy_operation_id.bytes[0] != shard)
+					return status::invalid;
+				std::vector<uint8_t> canonical;
+				const auto encoded = flatfile_item_accounting_reference_encode(
+					reference, &canonical);
+				if (encoded != status::ok)
+					return encoded;
+				if (canonical.size() != bytes.size() ||
+				    !std::equal(canonical.begin(), canonical.end(),
+						bytes.begin()) ||
+				    !operation_lines
+					     .emplace(reference.operation_id.bytes,
+						      reference.line_index)
+					     .second ||
+				    !legacy_events
+					     .emplace(reference.legacy_operation_id.bytes,
+						      reference.legacy_event_index)
+					     .second)
+					return status::invalid;
+				if (std::binary_search(born.begin(), born.end(),
+						       reference.item_uid) ||
+				    reference.operation_id.bytes ==
+					    original.command.operation_id.bytes ||
+				    reference.legacy_operation_id.bytes ==
+					    original.command.operation_id.bytes)
+					return status::already_exists;
+				++observed.retained_records;
+			}
+			++observed.buckets_verified;
+		}
+		if (observed.buckets_verified != 256 || !lock.matches(root))
+			return status::invalid;
+		// No identity/activity filter exists here. A retired/dead owner's exact
+		// retained reference prevents INITIAL UID reuse just as the original SQL
+		// all-history SELECT does. Other history/physical namespaces stay separate.
+		*output = observed;
+		return status::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
 }
