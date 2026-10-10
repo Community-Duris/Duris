@@ -255,6 +255,15 @@ using critical_zone_reset_item_apply_fn =
 	critical_apply_result (*)(const critical_zone_reset_item_execution_owner &, void *context);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
+// Optional genuine passive legacy replay companion. Original observer remains
+// mandatory when installed; absence of a paired implementation refuses the new
+// capability. Registration/caller selection is separate and unchanged here.
+// The actual held coordinator lender owns CURRENT C; outer carries all authentic
+// journal/caller/input storage and reserve must not reenter coordinator/journal.
+using critical_replay_observer_bounded_fn = bool (*)(const critical_command &, void *replay_context,
+						     bool (*)(size_t, void *) noexcept,
+						     void *budget_context,
+						     size_t outer_live) noexcept;
 
 // Passive original native registration under coordinator_mutex; no reentry,
 // submission, SQL or native effects. The context is the existing replay_context.

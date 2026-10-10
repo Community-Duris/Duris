@@ -7943,3 +7943,247 @@ enqueue_room_native_replayed_bounded(const critical_native_recovery_envelope &or
 #endif
 }
 } // namespace: complete private bounded ROOM passive replay insertion
+
+namespace
+{
+// Real journal callback parameter is borrowed, not cloned. Its inline and all
+// remaining journal/caller frames remain in outer throughout this real scope.
+struct legacy_replay_workspace
+{
+	critical_command &input;
+	const replay_observer_context *replay;
+	critical_replay_observer_bounded_fn bounded_observer;
+	const std::unique_lock<std::mutex> &lock;
+	std::vector<uint8_t> encoded;
+	std::string identity;
+	std::string fence_key;
+	std::unique_ptr<operation_state> state;
+	decltype(operations)::iterator found;
+	decltype(fences)::iterator fence_found;
+	native_identity_queue *fence_queue = nullptr;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer = 0, input_heap = 0, partial = 0, extra = 0, fresh = 0, key_index = 0;
+	bool input_moved = false, inserted = false, rollback_cleanup_reserved = false;
+	bool observer_started = false;
+	legacy_replay_workspace(critical_command &actual_input,
+				const replay_observer_context *actual_replay,
+				critical_replay_observer_bounded_fn actual_observer,
+				const std::unique_lock<std::mutex> &actual_lock,
+				bool (*callback)(size_t, void *) noexcept, void *opaque,
+				size_t caller_outer) noexcept
+		: input(actual_input)
+		, replay(actual_replay)
+		, bounded_observer(actual_observer)
+		, lock(actual_lock)
+		, reserve(callback)
+		, context(opaque)
+		, outer(caller_outer)
+	{
+	}
+};
+
+bool legacy_replay_reserve_locked(size_t exclusive_live, void *opaque) noexcept
+{
+	auto &work = *static_cast<legacy_replay_workspace *>(opaque);
+	return critical_room_shared_budget_lender::reserve(work.lock, work.reserve, work.context,
+							   exclusive_live);
+}
+
+bool legacy_replay_local_prefix(legacy_replay_workspace &work, size_t request = 0) noexcept
+{
+	work.partial = work.outer;
+	// Incoming outer owned the authentic input's INITIAL heap. After the original
+	// allocation-free move remove precisely that term, then measure the actual
+	// moved-from input. The same heap is now private state, later CURRENT C.
+	if (work.input_moved)
+	{
+		if (work.input_heap > work.partial)
+			return false;
+		work.partial -= work.input_heap;
+		if (!room_storage_command(work.partial, work.input))
+			return false;
+	}
+	return room_storage_add(work.partial, sizeof(legacy_replay_workspace)) &&
+	       room_storage_add(work.partial, work.encoded.capacity()) &&
+	       (!work.rollback_cleanup_reserved ||
+		room_storage_add(work.partial,
+				 2 * sizeof(std::array<char, 9>) + sizeof(std::string_view))) &&
+	       room_storage_string(work.partial, work.identity) &&
+	       room_storage_string(work.partial, work.fence_key) &&
+	       (!work.state || (room_storage_add(work.partial, sizeof(operation_state)) &&
+				room_storage_command(work.partial, work.state->command))) &&
+	       room_storage_add(work.partial, request);
+}
+
+bool legacy_replay_admit(legacy_replay_workspace &work, size_t request = 0) noexcept
+{
+	return legacy_replay_local_prefix(work, request) &&
+	       legacy_replay_reserve_locked(work.partial, &work);
+}
+
+bool legacy_replay_rollback(legacy_replay_workspace &work) noexcept
+{
+	// Complete original table/fences/pending rollback. Fixed remove_fences
+	// carriers were admitted BEFORE insertion; no callback or synthetic throw
+	// runs during cleanup after refusal. Original construction failure does not
+	// update_depth; original failed observer does. Keep that distinction.
+	if (work.inserted)
+	{
+		work.found = operations.find(work.identity);
+		if (work.found != operations.end())
+		{
+			remove_fences(work.identity, work.found->second->command);
+			operations.erase(work.found);
+		}
+	}
+	work.state.reset();
+	pending.erase(std::remove(pending.begin(), pending.end(), work.identity), pending.end());
+	if (work.observer_started)
+		update_depth();
+	return false;
+}
+
+// Complete genuine legacy insertion, unselected until its real mixed caller and
+// host observer exist. Missing paired observer cannot select an allocating
+// original fallback. Original absence of any passive observer remains valid.
+[[maybe_unused]] bool
+enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
+				const replay_observer_context *replay,
+				critical_replay_observer_bounded_fn actual_bounded_observer,
+				const std::unique_lock<std::mutex> &actual_init_lock,
+				bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+				size_t exclusive_outer) noexcept
+{
+	if (!reserve || actual_init_lock.mutex() != &coordinator_mutex ||
+	    !actual_init_lock.owns_lock() ||
+	    (replay && replay->observer && !actual_bounded_observer))
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	legacy_replay_workspace work(actual_journal_parameter, replay, actual_bounded_observer,
+				     actual_init_lock, reserve, budget_context, exclusive_outer);
+	try
+	{
+		if (!room_storage_command(work.input_heap, work.input) ||
+		    work.input_heap > work.outer || !legacy_replay_admit(work))
+			return false;
+		if (native_transport_command(work.input))
+			return false;
+		// Exact original execution_supported, with the actual paired selected
+		// extension proof. Legacy-valid commands require no extension callback.
+		if (!legacy_replay_local_prefix(work) ||
+		    !(critical_command_valid(work.input) ||
+		      (work.input.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		       critical_command_envelope_valid(work.input) &&
+		       extension_validator_callback && extension_validator_bounded_callback &&
+		       extension_validator_bounded_callback(
+			       work.input, legacy_replay_reserve_locked, &work, work.partial))))
+			return false;
+		if (!legacy_replay_admit(work) ||
+		    critical_command_encode_bounded(
+			    work.input, &work.encoded, legacy_replay_reserve_locked, &work,
+			    work.partial) != critical_command_codec_result::ok)
+			return false;
+		if (!legacy_replay_admit(work))
+			return false;
+		work.extra = sizeof(std::string);
+		if (!room_storage_add(work.extra, work.input.operation_id.bytes.size() + 1) ||
+		    !legacy_replay_admit(work, work.extra))
+			return false;
+		work.identity = operation_key(work.input.operation_id);
+		if (!legacy_replay_admit(work))
+			return false;
+		if (operations.find(work.identity) != operations.end() ||
+		    operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
+		    work.encoded.size() > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+			return false;
+		if (!legacy_replay_admit(work, sizeof(operation_state) +
+						       sizeof(std::unique_ptr<operation_state>)))
+			return legacy_replay_rollback(work);
+		work.state = std::make_unique<operation_state>();
+		if (!legacy_replay_admit(work))
+			return legacy_replay_rollback(work);
+		// This is the original MOVE, not a deep copy. Scalar ownership selection
+		// is immediate and nonfallible before the next complete CURRENT prefix.
+		work.state->command = std::move(work.input);
+		work.input_moved = true;
+		work.state->retained_bytes = work.encoded.size();
+		work.state->queued_at_usec = now_usec();
+		work.state->attempt = 1;
+		work.state->attachments = 0;
+		work.state->phase = critical_operation_phase::queued;
+		work.state->retain_until_publication = work.state->command.publication_required;
+		work.state->admission_failure_queued = false;
+		work.rollback_cleanup_reserved = true;
+		if (!operations.next_unique_insert_extra_peak(work.identity, 0, &work.extra) ||
+		    !legacy_replay_admit(work, work.extra))
+			return legacy_replay_rollback(work);
+		operations.emplace(work.identity, std::move(work.state));
+		work.inserted = true;
+		// Private unique_ptr is now null. All transferred command/state heap is
+		// in same-lock CURRENT C once; input inline/remaining capacities stay P.
+		if (!legacy_replay_admit(work) ||
+		    !pending.push_back_extra_peak(work.identity, &work.extra) ||
+		    !legacy_replay_admit(work, work.extra))
+			return legacy_replay_rollback(work);
+		pending.push_back(work.identity);
+		if (!legacy_replay_admit(work))
+			return legacy_replay_rollback(work);
+		work.found = operations.find(work.identity);
+		for (work.key_index = 0; work.key_index < work.found->second->command.keys.size();
+		     ++work.key_index)
+		{
+			if (!legacy_replay_admit(work, sizeof(std::string) +
+							       2 * sizeof(std::array<char, 9>)))
+				return legacy_replay_rollback(work);
+			work.fence_key =
+				entity_key(work.found->second->command.keys[work.key_index]);
+			work.fence_found = fences.find(work.fence_key);
+			if (work.fence_found == fences.end())
+			{
+				if (!native_identity_queue::initial_heap_bytes(&work.fresh) ||
+				    !fences.next_unique_insert_extra_peak(
+					    work.fence_key, work.fresh, &work.extra) ||
+				    !legacy_replay_admit(work, work.extra))
+					return legacy_replay_rollback(work);
+				work.fence_queue = &fences[std::move(work.fence_key)];
+				if (!legacy_replay_admit(work))
+					return legacy_replay_rollback(work);
+			}
+			else
+				work.fence_queue = &work.fence_found->second;
+			if (!work.fence_queue->push_back_extra_peak(work.identity, &work.extra) ||
+			    !legacy_replay_admit(work, work.extra))
+				return legacy_replay_rollback(work);
+			work.fence_queue->push_back(work.identity);
+			if (!legacy_replay_admit(work))
+				return legacy_replay_rollback(work);
+		}
+		health.fenced_keys = fences.size();
+		if (work.replay && work.replay->observer)
+		{
+			if (!legacy_replay_local_prefix(work))
+				return legacy_replay_rollback(work);
+			work.observer_started = true;
+			if (!work.bounded_observer(
+				    operations.at(work.identity)->command, work.replay->context,
+				    legacy_replay_reserve_locked, &work, work.partial))
+				return legacy_replay_rollback(work);
+		}
+		// Original no-observer branch remains accepted. Successful real observer
+		// has no subsequent fallible callback or new allocation before return.
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		// Actual standard-library exceptions only. Full original rollback is
+		// nonallocating; observer-started law preserves original metric timing.
+		return legacy_replay_rollback(work);
+	}
+#endif
+}
+} // namespace: complete private bounded legacy passive replay insertion
