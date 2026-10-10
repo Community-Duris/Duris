@@ -1665,3 +1665,275 @@ bool flatfile_coin_boot_stage::publish() noexcept
 		return false;
 	}
 }
+
+namespace
+{
+bool coin_physical_identity_add(size_t &total, size_t value) noexcept
+{
+	if (value > SIZE_MAX - total)
+		return false;
+	total += value;
+	return true;
+}
+template <typename T>
+bool coin_physical_identity_vector(const std::vector<T> &value, size_t &total) noexcept
+{
+	return value.capacity() <= SIZE_MAX / sizeof(T) &&
+	       coin_physical_identity_add(total, value.capacity() * sizeof(T));
+}
+constexpr size_t coin_physical_pile_defaults =
+	// Same actual ten aggregate defaults/destructors, six vector/base/impl/
+	// data defaults, six string/hider/local/NUL defaults in item payload.
+	2 * 10 * sizeof(void *) + 6 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>)) +
+	6 * (7 * sizeof(void *) + sizeof(std::allocator<char>) + sizeof(size_t) + sizeof(char));
+
+constexpr size_t coin_physical_vector_defaults =
+	// Authentic one vector/base/impl/data default and destructor this
+	// carriers and actual standard allocator object; no heap request.
+	5 * sizeof(void *) + sizeof(std::allocator<player_item_snapshot>);
+constexpr size_t coin_physical_unique_get_frames =
+	// unique get -> impl _M_ptr -> tuple get -> __get_helper ->
+	// _Tuple_impl::_M_head -> _Head_base::_M_head: each real reference/
+	// this input and returned pointer/reference, six actual source scopes.
+	6 * (2 * sizeof(void *));
+constexpr size_t coin_physical_unique_default_frames =
+	// unique/uniq_data/uniq_impl/tuple, two tuple_impl and two head_base
+	// actual default constructor/destructor this carriers, EBO deleter.
+	8 * sizeof(void *);
+constexpr size_t coin_physical_unique_frames =
+	// make_unique<> returns a distinct unique_ptr carrier (sizeof admitted
+	// at actual call separately). operator new n/returned raw pointer,
+	// unique pointer ctor(this,p), impl ctor(this,p), default tuple scopes
+	// and actual _M_ptr assignment access chain.
+	sizeof(size_t) + sizeof(void *) + 2 * (2 * sizeof(void *)) +
+	coin_physical_unique_default_frames + coin_physical_unique_get_frames +
+	// Original unique/data/impl defaulted move assignment this/source/return,
+	// impl reset(this,p,old), release(this,p,return), both ptr get chains,
+	// deleter get chain, forward reference argument/return.
+	3 * (3 * sizeof(void *)) + 3 * sizeof(void *) + 3 * sizeof(void *) +
+	3 * coin_physical_unique_get_frames + 2 * sizeof(void *) +
+	// Actual destructor this and __ptr ref/get-deleter/get-chain, move ref
+	// pair; default_delete(this,p) and delete pointer. Pointee generated
+	// destructor/member closures are genuine pile/copy profiles separately.
+	2 * sizeof(void *) + 2 * coin_physical_unique_get_frames + 2 * sizeof(void *) +
+	3 * sizeof(void *);
+constexpr size_t coin_physical_shape_defaults =
+	// Real outer shape ctor/dtor, two embedded command defaults/destructors,
+	// eight vector/base/impl/data/default allocator call paths. Literal row
+	// default/dtor/move source is actual shared row frame observer separately.
+	2 * sizeof(void *) +
+	2 * (2 * sizeof(void *) + 4 * (4 * sizeof(void *) + sizeof(std::allocator<uint8_t>))) +
+	coin_physical_unique_default_frames + coin_physical_vector_defaults;
+struct coin_physical_identity_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const shape *value = nullptr;
+	const std::vector<player_item_snapshot> *items = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observation = 10 * sizeof(void *) + 7 * sizeof(size_t) +
+					       6 * sizeof(bool) +
+					       4 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, heap = 0;
+		if (!coin_physical_identity_add(total, sizeof(*this)) ||
+		    !coin_physical_identity_add(total, frames) ||
+		    !coin_physical_identity_add(total, observation) ||
+		    !coin_physical_identity_add(total, critical_command_copy_frame_bytes()) ||
+		    !coin_physical_identity_add(total, critical_command_valid_frame_bytes()) ||
+		    !coin_physical_identity_add(total, item_transfer_payload_copy_frame_bytes()) ||
+		    !coin_physical_identity_add(total, player_item_snapshot_copy_frame_bytes()) ||
+		    !coin_physical_identity_add(total, coin_physical_unique_get_frames))
+			return false;
+		if (value)
+		{
+			if (!coin_physical_identity_add(total, sizeof(*value)) ||
+			    !coin_transfer_payload_current_heap_bytes(value->transfer, &heap) ||
+			    !coin_physical_identity_add(total, heap) ||
+			    !player_item_snapshot_current_heap_bytes(value->literal, &heap) ||
+			    !coin_physical_identity_add(total, heap))
+				return false;
+			if (value->pile &&
+			    (!coin_physical_identity_add(total, sizeof(*value->pile)) ||
+			     !item_transfer_payload_current_heap_bytes(*value->pile, &heap) ||
+			     !coin_physical_identity_add(total, heap)))
+				return false;
+		}
+		if (items)
+		{
+			if (!coin_physical_identity_add(total, sizeof(*items)) ||
+			    !coin_physical_identity_vector(*items, total))
+				return false;
+			for (const auto &item : *items)
+				if (!player_item_snapshot_current_heap_bytes(item, &heap) ||
+				    !coin_physical_identity_add(total, heap))
+					return false;
+		}
+		if (!coin_physical_identity_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+bool coin_physical_decode_shape_owned(const critical_command &command, shape &out,
+				      coin_physical_identity_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.type != critical_command_type::coin_transfer || !command.publication_required ||
+	    !critical_command_envelope_valid(command) ||
+	    !(budget.prefix(admission_prefix) &&
+	      coin_transfer_accounting_command_supported_bounded(
+		      command, budget.reserve, budget.context, admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      coin_transfer_command_decode_payload_bounded(command, &out.transfer, budget.reserve,
+							   budget.context, admission_prefix)))
+		return false;
+	out.drop = out.transfer.source.change.type == critical_command_type::account_bank &&
+		   out.transfer.destination.change.type == critical_command_type::item_transfer;
+	const bool pickup =
+		out.transfer.source.change.type == critical_command_type::item_transfer &&
+		out.transfer.destination.change.type == critical_command_type::account_bank;
+	if (!out.drop && !pickup)
+		return false;
+	out.wallet_index = out.drop ? 0 : 1;
+	out.pile_index = out.drop ? 1 : 0;
+	const auto &wallet = out.drop ? out.transfer.source : out.transfer.destination;
+	const auto &endpoint = out.drop ? out.transfer.destination : out.transfer.source;
+	if (!budget.peak(sizeof(item_transfer_payload) +
+			 sizeof(std::unique_ptr<item_transfer_payload>) +
+			 coin_physical_pile_defaults + coin_physical_unique_frames))
+		return false;
+	out.pile = std::make_unique<item_transfer_payload>();
+	if (!(budget.prefix(admission_prefix) &&
+	      currency_command_decode_payload_bounded(wallet.change, &out.wallet, budget.reserve,
+						      budget.context, admission_prefix)) ||
+	    out.wallet.pid == 0 || out.wallet.pid > INT_MAX ||
+	    out.wallet.reason != currency_reason_type::coin_transfer ||
+	    wallet.change.expected_revisions.size() != 2 ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_transfer_command_decode_payload_bounded(endpoint.change, out.pile.get(),
+							   budget.reserve, budget.context,
+							   admission_prefix)))
+		return false;
+	const auto &pile = *out.pile;
+	out.consumed = pile.to_owner.type == item_owner_type::destruction;
+	if (pile.item_count != 1 || pile.multi_root || !pile.selected_item_uid ||
+	    pile.selected_item_uid == UINT64_MAX || pile.target_parent_item_uid ||
+	    pile.expected_target_parent_revision || pile.items[0].parent_item_uid ||
+	    pile.items[0].item_uid != pile.selected_item_uid ||
+	    pile.items[0].root_item_uid != pile.selected_item_uid ||
+	    pile.target_root_item_uid != pile.selected_item_uid || pile.from_owner.context_id ||
+	    pile.to_owner.context_id ||
+	    pile.continuation.kind != item_transfer_continuation_kind::none ||
+	    !pile.continuation.data.empty())
+		return false;
+	if (out.drop)
+	{
+		if (pile.from_owner.type != item_owner_type::system || pile.from_owner.id ||
+		    pile.to_owner.type != item_owner_type::room || out.consumed ||
+		    pile.reason != item_transfer_reason::creation ||
+		    pile.items[0].expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
+		    pile.items[0].expected_state != item_custody_state::absent)
+			return false;
+		out.room = pile.to_owner.id;
+	}
+	else
+	{
+		if (pile.from_owner.type != item_owner_type::room ||
+		    (!out.consumed && !item_owner_identity_equal(pile.from_owner, pile.to_owner)) ||
+		    (out.consumed && pile.to_owner.id) ||
+		    pile.reason != (out.consumed ? item_transfer_reason::destruction :
+						   item_transfer_reason::player_put) ||
+		    !pile.items[0].expected_item_revision ||
+		    pile.items[0].expected_item_revision == UINT64_MAX ||
+		    pile.items[0].expected_state != item_custody_state::active)
+			return false;
+		out.room = pile.from_owner.id;
+	}
+	if (!budget.peak(sizeof(std::vector<player_item_snapshot>) + coin_physical_vector_defaults))
+		return false;
+	std::vector<player_item_snapshot> items;
+	budget.items = &items;
+	if (!out.room || out.room > INT_MAX ||
+	    (!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::allocation_failure :
+		     player_item_snapshot_list_decode_bounded(
+			     pile.item_blob.data(), pile.item_blob_size, &items, budget.reserve,
+			     budget.context, admission_prefix)) !=
+		    player_snapshot_codec_result::ok ||
+	    items.size() != 1 || items[0].object_uid != pile.selected_item_uid ||
+	    items[0].vnum != pile.items[0].vnum || items[0].type != ITEM_MONEY ||
+	    items[0].equipment_slot != -1 || items[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+	    items[0].string_mask != (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+	    !items[0].dynamic_affects.empty() || items[0].extra_descriptions.size() > 1 ||
+	    (items[0].extra_flags & (ITEM_LIT | ITEM_TRANSIENT | ITEM_ARTIFACT | ITEM_PROCLIB)))
+		return false;
+	if (!budget.peak(player_item_snapshot_copy_frame_bytes() + 2 * sizeof(void *)))
+		return false;
+	out.literal = std::move(items[0]);
+	return true;
+}
+
+bool coin_physical_identity_owned(const critical_command &command, int *wallet_pid,
+				  uint64_t *pile_uid,
+				  coin_physical_identity_budget &budget) noexcept
+{
+	if (!wallet_pid || !pile_uid)
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(shape) + coin_physical_shape_defaults +
+				 player_item_snapshot_copy_frame_bytes()))
+			return false;
+		shape value;
+		budget.value = &value;
+		if (!coin_physical_decode_shape_owned(command, value, budget))
+			return false;
+		*wallet_pid = static_cast<int>(value.wallet.pid);
+		*pile_uid = value.pile->selected_item_uid;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+} // namespace
+bool coin_physical_recovery_identity_bounded(const critical_command &command, int *wallet_pid,
+					     uint64_t *pile_uid,
+					     bool (*reserve)(size_t, void *) noexcept,
+					     void *context, size_t outer_live) noexcept
+{
+	if (!reserve)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	constexpr size_t frames =
+		// Complete public/owned identity and shape decoder signature/result,
+		// original pickup/wallet/endpoint/pile refs, actual new prefix scalar.
+		12 * sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(bool) + 4 * sizeof(void *) +
+		// Original owner identity equality reference args/return and real
+		// vector/array/subscript/data/empty getters in full shape predicates.
+		2 * sizeof(void *) + sizeof(bool) + 12 * (sizeof(void *) + sizeof(size_t)) +
+		// True unique_ptr observers and failure/success destruction closures.
+		coin_physical_unique_frames;
+	coin_physical_identity_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	return coin_physical_identity_owned(command, wallet_pid, pile_uid, budget);
+#else
+	(void)command;
+	(void)wallet_pid;
+	(void)pile_uid;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
