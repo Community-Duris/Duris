@@ -1255,3 +1255,728 @@ bool player_death_restitution_item_state_decode_bounded(const uint8_t *encoded, 
 		*retained_state_heap_bytes = work.census.total;
 	return true;
 }
+
+namespace
+{
+bool restitution_plan_storage_profile() noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG)
+	return restitution_state_storage_profile();
+#else
+	return false;
+#endif
+}
+
+struct restitution_plan_census
+{
+	size_t total = 0;
+	size_t index = 0;
+	size_t row_total = 0;
+
+	bool text(size_t &sum, const std::string &value) noexcept
+	{
+		// Pinned ordinary GCC13 C++11 string: local capacity 15, every dynamic
+		// allocation has capacity > 15 and includes one terminator byte.
+		return value.capacity() <= 15 ||
+		       (value.capacity() != std::numeric_limits<size_t>::max() &&
+			restitution_state_add(sum, value.capacity() + 1));
+	}
+	bool item(const player_death_restitution_item &value) noexcept
+	{
+		row_total = 0;
+		return text(row_total, value.classification) && text(row_total, value.note) &&
+		       restitution_state_add(row_total, value.metadata_payload.capacity()) &&
+		       restitution_state_add(row_total, value.original_payload.capacity());
+	}
+	bool observe(const player_death_restitution_plan &value) noexcept
+	{
+		total = 0;
+		if (value.items.capacity() > std::numeric_limits<size_t>::max() /
+						     sizeof(player_death_restitution_item) ||
+		    !restitution_state_add(total, value.items.capacity() *
+							  sizeof(player_death_restitution_item)) ||
+		    !text(total, value.actor) || !text(total, value.reason))
+			return false;
+		for (index = 0; index < value.items.size(); ++index)
+			if (!item(value.items[index]) || !restitution_state_add(total, row_total))
+				return false;
+		return true;
+	}
+};
+
+struct restitution_plan_decode_workspace
+{
+	player_death_restitution_plan decoded = {};
+	player_death_restitution_item item = {};
+	restitution_state_reader reader;
+	restitution_plan_census census;
+	size_t base;
+	size_t current = 0;
+	size_t request = 0;
+	size_t new_capacity = 0;
+	size_t index = 0;
+	uint32_t magic = 0;
+	uint16_t version = 0;
+	uint16_t reserved = 0;
+	uint16_t actor_length = 0;
+	uint16_t reason_length = 0;
+	uint16_t item_count = 0;
+	uint16_t plan_reserved = 0;
+	uint8_t disposition = 0;
+	uint8_t artifact_flags = 0;
+	uint16_t item_reserved = 0;
+	uint16_t class_length = 0;
+	uint16_t note_length = 0;
+	uint32_t metadata_length = 0;
+	uint32_t original_length = 0;
+	restitution_state_reserve_fn reserve;
+	void *context;
+
+	bool live() noexcept
+	{
+		if (!census.observe(decoded))
+			return false;
+		current = base;
+		return restitution_state_add(current, census.total) && census.item(item) &&
+		       restitution_state_add(current, census.row_total);
+	}
+	bool allocation(size_t count, size_t width) noexcept
+	{
+		if (width && count > std::numeric_limits<size_t>::max() / width)
+			return false;
+		request = count * width;
+		return live() && restitution_state_admit(current, request, reserve, context);
+	}
+	bool bytes(size_t count, std::vector<uint8_t> *output)
+	{
+		if (!reader.input || !output || reader.offset > reader.size ||
+		    count > reader.size - reader.offset || !allocation(count, sizeof(uint8_t)))
+			return false;
+		output->assign(reader.input + reader.offset, reader.input + reader.offset + count);
+		reader.offset += count;
+		return true;
+	}
+	bool text(size_t count, std::string &output)
+	{
+		if (reader.offset > reader.size || count > reader.size - reader.offset ||
+		    count > output.max_size() || !live())
+			return false;
+		new_capacity = count;
+		request = 0;
+		if (count > output.capacity())
+		{
+			if (output.capacity() > std::numeric_limits<size_t>::max() / 2)
+				return false;
+			if (count < 2 * output.capacity())
+				new_capacity = std::min(2 * output.capacity(), output.max_size());
+			if (new_capacity == std::numeric_limits<size_t>::max())
+				return false;
+			request = new_capacity + 1;
+		}
+		if (!restitution_state_admit(current, request, reserve, context))
+			return false;
+		output.assign(reinterpret_cast<const char *>(reader.input + reader.offset), count);
+		reader.offset += count;
+		return true;
+	}
+};
+
+// Only this new fixed-context digest bridge uses OpenSSL's deprecated low-level
+// API. The original one-shot digest and all selected methods remain unchanged.
+// Actual OpenSSL3.0.13 Linux x86_64 SHA256 assembly source selects SZ4/rounds64.
+// The largest real dispatch arm reserves this schedule/metadata, pushes six
+// GPRs, aligns to 1024, and uses the return/saved-pointer slots. C fallback
+// and streaming local object frames are separately derived from the full source.
+constexpr size_t restitution_sha256_assembly_frame =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t restitution_sha256_c_small_frame =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(const uint8_t *);
+constexpr size_t restitution_sha256_c_normal_frame =
+	16 * sizeof(unsigned int) + 11 * sizeof(unsigned int) + sizeof(int) +
+	sizeof(const uint8_t *) + sizeof(int) + sizeof(const unsigned int *);
+constexpr size_t restitution_sha256_c_frame =
+	std::max(restitution_sha256_c_small_frame, restitution_sha256_c_normal_frame);
+constexpr size_t restitution_sha256_init_frame = sizeof(void *) + sizeof(int);
+constexpr size_t restitution_sha256_update_frame =
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(const uint8_t *) + sizeof(unsigned int) +
+	sizeof(size_t) + sizeof(int);
+constexpr size_t restitution_sha256_final_frame = 2 * sizeof(void *) + sizeof(uint8_t *) +
+						  sizeof(size_t) + sizeof(unsigned long) +
+						  sizeof(unsigned int) + sizeof(int);
+[[maybe_unused]] constexpr size_t restitution_sha256_nested_frame =
+	std::max(restitution_sha256_assembly_frame, restitution_sha256_c_frame) +
+	std::max(restitution_sha256_init_frame,
+		 std::max(restitution_sha256_update_frame, restitution_sha256_final_frame));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+bool restitution_plan_digest_bounded(const std::array<uint8_t, 32> &expected,
+				     const std::vector<uint8_t> &payload,
+				     restitution_state_reserve_fn reserve, void *context,
+				     size_t outer_live) noexcept
+{
+	if (!digest_nonzero(expected))
+		return false;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) &&     \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&  \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    sizeof(unsigned long) != 8 || sizeof(unsigned int) != 4)
+		return false;
+	struct workspace
+	{
+		SHA256_CTX digest;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> actual = {};
+	};
+	if (!restitution_state_admit(outer_live,
+				     sizeof(workspace) + restitution_sha256_nested_frame, reserve,
+				     context))
+		return false;
+	workspace work;
+	return SHA256_Init(&work.digest) == 1 &&
+	       SHA256_Update(&work.digest, payload.data(), payload.size()) == 1 &&
+	       SHA256_Final(work.actual.data(), &work.digest) == 1 && work.actual == expected;
+#else
+	(void)payload;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
+#pragma GCC diagnostic pop
+
+struct restitution_plan_item_validation_workspace
+{
+	player_death_restitution_item_state state = {};
+	size_t state_heap = 0;
+	bool artifact = false;
+	bool historical = false;
+	bool approved = false;
+};
+
+struct restitution_plan_validation_workspace
+{
+	std::vector<uint64_t> seen;
+	std::vector<uint64_t> prior_deliveries;
+	std::vector<uint32_t> seen_artifact_vnums;
+	size_t base;
+	size_t current = 0;
+	size_t request = 0;
+	size_t index = 0;
+
+	bool live() noexcept
+	{
+		current = base;
+		return seen.capacity() <= std::numeric_limits<size_t>::max() / sizeof(uint64_t) &&
+		       prior_deliveries.capacity() <=
+			       std::numeric_limits<size_t>::max() / sizeof(uint64_t) &&
+		       seen_artifact_vnums.capacity() <=
+			       std::numeric_limits<size_t>::max() / sizeof(uint32_t) &&
+		       restitution_state_add(current, seen.capacity() * sizeof(uint64_t)) &&
+		       restitution_state_add(current,
+					     prior_deliveries.capacity() * sizeof(uint64_t)) &&
+		       restitution_state_add(current,
+					     seen_artifact_vnums.capacity() * sizeof(uint32_t));
+	}
+	bool allocation(size_t count, size_t width, restitution_state_reserve_fn reserve,
+			void *context) noexcept
+	{
+		if (width && count > std::numeric_limits<size_t>::max() / width)
+			return false;
+		request = count * width;
+		return live() && restitution_state_admit(current, request, reserve, context);
+	}
+};
+
+bool restitution_plan_item_valid_bounded(const player_death_restitution_plan &plan,
+					 const player_death_restitution_item &item,
+					 const std::vector<uint64_t> &seen,
+					 const std::vector<uint64_t> &prior_deliveries,
+					 restitution_state_reserve_fn reserve, void *context,
+					 size_t outer_live) noexcept
+{
+	size_t base = outer_live;
+	if (!restitution_state_add(base, sizeof(restitution_plan_item_validation_workspace)) ||
+	    !restitution_state_add(base, sizeof(base)) ||
+	    !restitution_state_admit(base, 0, reserve, context))
+		return false;
+	restitution_plan_item_validation_workspace work;
+
+	if (!item.item_uid || item.classification.empty() ||
+	    item.classification.size() > PLAYER_DEATH_RESTITUTION_MAX_CLASSIFICATION_BYTES ||
+	    item.note.size() > PLAYER_DEATH_RESTITUTION_MAX_NOTE_BYTES ||
+	    std::find(seen.begin(), seen.end(), item.item_uid) != seen.end())
+		return false;
+	if (item.disposition != player_death_restitution_disposition::deliver &&
+	    item.disposition != player_death_restitution_disposition::unresolved &&
+	    item.disposition != player_death_restitution_disposition::excluded)
+		return false;
+	if (item.disposition != player_death_restitution_disposition::deliver)
+	{
+		return (item.metadata_payload.empty() ||
+			item.metadata_payload.size() <=
+				PLAYER_DEATH_RESTITUTION_MAX_ITEM_STATE_BYTES) &&
+		       (item.original_payload.empty() ||
+			item.original_payload.size() <=
+				PLAYER_DEATH_RESTITUTION_MAX_ORIGINAL_PAYLOAD_BYTES);
+	}
+	if (!item.source_root_item_uid || !item.delivered_root_item_uid ||
+	    item.source_item_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    item.custody_item_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    item.expected_item_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    item.expected_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    item.custody_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    !item.expected_owner_state ||
+	    item.expected_owner_state != PLAYER_DEATH_RESTITUTION_QUARANTINED_STATE ||
+	    !item.custody_state || item.vnum > static_cast<uint32_t>(INT32_MAX) ||
+	    item.artifact_vnum > static_cast<uint32_t>(INT32_MAX) ||
+	    item.custody_owner_type != PLAYER_DEATH_RESTITUTION_PLAYER_OWNER_TYPE ||
+	    item.custody_owner_id != plan.source_pid || item.custody_owner_context_id ||
+	    item.source_item_revision != item.expected_item_revision ||
+	    item.metadata_payload.empty() || item.original_payload.empty() ||
+	    item.metadata_payload.size() > PLAYER_DEATH_RESTITUTION_MAX_ITEM_STATE_BYTES ||
+	    item.original_payload.size() > PLAYER_DEATH_RESTITUTION_MAX_ORIGINAL_PAYLOAD_BYTES ||
+	    !restitution_plan_digest_bounded(item.metadata_digest, item.metadata_payload, reserve,
+					     context, base))
+		return false;
+	if (!player_death_restitution_item_state_decode_bounded(
+		    item.metadata_payload.data(), item.metadata_payload.size(), &work.state,
+		    reserve, context, base, &work.state_heap) ||
+	    work.state.item_uid != item.item_uid || work.state.vnum != item.vnum)
+		return false;
+	work.artifact = item.artifact_vnum != 0;
+	if (work.artifact !=
+	    (item.artifact_timing_evidence_present || item.artifact_timing_uid_approved))
+		return false;
+	if (!work.artifact)
+	{
+		if (item.artifact_approval_uid || item.artifact_loss_epoch ||
+		    item.artifact_source_timer_epoch || item.artifact_usable_lifetime_seconds ||
+		    item.artifact_source_location_type || item.artifact_source_location ||
+		    item.artifact_type || item.artifact_domain_present ||
+		    item.artifact_domain_item_uid_present || item.artifact_domain_item_uid ||
+		    item.artifact_domain_item_revision || item.artifact_domain_revision ||
+		    item.artifact_baseline_present || item.artifact_baseline_opening_timer_epoch ||
+		    item.artifact_baseline_opening_bind_owner_pid ||
+		    item.artifact_baseline_opening_bind_timer_epoch ||
+		    item.artifact_baseline_opening_revision || item.artifact_bind_present ||
+		    item.artifact_bind_owner_pid || item.artifact_bind_timer_epoch ||
+		    item.artifact_legacy_projection_mask)
+			return false;
+	}
+	else
+	{
+		if (item.artifact_usable_lifetime_seconds == 0 ||
+		    item.artifact_usable_lifetime_seconds >
+			    PLAYER_DEATH_RESTITUTION_MAX_TIMER_SECONDS ||
+		    item.artifact_usable_lifetime_seconds > INT32_MAX ||
+		    item.vnum != item.artifact_vnum || item.artifact_legacy_projection_mask == 0 ||
+		    (item.artifact_legacy_projection_mask & ~ARTIFACT_LEGACY_MASK) ||
+		    item.artifact_type < PLAYER_DEATH_RESTITUTION_ARTIFACT_TYPE_MAJOR ||
+		    item.artifact_type > PLAYER_DEATH_RESTITUTION_ARTIFACT_TYPE_IOUN ||
+		    (item.artifact_source_location_type !=
+			     PLAYER_DEATH_RESTITUTION_ARTIFACT_LOCATION_ON_PLAYER &&
+		     item.artifact_source_location_type !=
+			     PLAYER_DEATH_RESTITUTION_ARTIFACT_LOCATION_ON_CORPSE) ||
+		    (item.artifact_source_location_type ==
+			     PLAYER_DEATH_RESTITUTION_ARTIFACT_LOCATION_ON_PLAYER &&
+		     item.artifact_source_location != static_cast<int32_t>(plan.source_pid) &&
+		     item.artifact_source_location != -2) ||
+		    (item.artifact_source_location_type ==
+			     PLAYER_DEATH_RESTITUTION_ARTIFACT_LOCATION_ON_CORPSE &&
+		     item.artifact_source_location != static_cast<int32_t>(plan.source_pid)) ||
+		    item.artifact_domain_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+		    item.artifact_domain_item_revision ==
+			    PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+		    item.artifact_baseline_opening_timer_epoch >
+			    static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) ||
+		    item.artifact_baseline_opening_bind_timer_epoch < 0 ||
+		    item.artifact_baseline_opening_bind_timer_epoch >
+			    std::numeric_limits<int64_t>::max() ||
+		    item.artifact_bind_timer_epoch < 0 ||
+		    item.artifact_bind_timer_epoch > std::numeric_limits<int32_t>::max())
+			return false;
+		work.historical = item.artifact_timing_evidence_present;
+		work.approved = item.artifact_timing_uid_approved;
+		if (work.historical == work.approved ||
+		    item.artifact_source_timer_epoch >
+			    static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) ||
+		    item.artifact_loss_epoch >
+			    static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))
+			return false;
+		if (work.historical)
+		{
+			if (item.artifact_source_timer_epoch <= item.artifact_loss_epoch ||
+			    item.artifact_usable_lifetime_seconds !=
+				    item.artifact_source_timer_epoch - item.artifact_loss_epoch ||
+			    item.artifact_approval_uid)
+				return false;
+		}
+		else if (item.artifact_approval_uid != item.item_uid)
+			return false;
+		if (item.artifact_bind_owner_pid != static_cast<int32_t>(plan.source_pid) &&
+		    item.artifact_bind_owner_pid != 0 && item.artifact_bind_owner_pid != -1)
+			return false;
+		if (!item.artifact_domain_present &&
+		    (item.artifact_domain_item_uid_present || item.artifact_domain_item_uid ||
+		     item.artifact_domain_item_revision || item.artifact_domain_revision))
+			return false;
+		if (item.artifact_domain_present && !item.artifact_domain_item_uid_present &&
+		    item.artifact_domain_item_uid)
+			return false;
+		if (item.artifact_domain_present && item.artifact_domain_item_uid_present &&
+		    item.artifact_domain_item_uid != item.item_uid)
+			return false;
+		if (item.artifact_domain_present && item.artifact_domain_item_uid_present &&
+		    item.artifact_domain_item_revision != item.expected_item_revision)
+			return false;
+		if (!item.artifact_domain_present && item.artifact_domain_item_revision)
+			return false;
+		if (!item.artifact_baseline_present &&
+		    (item.artifact_baseline_opening_timer_epoch ||
+		     item.artifact_baseline_opening_bind_owner_pid ||
+		     item.artifact_baseline_opening_bind_timer_epoch ||
+		     item.artifact_baseline_opening_revision))
+			return false;
+		if (item.artifact_baseline_present &&
+		    (item.artifact_baseline_opening_timer_epoch !=
+			     item.artifact_source_timer_epoch ||
+		     item.artifact_baseline_opening_bind_owner_pid !=
+			     item.artifact_bind_owner_pid ||
+		     item.artifact_baseline_opening_bind_timer_epoch !=
+			     item.artifact_bind_timer_epoch ||
+		     (!item.artifact_domain_present && item.artifact_baseline_opening_revision)))
+			return false;
+		if (!item.artifact_bind_present &&
+		    ((item.artifact_bind_owner_pid != 0 && item.artifact_bind_owner_pid != -1) ||
+		     item.artifact_bind_timer_epoch != 0))
+			return false;
+	}
+	if (item.source_parent_item_uid &&
+	    (std::find(prior_deliveries.begin(), prior_deliveries.end(),
+		       item.source_parent_item_uid) == prior_deliveries.end() ||
+	     std::find(prior_deliveries.begin(), prior_deliveries.end(),
+		       item.source_root_item_uid) == prior_deliveries.end()))
+		return false;
+	if (!item.source_parent_item_uid && item.source_root_item_uid != item.item_uid)
+		return false;
+	if (item.delivered_parent_item_uid &&
+	    std::find(prior_deliveries.begin(), prior_deliveries.end(),
+		      item.delivered_parent_item_uid) == prior_deliveries.end())
+		return false;
+	if (item.expected_owner_revision != plan.expected_source_owner_revision)
+		return false;
+	return true;
+}
+}
+
+bool player_death_restitution_plan_valid_bounded(const player_death_restitution_plan &plan,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept
+{
+	if (!plan.source_pid || plan.source_pid > static_cast<uint32_t>(INT32_MAX) ||
+	    !plan.death_revision || !plan.recipient_pid ||
+	    plan.recipient_pid > static_cast<uint32_t>(INT32_MAX) ||
+	    critical_operation_id_is_zero(plan.restitution_id) ||
+	    critical_operation_id_is_zero(plan.death_operation_id) ||
+	    !digest_nonzero(plan.evidence_digest) || !digest_nonzero(plan.payload_digest) ||
+	    !digest_nonzero(plan.plan_digest) ||
+	    plan.expected_recipient_save_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    plan.expected_source_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    plan.expected_recipient_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
+	    (plan.source_pid == plan.recipient_pid &&
+	     plan.expected_recipient_owner_revision != plan.expected_source_owner_revision) ||
+	    !plan.loss_epoch ||
+	    plan.loss_epoch > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) ||
+	    plan.actor.empty() || plan.actor.size() > MAX_ACTOR_BYTES || plan.reason.empty() ||
+	    plan.reason.size() > PLAYER_DEATH_RESTITUTION_MAX_NOTE_BYTES || plan.items.empty() ||
+	    plan.items.size() > PLAYER_DEATH_RESTITUTION_MAX_ITEMS)
+		return false;
+	if (!restitution_plan_storage_profile())
+		return false;
+	size_t base = outer_live;
+	if (!restitution_state_add(base, sizeof(restitution_plan_validation_workspace)) ||
+	    !restitution_state_add(base, sizeof(base)) ||
+	    !restitution_state_admit(base, 0, reserve, context))
+		return false;
+	restitution_plan_validation_workspace work;
+	work.base = base;
+	try
+	{
+		if (!work.allocation(plan.items.size(), sizeof(uint64_t), reserve, context))
+			return false;
+		work.seen.reserve(plan.items.size());
+		if (!work.allocation(plan.items.size(), sizeof(uint64_t), reserve, context))
+			return false;
+		work.prior_deliveries.reserve(plan.items.size());
+		if (!work.allocation(plan.items.size(), sizeof(uint32_t), reserve, context))
+			return false;
+		work.seen_artifact_vnums.reserve(plan.items.size());
+		for (work.index = 0; work.index < plan.items.size(); ++work.index)
+		{
+			const auto &item = plan.items[work.index];
+			if (!work.live() || !restitution_plan_item_valid_bounded(
+						    plan, item, work.seen, work.prior_deliveries,
+						    reserve, context, work.current))
+				return false;
+			if (item.disposition == player_death_restitution_disposition::deliver &&
+			    item.artifact_vnum != 0)
+			{
+				if (std::find(work.seen_artifact_vnums.begin(),
+					      work.seen_artifact_vnums.end(),
+					      item.artifact_vnum) != work.seen_artifact_vnums.end())
+					return false;
+				work.seen_artifact_vnums.push_back(item.artifact_vnum);
+			}
+			work.seen.push_back(item.item_uid);
+			if (item.disposition == player_death_restitution_disposition::deliver)
+				work.prior_deliveries.push_back(item.item_uid);
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
+	for (work.index = 0; work.index < plan.items.size(); ++work.index)
+		if (plan.items[work.index].disposition ==
+		    player_death_restitution_disposition::deliver)
+			return true;
+	return false;
+}
+
+namespace
+{
+bool restitution_plan_decode_bounded(const uint8_t *encoded, size_t encoded_size,
+				     player_death_restitution_plan *plan,
+				     restitution_state_reserve_fn reserve, void *context,
+				     size_t outer_live, size_t *retained_plan_heap_bytes) noexcept
+{
+	if (!encoded || !plan || encoded_size < 8 || encoded_size > MAX_PLAN_BYTES)
+		return false;
+	if (!restitution_plan_storage_profile())
+		return false;
+	size_t base = outer_live;
+	if (!restitution_state_add(base, sizeof(restitution_plan_decode_workspace)) ||
+	    !restitution_state_add(base, sizeof(base)) ||
+	    !restitution_state_admit(base, 0, reserve, context))
+		return false;
+	restitution_plan_decode_workspace work;
+	work.reader.input = encoded;
+	work.reader.size = encoded_size;
+	work.base = base;
+	work.reserve = reserve;
+	work.context = context;
+	if (!work.reader.read(&work.magic) || !work.reader.read(&work.version) ||
+	    !work.reader.read(&work.reserved) || work.magic != PLAN_MAGIC ||
+	    work.version != PLAYER_DEATH_RESTITUTION_PAYLOAD_VERSION || work.reserved != 0 ||
+	    !work.reader.read(&work.decoded.source_pid) ||
+	    !work.reader.read(&work.decoded.death_revision) ||
+	    !work.reader.read(&work.decoded.recipient_pid) ||
+	    !work.reader.read(&work.decoded.expected_recipient_save_revision) ||
+	    !work.reader.read(&work.decoded.expected_source_owner_revision) ||
+	    !work.reader.read(&work.decoded.expected_recipient_owner_revision) ||
+	    !work.reader.read(&work.decoded.loss_epoch))
+		return false;
+	if (work.reader.offset > encoded_size ||
+	    work.decoded.restitution_id.bytes.size() > encoded_size - work.reader.offset)
+		return false;
+	memcpy(work.decoded.restitution_id.bytes.data(), encoded + work.reader.offset,
+	       work.decoded.restitution_id.bytes.size());
+	work.reader.offset += work.decoded.restitution_id.bytes.size();
+	if (work.reader.offset > encoded_size ||
+	    work.decoded.death_operation_id.bytes.size() > encoded_size - work.reader.offset)
+		return false;
+	memcpy(work.decoded.death_operation_id.bytes.data(), encoded + work.reader.offset,
+	       work.decoded.death_operation_id.bytes.size());
+	work.reader.offset += work.decoded.death_operation_id.bytes.size();
+	if (work.reader.offset > encoded_size ||
+	    work.decoded.evidence_digest.size() > encoded_size - work.reader.offset)
+		return false;
+	memcpy(work.decoded.evidence_digest.data(), encoded + work.reader.offset,
+	       work.decoded.evidence_digest.size());
+	work.reader.offset += work.decoded.evidence_digest.size();
+	if (work.reader.offset > encoded_size ||
+	    work.decoded.payload_digest.size() > encoded_size - work.reader.offset)
+		return false;
+	memcpy(work.decoded.payload_digest.data(), encoded + work.reader.offset,
+	       work.decoded.payload_digest.size());
+	work.reader.offset += work.decoded.payload_digest.size();
+	if (work.reader.offset > encoded_size ||
+	    work.decoded.plan_digest.size() > encoded_size - work.reader.offset)
+		return false;
+	memcpy(work.decoded.plan_digest.data(), encoded + work.reader.offset,
+	       work.decoded.plan_digest.size());
+	work.reader.offset += work.decoded.plan_digest.size();
+	if (!work.reader.read(&work.actor_length) || !work.reader.read(&work.reason_length) ||
+	    !work.reader.read(&work.item_count) || !work.reader.read(&work.plan_reserved) ||
+	    work.plan_reserved != 0 || work.actor_length > MAX_ACTOR_BYTES ||
+	    work.reason_length > PLAYER_DEATH_RESTITUTION_MAX_NOTE_BYTES || work.item_count == 0 ||
+	    work.item_count > PLAYER_DEATH_RESTITUTION_MAX_ITEMS ||
+	    work.actor_length > encoded_size - work.reader.offset ||
+	    work.reason_length > encoded_size - work.reader.offset - work.actor_length)
+		return false;
+	try
+	{
+		if (!work.text(work.actor_length, work.decoded.actor))
+			return false;
+		if (!work.text(work.reason_length, work.decoded.reason))
+			return false;
+		if (!work.allocation(work.item_count, sizeof(player_death_restitution_item)))
+			return false;
+		work.decoded.items.reserve(work.item_count);
+		for (work.index = 0; work.index < work.item_count; ++work.index)
+		{
+			if (!work.reader.read(&work.item.item_uid) ||
+			    !work.reader.read(&work.item.source_root_item_uid) ||
+			    !work.reader.read(&work.item.source_parent_item_uid) ||
+			    !work.reader.read(&work.item.delivered_root_item_uid) ||
+			    !work.reader.read(&work.item.delivered_parent_item_uid) ||
+			    !work.reader.read(&work.item.source_item_revision) ||
+			    !work.reader.read(&work.item.expected_item_revision) ||
+			    !work.reader.read(&work.item.expected_owner_revision) ||
+			    !work.reader.read(&work.item.expected_owner_state) ||
+			    !work.reader.read(&work.item.custody_item_revision) ||
+			    !work.reader.read(&work.item.custody_state) ||
+			    !work.reader.read(&work.item.custody_owner_type) ||
+			    !work.reader.read(&work.item.custody_owner_id) ||
+			    !work.reader.read(&work.item.custody_owner_context_id) ||
+			    !work.reader.read(&work.item.custody_owner_revision) ||
+			    !work.reader.read(&work.item.vnum) ||
+			    !work.reader.read(&work.item.artifact_vnum) ||
+			    !work.reader.read(&work.disposition) ||
+			    !work.reader.read(&work.artifact_flags) ||
+			    !work.reader.read(&work.item.artifact_source_location_type) ||
+			    !work.reader.read(&work.item.artifact_source_location) ||
+			    !work.reader.read(&work.item.artifact_type) ||
+			    !work.reader.read(&work.item.artifact_legacy_projection_mask) ||
+			    !work.reader.read(&work.item_reserved) ||
+			    !work.reader.read(&work.item.artifact_approval_uid) ||
+			    !work.reader.read(&work.item.artifact_loss_epoch) ||
+			    !work.reader.read(&work.item.artifact_source_timer_epoch) ||
+			    !work.reader.read(&work.item.artifact_usable_lifetime_seconds) ||
+			    !work.reader.read(&work.item.artifact_domain_item_uid) ||
+			    !work.reader.read(&work.item.artifact_domain_item_revision) ||
+			    !work.reader.read(&work.item.artifact_domain_revision) ||
+			    !work.reader.read(&work.item.artifact_baseline_opening_timer_epoch) ||
+			    !work.reader.read(
+				    &work.item.artifact_baseline_opening_bind_owner_pid) ||
+			    !work.reader.read(
+				    &work.item.artifact_baseline_opening_bind_timer_epoch) ||
+			    !work.reader.read(&work.item.artifact_baseline_opening_revision) ||
+			    !work.reader.read(&work.item.artifact_bind_owner_pid) ||
+			    !work.reader.read(&work.item.artifact_bind_timer_epoch) ||
+			    !work.reader.read(&work.class_length) ||
+			    !work.reader.read(&work.note_length) ||
+			    !work.reader.read(&work.metadata_length) ||
+			    !work.reader.read(&work.original_length) || work.item_reserved != 0 ||
+			    (work.artifact_flags &
+			     ~(ARTIFACT_EVIDENCE | ARTIFACT_UID_APPROVAL | ARTIFACT_DOMAIN_PRESENT |
+			       ARTIFACT_DOMAIN_UID_PRESENT | ARTIFACT_BASELINE_PRESENT |
+			       ARTIFACT_BIND_PRESENT)) ||
+			    (work.item.artifact_legacy_projection_mask & ~ARTIFACT_LEGACY_MASK))
+				return false;
+			work.item.disposition =
+				static_cast<player_death_restitution_disposition>(work.disposition);
+			work.item.artifact_timing_evidence_present =
+				(work.artifact_flags & ARTIFACT_EVIDENCE) != 0;
+			work.item.artifact_timing_uid_approved =
+				(work.artifact_flags & ARTIFACT_UID_APPROVAL) != 0;
+			work.item.artifact_domain_present =
+				(work.artifact_flags & ARTIFACT_DOMAIN_PRESENT) != 0;
+			work.item.artifact_domain_item_uid_present =
+				(work.artifact_flags & ARTIFACT_DOMAIN_UID_PRESENT) != 0;
+			work.item.artifact_baseline_present =
+				(work.artifact_flags & ARTIFACT_BASELINE_PRESENT) != 0;
+			work.item.artifact_bind_present =
+				(work.artifact_flags & ARTIFACT_BIND_PRESENT) != 0;
+			if (work.class_length > PLAYER_DEATH_RESTITUTION_MAX_CLASSIFICATION_BYTES ||
+			    work.note_length > PLAYER_DEATH_RESTITUTION_MAX_NOTE_BYTES ||
+			    work.metadata_length > PLAYER_DEATH_RESTITUTION_MAX_ITEM_STATE_BYTES ||
+			    work.original_length >
+				    PLAYER_DEATH_RESTITUTION_MAX_ORIGINAL_PAYLOAD_BYTES ||
+			    work.reader.offset > encoded_size ||
+			    work.item.metadata_digest.size() > encoded_size - work.reader.offset)
+				return false;
+			memcpy(work.item.metadata_digest.data(), encoded + work.reader.offset,
+			       work.item.metadata_digest.size());
+			work.reader.offset += work.item.metadata_digest.size();
+			if (work.class_length > encoded_size - work.reader.offset)
+				return false;
+			if (!work.text(work.class_length, work.item.classification))
+				return false;
+			if (work.note_length > encoded_size - work.reader.offset)
+				return false;
+			if (!work.text(work.note_length, work.item.note))
+				return false;
+			if (!work.bytes(work.metadata_length, &work.item.metadata_payload) ||
+			    !work.bytes(work.original_length, &work.item.original_payload))
+				return false;
+			work.decoded.items.push_back(std::move(work.item));
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
+	if (work.reader.offset != encoded_size || !work.live() ||
+	    !player_death_restitution_plan_valid_bounded(work.decoded, reserve, context,
+							 work.current))
+		return false;
+	if (!work.census.observe(work.decoded))
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<player_death_restitution_plan>);
+	static_assert(std::is_nothrow_move_constructible_v<player_death_restitution_item>);
+	*plan = std::move(work.decoded);
+	if (retained_plan_heap_bytes)
+		*retained_plan_heap_bytes = work.census.total;
+	return true;
+}
+}
+
+bool player_death_restitution_command_decode_payload_bounded(
+	const critical_command &command, player_death_restitution_plan *plan,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_plan_heap_bytes) noexcept
+{
+	if (!plan || command.type != critical_command_type::player_death_restitution ||
+	    command.payload_version != PLAYER_DEATH_RESTITUTION_PAYLOAD_VERSION ||
+	    !command.accepted_at_usec || command.payload.empty())
+		return false;
+	struct workspace
+	{
+		player_death_restitution_plan decoded = {};
+		size_t heap = 0;
+		size_t current = 0;
+	};
+	size_t base = outer_live;
+	if (!restitution_state_add(base, sizeof(workspace)) ||
+	    !restitution_state_add(base, sizeof(base)) ||
+	    !restitution_state_admit(base, 0, reserve, context))
+		return false;
+	workspace work;
+	if (!restitution_plan_decode_bounded(command.payload.data(), command.payload.size(),
+					     &work.decoded, reserve, context, base, &work.heap) ||
+	    !critical_operation_id_equal(work.decoded.restitution_id, command.operation_id))
+		return false;
+	work.decoded.accepted_at_usec = command.accepted_at_usec;
+	work.current = base;
+	if (!restitution_state_add(work.current, work.heap))
+		return false;
+	if (!player_death_restitution_plan_valid_bounded(work.decoded, reserve, context,
+							 work.current) ||
+	    command.keys.size() != 1 || command.keys[0].type != critical_entity_type::player ||
+	    command.keys[0].id != work.decoded.recipient_pid ||
+	    command.expected_revisions.size() != 1 ||
+	    command.expected_revisions[0].key.id != work.decoded.recipient_pid ||
+	    command.expected_revisions[0].revision != work.decoded.expected_recipient_save_revision)
+		return false;
+	static_assert(std::is_nothrow_move_assignable_v<player_death_restitution_plan>);
+	*plan = std::move(work.decoded);
+	if (retained_plan_heap_bytes)
+		*retained_plan_heap_bytes = work.heap;
+	return true;
+}

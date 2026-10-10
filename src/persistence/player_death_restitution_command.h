@@ -203,4 +203,16 @@ bool player_death_restitution_item_state_decode_bounded(
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
 	size_t *retained_state_heap_bytes = nullptr) noexcept;
 
+// Complete v3 plan validator and command-payload decoder. Authentic input,
+// destination inline/prior heap and caller frames belong to outer_live. The
+// decoder's optional transferred heap scalar excludes destination inline and
+// remains unchanged, together with the plan, on refusal. Original APIs remain.
+bool player_death_restitution_plan_valid_bounded(const player_death_restitution_plan &plan,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept;
+bool player_death_restitution_command_decode_payload_bounded(
+	const critical_command &command, player_death_restitution_plan *plan,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_plan_heap_bytes = nullptr) noexcept;
+
 #endif
