@@ -66525,7 +66525,7 @@
       "src/net/comm.c": "c3f25976b728f4df1d6f7e1c088d385e958906785f6bd1ce2f4356a5123d8e33",
       "src/persistence/critical_command.c": "b4a19933b97a04913d644ae7e05aab2dd9880bc8874f4f3e703f1bfd62a78eef",
       "src/persistence/critical_command.h": "6064c1da68d806c3b9e48d715d0991346fb6a6a45692dd51838740044a381a71",
-      "src/persistence/critical_command_coordinator.c": "9e0ec2f8f2c8fb21da17182c5a33ee1aa9877ca8ee190f7ddd3a5af1a7648a61",
+      "src/persistence/critical_command_coordinator.c": "1b228a37186335fed1dc89ee6a69a911aaa48d0db1f99326408687dbf0fc5c5e",
       "src/persistence/critical_command_coordinator.h": "f855be3692b747d84fdad86ddbd9ce09f4cc4de4e350d251fb8213b1574ddf75",
       "src/persistence/critical_command_journal.c": "07b1ca90db295c01ffb2d7d435572d6c6db68492f9505bc1e10e3f1ac669ab6f",
       "src/persistence/critical_command_journal.h": "9bf8e548a593f4d6fafb94bf7b81b95e3a090b680bb7c7e7019cfe6d8c46857d",
@@ -66829,7 +66829,9 @@
       "src/core/utility.h": "67b283f7f66a83511ed9bb17ff22bce27901a50c675b6099217edc2846823cc4",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d",
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
-      "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a"
+      "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
+      "src/persistence/player_death_restitution_command.c": "3e72ed565b81f86b8e4d4ee9d5957607ed23835d7ffe25e7368e68c4eaebde0b",
+      "src/persistence/player_death_restitution_command.h": "9f07652819c28d7fb5881049d8773d2e88379eed069681c18741317611c3159d"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -1,0 +1,7 @@
+# Complete genuine bounded restitution item-state decoder - 2026-10-09
+
+The new IST1 item-state decoder owns the complete original reader and validation. It prospectively admits actual fresh text, affect and description buffers with their simultaneous retained capacities and temporary row ownership. Original fields, flags, limits, signed conversions, presence and trailing-byte rules are preserved. Successful output transfer has no later fallible callback; refusal preserves both outputs.
+
+Independent full RAW and final formatted source reviews passed. Only original CRLF line endings were normalized to the authenticated Git LF preimage before formatting; complete tokens, logical preprocessing, inverse and original C prefix are preserved. Registry authentication contains 402 pins, including the two reviewed restitution command files absent from the previous 400-pin set, with 931 unchanged writer policies and zero new/unmapped sites. Evidence: tmp/restitution-state-codec-integrated-20261009.
+
+The original selected decoder remains unchanged. This unselected leaf supplies a necessary dependency; full v3 plan decoding/validation, retained status ownership, the actual runtime save/login fence, host dispatch and combined startup qualification remain unfinished. Native checks stay batched until major-plan readiness. Accounting inactive, admission CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
