@@ -298,6 +298,25 @@ Competing immutable creation-event/history/baseline/live-world/atomic/terminal/n
 publication/ACK remain open. Private source review/RAW/profile/token/policy/pins and
 primary handoff Goal ACTIVE are REPORTED ONLY; actual coordinator Goal stays BLOCKED.
 
+Late publication successors, separate from fixed PQ: retained baseline
+75d83e60a5ba07ee9c2b866565913a97e75beb7b / actual parent C14 and pouch wire
+69fded96fc0c47f3187876d157a6351fbac64d63 / actual parent75d83 EXIST. Root full
+handoffs/new59 baseline header/all23 authority+145 baseline C read; five whole
+forward-inverses,12 whole adjacent providers,three original complete OC controls
+and all prior owned sections authenticate. Actual passive owning control/epoch
+read is strong after SAME lock; genuine INITIAL authenticates every retained
+baseline head/all16 indexes including retired epochs/kind2 UID reservations.
+Never-initialized needs original full-prefix empty namespace; legacy-unknown
+needs actual structurally valid book/indexes. This reduces the missing baseline
+leaf dependency without proving full indexed economic before/after/creation
+history or atomic/native qualification. Full original baseline/metadata/crypto/
+SQL parity/math/ABI/allocator/full aggregate review NOT PERFORMED; full478 new
+pouch C semantics NOT PERFORMED. Private RAW/correction/preprocessor/policy/
+review/pin claims REPORTED ONLY. Queue both at PQ handoff, no task expansion,
+repin or CLOSED reopen. Original root insertion history remains in Git; concurrent
+primary75d83/69fd is preserved by a normal non-destructive merge. No source delta
+or private artifact import/commit belongs to this publication.
+
 Applicable backend boundary: actual docs/reference/CODEBASE.md retires siege runtime;
 docs/reference/DATABASE.md and original baseline_item_ownership.sh retain siege SQL
 tombstones/baseline witnesses, not permission to revive runtime. Actual flat accounting
@@ -382,8 +401,9 @@ routes/detach/adopt/enroll/light, financial command/compiler/result/recovery, di
 service/scheduler/placement/activity and full native/caller/crypto/ABI/allocator evidence
 remain separate. Primary owns maintained implementation/math/admission/authority/
 contracts/qualification; Plan5 backend/SQL0065/schema65/32MiB/recovery/release.
-Root publishes only three owned coordination docs; exact inserted-section inverse
-restores primary C14da733ce7fa7966eab6c3a37af052307423cd29. No maintained-source delta/
+Root publishes only three owned coordination docs. Original insertion restores
+primary C14da733ce7fa7966eab6c3a37af052307423cd29; merged publication insertion
+restores late primary69fded96fc0c47f3187876d157a6351fbac64d63. No maintained-source delta/
 private artifact import/commit/compiler/preprocessor/native/product/DB/deploy/activation/
 production mutation or other-chat messages. Preserve all CLOSED OC/OR/RR/BR/SS/SG/PC/
 PD/SC/RK/RF/GG/CG/CK/SAME-lock seals/receipts/history and all original wording corrections:
