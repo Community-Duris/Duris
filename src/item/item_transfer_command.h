@@ -537,4 +537,11 @@ bool item_transfer_native_mobile_context_valid_bounded(const item_transfer_paylo
 						       bool (*reserve)(size_t, void *) noexcept,
 						       void *context, size_t outer_live) noexcept;
 
+// Complete original generic payload validator, including all original native,
+// continuation/craft/corpse/collector/pet/multi-root/topology refusals in order.
+// Pure unselected companion; authentic input/sibling/caller owners stay outer.
+bool item_transfer_payload_valid_bounded(const item_transfer_payload &, uint16_t,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept;
+
 #endif

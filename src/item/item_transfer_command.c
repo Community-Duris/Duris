@@ -4954,3 +4954,540 @@ bool item_transfer_native_mobile_context_valid_bounded(const item_transfer_paylo
 		return false;
 	}
 }
+
+namespace
+{
+constexpr size_t item_payload_validation_pure_frames =
+	// Original selected_root_for and target_topology_for this/input/result,
+	// entry/parent pointers, UID/depth/selected-root named local scopes.
+	3 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(size_t) + 5 * sizeof(void *) +
+	2 * sizeof(uint64_t) + sizeof(bool) + item_continuation_lower_bound_frames +
+	// Original reason/version/owner/equality and fixed continuation predicates.
+	sizeof(item_transfer_reason) + sizeof(uint16_t) + 4 * sizeof(void *) + 5 * sizeof(bool) +
+	// Original spell value-codec and retirement value-codec data refs/version/
+	// bools/offset/effect/nested-UID/item ref plus fixed get32/get64 source scopes.
+	3 * sizeof(void *) + 3 * sizeof(uint16_t) + 4 * sizeof(bool) + sizeof(size_t) +
+	3 * sizeof(uint32_t) + sizeof(void *) + 2 * sizeof(uint64_t) + 2 * sizeof(unsigned int) +
+	// Original collector payload/version/collector reference and zero-ID
+	// range byte/iterators; all_of lambda captures original payload reference.
+	4 * sizeof(void *) + sizeof(uint16_t) + 2 * sizeof(bool) + sizeof(uint8_t) +
+	2 * sizeof(void *) +
+	// is_sorted/is_sorted_until/__is_sorted_until first/last/next/returned
+	// iterator and empty comparator; iter-less this/twoiter/bool.
+	3 * (3 * sizeof(void *) + sizeof(char)) + sizeof(void *) + sizeof(bool) +
+	3 * sizeof(void *) + sizeof(bool) +
+	// all_of/find_if_not/__find_if_not/__negate/_Iter_negate wrappers and
+	// lambda reference/UID/results. Actual find iterator/category scopes.
+	4 * (2 * sizeof(void *) + sizeof(char) + sizeof(bool)) + 3 * sizeof(void *) +
+	2 * sizeof(char) + 3 * sizeof(bool) + sizeof(uint64_t) +
+	item_native_validation_find_frames +
+	// valid_text string/max/nonempty/result, original string query/source
+	// all_of byte lambda; array/span/vector queries at literal fixed sites.
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(unsigned char) + sizeof(bool) + 12 * (sizeof(void *) + sizeof(size_t)) +
+	3 * sizeof(std::span<const uint8_t>) +
+	// Native projection default temporaries, vector default constructor and
+	// aggregate/vector/array equality + destruction declared scopes.
+	sizeof(native_quest_coin_give_projection) + sizeof(native_quest_cost_projection) +
+	4 * sizeof(void *) + sizeof(std::allocator<native_quest_cost_attempt>) +
+	6 * sizeof(void *) + 4 * sizeof(bool) + item_native_validation_equal_frames +
+	payload_clone_allocator_frames;
+struct item_payload_validation_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	const craft_pouch_mutation *pouch = nullptr;
+	const craft_recipe_continuation *recipe = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		constexpr size_t observations = 12 * sizeof(void *) + 9 * sizeof(size_t) +
+						4 * sizeof(bool) +
+						6 * (sizeof(void *) + sizeof(size_t));
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    !payload_clone_add(total, observations) ||
+		    !payload_clone_add(total, player_item_snapshot_copy_frame_bytes()))
+			return false;
+		if (outputs)
+		{
+			if (!payload_clone_add(total, sizeof(*outputs)) ||
+			    !payload_clone_vector_heap(*outputs, false, total))
+				return false;
+			for (const auto &item : *outputs)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if (pouch)
+		{
+			if (!payload_clone_add(total, sizeof(*pouch)) ||
+			    !payload_clone_vector_heap(pouch->usage, false, total) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->before, &row) ||
+			    !payload_clone_add(total, row) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->after, &row) ||
+			    !payload_clone_add(total, row))
+				return false;
+		}
+		if (recipe &&
+		    (!payload_clone_add(total, sizeof(*recipe)) ||
+		     !payload_clone_vector_heap(recipe->pouch_mutation, false, total) ||
+		     !payload_clone_vector_heap(recipe->refine_root_order, false, total) ||
+		     !payload_clone_string_heap(recipe->refine_material_name, false, total)))
+			return false;
+		if (!payload_clone_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+bool item_full_payload_validation_owned(const item_transfer_payload &payload,
+					uint16_t payload_version,
+					item_payload_validation_budget &budget)
+{
+	size_t admission_prefix = 0;
+	// Every legacy/generic encoder must refuse rather than silently drop money.
+	if (payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{})
+		return false;
+	// Every legacy/generic encoder must refuse rather than silently drop cost.
+	if (payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{})
+		return false;
+	if (!(budget.prefix(admission_prefix) && item_transfer_native_mobile_context_valid_bounded(
+							 payload, payload_version, budget.reserve,
+							 budget.context, admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_transfer_native_recovery_valid_bounded(payload, payload.native_recovery,
+							  payload_version, budget.reserve,
+							  budget.context, admission_prefix)))
+		return false;
+	const bool native_consumption = native_mobile_version(payload_version) &&
+					payload.native_mobile.action ==
+						item_native_mobile_action::consumption;
+	if (!item_owner_identity_valid(payload.from_owner) ||
+	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+	     payload.item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS) ||
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    payload.from_owner.type == item_owner_type::collector ||
+	    payload.to_owner.type == item_owner_type::collector ||
+	    !valid_collector_context(payload, payload_version) ||
+	    (payload.logical_source_id && (payload_version < ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION ||
+					   payload.reason != item_transfer_reason::creation)) ||
+	    payload.continuation.data.size() >
+		    item_transfer_continuation_limit(payload.continuation.kind) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::none &&
+	     !payload.continuation.data.empty()) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::quest_offering &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      payload.reason != item_transfer_reason::quest_turnin ||
+	      (!native_consumption && payload.from_owner.type != item_owner_type::player) ||
+	      payload.to_owner.type != item_owner_type::destruction || !payload.multi_root ||
+	      (!native_consumption && payload.reason_id <= 0) ||
+	      !(budget.prefix(admission_prefix) &&
+		item_transfer_quest_offering_continuation_valid_bounded(
+			payload, budget.reserve, budget.context, admission_prefix)))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::soulbind_transfer &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      !valid_soulbind_continuation(payload))) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::spell_component_retirement &&
+	     !valid_spell_component_continuation(payload, payload_version)) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::account_reward_retirement &&
+	     !valid_account_reward_retirement_continuation(payload, payload_version)) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
+	     !(budget.prefix(admission_prefix) &&
+	       item_transfer_duplicate_promotion_continuation_valid_bounded(
+		       payload, payload_version, budget.reserve, budget.context,
+		       admission_prefix))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage &&
+	     payload_version < ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::lockpick_retirement &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      !(budget.prefix(admission_prefix) &&
+		lockpick_retirement_payload_valid_bounded(payload, budget.reserve, budget.context,
+							  admission_prefix)))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe &&
+	     (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	      payload.reason != item_transfer_reason::craft)) ||
+	    (payload.continuation.kind != item_transfer_continuation_kind::none &&
+	     payload.continuation.kind != item_transfer_continuation_kind::quest_offering &&
+	     payload.continuation.kind != item_transfer_continuation_kind::soulbind_transfer &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::spell_component_retirement &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::account_reward_retirement &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage &&
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_recipe &&
+	     payload.continuation.kind != item_transfer_continuation_kind::lockpick_retirement))
+		return false;
+	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
+	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
+	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool world_corpse_raise_pet =
+		corpse_raise_pet && payload.from_owner.type == item_owner_type::room &&
+		payload.from_owner.id && payload.from_owner.id <= INT32_MAX &&
+		!payload.from_owner.context_id && payload.to_owner.type == item_owner_type::pet &&
+		payload.to_owner.id && payload.to_owner.context_id &&
+		payload.to_owner.context_id <= INT32_MAX && payload.multi_root &&
+		!payload.target_root_item_uid && !payload.target_parent_item_uid &&
+		static_cast<uint64_t>(payload.reason_id) == payload.to_owner.id;
+	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
+	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
+	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
+	const bool craft = payload.reason == item_transfer_reason::craft;
+	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
+	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool equipment = payload.reason == item_transfer_reason::player_wear ||
+			       payload.reason == item_transfer_reason::player_remove;
+	const bool forced_drop = item_transfer_forced_weapon_drop(payload.reason);
+	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (forced_drop &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::room || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (equipment &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	     payload.from_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.selected_item_uid != payload.items[0].root_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (player_transfer &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
+	     payload.to_owner.id > INT32_MAX || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.from_owner.id == payload.to_owner.id ||
+	     payload.multi_root || payload.target_parent_item_uid ||
+	     payload.reason_id != static_cast<int64_t>(payload.from_owner.id)))
+		return false;
+	if (craft)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>) +
+				 sizeof(craft_pouch_mutation) +
+				 // Original two row default constructions and three genuine vector
+				 // default constructors; shared source profile covers row closure.
+				 2 * player_item_snapshot_copy_frame_bytes() + 13 * sizeof(void *) +
+				 2 * sizeof(std::allocator<player_item_snapshot>) +
+				 sizeof(std::allocator<chaos_material_pouch_usage>)))
+			return false;
+		std::vector<player_item_snapshot> outputs;
+		craft_pouch_mutation pouch;
+		budget.outputs = &outputs;
+		budget.pouch = &pouch;
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    payload.from_owner.type != item_owner_type::player ||
+		    payload.to_owner.type != item_owner_type::player ||
+		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+		    !payload.from_owner.id || payload.from_owner.context_id ||
+		    payload.to_owner.context_id || !payload.multi_root ||
+		    !payload.selected_item_uid || payload.target_root_item_uid ||
+		    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+		    !(budget.prefix(admission_prefix) &&
+		      item_transfer_craft_outputs_decode_bounded(payload, &outputs, budget.reserve,
+								 budget.context, admission_prefix,
+								 nullptr)) ||
+		    !(budget.prefix(admission_prefix) &&
+		      craft_pouch_mutation_from_payload_bounded(
+			      payload, &pouch, budget.reserve, budget.context, admission_prefix)) ||
+		    (outputs.empty() && !find_payload_item(payload, payload.selected_item_uid)) ||
+		    payload.item_count + outputs.size() > CRITICAL_COMMAND_MAX_KEYS - 2)
+			return false;
+		if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+		{
+			if (!budget.peak(
+				    sizeof(craft_recipe_continuation) +
+				    3 * duris_craft_recipe_bounded_detail::empty_constructor_frames +
+				    duris_craft_recipe_bounded_detail::string_lifetime_frames))
+				return false;
+			craft_recipe_continuation recipe;
+			budget.recipe = &recipe;
+			if (!(budget.prefix(admission_prefix) &&
+			      craft_recipe_continuation_decode_bounded(
+				      payload.continuation.data, &recipe, budget.reserve,
+				      budget.context, admission_prefix)) ||
+			    (!budget.peak(
+				     duris_craft_recipe_bounded_detail::pure_frames +
+				     item_native_validation_count_frames +
+				     // Original matches payload/recipe refs, materials/ores/roots,
+				     // last_ore, UID and source-root loops/entry source locals.
+				     3 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(uint32_t) +
+				     sizeof(uint64_t)) ||
+			     !craft_recipe_continuation_matches(recipe, payload)) ||
+			    (craft_recipe_is_alchemy(recipe.discipline) ||
+					     recipe.discipline == craft_recipe_discipline::refine ?
+				     static_cast<uint32_t>(
+					     std::count_if(outputs.begin(), outputs.end(),
+							   [](const auto &output) {
+								   return output.parent_index ==
+									  PLAYER_SNAPSHOT_NO_PARENT;
+							   })) != recipe.output_count ||
+					     (!outputs.empty() &&
+					      outputs[0].object_uid != recipe.output_uid) :
+				     outputs.size() != 1 ||
+					     outputs[0].object_uid != recipe.output_uid ||
+					     outputs[0].vnum !=
+						     static_cast<int32_t>(recipe.recipe_vnum)) ||
+			    (recipe.discipline == craft_recipe_discipline::refine &&
+			     (!outputs.empty() &&
+			      (outputs.size() != 1 ||
+			       outputs[0].vnum != static_cast<int32_t>(recipe.recipe_vnum)))))
+				return false;
+			budget.recipe = nullptr;
+		}
+		for (const player_item_snapshot &output : outputs)
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (output.object_uid == payload.items[index].item_uid)
+					return false;
+		// Original locals die at this brace; later census must not read them.
+		budget.outputs = nullptr;
+		budget.pouch = nullptr;
+	}
+	// Other commands do not update the pet's physical item projection.
+	if ((payload.from_owner.type == item_owner_type::pet ||
+	     payload.to_owner.type == item_owner_type::pet) &&
+	    !pet_give && !pet_return && !corpse_raise_pet)
+		return false;
+	if ((pet_give && (payload.from_owner.type != item_owner_type::player ||
+			  payload.to_owner.type != item_owner_type::pet ||
+			  payload.from_owner.id != payload.to_owner.context_id ||
+			  payload.reason_id != static_cast<int64_t>(payload.to_owner.id))) ||
+	    (pet_return && (payload.from_owner.type != item_owner_type::pet ||
+			    payload.to_owner.type != item_owner_type::player ||
+			    payload.from_owner.context_id != payload.to_owner.id ||
+			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
+	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
+		return false;
+	const bool corpse_context_required =
+		payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+		(corpse_create || corpse_loot || (corpse_raise_pet && !world_corpse_raise_pet));
+	if (corpse_context_required != payload.corpse.present ||
+	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
+			       payload.to_owner.type != item_owner_type::corpse)) ||
+	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
+			     payload.to_owner.type != item_owner_type::player)) ||
+	    (corpse_raise_pet && !world_corpse_raise_pet &&
+	     (payload.from_owner.type != item_owner_type::corpse ||
+	      payload.to_owner.type != item_owner_type::pet)))
+		return false;
+	if (payload.corpse.present)
+	{
+		const item_owner_identity &owner = corpse_create ? payload.to_owner :
+								   payload.from_owner;
+		const uint32_t owner_pid = static_cast<uint32_t>(owner.id >> 32);
+		const uint32_t save_id = static_cast<uint32_t>(owner.id);
+		if (!owner_pid || owner_pid > INT32_MAX || !save_id || save_id > INT32_MAX ||
+		    owner.context_id || payload.corpse.room_vnum < 0 ||
+		    payload.corpse.actor_racewar > 4 ||
+		    payload.corpse.values[CORPSE_PID_VALUE_INDEX] !=
+			    static_cast<int32_t>(owner_pid) ||
+		    payload.corpse.values[CORPSE_SAVE_ID_VALUE_INDEX] !=
+			    static_cast<int32_t>(save_id) ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] < 0 ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] > 4 ||
+		    !valid_text(payload.corpse.owner_name, ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES,
+				true) ||
+		    !valid_text(payload.corpse.short_description,
+				ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES, false) ||
+		    !valid_text(payload.corpse.description,
+				ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES, false) ||
+		    !valid_text(payload.corpse.keywords, ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES,
+				false))
+			return false;
+	}
+	const bool creation = payload.from_owner.type == item_owner_type::system;
+	const bool destruction = payload.to_owner.type == item_owner_type::destruction;
+	const bool quest_turnin = payload.reason == item_transfer_reason::quest_turnin;
+	if (payload.to_owner.type == item_owner_type::system ||
+	    payload.from_owner.type == item_owner_type::destruction ||
+	    (payload.reason == item_transfer_reason::creation) != creation ||
+	    ((payload.reason == item_transfer_reason::destruction || quest_turnin) !=
+	     destruction) ||
+	    (quest_turnin && !native_consumption &&
+	     (payload.from_owner.type != item_owner_type::player || !payload.multi_root ||
+	      payload.reason_id <= 0 ||
+	      payload.continuation.kind != item_transfer_continuation_kind::quest_offering)) ||
+	    ((creation || destruction) &&
+	     item_owner_identity_equal(payload.from_owner, payload.to_owner)))
+		return false;
+	if (payload.multi_root)
+	{
+		const bool batch_reason = payload.reason == item_transfer_reason::player_get ||
+					  payload.reason == item_transfer_reason::player_drop ||
+					  payload.reason == item_transfer_reason::player_put ||
+					  payload.reason == item_transfer_reason::locker_deposit ||
+					  payload.reason == item_transfer_reason::locker_withdraw ||
+					  payload.reason == item_transfer_reason::corpse_loot ||
+					  payload.reason ==
+						  item_transfer_reason::corpse_raise_pet ||
+					  payload.reason == item_transfer_reason::corpse_create ||
+					  payload.reason == item_transfer_reason::destruction ||
+					  quest_turnin || craft;
+		const bool creation_batch = creation &&
+					    payload.reason == item_transfer_reason::creation;
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    (!craft && payload.selected_item_uid) || (!creation_batch && !batch_reason) ||
+		    (craft && (!payload.selected_item_uid || !payload.multi_root)) ||
+		    (creation_batch &&
+		     (payload.to_owner.type != item_owner_type::player ||
+		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
+		    (payload.target_parent_item_uid ? !payload.target_root_item_uid :
+						      payload.target_root_item_uid != 0))
+			return false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &entry = payload.items[index];
+			if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
+			    (creation_batch ? (entry.expected_item_revision !=
+						       ITEM_TRANSFER_ABSENT_REVISION ||
+					       entry.expected_state != item_custody_state::absent) :
+					      entry.expected_state != item_custody_state::active) ||
+			    (index && payload.items[index - 1].item_uid >= entry.item_uid) ||
+			    entry.item_uid == payload.target_parent_item_uid)
+				return false;
+			if (creation_batch)
+			{
+				const uint64_t selected_root =
+					selected_root_for(payload, entry.item_uid);
+				const item_transfer_entry *root =
+					find_payload_item(payload, selected_root);
+				uint64_t target_root = 0, target_parent = 0;
+				if (!root || selected_root != entry.root_item_uid ||
+				    root->root_item_uid != root->item_uid ||
+				    root->parent_item_uid ||
+				    !target_topology_for(payload, entry.item_uid, &target_root,
+							 &target_parent) ||
+				    target_root != entry.root_item_uid ||
+				    target_parent != entry.parent_item_uid)
+					return false;
+				continue;
+			}
+			const uint64_t selected_root = selected_root_for(payload, entry.item_uid);
+			const item_transfer_entry *selected =
+				find_payload_item(payload, selected_root);
+			if (!selected || selected->root_item_uid != entry.root_item_uid)
+				return false;
+			uint64_t target_root = 0, target_parent = 0;
+			if (!target_topology_for(payload, entry.item_uid, &target_root,
+						 &target_parent))
+				return false;
+		}
+		return true;
+	}
+	const uint64_t source_root = payload.items[0].root_item_uid;
+	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
+							      source_root;
+	const uint64_t target_root = payload.target_root_item_uid ? payload.target_root_item_uid :
+								    selected;
+	if (!source_root || !selected || !target_root ||
+	    (!payload.target_parent_item_uid && target_root != selected))
+		return false;
+	bool found_selected = false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const item_transfer_entry &entry = payload.items[index];
+		if (!entry.item_uid || entry.root_item_uid != source_root || entry.vnum <= 0 ||
+		    entry.expected_state !=
+			    (creation ? item_custody_state::absent : item_custody_state::active) ||
+		    (creation && entry.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION))
+			return false;
+		if (index && payload.items[index - 1].item_uid >= entry.item_uid)
+			return false;
+		if (entry.item_uid == payload.target_parent_item_uid)
+			return false;
+		if (entry.item_uid == selected)
+		{
+			if (found_selected)
+				return false;
+			found_selected = true;
+		}
+		else if (!entry.parent_item_uid)
+			return false;
+	}
+	if (!found_selected || (creation && selected != source_root))
+		return false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		if (payload.items[index].item_uid == selected)
+			continue;
+		uint64_t ancestor_uid = payload.items[index].parent_item_uid;
+		bool reaches_root = false;
+		for (size_t depth = 0; depth < payload.item_count; ++depth)
+		{
+			if (ancestor_uid == selected)
+			{
+				reaches_root = true;
+				break;
+			}
+			auto parent = std::find_if(payload.items.begin(),
+						   payload.items.begin() + payload.item_count,
+						   [&](const item_transfer_entry &candidate)
+						   { return candidate.item_uid == ancestor_uid; });
+			if (parent == payload.items.begin() + payload.item_count)
+				break;
+			ancestor_uid = parent->parent_item_uid;
+		}
+		if (!reaches_root)
+			return false;
+	}
+	return true;
+}
+
+} // namespace
+bool item_transfer_payload_valid_bounded(const item_transfer_payload &payload, uint16_t version,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		// Public/private payload/owner/reserve/context and original version
+		// parameters/results; prefix scratch. No inline payload clone exists.
+		5 * sizeof(void *) + 2 * sizeof(uint16_t) + 2 * sizeof(size_t) + 2 * sizeof(bool) +
+		// All 22 original boolean declaration sites, four loop index sites,
+		// two depth sites, original owner PID/saveID, ten declared UID/topology
+		// values and original entry/owner/parent/output/range ref carriers.
+		22 * sizeof(bool) + 6 * sizeof(size_t) + 2 * sizeof(uint32_t) +
+		10 * sizeof(uint64_t) + 10 * sizeof(void *) + item_payload_validation_pure_frames +
+		item_native_validation_find_frames + payload_clone_allocator_frames;
+	item_payload_validation_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_full_payload_validation_owned(payload, version, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
