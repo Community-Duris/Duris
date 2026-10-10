@@ -46,6 +46,9 @@ quest_mobile_native_reference_decode(std::span<const uint8_t>,
 // source-event/checksum/SHA frames. Same 148 bytes, digest, original version and
 // provenance laws; no native UID/source/custody/admission authority or selection.
 // Outer includes real input/prior output/caller state; strong output on refusal.
+// Codecs distinguish checked-size overflow (limit_exceeded), unsupported
+// profile/reserve refusal (allocation_failure), and invalid native values.
+// Public bool validation keeps its existing false-on-refusal contract.
 bool quest_mobile_native_reference_valid_bounded(const quest_mobile_native_reference &,
 						 bool (*reserve)(size_t, void *) noexcept,
 						 void *context, size_t outer) noexcept;

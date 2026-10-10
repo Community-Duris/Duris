@@ -319,3 +319,112 @@ bool quest_mobile_native_publication_binding::restore_money_metadata(
 		return false;
 	}
 }
+
+#include <thread>
+#include <unordered_map>
+
+// Complete original read-only reference observation with prospective admission.
+// No absence/birth authority: invalid_value alone never proves an empty binding.
+player_snapshot_codec_result
+quest_mobile_native_reference_copy_bounded(const char_data *character, uint64_t expected_runtime_id,
+					   quest_mobile_native_reference *output,
+					   bool (*reserve)(size_t, void *) noexcept, void *context,
+					   size_t outer) noexcept
+{
+	// Avoid the original diagnostic failure branch outside the game thread;
+	// accepted observations execute the exact original require/lookup chain.
+	if (!character || !output || !expected_runtime_id || !nevent_is_game_thread())
+		return player_snapshot_codec_result::invalid_value;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	_GLIBCXX_USE_CXX11_ABI != 1 || defined(_GLIBCXX_DEBUG) || !defined(__linux__) ||        \
+	!defined(__x86_64__) || defined(_WIN32)
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return player_snapshot_codec_result::allocation_failure;
+#else
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return player_snapshot_codec_result::allocation_failure;
+	struct workspace
+	{
+		std::span<const uint8_t> bytes;
+		quest_mobile_native_reference candidate;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> canonical{};
+	};
+	// Current installed GCC13 unordered_map::find uses pointer-only node
+	// iterators. Original private runtime map remains authoritative; no
+	// shadow cache, new allocation or derived generation is introduced.
+	using runtime_lookup_iterator = std::unordered_map<uint64_t, char_data *>::iterator;
+	constexpr size_t lookup_frames =
+		// find_character(runtime_id), actual found iterator and pointer return.
+		sizeof(uint64_t) + sizeof(runtime_lookup_iterator) + sizeof(void *) +
+		// unordered_map::find, Hashtable::find: this/key/returned iterator;
+		// actual loop iterator, code and bucket index.
+		2 * (2 * sizeof(void *) + sizeof(runtime_lookup_iterator)) +
+		sizeof(runtime_lookup_iterator) + 2 * sizeof(size_t) +
+		// _M_find_node and _M_find_before_node this/key/bucket/code;
+		// actual before/prev/current node locals and node pointer returns.
+		2 * (3 * sizeof(void *) + 2 * sizeof(size_t)) + 3 * sizeof(void *) +
+		// _M_equals, _S_equals, _M_key_equals and equal_to this/refs/results.
+		3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+		sizeof(size_t) + sizeof(bool) + 2 * (3 * sizeof(void *) + sizeof(bool)) +
+		// Both real bucket overloads, Hash_code_base overloads and identity
+		// hash<uint64_t>, Mod_range_hash: actual this/node/ref/code/count,
+		// returned hash/index and empty functor temporaries. Sequential
+		// branches are conservatively retained through the full lookup.
+		2 * (2 * sizeof(void *) + 2 * sizeof(size_t)) +
+		2 * (2 * sizeof(void *) + 3 * sizeof(size_t)) + 2 * sizeof(void *) +
+		sizeof(uint64_t) + sizeof(size_t) + 3 * sizeof(size_t) + sizeof(char) +
+		// Actual _M_next/_M_v/_M_valptr/aligned-storage ptr, key extractor,
+		// EBO hash/eq accessors; node iterator constructors/comparison/end.
+		4 * (2 * sizeof(void *)) + 2 * (3 * sizeof(void *) + sizeof(char)) +
+		4 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *) + sizeof(bool));
+	constexpr size_t thread_frames =
+		// nevent_require operation/result + nevent_is_game_thread result;
+		// std::this_thread::get_id returned id, id(native handle) ctor,
+		// __gthread_self/pthread_self result, and id equality refs/result.
+		sizeof(void *) + 2 * sizeof(bool) + sizeof(std::thread::id) + sizeof(void *) +
+		2 * sizeof(std::thread::native_handle_type) + 2 * sizeof(void *) + sizeof(bool);
+	constexpr size_t equal_frames =
+		// Exact fixed pointer std::equal -> __equal_aux/aux1/equal<true>,
+		// array/span queries and the actual memcmp arguments/int return.
+		4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(bool) + sizeof(size_t) +
+		3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t) +
+		sizeof(int) + 4 * (2 * sizeof(void *));
+	constexpr size_t frames = sizeof(workspace) + 4 * sizeof(void *) + sizeof(uint64_t) +
+				  2 * sizeof(size_t) + 3 * sizeof(player_snapshot_codec_result) +
+				  lookup_frames + thread_frames + equal_frames;
+	if (frames > SIZE_MAX - outer)
+		return player_snapshot_codec_result::limit_exceeded;
+	const size_t base = outer + frames;
+	if (!reserve || !reserve(base, context))
+		return player_snapshot_codec_result::allocation_failure;
+	if (!nevent_require_game_thread("quest_mobile_native_reference_copy") ||
+	    find_character_by_runtime_id(expected_runtime_id) != character)
+		return player_snapshot_codec_result::invalid_value;
+	// The exact original indexed generation is proved before dereferencing
+	// any character, NPC-only or private reference storage.
+	if (character->runtime_id != expected_runtime_id || !IS_NPC(character) ||
+	    !character->only.npc || !mob_index || character->only.npc->R_num < 0 ||
+	    character->only.npc->R_num > top_of_mobt)
+		return player_snapshot_codec_result::invalid_value;
+	workspace work{ std::span<const uint8_t>(character->native_mobile_binding.encoded_reference_,
+						 QUEST_MOBILE_NATIVE_BINDING_BYTES),
+			{},
+			{} };
+	const auto decoded = quest_mobile_native_reference_decode_bounded(
+		work.bytes, &work.candidate, reserve, context, base);
+	if (decoded != player_snapshot_codec_result::ok)
+		return decoded;
+	if (work.candidate.mobile_vnum != mob_index[character->only.npc->R_num].virtual_number)
+		return player_snapshot_codec_result::invalid_value;
+	const auto encoded = quest_mobile_native_reference_encode_bounded(
+		work.candidate, &work.canonical, reserve, context, base);
+	if (encoded != player_snapshot_codec_result::ok)
+		return encoded;
+	if (!std::equal(work.canonical.begin(), work.canonical.end(), work.bytes.begin()))
+		return player_snapshot_codec_result::invalid_value;
+	*output = work.candidate;
+	return player_snapshot_codec_result::ok;
+#endif
+}

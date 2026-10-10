@@ -3649,3 +3649,18 @@ protected Plan 5 WIP pass. Existing image/reference checksum dependency and
 actual constructor/caller/ROOT/global32MiB/native/R1-R8 qualification remain
 OPEN. Tests deferred to major-plan batch. Inactive/CLOSED, coverage incomplete,
 release BLOCKED, goal ACTIVE; this completes no major plan or runtime gate.
+
+
+## Typed bounded native reference and indexed copy implemented - 2026-10-10
+
+[Source checkpoint](TYPED_BOUNDED_NATIVE_REFERENCE_COPY_2026-10-10.md)
+repairs genuine codec resource-result flattening and adds full fixed-SHA source
+accounting plus real game-thread/indexed generation/NPC/canonical bounded copy.
+Original wire/strong outputs and unbounded binding algorithms remain. A narrow
+stage friendship enables genuine zero-byte observation; invalid_value never
+grants absence authority. Independent whole RAW and installed source review,
+four inverse pairs/13 dependencies/32 installed headers/formatting authenticate.
+458 existing pins/931 unchanged policies/complete mapping/protected Plan 5 WIP
+pass. Image checksum/caller/ROOT/global32MiB/native/recovery/R1-R8 qualification
+remain OPEN; tests deferred to major-plan batch. Inactive/CLOSED, coverage
+incomplete, release BLOCKED, goal ACTIVE; no major-plan completion is claimed.
