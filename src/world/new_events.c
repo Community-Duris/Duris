@@ -4069,3 +4069,207 @@ bool nevent_cancel_character_maintenance_bounded(nevent_handle handle, nevent_ca
 	} // Original partial cancel remains retained/observable.
 #endif
 }
+
+size_t nevent_native_reschedule_flush_source_observer_frame_bytes() noexcept
+{
+	// Exact finite source closure of the strong-output query below. Its outer
+	// block declares 23 size_t objects: seven sort profiles; erase_frame and
+	// clear_leaf; pending_count/logarithm/depth/cleanup; eight vector profiles;
+	// and peak. The former sixteen-object allowance omitted seven live names.
+	// Retain the sum of nested blocks conservatively: bucket; pending-log n;
+	// both count loops; sort logarithm/n/depth/working (eight more size_t names).
+	// Actual max/min temporary operands are dispatch+destroy, dispatch+vector,
+	// logarithm*2+1 and count-16+1 (four size_t objects).
+	return sizeof(std::array<size_t, PULSES_IN_TICK>) + 23 * sizeof(size_t) +
+	       8 * sizeof(size_t) + 4 * sizeof(size_t) +
+	       // output; map range/binding/event/request refs; actual map begin/end
+	       // iterators; both array ranges and their typed begin/end pointers.
+	       5 * sizeof(void *) +
+	       2 * sizeof(decltype(nevent_pending_reschedules)::const_iterator) +
+	       2 * (sizeof(void *) + 2 * sizeof(size_t *)) +
+	       // map begin/end/size, RB iterator construction/increment/comparison,
+	       // array begin/end/size, nevent_is_game_thread/std::thread id equality.
+	       12 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(std::thread::id) +
+	       6 * sizeof(bool) +
+	       // Exact original bucket argument/result and helper scopes. At most
+	       // two nested max scopes coexist; separately include the min scope,
+	       // each owning two const references, returned reference and bool.
+	       sizeof(unsigned long long) + sizeof(unsigned int) +
+	       3 * (3 * sizeof(const size_t *) + sizeof(bool));
+}
+
+bool nevent_native_reschedule_flush_source_frame_bytes(size_t *output) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)output;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread())
+		return false;
+	using iterator = std::vector<P_nevent>::iterator;
+	using compare = __gnu_cxx::__ops::_Iter_comp_iter<bool (*)(P_nevent, P_nevent)>;
+	using value_compare = __gnu_cxx::__ops::_Val_comp_iter<bool (*)(P_nevent, P_nevent)>;
+	using iter_value_compare = __gnu_cxx::__ops::_Iter_comp_val<bool (*)(P_nevent, P_nevent)>;
+	using difference = std::vector<P_nevent>::difference_type;
+	std::array<size_t, PULSES_IN_TICK> counts{};
+	// The pure observer follows precisely the original collected predicate and
+	// target bucket. Invalid/stale requests remain in original individual fallback.
+	for (const auto &[event, request] : nevent_pending_reschedules)
+		if (event->sequence == request.sequence &&
+		    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+		{
+			const size_t bucket = nevent_bucket_for_tick(request.due_tick);
+			if (counts[bucket] == SIZE_MAX)
+				return false;
+			++counts[bucket];
+		}
+	// The original process/fallback/map iteration/apply/merge source scopes.
+	// Actual vector-array inline and prospective old/new heaps are supplied by
+	// native_reschedule_flush_working_bytes, not duplicated by this observer.
+	constexpr size_t dispatch =
+		6 * sizeof(void *) + sizeof(bool) + sizeof(unsigned int) +
+		sizeof(nevent_pending_reschedule) +
+		// Original merge: batch reference, loc, cursor/head/tail/next/index.
+		5 * sizeof(void *) + sizeof(unsigned int) + sizeof(size_t) +
+		// Original unlink/apply/deferred/map erase (no heap allocation), actual
+		// pointer/bucket/request/result and tree iterator/reference closures.
+		14 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool);
+	// std::sort -> __sort, comparator-wrapper conversion/move, __lg(n) and
+	// normal iterator argument/result/difference/base and comparison carriers.
+	constexpr size_t setup = 4 * sizeof(iterator) + 2 * sizeof(compare) + 2 * sizeof(void *) +
+				 3 * sizeof(difference) + sizeof(int) +
+				 8 * (sizeof(void *) + sizeof(iterator)) + 4 * sizeof(bool);
+	// Each real __introsort_loop frame owns first,last,depth_limit,comp,cut.
+	// It recursively sorts the right partition after decrementing depth_limit;
+	// the left partition uses the same frame. Original depth is 2*floor(log2(n)).
+	constexpr size_t recursive = 3 * sizeof(iterator) + sizeof(difference) + sizeof(compare);
+	// __unguarded_partition_pivot -> move_median -> unguarded_partition, real
+	// iterator/comparator arguments/mid/pivot/returned cut; iter_swap/swap has
+	// two actual element refs and the one P_nevent temporary, move/forward refs.
+	constexpr size_t partition = 12 * sizeof(iterator) + 3 * sizeof(compare) +
+				     2 * sizeof(bool) + 7 * sizeof(void *) + sizeof(P_nevent);
+	// __final_insertion_sort/__insertion_sort/unguarded insertion and linear
+	// insertion: actual loop iterators/value/next, value-vs-iterator wrappers,
+	// distance/move_backward/normal iterator assignment and typed P_nevent value.
+	constexpr size_t insertion = 10 * sizeof(iterator) + 2 * sizeof(compare) +
+				     2 * sizeof(value_compare) + sizeof(iter_value_compare) +
+				     3 * sizeof(P_nevent) + 2 * sizeof(difference) +
+				     12 * sizeof(void *) + 3 * sizeof(bool);
+	// Depth-zero full original partial_sort -> heap_select/make_heap/sort_heap
+	// -> pop_heap/adjust_heap/push_heap. These are iterative; their complete
+	// actual difference/length/parent/child/hole/top/value/comparator carriers
+	// accompany the still-live introsort ancestors, never a guessed recursion.
+	constexpr size_t heap = 12 * sizeof(iterator) + 14 * sizeof(difference) +
+				5 * sizeof(compare) + 2 * sizeof(value_compare) +
+				2 * sizeof(iter_value_compare) + 4 * sizeof(P_nevent) +
+				18 * sizeof(void *) + 3 * sizeof(bool);
+	// Real nevent_sorts_before -> effective_priority: two event arguments,
+	// two priority locals/results, two event refs and their bool result.
+	constexpr size_t comparator =
+		4 * sizeof(P_nevent) + 4 * sizeof(unsigned int) + sizeof(bool);
+
+	// Independently of every eligible bucket, successful collection clears the
+	// actual complete pending tree, including all stale requests. GCC13 clear
+	// reaches _M_erase: each live frame owns this, x and y, recursively descends
+	// the right subtree, and iterates the left subtree. A valid RB tree with n
+	// actual nodes has height <= 2*floor(log2(n+1)); the null-child call adds one.
+	// This derives the full cleanup depth from the real owning map, never from
+	// eligible sort counts. The source-declared node-disposal leaf is constant.
+	using pending_value = decltype(nevent_pending_reschedules)::value_type;
+	using pending_node = std::_Rb_tree_node<pending_value>;
+	static_assert(std::is_trivially_destructible_v<pending_value>);
+	static_assert(std::is_trivially_copyable_v<P_nevent>);
+	constexpr size_t erase_frame = sizeof(void *) + 2 * sizeof(pending_node *);
+	constexpr size_t clear_leaf =
+		// map::clear, tree::clear, _S_left/_S_right, header::_M_reset.
+		5 * sizeof(void *) + 2 * sizeof(pending_node *) +
+		// _M_drop_node -> _M_destroy_node -> _M_valptr -> alloc_traits::destroy
+		// -> destroy_at; then _M_put_node -> alloc_traits/allocator deallocate.
+		11 * sizeof(void *) + 5 * sizeof(pending_node *) + 2 * sizeof(pending_value *) +
+		4 * sizeof(size_t);
+	const size_t pending_count = nevent_pending_reschedules.size();
+	size_t pending_logarithm = 0;
+	if (pending_count == SIZE_MAX)
+		pending_logarithm = sizeof(size_t) * CHAR_BIT;
+	else
+		for (size_t n = pending_count + 1; n > 1; n >>= 1)
+			++pending_logarithm;
+	const size_t cleanup_depth = pending_count ? pending_logarithm * 2 + 1 : 1;
+	if (cleanup_depth > (SIZE_MAX - dispatch - clear_leaf) / erase_frame)
+		return false;
+	const size_t cleanup = dispatch + clear_leaf + cleanup_depth * erase_frame;
+	// Original vector<P_nevent>::push_back(const value_type&) has two paths.
+	// Both retain the actual vector receiver/value reference; full growth owns
+	// _M_realloc_insert's position, args, len, old start/finish, elements-before,
+	// new start/finish. _M_check_len/max_size/size/end/iterator and allocation
+	// scopes are profiled separately from the already-owned old+new HEAP bytes.
+	constexpr size_t push = 2 * sizeof(void *);
+	constexpr size_t realloc_insert = sizeof(void *) + sizeof(iterator) + sizeof(void *) +
+					  2 * sizeof(size_t) + 4 * sizeof(P_nevent *);
+	constexpr size_t growth_check =
+		// _M_check_len this/n/s/len, max_size/_S_max_size allocator/diffmax/
+		// allocmax/result, size/end iterator, min/max reference/result carriers.
+		7 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(difference) + sizeof(iterator);
+	constexpr size_t allocate =
+		// _M_allocate this/n, alloc_traits::allocate allocator/n,
+		// allocator::allocate this/n, new_allocator::allocate this/n/hint,
+		// actual max-size/result and operator-new size/alignment arguments.
+		5 * sizeof(void *) + 8 * sizeof(size_t);
+	constexpr size_t construct =
+		// alloc_traits::construct allocator/destination/arg -> construct_at
+		// destination/arg; forward/addressof parameter/result references.
+		9 * sizeof(void *);
+	constexpr size_t relocate =
+		// _S_relocate -> __relocate_a -> bitwise __relocate_a_1. All own
+		// first,last,result,allocator; the last owns ptrdiff count. Runtime
+		// pointer relocation uses one memmove; constant-evaluation fallback
+		// and nontrivial element destruction cannot be selected for P_nevent.
+		12 * sizeof(void *) + sizeof(difference) +
+		3 * (sizeof(P_nevent *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t);
+	constexpr size_t deallocate =
+		// _M_deallocate -> alloc_traits -> allocator -> new_allocator:
+		// each actual receiver/allocator, data pointer and size; sized delete.
+		8 * sizeof(void *) + 5 * sizeof(size_t);
+	constexpr size_t destroy =
+		// vector-array -> vector -> _Vector_base destruction; _Destroy's
+		// allocator-aware/trivial range helpers plus exception cleanup args.
+		8 * sizeof(void *) + 4 * sizeof(P_nevent *) + 2 * sizeof(iterator) +
+		3 * sizeof(size_t);
+	// Sum the finite alternative growth/allocation/relocation/cleanup source
+	// closures conservatively, while keeping actual heap allocations separate.
+	constexpr size_t vector_frames = push + realloc_insert + growth_check + allocate +
+					 construct + relocate + deallocate + destroy;
+	size_t peak = std::max(cleanup, dispatch + destroy);
+	if (pending_count > 1)
+		for (size_t count : counts)
+			if (count)
+				peak = std::max(peak, dispatch + vector_frames);
+	if (nevent_pending_reschedules.size() > 1)
+		for (size_t count : counts)
+			if (count)
+			{
+				size_t logarithm = 0;
+				for (size_t n = count; n > 1; n >>= 1)
+					++logarithm;
+				// An n<=16 range never enters the introsort while. For larger
+				// ranges each right recursion strictly shrinks the range; retain
+				// both genuine limits without inventing a fixed recursion pad.
+				const size_t depth =
+					count <= 16 ? 1 :
+						      std::min(logarithm * 2 + 1, count - 16 + 1);
+				if (depth > (SIZE_MAX - dispatch - setup - partition - insertion -
+					     heap - comparator) /
+						    recursive)
+					return false;
+				// Partition, insertion and heap calls are alternatives. Their largest
+				// source closure accompanies the genuine bounded recursive chain.
+				const size_t working =
+					dispatch + setup + depth * recursive +
+					std::max(partition, std::max(insertion, heap)) + comparator;
+				peak = std::max(peak, working);
+			}
+	*output = peak;
+	return true;
+#endif
+}
