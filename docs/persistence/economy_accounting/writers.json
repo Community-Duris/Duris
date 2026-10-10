@@ -66811,7 +66811,7 @@
       "src/item/smith_native_command.h": "8ac9b42d86c9fb5176279bd1d594e903274cecb0dd1ac8a0f0011564d20761c8",
       "src/flatfile/flatfile_world_item_repository.c": "3d7cd1ec210fc82bf4b7a6157f298b06c07627e6993984a397e0d2414bd2431c",
       "tests/async/collector_explicit_item_boundary_cases.inc": "f14e5715480158ea2fb74777cf4e62334243ded96e50cae9a26806d8f58002fc",
-      "src/item/craft_recipe_continuation.h": "04d964cf53a4cef49dbb614bf602a72f1ac1a3c957ae6b5e8b4c1306be90b148",
+      "src/item/craft_recipe_continuation.h": "5d551129552997ed6a975a75aef703761ee997effbae793e34a1f31b45edda78",
       "src/world/zone_reset_item_owner.h": "89772879c2d3f75b5dd8e594bc16fb350eb5d616a27423fe6d43f2b77b0bb048",
       "src/flatfile/flatfile_accounting_shop_transaction.h": "984ce532f3ccefe922ed304515c9f3954ea8d3a2b38cd8e96b858045ed42f2af",
       "src/persistence/economic_sql_zone_reset_item_transaction.c": "c3ad5ca77cb863ec554b4452e1c9f5397ffaa210ac0c5549d565de891beccdf8",

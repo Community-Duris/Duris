@@ -1,0 +1,7 @@
+# Add complete bounded craft recipe continuation codec - 2026-10-09
+
+The full original item parser reaches craft recipe continuation before coin normalization. Complete bounded v1-v4 encoding and decoding companions preserve refine, cost, alchemy and notch fields, all version guards and canonical equality. Actual byte, UID and string allocations are admitted before fresh, growing and fitting operations. Nested encoding accounts the complete candidate and both canonical buffers through the final strong move.
+
+Full original RAW and final formatted source reviews passed. Both whole-method and header inverses, actual vector/string source profiles, genuine reviewed native-cost and quest dependency advances, logical preprocessing, token streams and protected files authenticate. Registry authentication retains 420 genuine pins and all 931 writer policies, with zero new or unmapped sites. Evidence: tmp/craft-recipe-codec-integrated-20261009. Native/build/gameplay/persistence/recovery checks remain deferred until major-plan readiness. Source-carrier expressions do not prove emitted stack or the complete 32 MiB budget.
+
+The complete item/craft/coin decoder closure, physical/save-obligation providers, mixed currency receiver, full mixed initializer and runtime qualification remain required. These prerequisites select no gameplay route, callback, publication, origin or ACK. Accounting remains inactive, admission CLOSED, coverage incomplete, release BLOCKED and the goal ACTIVE.
