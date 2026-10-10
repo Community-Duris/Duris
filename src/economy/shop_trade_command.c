@@ -791,3 +791,1173 @@ bool shop_trade_command_build_recovery(critical_command *command,
 		return false;
 	}
 }
+
+#include <limits>
+#include <iterator>
+#include <initializer_list>
+
+namespace
+{
+using shop_codec_reserve_fn = bool (*)(size_t, void *) noexcept;
+bool shop_codec_profile() noexcept
+{
+#if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG)
+	return true;
+#else
+	return false;
+#endif
+}
+bool shop_codec_add(size_t &sum, size_t amount) noexcept
+{
+	if (amount > std::numeric_limits<size_t>::max() - sum)
+		return false;
+	sum += amount;
+	return true;
+}
+template <typename T> bool shop_codec_vector_heap(const std::vector<T> &value, size_t &sum) noexcept
+{
+	return value.capacity() <= std::numeric_limits<size_t>::max() / sizeof(T) &&
+	       shop_codec_add(sum, value.capacity() * sizeof(T));
+}
+bool shop_codec_payload_heap(const shop_trade_payload &value, size_t &sum) noexcept
+{
+	return shop_codec_vector_heap(value.recovery_manifest.player_before.ordered_item_uids,
+				      sum) &&
+	       shop_codec_vector_heap(value.recovery_manifest.player_after.ordered_item_uids,
+				      sum) &&
+	       shop_codec_vector_heap(value.recovery_manifest.keeper_before.ordered_item_uids,
+				      sum) &&
+	       shop_codec_vector_heap(value.recovery_manifest.keeper_after.ordered_item_uids,
+				      sum) &&
+	       shop_codec_vector_heap(value.recovery_manifest.live_target_before.ordered_item_uids,
+				      sum) &&
+	       shop_codec_vector_heap(value.recovery_manifest.live_target_after.ordered_item_uids,
+				      sum);
+}
+bool shop_codec_command_heap(const critical_command &value, size_t &sum) noexcept
+{
+	return shop_codec_vector_heap(value.keys, sum) &&
+	       shop_codec_vector_heap(value.expected_revisions, sum) &&
+	       shop_codec_vector_heap(value.payload, sum) &&
+	       shop_codec_vector_heap(value.accounting_intent, sum);
+}
+struct shop_codec_live_owner;
+// Source-declared carriers for the real census/add/admit/vector-size/capacity
+// closure. These are genuine parameters/results/locals, not an emitted-stack
+// claim or a logical encoded-byte proxy.
+constexpr size_t shop_codec_census_frames =
+	3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+	2 * (2 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+struct shop_codec_budget
+{
+	shop_codec_reserve_fn reserve = nullptr;
+	void *context = nullptr;
+	size_t outer = 0;
+	shop_codec_live_owner *head = nullptr;
+	bool current(size_t *) noexcept;
+	bool peak(size_t) noexcept;
+};
+struct shop_codec_live_owner
+{
+	shop_codec_budget *budget = nullptr;
+	shop_codec_live_owner *previous = nullptr;
+	size_t inline_bytes = 0;
+	const shop_trade_payload *payload = nullptr;
+	const critical_command *command = nullptr;
+	const std::vector<uint8_t> *first = nullptr;
+	const std::vector<uint8_t> *second = nullptr;
+	shop_codec_live_owner(shop_codec_budget &b, size_t bytes, const shop_trade_payload *p,
+			      const critical_command *c, const std::vector<uint8_t> *one,
+			      const std::vector<uint8_t> *two) noexcept
+		: budget(&b)
+		, previous(b.head)
+		, inline_bytes(bytes)
+		, payload(p)
+		, command(c)
+		, first(one)
+		, second(two)
+	{
+		b.head = this;
+	}
+	~shop_codec_live_owner() noexcept { budget->head = previous; }
+	shop_codec_live_owner(const shop_codec_live_owner &) = delete;
+	shop_codec_live_owner &operator=(const shop_codec_live_owner &) = delete;
+};
+bool shop_codec_budget::current(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t total = outer;
+	for (const auto *owner = head; owner; owner = owner->previous)
+		if (!shop_codec_add(total, owner->inline_bytes) ||
+		    (owner->payload && !shop_codec_payload_heap(*owner->payload, total)) ||
+		    (owner->command && !shop_codec_command_heap(*owner->command, total)) ||
+		    (owner->first && !shop_codec_vector_heap(*owner->first, total)) ||
+		    (owner->second && !shop_codec_vector_heap(*owner->second, total)))
+			return false;
+	*output = total;
+	return true;
+}
+bool shop_codec_budget::peak(size_t request) noexcept
+{
+	size_t live = 0;
+	return reserve && current(&live) && shop_codec_add(live, request) &&
+	       shop_codec_add(live, shop_codec_census_frames) && reserve(live, context);
+}
+
+// The full original fixed-array gameplay validation and fence comparison are
+// allocation-free. Their genuine source-declared local/parameter/return scopes
+// and instantiated find/equal adapters coexist with the caller workspace.
+constexpr size_t shop_codec_find_frames(size_t closure) noexcept
+{
+	return
+		// find_if/__find_if/__find_if<random_access>: each first,last,pred,
+		// returned iterator; real trip-count/tag in the random-access scope.
+		3 * (2 * sizeof(void *) + closure + sizeof(void *)) + sizeof(std::ptrdiff_t) +
+		sizeof(char) +
+		// pred_iter's passed/returned functor and Iter_pred constructor,
+		// move's argument/result; actual adapter/lambda operator parameters.
+		3 * closure + sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) +
+		2 * sizeof(bool) +
+		// iterator_category reference parameter/returned empty tag.
+		sizeof(void *) + sizeof(char);
+}
+constexpr size_t shop_codec_equal_frames =
+	// 3-iterator equal/aux/aux1/simple-equal source scopes, simple flag/len,
+	// niter-base parameter/return carriers and __memcmp args/result.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(bool) + sizeof(size_t) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t shop_codec_pure_frames =
+	// Original valid_payload declared ref/return, creates/selected/reaches,
+	// target-root/root/parent UID, two indexes/depth, item/root/parent refs.
+	5 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(uint64_t) + 4 * sizeof(bool) +
+	// valid_name ref/return/length/index; actual strnlen args/result;
+	// creation/cleanup/purchase each original reference and boolean result.
+	sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) + sizeof(void *) + 2 * sizeof(size_t) +
+	3 * (sizeof(void *) + sizeof(bool)) +
+	// Actual captured-by-reference item predicates; include both instantiations
+	// and the complete genuine find source profile above, not item-count caps.
+	2 * (2 * sizeof(void *) + sizeof(bool)) + shop_codec_find_frames(sizeof(void *)) +
+	// Original manifest_is_empty's returned+destination binding arrays and
+	// all_of/find_if_not/negated-predicate scope around its captureless functor.
+	2 * sizeof(std::array<const shop_trade_recovery_forest_binding *,
+			      SHOP_TRADE_RECOVERY_FOREST_COUNT>) +
+	3 * (2 * sizeof(void *) + sizeof(char) + sizeof(void *)) +
+	shop_codec_find_frames(sizeof(char)) +
+	// binding_empty's actual zero-digest temporary/reference/result and full
+	// array equality; weight comparison has two refs+fixed real temporary.
+	sizeof(std::array<uint8_t, 32>) + 3 * sizeof(void *) + 2 * sizeof(bool) +
+	shop_codec_equal_frames + sizeof(shop_trade_destination_weight) + 2 * sizeof(void *) +
+	sizeof(bool) +
+	// matching_fences left/right references/result; custom equal's three
+	// iterator arguments, actual predicate carriers and full original key and
+	// revision predicate invocation scopes. Canonical vector == uses the
+	// separate complete three-iterator equality closure.
+	2 * sizeof(void *) + sizeof(bool) +
+	(3 * sizeof(void *) + sizeof(&critical_entity_key_equal) + sizeof(bool)) +
+	2 * sizeof(void *) + sizeof(bool) + (3 * sizeof(void *) + sizeof(char) + sizeof(bool)) +
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	sizeof(bool) + shop_codec_equal_frames;
+// Complete installed GCC13 ordinary allocator/vector declared-carrier closure.
+// All terms are genuine source scopes named below; conservative sums include
+// mutually exclusive branches, never a guessed cap or emitted-stack claim.
+constexpr size_t shop_codec_allocator_frames =
+	// _M_allocate, allocator_traits::allocate, allocator::allocate (C++20):
+	// each this/allocator reference, n and returned pointer; new_allocator
+	// adds its genuine hint pointer; operator new n and returned pointer.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// _M_deallocate/traits/allocator/new_allocator: allocator/this+p+n,
+	// then sized operator delete p+n. Trivial element _Destroy closures.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	(3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// vector max_size/_S_max_size/traits max_size/new_allocator::_M_max_size
+	// references/results and actual diffmax/allocmax locals. C++20 allocator
+	// has no max_size member; that inactive C++17 branch is not counted.
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) +
+	// traits::construct -> construct_at -> forward -> placement-new; all
+	// constructor arguments here are real references to trivial values.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t);
+constexpr size_t shop_codec_copy_frames =
+	// __uninitialized_move_if_noexcept_a and __uninitialized_copy_a: 3
+	// iterators+allocator-reference+returned iterator each. Runtime ordinary
+	// uninitialized_copy's two boolean locals and __uninit_copy carrier.
+	2 * (4 * sizeof(void *) + sizeof(void *)) + 3 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(void *) +
+	// copy/copy_move_a/a1/a2/copy_m, each3 iterator params+return; real
+	// miter/niter/wrap/assign_one and memmove argument/result scopes.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// distance/__distance and normal-iterator subtraction/base/dereference/
+	// ++/comparison/constructor source parameter/return scopes.
+	2 * (2 * sizeof(void *) + sizeof(std::ptrdiff_t)) + sizeof(char) +
+	6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool) +
+	// Fitting forward insert reaches advance(__mid,__elems_after), even zero.
+	// advance: iterator-reference, size_t n, real local difference_type __d;
+	// __iterator_category: iterator-reference and actual returned RA tag;
+	// __advance: iterator-reference, difference n and by-value RA tag;
+	// actual += this/n/reference-return, plus source ++/-- alternatives.
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(void *) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	4 * sizeof(void *);
+constexpr size_t shop_codec_relocate_frames =
+	// _S_relocate/__relocate_a/__relocate_a_1, each3 pointers+allocatorref
+	// +returned pointer; real niter-base calls/count/memmove scope.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t shop_codec_default_frames =
+	// Runtime default_n_a/default_n/default_n_1<true>: real first/n/allocator
+	// reference, can_fill and val locals, actual returned pointer carriers.
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(3 * sizeof(void *) + sizeof(size_t)) +
+	// _Construct's real location plus placement-new n/location/result.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// fill_n/__fill_n_a<random_access>: first/n/value/result/tag;
+	// __size_to_integer argument/result; __fill_a/__fill_a1 scalar __tmp.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(char) + 2 * sizeof(size_t) +
+	2 * (3 * sizeof(void *)) + sizeof(uint64_t);
+constexpr size_t shop_codec_vector_frames =
+	shop_codec_allocator_frames + shop_codec_copy_frames + shop_codec_relocate_frames +
+	shop_codec_default_frames +
+	// reserve this/n/old_size/tmp; assign public/forward-aux and exact
+	// _M_allocate_and_copy's this/n/first/last/result/returned pointer.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(char) + 5 * sizeof(void *) + sizeof(size_t) +
+	// push_back/emplace_back and real realloc_insert old/new start/finish,
+	// len/elems_before/position/forward value reference; _M_check_len.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 7 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(void *) + 3 * sizeof(size_t) +
+	// C++20 forward insert public/range-insert (no old dispatch), offset/elems_after/
+	// len/old-start/finish/mid/new-start/finish/iterator return/tag scopes.
+	15 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::ptrdiff_t) + sizeof(char) +
+	// default_append's n/size/navail/len and real old/new/destroy pointers.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// begin/end/cbegin/size/capacity/get-allocator declared carriers and
+	// iterator-category/std::max arguments/results on the real call paths.
+	7 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(char) + 3 * sizeof(void *);
+constexpr size_t shop_codec_move_frames =
+	// vector operator=(vector&&), _M_move_assign(true), actual vector __tmp,
+	// _M_swap_data's actual three-pointer _Vector_impl_data __tmp and
+	// _M_copy_data reference parameters; real allocator-return/forward.
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(char) +
+	sizeof(std::vector<uint8_t>) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(char) + 2 * sizeof(void *) +
+	// temporary destructor and actual default destroy/deallocate closure.
+	sizeof(void *) + shop_codec_allocator_frames;
+
+constexpr size_t shop_codec_leaf_frames =
+	// append/read/copy/allocator leaf actual values and argument/result carriers.
+	shop_codec_vector_frames + 8 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+	2 * sizeof(bool);
+
+struct shop_codec_encode_workspace
+{
+	std::vector<uint8_t> candidate;
+	std::vector<uint8_t> extension;
+	size_t index = 0;
+	size_t name_length = 0;
+	size_t nested = 0;
+};
+struct shop_codec_copy_encode_workspace
+{
+	shop_trade_payload previous{};
+	shop_codec_encode_workspace buffers;
+};
+struct shop_codec_build_workspace
+{
+	critical_command candidate{};
+	std::vector<uint8_t> encoded;
+	critical_entity_key account{};
+	critical_entity_key player{};
+	critical_entity_key shop{};
+	critical_entity_key item{};
+	size_t index = 0;
+	size_t nested = 0;
+};
+struct shop_codec_copy_build_workspace
+{
+	shop_trade_payload previous{};
+	shop_codec_build_workspace values;
+};
+struct shop_codec_decode_workspace
+{
+	shop_trade_payload candidate{};
+	critical_command expected{};
+	size_t nested = 0;
+	size_t transferred_heap = 0;
+};
+constexpr size_t shop_codec_encode_parameters =
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(size_t) + sizeof(void *);
+constexpr size_t shop_codec_build_parameters =
+	3 * sizeof(void *) + sizeof(critical_operation_id) + sizeof(critical_source_site) +
+	sizeof(critical_deadline_class) + sizeof(bool) + sizeof(char);
+constexpr size_t shop_codec_workspace_fixed = sizeof(shop_codec_live_owner);
+
+template <typename T>
+bool shop_codec_growth(std::vector<T> &value, size_t count, shop_codec_budget &budget) noexcept
+{
+	constexpr size_t frames = sizeof(shop_codec_live_owner) + 3 * sizeof(void *) +
+				  3 * sizeof(size_t) + sizeof(bool);
+	if (!budget.peak(frames))
+		return false;
+	shop_codec_live_owner frame_owner(budget, frames, nullptr, nullptr, nullptr, nullptr);
+	if (count > value.max_size() - value.size())
+		return false;
+	if (count <= value.capacity() - value.size())
+		return budget.peak(shop_codec_vector_frames + sizeof(critical_expected_revision));
+	size_t next = value.size() > count ? value.size() : count;
+	if (next > value.max_size() - value.size())
+		next = value.max_size();
+	else
+		next += value.size();
+	size_t request = shop_codec_vector_frames + sizeof(critical_expected_revision);
+	return next <= std::numeric_limits<size_t>::max() / sizeof(T) &&
+	       shop_codec_add(request, next * sizeof(T)) && budget.peak(request);
+}
+template <typename T>
+bool shop_codec_reserve(std::vector<T> &value, size_t count, shop_codec_budget &budget)
+{
+	constexpr size_t frames = sizeof(shop_codec_live_owner) + 3 * sizeof(void *) +
+				  2 * sizeof(size_t) + sizeof(bool);
+	if (!budget.peak(frames))
+		return false;
+	shop_codec_live_owner frame_owner(budget, frames, nullptr, nullptr, nullptr, nullptr);
+	if (count > value.max_size())
+		return false;
+	if (count > value.capacity())
+	{
+		size_t request = shop_codec_vector_frames + sizeof(critical_expected_revision);
+		if (count > std::numeric_limits<size_t>::max() / sizeof(T) ||
+		    !shop_codec_add(request, count * sizeof(T)) || !budget.peak(request))
+			return false;
+		value.reserve(count);
+	}
+	return true;
+}
+template <typename T>
+bool shop_codec_append(std::vector<uint8_t> &output, T value, shop_codec_budget &budget)
+{
+	constexpr size_t frames = sizeof(shop_codec_live_owner) + 3 * sizeof(void *) +
+				  2 * sizeof(T) + sizeof(size_t) + sizeof(bool);
+	if (!budget.peak(frames))
+		return false;
+	shop_codec_live_owner frame_owner(budget, frames, nullptr, nullptr, nullptr, nullptr);
+	const auto encoded = static_cast<std::make_unsigned_t<T>>(value);
+	for (size_t byte = 0; byte < sizeof(T); ++byte)
+	{
+		if (!shop_codec_growth(output, 1, budget))
+			return false;
+		output.push_back(static_cast<uint8_t>(encoded >> (byte * 8)));
+	}
+	return true;
+}
+template <typename Iterator> bool shop_codec_insert(std::vector<uint8_t> &output, Iterator first,
+						    Iterator last, shop_codec_budget &budget)
+{
+	constexpr size_t frames = sizeof(shop_codec_live_owner) + 2 * sizeof(void *) +
+				  2 * sizeof(Iterator) + sizeof(size_t) + sizeof(bool);
+	if (!budget.peak(frames))
+		return false;
+	shop_codec_live_owner frame_owner(budget, frames, nullptr, nullptr, nullptr, nullptr);
+	const size_t count = static_cast<size_t>(last - first);
+	if (!shop_codec_growth(output, count, budget))
+		return false;
+	output.insert(output.end(), first, last);
+	return true;
+}
+
+// Fresh destination only. Scalar/array fields preserve all original copy bytes;
+// six real UID requests occur individually before allocation, retaining every
+// previously copied UID capacity. No reserve-around-unbounded payload copy.
+bool shop_codec_clone_payload(const shop_trade_payload &source, shop_trade_payload &target,
+			      shop_codec_budget &budget)
+{
+	const size_t clone_frames = sizeof(shop_codec_live_owner) + 4 * sizeof(void *) +
+				    3 * sizeof(size_t) + sizeof(bool) +
+				    sizeof(std::array<shop_trade_recovery_forest_binding *,
+						      SHOP_TRADE_RECOVERY_FOREST_COUNT>) +
+				    sizeof(std::array<const shop_trade_recovery_forest_binding *,
+						      SHOP_TRADE_RECOVERY_FOREST_COUNT>);
+	if (!budget.peak(clone_frames))
+		return false;
+	shop_codec_live_owner frame_owner(budget, clone_frames, nullptr, nullptr, nullptr, nullptr);
+	target.action = source.action;
+	target.player_pid = source.player_pid;
+	target.shop_id = source.shop_id;
+	target.racewar = source.racewar;
+	target.account_name = source.account_name;
+	target.price = source.price;
+	target.keeper_vnum = source.keeper_vnum;
+	target.expected_keeper_cash = source.expected_keeper_cash;
+	target.keeper_roaming = source.keeper_roaming;
+	target.expected_wallet_revision = source.expected_wallet_revision;
+	target.expected_bank_revision = source.expected_bank_revision;
+	target.expected_shop_revision = source.expected_shop_revision;
+	target.selected_item_uid = source.selected_item_uid;
+	target.target_root_item_uid = source.target_root_item_uid;
+	target.target_parent_item_uid = source.target_parent_item_uid;
+	target.expected_target_parent_revision = source.expected_target_parent_revision;
+	target.stock_item_uid = source.stock_item_uid;
+	target.expected_stock_item_revision = source.expected_stock_item_revision;
+	target.stock_vnum = source.stock_vnum;
+	target.item_count = source.item_count;
+	target.items = source.items;
+	target.item_blob_size = source.item_blob_size;
+	target.item_blob = source.item_blob;
+	target.expected_player_save_revision = source.expected_player_save_revision;
+	target.expected_player_level = source.expected_player_level;
+	target.native_destination_weight_recorded = source.native_destination_weight_recorded;
+	target.destination_weight = source.destination_weight;
+	target.recovery_manifest_recorded = source.recovery_manifest_recorded;
+	const std::array<const shop_trade_recovery_forest_binding *, 6> sources{
+		&source.recovery_manifest.player_before,
+		&source.recovery_manifest.player_after,
+		&source.recovery_manifest.keeper_before,
+		&source.recovery_manifest.keeper_after,
+		&source.recovery_manifest.live_target_before,
+		&source.recovery_manifest.live_target_after
+	};
+	const std::array<shop_trade_recovery_forest_binding *, 6> targets{
+		&target.recovery_manifest.player_before,
+		&target.recovery_manifest.player_after,
+		&target.recovery_manifest.keeper_before,
+		&target.recovery_manifest.keeper_after,
+		&target.recovery_manifest.live_target_before,
+		&target.recovery_manifest.live_target_after
+	};
+	for (size_t index = 0; index < sources.size(); ++index)
+	{
+		targets[index]->present = sources[index]->present;
+		targets[index]->canonical_bytes = sources[index]->canonical_bytes;
+		targets[index]->canonical_digest = sources[index]->canonical_digest;
+		const size_t count = sources[index]->ordered_item_uids.size();
+		if (count > std::numeric_limits<size_t>::max() / sizeof(uint64_t) ||
+		    count * sizeof(uint64_t) >
+			    std::numeric_limits<size_t>::max() - shop_codec_vector_frames ||
+		    !budget.peak(shop_codec_vector_frames + count * sizeof(uint64_t)))
+			return false;
+		targets[index]->ordered_item_uids.assign(sources[index]->ordered_item_uids.begin(),
+							 sources[index]->ordered_item_uids.end());
+	}
+	return true;
+}
+bool shop_codec_drop_manifest(shop_trade_payload &previous, shop_codec_budget &budget) noexcept
+{
+	// The real original default manifest assignment creates this temporary,
+	// then releases the previously cloned blocks. Admission precedes the cut.
+	if (!budget.peak(sizeof(shop_trade_recovery_manifest) + 2 * sizeof(void *) + sizeof(bool) +
+			 shop_codec_move_frames))
+		return false;
+	previous.recovery_manifest = {};
+	return true;
+}
+
+bool shop_bounded_encode_base(const shop_trade_payload &, std::vector<uint8_t> *,
+			      shop_codec_budget &);
+bool shop_bounded_encode_accounted(const shop_trade_payload &, std::vector<uint8_t> *,
+				   shop_codec_budget &);
+bool shop_bounded_encode_native(const shop_trade_payload &, std::vector<uint8_t> *,
+				shop_codec_budget &);
+bool shop_bounded_encode_recovery(const shop_trade_payload &, std::vector<uint8_t> *,
+				  shop_codec_budget &);
+bool shop_bounded_build_base(critical_command *, critical_operation_id, const shop_trade_payload &,
+			     critical_source_site, critical_deadline_class, shop_codec_budget &);
+bool shop_bounded_build_accounted(critical_command *, critical_operation_id,
+				  const shop_trade_payload &, critical_source_site,
+				  critical_deadline_class, shop_codec_budget &);
+bool shop_bounded_build_native(critical_command *, critical_operation_id,
+			       const shop_trade_payload &, critical_source_site,
+			       critical_deadline_class, shop_codec_budget &);
+bool shop_bounded_build_recovery(critical_command *, critical_operation_id,
+				 const shop_trade_payload &, critical_source_site,
+				 critical_deadline_class, shop_codec_budget &);
+
+bool shop_bounded_encode_base(const shop_trade_payload &payload, std::vector<uint8_t> *out,
+			      shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_encode_workspace) + shop_codec_workspace_fixed +
+			       shop_codec_encode_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_encode_workspace work;
+	shop_codec_live_owner owner(budget, own, nullptr, nullptr, &work.candidate,
+				    &work.extension);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	auto *encoded = &work.candidate;
+
+	if (!encoded || payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !valid_payload(payload) || payload.expected_player_save_revision ||
+	    payload.expected_player_level || payload.native_destination_weight_recorded ||
+	    payload.destination_weight != shop_trade_destination_weight{})
+		return false;
+	try
+	{
+		encoded->clear();
+		if (!shop_codec_reserve(*encoded,
+					128 + payload.item_count * 40 + payload.item_blob_size,
+					budget))
+			return false;
+		if (!shop_codec_append<uint8_t>(*encoded, static_cast<uint8_t>(payload.action),
+						budget))
+			return false;
+		if (!shop_codec_append<uint32_t>(*encoded, payload.player_pid, budget))
+			return false;
+		if (!shop_codec_append<uint32_t>(*encoded, payload.shop_id, budget))
+			return false;
+		if (!shop_codec_append<uint8_t>(*encoded, payload.racewar, budget))
+			return false;
+		if (!shop_codec_append<int64_t>(*encoded, payload.price, budget))
+			return false;
+		if (!shop_codec_append<int32_t>(*encoded, payload.keeper_vnum, budget))
+			return false;
+		if (!shop_codec_append<int64_t>(*encoded, payload.expected_keeper_cash, budget))
+			return false;
+		if (!shop_codec_append<uint8_t>(*encoded, payload.keeper_roaming, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.expected_wallet_revision,
+						 budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.expected_bank_revision, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.expected_shop_revision, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.selected_item_uid, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.target_root_item_uid, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.target_parent_item_uid, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.expected_target_parent_revision,
+						 budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.stock_item_uid, budget))
+			return false;
+		if (!shop_codec_append<uint64_t>(*encoded, payload.expected_stock_item_revision,
+						 budget))
+			return false;
+		if (!shop_codec_append<int32_t>(*encoded, payload.stock_vnum, budget))
+			return false;
+		if (!shop_codec_append<uint16_t>(*encoded, payload.item_count, budget))
+			return false;
+		const size_t name_length =
+			strnlen(payload.account_name.data(), payload.account_name.size());
+		if (!shop_codec_append<uint8_t>(*encoded, static_cast<uint8_t>(name_length),
+						budget))
+			return false;
+		if (!shop_codec_insert(*encoded, payload.account_name.begin(),
+				       payload.account_name.begin() + name_length, budget))
+			return false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &item = payload.items[index];
+			if (!shop_codec_append<uint64_t>(*encoded, item.item_uid, budget))
+				return false;
+			if (!shop_codec_append<uint64_t>(*encoded, item.root_item_uid, budget))
+				return false;
+			if (!shop_codec_append<uint64_t>(*encoded, item.parent_item_uid, budget))
+				return false;
+			if (!shop_codec_append<uint64_t>(*encoded, item.expected_item_revision,
+							 budget))
+				return false;
+			if (!shop_codec_append<int32_t>(*encoded, item.vnum, budget))
+				return false;
+			if (!shop_codec_append<uint8_t>(
+				    *encoded, static_cast<uint8_t>(item.expected_state), budget))
+				return false;
+		}
+		if (!shop_codec_append<uint32_t>(*encoded, payload.item_blob_size, budget))
+			return false;
+		if (!shop_codec_insert(*encoded, payload.item_blob.begin(),
+				       payload.item_blob.begin() + payload.item_blob_size, budget))
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		encoded->clear();
+		return false;
+	}
+	if (encoded->size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.candidate);
+	return true;
+}
+
+bool shop_bounded_encode_accounted(const shop_trade_payload &payload, std::vector<uint8_t> *out,
+				   shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_encode_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_encode_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_encode_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, nullptr, &work.buffers.candidate,
+				    &work.buffers.extension);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	if (payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !payload.expected_player_save_revision || !payload.expected_player_level ||
+	    payload.expected_player_level > UINT8_MAX ||
+	    payload.native_destination_weight_recorded ||
+	    payload.destination_weight != shop_trade_destination_weight{})
+		return false;
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.expected_player_save_revision = 0;
+	work.previous.expected_player_level = 0;
+	if (!shop_bounded_encode_base(work.previous, &work.buffers.candidate, budget) ||
+	    work.buffers.candidate.size() >
+		    CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - SHOP_TRADE_ACCOUNTED_TAIL_BYTES ||
+	    !shop_codec_reserve(work.buffers.candidate,
+				work.buffers.candidate.size() + SHOP_TRADE_ACCOUNTED_TAIL_BYTES,
+				budget) ||
+	    !shop_codec_append<uint64_t>(work.buffers.candidate,
+					 payload.expected_player_save_revision, budget) ||
+	    !shop_codec_append<uint32_t>(work.buffers.candidate, payload.expected_player_level,
+					 budget) ||
+	    !shop_codec_append<uint32_t>(work.buffers.candidate, 0, budget))
+		return false;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.buffers.candidate);
+	return true;
+}
+bool shop_bounded_encode_native(const shop_trade_payload &payload, std::vector<uint8_t> *out,
+				shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_encode_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_encode_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_encode_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, nullptr, &work.buffers.candidate,
+				    &work.buffers.extension);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	if (payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !payload.native_destination_weight_recorded ||
+	    (payload.target_parent_item_uid ?
+		     payload.action != shop_trade_action::buy_produced ||
+			     payload.target_root_item_uid != payload.target_parent_item_uid :
+		     payload.destination_weight != shop_trade_destination_weight{}))
+		return false;
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.native_destination_weight_recorded = false;
+	work.previous.destination_weight = {};
+	if (!shop_bounded_encode_accounted(work.previous, &work.buffers.candidate, budget) ||
+	    work.buffers.candidate.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - 16 ||
+	    !shop_codec_reserve(work.buffers.candidate, work.buffers.candidate.size() + 16,
+				budget) ||
+	    !shop_codec_append<int32_t>(work.buffers.candidate, payload.destination_weight.before,
+					budget) ||
+	    !shop_codec_append<int32_t>(work.buffers.candidate,
+					payload.destination_weight.direct_contents, budget) ||
+	    !shop_codec_append<int32_t>(work.buffers.candidate, payload.destination_weight.shell,
+					budget) ||
+	    !shop_codec_append<int32_t>(work.buffers.candidate, payload.destination_weight.after,
+					budget))
+		return false;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.buffers.candidate);
+	return true;
+}
+bool shop_bounded_encode_recovery(const shop_trade_payload &payload, std::vector<uint8_t> *out,
+				  shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_encode_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_encode_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_encode_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, nullptr, &work.buffers.candidate,
+				    &work.buffers.extension);
+	if (!payload.recovery_manifest_recorded || !budget.current(&work.buffers.nested) ||
+	    !shop_trade_recovery_manifest_shape_valid_bounded(payload.recovery_manifest,
+							      budget.reserve, budget.context,
+							      work.buffers.nested) ||
+	    payload.recovery_manifest.live_target_before.present !=
+		    (payload.target_parent_item_uid != 0))
+		return false;
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.recovery_manifest_recorded = false;
+	if (!shop_codec_drop_manifest(work.previous, budget) ||
+	    !shop_bounded_encode_native(work.previous, &work.buffers.candidate, budget) ||
+	    !budget.current(&work.buffers.nested) ||
+	    !shop_trade_recovery_manifest_encode_bounded(
+		    payload.recovery_manifest, &work.buffers.extension, budget.reserve,
+		    budget.context, work.buffers.nested, nullptr) ||
+	    work.buffers.extension.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    work.buffers.candidate.size() >
+		    CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - work.buffers.extension.size() ||
+	    !shop_codec_insert(work.buffers.candidate, work.buffers.extension.begin(),
+			       work.buffers.extension.end(), budget))
+		return false;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.buffers.candidate);
+	return true;
+}
+
+bool shop_codec_sort_admit(size_t count, size_t element, size_t comparator,
+			   shop_codec_budget &budget) noexcept
+{
+	size_t remaining = count, levels = 0;
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	// Actual GCC13 introsort: first/last/cut + depth + comparator per
+	// recursive scope, initial2*floor(log2(n))+1 exhaustion carrier.
+	const size_t recursive = 3 * sizeof(void *) + sizeof(std::ptrdiff_t) + comparator;
+	const size_t leaves =
+		// sort/__sort, median/partition/iter_swap; final/unguarded insertion.
+		18 * sizeof(void *) + 7 * comparator + element + 16 * sizeof(void *) +
+		6 * comparator + 2 * element +
+		// partial-sort/heap-select/make/adjust/push/pop/sort-heap.
+		23 * sizeof(void *) + 11 * sizeof(std::ptrdiff_t) + 7 * comparator + 4 * element +
+		// comparator adapter parameter/return scopes and scalar predicates.
+		8 * sizeof(void *) + 5 * comparator + 4 * sizeof(bool) +
+		// This real admission method's own args/locals/result carrier.
+		2 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(bool);
+	if (levels > (std::numeric_limits<size_t>::max() - 1) / 2 ||
+	    2 * levels + 1 > std::numeric_limits<size_t>::max() / recursive)
+		return false;
+	size_t request = (2 * levels + 1) * recursive;
+	return shop_codec_add(request, leaves) && budget.peak(request);
+}
+
+bool shop_bounded_build_base(critical_command *out, critical_operation_id operation_id,
+			     const shop_trade_payload &payload, critical_source_site source_site,
+			     critical_deadline_class deadline_class, shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_build_workspace) + shop_codec_workspace_fixed +
+			       shop_codec_build_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_build_workspace work;
+	shop_codec_live_owner owner(budget, own, nullptr, &work.candidate, &work.encoded, nullptr);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	if (critical_operation_id_is_zero(operation_id) || !valid_payload(payload) ||
+	    !budget.current(&work.nested) ||
+	    !currency_account_key_bounded(payload.account_name.data(), payload.racewar,
+					  &work.account, budget.reserve, budget.context,
+					  work.nested) ||
+	    !shop_bounded_encode_base(payload, &work.encoded, budget))
+		return false;
+	work.player = { critical_entity_type::player, payload.player_pid };
+	work.shop = { critical_entity_type::shopkeeper, item_shopkeeper_owner_id(payload.shop_id) };
+	work.candidate.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	work.candidate.operation_id = operation_id;
+	work.candidate.type = critical_command_type::shop_trade;
+	work.candidate.payload_version = SHOP_TRADE_PAYLOAD_VERSION;
+	work.candidate.source_site = source_site;
+	work.candidate.deadline_class = deadline_class;
+	work.candidate.accepted_at_usec = 0;
+	// Exact original fresh capacities3, original initializer-list values and
+	// their distinct source arrays+initializer-list carriers before allocation.
+	if (!budget.peak(3 * sizeof(critical_entity_key) + 3 * sizeof(critical_entity_key) +
+			 sizeof(std::initializer_list<critical_entity_key>) +
+			 shop_codec_vector_frames))
+		return false;
+	work.candidate.keys = { work.player, work.account, work.shop };
+	if (!budget.peak(3 * sizeof(critical_expected_revision) +
+			 3 * sizeof(critical_expected_revision) +
+			 sizeof(std::initializer_list<critical_expected_revision>) +
+			 shop_codec_vector_frames))
+		return false;
+	work.candidate.expected_revisions = { { work.player, payload.expected_wallet_revision },
+					      { work.account, payload.expected_bank_revision },
+					      { work.shop, payload.expected_shop_revision } };
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	work.candidate.payload = std::move(work.encoded);
+	for (work.index = 0; work.index < payload.item_count; ++work.index)
+	{
+		work.item = { critical_entity_type::item, payload.items[work.index].item_uid };
+		if (!shop_codec_growth(work.candidate.keys, 1, budget))
+			return false;
+		work.candidate.keys.push_back(work.item);
+		if (!shop_codec_growth(work.candidate.expected_revisions, 1, budget))
+			return false;
+		work.candidate.expected_revisions.push_back(
+			{ work.item, payload.items[work.index].expected_item_revision });
+	}
+	if (creation(payload))
+	{
+		work.item = { critical_entity_type::item, payload.stock_item_uid };
+		if (!shop_codec_growth(work.candidate.keys, 1, budget))
+			return false;
+		work.candidate.keys.push_back(work.item);
+		if (!shop_codec_growth(work.candidate.expected_revisions, 1, budget))
+			return false;
+		work.candidate.expected_revisions.push_back(
+			{ work.item, payload.expected_stock_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		work.item = { critical_entity_type::item, payload.target_parent_item_uid };
+		if (!shop_codec_growth(work.candidate.keys, 1, budget))
+			return false;
+		work.candidate.keys.push_back(work.item);
+		if (!shop_codec_growth(work.candidate.expected_revisions, 1, budget))
+			return false;
+		work.candidate.expected_revisions.push_back(
+			{ work.item, payload.expected_target_parent_revision });
+	}
+	if (!shop_codec_sort_admit(work.candidate.keys.size(), sizeof(critical_entity_key),
+				   sizeof(&critical_entity_key_less), budget))
+		return false;
+	std::sort(work.candidate.keys.begin(), work.candidate.keys.end(), critical_entity_key_less);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	if (std::adjacent_find(work.candidate.keys.begin(), work.candidate.keys.end(),
+			       critical_entity_key_equal) != work.candidate.keys.end())
+		return false;
+	const auto revision_less =
+		[](const critical_expected_revision &left, const critical_expected_revision &right)
+	{ return critical_entity_key_less(left.key, right.key); };
+	if (!shop_codec_sort_admit(work.candidate.expected_revisions.size(),
+				   sizeof(critical_expected_revision), sizeof(revision_less),
+				   budget))
+		return false;
+	std::sort(work.candidate.expected_revisions.begin(),
+		  work.candidate.expected_revisions.end(), revision_less);
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.candidate);
+	return true;
+}
+
+bool shop_bounded_build_accounted(critical_command *out, critical_operation_id operation_id,
+				  const shop_trade_payload &payload,
+				  critical_source_site source_site,
+				  critical_deadline_class deadline_class, shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_build_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_build_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_build_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, &work.values.candidate,
+				    &work.values.encoded, nullptr);
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.expected_player_save_revision = 0;
+	work.previous.expected_player_level = 0;
+	if (!shop_bounded_build_base(&work.values.candidate, operation_id, work.previous,
+				     source_site, deadline_class, budget) ||
+	    !shop_bounded_encode_accounted(payload, &work.values.encoded, budget))
+		return false;
+	work.values.candidate.payload_version = SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	work.values.candidate.payload = std::move(work.values.encoded);
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.values.candidate);
+	return true;
+}
+bool shop_bounded_build_native(critical_command *out, critical_operation_id operation_id,
+			       const shop_trade_payload &payload, critical_source_site source_site,
+			       critical_deadline_class deadline_class, shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_build_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_build_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_build_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, &work.values.candidate,
+				    &work.values.encoded, nullptr);
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.native_destination_weight_recorded = false;
+	work.previous.destination_weight = {};
+	if (!shop_bounded_build_accounted(&work.values.candidate, operation_id, work.previous,
+					  source_site, deadline_class, budget) ||
+	    !shop_bounded_encode_native(payload, &work.values.encoded, budget))
+		return false;
+	work.values.candidate.payload_version = SHOP_TRADE_NATIVE_PAYLOAD_VERSION;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	work.values.candidate.payload = std::move(work.values.encoded);
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.values.candidate);
+	return true;
+}
+bool shop_bounded_build_recovery(critical_command *out, critical_operation_id operation_id,
+				 const shop_trade_payload &payload,
+				 critical_source_site source_site,
+				 critical_deadline_class deadline_class, shop_codec_budget &budget)
+{
+	if (!out)
+		return false;
+	constexpr size_t own = sizeof(shop_codec_copy_build_workspace) +
+			       shop_codec_workspace_fixed + shop_codec_build_parameters;
+	if (!budget.peak(own))
+		return false;
+	shop_codec_copy_build_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.previous, &work.values.candidate,
+				    &work.values.encoded, nullptr);
+	if (!shop_codec_clone_payload(payload, work.previous, budget))
+		return false;
+	work.previous.recovery_manifest_recorded = false;
+	if (!shop_codec_drop_manifest(work.previous, budget) ||
+	    !shop_bounded_build_native(&work.values.candidate, operation_id, work.previous,
+				       source_site, deadline_class, budget) ||
+	    !shop_bounded_encode_recovery(payload, &work.values.encoded, budget))
+		return false;
+	work.values.candidate.payload_version = SHOP_TRADE_RECOVERY_PAYLOAD_VERSION;
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	work.values.candidate.payload = std::move(work.values.encoded);
+	if (!budget.peak(shop_codec_move_frames))
+		return false;
+	*out = std::move(work.values.candidate);
+	return true;
+}
+
+bool shop_bounded_decode_impl(const critical_command &command, shop_codec_decode_workspace &work,
+			      shop_codec_budget &budget)
+{
+	auto *payload = &work.candidate;
+
+	if (!payload || command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    command.type != critical_command_type::shop_trade ||
+	    (!shop_trade_payload_version_is_accounted(command.payload_version) &&
+	     command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_CONTAINER_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_STOCK_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_LEGACY_PAYLOAD_VERSION))
+		return false;
+	// Genuine fresh workspace candidate already has every original zero/default field.
+	const uint8_t *cursor = command.payload.data();
+	const uint8_t *end = cursor + command.payload.size();
+	uint8_t action = 0, name_length = 0;
+	if (!read_le(&cursor, end, &action) || !read_le(&cursor, end, &payload->player_pid) ||
+	    !read_le(&cursor, end, &payload->shop_id) ||
+	    !read_le(&cursor, end, &payload->racewar) || !read_le(&cursor, end, &payload->price))
+		return false;
+	if (command.payload_version >= SHOP_TRADE_PAYLOAD_VERSION &&
+	    (!read_le(&cursor, end, &payload->keeper_vnum) ||
+	     !read_le(&cursor, end, &payload->expected_keeper_cash) ||
+	     !read_le(&cursor, end, &payload->keeper_roaming)))
+		return false;
+	if (!read_le(&cursor, end, &payload->expected_wallet_revision) ||
+	    !read_le(&cursor, end, &payload->expected_bank_revision) ||
+	    !read_le(&cursor, end, &payload->expected_shop_revision) ||
+	    !read_le(&cursor, end, &payload->selected_item_uid))
+		return false;
+	if (command.payload_version >= SHOP_TRADE_CONTAINER_PAYLOAD_VERSION)
+	{
+		if (!read_le(&cursor, end, &payload->target_root_item_uid) ||
+		    !read_le(&cursor, end, &payload->target_parent_item_uid) ||
+		    !read_le(&cursor, end, &payload->expected_target_parent_revision))
+			return false;
+	}
+	else
+		payload->target_root_item_uid = payload->selected_item_uid;
+	if (command.payload_version >= SHOP_TRADE_STOCK_PAYLOAD_VERSION &&
+	    (!read_le(&cursor, end, &payload->stock_item_uid) ||
+	     !read_le(&cursor, end, &payload->expected_stock_item_revision) ||
+	     !read_le(&cursor, end, &payload->stock_vnum)))
+		return false;
+	if (!read_le(&cursor, end, &payload->item_count) || !read_le(&cursor, end, &name_length) ||
+	    !name_length || name_length > CURRENCY_ACCOUNT_NAME_MAX_BYTES ||
+	    static_cast<size_t>(end - cursor) < name_length ||
+	    payload->item_count > payload->items.size())
+		return false;
+	payload->action = static_cast<shop_trade_action>(action);
+	memcpy(payload->account_name.data(), cursor, name_length);
+	cursor += name_length;
+	for (size_t index = 0; index < payload->item_count; ++index)
+	{
+		uint8_t state = 0;
+		auto &item = payload->items[index];
+		if (!read_le(&cursor, end, &item.item_uid) ||
+		    !read_le(&cursor, end, &item.root_item_uid) ||
+		    !read_le(&cursor, end, &item.parent_item_uid) ||
+		    !read_le(&cursor, end, &item.expected_item_revision) ||
+		    !read_le(&cursor, end, &item.vnum) || !read_le(&cursor, end, &state))
+			return false;
+		item.expected_state = static_cast<item_custody_state>(state);
+	}
+	if (!read_le(&cursor, end, &payload->item_blob_size) || !payload->item_blob_size ||
+	    payload->item_blob_size > payload->item_blob.size() ||
+	    (command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ?
+		     static_cast<size_t>(end - cursor) <
+			     payload->item_blob_size + SHOP_TRADE_NATIVE_TAIL_BYTES +
+				     SHOP_TRADE_RECOVERY_MANIFEST_MIN_BYTES :
+		     static_cast<size_t>(end - cursor) !=
+			     payload->item_blob_size +
+				     (command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ?
+					      SHOP_TRADE_NATIVE_TAIL_BYTES :
+				      command.payload_version ==
+						      SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ?
+					      SHOP_TRADE_ACCOUNTED_TAIL_BYTES :
+					      0)))
+		return false;
+	memcpy(payload->item_blob.data(), cursor, payload->item_blob_size);
+	if (shop_trade_payload_version_is_accounted(command.payload_version))
+	{
+		cursor += payload->item_blob_size;
+		uint32_t padding = 0;
+		if (!read_le(&cursor, end, &payload->expected_player_save_revision) ||
+		    !read_le(&cursor, end, &payload->expected_player_level) ||
+		    !read_le(&cursor, end, &padding) || padding ||
+		    !payload->expected_player_save_revision || !payload->expected_player_level ||
+		    payload->expected_player_level > UINT8_MAX)
+			return false;
+	}
+	if (command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ||
+	    command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION)
+	{
+		payload->native_destination_weight_recorded = true;
+		if (!read_le(&cursor, end, &payload->destination_weight.before) ||
+		    !read_le(&cursor, end, &payload->destination_weight.direct_contents) ||
+		    !read_le(&cursor, end, &payload->destination_weight.shell) ||
+		    !read_le(&cursor, end, &payload->destination_weight.after) ||
+		    (payload->target_parent_item_uid ?
+			     payload->action != shop_trade_action::buy_produced ||
+				     payload->target_root_item_uid !=
+					     payload->target_parent_item_uid :
+			     payload->destination_weight != shop_trade_destination_weight{}))
+			return false;
+	}
+	if (command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION)
+	{
+		payload->recovery_manifest_recorded = true;
+		if (!budget.current(&work.nested) ||
+		    !shop_trade_recovery_manifest_decode_bounded(
+			    std::span<const uint8_t>(cursor, static_cast<size_t>(end - cursor)),
+			    &payload->recovery_manifest, budget.reserve, budget.context,
+			    work.nested, nullptr) ||
+		    payload->recovery_manifest.live_target_before.present !=
+			    (payload->target_parent_item_uid != 0))
+			return false;
+		cursor = end;
+	}
+	if (shop_trade_payload_version_is_accounted(command.payload_version) && cursor != end)
+		return false;
+	if (command.payload_version == SHOP_TRADE_LEGACY_PAYLOAD_VERSION)
+	{
+		if (payload->action == shop_trade_action::buy_produced)
+			return false;
+		if (payload->action == shop_trade_action::buy_existing)
+		{
+			auto selected = std::find_if(
+				payload->items.begin(),
+				payload->items.begin() + payload->item_count, [&](const auto &item)
+				{ return item.item_uid == payload->selected_item_uid; });
+			if (selected == payload->items.begin() + payload->item_count)
+				return false;
+			payload->stock_item_uid = selected->item_uid;
+			payload->expected_stock_item_revision = selected->expected_item_revision;
+			payload->stock_vnum = selected->vnum;
+		}
+	}
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	if (!valid_payload(*payload))
+		return false;
+	auto &expected = work.expected;
+	const bool built = command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ?
+				   shop_bounded_build_recovery(&expected, command.operation_id,
+							       *payload, command.source_site,
+							       command.deadline_class, budget) :
+			   command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ?
+				   shop_bounded_build_native(&expected, command.operation_id,
+							     *payload, command.source_site,
+							     command.deadline_class, budget) :
+			   command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ?
+				   shop_bounded_build_accounted(&expected, command.operation_id,
+								*payload, command.source_site,
+								command.deadline_class, budget) :
+				   shop_bounded_build_base(&expected, command.operation_id,
+							   *payload, command.source_site,
+							   command.deadline_class, budget);
+	if (!budget.peak(shop_codec_pure_frames))
+		return false;
+	return built && matching_fences(expected, command) &&
+	       (command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ||
+		expected.payload == command.payload);
+}
+
+} // namespace
+
+bool shop_trade_command_decode_payload_bounded(const critical_command &command,
+					       shop_trade_payload *out,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live,
+					       size_t *retained_payload_heap_bytes) noexcept
+{
+	if (!out || !reserve || !shop_codec_profile())
+		return false;
+	constexpr size_t public_frames = 5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+	size_t base = outer_live;
+	if (!shop_codec_add(base, sizeof(shop_codec_budget) + public_frames) ||
+	    !reserve(base, context))
+		return false;
+	shop_codec_budget budget{ reserve, context, base, nullptr };
+	// Actual original decoder parameters/locals, fixed LE reader and native
+	// tail/weight temporaries and manifest span argument carrier. Every fixed
+	// candidate field lives in the genuine workspace, not a synthetic fixture.
+	constexpr size_t decoder_frames = 9 * sizeof(void *) + 2 * sizeof(size_t) +
+					  3 * sizeof(uint8_t) + sizeof(uint32_t) + sizeof(bool) +
+					  sizeof(shop_trade_destination_weight) +
+					  sizeof(std::span<const uint8_t>);
+	constexpr size_t own =
+		sizeof(shop_codec_decode_workspace) + shop_codec_workspace_fixed + decoder_frames;
+	if (!budget.peak(own + shop_codec_leaf_frames + shop_codec_pure_frames))
+		return false;
+	shop_codec_decode_workspace work;
+	shop_codec_live_owner owner(budget, own, &work.candidate, &work.expected, nullptr, nullptr);
+	static_assert(std::is_nothrow_move_assignable_v<shop_trade_payload>);
+	static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+	try
+	{
+		if (!shop_bounded_decode_impl(command, work, budget) ||
+		    !shop_codec_payload_heap(work.candidate, work.transferred_heap) ||
+		    !budget.peak(shop_codec_move_frames))
+			return false;
+		*out = std::move(work.candidate);
+		if (retained_payload_heap_bytes)
+			*retained_payload_heap_bytes = work.transferred_heap;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
