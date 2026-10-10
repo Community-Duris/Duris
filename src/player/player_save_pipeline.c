@@ -10892,3 +10892,1087 @@ bool player_save_shop_replay_owner::restore_flat(const critical_command &command
 	}
 #endif
 }
+
+namespace
+{
+// Caller relay observes the genuine provider registry and the SAME pipeline
+// scope. This child owns only its actual decoded candidates and wire buffers.
+struct held_native_checkpoint_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *payload = nullptr;
+	const held_retirement_recovery *held = nullptr;
+	const native_quest_recovery_context *native = nullptr;
+	const economic_frozen_intent *intent = nullptr;
+	const critical_command *command = nullptr;
+	const auction_native_command_context *auction_command = nullptr;
+	const auction_recovery_context *auction_context = nullptr;
+	player_save_coin_replay_budget_scope_owner *owned_scope = nullptr;
+	const std::vector<uint8_t> *wire[4]{};
+	static bool forest(size_t &bytes, const std::vector<player_item_snapshot> &value) noexcept
+	{
+		if (value.capacity() > SIZE_MAX / sizeof(player_item_snapshot) ||
+		    !coin_save_pool_add(bytes, value.capacity() * sizeof(player_item_snapshot)))
+			return false;
+		for (const auto &row : value)
+		{
+			size_t heap = 0;
+			if (!player_item_snapshot_current_heap_bytes(row, &heap) ||
+			    !coin_save_pool_add(bytes, heap))
+				return false;
+		}
+		return true;
+	}
+	static bool text(size_t &bytes, const std::string &value) noexcept
+	{
+		return value.capacity() <= 15 || (value.capacity() != SIZE_MAX &&
+						  coin_save_pool_add(bytes, value.capacity() + 1));
+	}
+	bool current(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		bytes = outer;
+		size_t heap = 0;
+		if (!coin_save_pool_add(bytes, frames) || !coin_save_pool_add(bytes, extra))
+			return false;
+		if (owned_scope && (!player_save_auction_replay_owner::current_storage_bytes(
+					    *owned_scope, &heap) ||
+				    !coin_save_pool_add(bytes, heap)))
+			return false;
+		if (auction_command &&
+		    (!coin_save_pool_add(bytes, auction_command->base_v1_payload.capacity()) ||
+		     auction_command->before_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		     !coin_save_pool_add(bytes, auction_command->before_item_uids.capacity() *
+							sizeof(uint64_t))))
+			return false;
+		if (auction_context)
+		{
+			if (!forest(bytes, auction_context->player_before) ||
+			    !forest(bytes, auction_context->player_after) ||
+			    !forest(bytes, auction_context->selected_literals) ||
+			    auction_context->reload.capacity() >
+				    SIZE_MAX / sizeof(std::array<auction_recovery_effect, 4>) ||
+			    !coin_save_pool_add(
+				    bytes,
+				    auction_context->reload.capacity() *
+					    sizeof(std::array<auction_recovery_effect, 4>)) ||
+			    auction_context->proclib.capacity() >
+				    SIZE_MAX / sizeof(std::vector<auction_recovery_effect>) ||
+			    !coin_save_pool_add(
+				    bytes, auction_context->proclib.capacity() *
+						   sizeof(std::vector<auction_recovery_effect>)))
+				return false;
+			for (const auto &chain : auction_context->proclib)
+				if (chain.capacity() > SIZE_MAX / sizeof(auction_recovery_effect) ||
+				    !coin_save_pool_add(bytes,
+							chain.capacity() *
+								sizeof(auction_recovery_effect)))
+					return false;
+		}
+		if (intent && !coin_save_pool_add(bytes, intent->admission.facts.capacity()))
+			return false;
+		if (command && (!critical_command_current_heap_bytes(*command, &heap) ||
+				!coin_save_pool_add(bytes, heap)))
+			return false;
+		if (payload && (!item_transfer_payload_current_heap_bytes(*payload, &heap) ||
+				!coin_save_pool_add(bytes, heap)))
+			return false;
+		if (held && (!forest(bytes, held->before) || !forest(bytes, held->after)))
+			return false;
+		if (native && (!native_quest_recovery_context_current_heap_bytes(*native, &heap) ||
+			       !coin_save_pool_add(bytes, heap)))
+			return false;
+		for (const auto *value : wire)
+			if (value && !coin_save_pool_add(bytes, value->capacity()))
+				return false;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return reserve && current(bytes, extra) && reserve(bytes, context);
+	}
+	bool request(size_t bytes, size_t source) const noexcept
+	{
+		return coin_save_pool_add(bytes, source) && peak(bytes);
+	}
+
+	// Admit the genuine codec query before querying it, then only prospective
+	// initial physical objects plus the returned source before entering it.
+	// The child CURRENT census owns actual inline objects after entry; these
+	// requests are transient and never become an additional retained baseline.
+	bool held_codec_entry() const noexcept
+	{
+		constexpr size_t query = held_retirement_codec_source_profile_query_frames();
+		size_t source = 0, entry = 0;
+		if (!peak(query))
+			return false;
+		source = held_retirement_codec_source_frame_bytes();
+		entry = held_retirement_codec_entry_inline_bytes();
+		return source && source != SIZE_MAX && entry && entry != SIZE_MAX &&
+		       request(entry, source);
+	}
+	bool native_codec_entry() const noexcept
+	{
+		constexpr size_t query = native_quest_recovery_codec_source_profile_query_frames();
+		size_t source = 0, entry = 0;
+		if (!peak(query))
+			return false;
+		source = native_quest_recovery_codec_source_frame_bytes();
+		entry = native_quest_recovery_codec_entry_inline_bytes();
+		return source && source != SIZE_MAX && entry && entry != SIZE_MAX &&
+		       request(entry, source);
+	}
+	static bool child(size_t extra, void *opaque) noexcept
+	{
+		return static_cast<held_native_checkpoint_budget *>(opaque)->peak(extra);
+	}
+};
+}
+
+size_t player_save_native_recovery_replay_owner::current_observer_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + sizeof(bool);
+}
+bool player_save_native_recovery_replay_owner::current_storage_bytes(
+	player_save_coin_replay_budget_scope_owner &scope, size_t *output) noexcept
+{
+	return scope.bootstrap_storage_bytes(output);
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+
+bool held_retirement_slot_command_bounded(const literal_inventory_checkpoint &slot,
+					  const critical_command &command,
+					  bool (*reserve)(size_t, void *) noexcept,
+					  void *reserve_context, size_t outer_live)
+{
+	const size_t frames = sizeof(held_native_checkpoint_budget) +
+			      3 * sizeof(std::vector<uint8_t>) + sizeof(lockpick_retirement_terms) +
+			      sizeof(held_retirement_recovery) + 10 * sizeof(void *) +
+			      10 * sizeof(size_t) + 8 * sizeof(bool) + coin_save_restore_frames +
+			      coin_save_critical_codec_frames + coin_save_vector_frames;
+	held_native_checkpoint_budget budget{ reserve, reserve_context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	std::vector<uint8_t> frozen;
+	lockpick_retirement_terms terms;
+	held_retirement_recovery original;
+	budget.held = &original;
+	budget.wire[0] = &frozen;
+	if (!slot.held || !slot.restored_sql_drop ||
+	    slot.profile != literal_checkpoint_profile::held_retirement ||
+	    !slot.execution_hold_generation || !slot.held_recovery_revision ||
+	    !slot.captured_revision || slot.captured_revision != slot.acknowledged_revision ||
+	    !budget.held_codec_entry() ||
+	    !held_retirement_command_identity_bounded(
+		    command, nullptr, &terms, held_native_checkpoint_budget::child, &budget, 0) ||
+	    critical_command_encode_bounded(command, &frozen, held_native_checkpoint_budget::child,
+					    &budget, 0) != critical_command_codec_result::ok ||
+	    slot.payload != frozen || slot.operation_id.bytes != command.operation_id.bytes ||
+	    slot.token.pid != static_cast<int32_t>(terms.actor_pid) || slot.token.root_uid ||
+	    slot.held_selected_uid != terms.item_uid || !budget.held_codec_entry() ||
+	    !held_retirement_recovery_decode_bounded(command, slot.held_attachment, &original,
+						     held_native_checkpoint_budget::child, &budget,
+						     0) ||
+	    original.save_revision != slot.acknowledged_revision ||
+	    (!budget.peak(coin_save_hold_frames) ||
+	     !player_save_execution_guard::publication_operation_held(command.operation_id)))
+		return false;
+	if (slot.held_passive_restored && !slot.held_runtime_rebound)
+	{
+		if (slot.token.actor_runtime_id || slot.token.generation)
+			return false;
+	}
+	else if (!slot.token.actor_runtime_id || !slot.token.generation)
+		return false;
+	std::vector<uint8_t> before, after;
+	budget.wire[1] = &before;
+	budget.wire[2] = &after;
+	if (player_item_snapshot_list_encode_bounded(original.before, &before,
+						     held_native_checkpoint_budget::child, &budget,
+						     0) != player_snapshot_codec_result::ok ||
+	    player_item_snapshot_list_encode_bounded(original.after, &after,
+						     held_native_checkpoint_budget::child, &budget,
+						     0) != player_snapshot_codec_result::ok ||
+	    slot.held_before != before || slot.held_after != after)
+		return false;
+	return true;
+}
+
+bool native_quest_body_pair_bounded(const item_transfer_payload &payload,
+				    std::span<const uint8_t> before, std::vector<uint8_t> *after,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer_live)
+{
+	const size_t frames = sizeof(held_native_checkpoint_budget) +
+			      3 * sizeof(std::vector<player_item_snapshot>) +
+			      3 * sizeof(std::vector<uint8_t>) + 13 * sizeof(void *) +
+			      10 * sizeof(size_t) + 6 * sizeof(bool) +
+			      sizeof(player_snapshot_codec_result) + coin_save_vector_frames +
+			      player_item_snapshot_copy_frame_bytes();
+	held_native_checkpoint_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	if (!after)
+		return false;
+	if (payload.native_money.present || payload.native_cost.fee_only)
+	{
+		if (!item_transfer_native_mobile_recovery_shape_valid_bounded(
+			    payload, held_native_checkpoint_budget::child, &budget, 0) ||
+		    !shop_trade_recovery_forest_verify_bounded(
+			    before, shop_trade_recovery_forest_role::player_before,
+			    payload.native_recovery.player_before,
+			    held_native_checkpoint_budget::child, &budget, 0) ||
+		    !shop_trade_recovery_forest_verify_bounded(
+			    before, shop_trade_recovery_forest_role::player_after,
+			    payload.native_recovery.player_after,
+			    held_native_checkpoint_budget::child, &budget, 0))
+			return false;
+		if (!budget.request(before.size(), coin_save_vector_frames))
+			return false;
+		std::vector<uint8_t> unchanged(before.begin(), before.end());
+		*after = std::move(unchanged);
+		return true;
+	}
+	if (payload.native_mobile.action == item_native_mobile_action::consumption)
+	{
+		// Real final-giver checkpoint is retained; no inventory mutation or
+		// fabricated complete binding is introduced for native destruction.
+		if (!budget.request(before.size(), coin_save_vector_frames))
+			return false;
+		*after = std::vector<uint8_t>(before.begin(), before.end());
+		return true;
+	}
+	std::vector<player_item_snapshot> full, selected, remaining;
+	std::vector<uint8_t> selected_bytes, after_bytes;
+	struct forest_relay
+	{
+		held_native_checkpoint_budget *budget;
+		const std::vector<player_item_snapshot> *forests[3];
+		static bool child(size_t extra, void *opaque) noexcept
+		{
+			auto &self = *static_cast<forest_relay *>(opaque);
+			size_t bytes = extra;
+			for (const auto *forest : self.forests)
+				if (!held_native_checkpoint_budget::forest(bytes, *forest))
+					return false;
+			return self.budget->peak(bytes);
+		}
+	} relay{ &budget, { &full, &selected, &remaining } };
+	budget.wire[0] = &selected_bytes;
+	budget.wire[1] = &after_bytes;
+	if (!shop_trade_recovery_forest_verify_bounded(
+		    before, shop_trade_recovery_forest_role::player_before,
+		    payload.native_recovery.player_before, held_native_checkpoint_budget::child,
+		    &budget, 0) ||
+	    player_item_snapshot_list_decode_bounded(before.data(), before.size(), &full,
+						     forest_relay::child, &relay,
+						     0) != player_snapshot_codec_result::ok ||
+	    player_item_snapshot_extract_subtree_bounded(
+		    full, item_transfer_result_root(payload), &selected, &remaining,
+		    forest_relay::child, &relay, 0) != player_snapshot_codec_result::ok ||
+	    player_item_snapshot_list_encode_bounded(selected, &selected_bytes, forest_relay::child,
+						     &relay,
+						     0) != player_snapshot_codec_result::ok ||
+	    selected_bytes.size() != payload.item_blob_size ||
+	    !std::equal(selected_bytes.begin(), selected_bytes.end(), payload.item_blob.begin()) ||
+	    player_item_snapshot_list_encode_bounded(remaining, &after_bytes, forest_relay::child,
+						     &relay,
+						     0) != player_snapshot_codec_result::ok ||
+	    !shop_trade_recovery_forest_verify_bounded(
+		    after_bytes, shop_trade_recovery_forest_role::player_after,
+		    payload.native_recovery.player_after, forest_relay::child, &relay, 0))
+		return false;
+	*after = std::move(after_bytes);
+	return true;
+}
+}
+#endif
+#ifndef __NO_MYSQL__
+namespace
+{
+bool native_quest_publication_identity_bounded(const critical_command &command,
+					       item_transfer_payload *payload,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live)
+{
+	const size_t frames =
+		sizeof(held_native_checkpoint_budget) + sizeof(economic_frozen_intent) +
+		sizeof(critical_command) + sizeof(std::vector<uint8_t>) + 10 * sizeof(void *) +
+		9 * sizeof(size_t) + 6 * sizeof(bool) + sizeof(economic_accounting_error) +
+		critical_command_copy_frame_bytes() + critical_command_valid_frame_bytes() +
+		coin_save_vector_frames;
+	held_native_checkpoint_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	economic_frozen_intent intent;
+	critical_command original;
+	std::vector<uint8_t> expected;
+	budget.intent = &intent;
+	budget.command = &original;
+	budget.wire[0] = &expected;
+	if (!payload || !command.publication_required || !command.accepted_at_usec ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !item_transfer_native_mobile_acknowledged_version(command.payload_version) ||
+	    !critical_command_envelope_valid(command) ||
+	    !item_transfer_command_decode_payload_bounded(
+		    command, payload, held_native_checkpoint_budget::child, &budget, 0) ||
+	    !item_transfer_native_mobile_recovery_shape_valid_bounded(
+		    *payload, held_native_checkpoint_budget::child, &budget, 0) ||
+	    economic_intent_decode_bounded(command.accounting_intent, &intent,
+					   held_native_checkpoint_budget::child, &budget,
+					   0) != economic_accounting_error::ok ||
+	    economic_intent_verify_binding_bounded(command, intent,
+						   held_native_checkpoint_budget::child, &budget,
+						   0) != economic_accounting_error::ok)
+		return false;
+	size_t request = 0;
+	if (!critical_command_fresh_copy_request_bytes(command, &request) || !budget.peak(request))
+		return false;
+	original = command;
+	original.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	original.accounting_intent.clear();
+	original.accepted_at_usec = 0;
+	original.publication_required = false;
+	const auto &metadata = intent.admission.metadata;
+	return item_native_mobile_accounting_intent_bounded(
+		       original, metadata.lineage, metadata.epoch,
+		       payload->native_mobile.final_giver_pid,
+		       metadata.source_event ? &*metadata.source_event : nullptr, &expected,
+		       held_native_checkpoint_budget::child, &budget,
+		       0) == economic_accounting_error::ok &&
+	       expected == command.accounting_intent;
+}
+}
+#endif
+
+bool player_save_native_recovery_replay_owner::restore_held_checkpoint(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)envelope;
+	(void)scope;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	size_t frames = 0;
+	if (!restore_held_source_frames(&frames))
+		return false;
+	held_native_checkpoint_budget budget{ reserve, context, outer_live, frames };
+	if (!scope.prepared() || !budget.peak())
+		return false;
+	try
+	{
+		lockpick_retirement_terms terms;
+		held_retirement_recovery original;
+		std::vector<uint8_t> frozen, before, after, attachment;
+		budget.held = &original;
+		budget.wire[0] = &frozen;
+		budget.wire[1] = &before;
+		budget.wire[2] = &after;
+		budget.wire[3] = &attachment;
+		if (!envelope.revision ||
+		    envelope.phase != critical_native_recovery_phase::execution_pending ||
+		    !budget.held_codec_entry() ||
+		    !held_retirement_command_identity_bounded(envelope.command, nullptr, &terms,
+							      held_native_checkpoint_budget::child,
+							      &budget, 0) ||
+		    !budget.held_codec_entry() ||
+		    !held_retirement_recovery_decode_bounded(
+			    envelope.command, envelope.attachment, &original,
+			    held_native_checkpoint_budget::child, &budget, 0) ||
+		    critical_command_encode_bounded(envelope.command, &frozen,
+						    held_native_checkpoint_budget::child, &budget,
+						    0) != critical_command_codec_result::ok ||
+		    player_item_snapshot_list_encode_bounded(
+			    original.before, &before, held_native_checkpoint_budget::child, &budget,
+			    0) != player_snapshot_codec_result::ok ||
+		    player_item_snapshot_list_encode_bounded(
+			    original.after, &after, held_native_checkpoint_budget::child, &budget,
+			    0) != player_snapshot_codec_result::ok)
+			return false;
+		if (!budget.request(envelope.attachment.size(), coin_save_vector_frames))
+			return false;
+		attachment = envelope.attachment;
+		size_t bytes = 0;
+		for (size_t size :
+		     { frozen.size(), before.size(), after.size(), attachment.size() })
+		{
+			if (size > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+				return false;
+			bytes += size;
+		}
+		if (!scope.prepared())
+			return false;
+		if (!health.initialized || stop_requested || execution_started)
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (!budget.peak(coin_save_hold_frames + coin_save_bytes_equal_frames))
+				return false;
+			if (candidate.token.pid == static_cast<int>(terms.actor_pid) ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == envelope.command.operation_id.bytes))
+			{
+				uint64_t generation = 0;
+				if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+						 coin_save_vector_move_frames))
+					return false;
+				if (!candidate.held_passive_restored ||
+				    candidate.held_runtime_rebound ||
+				    candidate.held_recovery_revision != envelope.revision ||
+				    candidate.held_attachment != attachment ||
+				    candidate.token.actor_runtime_id ||
+				    candidate.token.generation ||
+				    !held_retirement_slot_command_bounded(
+					    candidate, envelope.command,
+					    held_native_checkpoint_budget::child, &budget, 0) ||
+				    !player_save_execution_guard::install_hold(
+					    terms.actor_pid, envelope.command.operation_id,
+					    &generation) ||
+				    generation != candidate.execution_hold_generation)
+					return false;
+				return true;
+			}
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(bytes))
+			return false;
+		uint64_t generation = 0;
+		if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+				 coin_save_vector_move_frames))
+			return false;
+		if (!player_save_execution_guard::install_hold(
+			    terms.actor_pid, envelope.command.operation_id, &generation))
+			return false;
+		slot->profile = literal_checkpoint_profile::held_retirement;
+		slot->token = { static_cast<int32_t>(terms.actor_pid), 0, 0, 0 };
+		slot->held_selected_uid = terms.item_uid;
+		slot->payload = std::move(frozen);
+		slot->held_before = std::move(before);
+		slot->held_after = std::move(after);
+		slot->held_attachment = std::move(attachment);
+		slot->held_recovery_revision = envelope.revision;
+		slot->captured_revision = slot->acknowledged_revision = original.save_revision;
+		slot->operation_id = envelope.command.operation_id;
+		slot->execution_hold_generation = generation;
+		slot->held = slot->restored_sql_drop = slot->held_passive_restored = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool player_save_native_recovery_replay_owner::restore_native_checkpoint(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)envelope;
+	(void)scope;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	size_t frames = 0;
+	if (!restore_native_source_frames(&frames))
+		return false;
+	held_native_checkpoint_budget budget{ reserve, context, outer_live, frames };
+	if (!scope.prepared() || !budget.peak())
+		return false;
+	try
+	{
+		item_transfer_payload payload{};
+		native_quest_recovery_context recovery;
+		std::vector<uint8_t> frozen, before, after, attachment;
+		budget.payload = &payload;
+		budget.native = &recovery;
+		budget.wire[0] = &frozen;
+		budget.wire[1] = &before;
+		budget.wire[2] = &after;
+		budget.wire[3] = &attachment;
+		if (!envelope.revision ||
+		    envelope.phase != critical_native_recovery_phase::execution_pending ||
+		    !native_quest_publication_identity_bounded(envelope.command, &payload,
+							       held_native_checkpoint_budget::child,
+							       &budget, 0) ||
+		    !budget.native_codec_entry() ||
+		    native_quest_recovery_context_decode_bounded(
+			    envelope.command, envelope.attachment, &recovery,
+			    held_native_checkpoint_budget::child, &budget,
+			    0) != player_snapshot_codec_result::ok ||
+		    critical_command_encode_bounded(envelope.command, &frozen,
+						    held_native_checkpoint_budget::child, &budget,
+						    0) != critical_command_codec_result::ok ||
+		    player_item_snapshot_list_encode_bounded(
+			    recovery.player_before, &before, held_native_checkpoint_budget::child,
+			    &budget, 0) != player_snapshot_codec_result::ok ||
+		    !native_quest_body_pair_bounded(payload, before, &after,
+						    held_native_checkpoint_budget::child, &budget,
+						    0))
+			return false;
+		size_t bytes = 0;
+		for (const size_t size :
+		     { frozen.size(), before.size(), after.size(), envelope.attachment.size() })
+		{
+			if (size > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+				return false;
+			bytes += size;
+		}
+		if (!budget.request(envelope.attachment.size(), coin_save_vector_frames))
+			return false;
+		attachment = envelope.attachment;
+		const int pid = static_cast<int>(payload.native_recovery.player_pid);
+		const uint64_t revision = payload.native_recovery.acknowledged_save_revision;
+		const uint64_t root = payload.native_mobile.action ==
+						      item_native_mobile_action::acceptance ?
+					      payload.selected_item_uid :
+					      0;
+		if (pid <= 0 || !revision)
+			return false;
+		if (!scope.prepared())
+			return false;
+		// Critical replay installs only a prepared passive original hold. No
+		// actor runtime identity, save token generation or effects are restored.
+		if (!health.initialized || stop_requested || execution_started)
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (!budget.peak(coin_save_hold_frames + coin_save_bytes_equal_frames))
+				return false;
+			if (candidate.token.pid == pid ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == envelope.command.operation_id.bytes))
+			{
+				uint64_t generation = 0;
+				if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+						 coin_save_vector_move_frames))
+					return false;
+				if (candidate.profile != literal_checkpoint_profile::native_quest ||
+				    !candidate.restored_native_quest ||
+				    candidate.native_quest_runtime_rebound ||
+				    !candidate.restored_sql_drop || !candidate.held ||
+				    candidate.token.pid != pid ||
+				    candidate.token.root_uid != root ||
+				    candidate.native_money_only != payload.native_money.present ||
+				    (payload.native_money.present &&
+				     (candidate.native_money_before !=
+					      payload.native_money.projection.player_before ||
+				      candidate.native_money_wallet_revision !=
+					      payload.native_money.projection
+						      .player_before_revision)) ||
+				    candidate.token.actor_runtime_id ||
+				    candidate.token.generation || candidate.payload != frozen ||
+				    candidate.original_native_quest_before != before ||
+				    candidate.original_native_quest_after != after ||
+				    candidate.restored_native_quest_revision != envelope.revision ||
+				    candidate.restored_native_quest_attachment != attachment ||
+				    candidate.captured_revision != revision ||
+				    candidate.acknowledged_revision != revision ||
+				    candidate.operation_id.bytes !=
+					    envelope.command.operation_id.bytes ||
+				    !player_save_execution_guard::install_hold(
+					    pid, envelope.command.operation_id, &generation))
+					return false;
+				if (generation != candidate.execution_hold_generation)
+				{
+					player_save_execution_guard::poison_integrity();
+					return false;
+				}
+				return true;
+			}
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(bytes))
+			return false;
+		uint64_t generation = 0;
+		if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+				 coin_save_vector_move_frames))
+			return false;
+		if (!player_save_execution_guard::install_hold(pid, envelope.command.operation_id,
+							       &generation))
+			return false;
+		// All canonical decode, forest derivation, allocation and capacity checks
+		// precede hold installation. These default-allocator moves cannot throw.
+		slot->profile = literal_checkpoint_profile::native_quest;
+		slot->token = { pid, 0, root, 0 };
+		slot->native_money_only = payload.native_money.present;
+		if (payload.native_money.present)
+		{
+			slot->native_money_before = payload.native_money.projection.player_before;
+			slot->native_money_wallet_revision =
+				payload.native_money.projection.player_before_revision;
+		}
+		slot->payload = std::move(frozen);
+		slot->original_native_quest_before = std::move(before);
+		slot->original_native_quest_after = std::move(after);
+		slot->restored_native_quest_attachment = std::move(attachment);
+		slot->restored_native_quest_revision = envelope.revision;
+		slot->captured_revision = revision;
+		slot->acknowledged_revision = revision;
+		slot->operation_id = envelope.command.operation_id;
+		slot->execution_hold_generation = generation;
+		slot->held = true;
+		slot->restored_sql_drop = true;
+		slot->restored_native_quest = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool auction_publication_identity_bounded(const critical_command &command,
+					  auction_native_command_context *payload,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live)
+{
+	return payload && command.type == critical_command_type::auction &&
+	       command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.publication_required && command.accepted_at_usec &&
+	       critical_command_envelope_valid(command) &&
+	       auction_repository_frozen_accounting_valid_bounded(command, reserve, context,
+								  outer_live) &&
+	       auction_native_command_decode_bounded(command, payload, reserve, context,
+						     outer_live) == economic_accounting_error::ok &&
+	       payload->payload.actor_pid &&
+	       payload->payload.actor_pid <=
+		       static_cast<uint32_t>(std::numeric_limits<int>::max()) &&
+	       payload->acknowledged_save_revision && payload->original_level;
+}
+bool auction_body_pair_bounded(const critical_command &command,
+			       const auction_recovery_context &recovery,
+			       std::span<const uint8_t> before, std::vector<uint8_t> *after,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer_live)
+{
+	held_native_checkpoint_budget budget{
+		reserve, context, outer_live,
+		sizeof(held_native_checkpoint_budget) +
+			2 * sizeof(std::vector<player_item_snapshot>) +
+			3 * sizeof(std::vector<uint8_t>) + sizeof(auction_native_command_context) +
+			12 * sizeof(void *) + 10 * sizeof(size_t) + 8 * sizeof(bool) +
+			coin_save_vector_frames + player_item_snapshot_copy_frame_bytes()
+	};
+	if (!budget.peak())
+		return false;
+	std::vector<player_item_snapshot> full, expected;
+	std::vector<uint8_t> canonical, body;
+	std::vector<uint8_t> authenticated;
+	auction_native_command_context accepted;
+	budget.auction_command = &accepted;
+	budget.wire[0] = &canonical;
+	budget.wire[1] = &body;
+	budget.wire[2] = &authenticated;
+	struct relay
+	{
+		held_native_checkpoint_budget *budget;
+		const std::vector<player_item_snapshot> *full, *expected;
+		static bool child(size_t extra, void *opaque) noexcept
+		{
+			auto &self = *static_cast<relay *>(opaque);
+			size_t bytes = extra;
+			return held_native_checkpoint_budget::forest(bytes, *self.full) &&
+			       held_native_checkpoint_budget::forest(bytes, *self.expected) &&
+			       self.budget->request(bytes, sizeof(relay) + 5 * sizeof(void *) +
+								   3 * sizeof(size_t) +
+								   3 * sizeof(bool));
+		}
+	} current{ &budget, &full, &expected };
+	if (!after ||
+	    !auction_publication_identity_bounded(command, &accepted, relay::child, &current, 0) ||
+	    player_item_snapshot_list_decode_bounded(before.data(), before.size(), &full,
+						     relay::child, &current,
+						     0) != player_snapshot_codec_result::ok ||
+	    player_item_snapshot_list_encode_bounded(recovery.player_before, &canonical,
+						     relay::child, &current,
+						     0) != player_snapshot_codec_result::ok ||
+	    canonical.size() != before.size() ||
+	    !std::equal(canonical.begin(), canonical.end(), before.begin()) ||
+	    auction_recovery_context_encode_bounded(command, recovery, &authenticated, relay::child,
+						    &current,
+						    0) != player_snapshot_codec_result::ok ||
+	    !auction_native_expected_player_forest_bounded(
+		    accepted.payload, full, recovery.selected_literals, false,
+		    accepted.original_level, &expected, relay::child, &current, 0) ||
+	    player_item_snapshot_list_encode_bounded(expected, &body, relay::child, &current, 0) !=
+		    player_snapshot_codec_result::ok)
+		return false;
+	*after = std::move(body);
+	return true;
+}
+}
+#endif
+
+size_t player_save_auction_replay_owner::current_observer_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + sizeof(bool);
+}
+bool player_save_auction_replay_owner::current_storage_bytes(
+	player_save_coin_replay_budget_scope_owner &scope, size_t *out) noexcept
+{
+	return scope.bootstrap_storage_bytes(out);
+}
+bool player_save_auction_replay_owner::restore_recovery_checkpoint(
+	const critical_native_recovery_envelope &envelope,
+	player_save_coin_replay_budget_scope_owner &scope, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)envelope;
+	(void)scope;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	size_t frames = 0;
+	if (!restore_source_frames(&frames))
+		return false;
+	held_native_checkpoint_budget budget{ reserve, context, outer_live, frames };
+	budget.owned_scope = &scope;
+	if (!scope.prepared() || !budget.peak())
+		return false;
+	try
+	{
+		auction_native_command_context payload{};
+		auction_recovery_context recovery;
+		std::vector<uint8_t> frozen, before, after, attachment;
+		budget.auction_command = &payload;
+		budget.auction_context = &recovery;
+		budget.wire[0] = &frozen;
+		budget.wire[1] = &before;
+		budget.wire[2] = &after;
+		budget.wire[3] = &attachment;
+		if (!auction_recovery_envelope_valid_bounded(
+			    envelope, held_native_checkpoint_budget::child, &budget, 0) ||
+		    envelope.phase != critical_native_recovery_phase::execution_pending ||
+		    !auction_publication_identity_bounded(envelope.command, &payload,
+							  held_native_checkpoint_budget::child,
+							  &budget, 0) ||
+		    auction_recovery_context_decode_bounded(
+			    envelope.command, envelope.attachment, &recovery,
+			    held_native_checkpoint_budget::child, &budget,
+			    0) != player_snapshot_codec_result::ok ||
+		    critical_command_encode_bounded(envelope.command, &frozen,
+						    held_native_checkpoint_budget::child, &budget,
+						    0) != critical_command_codec_result::ok ||
+		    player_item_snapshot_list_encode_bounded(
+			    recovery.player_before, &before, held_native_checkpoint_budget::child,
+			    &budget, 0) != player_snapshot_codec_result::ok ||
+		    !auction_body_pair_bounded(envelope.command, recovery, before, &after,
+					       held_native_checkpoint_budget::child, &budget, 0))
+			return false;
+		size_t bytes = 0;
+		for (const size_t size :
+		     { frozen.size(), before.size(), after.size(), envelope.attachment.size() })
+		{
+			if (size > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+				return false;
+			bytes += size;
+		}
+		if (!budget.request(envelope.attachment.size(), coin_save_vector_frames))
+			return false;
+		attachment = envelope.attachment;
+		const int pid = static_cast<int>(payload.payload.actor_pid);
+		const uint64_t revision = payload.acknowledged_save_revision;
+		const uint64_t root = 0;
+		if (pid <= 0 || !revision)
+			return false;
+		if (!scope.prepared())
+			return false;
+		// Critical replay installs only a prepared passive original hold. No
+		// actor runtime identity, save token generation or effects are restored.
+		if (!health.initialized || stop_requested || execution_started)
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (!budget.peak(coin_save_hold_frames + coin_save_bytes_equal_frames))
+				return false;
+			if (candidate.token.pid == pid ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == envelope.command.operation_id.bytes))
+			{
+				uint64_t generation = 0;
+				if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+						 coin_save_vector_move_frames))
+					return false;
+				if (candidate.profile != literal_checkpoint_profile::auction ||
+				    !candidate.restored_auction ||
+				    candidate.auction_runtime_rebound ||
+				    !candidate.restored_sql_drop || !candidate.held ||
+				    candidate.token.pid != pid ||
+				    candidate.token.root_uid != root ||
+				    candidate.token.actor_runtime_id ||
+				    candidate.token.generation || candidate.payload != frozen ||
+				    candidate.original_auction_before != before ||
+				    candidate.original_auction_after != after ||
+				    candidate.restored_auction_revision != envelope.revision ||
+				    candidate.restored_auction_attachment != attachment ||
+				    candidate.level != payload.original_level ||
+				    !auction_checkpoint_roots_match(candidate, payload.payload) ||
+				    candidate.captured_revision != revision ||
+				    candidate.acknowledged_revision != revision ||
+				    candidate.operation_id.bytes !=
+					    envelope.command.operation_id.bytes ||
+				    !player_save_execution_guard::install_hold(
+					    pid, envelope.command.operation_id, &generation))
+					return false;
+				if (generation != candidate.execution_hold_generation)
+				{
+					player_save_execution_guard::poison_integrity();
+					return false;
+				}
+				return true;
+			}
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(bytes))
+			return false;
+		uint64_t generation = 0;
+		if (!budget.peak(coin_save_hold_frames + coin_save_capacity_frames +
+				 coin_save_vector_move_frames))
+			return false;
+		if (!player_save_execution_guard::install_hold(pid, envelope.command.operation_id,
+							       &generation))
+			return false;
+		// All canonical decode, forest derivation, allocation and capacity checks
+		// precede hold installation. These default-allocator moves cannot throw.
+		slot->profile = literal_checkpoint_profile::auction;
+		slot->token = { pid, 0, root, 0 };
+		slot->payload = std::move(frozen);
+		slot->original_auction_before = std::move(before);
+		slot->original_auction_after = std::move(after);
+		slot->restored_auction_attachment = std::move(attachment);
+		slot->restored_auction_revision = envelope.revision;
+		slot->level = payload.original_level;
+		slot->auction_literal_root_count = payload.payload.action == auction_action::list ?
+							   payload.payload.item_count :
+							   0;
+		for (size_t i = 0; i < slot->auction_literal_root_count; ++i)
+			slot->auction_literal_roots[i] = payload.payload.items[i].item_uid;
+		slot->captured_revision = revision;
+		slot->acknowledged_revision = revision;
+		slot->operation_id = envelope.command.operation_id;
+		slot->execution_hold_generation = generation;
+		slot->held = true;
+		slot->restored_sql_drop = true;
+		slot->restored_auction = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool player_save_pipeline_replay_current_storage_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	// Genuine unique_lock(mutex&)/addressof/lock/mutex::lock/gthread subset;
+	// dtor/unlock/mutex::unlock/gthread and owns_lock/mutex getters already
+	// have their typed source allowance in the unchanged coin_save_lock_frames.
+	// The external scope constructor's three pointer formals fit the held
+	// bootstrap this/output/result/four-size_t allowance in observer_frame_bytes.
+	// The actual gthr nonweak selection contributes its active int.
+	// Constructor, destructor and locked getter phases are sequential; each
+	// real chain is dominated independently, rather than adding exclusive
+	// lifetimes as if they were a surviving allocation. Scope ctor formals
+	// (this/reserve/context) are included with the largest constructor chain.
+	static_assert(3 * sizeof(void *) + 7 * sizeof(void *) + 3 * sizeof(int) <=
+		      coin_save_lock_frames);
+	static_assert(sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(int) <=
+		      coin_save_lock_frames);
+	static_assert(3 * sizeof(void *) + sizeof(bool) <= coin_save_lock_frames);
+	static_assert(3 * sizeof(void *) <= 2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(size_t));
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = sizeof(player_save_coin_replay_budget_scope_owner) + sizeof(size_t *) +
+		  sizeof(size_t) + sizeof(bool) +
+		  player_save_coin_replay_budget_scope_owner::observer_frame_bytes();
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+size_t held_native_checkpoint_relay_source_frames() noexcept
+{
+	size_t command = 0;
+	if (!critical_command_current_heap_observer_frame_bytes(&command))
+		return 0;
+	// current(this,out,extra,heap,result), peak(this,extra,bytes,result), request
+	// (this,bytes,source,result), child(extra,opaque,result), wire loop endpoints.
+	// Actual snapshot forest observer: bytes/forest refs, row alias/endpoints,
+	// capacity/product and heap/result, all checked add scopes and fixed queries.
+	return 2 * (sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool)) +
+	       held_retirement_codec_source_profile_query_frames() +
+	       native_quest_recovery_codec_source_profile_query_frames() + 2 * sizeof(void *) +
+	       2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) +
+	       sizeof(bool) + sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	       2 * sizeof(std::vector<player_item_snapshot>::const_iterator) + sizeof(void *) +
+	       sizeof(size_t) + 18 * sizeof(void *) + sizeof(bool) +
+	       player_item_snapshot_current_heap_observer_frame_bytes() +
+	       item_transfer_payload_current_heap_observer_frame_bytes() +
+	       native_quest_recovery_context_current_heap_observer_frame_bytes() +
+	       coin_save_pool_observation_frames + coin_save_other_pipeline_observer_frames +
+	       player_save_coin_replay_budget_scope_owner::observer_frame_bytes() +
+	       critical_command_valid_frame_bytes() + command + sizeof(void *) +
+	       2 * sizeof(std::vector<std::vector<auction_recovery_effect>>::const_iterator) +
+	       sizeof(void *) + 18 * sizeof(void *) + sizeof(bool) +
+	       7 * (sizeof(void *) + sizeof(size_t)) +
+	       player_save_auction_replay_owner::current_observer_frame_bytes();
+}
+size_t held_native_checkpoint_member_source_frames() noexcept
+{
+	// Owned codec temporary command/payload/forest members use the exact
+	// default-allocator string/vector copy/move/destroy tails in their owners.
+	// These are fixed source closures; no retained capacity is replaced by them.
+	return critical_command_copy_frame_bytes() + item_transfer_payload_copy_frame_bytes() +
+	       player_item_snapshot_copy_frame_bytes() +
+	       player_item_snapshot_vector_operation_frame_bytes() + coin_save_vector_defaults +
+	       coin_save_vector_frames + coin_save_vector_move_frames +
+	       coin_save_bytes_equal_frames + coin_save_hold_frames + coin_save_capacity_frames +
+	       coin_save_critical_codec_frames + coin_save_restore_frames;
+}
+#endif
+}
+bool player_save_native_recovery_replay_owner::restore_held_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const size_t relay = held_native_checkpoint_relay_source_frames();
+	if (!relay)
+		return false;
+	*output = sizeof(lockpick_retirement_terms) + sizeof(held_retirement_recovery) +
+		  4 * sizeof(std::vector<uint8_t>) + sizeof(held_native_checkpoint_budget) +
+		  10 * sizeof(void *) + 18 * sizeof(size_t) + 2 * sizeof(int) +
+		  4 * sizeof(uint64_t) + 9 * sizeof(bool) + relay +
+		  held_native_checkpoint_member_source_frames() +
+		  // Duplicate slot validator owns its separate original/re-encoded buffers;
+		  // its whole source exists before its first reserve callback.
+		  sizeof(held_native_checkpoint_budget) + 3 * sizeof(std::vector<uint8_t>) +
+		  sizeof(lockpick_retirement_terms) + sizeof(held_retirement_recovery) +
+		  10 * sizeof(void *) + 10 * sizeof(size_t) + 8 * sizeof(bool);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+bool player_save_native_recovery_replay_owner::restore_native_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const size_t relay = held_native_checkpoint_relay_source_frames();
+	if (!relay)
+		return false;
+	*output = sizeof(item_transfer_payload) + sizeof(native_quest_recovery_context) +
+		  4 * sizeof(std::vector<uint8_t>) + sizeof(held_native_checkpoint_budget) +
+		  10 * sizeof(void *) + 18 * sizeof(size_t) + 2 * sizeof(int) +
+		  4 * sizeof(uint64_t) + 9 * sizeof(bool) + relay +
+		  held_native_checkpoint_member_source_frames() +
+		  // Complete original identity body and forest derivation are nested callers.
+		  sizeof(held_native_checkpoint_budget) + sizeof(economic_frozen_intent) +
+		  sizeof(critical_command) + sizeof(std::vector<uint8_t>) + 10 * sizeof(void *) +
+		  9 * sizeof(size_t) + 6 * sizeof(bool) + sizeof(economic_accounting_error) +
+		  sizeof(held_native_checkpoint_budget) +
+		  3 * sizeof(std::vector<player_item_snapshot>) + 3 * sizeof(std::vector<uint8_t>) +
+		  13 * sizeof(void *) + 10 * sizeof(size_t) + 6 * sizeof(bool) +
+		  sizeof(player_snapshot_codec_result) + 4 * sizeof(void *) + sizeof(size_t) +
+		  sizeof(bool) + native_quest_recovery_context_current_heap_observer_frame_bytes() +
+		  sizeof(size_t);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+bool player_save_auction_replay_owner::restore_source_frames(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	const size_t relay = held_native_checkpoint_relay_source_frames();
+	if (!relay)
+		return false;
+	*output = sizeof(held_native_checkpoint_budget) + sizeof(auction_native_command_context) +
+		  sizeof(auction_recovery_context) + 4 * sizeof(std::vector<uint8_t>) +
+		  11 * sizeof(void *) + 18 * sizeof(size_t) + 2 * sizeof(int) +
+		  5 * sizeof(uint64_t) + 9 * sizeof(bool) + relay +
+		  held_native_checkpoint_member_source_frames() +
+		  // Actual auction body-pair caller: three forests, authenticated body,
+		  // command context and relay fields/endpoints beneath the same held scope.
+		  sizeof(auction_native_command_context) +
+		  2 * sizeof(std::vector<player_item_snapshot>) + 3 * sizeof(std::vector<uint8_t>) +
+		  sizeof(held_native_checkpoint_budget) + 12 * sizeof(void *) + 8 * sizeof(size_t) +
+		  5 * sizeof(bool) + sizeof(player_snapshot_codec_result);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

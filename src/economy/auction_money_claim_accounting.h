@@ -54,4 +54,14 @@ economic_accounting_error auction_money_claim_accounting_plan(
 	const auction_money_claim_authority &authority, const auction_command_result &result,
 	economic_accounting_plan *plan);
 
+// Genuine complete original auction replay companions. Caller owns inputs,
+// prior outputs and sibling retained state in outer_live; callback retains the
+// admitted simultaneous peak. Semantic laws and strong outputs remain original.
+// No writer/source/execution authority; native qualification remains separate.
+economic_accounting_error auction_money_claim_accounting_decode_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	economic_account_key *claim_account, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+
 #endif

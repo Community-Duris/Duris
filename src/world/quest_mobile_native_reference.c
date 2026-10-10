@@ -481,3 +481,141 @@ player_snapshot_codec_result quest_mobile_native_reference_decode_bounded(
 	*output = candidate;
 	return player_snapshot_codec_result::ok;
 }
+
+// Pure source contracts for the actual fixed bounded reference codecs.
+// Complete source is a transient preentry contract. Existing bounded helpers
+// retain their original source/inline admissions; only the explicitly uncovered
+// supplement remains in caller outer. No codec or admission algorithm changes.
+namespace
+{
+bool native_reference_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                  \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                           \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                           \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                          \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(SHA_LONG) == 4 &&
+	       sizeof(unsigned int) == 4 && sizeof(unsigned long) == 8 && sizeof(bool) == 1;
+#else
+	return false;
+#endif
+}
+// Actual native_ref_valid_result formals/return/admitted and frames constant;
+// original validator and its real any_of/source-event/zero descendants.
+constexpr size_t native_reference_validation_source =
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(player_snapshot_codec_result) +
+	sizeof(void *) + sizeof(bool) + native_ref_valid_frames + native_ref_control_frames;
+// Actual native_ref_hash bytes/output/reserve/context,length/outer, frames
+// constant, admitted/result. Its local workspace is original-admission-owned.
+constexpr size_t native_reference_hash_source =
+	4 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(player_snapshot_codec_result) +
+	native_ref_sha_frames + native_ref_copy_frames + native_ref_control_frames;
+// Source-event encoder's scalar/source calls; its real result array is admitted
+// by native_ref_source_encode_frames and is deliberately not SOURCE twice.
+constexpr size_t native_reference_event_encode_source =
+	sizeof(uint16_t) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(economic_accounting_error) +
+	native_ref_valid_frames + native_ref_copy_frames;
+constexpr size_t native_reference_encode_source =
+	// Actual public signature/base/parameters/frames/offset, valid/admitted/
+	// hashed/return. Candidate and source arrays are original frame-owned.
+	4 * sizeof(void *) + 5 * sizeof(size_t) + 4 * sizeof(player_snapshot_codec_result) +
+	native_reference_validation_source + native_ref_copy_frames + native_ref_put_get_frames +
+	native_reference_event_encode_source + native_ref_control_frames +
+	native_reference_hash_source;
+constexpr size_t native_reference_checksum_source =
+	// span,reserve/context,outer/base/frames/sealed,admitted/hashed/return.
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(void *) + 4 * sizeof(size_t) +
+	3 * sizeof(player_snapshot_codec_result) + native_ref_copy_frames +
+	native_ref_memcmp_frames + native_ref_control_frames + native_reference_hash_source;
+constexpr size_t native_reference_decode_source =
+	// Actual public span/output/reserve/context,outer/base/frames/offset,
+	// economic-source object getter return, admitted/checked/valid/return.
+	sizeof(std::span<const uint8_t>) + 3 * sizeof(void *) + 5 * sizeof(size_t) +
+	4 * sizeof(player_snapshot_codec_result) + native_ref_equal_frames +
+	native_ref_copy_frames + native_ref_put_get_frames + native_ref_source_decode_scalars +
+	native_ref_control_frames + native_reference_checksum_source +
+	native_reference_validation_source;
+// Each term names an actual lexical constexpr size_t whose carrier is absent
+// from that helper's original parameter/control count. Encode: public
+// parameters+frames, valid_result frames, hash frames. Decode: public frames,
+// checksum frames, hash frames, valid_result frames. No numerical baseline or
+// current-observer subtraction is involved; original controller formulas stay.
+constexpr size_t native_reference_encode_supplement = 4 * sizeof(size_t);
+constexpr size_t native_reference_decode_supplement = 4 * sizeof(size_t);
+constexpr size_t native_reference_valid_source = 3 * sizeof(void *) + 2 * sizeof(size_t) +
+						 sizeof(bool) + native_ref_control_frames +
+						 native_reference_validation_source;
+}
+
+bool quest_mobile_native_reference_valid_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = native_reference_valid_source;
+	return true;
+}
+bool quest_mobile_native_reference_valid_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = sizeof(size_t); // Genuine valid_result's frames constant only.
+	return true;
+}
+bool quest_mobile_native_reference_valid_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = 0; // No aggregate is constructed by the bool wrapper.
+	return true;
+}
+bool quest_mobile_native_reference_encode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = native_reference_encode_source;
+	return true;
+}
+bool quest_mobile_native_reference_decode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = native_reference_decode_source;
+	return true;
+}
+bool quest_mobile_native_reference_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = native_reference_encode_supplement;
+	return true;
+}
+bool quest_mobile_native_reference_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	*output = native_reference_decode_supplement;
+	return true;
+}
+bool quest_mobile_native_reference_encode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	// Before its first real admission encode has no local aggregate. Its real
+	// candidate/source arrays and hash workspace are constructed afterwards.
+	*output = 0;
+	return true;
+}
+bool quest_mobile_native_reference_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !native_reference_source_policy())
+		return false;
+	// Decode likewise constructs candidate/checksum/hash only after admission.
+	*output = 0;
+	return true;
+}
