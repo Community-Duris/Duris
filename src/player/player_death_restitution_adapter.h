@@ -77,4 +77,11 @@ bool player_death_restitution_runtime_login_admit(int pid);
 player_death_restitution_runtime_live_health
 player_death_restitution_runtime_live_health_copy(void);
 
+// Passive game-thread observation of the restitution adapter's actual fixed
+// submission/status arrays, callback table and ALL retained actor capacities.
+// No locks, allocation, readiness change or lifetime lease. Root startup must
+// sum this owner once; the private selected-family provider excludes it from
+// its incoming outer and observes/adds it itself.
+bool player_death_restitution_runtime_replay_storage_bytes(size_t *output) noexcept;
+
 #endif
