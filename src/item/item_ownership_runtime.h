@@ -162,4 +162,16 @@ bool item_ownership_runtime_hydrate_many_atomic_bounded(
 	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
 	size_t outer_live) noexcept;
 
+// Bounded original single-owner hydration, including a real zero-item owner.
+// Preserve the original validity/monotonic revision and allocation-failure laws.
+// outer_live includes both actual cache maps exactly once, all input/context
+// storage and external ROOT storage. Callback preserves serialized cache access.
+// Refresh actual cache storage on EVERY return: admitted bucket growth survives
+// later refusal, while owner contents remain unchanged. No item, ID, publication,
+// ACK, or accounting authority is created by this cache projection.
+bool item_ownership_runtime_hydrate_owner_bounded(const item_owner_identity &, uint64_t revision,
+						  bool (*reserve_scratch_peak)(size_t,
+									       void *) noexcept,
+						  void *context, size_t outer_live) noexcept;
+
 #endif
