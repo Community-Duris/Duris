@@ -708,3 +708,286 @@ bool craft_pouch_mutation_decode_bounded(std::span<const uint8_t> encoded,
 
 #endif
 }
+#include <tuple>
+namespace
+{
+using pouch_payload_map = std::map<int, uint64_t>;
+using pouch_payload_node = std::_Rb_tree_node<pouch_payload_map::value_type>;
+// Genuine allocation-free map lookup scopes: public contains/at/lower_bound,
+// tree find/lower_bound and _M_lower_bound; key_compare, less(int), iterator
+// construction/dereference/comparison, _S_key/_Select1st and tree queries.
+constexpr size_t pouch_payload_lookup_frames =
+	3 * 3 * sizeof(void *) + 3 * sizeof(void *) + 5 * sizeof(void *) + 4 * sizeof(void *) +
+	5 * 2 * sizeof(void *) + 3 * sizeof(void *) + 3 * sizeof(void *) + sizeof(bool) +
+	2 * (sizeof(void *) + sizeof(std::less<int>)) + 2 * sizeof(void *) +
+	2 * 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) + 6 * sizeof(void *) +
+	sizeof(size_t);
+// Actual operator[](const int&) node construction and insertion chain. The
+// default standard allocator requests ONE genuine node only for a missing key.
+constexpr size_t pouch_payload_insert_frames =
+	pouch_payload_lookup_frames +
+	// map::operator[] this/k/i/result + real tuple temporaries/piecewise tag.
+	4 * sizeof(void *) + sizeof(std::tuple<const int &>) + sizeof(std::tuple<>) +
+	sizeof(std::piecewise_construct_t) +
+	// _M_emplace_hint_unique this/position/3 arg refs, actual _Auto_node
+	// two-pointer object, returned position pair and returned iterator.
+	11 * sizeof(void *) +
+	// _Auto_node ctor this/tree/3args; create_node this/3args/tmp/result;
+	// construct_node this/node/3args; get_node/allocator/valptr queries.
+	5 * sizeof(void *) + 6 * sizeof(void *) + 5 * sizeof(void *) + 3 * 2 * sizeof(void *) +
+	// Node allocator/placement-new/construct_at and failed-node destruction;
+	// triple piecewise args add real extra references to existing one-value
+	// traits construct/construct_at/forward profiles.
+	pouch_wire_allocator_frames + 2 * sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) +
+	// pair piecewise constructor this/tag/by-value tuple1/tuple2, delegate
+	// this/tuple refs/index tags; get/get_helper/head/head_base, forward;
+	// tuple<const int&>/Tuple_impl/Head_base and tuple<> constructors.
+	sizeof(void *) + sizeof(std::piecewise_construct_t) + sizeof(std::tuple<const int &>) +
+	sizeof(std::tuple<>) + 3 * sizeof(void *) + 2 * sizeof(char) + 4 * 2 * sizeof(void *) +
+	2 * sizeof(void *) + 6 * sizeof(void *) + sizeof(void *) +
+	// Hint lookup actual pos/before/after/returned pair and fallback unique
+	// lookup x/y/j/comp; _Auto_node::_M_insert pair/it/result and insertion.
+	8 * sizeof(void *) + 7 * sizeof(void *) + sizeof(bool) + 5 * sizeof(void *) +
+	5 * sizeof(void *) + sizeof(bool) +
+	// GCC13.3 tree.cc _Rb_tree_insert_and_rebalance: actual bool+3 pointer
+	// params, root reference, xpp/y locals; nested rotate x/root/y. No heap.
+	sizeof(bool) + 6 * sizeof(void *) + 3 * sizeof(void *) +
+	// Actual returned position pair constructors and node guard destructor.
+	3 * sizeof(void *) + sizeof(void *);
+constexpr size_t pouch_payload_map_lifetime_frames =
+	// map/tree/impl/allocator/key_compare/header/_M_reset construction and
+	// destruction; drop_node/destroy_node/allocator destroy and sized delete.
+	8 * sizeof(void *) + 2 * sizeof(std::allocator<pouch_payload_map::value_type>) +
+	sizeof(std::less<int>) + 3 * 2 * sizeof(void *) + pouch_wire_allocator_frames;
+// _M_erase source has this, x and local y; each actual recursion follows a
+// distinct existing node's right child. Current n+1 is a source-proven finite
+// upper bound including terminal empty call, not an opaque guessed stack cap.
+bool pouch_payload_erase_frames(size_t nodes, size_t &total) noexcept
+{
+	constexpr size_t frame = 3 * sizeof(void *);
+	return nodes < SIZE_MAX && nodes + 1 <= SIZE_MAX / frame &&
+	       pouch_wire_add(total, (nodes + 1) * frame);
+}
+struct pouch_payload_budget
+{
+	pouch_wire_budget wire;
+	const craft_recipe_continuation *recipe = nullptr;
+	const item_transfer_payload *payload = nullptr;
+	const pouch_payload_map *consumed = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		size_t total = 0, actual = 0;
+		constexpr size_t observation =
+			7 * sizeof(void *) + 6 * sizeof(size_t) + 3 * sizeof(bool);
+		if (!wire.prefix(total) || !pouch_wire_add(total, sizeof(*this) - sizeof(wire)) ||
+		    !pouch_wire_add(total, observation) ||
+		    (recipe &&
+		     (!wire.heap(recipe->pouch_mutation, total) ||
+		      !wire.heap(recipe->refine_root_order, total) ||
+		      (recipe->refine_material_name.capacity() > 15 &&
+		       (recipe->refine_material_name.capacity() == SIZE_MAX ||
+			!pouch_wire_add(total, recipe->refine_material_name.capacity() + 1))))) ||
+		    (payload &&
+		     (!item_transfer_payload_current_heap_bytes(*payload, &actual) ||
+		      !pouch_wire_add(total, actual) ||
+		      !pouch_wire_add(total, item_transfer_payload_copy_frame_bytes()))) ||
+		    (consumed &&
+		     (consumed->size() > SIZE_MAX / sizeof(pouch_payload_node) ||
+		      !pouch_wire_add(total, consumed->size() * sizeof(pouch_payload_node)) ||
+		      !pouch_payload_erase_frames(consumed->size(), total))) ||
+		    !pouch_wire_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && wire.reserve && wire.reserve(total, wire.context);
+	}
+	bool insert(const pouch_payload_map &value, int key) const noexcept
+	{
+		// Authenticate the real currently absent/present key before forming
+		// its exact original operator[] request, with true lookup frames.
+		constexpr size_t own =
+			2 * sizeof(void *) + sizeof(int) + sizeof(bool) + sizeof(size_t);
+		if (!peak(pouch_payload_lookup_frames + own))
+			return false;
+		const bool missing = !value.contains(key);
+		size_t extra = pouch_payload_insert_frames + own;
+		if (missing && (!pouch_wire_add(extra, sizeof(pouch_payload_node)) ||
+				!pouch_wire_add(extra, 3 * sizeof(void *))))
+			return false;
+		// Current n+1 erase recursion already lives in prefix. One new node
+		// adds precisely one prospective recursive frame before allocation.
+		return peak(extra);
+	}
+};
+bool pouch_payload_reset(pouch_payload_budget &owner, craft_pouch_mutation *output) noexcept
+{
+	// Actual temporary compound mutation has two default rows and a usage
+	// vector. Its true lifetime/default/move/destructor scopes are admitted
+	// before construction and the exact original successful reset.
+	if (!owner.peak(sizeof(craft_pouch_mutation) + pouch_wire_empty_constructor_frames +
+			pouch_wire_move_frames + player_item_snapshot_copy_frame_bytes()))
+		return false;
+	*output = {};
+	return true;
+}
+} // namespace
+bool craft_pouch_mutation_from_payload_bounded(const item_transfer_payload &payload,
+					       craft_pouch_mutation *mutation,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)payload;
+	(void)mutation;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return false;
+#else
+
+	constexpr size_t frames = 4 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool) +
+				  pouch_wire_pure_frames + pouch_payload_lookup_frames +
+				  pouch_payload_map_lifetime_frames;
+	pouch_payload_budget owner{ { reserve, context, outer, frames } };
+	size_t prefix = 0;
+	if (!owner.peak())
+		return false;
+
+	if (!mutation)
+		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+	{
+		owner.wire.frames += sizeof(craft_recipe_continuation) +
+				     duris_craft_recipe_bounded_detail::pure_frames +
+				     duris_craft_recipe_bounded_detail::string_lifetime_frames;
+		if (!owner.peak())
+			return false;
+		craft_recipe_continuation recipe;
+		owner.recipe = &recipe;
+		if (!owner.prefix(prefix))
+			return false;
+		if (!craft_recipe_continuation_decode_bounded(
+			    std::span<const uint8_t>(payload.continuation.data.data(),
+						     payload.continuation.data.size()),
+			    &recipe, reserve, context, prefix) ||
+		    !craft_recipe_continuation_matches(recipe, payload))
+			return false;
+		if (recipe.pouch_mutation.empty())
+		{
+			return pouch_payload_reset(owner, mutation); // original empty recipe reset
+		}
+		try
+		{
+			owner.wire.frames += sizeof(item_transfer_payload) +
+					     item_transfer_payload_copy_frame_bytes();
+			if (!owner.peak())
+				return false;
+			item_transfer_payload pouch_payload;
+			owner.payload = &pouch_payload;
+			if (!owner.prefix(prefix) ||
+			    !item_transfer_payload_clone_bounded(payload, &pouch_payload, reserve,
+								 context, prefix))
+				return false;
+			pouch_payload.continuation.kind =
+				item_transfer_continuation_kind::craft_pouch_usage;
+			if (!owner.peak(pouch_wire_move_frames))
+				return false;
+			pouch_payload.continuation.data = std::move(recipe.pouch_mutation);
+			return owner.prefix(prefix) &&
+			       craft_pouch_mutation_from_payload_bounded(pouch_payload, mutation,
+									 reserve, context, prefix);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	if (payload.continuation.kind == item_transfer_continuation_kind::none)
+	{
+		if (!payload.continuation.data.empty())
+			return false;
+		return pouch_payload_reset(owner, mutation); // original absent continuation reset
+	}
+	if (payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage ||
+	    payload.reason != item_transfer_reason::craft || !payload.multi_root ||
+	    !payload.from_owner.id || payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.context_id || payload.from_owner.type != payload.to_owner.type ||
+	    payload.from_owner.id != payload.to_owner.id || payload.to_owner.context_id ||
+	    payload.item_count < 2 || payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	try
+	{
+		owner.wire.frames += sizeof(craft_pouch_mutation) + sizeof(pouch_payload_map) +
+				     pouch_wire_empty_constructor_frames +
+				     player_item_snapshot_copy_frame_bytes();
+		if (!owner.peak())
+			return false;
+		craft_pouch_mutation candidate;
+		owner.wire.candidate = &candidate;
+		if (!owner.prefix(prefix))
+			return false;
+		if (!craft_pouch_mutation_decode_bounded(
+			    std::span<const uint8_t>(payload.continuation.data.data(),
+						     payload.continuation.data.size()),
+			    &candidate, reserve, context, prefix))
+			return false;
+		size_t retained_count = 0;
+		std::map<int, uint64_t> consumed;
+		owner.consumed = &consumed;
+		// Actual entry/used references remain live through nested callbacks.
+		owner.wire.frames += 2 * sizeof(void *);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &entry = payload.items[index];
+			if (entry.expected_state != item_custody_state::active ||
+			    entry.expected_item_revision == UINT64_MAX)
+				return false;
+			if (entry.item_uid == candidate.before.object_uid)
+			{
+				if (entry.vnum != VOBJ_CHAOS_CRAFT_POUCH)
+					return false;
+				++retained_count;
+			}
+			else
+			{
+				if (entry.vnum == VOBJ_CHAOS_CRAFT_POUCH ||
+				    entry.root_item_uid == candidate.before.object_uid ||
+				    entry.parent_item_uid == candidate.before.object_uid)
+					return false;
+				if (!owner.insert(consumed, entry.vnum))
+					return false;
+				++consumed[entry.vnum];
+			}
+		}
+		if (retained_count != 1 || payload.selected_item_uid == candidate.before.object_uid)
+			return false;
+		if (candidate.mode == chaos_pouch_usage_mode::collected)
+		{
+			if (payload.item_blob_size || payload.reason_id != VOBJ_CHAOS_CRAFT_POUCH ||
+			    consumed.size() != candidate.usage.size())
+				return false;
+			if (!owner.peak(pouch_payload_lookup_frames))
+				return false;
+			for (const auto &used : candidate.usage)
+				if (!consumed.contains(used.vnum) ||
+				    consumed.at(used.vnum) != used.count)
+					return false;
+		}
+		owner.wire.frames -= 2 * sizeof(void *);
+		if (!owner.peak(pouch_wire_move_frames + player_item_snapshot_copy_frame_bytes()))
+			return false;
+		*mutation = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+
+#endif
+}
