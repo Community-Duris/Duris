@@ -763,3 +763,884 @@ int quest_mobile_native_flatfile_shared_shop_origin_prepare_locked(
 		return EIO;
 	}
 }
+
+namespace
+{
+// Passive companions only. Each nested base includes all actual retained caller
+// inputs/heaps; the reserve callback owns the absolute admitted peak until exit.
+struct ordinary_origin_admission
+{
+	flatfile_scratch_reserve_fn reserve;
+	void *context;
+	bool refused = false;
+	static bool forward(size_t bytes, void *opaque) noexcept
+	{
+		auto &self = *static_cast<ordinary_origin_admission *>(opaque);
+		if (!self.reserve || !self.reserve(bytes, self.context))
+		{
+			self.refused = true;
+			return false;
+		}
+		return true;
+	}
+};
+bool ordinary_origin_add(size_t &n, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - n)
+		return false;
+	n += extra;
+	return true;
+}
+bool ordinary_origin_admit(size_t base, size_t extra, ordinary_origin_admission &admission) noexcept
+{
+	return ordinary_origin_add(base, extra) &&
+	       ordinary_origin_admission::forward(base, &admission);
+}
+// Full source-pinned SHA256 low-level algorithm and genuine installed-frame
+// terms match the published native-reference companion. No EVP allocation.
+bool ordinary_origin_hash_admit(size_t outer, size_t request, flatfile_scratch_reserve_fn reserve,
+				void *context) noexcept
+{
+	return ordinary_origin_add(outer, request) && reserve && reserve(outer, context);
+}
+bool ordinary_origin_hash_profile() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&      \
+	defined(__x86_64__) && !defined(_WIN32) && defined(OPENSSL_VERSION_MAJOR) &&          \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                       \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                       \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(SHA_LONG) == 4 &&
+	       sizeof(unsigned int) == 4 && sizeof(unsigned long) == 8;
+#else
+	return false;
+#endif
+}
+constexpr size_t ordinary_origin_hash_sha_assembly_frames =
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (256 * 4 - 1) + 2 * sizeof(void *);
+constexpr size_t ordinary_origin_hash_sha_c_small_frames =
+	16 * sizeof(unsigned int) + 12 * sizeof(unsigned int) + sizeof(unsigned int) + sizeof(int) +
+	sizeof(void *);
+constexpr size_t ordinary_origin_hash_sha_c_normal_frames = 16 * sizeof(unsigned int) +
+							    11 * sizeof(unsigned int) +
+							    2 * sizeof(int) + 2 * sizeof(void *);
+constexpr size_t ordinary_origin_hash_sha_init_frames = sizeof(void *) + sizeof(int);
+constexpr size_t ordinary_origin_hash_sha_update_frames =
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(unsigned int) +
+	sizeof(size_t) + sizeof(int);
+constexpr size_t ordinary_origin_hash_sha_final_frames = 3 * sizeof(void *) + sizeof(size_t) +
+							 sizeof(unsigned long) +
+							 sizeof(unsigned int) + sizeof(int);
+constexpr size_t ordinary_origin_hash_sha_frames =
+	std::max(ordinary_origin_hash_sha_assembly_frames,
+		 std::max(ordinary_origin_hash_sha_c_small_frames,
+			  ordinary_origin_hash_sha_c_normal_frames)) +
+	std::max(ordinary_origin_hash_sha_init_frames,
+		 std::max(ordinary_origin_hash_sha_update_frames,
+			  ordinary_origin_hash_sha_final_frames));
+constexpr size_t ordinary_origin_hash_copy_frames =
+	// copy/copy_move_a/a1/a2/copy_m actual three iterator args and return;
+	// miter/niter/wrap, real length/Num and runtime memcpy/memmove args/result.
+	5 * (3 * sizeof(void *) + sizeof(void *)) + 2 * (sizeof(void *) + sizeof(void *)) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t) +
+	// copy_n, actual n conversion, forward copy_n random access tag.
+	2 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(size_t) +
+	// Array/span begin/end/data/size, _S_ptr and subspan true declarations.
+	8 * (2 * sizeof(void *)) + 4 * (sizeof(void *) + sizeof(size_t)) +
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t) + sizeof(void *);
+constexpr size_t ordinary_origin_hash_memcmp_frames =
+	// Pinned cpuid.c fallback: in_a/in_b/len/i/a/b/x + int result. Real
+	// x86_64cpuid.pl CRYPTO_memcmp has no pushes/sub/spill or nested call;
+	// only its true caller return address is an explicit assembly stack term.
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(unsigned char) + sizeof(int) +
+	sizeof(void *);
+// Actual fixed default-base10 to_chars wrapper/_i/_10/len/10_impl source:
+// no decimal string intermediate. Sequential len/impl peaks are conservatively
+// retained together, each term belongs to a real captured source declaration.
+constexpr size_t ordinary_origin_decimal_frames =
+	2 * (2 * sizeof(void *) + sizeof(uint64_t) + sizeof(int) + sizeof(std::to_chars_result)) +
+	sizeof(uint64_t) + 2 * sizeof(void *) + sizeof(uint64_t) + sizeof(std::to_chars_result) +
+	sizeof(unsigned) + sizeof(uint64_t) + sizeof(int) + 3 * sizeof(unsigned) +
+	sizeof(unsigned long) + sizeof(void *) + sizeof(unsigned) + sizeof(uint64_t) +
+	sizeof(char[201]) + sizeof(unsigned) + 2 * sizeof(uint64_t);
+constexpr size_t ordinary_origin_value_frames =
+	ordinary_origin_hash_copy_frames +
+	// vector/array equality, equal/aux1/aux2/memcmp and iterator adapters.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + sizeof(bool) + sizeof(size_t) +
+	3 * (sizeof(void *) + sizeof(void *)) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	// Scalar add/admit and result adapters include their real args/results.
+	6 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) + 3 * sizeof(int);
+int ordinary_origin_hash_hash(const uint8_t *bytes, size_t length, uint8_t *output,
+			      flatfile_scratch_reserve_fn reserve, void *context,
+			      size_t outer) noexcept
+{
+	if (!bytes || !output)
+		return EINVAL;
+	if (!ordinary_origin_hash_profile())
+		return ENOTSUP;
+#if defined(__linux__) && defined(__x86_64__) && !defined(_WIN32) &&     \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&  \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&  \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	struct workspace
+	{
+		SHA256_CTX digest;
+		std::array<uint8_t, 32> result{};
+		bool hashed = false;
+	};
+	constexpr size_t frames = sizeof(workspace) + 4 * sizeof(void *) + 2 * sizeof(size_t) +
+				  sizeof(int) + ordinary_origin_hash_sha_frames +
+				  ordinary_origin_hash_copy_frames +
+				  // Actual admit/add references/function/context/scalars/results.
+				  4 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+	// Checked-add overflow can refuse before reserve() sets a refusal latch.
+	// Return the real resource status directly; do not infer it from a bool.
+	if (!ordinary_origin_hash_admit(outer, frames, reserve, context))
+		return ENOBUFS;
+	workspace work;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	work.hashed = SHA256_Init(&work.digest) == 1 &&
+		      SHA256_Update(&work.digest, bytes, length) == 1 &&
+		      SHA256_Final(work.result.data(), &work.digest) == 1;
+#pragma GCC diagnostic pop
+	if (!work.hashed)
+		return EIO;
+	std::copy(work.result.begin(), work.result.end(), output);
+	return 0;
+#else
+	(void)length;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return ENOTSUP;
+#endif
+}
+
+bool ordinary_origin_policy() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	return ordinary_origin_hash_profile();
+#else
+	return false;
+#endif
+}
+int ordinary_origin_error(economic_accounting_error status,
+			  const ordinary_origin_admission &admission) noexcept
+{
+	if (admission.refused || status == economic_accounting_error::capacity ||
+	    status == economic_accounting_error::overflow)
+		return ENOBUFS;
+	return status == economic_accounting_error::ok ? 0 : EBADMSG;
+}
+int ordinary_origin_error(player_snapshot_codec_result status,
+			  const ordinary_origin_admission &admission) noexcept
+{
+	if (admission.refused)
+		return ENOBUFS;
+	// Entry already checked the installed policy. Unsupported wire versions
+	// retain the original corruption classification instead of becoming absence.
+	return codec_error(status);
+}
+int ordinary_origin_error(critical_command_codec_result status,
+			  const ordinary_origin_admission &admission) noexcept
+{
+	if (admission.refused || status == critical_command_codec_result::overflow)
+		return ENOBUFS;
+	return status == critical_command_codec_result::ok ? 0 : EBADMSG;
+}
+size_t ordinary_origin_string_heap(const std::string &text) noexcept
+{
+	return text.capacity() > 15 ? text.capacity() + 1 : 0;
+}
+
+int ordinary_origin_file_read(const std::string &root, const flatfile_authority_lock &lock,
+			      uint64_t id, bool origin, std::vector<uint8_t> *output, bool *present,
+			      ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		std::array<char, sizeof("quest-mobile-native-") + 20 + sizeof(".qno") - 1> name{};
+		std::to_chars_result converted{};
+		std::string directory, filename;
+		std::vector<uint8_t> bytes;
+		size_t directory_size = 0, name_size = 0, live = 0;
+		flatfile_read_result read = flatfile_read_result::invalid;
+		int saved_error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       ordinary_origin_decimal_frames + 6 * sizeof(void *) +
+					       3 * sizeof(size_t) + sizeof(uint64_t) +
+					       sizeof(bool)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	if (!lock.matches(root))
+		return EINVAL;
+	constexpr size_t prefix = sizeof("quest-mobile-native-") - 1;
+	std::copy_n("quest-mobile-native-", prefix, work.name.begin());
+	work.converted =
+		std::to_chars(work.name.data() + prefix, work.name.data() + prefix + 20, id);
+	if (work.converted.ec != std::errc{})
+		return EINVAL;
+	std::copy_n(origin ? ".qno" : ".qmn", 4, work.converted.ptr);
+	work.name_size = static_cast<size_t>(work.converted.ptr - work.name.data()) + 4;
+	work.directory_size = root.size();
+	work.live = base;
+	if (!ordinary_origin_add(work.directory_size, sizeof("/domains") - 1) ||
+	    (work.directory_size > 15 &&
+	     (work.directory_size == SIZE_MAX ||
+	      !ordinary_origin_add(work.live, work.directory_size + 1))) ||
+	    (work.name_size > 15 && !ordinary_origin_add(work.live, work.name_size + 1)) ||
+	    !ordinary_origin_admit(work.live, 2 * sizeof(std::string), admission))
+		return ENOBUFS;
+	// Fresh length constructors use the pinned installed exact n+1 request.
+	work.directory = std::string(work.directory_size, '\0');
+	std::copy(root.begin(), root.end(), work.directory.begin());
+	std::copy_n("/domains", sizeof("/domains") - 1, work.directory.begin() + root.size());
+	work.filename = std::string(work.name.data(), work.name_size);
+	if (work.directory.capacity() != std::max(size_t{ 15 }, work.directory_size) ||
+	    work.filename.capacity() != std::max(size_t{ 15 }, work.name_size))
+		return ENOTSUP;
+	errno = 0;
+	work.read = flatfile_read_bounded(
+		work.directory, work.filename,
+		origin ? origin_maximum_bytes : PLAYER_SNAPSHOT_MAX_BYTES + 1, &work.bytes,
+		&ordinary_origin_admission::forward, &admission, work.live);
+	work.saved_error = errno;
+	if (admission.refused)
+		return ENOBUFS;
+	if (work.read == flatfile_read_result::not_found)
+	{
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = std::move(work.bytes);
+		*present = false;
+		return 0;
+	}
+	if (work.read == flatfile_read_result::invalid)
+		return work.saved_error == ENOBUFS || work.saved_error == ENOMEM ||
+				       work.saved_error == ENOTSUP ?
+			       work.saved_error :
+			       EBADMSG;
+	if (work.read != flatfile_read_result::ok)
+		return work.saved_error ? work.saved_error : EIO;
+	if (!origin && work.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return E2BIG;
+	if (!lock.matches(root))
+		return EINVAL;
+	*output = std::move(work.bytes);
+	*present = true;
+	return 0;
+}
+
+int ordinary_origin_native_read(const std::string &root, const flatfile_authority_lock &lock,
+				uint64_t id, quest_mobile_native_flatfile_row *output, size_t *heap,
+				ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		quest_mobile_native_flatfile_row candidate;
+		std::vector<uint8_t> bytes, canonical;
+		std::span<const uint8_t> span;
+		size_t image_heap = 0, live = 0;
+		bool present = false;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       6 * sizeof(void *) + 2 * sizeof(size_t) +
+					       sizeof(uint64_t)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	work.candidate.mobile_instance_id = id;
+	work.error = ordinary_origin_file_read(root, lock, id, false, &work.bytes, &work.present,
+					       admission, base);
+	if (work.error)
+		return work.error;
+	if (!work.present)
+	{
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = std::move(work.candidate);
+		if (heap)
+			*heap = 0;
+		return 0;
+	}
+	work.live = base;
+	if (!ordinary_origin_add(work.live, work.bytes.capacity()))
+		return ENOBUFS;
+	work.span = work.bytes;
+	work.error = ordinary_origin_error(
+		quest_mobile_native_image_decode_bounded(work.span, &work.candidate.image,
+							 &ordinary_origin_admission::forward,
+							 &admission, work.live, &work.image_heap),
+		admission);
+	if (work.error)
+		return work.error;
+	if (work.candidate.image.reference.mobile_instance_id != id)
+		return EBADMSG;
+	if (!ordinary_origin_add(work.live, work.image_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_error(
+		quest_mobile_native_image_encode_bounded(work.candidate.image, &work.canonical,
+							 &ordinary_origin_admission::forward,
+							 &admission, work.live),
+		admission);
+	if (work.error)
+		return work.error;
+	if (work.canonical != work.bytes)
+		return EBADMSG;
+	if (!lock.matches(root))
+		return EINVAL;
+	work.candidate.present = true;
+	*output = std::move(work.candidate);
+	if (heap)
+		*heap = work.image_heap;
+	return 0;
+}
+
+int ordinary_origin_birth(const critical_command &command, quest_mobile_native_image *output,
+			  size_t *heap, ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		quest_mobile_native_image candidate;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		native_mobile_birth_cash_role_recipe role;
+		size_t image_heap = 0, recipes_heap = 0;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       4 * sizeof(void *) + 2 * sizeof(size_t)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	work.error =
+		ordinary_origin_error(native_mobile_birth_cash_role_command_decode_bounded(
+					      command, &work.candidate, &work.recipes, &work.role,
+					      &ordinary_origin_admission::forward, &admission, base,
+					      &work.image_heap, &work.recipes_heap),
+				      admission);
+	if (work.error)
+		return work.error;
+	if (work.role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return EBADMSG;
+	*output = std::move(work.candidate);
+	if (heap)
+		*heap = work.image_heap;
+	return 0;
+}
+
+int ordinary_origin_terminal(const critical_native_recovery_envelope &original,
+			     ordinary_origin_admission &admission, size_t outer) noexcept
+{
+	if (original.revision <= 1 ||
+	    original.phase != critical_native_recovery_phase::continuation_pending)
+		return EBADMSG;
+	return ordinary_origin_error(native_mobile_birth_cash_role_recovery_validate_bounded(
+					     original, &ordinary_origin_admission::forward,
+					     &admission, outer),
+				     admission);
+}
+
+int ordinary_origin_encode(const critical_native_recovery_envelope &original,
+			   std::vector<uint8_t> *output, ordinary_origin_admission &admission,
+			   size_t outer)
+{
+	struct workspace
+	{
+		critical_command retained;
+		std::vector<uint8_t> left, right, bytes;
+		std::span<const uint8_t> attachment;
+		size_t command_heap = 0, live = 0, encoded_size = 0, checked_size = 0, index = 0;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       4 * sizeof(void *) + 2 * sizeof(size_t)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	if (original.attachment.empty() ||
+	    original.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return E2BIG;
+	work.attachment = original.attachment;
+	work.error = ordinary_origin_error(
+		native_mobile_birth_cash_role_recovery_original_command_decode_status_bounded(
+			work.attachment, &work.retained, &ordinary_origin_admission::forward,
+			&admission, base, &work.command_heap),
+		admission);
+	if (work.error)
+		return work.error;
+	work.live = base;
+	if (!ordinary_origin_add(work.live, work.command_heap))
+		return ENOBUFS;
+	// Exactly the original critical_command_equal canonical byte equality, with
+	// both real codec requests admitted and the left retained while right grows.
+	work.error = ordinary_origin_error(
+		critical_command_encode_bounded(work.retained, &work.left,
+						&ordinary_origin_admission::forward, &admission,
+						work.live),
+		admission);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_add(work.live, work.left.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_error(
+		critical_command_encode_bounded(original.command, &work.right,
+						&ordinary_origin_admission::forward, &admission,
+						work.live),
+		admission);
+	if (work.error)
+		return work.error;
+	if (work.left != work.right)
+		return EBADMSG;
+	if (!ordinary_origin_add(work.live, work.right.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_terminal(original, admission, work.live);
+	if (work.error)
+		return work.error;
+	work.encoded_size = origin_overhead_bytes + original.attachment.size();
+	if (!ordinary_origin_admit(work.live, work.encoded_size + sizeof(std::vector<uint8_t>),
+				   admission))
+		return ENOBUFS;
+	work.bytes = std::vector<uint8_t>(work.encoded_size);
+	if (work.bytes.capacity() != work.encoded_size)
+		return ENOTSUP;
+	work.bytes[0] = 'Q';
+	work.bytes[1] = 'N';
+	work.bytes[2] = 'O';
+	work.bytes[3] = '1';
+	work.bytes[4] = 1;
+	work.bytes[5] = 0;
+	work.bytes[6] = static_cast<uint8_t>(original.phase);
+	work.bytes[7] = 0;
+	for (work.index = 0; work.index < sizeof(original.revision); ++work.index)
+		work.bytes[8 + work.index] =
+			static_cast<uint8_t>(original.revision >> (8 * work.index));
+	std::copy(original.attachment.begin(), original.attachment.end(),
+		  work.bytes.begin() + origin_header_bytes);
+	work.checked_size = work.bytes.size() - SHA256_DIGEST_LENGTH;
+	work.error = ordinary_origin_hash_hash(work.bytes.data(), work.checked_size,
+					       work.bytes.data() + work.checked_size,
+					       &ordinary_origin_admission::forward, &admission,
+					       work.live + work.bytes.capacity());
+	if (work.error)
+		return work.error;
+	*output = std::move(work.bytes);
+	return 0;
+}
+
+int ordinary_origin_decode(std::span<const uint8_t> bytes,
+			   critical_native_recovery_envelope *output, size_t *heap,
+			   ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		critical_native_recovery_envelope candidate;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		std::span<const uint8_t> body;
+		uint64_t revision = 0;
+		size_t checked_size = 0, index = 0, command_heap = 0, live = 0, retained = 0;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       4 * sizeof(void *) + 2 * sizeof(size_t) +
+					       sizeof(std::span<const uint8_t>)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	if (bytes.size() <= origin_overhead_bytes || bytes.size() > origin_maximum_bytes ||
+	    bytes[0] != 'Q' || bytes[1] != 'N' || bytes[2] != 'O' || bytes[3] != '1' ||
+	    bytes[4] != 1 || bytes[5] != 0 || bytes[7] != 0 ||
+	    bytes[6] != static_cast<uint8_t>(critical_native_recovery_phase::continuation_pending))
+		return EBADMSG;
+	for (work.index = 0; work.index < sizeof(work.revision); ++work.index)
+		work.revision |= uint64_t{ bytes[8 + work.index] } << (8 * work.index);
+	if (!work.revision)
+		return EBADMSG;
+	work.checked_size = bytes.size() - SHA256_DIGEST_LENGTH;
+	work.error = ordinary_origin_hash_hash(bytes.data(), work.checked_size, work.digest.data(),
+					       &ordinary_origin_admission::forward, &admission,
+					       base);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_admit(base, ordinary_origin_hash_memcmp_frames, admission))
+		return ENOBUFS;
+	if (CRYPTO_memcmp(work.digest.data(), bytes.data() + work.checked_size, work.digest.size()))
+		return EBADMSG;
+	work.body = bytes.subspan(origin_header_bytes, work.checked_size - origin_header_bytes);
+	work.error = ordinary_origin_error(
+		native_mobile_birth_cash_role_recovery_original_command_decode_status_bounded(
+			work.body, &work.candidate.command, &ordinary_origin_admission::forward,
+			&admission, base, &work.command_heap),
+		admission);
+	if (work.error)
+		return work.error;
+	work.candidate.revision = work.revision;
+	work.candidate.phase = static_cast<critical_native_recovery_phase>(bytes[6]);
+	work.live = base;
+	if (!ordinary_origin_add(work.live, work.command_heap) ||
+	    !ordinary_origin_admit(work.live, work.body.size() + sizeof(std::vector<uint8_t>),
+				   admission))
+		return ENOBUFS;
+	work.candidate.attachment = std::vector<uint8_t>(work.body.begin(), work.body.end());
+	if (work.candidate.attachment.capacity() != work.body.size())
+		return ENOTSUP;
+	work.retained = work.command_heap;
+	if (!ordinary_origin_add(work.retained, work.candidate.attachment.capacity()) ||
+	    !ordinary_origin_add(work.live, work.candidate.attachment.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_terminal(work.candidate, admission, work.live);
+	if (work.error)
+		return work.error;
+	*output = std::move(work.candidate);
+	if (heap)
+		*heap = work.retained;
+	return 0;
+}
+
+int ordinary_origin_reference_match(const quest_mobile_native_reference &requested,
+				    const quest_mobile_native_reference &actual, bool stable,
+				    ordinary_origin_admission &admission, size_t outer) noexcept
+{
+	struct workspace
+	{
+		quest_mobile_native_reference normalized;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> a{}, b{};
+		int error = 0;
+	};
+	// Genuine published bounded codec owns its complete original source-event,
+	// checksum and installed SHA frames. Both caller arrays remain live here.
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       4 * sizeof(void *) + sizeof(size_t) +
+					       sizeof(bool)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	work.normalized = actual;
+	if (stable)
+	{
+		work.normalized.mobile_revision = requested.mobile_revision;
+		work.normalized.stock_revision = requested.stock_revision;
+	}
+	work.error = ordinary_origin_error(
+		quest_mobile_native_reference_encode_bounded(
+			requested, &work.a, &ordinary_origin_admission::forward, &admission, base),
+		admission);
+	if (!work.error)
+		work.error = ordinary_origin_error(quest_mobile_native_reference_encode_bounded(
+							   work.normalized, &work.b,
+							   &ordinary_origin_admission::forward,
+							   &admission, base),
+						   admission);
+	return work.error ? work.error : work.a == work.b ? 0 : ESTALE;
+}
+
+int ordinary_origin_read(const std::string &root, const flatfile_authority_lock &lock,
+			 const quest_mobile_native_reference &reference,
+			 quest_mobile_native_flatfile_origin_row *output, size_t *heap,
+			 ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		quest_mobile_native_flatfile_row current;
+		quest_mobile_native_flatfile_origin_row candidate;
+		quest_mobile_native_image birth;
+		std::vector<uint8_t> bytes;
+		std::span<const uint8_t> span;
+		size_t current_heap = 0, origin_heap = 0, birth_heap = 0, live = 0;
+		bool present = false;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       6 * sizeof(void *) + 2 * sizeof(size_t)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	work.error = ordinary_origin_native_read(root, lock, reference.mobile_instance_id,
+						 &work.current, &work.current_heap, admission,
+						 base);
+	if (work.error)
+		return work.error;
+	if (!work.current.present)
+		return ENOENT;
+	work.live = base;
+	if (!ordinary_origin_add(work.live, work.current_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_reference_match(reference, work.current.image.reference, false,
+						     admission, work.live);
+	if (work.error)
+		return work.error;
+	work.error = ordinary_origin_file_read(root, lock, reference.mobile_instance_id, true,
+					       &work.bytes, &work.present, admission, work.live);
+	if (work.error)
+		return work.error;
+	if (!work.present)
+	{
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = std::move(work.candidate);
+		if (heap)
+			*heap = 0;
+		return 0;
+	}
+	if (!ordinary_origin_add(work.live, work.bytes.capacity()))
+		return ENOBUFS;
+	work.span = work.bytes;
+	work.error = ordinary_origin_decode(work.span, &work.candidate.original, &work.origin_heap,
+					    admission, work.live);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_add(work.live, work.origin_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_birth(work.candidate.original.command, &work.birth,
+					   &work.birth_heap, admission, work.live);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_add(work.live, work.birth_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_reference_match(reference, work.birth.reference, true,
+						     admission, work.live);
+	if (work.error)
+		return work.error;
+	if (work.candidate.original.command.operation_id.bytes != reference.birth_operation.bytes)
+		return EBADMSG;
+	if (!lock.matches(root))
+		return EINVAL;
+	work.candidate.present = true;
+	*output = std::move(work.candidate);
+	if (heap)
+		*heap = work.origin_heap;
+	return 0;
+}
+
+// The complete original preparation check is also the post-commit recheck.
+// require_present forbids missing origin from becoming durable confirmation.
+int ordinary_origin_prepare(const std::string &root, const flatfile_authority_lock &lock,
+			    const critical_native_recovery_envelope &original, bool require_present,
+			    flatfile_authority_operation *output, size_t *heap,
+			    ordinary_origin_admission &admission, size_t outer)
+{
+	struct workspace
+	{
+		std::vector<uint8_t> bytes, born_bytes, current_bytes, prior;
+		quest_mobile_native_image birth;
+		quest_mobile_native_flatfile_row current;
+		quest_mobile_native_flatfile_origin_row retained;
+		flatfile_authority_operation candidate;
+		std::array<char, sizeof("quest-mobile-native-") + 20 + sizeof(".qno") - 1> name{};
+		std::to_chars_result converted{};
+		size_t birth_heap = 0, current_heap = 0, origin_heap = 0, live = 0, name_size = 0,
+		       retained_heap = 0;
+		int error = 0;
+	};
+	size_t base = outer;
+	if (!ordinary_origin_add(base, sizeof(workspace) + ordinary_origin_value_frames +
+					       ordinary_origin_decimal_frames + 6 * sizeof(void *) +
+					       2 * sizeof(size_t) + sizeof(bool)) ||
+	    !ordinary_origin_admit(base, 0, admission))
+		return ENOBUFS;
+	workspace work;
+	work.error = ordinary_origin_encode(original, &work.bytes, admission, base);
+	if (work.error)
+		return work.error;
+	work.live = base;
+	if (!ordinary_origin_add(work.live, work.bytes.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_birth(original.command, &work.birth, &work.birth_heap,
+					   admission, work.live);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_add(work.live, work.birth_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_native_read(root, lock,
+						 work.birth.reference.mobile_instance_id,
+						 &work.current, &work.current_heap, admission,
+						 work.live);
+	if (work.error)
+		return work.error;
+	if (!work.current.present)
+		return ENOENT;
+	if (!ordinary_origin_add(work.live, work.current_heap))
+		return ENOBUFS;
+	work.error = ordinary_origin_error(
+		quest_mobile_native_image_encode_bounded(work.birth, &work.born_bytes,
+							 &ordinary_origin_admission::forward,
+							 &admission, work.live),
+		admission);
+	if (work.error)
+		return work.error;
+	if (!ordinary_origin_add(work.live, work.born_bytes.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_error(
+		quest_mobile_native_image_encode_bounded(work.current.image, &work.current_bytes,
+							 &ordinary_origin_admission::forward,
+							 &admission, work.live),
+		admission);
+	if (work.error)
+		return work.error;
+	if (work.born_bytes != work.current_bytes)
+		return ESTALE;
+	if (!ordinary_origin_add(work.live, work.current_bytes.capacity()))
+		return ENOBUFS;
+	work.error = ordinary_origin_read(root, lock, work.birth.reference, &work.retained,
+					  &work.origin_heap, admission, work.live);
+	if (work.error)
+		return work.error;
+	if (!work.retained.present && require_present)
+		return ENOENT;
+	if (!ordinary_origin_add(work.live, work.origin_heap))
+		return ENOBUFS;
+	if (work.retained.present)
+	{
+		work.error = ordinary_origin_encode(work.retained.original, &work.prior, admission,
+						    work.live);
+		if (work.error)
+			return work.error;
+		if (work.prior != work.bytes)
+			return ESTALE;
+		if (!ordinary_origin_add(work.live, work.prior.capacity()))
+			return ENOBUFS;
+	}
+	if (!lock.matches(root))
+		return EINVAL;
+	// Recheck consumes no staged operation and allocates no filename. Every
+	// successful recheck has observed a PRESENT exact full canonical QNO1.
+	if (require_present)
+		return 0;
+	constexpr size_t prefix = sizeof("quest-mobile-native-") - 1;
+	std::copy_n("quest-mobile-native-", prefix, work.name.begin());
+	work.converted = std::to_chars(work.name.data() + prefix, work.name.data() + prefix + 20,
+				       work.birth.reference.mobile_instance_id);
+	if (work.converted.ec != std::errc{})
+		return EINVAL;
+	std::copy_n(".qno", 4, work.converted.ptr);
+	work.name_size = static_cast<size_t>(work.converted.ptr - work.name.data()) + 4;
+	if (!ordinary_origin_admit(
+		    work.live, sizeof(std::string) + (work.name_size > 15 ? work.name_size + 1 : 0),
+		    admission))
+		return ENOBUFS;
+	work.candidate.filename = std::string(work.name.data(), work.name_size);
+	if (work.candidate.filename.capacity() != std::max(size_t{ 15 }, work.name_size))
+		return ENOTSUP;
+	work.candidate.store = flatfile_authority_store::domains;
+	work.candidate.kind = flatfile_authority_operation_kind::write;
+	work.candidate.bytes = std::move(work.bytes);
+	work.retained_heap = work.candidate.bytes.capacity();
+	if (!ordinary_origin_add(work.retained_heap,
+				 ordinary_origin_string_heap(work.candidate.filename)))
+		return ENOBUFS;
+	if (!lock.matches(root))
+		return EINVAL;
+	*output = std::move(work.candidate);
+	if (heap)
+		*heap = work.retained_heap;
+	return 0;
+}
+} // namespace
+
+int quest_mobile_native_flatfile_ordinary_origin_read_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const quest_mobile_native_reference &reference,
+	quest_mobile_native_flatfile_origin_row *output, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer, size_t *retained_origin_heap) noexcept
+{
+	if (!ordinary_origin_policy())
+		return ENOTSUP;
+	if (!output || root.empty() || !reference.mobile_instance_id ||
+	    reference.mobile_instance_id == UINT64_MAX || !lock.matches(root))
+		return EINVAL;
+	if (!reserve ||
+	    !ordinary_origin_add(outer, sizeof(ordinary_origin_admission) + 7 * sizeof(void *) +
+						sizeof(size_t)) ||
+	    !reserve(outer, context))
+		return ENOBUFS;
+	ordinary_origin_admission admission{ reserve, context };
+	try
+	{
+		return ordinary_origin_read(root, lock, reference, output, retained_origin_heap,
+					    admission, outer);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}
+
+int quest_mobile_native_flatfile_ordinary_origin_prepare_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, flatfile_authority_operation *output,
+	flatfile_scratch_reserve_fn reserve, void *context, size_t outer,
+	size_t *retained_operation_heap) noexcept
+{
+	if (!ordinary_origin_policy())
+		return ENOTSUP;
+	if (!output || root.empty() || !lock.matches(root))
+		return EINVAL;
+	if (!reserve ||
+	    !ordinary_origin_add(outer, sizeof(ordinary_origin_admission) + 7 * sizeof(void *) +
+						sizeof(size_t)) ||
+	    !reserve(outer, context))
+		return ENOBUFS;
+	ordinary_origin_admission admission{ reserve, context };
+	try
+	{
+		return ordinary_origin_prepare(root, lock, original, false, output,
+					       retained_operation_heap, admission, outer);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}
+
+int quest_mobile_native_flatfile_ordinary_origin_recheck_locked_bounded(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original, flatfile_scratch_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	if (!ordinary_origin_policy())
+		return ENOTSUP;
+	if (root.empty() || !lock.matches(root))
+		return EINVAL;
+	if (!reserve ||
+	    !ordinary_origin_add(outer, sizeof(ordinary_origin_admission) + 5 * sizeof(void *) +
+						sizeof(size_t)) ||
+	    !reserve(outer, context))
+		return ENOBUFS;
+	ordinary_origin_admission admission{ reserve, context };
+	try
+	{
+		return ordinary_origin_prepare(root, lock, original, true, nullptr, nullptr,
+					       admission, outer);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EOVERFLOW;
+	}
+}

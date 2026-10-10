@@ -289,4 +289,15 @@ native_mobile_birth_cash_role_recovery_validate_bounded(const critical_native_re
 							bool (*)(size_t, void *) noexcept, void *,
 							size_t outer_live) noexcept;
 
+// Complete original ordinary terminal extraction, with the SAME full private
+// preflight before first command allocation, genuine command/typed context
+// decode and original body_terminal proof. No inferred envelope phase/revision,
+// caller/source/receipt/storage or retirement authority. Strong command and
+// retained heap scalar on every refusal. Caller outer owns input/prior outputs;
+// prospective supported-profile storage contract matches typed decode above.
+economic_accounting_error
+native_mobile_birth_cash_role_recovery_original_command_decode_status_bounded(
+	std::span<const uint8_t>, critical_command *, bool (*)(size_t, void *) noexcept, void *,
+	size_t outer_live, size_t *retained_command_heap_bytes = nullptr) noexcept;
+
 #endif

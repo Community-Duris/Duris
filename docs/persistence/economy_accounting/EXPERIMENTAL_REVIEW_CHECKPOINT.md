@@ -3577,3 +3577,17 @@ installed whole inverses/tokens/logicalPP/originalCprefix/exact private relay/
 SOURCE PASS. Actual producer selection and joined native/library/global32MiB/
 R1-R8 remain OPEN. Tests deferred major-plan batch; inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Ordinary bounded terminal origin and recovery implemented - 2026-10-10
+
+[Source checkpoint](ORDINARY_BOUNDED_TERMINAL_ORIGIN_RECOVERY_2026-10-10.md)
+supplies complete passive QNO1 read/existing-operation/PRESENT exactrecheck and
+original-command preflight-before-allocation recovery. Full framing/hash/version/
+reference/current-image/typed terminal/canonical/strong-output/lock laws survive;
+hash admission, unsupported policy and actual hashing errors remain distinct.
+Full152/310/51captures/fourwholeinverses/tokens/logicalPP/originalCprefixes/
+443pins/fourchangedexistingpins/931unchangedpolicies/2853mappedunique/protected3
+SOURCE PASS. Caller durable commit+recheck before retirement, real integration
+and native/library/backend/global32MiB/R1-R8 remain OPEN. Tests deferred major-
+plan batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
