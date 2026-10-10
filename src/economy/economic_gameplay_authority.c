@@ -1717,3 +1717,48 @@ economic_accounting_error economic_gameplay_authority::prepare_zone_reset_item_f
 		return error::corrupt_evidence;
 	}
 }
+
+economic_accounting_error
+economic_gameplay_authority::prepare_native_mobile_birth_ordinary_wallet_flat(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const native_mobile_birth_cash_role_recipe &role, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	const char *root = persistence_mode_flatfile_root();
+	if (!output || persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+	    persistence_mode_requires_mysql() || !root || !*root ||
+	    role.role != native_mobile_birth_cash_role::ordinary_wallet)
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_cash_role_command_build(
+			metadata, original, recipes, role, original_site, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
