@@ -2847,6 +2847,198 @@ preserves concurrent primary guidance and coordinator findings without force/res
 F1 and Smith missing-API P1 remain open. Actual Goals stay BLOCKED/unfinished and
 heartbeat ACTIVE through the continuing broader completion audit.
 
+## Ordinary NPC factory pair reviewed CLOSED; bounded post-submit observation pair selected - 2026-10-10
+
+Both original PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_AUTHORITY_BOUNDARY_2026-10-10.txt
+and PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_ACCEPTANCE_DELTA_2026-10-10.txt
+independently SOURCE/DESIGN/METADATA PASS; FC reviews CLOSED without correction at
+Fcc44b3205199ccf788ad4a6afbc3b0ceba81a4fe / actual parent P
+932067efb8a0395a88d8d7c11e66652a4d8f4999. Original selecting E
+e99382dc3b00c7d717a9c01952af86bb3d81d7da / actual parent
+417a5ec8a8b3a610f1f907edcc022b9b5a928d71 remains immutable. Both original default
+stdout receipts independently reproduced exactly at unchanged clean E BEFORE root
+source advance: architecture4507/quest4484 bytes. No original note/PINS/INDEX/verifier/
+receipt/history rewrite, repin or CLOSED verifier rerun.
+
+Root D:/Dev/Temp/coordinator-ordinary-npc-factory-binding-seal-review-20261010 authenticates
+strict1496 architecture/four quest indexed payloads plus their INDEX files, full raw
+Git providers/cuts/signatures/bodies/catches/required original equalities/changed owning
+joins/general whole source inverses/raw diffs/scopes/members/actual lexical intervals/
+field routes/source orders and original minimal CLOSED OW note+INDEX. Both whole notes,
+maps/four legal blueprints/assessments and complete executable verifiers read/audited
+before original default execution. All23 new complete source definitions and six changed
+owning methods read; full original SQL valid/seal/ordinary executing source proof/flat
+wallet/capacity delegates independently read. Complete originals remain source controls;
+full original financial/constructor/crypto/math/SQL/native semantic qualification is not
+inferred from byte authentication. Architecture61 providers/1384 cuts/127 original
+equalities/23 new definitions/six changed methods/six changed scopes/20 scope equalities/
+20 inline methods/24 defaulted-deleted members/518 declarations/18 constants/45 field
+routes/five whole source transforms/ten raw diffs/three separate selecting transforms/
+six selecting diffs/four orders/21 installed headers/two minimal OW principals/one map/
+four blueprints/one assessment. Quest74 providers/229 full functions/44 scopes/97 original
+function equalities/six changed joins/28 declared lifetimes/nine lexical scopes/21 field
+routes/64 constants/six orders/31 whole controls/five transforms/five raw diffs/two minimal
+OW principals/four cuts. Twelve whitespace positives/fifty deleted-expression refusals
+are source sensitivity only. Actual21 installed libstdc++13 headers independently
+authenticated against existing container1172e0cf7e2b7e37abf42a9077b3935c27eb19135e62ae0f0c27c6ab5250f898,
+image74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b,
+package13.3.0-6ubuntu2~24.04.1 and package MD5 read-only. No compiler/preprocessor/ELF run.
+Root quest diff-option/whitespace selector corrections are review setup only; original
+packets unchanged. Unsealed worker construction diagnostics remain historical evidence.
+
+FC preserves authentic entered M and real constructor/global effects, retained registry
+owner/private NPC scope/all-four-arg/if/full copied identity. Pure CURRENT differs from
+bounded scratch admission; mint's sealed/submitted gates are not invented in later
+CURRENT. Scope copies retain real root/control blocks, registry transfer counts owning
+heaps once. Actual native item constructor remains unbounded and has genuine refusal/
+retention/catch/global side effects. NPC batch requires scope even for empty forest,
+preserves original UID/prototype/procedure/binding order and strong old output. Full
+original executing source still calls SQL-only valid(), rejecting flat; original reset
+selection stays unchanged. New valid_flat existence is insufficient for full execution.
+Seal inputs and image/source delegates remain live at final bare charge. Native first
+admission/full constructor/global/ABI/allocator/transient32MiB/full caller qualification
+NOT PERFORMED; FC1-FC4/component/native UNEXECUTED, genuine commands UNAVAILABLE.
+
+Original principal seals are recorded below. Architecture's actual clean E default
+source observation and separate maintained clean5c53 remain distinct from quest's E
+checkout seal. Both root authentication files preserve exact original receipts.
+
+- Architecture authority-map.json: 15338/2422211a837e313c766e894369273ee3fbffde464ecd86496d82c6dccd3c1030
+- Architecture available-source-assessment.json: 4768/b6bff453a9fabab01ecdb15bdc47369ddc2170ac3cd7b18a7d897f5b4e29479e
+- Architecture INDEX.json: 274282/f9c6135f611ff7d48335ac472867f28c0fff2d85b30969d2af1bdd5715d3dbdc
+- Architecture PINS.json: 1899909/694646d8e6e9884f5c364bdd462df362d6e30b7a5d89f04bfbcbfb7b80de84e3
+- Architecture PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_AUTHORITY_BOUNDARY_2026-10-10.txt: 30395/9195ebbf88c7ae18e56684e1fdb5be58269de4337486c92d3f9bb3b3aa50ae83
+- Architecture VERIFICATION.json: 4507/8c0702cacff133a45f590d6bbbede37e4edac452d22f072dd9bda18ba1c58bda
+- Architecture verify.py: 77082/84da5f9b31f92e5f6537ada685412a18a4ac7a6c5e71387ca0a95621425f7fd0
+- Quest INDEX.json: 685/6d74fcad9df028f22f46b7f990e22729d855471d4c4e6772dbd8745c699c188a
+- Quest PINS.json: 12886115/474478f6d0175801c8d26f4dcd662d36c7346ed8f2c9722bac3562d4aa7c2e50
+- Quest PUBLISHED_ORDINARY_NPC_FLAT_FACTORY_BINDING_SEAL_ACCEPTANCE_DELTA_2026-10-10.txt: 32458/9be363acd0cb2938592e306ef6187b31f1196a6bf4a28f240b0285134d8c780a
+- Quest VERIFICATION.json: 4484/2186c9aa7bdfa49fdc1df76dd5f2140e7e020f58d5607c1d0a2311569b5ce44c
+- Quest verify.py: 14801/9448ce513a11d75174875cc8fb9151d1f98e8800b1d9a96e3be1816ab873a550
+
+Published successors distinct from original FC:
+b767a678daa0b31a662d849f9419fec7a90e113b / actual parent E supplies genuine common
+ROOT dispatcher/guard and bounded NPC submission. afd6d5630450dcff30eca76c0e5b24fec9fab57c
+/ actual parent b767 supplies historical NMB2/INITIAL validation and production four
+nullable companions. Prior heartbeat-0838 proof authenticates nine whole transforms,
+seventeen whole controls and original selecting FC sections. These leaves EXIST;
+full first admission/original execution/native/recovery/publication/ACK remains open.
+Qcf2bbe5a18cfc74682c6f1e4bffff6950724bf09 / actual parent Uafd6 supplies genuine
+complete bounded ordinary generation/completion/context providers with real coordinator
+mutex/CURRENT lender and original lookup/copy laws. Vfbeca5b3362735ecbb99fe17ca531e26ba24a9d1
+/ actual parent Q supplies a private six-argument facade to the full original CURRENT
+storage reader, granting no preparation/commit permission. B5de359bbd5aab5edd641b7e7b4b5617c85e0d06b
+/ actual parent V supplies actual NPC pulse generation/completion selection and a separate
+full submitted retained-source predicate; pre-submit gates remain. Root full three
+handoffs/new headers/complete six source diffs read. Six general whole forward-inverses,
+25 whole selecting-E providers (fixed-F equality separately recorded),53 complete fixed-F
+birth definition continuities and all three original FC sections authenticate in
+successor-authentication.json. Initial facade filename and F-versus-E provider-control
+selection corrections are root review setup only. Full new C/financial/storage/SQL/crypto/
+math/ABI/allocator/native/transient32MiB/full host integrated qualification NOT PERFORMED;
+private RAW/draft correction/preprocessor/policy/registry/profile/native claims REPORTED
+ONLY. Four full bounded CURRENT receipt/history, wallet/native authority, revision1
+custody and covered physical-catalog dependencies remain; private owner progress unknown.
+No missing-observation/retained-source/facade leaf claim or adoption/activation inferred.
+
+One bounded BO delivery per existing chat, fixed B5de359 / actual parent Vfbeca:
+- Architecture: PUBLISHED_ORDINARY_BIRTH_BOUNDED_POST_SUBMIT_OBSERVATION_AUTHORITY_BOUNDARY_2026-10-10.txt
+- Quest: PUBLISHED_ORDINARY_BIRTH_BOUNDED_POST_SUBMIT_OBSERVATION_ACCEPTANCE_DELTA_2026-10-10.txt
+Concrete output: one private exact ownership/authority map, exactly BO1-BO4 legal future
+acceptance blueprints and one finite available-source assessment; strict INDEX/fully
+audited deterministic stdlib/read-only Git verifier/exact original default stdout/root
+independent review. Future benefit: implementation-ready authentic submitted source,
+mutex/lender/query/guard and fresh surviving ownership cuts for genuine NPC observation
+and later complete CURRENT integration. Available inputs: six changed providers across
+Q/U,V/Q,B/V, all original owning declarations and required helpers at those fixed refs.
+Authenticate six whole transforms and changed original pulse plus whole unchanged original
+generation/completion/context/command-envelope/retained-source/pre-submit/SQL/shared
+controls. Q and V are fixed dependency controls, not later repins. Read complete new
+workspace/provider/method/guard/callback/source/pulse/facade definitions, actual friends/
+inline members/catches/source profiles/lifetimes and only necessary genuine original
+typed-family/command-match/encoder/envelope/current-lender/common-ROOT/charge helpers.
+Full original read_current_locked is a dependency control; do not assign its financial
+implementation, four missing bounded storage compositions, full startup or Plan5 work.
+Reuse minimal CLOSED FC note+INDEX only and necessary original source controls; no old
+verifier/PINS/receipt/history rerun or unrelated SQL/Smith/coin/compiler inventories.
+Primary owns maintained implementation/authority/contracts/admission/math/qualification.
+Workers own private D: source packets only, one bounded delivery each. No maintained
+source/tests/docs edits/imports/commits/build/compiler/preprocessor/ELF/native/product/DB/
+activation/Goal resumption. Missing native/host inputs block only dependent execution.
+No active scope expansion/reassignment/repin at later publications.
+
+Four BO legal cuts only:
+BO1 Genuine ordinary command family and full generation matching, actual pending-
+publication-first/completed-cache-second completion, full original phase1/phase2 context
+gates/uncertainty and immutable command/native envelope. Distinguish each provider's
+actual gate set; do not invent receipt/generation/readiness/lifecycle gates in helpers
+which lack them. Actual identity/key/encoders/copy capacities and strong public outputs
+on false remain. An operation ID/phase/value or observation grants no execution/native/
+world/source/publication/delivery/ACK authority; successful callbacks may update census.
+BO2 Genuine submitted retained birth/private capsule/NPC scope/current bindings/reset-M/
+all-four-arg/source/root/lineage/epoch/image/reference proof. Separate post-submit predicate
+requires submitted state and allows completed births still needing generation. Whole
+pre-submit freeze/submit gates and original SQL-only executing source-current remain.
+No copied owner/ID/pointer/phase/receipt substitutes for actual registry provenance;
+observation permission does not repair factory selection, executing source or cold origin.
+BO3 Actual ROOT common guard per observation and exact held coordinator mutex/registered
+same-lock lender. Every request adds fresh CURRENT C once; callback uses direct retained
+source proof and real charge, never pre-submit-only callback or recursive held-lock
+observer. Guard/query/callback/lock carriers die before immediate outside full census,
+including ordinary absence/early refusal. Actual successful generation/completion latch
+precedes fallible recensus; invalid receipt blocks and failed recensus stops pulse before
+next generation/completion/publication. No stale C/G, zero/constant/accepting observer,
+fabricated thread/permit/phase/owner or new callback into held coordinator/journal locks.
+BO4 Actual old output/input/registry/coordinator/global/caller/siblings and nested identity/
+two encoded vectors/full candidate envelope/guard/context/query/source scratch coexist
+at their genuine intervals. Full original fields and capacities count once; lexical
+deaths precede fresh surviving full census. Source8-pointer/3-size/3-bool expression is
+unevaluated, not emitted ABI/allocator/transient32MiB/first admission proof. Private
+CURRENT facade forwards six genuine arguments without locks or writes and gives only
+informational projection; authentic envelope/generation/delivered receipt/lifecycle,
+identity THEN authority locks/recovery/SAME interval consumption and full original
+receipt/history/wallet/custody/catalog laws remain real future dependencies. No partial
+fixed-charge wrapper/copied financial/hash/allocator/C++ model or accepting fixture.
+BO1-BO4/component/native UNEXECUTED; genuine commands UNAVAILABLE. Required genuine full
+bounded CURRENT composition/first observation/primitive/global/current ELF/schema/legal
+capture/fault/restart/SQL parity/crypto/math/ABI/allocator/full host/native/cold/warm
+publication/terminal/outbox/guarded ACK/transient32MiB qualification remain unavailable.
+
+Evolving prioritized queue:
+1. Selected fixed BO observation/retained-source/guard/facade pair only; reassess at handoff
+   without repin/CLOSED reopen/adoption wait/busywork. Genuine providers/caller EXIST.
+2. Full bounded CURRENT receipt/history/wallet/native authority/revision1 custody/physical
+   catalogs and complete selecting/executing factory/world/source/global/primitive/first
+   admission/creation provenance/lost-history/cold/warm publication/terminal/outbox/ACK/
+   pause latency/transient32MiB qualification. Freeze/submit/envelope/common ROOT/INITIAL/
+   registration/lifecycle/prepared-worker/save/receiver leaves EXIST, not full closure.
+   Full canonical coin/compiler/compound receiver/owning host/save and Smith original
+   BEFORE/history/season/capture/source/participant/ACK remain separate.
+3. Full mixed startup/host ROOM/shared/legacy/currency/applicable restitution/fresh siblings,
+   H/SG/N402/7f uncertainty/full selector/admission/legal failure/restart/capture; paired
+   ROOT/publication/NPC pool/four cold routes/detach/adopt/enroll/light/service/diagnostics/
+   scheduler/placement/activity/full native/crypto/ABI/allocator proof. Plan5 retains
+   backend/SQL0065/schema65/measurement/history/backup/restore/32MiB/recovery/release.
+   Siege runtime retired, applicable SQL witnesses retained; unsupported flat restitution
+   and mixed/clientful selection refuses. No weakened original applicable requirements.
+
+Root publishes only three owned coordination docs. Whole inserted-section inverse restores
+actual primary in publication-verified.json; no maintained-source/private artifact delta.
+Preserve all CLOSED FC/PS/CS/OW/CV/OA/EH/PQ/OC/OR/RR/BR/SS/SG/PC/PD/SC/RK/RF/GG/CG/CK/
+SAME-lock seals/receipts/history/corrections/known-zero cash/unchecked-close/hydration
+allocation/CURRENT-warm/constructor declaration-order/TR UNEXECUTED/factory CURRENT-
+RETAINED and every earlier original. Preserve architecture clean5c53/unsealed probe,
+questacb1/630b/f4e ancestry/three owned local edits,all isolated jobs/services/containers/
+build/failure evidence. Historical Oct7 attachment2026-10-07T06:43:36.393Z and ae70
+provenance correction stand; genuinely newer human instructions take priority. Private
+native/build/SQL reports root UNREVIEWED. Actual root Goal BLOCKED unchanged1791410483;
+workers BLOCKED1791446642/1791411827 distinct; no replacement/resumption/pause/completion.
+Broad Plans1-5/R1-R8/applicable backend/gameplay/persistence/recovery/owner completion audit
+open. Accounting inactive/admission CLOSED/coverage incomplete/release BLOCKED. Heartbeat
+ACTIVE until broad audit/user pause; quiet unchanged/non-actionable, notify meaningful
+progress/failure/completion/required user action. All Git fetch/merge/commit/push gc.auto=0;
+no reset/revert/kill/delete/restart/pruning/housekeeping.
+
 ## Prepared save/replay pair reviewed CLOSED; ordinary NPC factory/binding/seal pair selected - 2026-10-10
 
 Both original PUBLISHED_PREPARED_SAVE_STORAGE_BORROWED_CURRENCY_REPLAY_AUTHORITY_BOUNDARY_2026-10-10.txt
