@@ -106,4 +106,15 @@ bool world_activity_schedule_mundane_after_bounded(P_char, int, bool *, bool *,
 						   bool (*)(size_t, void *) noexcept, void *,
 						   size_t) noexcept;
 
+// Full original delay policy and controlled-presence/wake allocations. Caller
+// supplies actual CURRENT ROOT globals in outer_live exactly once and owns a
+// started latch before invocation. Partial refusal never retries refresh/RNG.
+// A true returned marker preserves the genuine delay even if the final storage
+// admission refuses; retry only its checkpoint. Existing APIs remain selected.
+bool world_activity_mundane_delay_bounded(P_char, bool quick_retry, bool legacy_zone_occupied,
+					  int *delay, bool *returned,
+					  bool (*current_global)(size_t *, void *) noexcept,
+					  bool (*reserve)(size_t, void *) noexcept, void *,
+					  size_t outer_live) noexcept;
+
 #endif /* DURIS_WORLD_ACTIVITY_H */

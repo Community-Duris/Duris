@@ -16798,3 +16798,18 @@ headers/463 pins/two updates/931 unchanged policies/seven matrix relocations and
 protected Plan5 WIP. Full startup/accepting publication/extraction/native32MiB/
 gameplay/persistence/recovery/R1-R8 gates remain OPEN. Tests deferred to major-plan
 batch; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Original activity delay and scheduler admission implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_ACTIVITY_SCHEDULER_ADMISSION_2026-10-10.md)
+adds the full original bounded mundane-delay companion and real pending-flush
+source/observer allowances. Original policy, controlled mutations, single draw,
+return latch and selected/default/inactive functions survive. Genuine fresh
+global relay, map rehash/cleanup, all-stale tree clearing and GNU13 vector/sort
+source paths are covered without duplicating heap ownership. Independent RAW
+and actual formatted reviews authenticate 30+59+13 members, complete inverses,
+13 current dependencies and installed-library controls. Protected Plan5 WIP is
+excluded. Original accepting caller, emitted/native32MiB, measured workload,
+gameplay/persistence/recovery/R1-R8 remain OPEN; tests deferred to major-plan
+batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

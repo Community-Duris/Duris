@@ -127,4 +127,12 @@ bool nevent_cancel_character_maintenance_bounded(nevent_handle, nevent_cancel_re
 						 bool (*)(size_t, void *) noexcept, void *,
 						 size_t) noexcept;
 
+// Pure complete original pending-reschedule flush source carriers, including
+// genuine per-bucket std::sort introsort recursion and its heap/insertion/
+// comparator/move tails. Separate from CURRENT maps, vector-array inline and
+// prospective old/new vector heap supplied by original flush working profile.
+// Strong output under genuine game-thread exclusion; no mutation or policy.
+size_t nevent_native_reschedule_flush_source_observer_frame_bytes() noexcept;
+bool nevent_native_reschedule_flush_source_frame_bytes(size_t *) noexcept;
+
 #endif /* _SOJ_EVENTS_H_ */

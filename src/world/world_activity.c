@@ -2097,3 +2097,299 @@ bool world_activity_native_birth_restore_owner::enter_bounded(
 	return false;
 #endif
 }
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+// A source-carrier upper envelope of the actual GNU13 controlled_rooms
+// lookup/erase/emplace call graphs. The two arguments to emplace are lvalue
+// references to the real P_char and in_room int. No pair/container copy or
+// allocator interception is used. Sibling call carriers are conservatively
+// summed, not multiplied by a population or guessed stack factor. Requested
+// node/bucket heap is already owned by activity_enter_budget::insert and is
+// deliberately absent here. Native emitted stack/libc qualification is separate.
+using activity_delay_controlled_map = decltype(controlled_rooms);
+using activity_delay_controlled_iterator = activity_delay_controlled_map::iterator;
+using activity_delay_controlled_const_iterator = activity_delay_controlled_map::const_iterator;
+using activity_delay_controlled_result = std::pair<activity_delay_controlled_iterator, bool>;
+using activity_delay_controlled_node = std::__detail::_Hash_node<
+	activity_delay_controlled_map::value_type,
+	std::__cache_default<P_char, activity_delay_controlled_map::hasher>::value>;
+using activity_delay_controlled_bucket_allocator = std::allocator<std::__detail::_Hash_node_base *>;
+static_assert(alignof(activity_delay_controlled_node) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+static_assert(alignof(std::__detail::_Hash_node_base *) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+
+constexpr size_t activity_delay_controlled_hash_frames =
+	// Existing insert scanner stays live across its final reserve callback:
+	// this/map/key/scope and actual policy/growth/bytes. Its first scoped
+	// admission already includes scan, so this is a conservative call-chain
+	// upper envelope, never a second node/bucket heap request.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::__detail::_Prime_rehash_policy) +
+	sizeof(std::pair<bool, size_t>) + sizeof(size_t) +
+	// unordered_map::emplace and _Hashtable::emplace: this, two argument
+	// references, returned iterator/bool pair; unique-key tag at the table call.
+	2 * (3 * sizeof(void *) + sizeof(activity_delay_controlled_result)) +
+	sizeof(std::true_type) +
+	// _M_emplace: this/two references/tag; __node (_M_h,_M_node), __k,
+	// __code/__bkt, __it/__p/__pos and returned pair. _Scoped_node constructor:
+	// this/__h/two references; destructor's this on exception/duplicate.
+	3 * sizeof(void *) + sizeof(std::true_type) + 2 * sizeof(void *) + sizeof(void *) +
+	2 * sizeof(size_t) + 2 * sizeof(activity_delay_controlled_iterator) + sizeof(void *) +
+	sizeof(activity_delay_controlled_result) + 4 * sizeof(void *) + sizeof(void *) +
+	// _M_allocate_node: this/two references, __nptr and __n; placement-new
+	// result/address, real node/base/value/cache/buffer constructor this values.
+	5 * sizeof(void *) + 2 * sizeof(void *) + 6 * sizeof(void *) +
+	// node and bucket requests both use traits::allocate -> allocator::allocate
+	// -> __new_allocator::allocate -> _M_max_size -> operator new(size_t).
+	// Each listed signature owns allocator reference/this, count, raw pointer
+	// result, and the runtime new_allocator hint. Alignment branches are
+	// excluded by the actual original node/bucket type assertions above.
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	     sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	     sizeof(void *) + sizeof(size_t) + sizeof(size_t) + sizeof(void *)) +
+	// traits::construct(allocator,node-value,two references), construct_at
+	// (location,two references,result/placement address), pair(this,two refs).
+	// Actual std::forward argument evaluations in map/table/_M_emplace/scoped
+	// node/allocate_node/traits/construct_at/pair: two real references each.
+	4 * sizeof(void *) + 5 * sizeof(void *) + 3 * sizeof(void *) + 8 * (2 * sizeof(void *)) +
+	// _M_insert_unique_node: this/__bkt/__code/__node/__n_elt,
+	// __saved_state reference and its returned _State temporary, __do_rehash.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(void *) +
+	sizeof(std::__detail::_Prime_rehash_policy::_State) + sizeof(std::pair<bool, size_t>) +
+	sizeof(activity_delay_controlled_iterator) +
+	// _M_state/_M_need_rehash/_M_reset interface carriers, including saved
+	// threshold; compiled policy implementation/emitted stack remain a gate.
+	sizeof(void *) + sizeof(std::__detail::_Prime_rehash_policy::_State) + sizeof(void *) +
+	3 * sizeof(size_t) + sizeof(std::pair<bool, size_t>) + sizeof(void *) +
+	sizeof(std::__detail::_Prime_rehash_policy::_State) +
+	// _M_rehash this/count/saved reference and _M_rehash_aux this/count/tag,
+	// __new_buckets/__p/__next/__bbegin_bkt/__bkt. Relocation is iterative.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+	sizeof(std::true_type) + 3 * sizeof(void *) + 2 * sizeof(size_t) +
+	// Table _M_allocate_buckets this/count/result; allocation owner's this/count,
+	// __alloc/__ptr/__p; converting allocator ctor's this/source reference.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+	sizeof(activity_delay_controlled_bucket_allocator) + 2 * sizeof(void *) +
+	2 * sizeof(void *) +
+	// Bucket memset actual destination/value/count. _M_deallocate_buckets
+	// no-arg table wrapper, table(this,buckets,count), owner(this,buckets,count,
+	// __ptr,__alloc), uses-single-bucket(this,buckets,bool).
+	sizeof(void *) + sizeof(int) + sizeof(size_t) + sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(activity_delay_controlled_bucket_allocator) + 2 * sizeof(void *) + sizeof(bool) +
+	// Node rollback and bucket release both use traits::deallocate, allocator
+	// deallocate, __new_allocator::deallocate, sized operator delete. The real
+	// nodes/buckets are not charged as fresh heap a second time on cleanup.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	     2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t)) +
+	// _M_deallocate_node(this,node), traits::destroy(allocator,value),
+	// destroy_at(value), pair destructor(this), _M_deallocate_node_ptr
+	// (this,node,__ptr), pointer_to(node-reference/result), addressof(reference).
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(void *) +
+	3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	// Actual node/base/value/cache/buffer destructor this values.
+	6 * sizeof(void *) +
+	// Hash lookup common to find/emplace/relocate/erase: _M_hash_code(this,key),
+	// _M_hash(this,ref-result), pointer hash(this,pointer), table bucket-index
+	// (this,code), hash-code-base(code,count), modulo(this,num,denom).
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) + sizeof(P_char) + sizeof(void *) +
+	sizeof(size_t) + sizeof(void *) + 2 * sizeof(size_t) +
+	sizeof(std::__detail::_Mod_range_hashing) + sizeof(void *) + 2 * sizeof(size_t) +
+	// Node overloads: table bucket-index(this,node), hash-code-base(this,node,
+	// count), node _M_next(this,result); hash result/bucket result temporaries.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	2 * sizeof(size_t) +
+	// _M_find_node(this,bucket,key,code,__before_n), _M_find_before_node
+	// (this,bucket,key,code,__prev_p,__p). All traversal loops are iterative.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(void *) + 2 * sizeof(size_t) +
+	// _M_equals(this,key,code,node), _S_equals(code,node), _M_key_equals
+	// (this,key,node), _M_eq(this,result), equal_to(this,two refs).
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(size_t) + sizeof(void *) + 3 * sizeof(void *) +
+	2 * sizeof(void *) + 3 * sizeof(void *) +
+	// _Select1st temporary/this/forwarded pair/result and forward(pair),
+	// _M_v -> _M_valptr -> aligned buffer _M_ptr -> _M_addr, each this/result.
+	sizeof(std::__detail::_Select1st) + 3 * sizeof(void *) + sizeof(void *) +
+	4 * (2 * sizeof(void *)) +
+	// _M_insert_bucket_begin(this,bucket,node), _M_store_code(this,node,code).
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	// Original controlled-map find wrappers/table find: this/key/return,
+	// __it/__code/__bkt; begin/end/size, iterator ctor/inc/compare carriers.
+	2 * (2 * sizeof(void *) + sizeof(activity_delay_controlled_iterator)) +
+	sizeof(activity_delay_controlled_iterator) + 2 * sizeof(size_t) +
+	2 * (sizeof(void *) + sizeof(activity_delay_controlled_iterator)) + sizeof(void *) +
+	sizeof(size_t) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(bool) +
+	// Iterator/bool returned-pair construction, original true/false temporary,
+	// pair this/two argument references/forward references, iterator copy this
+	// and input, pointer __to_address argument/result during real allocation.
+	sizeof(bool) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) +
+	// Original erase(iterator) wrappers and const-iterator conversion, table
+	// erase(const_iterator): this/iterator/__n/__bkt/__prev_n/result;
+	// _M_get_previous_node(this,bucket,node,__prev_n), _M_erase
+	// (this,bucket,prev,node,__next_bkt,__result), remove_bucket_begin
+	// (this,bucket,next,next_bucket). No population-proportional call recursion.
+	2 * (sizeof(void *) + sizeof(activity_delay_controlled_iterator)) + sizeof(void *) +
+	sizeof(activity_delay_controlled_iterator) +
+	sizeof(activity_delay_controlled_const_iterator) + sizeof(void *) +
+	sizeof(activity_delay_controlled_const_iterator) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(activity_delay_controlled_iterator) + 3 * sizeof(void *) + sizeof(size_t) +
+	3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(activity_delay_controlled_iterator) +
+	2 * sizeof(void *) + 2 * sizeof(size_t);
+
+// The existing activity budget refreshes its own three registries. The relay
+// refreshes the remaining authentic ROOT globals, without charging those same
+// activity/pending/output owners a second time. No observer acquires authority.
+struct activity_delay_global_relay
+{
+	bool (*current_global)(size_t *, void *) noexcept;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t initial_foreign;
+
+	bool foreign(size_t *result) const noexcept
+	{
+		size_t global = 0, activity = 0, pending = 0, output = 0;
+		if (!current_global(&global, context) || !world_activity_storage_bytes(&activity) ||
+		    !nevent_native_reschedule_storage_bytes(&pending) ||
+		    !diagnostic_output_storage_bytes(&output) || activity > global ||
+		    pending > global - activity || output > global - activity - pending)
+			return false;
+		*result = global - activity - pending - output;
+		return true;
+	}
+	static bool admit(size_t requested, void *opaque) noexcept
+	{
+		auto &relay = *static_cast<activity_delay_global_relay *>(opaque);
+		size_t foreign = 0, flush_frames = 0, observed = 0;
+		if (requested < relay.initial_foreign || !relay.foreign(&foreign))
+			return false;
+		requested -= relay.initial_foreign;
+		if (!activity_storage_add(requested, foreign))
+			return false;
+		// Admit the actual dynamic observer before it inspects the live map.
+		// The original flush owns its array requests through finish_bounded;
+		// this allowance adds only genuine selected library/source frames.
+		observed = requested;
+		if (!activity_storage_add(
+			    observed,
+			    nevent_native_reschedule_flush_source_observer_frame_bytes()) ||
+		    !relay.reserve(observed, relay.context) ||
+		    !nevent_native_reschedule_flush_source_frame_bytes(&flush_frames))
+			return false;
+		// The read-only observer cannot mutate any owner. This fresh CURRENT
+		// value remains valid across the synchronous original reserve call.
+		return activity_storage_add(requested, flush_frames) &&
+		       relay.reserve(requested, relay.context);
+	}
+};
+#endif
+}
+
+bool world_activity_mundane_delay_bounded(P_char ch, bool quick_retry, bool legacy_zone_occupied,
+					  int *delay, bool *returned,
+					  bool (*current_global)(size_t *, void *) noexcept,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer_live) noexcept
+{
+	if (!delay || !returned || *returned || !current_global || !reserve ||
+	    !nevent_is_game_thread())
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	// Public arguments, base/tier/draw/status and the actual lower budget and
+	// relay. Include observer/checked-add carriers before the first observer.
+	constexpr size_t frames = sizeof(activity_enter_budget) +
+				  sizeof(activity_delay_global_relay) + 8 * sizeof(void *) +
+				  sizeof(size_t) + 2 * sizeof(bool) + 2 * sizeof(int) +
+				  sizeof(world_activity_tier) + 12 * sizeof(void *) +
+				  12 * sizeof(size_t) + 6 * sizeof(bool);
+	// Full controlled-presence -> reason -> zone/encounter wake call chain.
+	// Lower wake providers own their batch, four handles and current size;
+	// reason owns its callback. These are the remaining actual source frames.
+	constexpr size_t controlled_frames =
+		sizeof(decltype(controlled_rooms.begin())) + 4 * sizeof(void *) + sizeof(size_t) +
+		sizeof(bool) + 5 * sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(int) +
+		2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(int) +
+		4 * sizeof(bool) + 4 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(int) +
+		2 * sizeof(bool) + sizeof(decltype(zones[0].npcs.begin())) +
+		// Tier/timing-sensitive/control helpers and original number/max args.
+		5 * sizeof(P_char) + 6 * sizeof(int) + 3 * sizeof(bool) +
+		// Genuine number(from,to) -> rnd64 scope/state/result/t -> rotl(x,k).
+		// Both original random scopes and the optional constructor scope are
+		// selected unchanged; no guessed temporary generator substitutes them.
+		2 * sizeof(int) + 2 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint64_t) +
+		sizeof(int);
+	size_t frame = frames;
+	if (!activity_storage_add(frame, controlled_frames) ||
+	    !activity_storage_add(frame, activity_delay_controlled_hash_frames) ||
+	    frame > SIZE_MAX - outer_live || !reserve(outer_live + frame, context))
+		return false;
+	activity_delay_global_relay relay{ current_global, reserve, context, 0 };
+	if (!relay.foreign(&relay.initial_foreign) || relay.initial_foreign > outer_live)
+		return false;
+	activity_enter_budget budget{ activity_delay_global_relay::admit, &relay, 0 };
+	if (!activity_native_budget_init(budget, outer_live, frame) || !budget.admit(0))
+		return false;
+	try
+	{
+		if (quick_retry)
+		{
+			*delay = PULSE_VIOLENCE;
+			*returned = true;
+			return budget.admit(0);
+		}
+		int base = legacy_zone_occupied ? PULSE_MOBILE :
+						  PULSE_MOBILE * PLAYERLESS_ZONE_SPEED_MODIFIER;
+		if (config.enabled && ready && ch)
+		{
+			// Full original refresh: erasure/insertion, direct/adjacent reasons,
+			// grace and real zone/encounter wakes, not an idle-tier shortcut.
+			if (!activity_controlled_enter_bounded(budget, 0, ch))
+				return false;
+			const auto tier = world_activity_tier_for_room(ch->in_room);
+			if (world_activity_mob_is_timing_sensitive(ch))
+			{
+				if (tier == world_activity_tier::active)
+					base = PULSE_MOBILE;
+			}
+			else
+			{
+				switch (tier)
+				{
+				case world_activity_tier::active:
+					base = PULSE_MOBILE;
+					break;
+				case world_activity_tier::nearby:
+					base = PULSE_MOBILE * config.nearby_multiplier;
+					break;
+				case world_activity_tier::distant:
+					base = config.distant_pulses;
+					break;
+				}
+			}
+		}
+		if (!budget.admit(0))
+			return false;
+		*delay = std::max(1, base + number(-4, 4));
+		*returned = true; // Immutable actual draw precedes fallible diagnostics.
+		return budget.admit(0);
+	}
+	catch (...)
+	{
+		// An original refresh may already have changed real owner state.
+		// Observe retained CURRENT best-effort; preserve the actual failure
+		// result and the caller's started/returned no-reroll state.
+		(void)budget.admit(0);
+		return false;
+	}
+#else
+	(void)ch;
+	(void)quick_retry;
+	(void)legacy_zone_occupied;
+	(void)context;
+	(void)outer_live;
+	return false;
+#endif
+}
