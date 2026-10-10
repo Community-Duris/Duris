@@ -229,6 +229,83 @@ class PolicyTests(Fixture):
                 self.assertEqual(backup.retained(items, p, now), {"latest", "second", "previous"})
 
 class GenerationTests(Fixture):
+    def test_staged_migration_and_schema_changes_never_publish_or_prune(self):
+        for mode in sorted(backup.MODES):
+            for fault in ("payload", "selector", "extra", "schema"):
+                with self.subTest(mode=mode, fault=fault):
+                    self.p["root"] = self.base / ("source-fault-" + mode + "-" + fault)
+                    before = self.baseline(mode)
+                    def damage(stage):
+                        if stage != "after_capture":
+                            return
+                        pending, = self.p["root"].glob(".staging-*")
+                        archive = pending / "migrations"
+                        if fault == "payload":
+                            target = archive / "immutable/0065_zone_reset_item_birth_origin_nullable_default.sql"
+                            target.write_bytes(target.read_bytes() + b"\n-- changed\n")
+                        elif fault == "selector":
+                            (archive / "migration_manifest.nullable_default_0065.json").unlink()
+                        elif fault == "extra":
+                            (archive / "unexpected.sql").write_bytes(b"SELECT 1;\n")
+                        else:
+                            frozen = backup.read_json(pending / "runtime-schema.json")
+                            frozen["baseline_id"] = "changed-after-validation"
+                            backup.write_json(pending / "runtime-schema.json", frozen)
+                    reason = "schema_changed_during_capture" if fault == "schema" else "migration_archive_changed"
+                    with mock.patch.object(backup, "checkpoint", side_effect=damage), \
+                         self.assertRaisesRegex(backup.BackupError, reason):
+                        self.create(mode)
+                    self.assert_preserved(before)
+                    self.assertEqual(set(self.p["root"].glob("[0-9]*")), set(before))
+                    self.assertFalse(list(self.p["root"].glob(".staging-*")))
+
+    def test_migration_archive_checks_declared_inputs_even_with_consistent_inventory(self):
+        for mode in sorted(backup.MODES):
+            for fault in ("payload", "selector", "extra", "truncated"):
+                with self.subTest(mode=mode, fault=fault):
+                    self.p["root"] = self.base / ("archive-fault-" + mode + "-" + fault)
+                    generation = self.create(mode)
+                    archive = generation / "migrations"
+                    if fault == "payload":
+                        target = archive / "immutable/0065_zone_reset_item_birth_origin_nullable_default.sql"
+                        target.write_bytes(target.read_bytes() + b"\n-- changed\n")
+                    elif fault == "selector":
+                        (archive / "migration_manifest.nullable_default_0065.json").unlink()
+                    elif fault == "extra":
+                        (archive / "unexpected.sql").write_bytes(b"SELECT 1;\n")
+                    else:
+                        selector = archive / "migration_manifest.nullable_default_0065.json"
+                        value = backup.read_json(selector)
+                        value["migrations"].pop()
+                        backup.write_json(selector, value)
+                    meta = backup.read_json(generation / "manifest.json")
+                    meta["files"] = backup.inventory(generation)
+                    meta["files"].pop("manifest.json")
+                    backup.write_json(generation / "manifest.json", meta)
+                    before = backup.inventory(generation)
+                    with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+                        backup.verify(generation)
+                    self.assertEqual(backup.inventory(generation), before)
+        archive.rename(self.base / "removed-migration-archive")
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+            backup.verify(generation)
+
+    def test_legacy_generations_without_migration_archive_remain_supported(self):
+        for mode in sorted(backup.MODES):
+            with self.subTest(mode=mode):
+                self.p["root"] = self.base / ("legacy-archive-" + mode)
+                generation = self.create(mode)
+                (generation / "migrations").rename(self.base / ("legacy-inputs-" + mode))
+                meta = backup.read_json(generation / "manifest.json")
+                meta.pop("runtime_schema_profile", None)
+                meta["files"] = backup.inventory(generation)
+                meta["files"].pop("manifest.json")
+                backup.write_json(generation / "manifest.json", meta)
+                self.assertEqual(backup.verify(generation), meta)
+
     def test_backup_retains_original_and_variant_migration_inputs(self):
         generation = self.create("mariadb-primary")
         self.assertEqual(backup.verify(generation).get("runtime_schema_profile", 64), 64)

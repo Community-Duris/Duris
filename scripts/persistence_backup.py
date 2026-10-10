@@ -40,6 +40,12 @@ GENERATION = re.compile(r"[0-9]{20}-[0-9a-f]{32}")
 LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock", ".artifact-mana.lock"}
 JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
 LOCK_WAIT_SECONDS = 120
+MIGRATION_SELECTORS = (
+    "migration_manifest.json", "migration_manifest.staging_0045.json",
+    "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
+    "migration_manifest.staging_0045_nullable_default_0065.json",
+    "migration_manifest.master_0031_nullable_default_0065.json",
+)
 CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
 BLOCKED_RETRY_FILE = ".blocked-retry.json"
 BLOCKED_RETRY_CODES = {
@@ -426,10 +432,7 @@ def database_runtime_profile(schema, args, env, database):
 
 def migration_capture(stage, p, capacity_base):
     sources = {}
-    for name in ("migration_manifest.json", "migration_manifest.staging_0045.json",
-                 "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
-                 "migration_manifest.staging_0045_nullable_default_0065.json",
-                 "migration_manifest.master_0031_nullable_default_0065.json"):
+    for name in MIGRATION_SELECTORS:
         path = ROOT / "migrations" / name
         raw = migrations.read_regular(path, migrations.MAX_MANIFEST_BYTES, "migration selector")
         manifest = migrations.load_manifest(path)
@@ -443,6 +446,7 @@ def migration_capture(stage, p, capacity_base):
                         "migration_source_changed")
                 sources[source] = checksum
     captured_size = capacity_base + total_size(stage)
+    captured = {}
     (stage / "migrations").mkdir(mode=0o700)
     for source, checksum in sorted(sources.items()):
         relative = source.relative_to(ROOT / "migrations")
@@ -459,6 +463,22 @@ def migration_capture(stage, p, capacity_base):
         with target.open("xb") as output:
             output.write(payload)
         target.chmod(0o600)
+        captured[relative.as_posix()] = {"sha256": checksum, "bytes": len(payload)}
+    return captured
+
+
+def validate_migration_archive(root):
+    try:
+        expected = set(MIGRATION_SELECTORS)
+        for name in MIGRATION_SELECTORS:
+            manifest = migrations.load_manifest(root / name)
+            require(len(manifest.migrations) == 65, "invalid_migration_archive")
+            for step in manifest.migrations:
+                expected.update(path.relative_to(root).as_posix()
+                                for path in (step.apply_path, step.verify_path))
+        require(set(inventory(root)) == expected, "invalid_migration_archive")
+    except migrations.MigrationContractError as error:
+        raise BackupError("invalid_migration_archive") from error
 
 
 def validate_dump(path, schema=None, profile=64):
@@ -546,6 +566,8 @@ def verify(generation):
     require(actual == manifest.get("files") and actual, "generation_checksum_mismatch")
     require(digest(generation / "runtime-schema.json") == manifest.get("runtime_schema_sha256"),
             "schema_manifest_mismatch")
+    if (generation / "migrations").exists() or "runtime_schema_profile" in manifest:
+        validate_migration_archive(generation / "migrations")
     if manifest["mode"] == "mariadb-primary":
         validate_dump(generation / "database.sql.gz", generation / "runtime-schema.json",
                       manifest.get("runtime_schema_profile", 64))
@@ -871,9 +893,10 @@ def backup(p, mode):
                 schema = secure_path(Path(os.environ["RUNTIME_COMPATIBILITY_MANIFEST"]), False)
             shutil.copyfile(schema, stage / "runtime-schema.json")
             (stage / "runtime-schema.json").chmod(0o600)
+            schema_digest = digest(stage / "runtime-schema.json")
             if mode == "mariadb-primary":
                 profile = verify_database_schema(stage / "runtime-schema.json")
-            migration_capture(stage, p, capacity_base)
+            migration_snapshot = migration_capture(stage, p, capacity_base)
             journals = journal_capture(stage, p, capacity_base)
             detail = (flatfile_capture(stage, p, capacity_base) if mode == "flatfile-primary"
                       else mariadb_capture(stage, p, capacity_base))
@@ -884,6 +907,10 @@ def backup(p, mode):
                 require(profile == detail.get("runtime_schema_profile") == after_profile,
                         "runtime_schema_profile_changed")
             checkpoint("after_capture")
+            require(digest(stage / "runtime-schema.json") == schema_digest,
+                    "schema_changed_during_capture")
+            require(inventory(stage / "migrations") == migration_snapshot, "migration_archive_changed")
+            validate_migration_archive(stage / "migrations")
             meta = {"version": 1, "generation": name, "created": capture_started, "mode": mode,
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}
