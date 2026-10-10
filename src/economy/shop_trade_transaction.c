@@ -183,6 +183,10 @@ class shop_trade_native_publication_owner final
 		       player_save_restored_publication_owner::publish_shop(
 			       command, completion, original_refusal_no_native_effect, nullptr);
 	}
+
+    public:
+	static bool passive_current_storage_bytes(size_t *) noexcept;
+	static size_t passive_storage_observer_frame_bytes() noexcept;
 };
 
 namespace
@@ -8498,4 +8502,764 @@ bool shop_trade_native_publication_owner::native_publish_flat(
 	{
 		return false;
 	}
+}
+
+namespace
+{
+struct shop_replay_bytes
+{
+	size_t value = 0;
+	bool add(size_t amount) noexcept
+	{
+		if (amount > SIZE_MAX - value)
+			return false;
+		value += amount;
+		return true;
+	}
+	template <class T> bool vector(const std::vector<T> &v) noexcept
+	{
+		return v.capacity() <= SIZE_MAX / sizeof(T) && add(v.capacity() * sizeof(T));
+	}
+	template <class K, class V> bool map_nodes(const std::map<K, V> &v) noexcept
+	{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+		using node = std::_Rb_tree_node<typename std::map<K, V>::value_type>;
+		return v.size() <= SIZE_MAX / sizeof(node) && add(v.size() * sizeof(node));
+#else
+		(void)v;
+		return false;
+#endif
+	}
+	bool string(const std::string &s) noexcept
+	{
+		const auto address = reinterpret_cast<uintptr_t>(s.data());
+		const auto object = reinterpret_cast<uintptr_t>(&s);
+		return (address >= object && address - object < sizeof(s)) ||
+		       (s.capacity() != SIZE_MAX && add(s.capacity() + 1));
+	}
+	bool item(const player_item_snapshot &row) noexcept
+	{
+		size_t heap = 0;
+		return player_item_snapshot_current_heap_bytes(row, &heap) && add(heap);
+	}
+	bool items(const std::vector<player_item_snapshot> &rows) noexcept
+	{
+		if (!vector(rows))
+			return false;
+		for (const auto &row : rows)
+			if (!item(row))
+				return false;
+		return true;
+	}
+	bool snapshot(const player_snapshot &row) noexcept
+	{
+		size_t heap = 0;
+		return player_snapshot_current_heap_bytes(row, &heap) && add(heap);
+	}
+	bool command(const critical_command &row) noexcept
+	{
+		size_t heap = 0;
+		return critical_command_current_heap_bytes(row, &heap) && add(heap);
+	}
+	bool payload(const shop_trade_payload &row) noexcept
+	{
+		size_t heap = 0;
+		return shop_trade_accounting_payload_current_heap_bytes(row, &heap) && add(heap);
+	}
+	bool custody(const std::vector<flatfile_item_ownership_record> &rows) noexcept
+	{
+		if (!vector(rows))
+			return false;
+		for (const auto &row : rows)
+			if (!vector(row.coin_payload))
+				return false;
+		return true;
+	}
+	bool keeper(const flatfile_shopkeeper_record &row) noexcept
+	{
+		return vector(row.affects) && items(row.items);
+	}
+	bool flat_native(const shop_trade_flat_native_checkpoint_stage &stage) noexcept
+	{
+		if (!string(stage.player_hold_cut.selected_root) ||
+		    !snapshot(stage.original_queued_ack) ||
+		    !vector(stage.player.authority.mappings) ||
+		    !string(stage.player.native_money.account_name) ||
+		    !vector(stage.player.native_money.recent_pvp_deaths) ||
+		    !vector(stage.player.native_money.completed_epic_zones) ||
+		    !snapshot(stage.player.player) || !custody(stage.player.player_custody) ||
+		    !vector(stage.player.pet_custody) || !custody(stage.keeper_custody) ||
+		    !keeper(stage.keeper_before) || !keeper(stage.keeper_after) ||
+		    !string(stage.catalog_before.filename) || !vector(stage.catalog_before.bytes) ||
+		    !string(stage.catalog_after.filename) || !vector(stage.catalog_after.bytes))
+			return false;
+		for (const auto &mapping : stage.player.authority.mappings)
+			if (!string(mapping.locator.name))
+				return false;
+		for (const auto &pet : stage.player.pet_custody)
+			if (!custody(pet.custody))
+				return false;
+		return true;
+	}
+};
+} // namespace
+
+bool shop_trade_native_publication_owner::passive_current_storage_bytes(size_t *output) noexcept
+{
+	if (!output || !nevent_is_game_thread())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	shop_replay_bytes bytes;
+	if (!bytes.add(sizeof(pending)) || !bytes.add(sizeof(notifying)) ||
+	    !bytes.add(sizeof(preparation_generation)) || !bytes.map_nodes(pending))
+		return false;
+	for (const auto &[id, entry] : pending)
+	{
+		if (!bytes.payload(entry.payload) || !bytes.items(entry.before_player) ||
+		    !bytes.items(entry.after_player) || !bytes.items(entry.after_keeper) ||
+		    !bytes.vector(entry.after_destination))
+			return false;
+		if (entry.preparation)
+		{
+			const auto &p = *entry.preparation;
+			if (!bytes.add(sizeof(p)) || !bytes.vector(p.selected) ||
+			    !bytes.vector(p.stock) || !bytes.vector(p.destination) ||
+			    !bytes.vector(p.keeper_blob) || !bytes.items(p.keeper_items) ||
+			    !bytes.vector(p.fenced_uids))
+				return false;
+			if (p.command &&
+			    (!bytes.add(sizeof(*p.command)) || !bytes.command(*p.command)))
+				return false;
+			if (p.flat)
+			{
+				if (!bytes.add(sizeof(*p.flat)) ||
+				    !bytes.string(p.flat->selected_root))
+					return false;
+				if (p.flat->native && (!bytes.add(sizeof(*p.flat->native)) ||
+						       !bytes.flat_native(*p.flat->native)))
+					return false;
+			}
+#ifndef __NO_MYSQL__
+			if (!bytes.map_nodes(p.native_stage.keeper_image))
+				return false;
+			for (const auto &[key, row] : p.native_stage.keeper_image)
+				if (!bytes.item(row.item))
+					return false;
+#endif
+		}
+		if (!entry.cold)
+			continue;
+		const auto &c = *entry.cold;
+		if (!bytes.add(sizeof(c)) || !bytes.vector(c.fenced_uids))
+			return false;
+		if (c.command && (!bytes.add(sizeof(*c.command)) || !bytes.command(*c.command)))
+			return false;
+		for (const auto *forest :
+		     { &c.original_player, &c.original_keeper, &c.working_player, &c.working_keeper,
+		       &c.source, &c.selected_after, &c.working_target })
+			if (!bytes.items(*forest))
+				return false;
+		if (c.flat_working)
+		{
+			if (!bytes.add(sizeof(*c.flat_working)))
+				return false;
+			for (const auto &forest : c.flat_working->player)
+				if (!bytes.items(forest))
+					return false;
+			for (const auto &forest : c.flat_working->keeper)
+				if (!bytes.items(forest))
+					return false;
+			for (const auto &forest : c.flat_working->target)
+				if (!bytes.items(forest))
+					return false;
+		}
+		if (c.flat_literals)
+		{
+			const auto &s = *c.flat_literals;
+			const size_t binding = s.bindings.retained_bytes();
+			if (binding < sizeof(s.bindings) || !bytes.add(sizeof(s)) ||
+			    !bytes.add(binding - sizeof(s.bindings)) || !bytes.vector(s.staged) ||
+			    !bytes.vector(s.reload) || !bytes.vector(s.enrollment_counts))
+				return false;
+			// Unconsumed private stages retain the source row in exact index
+			// order. A transferred object has a null stage pointer; ROOT G owns
+			// its strings/descriptors thereafter. No saved-byte cache is used.
+			for (size_t i = 0; i < s.staged.size(); ++i)
+			{
+				size_t heap = 0;
+				if (s.staged[i].object_ &&
+				    (i >= c.source.size() ||
+				     !s.staged[i].current_private_heap_bytes(c.source[i], &heap)))
+					return false;
+				if (!bytes.add(heap))
+					return false;
+			}
+			for (const auto &reload : s.reload)
+				if (!bytes.vector(reload.proclib_probes))
+					return false;
+		}
+#ifndef __NO_MYSQL__
+		const size_t binding = c.bindings.retained_bytes();
+		if (binding < sizeof(c.bindings) || !bytes.add(binding - sizeof(c.bindings)) ||
+		    !bytes.vector(c.staged) || !bytes.vector(c.reload) ||
+		    !bytes.map_nodes(c.enrollment_counts))
+			return false;
+		for (size_t i = 0; i < c.staged.size(); ++i)
+		{
+			size_t heap = 0;
+			if (c.staged[i].object_ &&
+			    (i >= c.source.size() ||
+			     !c.staged[i].current_private_heap_bytes(c.source[i], &heap)))
+				return false;
+			if (!bytes.add(heap))
+				return false;
+		}
+		for (const auto &reload : c.reload)
+			if (!bytes.vector(reload.proclib_probes))
+				return false;
+#endif
+	}
+	*output = bytes.value;
+	return true;
+#endif
+}
+bool shop_trade_transaction_replay_current_storage_bytes(size_t *output) noexcept
+{
+	return shop_trade_native_publication_owner::passive_current_storage_bytes(output);
+}
+
+size_t shop_trade_native_publication_owner::passive_storage_observer_frame_bytes() noexcept
+{
+	// Source-declared live visitor references, typed container range iterators,
+	// nested collector/source-row scan/checked-add and borrowed leaf observers.
+	// Literal/forest inline objects stay in the retained nodes and are not
+	// multiplied into the observation stack. Emitted/libc qualification is open.
+	return sizeof(shop_replay_bytes) + 24 * sizeof(void *) + 12 * sizeof(size_t) +
+	       8 * sizeof(bool) + 2 * sizeof(decltype(pending)::const_iterator) +
+	       7 * sizeof(const std::vector<player_item_snapshot> *) +
+	       sizeof(std::initializer_list<const std::vector<player_item_snapshot> *>) +
+	       6 * sizeof(std::vector<player_item_snapshot>::const_iterator) +
+	       shop_trade_accounting_decoded_heap_observer_frame_bytes() +
+	       shop_trade_original_item_stage::current_private_heap_observer_frame_bytes() +
+	       player_item_snapshot_copy_frame_bytes();
+}
+size_t shop_trade_transaction_replay_storage_observer_frame_bytes() noexcept
+{
+	return shop_trade_native_publication_owner::passive_storage_observer_frame_bytes();
+}
+
+namespace
+{
+size_t shop_replay_fixed_source_frames() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using iterator = decltype(pending)::iterator;
+	using const_iterator = decltype(pending)::const_iterator;
+	using node = std::_Rb_tree_node<decltype(pending)::value_type>;
+	using tree_pointer = std::_Rb_tree_node_base *;
+	// Actual public restore arguments/flat/result, all retained function
+	// locals and range-array temporaries. Work/entry/command inline objects
+	// themselves are charged through sizeof(shop_replay_work), not this list.
+	constexpr size_t caller =
+		5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) + 2 * sizeof(size_t) +
+		sizeof(iterator) + 2 * sizeof(void *) + sizeof(size_t) +
+		6 * sizeof(const shop_trade_recovery_forest_binding *) +
+		sizeof(std::initializer_list<const shop_trade_recovery_forest_binding *>) +
+		2 * sizeof(const shop_trade_recovery_forest_binding **) +
+		sizeof(std::pair<iterator, bool>) + sizeof(decltype(pending)::insert_return_type) +
+		sizeof(shop_replay_bytes) + sizeof(size_t);
+	// prefix/peak/forward/append/add/vector and their current/getter calls.
+	constexpr size_t budget = 19 * sizeof(void *) + 15 * sizeof(size_t) + 7 * sizeof(bool) +
+				  sizeof(shop_replay_bytes) + 2 * sizeof(iterator) +
+				  sizeof(const pending_trade *);
+	// Original player_pending/keeper_busy: any_of -> none_of -> find_if ->
+	// __find_if(input-iterator). Source loops are iterative; their PID/shop
+	// captures, iterators/parameters/returned iterator/predicate adapter and
+	// original lambda row references coexist once, independent of map size.
+	constexpr size_t predicates = 4 * sizeof(uint32_t) + 11 * sizeof(iterator) +
+				      8 * sizeof(void *) + 7 * sizeof(bool);
+	// map::find -> tree::find -> _M_lower_bound and real _S_key/_S_left/
+	// _S_right/iterator dereference/end paths. The genuine array<uint8_t,16>
+	// std::less expression uses C++20 array::operator<=> runtime memcmp and
+	// strong_ordering < 0, not a synthesized lexicographical comparator.
+	constexpr size_t lookup = 12 * sizeof(void *) + 3 * sizeof(iterator) +
+				  2 * sizeof(const_iterator) + 2 * sizeof(tree_pointer) +
+				  4 * sizeof(bool);
+	constexpr size_t array_key_comparison =
+		3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+		sizeof(std::strong_ordering) + sizeof(size_t) + 4 * (2 * sizeof(void *)) +
+		3 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(std::strong_ordering) +
+		sizeof(std::__cmp_cat::__unspec) + 3 * sizeof(bool);
+	// GCC13 map::emplace has an exact two-argument/default-allocator usable-key
+	// fast path (stl_map.h588): argument-reference pair, key, lower_bound and
+	// hint, then _M_emplace_hint_unique's real _Auto_node (tree ref/node ptr),
+	// hint/key/result position pair. _M_create_node/_M_construct_node and
+	// allocator_traits/new_allocator/construct_at/pair forward that same pair.
+	constexpr size_t node_create =
+		sizeof(std::pair<const std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES> &,
+				 pending_trade &>) +
+		17 * sizeof(void *) + 3 * sizeof(iterator) + 2 * sizeof(const_iterator) +
+		2 * sizeof(tree_pointer) + 3 * sizeof(std::pair<tree_pointer, tree_pointer>) +
+		2 * sizeof(std::allocator<node>) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+	// Real map node extract/reinsert: original node_handle's pointer/optional
+	// allocator belongs to work.node, but transient result/allocator/reference
+	// move carriers, _M_get_insert_unique_pos and _M_insert_node remain live.
+	// Single-node staged map is the only private tree ever destroyed here;
+	// its _M_erase call has depth one. Persistent pending is never cleared.
+	constexpr size_t node_transfer =
+		sizeof(decltype(pending)::insert_return_type) + 13 * sizeof(void *) +
+		4 * sizeof(iterator) + 2 * sizeof(const_iterator) +
+		2 * sizeof(std::pair<tree_pointer, tree_pointer>) + 3 * sizeof(bool) +
+		sizeof(std::allocator<node>) + 2 * sizeof(size_t);
+	// Fresh uint64 vector copy/range-insert/push_back: actual old/new/begin/end,
+	// position, n, elements_after, old_finish, mid and _M_check_len max/len.
+	// Allocator_traits/new_allocator/_Construct and uninitialized copy/relocate
+	// are real type-specific, iterative source scopes; old heap remains in
+	// CURRENT and new heap is a prospective request, outside these carriers.
+	constexpr size_t vector_copy = 17 * sizeof(void *) + 12 * sizeof(size_t) +
+				       4 * sizeof(std::vector<uint64_t>::iterator) +
+				       sizeof(uint64_t) + 5 * sizeof(bool) +
+				       2 * sizeof(std::allocator<uint64_t>);
+	// Default workspace/cold constructors and cleanup execute the actual
+	// default vector -> _Vector_base -> _Vector_impl -> _Vector_impl_data
+	// /allocator chain, map -> _Rb_tree/_Rb_tree_impl/_Rb_tree_header and node
+	// handle construction. These alternatives are admitted together as a
+	// finite inventory, without claiming compiler-emitted stack measurement.
+	constexpr size_t construction = 16 * sizeof(void *) + 2 * sizeof(std::_Rb_tree_header) +
+					3 * sizeof(std::allocator<uint64_t>) +
+					sizeof(std::allocator<node>);
+	// unique_ptr construction/reset/destroy + command/payload vector move
+	// assignment/destruction: real _M_move_assign temporary, allocator and
+	// _Vector_impl_data swap holders. Only one nested vector chain is active;
+	// six manifest members are moved/destroyed sequentially, not six heaps.
+	constexpr size_t cleanup = 18 * sizeof(void *) + 2 * sizeof(std::vector<uint64_t>) +
+				   sizeof(std::vector<uint8_t>) +
+				   4 * sizeof(std::allocator<uint64_t>) + 4 * sizeof(size_t) +
+				   3 * sizeof(bool);
+	// Duplicate identity uses the original TWO encodes and byte-vector ==.
+	// Genuine encoder/profile/envelope arguments/results, wire_bytes/status,
+	// key/revision range iterators and pad loops, append_le<uint64_t>'s value
+	// and byte loop, range-insert/push-back/allocator and typed copy/move paths.
+	// The encoder's private result vector and actual fresh heap request are
+	// admitted by critical_command_encode_bounded, not duplicated here.
+	constexpr size_t duplicate_encode =
+		// equal_commands this/left/right/candidate ref/nested/equal and return.
+		4 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + 14 * sizeof(void *) +
+		9 * sizeof(size_t) + 2 * sizeof(critical_command_codec_result) + sizeof(uint64_t) +
+		2 * sizeof(unsigned int) + 4 * sizeof(bool) +
+		2 * sizeof(std::vector<critical_entity_key>::const_iterator) +
+		2 * sizeof(std::vector<critical_expected_revision>::const_iterator) +
+		6 * sizeof(std::vector<uint8_t>::iterator) +
+		8 * sizeof(std::vector<uint8_t>::const_iterator) +
+		// GCC13 vector equality -> equal -> __equal_aux/aux1 -> raw-byte
+		// __equal<true>/__memcmp: actual refs/iterators/n/result; no recursion.
+		20 * sizeof(void *) + 4 * sizeof(std::ptrdiff_t) + 6 * sizeof(bool) + sizeof(int) +
+		// uint8 vector range insert/push_back and relocation/copy/deallocation.
+		19 * sizeof(void *) + 11 * sizeof(size_t) + 2 * sizeof(std::allocator<uint8_t>);
+	return caller + budget + predicates + lookup + array_key_comparison + node_create +
+	       node_transfer + vector_copy + construction + cleanup + duplicate_encode +
+	       critical_command_valid_frame_bytes() + critical_command_copy_frame_bytes() +
+	       // ROOT owns the complete SAME-scope observer closure once. This
+	       // only charges the actual borrowed SHOP wrapper's source carriers.
+	       player_save_shop_replay_owner::current_observer_frame_bytes() +
+	       // Pure sort-profile observer params/logarithm/n/depth/leaf and the
+	       // actual three-element max initializer-list/returned reference.
+	       2 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(std::initializer_list<size_t>) +
+	       sizeof(bool);
+#else
+	return 0;
+#endif
+}
+
+bool shop_replay_uid_sort_source_frames(size_t count, size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	using iterator = std::vector<uint64_t>::iterator;
+	using compare = __gnu_cxx::__ops::_Iter_less_iter;
+	using value_compare = __gnu_cxx::__ops::_Val_less_iter;
+	using iter_value_compare = __gnu_cxx::__ops::_Iter_less_val;
+	using difference = std::vector<uint64_t>::difference_type;
+	// Authenticated GCC13 complete sort inventory, with these actual default
+	// uint64 iterator/value adapters (not scheduler function-pointer wrappers).
+	constexpr size_t setup = 4 * sizeof(iterator) + 2 * sizeof(compare) + 2 * sizeof(void *) +
+				 3 * sizeof(difference) + sizeof(int) +
+				 8 * (sizeof(void *) + sizeof(iterator)) + 4 * sizeof(bool);
+	constexpr size_t recursive = 3 * sizeof(iterator) + sizeof(difference) + sizeof(compare);
+	constexpr size_t partition = 12 * sizeof(iterator) + 3 * sizeof(compare) +
+				     2 * sizeof(bool) + 7 * sizeof(void *) + sizeof(uint64_t);
+	constexpr size_t insertion = 10 * sizeof(iterator) + 2 * sizeof(compare) +
+				     2 * sizeof(value_compare) + sizeof(iter_value_compare) +
+				     3 * sizeof(uint64_t) + 2 * sizeof(difference) +
+				     12 * sizeof(void *) + 3 * sizeof(bool);
+	constexpr size_t heap = 12 * sizeof(iterator) + 14 * sizeof(difference) +
+				5 * sizeof(compare) + 2 * sizeof(value_compare) +
+				2 * sizeof(iter_value_compare) + 4 * sizeof(uint64_t) +
+				18 * sizeof(void *) + 3 * sizeof(bool);
+	constexpr size_t comparator = 2 * sizeof(iterator) + 2 * sizeof(void *) + 3 * sizeof(bool);
+	// Full default unique -> adjacent_find -> __adjacent_find and __unique,
+	// Iter_equal_to_iter plus result/next and original vector erase-at-end /
+	// typed destroy/move iterator closures. These loops never recurse.
+	constexpr size_t unique_erase = 15 * sizeof(iterator) +
+					4 * sizeof(__gnu_cxx::__ops::_Iter_equal_to_iter) +
+					12 * sizeof(void *) + 3 * sizeof(difference) +
+					4 * sizeof(size_t) + 5 * sizeof(bool);
+	size_t logarithm = 0;
+	for (size_t n = count; n > 1; n >>= 1)
+		++logarithm;
+	// Actual __sort initializes depth to 2*__lg(n); each recursive right
+	// partition strictly shrinks and the left partition reuses the frame.
+	const size_t depth = count <= 16 ? 1 : std::min(logarithm * 2 + 1, count - 16 + 1);
+	const size_t leaf = std::max({ partition, insertion, heap });
+	if (depth > (SIZE_MAX - setup - leaf - comparator) / recursive)
+		return false;
+	*output = std::max(setup + depth * recursive + leaf + comparator, unique_erase);
+	return true;
+#else
+	(void)count;
+	return false;
+#endif
+}
+
+struct shop_replay_work
+{
+	economic_frozen_intent intent;
+	shop_trade_payload payload{};
+	economic_account_key wallet{}, bank{}, keeper{};
+	pending_trade entry;
+	decltype(pending) staged;
+	decltype(pending)::node_type node;
+};
+struct shop_replay_duplicate_work
+{
+	std::vector<uint8_t> left, right;
+};
+struct shop_replay_budget
+{
+	player_save_coin_replay_budget_scope_owner &pipeline;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer;
+	shop_replay_work *work = nullptr;
+	const shop_replay_duplicate_work *duplicate = nullptr;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &b = *static_cast<shop_replay_budget *>(opaque);
+		if (b.denied || !b.reserve || !b.reserve(amount, b.context))
+		{
+			b.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &out, bool include_pipeline = true, size_t extra = 0) noexcept
+	{
+		shop_replay_bytes bytes;
+		size_t current = 0;
+		if (!bytes.add(outer) || !bytes.add(sizeof(*this)) ||
+		    !bytes.add(sizeof(shop_replay_work)) ||
+		    !bytes.add(shop_replay_fixed_source_frames()) ||
+		    !bytes.add(shop_trade_transaction_replay_storage_observer_frame_bytes()) ||
+		    !shop_trade_transaction_replay_current_storage_bytes(&current) ||
+		    !bytes.add(current))
+			return false;
+		if (include_pipeline &&
+		    (!player_save_shop_replay_owner::current_storage_bytes(pipeline, &current) ||
+		     !bytes.add(current)))
+			return false;
+		if (work)
+		{
+			if (!bytes.add(work->intent.admission.facts.capacity()) ||
+			    !bytes.payload(work->payload) || !bytes.payload(work->entry.payload))
+				return false;
+			if (work->entry.cold && (!bytes.add(sizeof(*work->entry.cold)) ||
+						 !bytes.vector(work->entry.cold->fenced_uids) ||
+						 (work->entry.cold->command &&
+						  (!bytes.add(sizeof(*work->entry.cold->command)) ||
+						   !bytes.command(*work->entry.cold->command)))))
+				return false;
+			const pending_trade *private_entry = nullptr;
+			if (!work->staged.empty())
+			{
+				if (!bytes.map_nodes(work->staged))
+					return false;
+				private_entry = &work->staged.begin()->second;
+			}
+			if (!work->node.empty())
+			{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13
+				if (!bytes.add(sizeof(
+					    std::_Rb_tree_node<decltype(pending)::value_type>)))
+					return false;
+				private_entry = &work->node.mapped();
+#else
+				return false;
+#endif
+			}
+			if (private_entry &&
+			    (!bytes.payload(private_entry->payload) || !private_entry->cold ||
+			     !bytes.add(sizeof(*private_entry->cold)) ||
+			     !bytes.vector(private_entry->cold->fenced_uids) ||
+			     !private_entry->cold->command ||
+			     !bytes.add(sizeof(*private_entry->cold->command)) ||
+			     !bytes.command(*private_entry->cold->command)))
+				return false;
+		}
+		if (duplicate &&
+		    (!bytes.add(sizeof(*duplicate)) || !bytes.vector(duplicate->left) ||
+		     !bytes.vector(duplicate->right)))
+			return false;
+		if (!bytes.add(extra))
+			return false;
+		out = bytes.value;
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t current = 0;
+		if (!prefix(current, true, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return forward(current, this);
+	}
+	bool append(std::vector<uint64_t> &v, const uint64_t *first, size_t count)
+	{
+		if (!count)
+			return peak();
+		if (count > v.max_size() - v.size())
+			return false;
+		const size_t desired = v.size() + count;
+		size_t request = 0;
+		if (desired > v.capacity())
+		{
+			const size_t growth = std::max(v.size(), count);
+			if (growth > v.max_size() - v.size())
+				return false;
+			const size_t capacity = v.size() + growth;
+			if (capacity > SIZE_MAX / sizeof(uint64_t))
+				return false;
+			request = capacity * sizeof(uint64_t);
+		}
+		// Original range insert retains old capacity while the actual GCC13
+		// _M_check_len(size+max(size,n)) new allocation is live.
+		if (!peak(request))
+			return false;
+		v.insert(v.end(), first, first + count);
+		return true;
+	}
+	bool append_one(std::vector<uint64_t> &v, uint64_t uid)
+	{
+		size_t request = 0;
+		if (v.size() == v.capacity())
+		{
+			const size_t grow = std::max(v.size(), size_t{ 1 });
+			if (grow > v.max_size() - v.size() ||
+			    v.size() + grow > SIZE_MAX / sizeof(uint64_t))
+				return false;
+			request = (v.size() + grow) * sizeof(uint64_t);
+		}
+		if (!peak(request))
+			return false;
+		v.push_back(uid);
+		return true;
+	}
+	bool equal_commands(const critical_command &left, const critical_command &right) noexcept
+	{
+		if (!work || !peak(sizeof(shop_replay_duplicate_work)))
+			return false;
+		// Keep the complete original critical_command_equal algorithm and
+		// failure law: left encode, right encode, then exact wire equality.
+		// Both outputs' actual capacities coexist through the right encoder,
+		// then original local cleanup finishes before the authentic hold.
+		size_t nested = 0;
+		shop_replay_duplicate_work candidate;
+		duplicate = &candidate;
+		const bool equal = prefix(nested) &&
+				   critical_command_encode_bounded(left, &candidate.left, forward,
+								   this, nested) ==
+					   critical_command_codec_result::ok &&
+				   prefix(nested) &&
+				   critical_command_encode_bounded(right, &candidate.right, forward,
+								   this, nested) ==
+					   critical_command_codec_result::ok &&
+				   candidate.left == candidate.right;
+		duplicate = nullptr;
+		return equal;
+	}
+};
+} // namespace
+
+bool shop_trade_transaction_restore_replayed_command_bounded(
+	const critical_command &original, player_save_coin_replay_budget_scope_owner &pipeline,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!reserve || !nevent_is_game_thread())
+		return false;
+	const bool flat = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+#ifdef __NO_MYSQL__
+	if (!flat)
+		return false;
+#else
+	if (flat)
+		return false;
+#endif
+	shop_replay_budget budget{ pipeline, reserve, context, outer };
+	if (sizeof(void *) != 8 || sizeof(unsigned long) != 8)
+		return false;
+	if (!budget.peak())
+		return false;
+	if (!original.publication_required || original.type != critical_command_type::shop_trade ||
+	    original.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    original.payload_version != SHOP_TRADE_RECOVERY_MANIFEST_VERSION ||
+	    !critical_command_envelope_valid(original))
+		return false;
+	shop_replay_work work;
+	budget.work = &work;
+	size_t nested = 0, request = 0;
+	try
+	{
+		if (!budget.prefix(nested) ||
+		    shop_trade_accounting_decode_bounded(original, &work.intent, &work.payload,
+							 &work.wallet, &work.bank, &work.keeper,
+							 shop_replay_budget::forward, &budget,
+							 nested) != economic_accounting_error::ok ||
+		    !work.payload.recovery_manifest_recorded || !work.payload.player_pid ||
+		    work.payload.player_pid > INT_MAX)
+			return false;
+		auto found = pending.find(original.operation_id.bytes);
+		if (found != pending.end())
+		{
+			if (!found->second.cold || !found->second.cold->command ||
+			    (flat && (!found->second.cold->flat_restored ||
+				      !found->second.cold->flat_registration_bytes)) ||
+			    !budget.equal_commands(*found->second.cold->command, original) ||
+			    !budget.prefix(nested, false))
+				return false;
+			const bool held =
+				flat ? player_save_shop_replay_owner::restore_flat(
+					       original,
+					       found->second.cold->flat_registration_bytes,
+					       pipeline, nested) :
+				       player_save_shop_replay_owner::restore_sql(original,
+										  pipeline, nested);
+			if (!held)
+				return false;
+			found->second.cold->registration_pending = false;
+			return true;
+		}
+		if (pending.size() + notifying >= SHOP_TRADE_PENDING_MAX ||
+		    player_pending(work.payload.player_pid) ||
+		    shop_trade_transaction_keeper_busy(work.payload.shop_id))
+			return false;
+		work.entry.player_pid = work.payload.player_pid;
+		// Fresh six-vector copy, exactly the original immutable payload. Old
+		// parsed capacities remain retained alongside all actual new requests.
+		shop_replay_bytes copy;
+		for (const auto *binding : { &work.payload.recovery_manifest.player_before,
+					     &work.payload.recovery_manifest.player_after,
+					     &work.payload.recovery_manifest.keeper_before,
+					     &work.payload.recovery_manifest.keeper_after,
+					     &work.payload.recovery_manifest.live_target_before,
+					     &work.payload.recovery_manifest.live_target_after })
+			if (binding->ordered_item_uids.size() > SIZE_MAX / sizeof(uint64_t) ||
+			    !copy.add(binding->ordered_item_uids.size() * sizeof(uint64_t)))
+				return false;
+		if (!budget.peak(copy.value))
+			return false;
+		work.entry.payload = work.payload;
+		if (!budget.peak(sizeof(cold_trade_restore)))
+			return false;
+		work.entry.cold = std::make_unique<cold_trade_restore>();
+		if (!critical_command_fresh_copy_request_bytes(original, &request) ||
+		    request > SIZE_MAX - sizeof(critical_command) ||
+		    !budget.peak(sizeof(critical_command) + request +
+				 critical_command_copy_frame_bytes()))
+			return false;
+		work.entry.cold->command = std::make_unique<critical_command>(original);
+		work.entry.cold->flat_restored = flat;
+		const auto &manifest = work.entry.payload.recovery_manifest;
+		for (const auto *binding :
+		     { &manifest.player_before, &manifest.player_after, &manifest.keeper_before,
+		       &manifest.keeper_after, &manifest.live_target_before,
+		       &manifest.live_target_after })
+			if (!budget.append(work.entry.cold->fenced_uids,
+					   binding->ordered_item_uids.data(),
+					   binding->ordered_item_uids.size()))
+				return false;
+		for (size_t i = 0; i < work.payload.item_count; ++i)
+			if (!budget.append_one(work.entry.cold->fenced_uids,
+					       work.payload.items[i].item_uid))
+				return false;
+		auto &uids = work.entry.cold->fenced_uids;
+		// Preserve the full original sort/unique/erase; authenticate the real
+		// input-driven introsort recursion before entering any algorithm.
+		size_t sort_frames = 0;
+		if (!shop_replay_uid_sort_source_frames(uids.size(), &sort_frames) ||
+		    !budget.peak(sort_frames))
+			return false;
+		std::sort(uids.begin(), uids.end());
+		uids.erase(std::unique(uids.begin(), uids.end()), uids.end());
+		if (flat && uids.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return false;
+		using map_type = decltype(pending);
+		using node_type = std::_Rb_tree_node<map_type::value_type>;
+		if (flat)
+		{
+			// Exact original registration owner's byte law, distinct from full
+			// ROOT CURRENT: node + cold + command + all original capacities.
+			shop_replay_bytes bytes;
+			if (!bytes.add(sizeof(node_type)) ||
+			    !bytes.add(sizeof(cold_trade_restore)) ||
+			    !bytes.add(sizeof(critical_command)) ||
+			    !bytes.command(*work.entry.cold->command) || !bytes.vector(uids) ||
+			    !bytes.payload(work.entry.payload) ||
+			    bytes.value > PLAYER_SAVE_PIPELINE_MAX_BYTES)
+				return false;
+			work.entry.cold->flat_registration_bytes = bytes.value;
+			if (!budget.peak(sizeof(node_type)))
+				return false;
+			work.staged.emplace(original.operation_id.bytes, std::move(work.entry));
+			work.node = work.staged.extract(work.staged.begin());
+			if (!budget.prefix(nested, false))
+				return false;
+			if (!player_save_shop_replay_owner::restore_flat(
+				    original, work.node.mapped().cold->flat_registration_bytes,
+				    pipeline, nested))
+				return false;
+			// No reservation/allocation follows the irreversible shared hold.
+			work.node.mapped().cold->registration_pending = false;
+			const auto inserted = pending.insert(std::move(work.node));
+			return inserted.inserted;
+		}
+		if (!budget.peak(sizeof(node_type)))
+			return false;
+		const auto inserted =
+			pending.emplace(original.operation_id.bytes, std::move(work.entry));
+		if (!inserted.second || !budget.prefix(nested, false) ||
+		    !player_save_shop_replay_owner::restore_sql(original, pipeline, nested))
+			return false;
+		// Uncertain registration retains the original inserted pending node.
+		// An exact retry repeats the same typed hold without replacing state.
+		inserted.first->second.cold->registration_pending = false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
 }

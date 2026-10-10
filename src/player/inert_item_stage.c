@@ -761,3 +761,82 @@ bool native_mobile_birth_literal_pool_storage_bytes(size_t *output) noexcept
 	return true;
 #endif
 }
+
+bool shop_trade_original_item_stage::current_private_heap_bytes(const player_item_snapshot &literal,
+								size_t *output) const noexcept
+{
+	if (!output)
+		return false;
+	if (!object_)
+	{
+		if (pool_ || affect_pool_)
+			return false;
+		*output = 0;
+		return true;
+	}
+	// The original constructor allocates all private texts to exact literal
+	// byte counts. The actual stage retains that original object and UID.
+	if (!pool_ || pool_ != dead_obj_pool || pool_->size != sizeof(obj_data) ||
+	    pool_->next_off != offsetof(obj_data, next) || !literal.object_uid ||
+	    (affect_pool_ && affect_pool_ != dead_obj_affect_pool) ||
+	    object_->obj_uid != literal.object_uid ||
+	    literal.string_mask != (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+	    object_->str_mask != literal.string_mask)
+		return false;
+	size_t bytes = 0;
+	const auto text = [&](const char *actual, const std::string &expected) noexcept
+	{
+		return actual && expected.size() != SIZE_MAX &&
+		       expected.find('\0') == std::string::npos &&
+		       std::memcmp(actual, expected.c_str(), expected.size() + 1) == 0 &&
+		       literal_raw_add(bytes, expected.size() + 1) &&
+		       literal_raw_add(bytes, literal_raw_header_bytes());
+	};
+	if (!text(object_->name, literal.name) ||
+	    !text(object_->short_description, literal.short_description) ||
+	    !text(object_->description, literal.description) ||
+	    !text(object_->action_description, literal.action_description))
+		return false;
+	const extra_descr_data *actual = object_->ex_description;
+	for (const auto &expected : literal.extra_descriptions)
+	{
+		if (!actual || !literal_raw_add(bytes, sizeof(extra_descr_data)) ||
+		    !literal_raw_add(bytes, literal_raw_header_bytes()))
+			return false;
+		// Literal-guided traversal has a fixed finite end. It never builds an
+		// allocating address set, and genuine constructor ownership supplies
+		// distinct descriptor/text requests. A changed/cyclic tail refuses.
+		if (expected.spellbook)
+		{
+			constexpr char marker[] = { 3, 1, 3, 0 };
+			constexpr size_t bits_bytes = (MAX_SKILLS + 1) / 8 + 2;
+			if (!actual->keyword || !actual->description ||
+			    std::memcmp(actual->keyword, marker, sizeof(marker)) != 0 ||
+			    !literal_raw_add(bytes, sizeof(marker)) ||
+			    !literal_raw_add(bytes, bits_bytes) ||
+			    !literal_raw_add(bytes, 2 * literal_raw_header_bytes()))
+				return false;
+		}
+		else if (!text(actual->keyword, expected.keyword) ||
+			 !text(actual->description, expected.description))
+			return false;
+		actual = actual->next;
+	}
+	if (actual)
+		return false;
+	*output = bytes;
+	return true;
+}
+size_t shop_trade_original_item_stage::current_private_heap_observer_frame_bytes() noexcept
+{
+	// This method's arguments/result/bytes/text closure/descriptor/binding
+	// reference/vector range iterators; text lambda arguments/result and actual
+	// string find, char_traits::find/memchr and memcmp scalar carriers. Binary
+	// spellbook byte allocation length is fixed by the original constructor;
+	// this ownership observer never invokes the allocating/decoding validator.
+	return 6 * sizeof(void *) + 2 * sizeof(size_t) + 3 * sizeof(bool) +
+	       sizeof(const extra_descr_data *) +
+	       2 * sizeof(std::vector<player_item_extra_description_snapshot>::const_iterator) +
+	       10 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(char) + sizeof(int) +
+	       3 * sizeof(bool) + 4 * sizeof(char);
+}

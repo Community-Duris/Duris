@@ -66,4 +66,23 @@ shop_trade_accounting_plan(const critical_command &command, const economic_froze
 			   const shop_trade_accounting_authority &authority,
 			   const shop_trade_result &result, economic_accounting_plan *plan);
 
+// Full original SHOP schema/metadata/facts/binding and projected-intent proof.
+// Outer owns actual input, prior outputs and sibling storage. Private candidates
+// are censused at every prospective cut. Outputs stay unchanged on refusal.
+economic_accounting_error
+shop_trade_accounting_decode_bounded(const critical_command &, economic_frozen_intent *,
+				     shop_trade_payload *, economic_account_key *,
+				     economic_account_key *, economic_account_key *,
+				     bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+				     void *context, size_t outer_live_scratch) noexcept;
+// Allocation-free CURRENT returned-value heap observers. Account-key fields
+// are entirely inline; these counts exclude the caller-owned inline objects.
+bool shop_trade_accounting_intent_current_heap_bytes(const economic_frozen_intent &,
+						     size_t *) noexcept;
+bool shop_trade_accounting_payload_current_heap_bytes(const shop_trade_payload &,
+						      size_t *) noexcept;
+bool shop_trade_accounting_account_current_heap_bytes(const economic_account_key &,
+						      size_t *) noexcept;
+size_t shop_trade_accounting_decoded_heap_observer_frame_bytes() noexcept;
+
 #endif

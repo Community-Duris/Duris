@@ -659,3 +659,499 @@ bool collector_command_build(critical_command *command, critical_operation_id op
 	return command->keys.size() <= CRITICAL_COMMAND_MAX_KEYS &&
 	       command->expected_revisions.size() <= CRITICAL_COMMAND_MAX_KEYS;
 }
+
+#include <openssl/sha.h>
+namespace
+{
+bool collector_codec_add(size_t &total, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - total)
+		return false;
+	total += extra;
+	return true;
+}
+bool collector_codec_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && defined(__linux__) &&            \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8;
+#else
+	return false;
+#endif
+}
+// Qualified GCC13 vector reserve/reallocation, construct/move/destroy and
+// allocator forwarding scopes. Heap requests are separate actual counts.
+constexpr size_t collector_codec_vector_frames =
+	// reserve/_M_allocate_and_copy/uninitialized_copy/allocator allocation.
+	12 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(bool) +
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + sizeof(size_t) +
+	sizeof(void *) + sizeof(size_t) +
+	// push_back/_M_realloc_insert/_M_check_len/relocate original scopes.
+	15 * sizeof(void *) + 8 * sizeof(size_t) + 3 * sizeof(bool) +
+	// allocator_traits/construct_at/placement-new/forward trivial element.
+	10 * sizeof(void *) + sizeof(size_t) +
+	// vector destructor/_Destroy/allocator deallocate/sized delete.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t) +
+	7 * sizeof(void *) + 4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t);
+template <class T, class Comparator> constexpr size_t collector_codec_sort_leaf_frames()
+{
+	// Genuine GCC13 sort/partition/insertion/heap/move/comparator scopes;
+	// comparator and value carriers use the selected key/revision types.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+struct collector_codec_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *encoded = nullptr;
+	const critical_command *command = nullptr;
+	mutable bool denied = false;
+	bool prefix(size_t &total, size_t extra = 0) const noexcept
+	{
+		total = outer;
+		size_t heap = 0;
+		if (!collector_codec_add(total, sizeof(*this)) ||
+		    !collector_codec_add(total, frames) ||
+		    !collector_codec_add(total, critical_command_copy_frame_bytes()) ||
+		    !collector_codec_add(total, 8 * sizeof(void *) + 8 * sizeof(size_t) +
+							4 * sizeof(bool)) ||
+		    (encoded && !collector_codec_add(total, encoded->capacity())) ||
+		    (command && (!critical_command_current_heap_bytes(*command, &heap) ||
+				 !collector_codec_add(total, heap))) ||
+		    !collector_codec_add(total, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t total = 0;
+		if (!prefix(total, extra) || !reserve || !reserve(total, context))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	template <class T> bool growth(const std::vector<T> &value, size_t count = 1) noexcept
+	{
+		size_t extra = collector_codec_vector_frames;
+		if (count > value.max_size() - value.size())
+		{
+			denied = true;
+			return false;
+		}
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!collector_codec_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !collector_codec_add(extra, next * sizeof(T)))
+			{
+				denied = true;
+				return false;
+			}
+		}
+		return peak(extra + 2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool));
+	}
+	template <class T, class Comparator> bool sort(size_t count) noexcept
+	{
+		size_t depth = 0, n = count,
+		       extra = collector_codec_sort_leaf_frames<T, Comparator>();
+		while (n > 1)
+		{
+			n >>= 1;
+			++depth;
+		}
+		const size_t recursive =
+			3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator);
+		return 2 * depth + 1 <= SIZE_MAX / recursive &&
+		       collector_codec_add(extra, (2 * depth + 1) * recursive) && peak(extra);
+	}
+	static bool forward(size_t child, void *opaque) noexcept
+	{
+		auto &budget = *static_cast<collector_codec_budget *>(opaque);
+		// Child owns its complete absolute prefix; refresh/deny is propagated.
+		if (!budget.reserve || !budget.reserve(child, budget.context))
+		{
+			budget.denied = true;
+			return false;
+		}
+		return true;
+	}
+};
+template <class T> bool collector_append_le_bounded(std::vector<uint8_t> *output, T value,
+						    collector_codec_budget &budget)
+{
+	using unsigned_type = std::make_unsigned_t<T>;
+	const unsigned_type encoded = static_cast<unsigned_type>(value);
+	for (size_t byte = 0; byte < sizeof(T); ++byte)
+	{
+		if (!budget.growth(*output))
+			return false;
+		output->push_back(static_cast<uint8_t>(encoded >> (byte * 8)));
+	}
+	return true;
+}
+bool collector_append_owner_bounded(std::vector<uint8_t> *output, const item_owner_identity &owner,
+				    collector_codec_budget &budget)
+{
+	return collector_append_le_bounded<uint8_t>(output, static_cast<uint8_t>(owner.type),
+						    budget) &&
+	       collector_append_le_bounded<uint64_t>(output, owner.id, budget) &&
+	       collector_append_le_bounded<uint64_t>(output, owner.context_id, budget);
+}
+bool collector_append_name_bounded(std::vector<uint8_t> *output,
+				   const std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> &name,
+				   collector_codec_budget &budget)
+{
+	const size_t length = strnlen(name.data(), name.size());
+	if (length >= name.size() ||
+	    !collector_append_le_bounded<uint16_t>(output, static_cast<uint16_t>(length), budget) ||
+	    !budget.growth(*output, length))
+		return false;
+	output->insert(output->end(), name.begin(), name.begin() + length);
+	return true;
+}
+bool collector_encode_owned(const collector_command_payload &payload, std::vector<uint8_t> *encoded,
+			    collector_codec_budget &budget)
+{
+	if (!encoded || !valid_payload(payload))
+		return false;
+	try
+	{
+		encoded->clear();
+		const size_t requested = 128 + payload.item_count * 40 + payload.item_blob_size;
+		if (!budget.peak(collector_codec_vector_frames + requested))
+			return false;
+		encoded->reserve(requested);
+		if (!collector_append_le_bounded<uint8_t>(
+			    encoded, static_cast<uint8_t>(payload.action), budget))
+			return false;
+		if (!collector_append_le_bounded<uint8_t>(
+			    encoded, static_cast<uint8_t>(payload.cancel_reason), budget))
+			return false;
+		if (!collector_append_le_bounded<uint8_t>(
+			    encoded, static_cast<uint8_t>(payload.target_state), budget))
+			return false;
+		if (!collector_append_le_bounded<uint8_t>(
+			    encoded, payload.capacity_admitted ? 1 : 0, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(encoded, payload.listing, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(
+			    encoded, payload.expected_listing_revision, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(encoded, payload.observed_at, budget))
+			return false;
+		if (!collector_append_le_bounded<uint32_t>(encoded, payload.actor_pid, budget))
+			return false;
+		if (!collector_append_le_bounded<uint8_t>(encoded, payload.racewar, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(
+			    encoded, payload.expected_wallet_revision, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(encoded, payload.expected_bank_revision,
+							   budget))
+			return false;
+		if (!collector_append_owner_bounded(encoded, payload.from_owner, budget))
+			return false;
+		if (!collector_append_owner_bounded(encoded, payload.to_owner, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(
+			    encoded, payload.expected_from_owner_revision, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(
+			    encoded, payload.expected_to_owner_revision, budget))
+			return false;
+		if (!collector_append_le_bounded<uint64_t>(encoded, payload.selected_item_uid,
+							   budget))
+			return false;
+		if (!collector_append_le_bounded<uint16_t>(encoded, payload.item_count, budget))
+			return false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &item = payload.items[index];
+			if (!collector_append_le_bounded<uint64_t>(encoded, item.item_uid, budget))
+				return false;
+			if (!collector_append_le_bounded<uint64_t>(encoded, item.root_item_uid,
+								   budget))
+				return false;
+			if (!collector_append_le_bounded<uint64_t>(encoded, item.parent_item_uid,
+								   budget))
+				return false;
+			if (!collector_append_le_bounded<uint64_t>(
+				    encoded, item.expected_item_revision, budget))
+				return false;
+			if (!collector_append_le_bounded<int32_t>(encoded, item.vnum, budget))
+				return false;
+			if (!collector_append_le_bounded<uint8_t>(
+				    encoded, static_cast<uint8_t>(item.expected_state), budget))
+				return false;
+			if (!collector_append_le_bounded<uint8_t>(encoded, 0, budget))
+				return false;
+			if (!collector_append_le_bounded<uint8_t>(encoded, 0, budget))
+				return false;
+			if (!collector_append_le_bounded<uint8_t>(encoded, 0, budget))
+				return false;
+		}
+		if (!collector_append_name_bounded(encoded, payload.account_name, budget))
+			return false;
+		if (!collector_append_le_bounded<uint32_t>(encoded, payload.item_blob_size, budget))
+			return false;
+		if (!budget.growth(*encoded, payload.item_blob_size))
+			return false;
+		encoded->insert(encoded->end(), payload.item_blob.begin(),
+				payload.item_blob.begin() + payload.item_blob_size);
+	}
+	catch (const std::bad_alloc &)
+	{
+		budget.denied = true;
+		encoded->clear();
+		return false;
+	}
+	return encoded->size() <= CRITICAL_COMMAND_MAX_PAYLOAD_BYTES;
+}
+bool collector_build_owned(critical_command *command, critical_operation_id operation_id,
+			   const collector_command_payload &payload,
+			   critical_source_site source_site, critical_deadline_class deadline_class,
+			   collector_codec_budget &budget)
+{
+	if (!command || critical_operation_id_is_zero(operation_id) || !valid_payload(payload))
+		return false;
+	std::vector<uint8_t> encoded;
+	budget.encoded = &encoded;
+	if (!collector_encode_owned(payload, &encoded, budget))
+		return false;
+	*command = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+		     .operation_id = operation_id,
+		     .type = critical_command_type::collector,
+		     .payload_version = COLLECTOR_COMMAND_PAYLOAD_VERSION,
+		     .source_site = source_site,
+		     .deadline_class = deadline_class,
+		     .accepted_at_usec = 0,
+		     .keys = {},
+		     .expected_revisions = {},
+		     .payload = std::move(encoded) };
+	budget.encoded = nullptr;
+	budget.command = command;
+	auto add_key = [&](critical_entity_key key)
+	{
+		if (std::find_if(command->keys.begin(), command->keys.end(),
+				 [&](const critical_entity_key &candidate) {
+					 return critical_entity_key_equal(candidate, key);
+				 }) == command->keys.end())
+		{
+			if (!budget.growth(command->keys))
+				return false;
+			command->keys.push_back(key);
+		}
+		return true;
+	};
+	auto add_fence = [&](critical_entity_key key, uint64_t revision)
+	{
+		if (!add_key(key))
+			return false;
+		if (std::find_if(command->expected_revisions.begin(),
+				 command->expected_revisions.end(),
+				 [&](const critical_expected_revision &candidate) {
+					 return critical_entity_key_equal(candidate.key, key);
+				 }) == command->expected_revisions.end())
+		{
+			if (!budget.growth(command->expected_revisions))
+				return false;
+			command->expected_revisions.push_back({ key, revision });
+		}
+		return true;
+	};
+	try
+	{
+		const critical_entity_key listing = { critical_entity_type::collector,
+						      payload.listing };
+		if (!add_fence(listing, payload.expected_listing_revision))
+			return false;
+		if (payload.action == collector_action::purchase)
+		{
+			const critical_entity_key player = { critical_entity_type::player,
+							     payload.actor_pid };
+			critical_entity_key account = {};
+			size_t nested = 0;
+			if (!budget.prefix(nested) ||
+			    !currency_account_key_bounded(
+				    payload.account_name.data(), payload.racewar, &account,
+				    collector_codec_budget::forward, &budget, nested))
+				return false;
+			if (!add_fence(player, payload.expected_wallet_revision))
+				return false;
+			if (!add_fence(account, payload.expected_bank_revision))
+				return false;
+		}
+		if (payload.item_count)
+		{
+			critical_entity_key from = {}, to = {};
+			size_t nested = 0;
+			if (!budget.prefix(nested) ||
+			    !item_owner_key_bounded(payload.from_owner, &from,
+						    collector_codec_budget::forward, &budget,
+						    nested) ||
+			    !budget.prefix(nested) ||
+			    !item_owner_key_bounded(payload.to_owner, &to,
+						    collector_codec_budget::forward, &budget,
+						    nested))
+				return false;
+			if (!add_fence(from, payload.expected_from_owner_revision))
+				return false;
+			if (!add_fence(to, payload.expected_to_owner_revision))
+				return false;
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (!add_fence({ critical_entity_type::item,
+						 payload.items[index].item_uid },
+					       payload.items[index].expected_item_revision))
+					return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		budget.denied = true;
+		return false;
+	}
+	if (!budget.sort<critical_entity_key, decltype(&critical_entity_key_less)>(
+		    command->keys.size()))
+		return false;
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (!budget.sort<critical_expected_revision, char>(command->expected_revisions.size()))
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  [](const critical_expected_revision &left,
+		     const critical_expected_revision &right)
+		  { return critical_entity_key_less(left.key, right.key); });
+	return command->keys.size() <= CRITICAL_COMMAND_MAX_KEYS &&
+	       command->expected_revisions.size() <= CRITICAL_COMMAND_MAX_KEYS;
+}
+}
+
+bool collector_command_decode_payload_bounded(const critical_command &command,
+					      collector_command_payload *payload,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer_live,
+					      bool *capacity_refused) noexcept
+{
+	const size_t frames =
+		sizeof(critical_command) + sizeof(collector_command_payload) +
+		sizeof(std::vector<uint8_t>) + 18 * sizeof(void *) + 10 * sizeof(size_t) +
+		8 * sizeof(bool) + 8 * sizeof(uint8_t) + sizeof(critical_entity_key) * 4 +
+		sizeof(critical_operation_id) + sizeof(critical_expected_revision) +
+		// Actual denial relay's output pointer/reference plus its constructor and
+		// destructor parameter/return scopes remain live throughout the call.
+		5 * sizeof(void *) + sizeof(bool) + 4 * collector_codec_vector_frames +
+		critical_command_valid_frame_bytes() +
+		// Original full structural tree/name/owner predicates and read/append helpers.
+		14 * sizeof(void *) + 8 * sizeof(size_t) + 5 * sizeof(uint64_t) + 8 * sizeof(bool) +
+		4 * sizeof(uint8_t);
+	collector_codec_budget budget{ reserve, context, outer_live, frames };
+	struct refusal_relay
+	{
+		bool *output;
+		const bool &denied;
+		~refusal_relay() noexcept
+		{
+			if (output)
+				*output = denied;
+		}
+	};
+	refusal_relay relay{ capacity_refused, budget.denied };
+	if (!collector_codec_supported())
+	{
+		budget.denied = true;
+		return false;
+	}
+	if (!budget.peak())
+		return false;
+	try
+	{
+		if (!payload || command.type != critical_command_type::collector ||
+		    command.payload_version != COLLECTOR_COMMAND_PAYLOAD_VERSION)
+			return false;
+		*payload = {};
+		const uint8_t *cursor = command.payload.data();
+		const uint8_t *end = cursor + command.payload.size();
+		uint8_t action = 0, reason = 0, target_state = 0, capacity = 0;
+		if (!read_le(&cursor, end, &action) || !read_le(&cursor, end, &reason) ||
+		    !read_le(&cursor, end, &target_state) || !read_le(&cursor, end, &capacity) ||
+		    capacity > 1 || !read_le(&cursor, end, &payload->listing) ||
+		    !read_le(&cursor, end, &payload->expected_listing_revision) ||
+		    !read_le(&cursor, end, &payload->observed_at) ||
+		    !read_le(&cursor, end, &payload->actor_pid) ||
+		    !read_le(&cursor, end, &payload->racewar) ||
+		    !read_le(&cursor, end, &payload->expected_wallet_revision) ||
+		    !read_le(&cursor, end, &payload->expected_bank_revision) ||
+		    !read_owner(&cursor, end, &payload->from_owner) ||
+		    !read_owner(&cursor, end, &payload->to_owner) ||
+		    !read_le(&cursor, end, &payload->expected_from_owner_revision) ||
+		    !read_le(&cursor, end, &payload->expected_to_owner_revision) ||
+		    !read_le(&cursor, end, &payload->selected_item_uid) ||
+		    !read_le(&cursor, end, &payload->item_count) ||
+		    payload->item_count > payload->items.size())
+			return false;
+		payload->action = static_cast<collector_action>(action);
+		payload->cancel_reason = static_cast<collector::reason>(reason);
+		payload->target_state = static_cast<item_custody_state>(target_state);
+		payload->capacity_admitted = capacity != 0;
+		for (size_t index = 0; index < payload->item_count; ++index)
+		{
+			uint8_t state = 0, reserved[3] = {};
+			auto &item = payload->items[index];
+			if (!read_le(&cursor, end, &item.item_uid) ||
+			    !read_le(&cursor, end, &item.root_item_uid) ||
+			    !read_le(&cursor, end, &item.parent_item_uid) ||
+			    !read_le(&cursor, end, &item.expected_item_revision) ||
+			    !read_le(&cursor, end, &item.vnum) || !read_le(&cursor, end, &state) ||
+			    !read_le(&cursor, end, &reserved[0]) ||
+			    !read_le(&cursor, end, &reserved[1]) ||
+			    !read_le(&cursor, end, &reserved[2]) || reserved[0] || reserved[1] ||
+			    reserved[2])
+				return false;
+			item.expected_state = static_cast<item_custody_state>(state);
+		}
+		if (!read_name(&cursor, end, &payload->account_name) ||
+		    !read_le(&cursor, end, &payload->item_blob_size) ||
+		    payload->item_blob_size > payload->item_blob.size() ||
+		    static_cast<size_t>(end - cursor) != payload->item_blob_size)
+			return false;
+		memcpy(payload->item_blob.data(), cursor, payload->item_blob_size);
+		if (!valid_payload(*payload))
+			return false;
+		critical_command expected = {};
+		if (!collector_build_owned(&expected, command.operation_id, *payload,
+					   command.source_site, command.deadline_class, budget) ||
+		    !matching_fences(expected, command))
+			return false;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		budget.denied = true;
+		return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}

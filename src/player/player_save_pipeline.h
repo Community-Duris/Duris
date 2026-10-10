@@ -790,6 +790,8 @@ class player_save_coin_replay_budget_scope_owner final
     private:
 	friend class critical_mixed_startup_replay_owner;
 	friend class player_save_sql_drop_replay_owner;
+	friend class player_save_shop_replay_owner;
+	friend class player_save_sql_collector_replay_owner;
 	friend bool player_save_pipeline_replay_current_storage_bytes(size_t *) noexcept;
 	friend bool
 	player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_command &,
@@ -823,6 +825,8 @@ class player_save_coin_replay_budget_scope_owner final
 	bool restore(const critical_command &, size_t exclusive_outer) const noexcept;
 	bool restore_obligation(const critical_command &, int, uint64_t,
 				size_t exclusive_outer) const;
+	bool restore_publication_profile(const critical_command &, int, uint64_t,
+					 size_t exclusive_outer, bool shop) const;
 	std::unique_lock<std::mutex> lock_;
 	bool (*reserve_)(size_t, void *) noexcept;
 	void *context_;
@@ -884,5 +888,32 @@ bool player_save_pipeline_restore_sql_drop_obligation_bounded(const critical_com
 							      bool (*)(size_t, void *) noexcept,
 							      void *,
 							      size_t exclusive_outer) noexcept;
+
+// Same-scope passive SHOP/Collector replay, paired with full bounded decoders.
+class player_save_shop_replay_owner final
+{
+    public:
+	static size_t frame_bytes() noexcept;
+	// Additional wrapper only; ROOT owns the complete same-scope observer.
+	static size_t current_observer_frame_bytes() noexcept;
+	static bool current_storage_bytes(player_save_coin_replay_budget_scope_owner &,
+					  size_t *) noexcept;
+	static bool restore_sql(const critical_command &,
+				player_save_coin_replay_budget_scope_owner &,
+				size_t exclusive_outer) noexcept;
+	// Complete original flat hold law; full provider/source joins required.
+	static bool restore_flat(const critical_command &, size_t native_owner_retained_bytes,
+				 player_save_coin_replay_budget_scope_owner &,
+				 size_t exclusive_outer) noexcept;
+};
+class player_save_sql_collector_replay_owner final
+{
+    public:
+	static size_t frame_bytes() noexcept;
+	static bool current_storage_bytes(player_save_coin_replay_budget_scope_owner &,
+					  size_t *) noexcept;
+	static bool restore(const critical_command &, player_save_coin_replay_budget_scope_owner &,
+			    size_t exclusive_outer) noexcept;
+};
 
 #endif

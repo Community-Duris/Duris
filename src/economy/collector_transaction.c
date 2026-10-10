@@ -934,3 +934,433 @@ void collector_transaction_reset_for_tests(void)
 	std::lock_guard<std::mutex> lock(outbox_mutex);
 	outbox_publications.clear();
 }
+
+#include <limits>
+#include <type_traits>
+#include <compare>
+
+namespace
+{
+bool collector_replay_add(size_t &bytes, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - bytes)
+		return false;
+	bytes += extra;
+	return true;
+}
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+template <class Key, class Value>
+bool collector_table_heap(const std::unordered_map<Key, Value> &table, size_t &bytes) noexcept
+{
+	using map_type = std::unordered_map<Key, Value>;
+	using node_type =
+		std::__detail::_Hash_node<typename map_type::value_type,
+					  std::__cache_default<Key, std::hash<Key>>::value>;
+	const size_t buckets = table.bucket_count();
+	// GCC13 _M_allocate_buckets(1) returns the genuine inline single bucket.
+	if (!buckets ||
+	    (buckets > 1 &&
+	     (buckets > SIZE_MAX / sizeof(std::__detail::_Hash_node_base *) ||
+	      !collector_replay_add(bytes, buckets * sizeof(std::__detail::_Hash_node_base *)))))
+		return false;
+	return table.size() <= SIZE_MAX / sizeof(node_type) &&
+	       collector_replay_add(bytes, table.size() * sizeof(node_type));
+}
+#endif
+struct collector_replay_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const economic_frozen_intent *intent = nullptr;
+	const pending_purchase *entry = nullptr;
+	const std::string *key = nullptr;
+	const std::vector<uint8_t> *left = nullptr, *right = nullptr;
+	bool current(size_t &bytes, size_t extra = 0) const noexcept
+	{
+		size_t heap = 0;
+		if (!collector_transaction_replay_current_storage_bytes(&bytes) ||
+		    !collector_replay_add(bytes, outer) || !collector_replay_add(bytes, frames) ||
+		    !collector_replay_add(bytes, sizeof(*this)) ||
+		    !collector_replay_add(bytes,
+					  collector_transaction_replay_observer_frame_bytes()) ||
+		    !collector_replay_add(bytes, extra) ||
+		    (intent && !collector_replay_add(bytes, intent->admission.facts.capacity())) ||
+		    (key && key->capacity() > 15 &&
+		     (key->capacity() == SIZE_MAX ||
+		      !collector_replay_add(bytes, key->capacity() + 1))) ||
+		    (left && !collector_replay_add(bytes, left->capacity())) ||
+		    (right && !collector_replay_add(bytes, right->capacity())))
+			return false;
+		if (entry && entry->command &&
+		    (!collector_replay_add(bytes, sizeof(critical_command)) ||
+		     !critical_command_current_heap_bytes(*entry->command, &heap) ||
+		     !collector_replay_add(bytes, heap)))
+			return false;
+		return !entry || !entry->payload ||
+		       collector_replay_add(bytes, sizeof(collector_command_payload));
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t bytes = 0;
+		return current(bytes, extra) && reserve && reserve(bytes, context);
+	}
+	static bool child(size_t request, void *opaque) noexcept
+	{
+		return static_cast<collector_replay_budget *>(opaque)->peak(request);
+	}
+	bool equal(const critical_command &a, const critical_command &b) noexcept
+	{
+		// Preserve original canonical wire comparison, not a projected field subset.
+		const size_t own = 2 * sizeof(std::vector<uint8_t>) + 8 * sizeof(void *) +
+				   4 * sizeof(size_t) + 3 * sizeof(bool) +
+				   critical_command_valid_frame_bytes() +
+				   critical_command_copy_frame_bytes();
+		if (!peak(own))
+			return false;
+		std::vector<uint8_t> a_bytes, b_bytes;
+		left = &a_bytes;
+		right = &b_bytes;
+		bool matched = false;
+		do
+		{
+			if (critical_command_encode_bounded(
+				    a, &a_bytes, collector_replay_budget::child, this, own) !=
+			    critical_command_codec_result::ok)
+				break;
+			if (critical_command_encode_bounded(
+				    b, &b_bytes, collector_replay_budget::child, this, own) !=
+			    critical_command_codec_result::ok)
+				break;
+			matched = a_bytes == b_bytes;
+		} while (false);
+		left = nullptr;
+		right = nullptr;
+		return matched;
+	}
+};
+}
+
+size_t collector_transaction_replay_observer_frame_bytes() noexcept
+{
+	// Actual lock/scoped iterator/node/string/owned-command observation closures.
+	return sizeof(std::lock_guard<std::mutex>) + 24 * sizeof(void *) + 17 * sizeof(size_t) +
+	       7 * sizeof(bool) + critical_command_copy_frame_bytes();
+}
+bool collector_transaction_replay_current_storage_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+	if (!output || !nevent_is_game_thread())
+		return false;
+	try
+	{
+		size_t bytes = sizeof(pending) + sizeof(purchases) + sizeof(purchase_pump_running) +
+			       sizeof(player_recoveries) + sizeof(outbox_mutex) +
+			       sizeof(outbox_publications);
+		if (!collector_table_heap(pending, bytes) ||
+		    !collector_table_heap(player_recoveries, bytes))
+			return false;
+		using purchase_node = std::_Rb_tree_node<typename decltype(purchases)::value_type>;
+		if (purchases.size() > SIZE_MAX / sizeof(purchase_node) ||
+		    !collector_replay_add(bytes, purchases.size() * sizeof(purchase_node)))
+			return false;
+		for (const auto &value : pending)
+		{
+			if (value.first.capacity() > 15 &&
+			    (value.first.capacity() == SIZE_MAX ||
+			     !collector_replay_add(bytes, value.first.capacity() + 1)))
+				return false;
+			if (value.second.payload &&
+			    !collector_replay_add(bytes, sizeof(collector_command_payload)))
+				return false;
+		}
+		for (const auto &value : player_recoveries)
+		{
+			if (value.first.capacity() > 15 &&
+			    (value.first.capacity() == SIZE_MAX ||
+			     !collector_replay_add(bytes, value.first.capacity() + 1)))
+				return false;
+			if (value.second.payload &&
+			    !collector_replay_add(bytes, sizeof(collector_command_payload)))
+				return false;
+		}
+		for (const auto &value : purchases)
+		{
+			size_t heap = 0;
+			if (value.second.command &&
+			    (!collector_replay_add(bytes, sizeof(critical_command)) ||
+			     !critical_command_current_heap_bytes(*value.second.command, &heap) ||
+			     !collector_replay_add(bytes, heap)))
+				return false;
+			if (value.second.payload &&
+			    !collector_replay_add(bytes, sizeof(collector_command_payload)))
+				return false;
+		}
+		{
+			// This is the existing leaf mutex, independent of coordinator/pipeline.
+			std::lock_guard<std::mutex> lock(outbox_mutex);
+			if (!collector_table_heap(outbox_publications, bytes))
+				return false;
+		}
+		*output = bytes;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+size_t collector_hinted_emplace_source_frames() noexcept
+{
+	using tree_type = decltype(purchases);
+	using key_type = typename tree_type::key_type;
+	using iterator = typename tree_type::iterator;
+	using const_iterator = typename tree_type::const_iterator;
+	using result = std::pair<iterator, bool>;
+	using position = std::pair<std::_Rb_tree_node_base *, std::_Rb_tree_node_base *>;
+	using references = std::pair<const key_type &, pending_purchase &>;
+	static_assert(std::is_same_v<decltype(std::declval<const key_type &>() <=>
+					      std::declval<const key_type &>()),
+				     std::strong_ordering>);
+	// stl_map.h:590-605: this/__args, real pair<_Args&...> temporary,
+	// hidden structured-binding reference plus __a/__v, __k, __i, result.
+	constexpr size_t map_emplace = 3 * sizeof(void *) + sizeof(references) +
+				       4 * sizeof(void *) + sizeof(iterator) + sizeof(result);
+	// stl_pair.h reference-pair lvalue ctor(this,x,y); two get(rvalue pair)
+	// -> __move_get -> forward chains each own argument/result references.
+	// Returned pair<iterator,bool> ctor(this,x,y), its two forwards and the
+	// original true argument are separate actual selected source scopes.
+	constexpr size_t argument_pair = 3 * sizeof(void *) + 12 * sizeof(void *) +
+					 3 * sizeof(void *) + 4 * sizeof(void *) + sizeof(bool);
+	// map::lower_bound -> tree::lower_bound -> _M_lower_bound(x,y,k),
+	// including actual return iterator and its node-pointer constructor.
+	constexpr size_t lower_bound = 2 * sizeof(void *) + sizeof(iterator) + 2 * sizeof(void *) +
+				       sizeof(iterator) + 4 * sizeof(void *) + sizeof(iterator) +
+				       2 * sizeof(void *);
+	// map::emplace_hint -> _M_emplace_hint_unique: actual const hint,
+	// this/two forwarded references, return iterator, _Auto_node's tree& and
+	// node pointer, and __res (actual two-node-pointer position pair).
+	constexpr size_t emplace_hint = 3 * sizeof(void *) + sizeof(const_iterator) +
+					sizeof(iterator) + 3 * sizeof(void *) +
+					sizeof(const_iterator) + sizeof(iterator) +
+					2 * sizeof(void *) + sizeof(position);
+	// _M_get_insert_hint_unique_pos: this/position/key, __pos, __before or
+	// __after and returned position. Original fallback _M_get_insert_unique_pos
+	// additionally owns x/y/comp/j/result; both searches are iterative.
+	constexpr size_t hint_position = 2 * sizeof(void *) + sizeof(const_iterator) +
+					 3 * sizeof(iterator) + sizeof(position) +
+					 4 * sizeof(void *) + sizeof(bool) + sizeof(iterator) +
+					 sizeof(position);
+	// _Auto_node ctor/destructor/_M_key/_M_insert: this/tree/forward refs,
+	// __p value, __it and returned iterator. No fabricated node owner exists.
+	constexpr size_t auto_node_calls = 4 * sizeof(void *) + sizeof(void *) +
+					   2 * sizeof(void *) + sizeof(void *) + sizeof(position) +
+					   2 * sizeof(iterator);
+	// _M_create_node(this,args,tmp,result), _M_get_node(this,result),
+	// _M_construct_node(this,node,args), node allocator access, value/storage
+	// pointer access, placement new and real traits::construct/construct_at.
+	constexpr size_t node_construction =
+		5 * sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) + 2 * sizeof(void *) +
+		4 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+		4 * sizeof(void *) + 4 * sizeof(void *);
+	// Pair<const key,pending_purchase> ctor and forwards, generated key/body
+	// moves and their unique_ptr/tuple reference carriers; full existing
+	// command ownership/cleanup profile remains additional below.
+	constexpr size_t value_construction = 3 * sizeof(void *) + 4 * sizeof(void *) +
+					      2 * sizeof(void *) + 2 * sizeof(void *) +
+					      4 * sizeof(void *) + 4 * sizeof(void *);
+	// alloc_traits/allocator/new_allocator/operator new arguments/results,
+	// actual new_allocator max_size; one genuine fresh node allocation.
+	constexpr size_t allocator_calls =
+		8 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(void *) + 2 * sizeof(size_t);
+	// _M_insert_node(this,x,p,z,insert_left,result) and original exported
+	// rebalance bool/z/p/header arguments. Its emitted implementation remains
+	// part of the existing independent native/library qualification gate.
+	constexpr size_t insert_node = 4 * sizeof(void *) + sizeof(bool) + sizeof(iterator) +
+				       3 * sizeof(void *) + sizeof(bool);
+	// Selected tree accessors: key/value/aligned storage/Select1st, left/right,
+	// begin/end/leftmost/rightmost, const_cast, iterator ctor/deref/equality,
+	// increment/decrement and their original exported node arguments/results.
+	constexpr size_t accessors =
+		2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		sizeof(bool) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+		2 * sizeof(void *) +
+		// map/tree key_comp this/reference and their actual stateless return.
+		2 * (sizeof(void *) + sizeof(typename tree_type::key_compare));
+	// stl_function.h less<key>: this/x/y/result. C++20 array<uchar,32>
+	// compares by its real memcmp fast path and returns strong_ordering;
+	// include array arguments/n/result, memcmp inputs/int result, actual
+	// strong_ordering construction and operator<(strong_ordering,__unspec).
+	// __unspec's consteval constructor has no runtime call frame.
+	constexpr size_t key_comparison =
+		3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) +
+		sizeof(std::strong_ordering) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+		sizeof(void *) + sizeof(std::__cmp_cat::_Ord) + sizeof(std::strong_ordering) +
+		sizeof(std::strong_ordering) + sizeof(std::__cmp_cat::__unspec) + sizeof(bool);
+	// Node cleanup _M_destroy_node/_M_drop_node/_M_put_node, allocator destroy,
+	// destroy_at, actual pair/unique_ptr cleanup, traits/allocator/new_allocator
+	// deallocate and sized delete. The actual owned command's four vectors use
+	// the already authenticated original complete command cleanup profile.
+	constexpr size_t cleanup = 3 * (2 * sizeof(void *)) + 3 * sizeof(void *) +
+				   2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+				   4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+				   sizeof(size_t);
+	// This existing command profile is a genuine runtime function. Keep all
+	// pure fixed carrier subtotals constexpr, but obtain its total at runtime.
+	return map_emplace + argument_pair + lower_bound + emplace_hint + hint_position +
+	       auto_node_calls + node_construction + value_construction + allocator_calls +
+	       insert_node + accessors + key_comparison + cleanup +
+	       critical_command_copy_frame_bytes();
+}
+#endif
+bool register_hold(const critical_command &original,
+		   player_save_coin_replay_budget_scope_owner &scope,
+		   collector_replay_budget &budget) noexcept
+{
+	size_t full = 0, owned = 0;
+	if (!budget.current(full) ||
+	    !player_save_sql_collector_replay_owner::current_storage_bytes(scope, &owned) ||
+	    owned > budget.outer || owned > full)
+		return false;
+	return player_save_sql_collector_replay_owner::restore(original, scope, full - owned);
+}
+}
+
+bool collector_purchase_cold_restore_owner::restore_bounded(
+	const critical_command &original, collector_purchase_effect_fn effect,
+	collector_completion_fn notify, player_save_coin_replay_budget_scope_owner &scope,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)original;
+	(void)effect;
+	(void)notify;
+	(void)scope;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return false;
+#else
+	using tree_type = decltype(purchases);
+	using tree_node = std::_Rb_tree_node<typename tree_type::value_type>;
+	const size_t frames =
+		sizeof(economic_frozen_intent) + sizeof(collector_command_payload) +
+		sizeof(collector::record) + 2 * sizeof(economic_account_key) +
+		sizeof(pending_purchase) + sizeof(std::string) + sizeof(tree_type::iterator) +
+		sizeof(std::pair<tree_type::iterator, bool>) + 14 * sizeof(void *) +
+		11 * sizeof(size_t) + 8 * sizeof(bool) + critical_command_valid_frame_bytes() +
+		critical_command_copy_frame_bytes();
+	collector_replay_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		if (!nevent_is_game_thread() || !effect || !notify ||
+#ifndef __NO_MYSQL__
+		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#else
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+#endif
+		    !original.publication_required ||
+		    original.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    !critical_command_envelope_valid(original))
+			return false;
+		economic_frozen_intent intent;
+		budget.intent = &intent;
+		collector_command_payload payload{};
+		collector::record listing{};
+		economic_account_key wallet{}, bank{};
+		// The admitted intent supplies the original listing, not today's catalog
+		// and not a result-only outbox event. No native completion exists at boot.
+		if (collector_purchase_accounting_decode_bounded(
+			    original, &intent, &payload, &listing, &wallet, &bank,
+			    collector_replay_budget::child, &budget,
+			    0) != economic_accounting_error::ok ||
+		    !payload.actor_pid || payload.actor_pid > INT_MAX ||
+		    payload.action != collector_action::purchase || payload.item_count != 1 ||
+		    !payload.selected_item_uid)
+			return false;
+		auto found = purchases.find(original.operation_id.bytes);
+		if (found != purchases.end())
+		{
+			auto &entry = found->second;
+			// Even exact duplicates preserve the first seal, conflict flags and
+			// native handler stages; no completion or effect is replaced here.
+			if (!entry.command || !budget.equal(*entry.command, original) ||
+			    entry.effect != effect || entry.notify != notify ||
+			    !register_hold(original, scope, budget))
+				return false;
+			entry.restore_registration_pending = false;
+			return true;
+		}
+		const size_t key_frames =
+			sizeof(std::string) + original.operation_id.bytes.size() + 1 +
+			// Original string constructor/_M_construct/_M_create/allocator/destruction.
+			17 * sizeof(void *) + 10 * sizeof(size_t) + 3 * sizeof(bool) +
+			critical_command_copy_frame_bytes();
+		if (!budget.peak(key_frames))
+			return false;
+		std::string key = operation_key(original.operation_id);
+		budget.key = &key;
+		if (pending.size() + purchases.size() >= COLLECTOR_PENDING_MAX ||
+		    player_pending(payload.actor_pid) || listing_pending(payload.listing) ||
+		    pending.find(key) != pending.end())
+			return false;
+		pending_purchase entry;
+		budget.entry = &entry;
+		entry.actor_pid = payload.actor_pid;
+		size_t copy_request = 0;
+		if (!critical_command_fresh_copy_request_bytes(original, &copy_request) ||
+		    !collector_replay_add(copy_request, sizeof(critical_command)) ||
+		    !budget.peak(copy_request))
+			return false;
+		entry.command = std::make_unique<critical_command>(original);
+		if (!budget.peak(sizeof(collector_command_payload) + 4 * sizeof(void *) +
+				 sizeof(size_t)))
+			return false;
+		entry.payload = std::make_unique<collector_command_payload>(payload);
+		entry.original_listing = listing;
+		entry.effect = effect;
+		entry.notify = notify;
+		entry.restore_registration_pending = true;
+		// All domain allocation precedes shared hold registration. Retain this
+		// original on registration doubt, but do not let it publish until the
+		// same original has successfully registered its exact prepared hold.
+		// Exact fresh tree node; old tree and private unique owners stay live.
+		// GCC13 selects the usable-key lower_bound/emplace_hint branch for this
+		// actual const array key reference and pending_purchase rvalue argument.
+		const size_t insertion_frames =
+			sizeof(tree_node) + collector_hinted_emplace_source_frames();
+		if (!budget.peak(insertion_frames))
+			return false;
+		const auto inserted =
+			purchases.emplace(original.operation_id.bytes, std::move(entry));
+		budget.entry = nullptr;
+		if (!inserted.second || !register_hold(original, scope, budget))
+			return false;
+		inserted.first->second.restore_registration_pending = false;
+		// Genuine full native completions arrive through handle_completions.
+		// Startup registration performs no materialization, projection or ACK.
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

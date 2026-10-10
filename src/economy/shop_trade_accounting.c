@@ -582,3 +582,270 @@ shop_trade_accounting_plan(const critical_command &command, const economic_froze
 		return error::capacity;
 	}
 }
+
+#include <type_traits>
+namespace
+{
+bool shop_accounting_size_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+bool shop_accounting_payload_heap(const shop_trade_payload &p, size_t &total) noexcept
+{
+	for (const auto *binding :
+	     { &p.recovery_manifest.player_before, &p.recovery_manifest.player_after,
+	       &p.recovery_manifest.keeper_before, &p.recovery_manifest.keeper_after,
+	       &p.recovery_manifest.live_target_before, &p.recovery_manifest.live_target_after })
+		if (binding->ordered_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+		    !shop_accounting_size_add(total, binding->ordered_item_uids.capacity() *
+							     sizeof(uint64_t)))
+			return false;
+	return true;
+}
+struct shop_accounting_decode_work
+{
+	shop_trade_payload parsed{}, revalidated{};
+	economic_frozen_intent intent;
+	critical_command projection;
+	economic_admission_facts admission;
+	std::vector<uint8_t> expected;
+	economic_account_key wallet{}, bank{}, keeper{};
+};
+struct shop_accounting_decode_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer;
+	const shop_accounting_decode_work *work = nullptr;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &self = *static_cast<shop_accounting_decode_budget *>(opaque);
+		if (self.denied || !self.reserve || !self.reserve(amount, self.context))
+		{
+			self.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &out, size_t additional = 0) noexcept
+	{
+		// Public parameters/results; payload/intent/facts locals live in work.
+		// Original facts span/shared flag/lineage/status, read_u64 arguments,
+		// loop/result, account/source/reason helper arguments and return values;
+		// current/prefix/heap observer parameters, binding range/iterators.
+		constexpr size_t frames =
+			8 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(std::span<const uint8_t>) +
+			sizeof(bool) + sizeof(error) + 2 * sizeof(void *) + 3 * sizeof(size_t) +
+			sizeof(uint64_t) + 2 * sizeof(economic_account_key) +
+			sizeof(economic_source_event) + sizeof(economic_reason) +
+			sizeof(shop_trade_action) + 14 * sizeof(void *) + 10 * sizeof(size_t) +
+			8 * sizeof(bool) + 6 * sizeof(const shop_trade_recovery_forest_binding *) +
+			sizeof(std::initializer_list<const shop_trade_recovery_forest_binding *>) +
+			2 * sizeof(const shop_trade_recovery_forest_binding **);
+		size_t value = outer, heap = 0;
+		if (!shop_accounting_size_add(value, sizeof(*this)) ||
+		    !shop_accounting_size_add(value, sizeof(shop_accounting_decode_work)) ||
+		    !shop_accounting_size_add(value, frames) ||
+		    !shop_accounting_size_add(value, critical_command_copy_frame_bytes()) ||
+		    !shop_accounting_size_add(value, critical_command_valid_frame_bytes()))
+		{
+			denied = true;
+			return false;
+		}
+		if (work &&
+		    (!shop_accounting_payload_heap(work->parsed, value) ||
+		     !shop_accounting_payload_heap(work->revalidated, value) ||
+		     !critical_command_current_heap_bytes(work->projection, &heap) ||
+		     !shop_accounting_size_add(value, heap) ||
+		     !shop_accounting_size_add(value, work->intent.admission.facts.capacity()) ||
+		     !shop_accounting_size_add(value, work->admission.facts.capacity()) ||
+		     !shop_accounting_size_add(value, work->expected.capacity())))
+		{
+			denied = true;
+			return false;
+		}
+		if (!shop_accounting_size_add(value, additional))
+		{
+			denied = true;
+			return false;
+		}
+		out = value;
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t value = 0;
+		if (!prefix(value, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return forward(value, this);
+	}
+};
+} // namespace
+
+economic_accounting_error shop_trade_accounting_decode_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	shop_trade_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	economic_account_key *keeper, bool (*reserve)(size_t, void *) noexcept, void *context,
+	size_t outer) noexcept
+{
+	if (!intent || !payload || !wallet || !bank || !keeper || !reserve ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		return error::invalid_version;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return error::capacity;
+#else
+	shop_accounting_decode_budget budget{ reserve, context, outer };
+	if (!budget.peak())
+		return error::capacity;
+	if (!critical_command_envelope_valid(command))
+		return error::invalid_version;
+	shop_accounting_decode_work work;
+	budget.work = &work;
+	size_t nested = 0, request = 0;
+	static_assert(std::is_nothrow_move_assignable_v<economic_frozen_intent>);
+	static_assert(std::is_nothrow_move_assignable_v<shop_trade_payload>);
+	try
+	{
+		if ((command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
+		     !shop_trade_payload_version_is_accounted(command.payload_version)) ||
+		    !budget.prefix(nested) ||
+		    !shop_trade_command_decode_payload_bounded(
+			    command, &work.parsed, shop_accounting_decode_budget::forward, &budget,
+			    nested) ||
+		    work.parsed.keeper_vnum <= 0)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		if (!budget.prefix(nested) ||
+		    economic_intent_decode_bounded(command.accounting_intent, &work.intent,
+						   shop_accounting_decode_budget::forward, &budget,
+						   nested) != error::ok ||
+		    !budget.prefix(nested) ||
+		    economic_intent_verify_binding_bounded(command, work.intent,
+							   shop_accounting_decode_budget::forward,
+							   &budget, nested) != error::ok)
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(work.intent.admission.facts);
+		const bool shared = facts.size() == 16;
+		if ((!shared && facts.size() != 24) ||
+		    shared != shop_trade_payload_version_is_accounted(command.payload_version))
+			return error::invalid_identity;
+		const auto &lineage = work.intent.admission.metadata.lineage;
+		work.wallet = { lineage, economic_account_kind::wallet, read_u64(facts, 0), 0 };
+		work.bank = { lineage, economic_account_kind::bank, read_u64(facts, 8),
+			      work.parsed.racewar };
+		work.keeper = shared ? shared_counterparty(lineage, work.parsed.action) :
+				       economic_account_key{ lineage,
+							     economic_account_kind::treasury,
+							     read_u64(facts, 16), 0 };
+		if (!budget.peak() ||
+		    !critical_command_fresh_copy_request_bytes(command, &request) ||
+		    !budget.peak(request))
+			return error::capacity;
+		work.projection = command;
+		work.projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		work.projection.accounting_intent.clear();
+		work.projection.publication_required = false;
+		// Reproduce the original projected-intent builder's own full decoder,
+		// not just a metadata comparison on the first decoded payload.
+		if (critical_operation_id_is_zero(work.intent.admission.metadata.epoch) ||
+		    (!shared && work.projection.payload_version != SHOP_TRADE_PAYLOAD_VERSION) ||
+		    (shared &&
+		     !shop_trade_payload_version_is_accounted(work.projection.payload_version)) ||
+		    !budget.prefix(nested) ||
+		    !shop_trade_command_decode_payload_bounded(
+			    work.projection, &work.revalidated,
+			    shop_accounting_decode_budget::forward, &budget, nested) ||
+		    work.revalidated.keeper_vnum <= 0 ||
+		    (shared ? !shared_accounts_valid(work.wallet, work.bank,
+						     work.revalidated.racewar) :
+			      !accounts_valid(work.wallet, work.bank, work.keeper,
+					      work.revalidated.racewar)))
+			return budget.denied ? error::capacity : error::unauthorized;
+		work.admission.metadata.lineage = work.wallet.lineage;
+		work.admission.metadata.epoch = work.intent.admission.metadata.epoch;
+		work.admission.metadata.actor_kind = economic_actor_kind::domain;
+		work.admission.metadata.actor_id = work.revalidated.player_pid;
+		work.admission.metadata.writer_id = ECONOMIC_WRITER_SHOP_TRADE;
+		work.admission.metadata.reason = reason_for(work.revalidated.action);
+		if (!cleanup(work.revalidated.action))
+			work.admission.metadata.source_event =
+				source_for(work.projection, work.revalidated);
+		if (!budget.peak((shared ? 16 : 24) + 5 * sizeof(void *) + 4 * sizeof(size_t) +
+				 sizeof(uint64_t)))
+			return error::capacity;
+		work.admission.facts.reserve(shared ? 16 : 24);
+		append_u64(&work.admission.facts, work.wallet.authority_id);
+		append_u64(&work.admission.facts, work.bank.authority_id);
+		if (!shared)
+			append_u64(&work.admission.facts, work.keeper.authority_id);
+		if (!budget.prefix(nested))
+			return error::capacity;
+		const auto status = economic_intent_freeze_fixed_bounded(
+			work.projection, work.admission, &work.expected,
+			shop_accounting_decode_budget::forward, &budget, nested);
+		if (status != error::ok || work.expected != command.accounting_intent)
+			return budget.denied ? error::capacity : error::unauthorized;
+		// All five transfers are nonallocating. Admit the actual vector move
+		// assignment/destruction carriers before the first output changes.
+		if (!budget.peak(10 * sizeof(void *) + 6 * sizeof(std::vector<uint64_t>) +
+				 3 * sizeof(std::vector<uint8_t>) +
+				 9 * sizeof(std::allocator<uint8_t>)))
+			return error::capacity;
+		*intent = std::move(work.intent);
+		*payload = std::move(work.parsed);
+		*wallet = work.wallet;
+		*bank = work.bank;
+		*keeper = work.keeper;
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+#endif
+}
+
+bool shop_trade_accounting_intent_current_heap_bytes(const economic_frozen_intent &value,
+						     size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = value.admission.facts.capacity();
+	return true;
+}
+bool shop_trade_accounting_payload_current_heap_bytes(const shop_trade_payload &value,
+						      size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t bytes = 0;
+	if (!shop_accounting_payload_heap(value, bytes))
+		return false;
+	*output = bytes;
+	return true;
+}
+bool shop_trade_accounting_account_current_heap_bytes(const economic_account_key &,
+						      size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = 0;
+	return true;
+}
+size_t shop_trade_accounting_decoded_heap_observer_frame_bytes() noexcept
+{
+	// Public reference/output/result; payload helper reference/total/range,
+	// actual six binding pointer array/initializer-list and range iterators,
+	// checked-add total/amount/result and capacity access reference/result.
+	return 6 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) +
+	       6 * sizeof(const shop_trade_recovery_forest_binding *) +
+	       sizeof(std::initializer_list<const shop_trade_recovery_forest_binding *>) +
+	       2 * sizeof(const shop_trade_recovery_forest_binding **);
+}

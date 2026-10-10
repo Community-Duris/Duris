@@ -10342,3 +10342,553 @@ bool player_save_pipeline_restore_sql_drop_obligation_bounded(
 	}
 #endif
 }
+
+// Genuine borrowed replay companions. ROOT supplies the uninterrupted actual
+// startup coordinator/lifecycle and pipeline scope. No public payload bypass,
+// new mutex acquisition, guessed retained baseline or post-hold callback.
+namespace
+{
+constexpr size_t coin_save_replay_max(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+template <class T> constexpr size_t coin_save_replay_vector_cleanup() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	using B = std::_Vector_base<T, A>;
+	using I = typename B::_Vector_impl;
+	using N = std::__new_allocator<T>;
+	static_assert(std::is_trivially_destructible_v<T>);
+	static_assert(alignof(T) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+	constexpr size_t get_allocator = sizeof(B *) + sizeof(A *);
+	constexpr size_t destroy_range = 2 * sizeof(T *) + sizeof(A *) + 2 * sizeof(T *) +
+					 coin_save_replay_max(sizeof(bool), 2 * sizeof(T *));
+#ifdef __cpp_sized_deallocation
+	constexpr size_t delete_call = sizeof(T *) + sizeof(size_t);
+#else
+	constexpr size_t delete_call = sizeof(T *);
+#endif
+	constexpr size_t allocator_deallocate =
+		sizeof(A *) + sizeof(T *) + sizeof(size_t) +
+		coin_save_replay_max(sizeof(bool),
+				     sizeof(N *) + sizeof(T *) + sizeof(size_t) + delete_call);
+	constexpr size_t deallocate = sizeof(B *) + sizeof(T *) + sizeof(size_t) + sizeof(A *) +
+				      sizeof(T *) + sizeof(size_t) + allocator_deallocate;
+	constexpr size_t impl_cleanup = sizeof(I *) + sizeof(A *);
+	constexpr size_t base_cleanup =
+		sizeof(B *) + coin_save_replay_max(deallocate, impl_cleanup);
+	return sizeof(V *) +
+	       coin_save_replay_max(coin_save_replay_max(get_allocator, destroy_range),
+				    base_cleanup);
+}
+using coin_save_replay_event = economic_source_event;
+using coin_save_replay_optional = std::optional<coin_save_replay_event>;
+using coin_save_replay_optional_base = std::_Optional_base<coin_save_replay_event>;
+using coin_save_replay_optional_payload = std::_Optional_payload<coin_save_replay_event>;
+using coin_save_replay_optional_payload_base = std::_Optional_payload_base<coin_save_replay_event>;
+using coin_save_replay_optional_storage =
+	coin_save_replay_optional_payload_base::_Storage<coin_save_replay_event>;
+static_assert(std::is_trivially_copy_constructible_v<coin_save_replay_event> &&
+	      std::is_trivially_move_constructible_v<coin_save_replay_event> &&
+	      std::is_trivially_copy_assignable_v<coin_save_replay_event> &&
+	      std::is_trivially_move_assignable_v<coin_save_replay_event> &&
+	      std::is_trivially_destructible_v<coin_save_replay_optional>);
+constexpr size_t coin_save_replay_optional_default =
+	sizeof(coin_save_replay_optional *) + sizeof(coin_save_replay_optional_base *) +
+	sizeof(coin_save_replay_optional_payload *) +
+	sizeof(coin_save_replay_optional_payload_base *) +
+	sizeof(coin_save_replay_optional_storage *);
+constexpr size_t coin_save_replay_intent_default =
+	sizeof(economic_frozen_intent *) + sizeof(economic_admission_facts *) +
+	coin_save_replay_max(sizeof(economic_operation_metadata *) +
+				     coin_save_replay_optional_default,
+			     coin_save_vector_defaults);
+constexpr size_t coin_save_replay_intent_cleanup = sizeof(economic_frozen_intent *) +
+						   sizeof(economic_admission_facts *) +
+						   coin_save_replay_vector_cleanup<uint8_t>();
+constexpr size_t coin_save_replay_shop_cleanup =
+	sizeof(shop_trade_payload *) + sizeof(shop_trade_recovery_manifest *) +
+	sizeof(shop_trade_recovery_forest_binding *) + coin_save_replay_vector_cleanup<uint64_t>();
+constexpr size_t coin_save_replay_intent_carriers =
+	coin_save_replay_max(coin_save_replay_intent_default, coin_save_replay_intent_cleanup);
+constexpr size_t coin_save_replay_shop_carriers = coin_save_replay_max(
+	coin_save_replay_intent_carriers,
+	coin_save_replay_max(coin_save_vector_defaults, coin_save_replay_shop_cleanup));
+static_assert(coin_save_replay_vector_cleanup<uint8_t>() <=
+	      sizeof(std::vector<uint8_t> *) + coin_save_allocator_frames);
+static_assert(coin_save_replay_vector_cleanup<uint64_t>() <=
+	      sizeof(std::vector<uint64_t> *) + coin_save_allocator_frames);
+} // namespace
+bool player_save_coin_replay_budget_scope_owner::restore_publication_profile(
+	const critical_command &command, int pid, uint64_t root_uid, size_t outer_live,
+	bool shop) const
+{
+	const auto profile = shop ? literal_checkpoint_profile::shop :
+				    literal_checkpoint_profile::ordinary_drop;
+	constexpr size_t frames = coin_save_restore_frames + sizeof(bool);
+	size_t admission_prefix = 0;
+	if (!coin_save_exclusive_add(
+		    outer_live, frames + sizeof(std::vector<uint8_t>) + coin_save_vector_defaults,
+		    admission_prefix) ||
+	    !admit(admission_prefix))
+		return false;
+	std::vector<uint8_t> frozen;
+	const auto prefix = [this, &frozen, outer_live](size_t extra, size_t &output) noexcept
+	{
+		size_t live = outer_live;
+		if (!coin_save_pool_add(live,
+					coin_save_restore_frames + sizeof(bool) + sizeof(frozen)) ||
+		    !coin_save_pool_add(live, frozen.capacity()) ||
+		    !coin_save_pool_add(live, extra))
+			return false;
+		output = live;
+		return true;
+	};
+	if (pid <= 0 || !root_uid ||
+	    (!prefix(coin_save_critical_codec_frames, admission_prefix) ?
+		     critical_command_codec_result::overflow :
+		     critical_command_encode_bounded(
+			     command, &frozen, reserve_exclusive,
+			     const_cast<player_save_coin_replay_budget_scope_owner *>(this),
+			     admission_prefix)) != critical_command_codec_result::ok)
+		return false;
+	// The real enclosing scope owns this same pipeline_mutex unique_lock.
+	if (!locked())
+		return false;
+	// The typed caller classified the original immutable room operation.
+	// Registration remains closed before any execution owner starts.
+	if (!health.initialized || stop_requested || execution_started)
+		return false;
+	literal_inventory_checkpoint *slot = nullptr;
+	for (auto &candidate : literal_inventory_checkpoints)
+	{
+		if (!prefix(coin_save_hold_frames + coin_save_bytes_equal_frames,
+			    admission_prefix) ||
+		    !admit(admission_prefix))
+			return false;
+		if (candidate.token.pid == pid ||
+		    (candidate.held && candidate.operation_id.bytes == command.operation_id.bytes))
+		{
+			uint64_t generation = 0;
+			if (candidate.profile != profile || !candidate.restored_sql_drop ||
+			    !candidate.held || candidate.token.pid != pid ||
+			    candidate.token.root_uid != root_uid ||
+			    candidate.operation_id.bytes != command.operation_id.bytes ||
+			    candidate.payload != frozen ||
+			    !player_save_execution_guard::install_hold(pid, command.operation_id,
+								       &generation))
+				return false;
+			if (generation != candidate.execution_hold_generation)
+			{
+				player_save_execution_guard::poison_integrity();
+				return false;
+			}
+			return true;
+		}
+		if (!candidate.token.pid && !slot)
+			slot = &candidate;
+	}
+	if (!slot || !literal_inventory_capacity_locked(frozen.size()))
+		return false;
+	uint64_t generation = 0;
+	if (!prefix(coin_save_hold_frames + coin_save_capacity_frames +
+			    coin_save_vector_move_frames,
+		    admission_prefix) ||
+	    !admit(admission_prefix))
+		return false;
+	if (!player_save_execution_guard::install_hold(pid, command.operation_id, &generation))
+		return false;
+	// All fallible command allocation/validation precedes guard installation.
+	slot->execution_hold_generation = generation;
+	slot->profile = profile;
+	slot->token.pid = pid;
+	slot->token.root_uid = root_uid;
+	slot->payload = std::move(frozen);
+	slot->operation_id = command.operation_id;
+	slot->held = true;
+	slot->restored_sql_drop = true;
+	return true;
+}
+
+size_t player_save_shop_replay_owner::current_observer_frame_bytes() noexcept
+{
+	// Only the actual borrowed wrapper's two reference/pointer arguments and
+	// boolean result. ROOT separately owns the complete authentic SAME-scope
+	// observer_frame_bytes closure before all provider CURRENT queries.
+	return 2 * sizeof(void *) + sizeof(bool);
+}
+
+size_t player_save_shop_replay_owner::frame_bytes() noexcept
+{
+	// Actual wrapper/identity locals and returned inline decoded owners.
+	// Decoder's transitive source frames remain inside its bounded provider;
+	// independent full source review is required before integration/selection.
+	return 6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(int) +
+	       sizeof(uint64_t) + sizeof(economic_frozen_intent) + sizeof(shop_trade_payload) +
+	       3 * sizeof(economic_account_key) + coin_save_replay_shop_carriers +
+	       shop_trade_accounting_decoded_heap_observer_frame_bytes() + sizeof(uint16_t) +
+	       sizeof(bool) + sizeof(economic_accounting_error);
+}
+
+bool player_save_shop_replay_owner::current_storage_bytes(
+	player_save_coin_replay_budget_scope_owner &scope, size_t *output) noexcept
+{
+	return scope.bootstrap_storage_bytes(output);
+}
+
+bool player_save_shop_replay_owner::restore_sql(const critical_command &command,
+						player_save_coin_replay_budget_scope_owner &scope,
+						size_t exclusive_outer) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)scope;
+	(void)exclusive_outer;
+	return false;
+#else
+	if (!scope.prepared() || !scope.reserve_)
+		return false;
+	try
+	{
+		size_t prefix = exclusive_outer, heap = 0;
+		if (!coin_save_pool_add(prefix, frame_bytes()) || !scope.admit(prefix))
+			return false;
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet, bank, counterparty;
+		// Original lower identity gates remain at the same hold boundary.
+		if (!command.publication_required ||
+		    !shop_trade_payload_version_is_accounted(command.payload_version) ||
+		    shop_trade_accounting_decode_bounded(
+			    command, &intent, &payload, &wallet, &bank, &counterparty,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) != economic_accounting_error::ok ||
+		    !payload.player_pid || payload.player_pid > INT_MAX ||
+		    !payload.selected_item_uid || !payload.expected_player_save_revision ||
+		    !payload.expected_player_level ||
+		    !shop_trade_accounting_intent_current_heap_bytes(intent, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !shop_trade_accounting_payload_current_heap_bytes(payload, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !shop_trade_accounting_account_current_heap_bytes(wallet, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !shop_trade_accounting_account_current_heap_bytes(bank, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !shop_trade_accounting_account_current_heap_bytes(counterparty, &heap) ||
+		    !coin_save_pool_add(prefix, heap))
+			return false;
+		// Same original profile/slot/payload/generation/capacity/poison law.
+		// All fallible admission precedes install_hold and ownership transfer.
+		return scope.restore_publication_profile(command,
+							 static_cast<int>(payload.player_pid),
+							 payload.selected_item_uid, prefix, true);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+size_t player_save_sql_collector_replay_owner::frame_bytes() noexcept
+{
+	return 6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(int) +
+	       sizeof(uint64_t) + sizeof(economic_frozen_intent) +
+	       sizeof(collector_command_payload) + sizeof(collector::record) +
+	       2 * sizeof(economic_account_key) + coin_save_replay_intent_carriers +
+	       collector_purchase_accounting_replay_observer_frame_bytes() +
+	       critical_command_valid_frame_bytes() + sizeof(economic_accounting_error);
+}
+
+bool player_save_sql_collector_replay_owner::current_storage_bytes(
+	player_save_coin_replay_budget_scope_owner &scope, size_t *output) noexcept
+{
+	return scope.bootstrap_storage_bytes(output);
+}
+
+bool player_save_sql_collector_replay_owner::restore(
+	const critical_command &command, player_save_coin_replay_budget_scope_owner &scope,
+	size_t exclusive_outer) noexcept
+{
+	if (!scope.prepared() || !scope.reserve_)
+		return false;
+	try
+	{
+		size_t prefix = exclusive_outer, heap = 0;
+		if (!coin_save_pool_add(prefix, frame_bytes()) || !scope.admit(prefix))
+			return false;
+		economic_frozen_intent intent;
+		collector_command_payload payload;
+		collector::record original;
+		economic_account_key wallet, bank;
+		if (!command.publication_required || !critical_command_envelope_valid(command) ||
+		    collector_purchase_accounting_decode_bounded(
+			    command, &intent, &payload, &original, &wallet, &bank,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) != economic_accounting_error::ok ||
+		    !payload.actor_pid || payload.actor_pid > INT_MAX ||
+		    payload.action != collector_action::purchase || payload.item_count != 1 ||
+		    !payload.selected_item_uid ||
+		    !collector_purchase_accounting_replay_heap_bytes(intent, &heap) ||
+		    !coin_save_pool_add(prefix, heap))
+			return false;
+		return scope.restore_publication_profile(command,
+							 static_cast<int>(payload.actor_pid),
+							 payload.selected_item_uid, prefix, false);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+namespace coin_save_flat_shop_string_source
+{
+using S = std::string;
+using A = std::allocator<char>;
+using NA = std::__new_allocator<char>;
+using AT = std::allocator_traits<A>;
+constexpr size_t P = sizeof(void *), N = sizeof(S::size_type);
+constexpr size_t D = sizeof(std::ptrdiff_t), B = sizeof(bool), C = sizeof(char);
+constexpr size_t I = sizeof(int), F = sizeof(std::forward_iterator_tag);
+constexpr size_t R = sizeof(std::random_access_iterator_tag);
+constexpr size_t mx(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+static_assert(std::is_same_v<S::allocator_type, A>);
+static_assert(AT::is_always_equal::value);
+static_assert(AT::propagate_on_container_move_assignment::value);
+static_assert(std::is_nothrow_move_assignable_v<S>);
+static_assert(alignof(char) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+// Actual traits/allocator/new_allocator/new, including runtime constant-
+// evaluation predicate and _M_max_size; no constexpr allocation branch.
+constexpr size_t allocate = (2 * P + N) + (2 * P + N + B) + (3 * P + N) + (P + N) + (P + N);
+#ifdef __cpp_sized_deallocation
+constexpr size_t delete_call = P + N;
+#else
+constexpr size_t delete_call = P;
+#endif
+constexpr size_t deallocate = (2 * P + N) + (2 * P + N + B) + (2 * P + N) + delete_call;
+static_assert(allocate + deallocate <= coin_save_allocator_frames);
+constexpr size_t allocator_default = sizeof(A *) + sizeof(NA *);
+constexpr size_t allocator_copy = 2 * sizeof(A *) + 2 * sizeof(NA *);
+constexpr size_t allocator_cleanup = sizeof(A *) + sizeof(NA *);
+constexpr size_t allocator_assign = 3 * sizeof(A *) + 3 * sizeof(NA *);
+constexpr size_t move_reference = 2 * P, internal_addressof = 2 * P;
+constexpr size_t public_addressof = 2 * P + internal_addressof;
+constexpr size_t pointer_to = 2 * P + public_addressof;
+constexpr size_t data = 2 * P, size = P + N, get_allocator = 2 * P;
+constexpr size_t set_data = 2 * P, set_size = P + N, set_capacity = P + N;
+constexpr size_t local_data = 2 * P + pointer_to;
+constexpr size_t is_local = P + B + data + local_data;
+constexpr size_t capacity = P + N + is_local;
+// Runtime local initialization excludes its constant-evaluated fill loop.
+constexpr size_t init_local = P + B, use_local = 2 * P + init_local + local_data;
+// Actual char_traits runtime leaves and strlen/memcmp/memcpy declarations.
+constexpr size_t traits_assign = 2 * P + B;
+constexpr size_t traits_length = (P + N + B) + (P + N);
+constexpr size_t traits_compare = (2 * P + N + I + B) + (2 * P + N + I);
+constexpr size_t traits_copy = (3 * P + N + B) + (3 * P + N);
+constexpr size_t copy = 2 * P + N + mx(traits_assign, traits_copy);
+constexpr size_t copy_chars = 3 * P + D + copy;
+constexpr size_t set_length = P + N + set_size + data + C + traits_assign;
+constexpr size_t destroy = P + N + get_allocator + data + deallocate;
+constexpr size_t dispose = P + is_local + destroy;
+constexpr size_t hider_cleanup = P + allocator_cleanup;
+constexpr size_t destructor = P + mx(dispose, hider_cleanup);
+// C++20 default allocator traits max_size: no old allocator::max_size call.
+constexpr size_t max_size = P + N + get_allocator + (P + N);
+constexpr size_t string_allocate = 3 * P + N + allocate;
+constexpr size_t create = 3 * P + N + max_size + get_allocator + string_allocate;
+constexpr size_t distance = (2 * P + D) + (P + R) + (2 * P + R + D);
+// Actual forward _Guard owns one pointer. Allocation precedes its construction;
+// runtime char copy/set_length do not throw; successful guard is cleared.
+constexpr size_t guard_object = sizeof(S *), guard_constructor = 2 * P;
+constexpr size_t guard_destructor = P;
+constexpr size_t construct_forward =
+	3 * P + N + F + guard_object + distance + mx(create + set_data + set_capacity, init_local) +
+	guard_constructor + data + copy_chars + set_length + guard_destructor;
+constexpr size_t hider_const_constructor = 3 * P + allocator_copy;
+constexpr size_t constructor = sizeof(A) + allocator_default + 4 * P + local_data +
+			       hider_const_constructor + traits_length + construct_forward +
+			       allocator_cleanup;
+// C++20 rewritten != invokes the real operator== overloads, not compare/<=>.
+constexpr size_t equal_string = 2 * P + B + 3 * size + 2 * data + traits_compare;
+constexpr size_t equal_c_string = 2 * P + B + 2 * size + traits_length + data + traits_compare;
+constexpr size_t alloc_on_move = 2 * P + move_reference + allocator_assign;
+constexpr size_t move_local = internal_addressof + 3 * size + 2 * data + copy + set_length;
+constexpr size_t move_heap = P + N + is_local + data + set_data + data + set_size + size +
+			     set_capacity + mx(set_data + set_capacity, set_data + use_local);
+constexpr size_t clear = P + set_length;
+// Default allocator's true POCMA/always_equal excludes deep-copy assignment.
+// A former slot heap may move into local root and be destroyed on cleanup.
+constexpr size_t move_assign = 3 * P + B + 3 * B + 2 * is_local + 2 * get_allocator +
+			       alloc_on_move + mx(move_local, move_heap) + clear;
+constexpr size_t frames =
+	mx(constructor,
+	   mx(move_assign,
+	      mx(destructor, mx(equal_string, mx(equal_c_string, mx(traits_length, capacity))))));
+} // namespace coin_save_flat_shop_string_source
+
+bool player_save_shop_replay_owner::restore_flat(const critical_command &command,
+						 size_t native_owner_retained_bytes,
+						 player_save_coin_replay_budget_scope_owner &scope,
+						 size_t exclusive_outer) noexcept
+{
+#ifndef __NO_MYSQL__
+	(void)command;
+	(void)native_owner_retained_bytes;
+	(void)scope;
+	(void)exclusive_outer;
+	return false;
+#else
+	if (!scope.prepared() || !scope.reserve_)
+		return false;
+	try
+	{
+		const size_t frames = frame_bytes() + sizeof(std::vector<uint8_t>) +
+				      sizeof(std::string) + 15 * sizeof(size_t) +
+				      7 * sizeof(void *) + 3 * sizeof(uint64_t) + sizeof(int) +
+				      coin_save_restore_frames + coin_save_critical_codec_frames +
+				      coin_save_flat_shop_string_source::frames;
+		size_t prefix = exclusive_outer, heap = 0;
+		if (!coin_save_pool_add(prefix, frames) || !scope.admit(prefix))
+			return false;
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet, bank, counterparty;
+		std::vector<uint8_t> frozen;
+		if (!nevent_is_game_thread() ||
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		    !command.publication_required ||
+		    command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ||
+		    !native_owner_retained_bytes ||
+		    native_owner_retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+		    shop_trade_accounting_decode_bounded(
+			    command, &intent, &payload, &wallet, &bank, &counterparty,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) != economic_accounting_error::ok ||
+		    !payload.recovery_manifest_recorded || !payload.player_pid ||
+		    payload.player_pid > INT_MAX || !payload.selected_item_uid ||
+		    !shop_trade_accounting_intent_current_heap_bytes(intent, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    !shop_trade_accounting_payload_current_heap_bytes(payload, &heap) ||
+		    !coin_save_pool_add(prefix, heap) ||
+		    critical_command_encode_bounded(
+			    command, &frozen,
+			    player_save_coin_replay_budget_scope_owner::reserve_exclusive, &scope,
+			    prefix) != critical_command_codec_result::ok ||
+		    !coin_save_pool_add(prefix, frozen.capacity()))
+			return false;
+		const char *selected = persistence_mode_flatfile_root();
+		if (!selected || !*selected)
+			return false;
+		const size_t root_length = std::char_traits<char>::length(selected);
+		size_t root_peak = prefix;
+		if (root_length > 15 &&
+		    (root_length == SIZE_MAX || !coin_save_pool_add(root_peak, root_length + 1)))
+			return false;
+		if (!scope.admit(root_peak))
+			return false;
+		std::string root(selected);
+		if (root.capacity() > 15 && !coin_save_pool_add(prefix, root.capacity() + 1))
+			return false;
+		const int pid = static_cast<int>(payload.player_pid);
+		// All actual allocations precede hold installation. Existing slot
+		// accounting charges payload/root sizes; this separate delta charges
+		// their remaining capacities plus the native owner's complete census.
+		size_t extra = native_owner_retained_bytes;
+		for (size_t bytes :
+		     { frozen.capacity() - frozen.size(), root.capacity() - root.size() })
+		{
+			if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - extra)
+				return false;
+			extra += bytes;
+		}
+		size_t total = extra;
+		for (size_t bytes : { frozen.size(), root.size() })
+		{
+			if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - total)
+				return false;
+			total += bytes;
+		}
+		if (!scope.locked())
+			return false;
+		const auto epoch = player_save_execution_guard::current_ownership_epoch();
+		if (!health.initialized || stop_requested || execution_started || !epoch ||
+		    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		    !persistence_mode_flatfile_root() || root != persistence_mode_flatfile_root())
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (!scope.admit(prefix))
+				return false;
+			if (candidate.token.pid == pid ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == command.operation_id.bytes))
+			{
+				uint64_t generation = 0;
+				if (candidate.profile !=
+					    literal_checkpoint_profile::flat_shop_restored ||
+				    !candidate.held || candidate.restored_sql_drop ||
+				    candidate.token.pid != pid ||
+				    candidate.token.actor_runtime_id ||
+				    candidate.token.generation ||
+				    candidate.token.root_uid != payload.selected_item_uid ||
+				    candidate.operation_id.bytes != command.operation_id.bytes ||
+				    candidate.payload != frozen ||
+				    candidate.flat_shop_root != root ||
+				    candidate.flat_shop_ownership_epoch != epoch ||
+				    candidate.flat_shop_restored_native_owner_bytes !=
+					    native_owner_retained_bytes ||
+				    !candidate.flat_shop_restored_reserved_bytes ||
+				    candidate.flat_shop_native_attempt_started ||
+				    candidate.flat_shop_native_reserved_bytes ||
+				    candidate.flat_shop_command_reserved_bytes ||
+				    candidate.flat_shop_payload_reserved_bytes ||
+				    !candidate.flat_shop_journal_command.empty() ||
+				    !candidate.original_shop_body.empty() ||
+				    !player_save_execution_guard::install_hold(
+					    pid, command.operation_id, &generation))
+					return false;
+				if (generation != candidate.execution_hold_generation)
+				{
+					player_save_execution_guard::poison_integrity();
+					return false;
+				}
+				return true;
+			}
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(total))
+			return false;
+		uint64_t generation = 0;
+		if (!scope.admit(prefix))
+			return false;
+		if (!player_save_execution_guard::install_hold(pid, command.operation_id,
+							       &generation))
+			return false;
+		// No allocation or native effect follows installation. Retry identity
+		// is passive and exact; the later cold publisher must supply all proof.
+		slot->profile = literal_checkpoint_profile::flat_shop_restored;
+		slot->token.pid = pid;
+		slot->token.root_uid = payload.selected_item_uid;
+		slot->payload = std::move(frozen);
+		slot->flat_shop_root = std::move(root);
+		slot->flat_shop_restored_reserved_bytes = extra;
+		slot->flat_shop_restored_native_owner_bytes = native_owner_retained_bytes;
+		slot->flat_shop_ownership_epoch = epoch;
+		slot->execution_hold_generation = generation;
+		slot->operation_id = command.operation_id;
+		slot->held = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}

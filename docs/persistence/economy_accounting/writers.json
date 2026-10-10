@@ -23722,7 +23722,7 @@
         ],
         [
           "src/economy/collector_transaction.h",
-          79,
+          87,
           "economic_submit"
         ],
         [
@@ -34196,7 +34196,7 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          3932,
+          3936,
           "economic_submit"
         ]
       ],
@@ -34580,22 +34580,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2451,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2453,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
           2455,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          2456,
+          2457,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2459,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2460,
           "coin_assignment"
         ]
       ],
@@ -34906,22 +34906,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2813,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2815,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
           2817,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          2818,
+          2819,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2821,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2822,
           "coin_assignment"
         ]
       ],
@@ -35399,17 +35399,17 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2984,
+          2988,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          3032,
+          3036,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          3035,
+          3039,
           "economic_submit"
         ]
       ],
@@ -48734,22 +48734,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          7858,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          7860,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
           7862,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          7863,
+          7864,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          7866,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          7867,
           "coin_assignment"
         ]
       ],
@@ -48793,7 +48793,7 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          8139,
+          8143,
           "item_lifecycle"
         ]
       ],
@@ -54530,7 +54530,7 @@
     },
     {
       "path": "src/economy/collector_transaction.h",
-      "line": 79,
+      "line": 87,
       "family": "economic_submit",
       "excerpt": "bool collector_transaction_submit("
     },
@@ -55802,103 +55802,103 @@
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2984,
+      "line": 2988,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit_with_publication(P_char character,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 3032,
+      "line": 3036,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &payload,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 3035,
+      "line": 3039,
       "family": "economic_submit",
       "excerpt": "return shop_trade_transaction_submit_with_publication(character, payload, nullptr,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 3932,
+      "line": 3936,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_preparation_owner::start(P_char actor, P_char keeper, P_obj selected, P_obj stock,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2451,
+      "line": 2455,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(remainder / 1000);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2453,
+      "line": 2457,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(remainder / 100);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2455,
+      "line": 2459,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(observed.keeper) = static_cast<int>(remainder / 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2456,
+      "line": 2460,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(observed.keeper) = static_cast<int>(remainder % 10);"
-    },
-    {
-      "path": "src/economy/shop_trade_transaction.c",
-      "line": 2813,
-      "family": "coin_assignment",
-      "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(cash / 1000);"
-    },
-    {
-      "path": "src/economy/shop_trade_transaction.c",
-      "line": 2815,
-      "family": "coin_assignment",
-      "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(cash / 100);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
       "line": 2817,
       "family": "coin_assignment",
+      "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(cash / 1000);"
+    },
+    {
+      "path": "src/economy/shop_trade_transaction.c",
+      "line": 2819,
+      "family": "coin_assignment",
+      "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(cash / 100);"
+    },
+    {
+      "path": "src/economy/shop_trade_transaction.c",
+      "line": 2821,
+      "family": "coin_assignment",
       "excerpt": "GET_SILVER(observed.keeper) = static_cast<int>(cash / 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2818,
+      "line": 2822,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(observed.keeper) = static_cast<int>(cash % 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 7858,
+      "line": 7862,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(remainder / 1000);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 7860,
+      "line": 7864,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(remainder / 100);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 7862,
+      "line": 7866,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(observed.keeper) = static_cast<int>(remainder / 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 7863,
+      "line": 7867,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(observed.keeper) = static_cast<int>(remainder % 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 8139,
+      "line": 8143,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(*selected, FALSE);"
     },
@@ -66445,10 +66445,10 @@
       "src/economy/collector_purchase_publication.c": "0a1375c62db5e782d2b873dce0eb11f56c1559f53900205899dc104a944f179e",
       "src/economy/collector_repository.c": "4f13cc8308c06d3abf76d2a6776900c23bbe3ac2fa2e25adf88fa9196f4c4e76",
       "src/economy/collector_repository.h": "2cf659522075b26d9b970468e8872d13d5796b984b92caa6175b43b66de87a34",
-      "src/economy/collector_service.c": "73721e2182bfbd25b32d42df42574a01c4aef5b26812c0e8695d275479f7136e",
-      "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
-      "src/economy/collector_transaction.c": "7071d61afa5741368ebd4c890b2fab4cca820e773eb5d17bbffc1cf177e034ed",
-      "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
+      "src/economy/collector_service.c": "baff0481cabceb06ef200a6d3f7df4dc131213d61429846d0ac42a4eaa344e00",
+      "src/economy/collector_service.h": "99360b787197a37040893edc7ec823610ecd5d87ba1808437ba05bed673df740",
+      "src/economy/collector_transaction.c": "b05f52ca74cc82a2ed26b3d44c848a014f97f0387e78594fa965e82faf9c40fb",
+      "src/economy/collector_transaction.h": "cb289620919694f56322276514ebda098c3f0d9ad234f354b31268274c2cc253",
       "src/economy/currency_transaction.c": "76ecc3d104cc2933eeb076260d7a5fce7d3ca18dae4b900a15b097b0a881543e",
       "src/economy/currency_transaction.h": "f85a6532df6a9d5da0e9a2448ae934492a99816f469c794e1f30af8f3df5cd87",
       "src/economy/economic_accounting_plan.c": "75a3b50a03d42264f940316975897f5c319bae404df55db46bd23dd5fd2c81d8",
@@ -66477,8 +66477,8 @@
       "src/economy/native_quest_consumption_capture.h": "7f204f5c8dfa3ae7b5d4568944a48ac34803cabf42e5a09331c27060b1f00852",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/economy/shop.h": "8fcceb4db03ab4f0db88489ae9aa0b9e8edb8bfc53de092fb03be11460a5a610",
-      "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
-      "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
+      "src/economy/shop_trade_accounting.c": "0e0b003f38ec7a35de6a9d3278bf0bacdba0d73792f8e10a58968b9ce451b97f",
+      "src/economy/shop_trade_accounting.h": "c57a4e640e059ea2ab048707f61a0f9a5c5b2b8b0839fc8a4611c760c4d7b89e",
       "src/economy/shop_trade_command.c": "92a6185134e47f97e4460d9944c87369d2fd0191077ed3b1aaca416fdec64155",
       "src/economy/shop_trade_command.h": "15df70a9c84ebb0de047b46475fb6d8df26293c8db5dbb86a2ab76367e4b6ab9",
       "src/economy/shop_trade_destination_weight.h": "95d1ff686a8bb7a3c9ef370cc20bfe5da5bafca97c7c234651b3609b032b5d22",
@@ -66489,8 +66489,8 @@
       "src/economy/shop_trade_recovery_manifest.h": "dd7d8aff0ddb52831971048799bd20c8df5594462bdf02a6c65aecaa6427d92b",
       "src/economy/shop_trade_runtime.c": "de093cab3c9e350e1ab882643be91a2cc87d37c9bb4a8363b16bf2270eae2c97",
       "src/economy/shop_trade_runtime.h": "1b27401fcba5f6e32e6adeca06b3a07cfdd3e0f7b62ac8cfc78c21b1ec7c5529",
-      "src/economy/shop_trade_transaction.c": "cc1b28eec56839b07f5dff28e2cb5707cb638f6abe1ce7ba09bc2437ff0e12a0",
-      "src/economy/shop_trade_transaction.h": "38b1f15d83a6342fbfc27fdfa9c8731791f1a1a9e101c556070a657113861020",
+      "src/economy/shop_trade_transaction.c": "92693faedc9e37e0e70cd6306876ed04bb715eed80130af4cdccf222cf124a84",
+      "src/economy/shop_trade_transaction.h": "e3935244d6c41ac096b336b563a4d51380d25725bde469ac9475dff9a92a20f8",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
       "src/flatfile/flatfile_accounting_authority.c": "51fc6088ea8f7e1b7bdd257a0c69eca9c42928dd1340ad97758e84cbc9206734",
@@ -66537,14 +66537,14 @@
       "src/persistence/quest_mobile_native_sql.h": "37aa529418a8c1945c11fcdc38dd4821dc7110a73d0ae9e6fd370b7ddd60c2bb",
       "src/persistence/shop_item_runtime_payload.c": "cdd535e9e056c21a0ec2d54709dc6a52b8ef515d8b3f1ac2ba9b8700bfc29644",
       "src/persistence/shop_item_runtime_payload.h": "ad017691e237448d06bb5cd6cd20ed1e2dacf93858f6494e1a0a9092e5b8b40e",
-      "src/player/inert_item_stage.c": "efba16bf06fece23f86354e254728f0223e4cb4a46b5de4100195b9c095864b6",
-      "src/player/inert_item_stage.h": "43466252fc603acdda2a5d1932095bacbdf7e776a63d93bc56f3a5e2eeb9677f",
+      "src/player/inert_item_stage.c": "89b11e379695e836b0827cd25348e2891b8a1209d5a0ede2de42ee3f2b17842a",
+      "src/player/inert_item_stage.h": "bb8a80bccf6f228b89741d951d1877ef3901b69c2c21b3da686c75f33fa215ed",
       "src/player/player_load_items.c": "8a00575183c34e52b2cf55f3080460133d5ca907a4ac36b22cff8a51f8823990",
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "0ec4884156ce027c5f096d6daf6201a35b8dfe3eb23ef76a6d7a0adfdccac8e9",
-      "src/player/player_save_pipeline.h": "0132515a78023c9be8f6649e486a719907de16ea3c0c3f3f035204c16d0104f5",
+      "src/player/player_save_pipeline.c": "1ecbfd94f188f2fb0bb1228486738fd419bd6f8d5c65e3d5026a48d121fbd8a9",
+      "src/player/player_save_pipeline.h": "98c187cbf941f9f3cc2e5a1618d45ac6406c35656decf51099fcbca2a3a8ffc0",
       "src/player/player_snapshot_codec.c": "4353b4f432d8955d5030a4e35ba432eb979dc02bf42157de0b7e8c94c4a706e8",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
@@ -66892,7 +66892,11 @@
       "src/core/prototypes.h": "da19a5a690ff9f038c748493bbff73171589349ff1d2a38f15679e65501794f8",
       "src/magic/spell_item_lifecycle.c": "ef1e584035c5e314201fbdcebd6910e6bd567e5ce1d8e9fc44dd7a0f079ad565",
       "src/magic/spell_item_lifecycle.h": "3907673c6f702b0ff0839108b5de26c86a2cd6416b09606aa8679681b6ab0d66",
-      "src/magic/magic.c": "08ee4ddb1004f8b7c56fb8f0de506d4418c26b2f9ae4ebccdceec53cc84cc3a4"
+      "src/magic/magic.c": "08ee4ddb1004f8b7c56fb8f0de506d4418c26b2f9ae4ebccdceec53cc84cc3a4",
+      "src/economy/collector_accounting.c": "97497c314f68a3f4a7213f3af3ed5dfcc685ddd86af6457dd45b93169796edc2",
+      "src/economy/collector_accounting.h": "be9db88ce10070c19ba43ce648459667e0c9a2c8edd46833d718f54f236bfb1f",
+      "src/economy/collector_command.c": "9d4f8295d1f1f0cd6c7fe9e4027da148e35893f611c5ceb9f15284b38cbf0711",
+      "src/economy/collector_command.h": "19a66c44bf32ab1bb5bcb03db3ef5bd282701cbe2f0dbf4e8f5f56f5c3a62144"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -4419,3 +4419,19 @@ six current dependencies and installed controls; source registry completed with
 Full extraction/shared startup/native32MiB/gameplay/persistence/recovery/drain/
 R1-R8 remain OPEN. Tests deferred major-plan batch; inactive/CLOSED, coverage
 incomplete, release BLOCKED, goal ACTIVE. No major-plan completion.
+
+
+## Bounded passive SHOP and Collector replay implemented - 2026-10-10
+
+[Source checkpoint](BOUNDED_PASSIVE_SHOP_COLLECTOR_REPLAY_2026-10-10.md) adds
+complete original commerce validation/registration on the same actual held
+player-save scope, pure CURRENT ownership and full flat SHOP codec/string
+source allowances. Incorrect allocating SHOP noexcept and Collector runtime
+constexpr declarations are fixed. Original uncertainty/duplicates/hold ordering,
+selected/default/inactive behavior and protected Plan5 WIP survive. Independent
+source reviews authenticate283+106+14+52 members, all16 inverses,249 dependencies,
+explicit published aliases and actual formatted candidate. Source registry keeps
+467 pins/931 policies/2853 mapped sites;12 pin updates/four additions, no new writers.
+Full first-host/foreign CURRENT/producer/publication/native32MiB/running drain/
+gameplay/persistence/recovery/R1-R8 remain OPEN. Tests deferred major-plan batch;
+inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
