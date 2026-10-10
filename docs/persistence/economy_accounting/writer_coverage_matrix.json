@@ -398,13 +398,13 @@
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "d5dfd98fd415e77b916252249a5f596bdd9272ee88bb2f31e27c8e5abf7e5d61",
       "src/mob/studioproclib.h": "7e262e289aec7658cddc97f018814249c38b23a2d917bf5ade9a592fb9eba961",
-      "src/net/comm.c": "1e74b23b7bc1ad21a3df7be51a5f0f1049dbe979ce9e5240705835b3d1ef127d",
+      "src/net/comm.c": "63be28bf28f813d1adcfc6238ecf48d2958de6fe45d8034f72b95b6d1b30678f",
       "src/net/comm.h": "0ed017535610804ede76e56e1c6fb6b86011bfa762c62977e7b399736d17bf4d",
       "src/persistence/critical_command.c": "85b21fac76ef40290d780138c0f286effa2d9ae05288eccca7329b2e2eae8201",
       "src/persistence/critical_command.h": "a27846068b4be84d8eaf8de1f769445f74a000d10a1e55fb82b47df648d29eba",
       "src/persistence/critical_command_completion.h": "e9fda4736102573bc81ca37f5258143e7f13afe40629a08add3cc4962a84084a",
-      "src/persistence/critical_command_coordinator.c": "a11425a8e017f71faf60124b0e9d76f6e809c0fc4677a0d88eb6b4ef0f5a684e",
-      "src/persistence/critical_command_coordinator.h": "fb2b2cba08d6b4ae9c2bcdafbc76cea8350d8fd75353cc7ccbd403b04504e285",
+      "src/persistence/critical_command_coordinator.c": "acf0701f08c3b0693cbdf866eb3b3eb054f0f1c74ef5e2b924c97a3b6d8a77e8",
+      "src/persistence/critical_command_coordinator.h": "06dbed32b928f0e0d0df1721f5ec259ff644d00aabe806839afe4443f77a8927",
       "src/persistence/critical_command_journal.c": "07b1ca90db295c01ffb2d7d435572d6c6db68492f9505bc1e10e3f1ac669ab6f",
       "src/persistence/critical_command_journal.h": "9bf8e548a593f4d6fafb94bf7b81b95e3a090b680bb7c7e7019cfe6d8c46857d",
       "src/persistence/critical_command_repository.c": "ab990ffa7854a8beaf002dc26fe8fcddecd4e347f102b5757be0243669f9f38e",
@@ -476,8 +476,8 @@
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "7cd45a1d881b2c2dc9565f87cdc1123b80261b047467e2d2c1b61e6a8f02f893",
-      "src/player/player_save_pipeline.h": "e07be073559db64fa2683c016c580066dfc62d6f9a782cef0879fa61482f8b57",
+      "src/player/player_save_pipeline.c": "f98d015bb85837d3dd62afc5c0d9ada428ab429aea8f11078e9a4b119f98b638",
+      "src/player/player_save_pipeline.h": "815af3816dcec077029293a15214884eb929c3f3a6555bc6adedc5f930634dd2",
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
       "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
@@ -53960,7 +53960,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4371
+          4376
         ],
         "file": "src/persistence/critical_command_coordinator.c",
         "function": "critical_native_mobile_birth_publication_owner::submit",

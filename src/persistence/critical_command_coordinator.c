@@ -202,6 +202,8 @@ struct completed_state
 	size_t encoded_size;
 };
 
+const critical_mixed_startup_replay_owner *active_mixed_startup_owner = nullptr;
+
 struct replay_observer_context
 {
 	critical_replay_observer_fn observer;
@@ -2621,10 +2623,13 @@ bool critical_command_coordinator_init(
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
+	// Real lifecycle exclusion precedes this original uninterrupted init lock.
+	auto lifecycle = critical_mixed_startup_replay_owner::acquire_lifecycle();
 	std::unique_lock<std::mutex> lock(coordinator_mutex);
 	if (health.initialized || lifecycle_guard_active ||
 	    active_cutover_phase != cutover_owner_phase::none)
 		return false;
+	critical_mixed_startup_replay_owner startup(lock, lifecycle);
 	// Scalar-only reset after original init guard, before journal replay.
 	// Unregistered defaults remain unchanged; no stale observer survives boot.
 	if (!critical_room_shared_budget_lender::reset_before_replay(lock))
@@ -7504,16 +7509,17 @@ bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
 	if (!output)
 		return false;
 	size_t total =
-		sizeof(coordinator_mutex) + sizeof(work_available) + sizeof(result_available) +
-		sizeof(admission_available) + sizeof(publication_checkpoint_finished) +
-		sizeof(publication_checkpoints_inflight) + sizeof(guarded_publications_inflight) +
-		sizeof(operations) + sizeof(pending) + sizeof(pending_admission) +
-		sizeof(completion_delivery) + sizeof(active_keys) + sizeof(fences) +
-		sizeof(completed_cache) + sizeof(completed_order) + sizeof(completed_cache_bytes) +
-		sizeof(pending_admission_bytes) + sizeof(admission_inflight_bytes) +
-		sizeof(workers) + sizeof(admission_worker) + sizeof(apply_callback) +
-		sizeof(shared_native_apply_callback) + sizeof(ordinary_native_apply_callback) +
-		sizeof(zone_reset_apply_callback) + sizeof(extension_validator_callback) +
+		sizeof(active_mixed_startup_owner) + sizeof(coordinator_mutex) +
+		sizeof(work_available) + sizeof(result_available) + sizeof(admission_available) +
+		sizeof(publication_checkpoint_finished) + sizeof(publication_checkpoints_inflight) +
+		sizeof(guarded_publications_inflight) + sizeof(operations) + sizeof(pending) +
+		sizeof(pending_admission) + sizeof(completion_delivery) + sizeof(active_keys) +
+		sizeof(fences) + sizeof(completed_cache) + sizeof(completed_order) +
+		sizeof(completed_cache_bytes) + sizeof(pending_admission_bytes) +
+		sizeof(admission_inflight_bytes) + sizeof(workers) + sizeof(admission_worker) +
+		sizeof(apply_callback) + sizeof(shared_native_apply_callback) +
+		sizeof(ordinary_native_apply_callback) + sizeof(zone_reset_apply_callback) +
+		sizeof(extension_validator_callback) +
 		sizeof(extension_validator_bounded_callback) +
 		sizeof(native_replay_observer_callback) +
 		sizeof(native_replay_observer_bounded_callback) +
@@ -8685,3 +8691,53 @@ enqueue_shared_shop_native_replayed_bounded(const critical_native_recovery_envel
 #endif
 }
 } // namespace: complete private bounded shared NMB4 passive replay insertion
+
+player_save_prepared_startup_lifecycle_owner
+critical_mixed_startup_replay_owner::acquire_lifecycle()
+{
+	return player_save_prepared_startup_lifecycle_owner();
+}
+
+critical_mixed_startup_replay_owner::critical_mixed_startup_replay_owner(
+	const std::unique_lock<std::mutex> &actual_init_lock,
+	const player_save_prepared_startup_lifecycle_owner &actual_lifecycle) noexcept
+	: init_lock_(actual_init_lock)
+	, lifecycle_(actual_lifecycle)
+{
+	// Constructor is private to the original initializer, AFTER its unchanged
+	// init guard. Identity is the real live stack owner, not a readiness flag.
+	if (!active_mixed_startup_owner && init_lock_.mutex() == &coordinator_mutex &&
+	    init_lock_.owns_lock() && lifecycle_.held())
+		active_mixed_startup_owner = this;
+}
+
+critical_mixed_startup_replay_owner::~critical_mixed_startup_replay_owner() noexcept
+{
+	if (active_mixed_startup_owner == this)
+		active_mixed_startup_owner = nullptr;
+}
+
+const critical_mixed_startup_replay_owner *critical_mixed_startup_replay_owner::current() noexcept
+{
+	// Called only by the paired original-coordinator replay callback. The
+	// real init lock is held; this is not an unlocked outside host observer.
+	return active_mixed_startup_owner && active_mixed_startup_owner->held() ?
+		       active_mixed_startup_owner :
+		       nullptr;
+}
+
+bool critical_mixed_startup_replay_owner::held() const noexcept
+{
+	return active_mixed_startup_owner == this && init_lock_.mutex() == &coordinator_mutex &&
+	       init_lock_.owns_lock() && lifecycle_.held();
+}
+
+bool critical_mixed_startup_replay_owner::reserve_coordinator_cut(
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) const noexcept
+{
+	if (!reserve || !held())
+		return false;
+	// Same actual init lock and complete existing CURRENT-C lender. The real
+	// caller charges this bridge/identity frame before entering this method.
+	return critical_room_shared_budget_lender::reserve(init_lock_, reserve, context, outer);
+}
