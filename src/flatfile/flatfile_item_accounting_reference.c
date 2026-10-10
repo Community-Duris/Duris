@@ -1380,3 +1380,379 @@ catch (const std::bad_alloc &)
 {
 	return flatfile_item_accounting_status::capacity;
 }
+
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__LP64__) && defined(_GLIBCXX_RELEASE) && \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI &&     \
+	!defined(_GLIBCXX_DEBUG)
+using reference_current_key = std::pair<std::array<uint8_t, 16>, uint16_t>;
+using reference_current_key_node = std::_Rb_tree_node<reference_current_key>;
+using reference_current_line_node = std::_Rb_tree_node<uint16_t>;
+struct reference_current_line_less
+{
+	bool operator()(const economic_accounting_item_reference &left,
+			const economic_accounting_item_reference &right) const noexcept
+	{
+		return left.line_index < right.line_index;
+	}
+	bool operator()(const economic_accounting_item_reference &left,
+			uint16_t right) const noexcept
+	{
+		return left.line_index < right;
+	}
+};
+struct reference_current_workspace
+{
+	std::vector<economic_accounting_item_reference> sorted;
+	std::set<reference_current_key> operation_lines, legacy_events;
+	std::set<uint16_t> matched;
+	std::string directory;
+	flatfile_native_mobile_birth_ordinary_reference_current observed{};
+	reference_current_line_less less;
+	size_t directory_size = 0, fixed = 0, live = 0, peak = 0, index = 0;
+	unsigned int bucket = 0;
+	bool selected_missing = false;
+};
+struct reference_current_bucket_workspace
+{
+	std::string filename;
+	std::vector<uint8_t> existing;
+	char formatted[16]{};
+	size_t offset = 0;
+	uint8_t shard = 0;
+	flatfile_read_result loaded = flatfile_read_result::invalid;
+};
+struct reference_current_row_workspace
+{
+	std::span<const uint8_t> bytes;
+	economic_accounting_item_reference row{};
+	std::vector<uint8_t> canonical, expected_bytes;
+	std::vector<economic_accounting_item_reference>::const_iterator found;
+	flatfile_item_accounting_status result = flatfile_item_accounting_status::invalid;
+	bool root_match = false, legacy_match = false;
+};
+
+// Named parameters/return carriers for this leaf, the census, checked sums,
+// and reserve callback. This is a source storage profile, not emitted frames.
+constexpr size_t reference_current_leaf_frames =
+	sizeof(void *) * 6 + sizeof(std::span<const economic_accounting_item_reference>) +
+	sizeof(size_t) + sizeof(flatfile_item_accounting_status);
+constexpr size_t reference_current_census_frames =
+	sizeof(void *) * 8 + sizeof(size_t) * 5 + sizeof(bool) * 4;
+
+// Original fixed-record codec source: decoder parameters plus its complete
+// reader, returned/taken spans, DTO, identity spans and decoded scalars. Nested
+// read_number/take source carriers and the allocation-free original validator
+// are charged together. Original bodies remain selected, byte-exact.
+constexpr size_t reference_current_validator_frames =
+	sizeof(void *) * 5 + sizeof(uint8_t) + sizeof(bool) * 2;
+constexpr size_t reference_current_decode_frames =
+	sizeof(reader) + sizeof(economic_accounting_item_reference) +
+	sizeof(std::span<const uint8_t>) * 6 + sizeof(void *) * 5 + sizeof(size_t) * 6 +
+	sizeof(uint64_t) * 5 + sizeof(bool) * 3 + sizeof(uint32_t) + sizeof(uint16_t) * 3 +
+	sizeof(flatfile_item_accounting_status) + reference_current_validator_frames;
+// Encoder parameters plus raw()/number() parameter and loop carriers. The
+// larger raw branch includes its span and return carrier; both branches are
+// reserved, conservatively overlapping, before the original reserve(66).
+constexpr size_t reference_current_encode_frames =
+	sizeof(void *) * 6 + sizeof(std::span<const uint8_t>) + sizeof(size_t) * 2 +
+	sizeof(uint64_t) + sizeof(flatfile_item_accounting_status) +
+	reference_current_validator_frames;
+
+// Secure read's stat and fresh candidate vector are admitted by the genuine
+// flatfile_read_bounded provider. Its named parameters/scalars and read_all /
+// private_directory carriers are added here, not guessed as an opaque CB.
+// Library, syscall and emitted-frame qualification remains separate.
+constexpr size_t reference_current_read_frames = sizeof(void *) * 7 + sizeof(size_t) * 6 +
+						 sizeof(int) * 5 + sizeof(ssize_t) +
+						 sizeof(flatfile_read_result) + sizeof(bool) * 2;
+
+bool reference_current_census(reference_current_workspace &work,
+			      const reference_current_bucket_workspace *bucket,
+			      const reference_current_row_workspace *row, size_t extra,
+			      flatfile_scratch_reserve_fn reserve, void *context) noexcept
+{
+	work.live = work.fixed;
+	if (!reference_bound_rows(work.live, work.sorted.capacity(),
+				  sizeof(economic_accounting_item_reference)) ||
+	    !reference_bound_rows(work.live, work.operation_lines.size(),
+				  sizeof(reference_current_key_node)) ||
+	    !reference_bound_rows(work.live, work.legacy_events.size(),
+				  sizeof(reference_current_key_node)) ||
+	    !reference_bound_rows(work.live, work.matched.size(),
+				  sizeof(reference_current_line_node)) ||
+	    (work.directory.capacity() > 15 &&
+	     (work.directory.capacity() == SIZE_MAX ||
+	      !reference_bound_add(work.live, work.directory.capacity() + 1))))
+		return false;
+	if (bucket && (!reference_bound_add(work.live, sizeof(*bucket)) ||
+		       !reference_bound_add(work.live, bucket->existing.capacity()) ||
+		       (bucket->filename.capacity() > 15 &&
+			(bucket->filename.capacity() == SIZE_MAX ||
+			 !reference_bound_add(work.live, bucket->filename.capacity() + 1)))))
+		return false;
+	if (row && (!reference_bound_add(work.live, sizeof(*row)) ||
+		    !reference_bound_add(work.live, row->canonical.capacity()) ||
+		    !reference_bound_add(work.live, row->expected_bytes.capacity())))
+		return false;
+	work.peak = work.live;
+	return reference_bound_add(work.peak, reference_current_census_frames) &&
+	       reference_bound_add(work.peak, extra) && reserve(work.peak, context);
+}
+#endif
+} // namespace
+
+flatfile_item_accounting_status flatfile_native_mobile_birth_ordinary_reference_history_storage::
+	verify_current_operation_locked_bounded(
+		const std::string &root, const flatfile_authority_lock &lock,
+		const critical_operation_id &operation,
+		std::span<const economic_accounting_item_reference> expected,
+		flatfile_native_mobile_birth_ordinary_reference_current *output,
+		flatfile_scratch_reserve_fn reserve, void *context, size_t outer) noexcept
+{
+	using status = flatfile_item_accounting_status;
+	if (root.empty() || !output || !reserve)
+		return status::invalid;
+#if !defined(__linux__) || !defined(__x86_64__) || !defined(__LP64__) || \
+	!defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 ||          \
+	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)expected;
+	(void)context;
+	(void)outer;
+	errno = ENOTSUP;
+	return status::io_error;
+#else
+	// Admission precedes construction of every owned container, including the
+	// empty forest. Caller retains actual root/lock/expected backing in outer.
+	size_t first = outer;
+	if (!reference_bound_add(first, reference_current_leaf_frames +
+						sizeof(reference_current_workspace) +
+						sizeof(size_t) + reference_current_census_frames) ||
+	    !reserve(first, context))
+		return status::capacity;
+	if (!lock.matches(root) || critical_operation_id_is_zero(operation))
+		return status::invalid;
+	try
+	{
+		reference_current_workspace work;
+		work.fixed = first - reference_current_census_frames;
+		work.peak = sizeof(std::vector<economic_accounting_item_reference>);
+		if (!reference_bound_rows(work.peak, expected.size(),
+					  sizeof(economic_accounting_item_reference)) ||
+		    !reference_current_census(work, nullptr, nullptr, work.peak, reserve, context))
+			return status::capacity;
+		{
+			std::vector<economic_accounting_item_reference> sorted(expected.begin(),
+									       expected.end());
+			work.sorted = std::move(sorted);
+		}
+		if (!reference_current_census(work, nullptr, nullptr, 0, reserve, context))
+			return status::capacity;
+		std::sort(work.sorted.begin(), work.sorted.end(), work.less);
+		for (work.index = 0; work.index < work.sorted.size(); ++work.index)
+		{
+			if (!reference_current_census(work, nullptr, nullptr,
+						      reference_current_validator_frames, reserve,
+						      context))
+				return status::capacity;
+			if (!economic_accounting_item_reference_validate(work.sorted[work.index]) ||
+			    work.sorted[work.index].operation_id.bytes != operation.bytes ||
+			    work.sorted[work.index].legacy_operation_id.bytes != operation.bytes ||
+			    (work.index && work.sorted[work.index - 1].line_index ==
+						   work.sorted[work.index].line_index))
+				return status::invalid;
+		}
+		work.directory_size = root.size();
+		if (!reference_bound_add(work.directory_size,
+					 sizeof("/accounting/item_references") - 1))
+			return status::capacity;
+		work.peak = sizeof(std::string);
+		if (work.directory_size > 15 &&
+		    (work.directory_size == SIZE_MAX ||
+		     !reference_bound_add(work.peak, work.directory_size + 1)))
+			return status::capacity;
+		if (!reference_current_census(work, nullptr, nullptr, work.peak, reserve, context))
+			return status::capacity;
+		{
+			std::string directory(work.directory_size, '\0');
+			std::copy(root.begin(), root.end(), directory.begin());
+			std::copy_n("/accounting/item_references",
+				    sizeof("/accounting/item_references") - 1,
+				    directory.begin() + root.size());
+			work.directory = std::move(directory);
+		}
+		for (work.bucket = 0; work.bucket < 256; ++work.bucket)
+		{
+			if (!reference_current_census(work, nullptr, nullptr,
+						      sizeof(reference_current_bucket_workspace),
+						      reserve, context))
+				return status::capacity;
+			reference_current_bucket_workspace bucket;
+			bucket.shard = static_cast<uint8_t>(work.bucket);
+			std::snprintf(bucket.formatted, sizeof(bucket.formatted), "%02x.bin",
+				      bucket.shard);
+			bucket.filename.assign(bucket.formatted, 6);
+			if (!reference_current_census(work, &bucket, nullptr,
+						      reference_current_read_frames, reserve,
+						      context))
+				return status::capacity;
+			bucket.loaded = flatfile_read_bounded(
+				work.directory, bucket.filename,
+				FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+				&bucket.existing, reserve, context, work.peak);
+			if (bucket.loaded == flatfile_read_result::not_found)
+			{
+				work.selected_missing |= bucket.shard == operation.bytes[0];
+				++work.observed.missing_buckets;
+				++work.observed.buckets_verified;
+				continue;
+			}
+			if (bucket.loaded != flatfile_read_result::ok)
+				return read_status(bucket.loaded);
+			if (bucket.existing.size() %
+			    FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+				return status::invalid;
+			for (bucket.offset = 0; bucket.offset < bucket.existing.size();
+			     bucket.offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+			{
+				if (!reference_current_census(
+					    work, &bucket, nullptr,
+					    sizeof(reference_current_row_workspace), reserve,
+					    context))
+					return status::capacity;
+				reference_current_row_workspace row;
+				row.bytes =
+					std::span<const uint8_t>(bucket.existing)
+						.subspan(
+							bucket.offset,
+							FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+				if (!reference_current_census(work, &bucket, &row,
+							      reference_current_decode_frames,
+							      reserve, context))
+					return status::capacity;
+				row.result = flatfile_item_accounting_reference_decode(row.bytes,
+										       &row.row);
+				if (row.result != status::ok)
+					return row.result;
+				if (row.row.legacy_operation_id.bytes[0] != bucket.shard)
+					return status::invalid;
+				if (!reference_current_census(
+					    work, &bucket, &row,
+					    FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES +
+						    reference_current_encode_frames,
+					    reserve, context))
+					return status::capacity;
+				row.result = flatfile_item_accounting_reference_encode(
+					row.row, &row.canonical);
+				if (row.result != status::ok)
+					return row.result;
+				if (row.canonical.size() != row.bytes.size() ||
+				    !std::equal(row.canonical.begin(), row.canonical.end(),
+						row.bytes.begin()))
+					return status::invalid;
+				// Each original unique index is global across all shards. Admit a
+				// real GCC13 tree node and the complete temporary key/result pair
+				// before each original emplace, then census actual retained sizes.
+				if (!reference_current_census(
+					    work, &bucket, &row,
+					    sizeof(reference_current_key_node) +
+						    sizeof(reference_current_key) +
+						    sizeof(std::pair<
+							    std::set<reference_current_key>::iterator,
+							    bool>),
+					    reserve, context))
+					return status::capacity;
+				if (!work.operation_lines
+					     .emplace(row.row.operation_id.bytes,
+						      row.row.line_index)
+					     .second)
+					return status::invalid;
+				if (!reference_current_census(
+					    work, &bucket, &row,
+					    sizeof(reference_current_key_node) +
+						    sizeof(reference_current_key) +
+						    sizeof(std::pair<
+							    std::set<reference_current_key>::iterator,
+							    bool>),
+					    reserve, context))
+					return status::capacity;
+				if (!work.legacy_events
+					     .emplace(row.row.legacy_operation_id.bytes,
+						      row.row.legacy_event_index)
+					     .second)
+					return status::invalid;
+				row.root_match = row.row.operation_id.bytes == operation.bytes;
+				row.legacy_match = row.row.legacy_operation_id.bytes ==
+						   operation.bytes;
+				if (row.root_match || row.legacy_match)
+				{
+					if (!row.root_match || !row.legacy_match)
+						return status::invalid;
+					if (!reference_current_census(
+						    work, &bucket, &row,
+						    sizeof(std::vector<
+							    economic_accounting_item_reference>::
+								   const_iterator) *
+								    3 +
+							    sizeof(uint16_t) +
+							    sizeof(reference_current_line_less),
+						    reserve, context))
+						return status::capacity;
+					row.found = std::lower_bound(work.sorted.cbegin(),
+								     work.sorted.cend(),
+								     row.row.line_index, work.less);
+					if (row.found == work.sorted.cend() ||
+					    row.found->line_index != row.row.line_index)
+						return status::invalid;
+					if (!reference_current_census(
+						    work, &bucket, &row,
+						    sizeof(reference_current_line_node) +
+							    sizeof(uint16_t) +
+							    sizeof(std::pair<
+								    std::set<uint16_t>::iterator,
+								    bool>),
+						    reserve, context))
+						return status::capacity;
+					if (!work.matched.insert(row.row.line_index).second)
+						return status::invalid;
+					if (!reference_current_census(
+						    work, &bucket, &row,
+						    FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES +
+							    reference_current_encode_frames,
+						    reserve, context))
+						return status::capacity;
+					row.result = flatfile_item_accounting_reference_encode(
+						*row.found, &row.expected_bytes);
+					if (row.result != status::ok)
+						return row.result;
+					if (row.canonical != row.expected_bytes)
+						return status::invalid;
+					++work.observed.root_records;
+					++work.observed.legacy_records;
+				}
+				++work.observed.retained_records;
+			}
+			++work.observed.buckets_verified;
+		}
+		if (work.observed.buckets_verified != 256 || !lock.matches(root))
+			return status::invalid;
+		if (work.observed.root_records != expected.size() ||
+		    work.observed.legacy_records != expected.size() ||
+		    work.matched.size() != expected.size())
+			return work.selected_missing && !expected.empty() ? status::not_found :
+									    status::invalid;
+		// Every allocating/fallible reserve is before this strong scalar transfer.
+		*output = work.observed;
+		return status::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return status::capacity;
+	}
+	catch (...)
+	{
+		return status::io_error;
+	}
+#endif
+}
