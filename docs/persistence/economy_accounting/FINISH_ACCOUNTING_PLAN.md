@@ -305,7 +305,8 @@ OR1 Genuine SAME borrowed root lock and authentic original indexed successful
 schema2 NMB4 ordinary record/revision1/failure-stage/result264 law; complete original
 retained index/active/sealed/stale-next/canonical proof, not recovery/new lock or
 terminal/native publication authority. Preserve actual guards/private friend edges.
-OR2 Actual decoded original image/recipes/ordinary role/nonzero birth cash/original
+OR2 Actual decoded original image/recipes/ordinary role/present original cash image
+(including known-zero wallet at revision1)/original
 operation/frozen intent/source/binding and exact original wallet EAP1/no children/
 independently rebuilt MBR4 equality; real candidate/plan/receipt/input/old-output
 owners/lifetimes. Allocating proof supplies no retained bound/32MiB cap or emitted
