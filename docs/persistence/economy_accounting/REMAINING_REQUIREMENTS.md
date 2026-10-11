@@ -1,3 +1,9 @@
+## Latest shared ownership and coordinator lender native thread source correction — 2026-10-11
+
+The latest human approval authorizes the separate WORLD and SHOP file leases. Those owners retain their leased paths; Root owns the unleased Zone and shared Coordinator files. Historical charter text below does not revoke that later approval.
+
+[Coordinator lender native thread Source correction](COORDINATOR_LENDER_NATIVE_THREAD_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) corrects the captured direct pthread_self() profile and its two native-handle declaration count. Four ordinary Coordinator whole production objects and actual profile probes pass across both backends and supported/assertions profiles; private getter/caller runtime remains OPEN. Zone public-getter regression remains qualified. 504 Source pins: only the Coordinator source pin updates in this milestone. All other pins, writer policies/census and unrelated WIP are preserved. Plans1–4, R1–R8, architecture, complete caller/producer/native/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
 ## Latest shared ownership and zone native thread source correction — 2026-10-11
 
 The latest human approval authorizes the separate WORLD and SHOP file leases. Those owners retain their leased paths; Root owns the unleased Zone and shared Coordinator files. Historical charter text below does not revoke that later approval.
