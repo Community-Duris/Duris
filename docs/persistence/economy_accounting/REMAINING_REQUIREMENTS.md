@@ -5251,3 +5251,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Registered main outcome repair - 2026-10-11
 
 [Entry reporting repair](REGISTERED_MAIN_OUTCOME_REPAIR_2026-10-11.md) emits an actually called main under existing success/refusal semantics. Original-adapter red/fixed eight-method regression green; real registered Item gate and unchanged outcome contract pass both native header backends. Install/register eight-case regression; all497 previous pins preserved, three actual pins added. No case/marker/deadline weakening or production change. Whole Plans1-4/R1-R8/release remain open; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Original logit Source profile integration - 2026-10-11
+
+[Diagnostic contract integration](ORIGINAL_LOGIT_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) adds passive Source getters while retaining original logging bytes. The first real supported-profile failure is preserved; corrected direct pthread_self/glibc guard and two-handle count pass six genuine whole Utility objects and four actual getter runs across both header backends. Register exact permanent regression; replace three existing pins, add two, preserve all other pins/policies/census/sites. Reader/World caller integration, full producer/native/gameplay/SQL/recovery/architecture/R1-R8/release remain open. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

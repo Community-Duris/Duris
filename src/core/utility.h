@@ -86,4 +86,28 @@ bool diagnostic_wizlog_bounded(int, bool *, bool (*)(size_t *, void *) noexcept,
 			       bool (*)(size_t, void *) noexcept, void *, size_t, const char *,
 			       ...) noexcept __attribute__((format(printf, 7, 8)));
 
+// Passive declaration Source for ORIGINAL logit and its existing working-byte
+// preflight. Additional Source excludes tbuf/va_list, formatter/path storage and
+// heap payload: the original working-byte profile owns those. Working-query
+// Source excludes its scan: preflight_object_bytes owns that physical object.
+// The combined export includes the existing preflight getter's returned size_t,
+// and counts the shared vsnprintf/strcasecmp family once. Use either the combined
+// export or separately composed rows, never both. Original AND working-query
+// incoming varargs remain actual caller-owned occurrences, not an arbitrary pack.
+// Admit getter query before querying Source, then admit Source before the original
+// preflight getter; admit the returned scan bytes before working_bytes. Retain
+// original working storage through logit. Getters execute no scan, thread query,
+// formatting, logging or allocation; unsupported/null refusal preserves output.
+// Pinned GNU13.3/Linux LP64/glibc/MEMCHK1/fortify3/gthreads only. Declaration
+// accounting does not establish libc internals, ABI/emitted stack or native
+// qualification. All existing original diagnostic functions remain unchanged.
+bool diagnostic_original_logit_additional_source_frame_bytes(size_t *) noexcept;
+bool diagnostic_original_logit_working_query_source_frame_bytes(size_t *) noexcept;
+bool diagnostic_original_logit_with_queries_source_frame_bytes(size_t *) noexcept;
+constexpr size_t diagnostic_original_logit_source_query_frame_bytes() noexcept
+{
+	// Any one direct getter: actual output parameter and returned bool only.
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif // _UTILITY_H_
