@@ -3577,3 +3577,33 @@ only, result/remote in delivery/result.json. No shared interface/schema request,
 DB/build/server/fullsuite/retry/nextcohort/contractfields. Current65/restore/
 retention/erasure/nativeauthority/host/gameplay/fault/load/recovery/R1–R8/fullrelease
 OPEN; inactive/CLOSED/fullgoalACTIVE. Additive curator input/no notebook import.
+
+## 2026-10-11 — Original retention link prerequisite prepared, native NOT_RUN
+
+[ACC-06 preparation](PLAN5_RETENTION_LINK_PREPARATION_2026-10-11.md) publishes
+current-primary055 narrow+3provider patch external to broad owned retention WIP.
+All1427 exactGit inputs; original11TUs/candidate14; fullASTinverse/CPP/flags/
+assertions/allotherfunctions unchanged. Proposed actual originalSQLlink outcome
+first; only matchingthree-provider red permitsbothSQL/flat ASan/UBSan realbinary
+PID7/four original EAI1/EAP1 frame/digest/actor decoding and byteagreement.
+Originalflat remainsNOT_RUN ifSQLfirstfails; unexpectedactual failures preserved.
+No actualcompile/runtime/DB/game/schema/fullretention pass; zeroeffectstructural
+prerequisite only. Existing broad module/claims/64/journeys untouched.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-06-RETENTION-LINK-01; prep
+779e496621ac78213f586c37be40e761e1769833043eaac0d2a05414a55bc2c9,
+patch798921bab0d5ace50a01c3cb5afecad027c53223e68ba31951d5f03848a9e6ed,
+candidate3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878.
+Resource-free hash/AST/import/checkonly0/missinggrant1 proof; native NOT_RUN,
+resources0. Distinct reviewed oneQA74b.../2GiB/CPU2/600s/directD/readonly/no-network/
+--rm/restartno grant/lease required; ownership/cleanup/seal controls prepared.
+Producer basebea3c44ee0dcb34fffa166eee9d51dcfdd27a49d, result/remote in
+delivery/preparation-publication.json afterpublication. Owned report+exactpatch+
+additivefollowup only, no sharedinterface/schema/runtime/contract requests.
+Full65/coherentstake/fullretention/backuprestore/erasure/nativeauthority/host/
+recovery/gameplay/load/R1–R8/release OPEN, inactive/CLOSED/fullgoalACTIVE.
+Additive curator input/no notebook import or completed link-fix claim.
+Subsequent distinct coordinator grant SHA1f0685f6639e38e3d1bf5e2f57cc643ab6ed5da40eac6d534ab61a4c969fc20d,
+initialGRANTEDlock eb214047c3fb6379bea122b29083d8060c1b4c0300f49eb2f8dbd750334dd55b;
+review1bc5779484bd6d0c30f5770ec13ed94f24a9b676cea0587fe04d0f3258809d44.
+No native execution yet; preparation publication first, terminal result separate.
