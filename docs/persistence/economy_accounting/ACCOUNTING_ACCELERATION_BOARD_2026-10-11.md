@@ -2,9 +2,9 @@
 
 ## Current accepting gate
 
-ACC-01: fresh strict SQL and flat production compile/link plus maintained inactive
-flat boot on frozen `6022c0ad7feab34c13e27738d4295b65b8d010ac`. Bootstrap roster
-handoff and exclusive heavy-job grant/receipt precede execution. SQL startup and
+ACC-01 RUNNING: fresh strict SQL and flat production compile/link plus maintained inactive
+flat boot on frozen `6022c0ad7feab34c13e27738d4295b65b8d010ac`. ROSTER_READY
+received; exclusive heavy-job receipt acquired. SQL startup and
 schema/restore jobs must be sequenced with Plan 5; do not duplicate its mutable DB
 matrix. First checkpoint or exact failure/owner handoff target: within 12 hours
 of orchestrator creation (2026-10-11 00:43 MDT).
@@ -20,11 +20,11 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 bootstrap prepared; no heavy lease yet |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 running, frozen launch source |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; established `codex/accounting-plan5`; exact worktree/result pending roster | ACC-02 after current malformed-input slice drains |
-| World/quest | Exact chat/worktree pending ROSTER_READY; `codex/accounting-accel-world` | ACC-03 inspection/existing executable proof; maintained edit awaits primary acknowledgment |
-| Shop/backend | Exact chat/worktree pending ROSTER_READY; `codex/accounting-accel-shop` | ACC-04 inspection/existing executable proof; maintained edit awaits primary acknowledgment |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published parser result `fcefe3a1e54d68694a2a3b573e09a53bb31d914c`; ACC-02 first after ACC-01/boundary receipt |
+| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
+| Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
 - Launch source: `6022c0ad7feab34c13e27738d4295b65b8d010ac`; only charter and plan pointer added.
@@ -51,19 +51,44 @@ protected WIP/pending edits/exclusions, and release or renewal rules in the char
 Primary remains sole writer of `experimental-accounting`; local owners push only
 their assigned helper branches. No additional sessions or subagents authorized.
 
+Exact additional WORLD request: `src/world/quest.c` owns
+`submit_native_quest_give` -> `quest_native_gameplay_owner::begin/pulse` ->
+`quest_native_completion_owner::prepare_original`, continuation restore/pair ACK
+and reward. Its flat preparation/phase2 refuses; SQL requires authentic runtime
+NPC/item/cash references and accepting authority. Proposed first genuine QP06:
+29262/29263/29264 -> 29237/C3000/E2500. Primary must acknowledge that additional
+path/source/WIP before WORLD edits it. Legacy inactive mini-world ACK runner
+does not qualify genuine native birth/admission.
+
+Exact shared SHOP request remains PRIMARY-owned: `src/economy/economic_command_admission.c`
+and `.h` (real bounded schema2 SHOP selection; currently unavailable),
+`src/player/player_save_pipeline.c` and `.h` (factory-issued original operation/PID,
+generation/epoch, full forests/revisions, one hold, authenticated current result,
+once-only publication/cancellation/guarded ACK),
+`src/persistence/economic_sql_shop_trade_transaction.c` and `.h` (same root session
+lock/current/execute/receipt plus different-PID keeper fencing),
+`src/flatfile/flatfile_accounting_shop_transaction.c` and `.h` (same authority
+lock/current/apply/verify, uncertain outcome and journal compatibility).
+Current consumers are retained SHOP preparation/native checkpoint, coordinator,
+accounted dispatch and cold/live publication. These paths are requests to PRIMARY,
+not additional active SHOP leases. Require exact-ID uncertainty, committed-unpublished,
+lost completion, keeper contention, cold full forests/absence, repeated ACK and
+cleanup proof in existing transaction/retention/native restore journeys. Do not
+override availability or invent tokens/receipts for accepting tests.
+
 ## Queue and proof contracts
 
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries, inactive flat preflight, applicable existing SQL startup result or exact assigned failure | ROSTER_READY; one exclusive heavy grant; current frozen source |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Retained Plan 5 slice finishes; owned isolated databases; measured pins go to primary |
-| ACC-03 | Existing genuine quest/world executable failure reproduced or gate passed; then one acknowledged connected domain slice with both backend proof | Reuse retired quest packet; exact WORLD acknowledgment before edits |
-| ACC-04 | Existing genuine shop/repository executable failure reproduced or gate passed; then one acknowledged responsibility slice | Reuse retired domain packet; exact SHOP acknowledgment before edits |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | PRIORITY after ACC-01 current binaries/boundary receipt; isolated databases; measured pins go to primary |
+| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
+| ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
 
-Maintained commands prepared (not run):
+Maintained ACC-01 commands (running):
 
 ```sh
 make -C /source/src -k -j2 PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production \
@@ -98,12 +123,24 @@ Toolchain must be observed in the owned job; old image label is not compiler pro
 Measured free Windows memory: 4.58 GiB of 31.75 GiB at bootstrap. One heavy job
 at a time; no second slot without resource grant and measured memory.
 
-No resource controller was identified in maintained script filename inventory.
-Use explicit exclusive task receipts if bootstrap confirms no controller. Receipt
+No project controller was identified in maintained scripts or bootstrap receipts.
+Explicit exclusive task receipt `ACC-01-lease.json` and `heavy-job.lock` acquired at
+2026-10-11 00:49 MDT. Job `ACC-01-6022c0ad7`, attempt 2, disposable `duris-build-a`
+ID `cee234bd9277fda9fd5874c760509140cd86c754e6b69990ba4dbc105a2dffb7`, exact
+image above, read-only D source plus direct D bin/evidence/cache mounts, restart no,
+network none, CPU2/memory3GiB. GCC13.3.0 observed; strict production SQL compiling.
+Attempt 1 failed before compiler: nested `/source/bin` mountpoint missing under
+read-only export. Failure receipt preserved; empty directory added, no source-byte
+or flag change; first lease released before retry. Scratch `/t` is private 128MiB
+tmpfs for POSIX ownership checks; persistent evidence/build/cache stays on D.
+Frozen archive SHA256 `74774296e26462008de621c727752c4631a75337b3510620f3db29600caea8d0`;
+src tree `df568142d3c57d74683bed76da2a0eec67d4a326`.
+Receipt
 must identify owner chat, job, exact image/container, direct D mounts, purpose,
 start and release condition. Disposable jobs use foreground `--rm`, restart no,
 finally cleanup; release after evidence capture. Preserve unrelated services,
-volumes, recovery containers and all evidence. No resources acquired yet.
+volumes, recovery containers and all evidence. Active job releases in host finally
+after terminal result and exact-owned-container cleanup; workers have no heavy grant.
 
 ## Preserved retirement and handoffs
 
@@ -113,8 +150,16 @@ Retiring quest `01a110f7-3d22-7fc2-9965-daa6428d11fc`, domain
 all work/goals/failures; launch readiness owns bootstrap retirement capture.
 Old coordination heartbeat PAUSED; original prompt SHA256
 `472ba9b18ce9af8b9ab57eebc5ae2cb86cbb7a7cca0cab29f6b3468552b9e589` retained.
-Do not resume it. Exact reusable handoff receipts await roster/bootstrap handoff.
+Do not resume it. All three helpers verified IDLE, no active owned jobs carried.
+Quest packet `D:/Dev/Temp/quest-retirement-handoff-20261011/HANDOFF.md` SHA256
+`d494508008b7bebd574e089a39c2f676da85296f2b4f73fad90f8b5d88f5f731` and domain
+packet `D:/Dev/Temp/accounting-retirement-01a11627-20261011/HANDOFF.md` SHA256
+`807d48644ad8984751a6d681f6e3144497201af6742eb0d2e0fa3fc65b96347b` independently
+matched; dirty quest overlays and all stopped resources remain preserved.
 
-No worker delivery reviewed/integrated yet. No primary acknowledgment accepted.
+Plan5 latest parser/output patches read; not yet integrated. Parser final patch
+depends on earlier bounded stream/duplicate-field reader absent from launch source;
+Plan5 asked for exact minimal dependency bundle. No wholesale branch merge reviewed.
+No primary acknowledgment accepted. No runtime worker implementation active.
 Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
 estimate, not measured. Re-estimate after current accepting SQL/startup evidence.
