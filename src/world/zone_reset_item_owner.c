@@ -6509,12 +6509,12 @@ constexpr size_t literal_without_thread =
 
 namespace flat_root_complete_global_header_source
 {
-// Actual ordinary GNU13 get_id -> explicit id(native_handle) -> gthread_self
-// -> pthread_self. get_id's class prvalue directly initializes equality's
+// Actual Linux/glibc >= 2.27 GNU13 get_id -> explicit id(native_handle)
+// -> native pthread_self. get_id's class prvalue directly initializes equality's
 // right by-value parameter; no third id or undeclared copy/dtor is invented.
-// The two declared native scalar returns are distinct from ctor's formal.
+// The pthread_self return and ctor formal are the two native handle carriers.
 constexpr size_t thread = 2 * sizeof(std::thread::id) + sizeof(void *) +
-			  3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+			  2 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
 // Sequential game-thread calls reuse the same selected declaration graph.
 constexpr size_t base = flat_root_global_graph_source::base_without_thread + thread;
 constexpr size_t literal = flat_root_global_graph_source::literal_without_thread + thread;
@@ -6526,7 +6526,8 @@ bool zone_reset_item_owner::flat_global_current_header_source_frame_bytes(size_t
 	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
 	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
 	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
-	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) || !defined(__GLIBC_MINOR__) ||                \
+	(__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27))
 	(void)output;
 	return false;
 #else
@@ -6547,7 +6548,8 @@ bool zone_reset_item_owner::flat_global_literal_current_header_source_frame_byte
 	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
 	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
 	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
-	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) || !defined(__GLIBC_MINOR__) ||                \
+	(__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27))
 	(void)output;
 	return false;
 #else

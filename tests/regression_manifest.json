@@ -8648,6 +8648,19 @@
         "native-compiler"
       ],
       "purpose": "Six genuine whole Utility production objects and four actual supported/assertions getter runs across SQL-header and flatfile; passive original-logit Source contracts, null refusal and strong output preservation. Overall5400-second matrix cap is stricter than the sum of individual stage ceilings; no services, original logit invocation or release qualification."
+    },
+    "test_native_birth_zone_source_profile.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 102.16658935000305,
+      "timeout_seconds": 5400,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Four genuine ordinary whole Coordinator Make objects and actual macro profile probes, compile only; four whole Zone public-getter runs across SQL-header/flat supported and genuine assertions-refusal profiles, exact values/null/strong outputs. Coordinator private getter/caller runtime remains OPEN. No services or full accounting/release qualification."
     }
   }
 }
