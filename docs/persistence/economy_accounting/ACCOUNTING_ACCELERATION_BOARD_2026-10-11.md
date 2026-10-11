@@ -157,7 +157,22 @@ packet `D:/Dev/Temp/accounting-retirement-01a11627-20261011/HANDOFF.md` SHA256
 `807d48644ad8984751a6d681f6e3144497201af6742eb0d2e0fa3fc65b96347b` independently
 matched; dirty quest overlays and all stopped resources remain preserved.
 
-Plan5 latest parser/output patches read; not yet integrated. Parser final patch
+Reviewed Plan5 output integration: import only the three-file `ed57174e` ->
+`0446c40d` delta (four production lines in snapshot/origin main plus 62 existing
+test-module lines); preserve launch snapshot's older capture semantics. Complete
+encoded JSON plus newline now refuses over-limit before output creation; existing
+output remains exclusive/protected. Actual current-source command
+`python -B tests/async/test_economic_sql_uid_scope.py -v` passes 14/14 tests,
+zero failures/errors/skips, 0.063s; new method covers both exporters/16 controls.
+Windows CLI/file execution uses mocked SQL capture/client; POSIX mode and native
+SQL authority unqualified. Evidence/patch/result:
+`D:/Dev/Tests/Duris/accounting-accel-integration/PLAN5-output-integration`.
+PRIMARY registration request: append
+`SnapshotCliTests.test_output_byte_limit_includes_final_newline_before_file_creation`
+to `plan5_recent_uid_scope` required_cases and arguments before `-v`; preserve
+all existing controls. Registry/matrix refresh remains PRIMARY-owned.
+Native/migration source bytes unchanged, so ACC-01 stays at its original freeze.
+Parser final patch
 depends on earlier bounded stream/duplicate-field reader absent from launch source;
 Plan5 asked for exact minimal dependency bundle. No wholesale branch merge reviewed.
 No primary acknowledgment accepted. No runtime worker implementation active.
