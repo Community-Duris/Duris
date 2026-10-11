@@ -753,4 +753,319 @@ constexpr size_t item_transfer_native_recovery_valid_complete_source_query_frame
 	return 6 * sizeof(void *) + 7 * sizeof(size_t) + 9 * sizeof(bool);
 }
 
+bool item_transfer_native_cost_value_valid_complete_bounded(const item_transfer_payload &,
+							    bool (*)(size_t, void *) noexcept,
+							    void *, size_t) noexcept;
+bool item_transfer_native_cost_value_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_cost_value_valid_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_cost_value_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_cost_value_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Getter outputP/two N locals/returnB/policyB + checked-add P+N+B + Cost pureP+B.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool);
+}
+
+bool item_transfer_native_fee_shape_valid_complete_bounded(const item_transfer_payload &payload,
+							   bool acknowledged,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept;
+bool item_transfer_native_fee_encode_complete_bounded(const item_transfer_payload &payload,
+						      bool acknowledged,
+						      std::vector<uint8_t> *encoded,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept;
+bool item_transfer_native_fee_decode_complete_bounded(const critical_command &command,
+						      item_transfer_payload *payload,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept;
+bool item_transfer_native_money_shape_valid_complete_bounded(
+	const item_transfer_payload &payload, bool acknowledged,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+bool item_transfer_native_money_encode_complete_bounded(const item_transfer_payload &payload,
+							bool acknowledged,
+							std::vector<uint8_t> *encoded,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept;
+bool item_transfer_native_money_decode_complete_bounded(const critical_command &command,
+							item_transfer_payload *payload,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept;
+bool item_transfer_native_fee_shape_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_shape_valid_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_shape_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_fee_shape_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_cost_value_valid_complete_source_query_frame_bytes() +
+	       quest_mobile_native_reference_encode_source_query_frame_bytes() +
+	       (2 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool)) +
+	       shop_trade_recovery_forest_shape_valid_bounded_source_query_frame_bytes();
+}
+bool item_transfer_native_money_shape_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_money_shape_valid_complete_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool item_transfer_native_money_shape_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_money_shape_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       quest_mobile_native_reference_encode_source_query_frame_bytes() +
+	       shop_trade_recovery_forest_shape_valid_bounded_source_query_frame_bytes();
+}
+bool item_transfer_native_fee_encode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_encode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_encode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_fee_encode_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_fee_shape_valid_complete_source_query_frame_bytes() +
+	       native_quest_cost_projection_encode_source_query_frame_bytes() +
+	       quest_mobile_native_reference_encode_source_query_frame_bytes() +
+	       item_transfer_native_recovery_encode_complete_source_query_frame_bytes();
+}
+bool item_transfer_native_money_encode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_money_encode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_money_encode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_money_encode_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_money_shape_valid_complete_source_query_frame_bytes() +
+	       native_quest_coin_give_encode_source_query_frame_bytes() +
+	       quest_mobile_native_reference_encode_source_query_frame_bytes() +
+	       item_transfer_native_recovery_encode_complete_source_query_frame_bytes();
+}
+bool item_transfer_native_fee_decode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_decode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_fee_decode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_fee_decode_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       quest_mobile_native_reference_decode_source_query_frame_bytes() +
+	       native_quest_cost_projection_decode_source_query_frame_bytes() +
+	       item_transfer_native_recovery_decode_complete_source_query_frame_bytes() +
+	       item_transfer_native_fee_encode_complete_source_query_frame_bytes() +
+	       (3 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool)) +
+	       (2 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool));
+}
+bool item_transfer_native_money_decode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_money_decode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_money_decode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_money_decode_complete_source_query_frame_bytes() noexcept
+{
+	// Actual full getter output/result/child/resultB + policy + checked add.
+	// Child pure-getter Source follows the reviewed selecting DAG.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       quest_mobile_native_reference_decode_source_query_frame_bytes() +
+	       native_quest_coin_give_decode_source_query_frame_bytes() +
+	       item_transfer_native_recovery_decode_complete_source_query_frame_bytes() +
+	       item_transfer_native_money_encode_complete_source_query_frame_bytes() +
+	       (3 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool));
+}
+
+// Additive generic Source contracts. Original APIs and inactive gates retained.
+bool item_transfer_corpse_context_encode_complete_bounded(const item_corpse_metadata &corpse,
+							  std::vector<uint8_t> *encoded,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept;
+bool item_transfer_corpse_context_decode_complete_bounded(const uint8_t *encoded, size_t size,
+							  item_corpse_metadata *corpse,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept;
+bool item_transfer_collector_context_encode_complete_bounded(
+	const item_collector_death_enrollment &collector, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
+bool item_transfer_collector_context_decode_complete_bounded(
+	const uint8_t *encoded, size_t size, item_collector_death_enrollment *collector,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
+bool item_transfer_corpse_context_encode_complete_source_frame_bytes(size_t *bytes) noexcept;
+bool item_transfer_corpse_context_encode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_corpse_context_encode_complete_initial_inline_bytes(size_t *bytes) noexcept;
+bool item_transfer_corpse_context_decode_complete_source_frame_bytes(size_t *bytes) noexcept;
+bool item_transfer_corpse_context_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_corpse_context_decode_complete_initial_inline_bytes(size_t *bytes) noexcept;
+bool item_transfer_collector_context_encode_complete_source_frame_bytes(size_t *bytes) noexcept;
+bool item_transfer_collector_context_encode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_collector_context_encode_complete_initial_inline_bytes(size_t *bytes) noexcept;
+bool item_transfer_collector_context_decode_complete_source_frame_bytes(size_t *bytes) noexcept;
+bool item_transfer_collector_context_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_collector_context_decode_complete_initial_inline_bytes(size_t *bytes) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_complete_bounded(
+	const item_transfer_payload &payload, uint16_t version,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+bool item_transfer_craft_outputs_decode_complete_bounded(const item_transfer_payload &payload,
+							 std::vector<player_item_snapshot> *outputs,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer_live,
+							 size_t *retained_item_heap_bytes) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_duplicate_promotion_continuation_valid_complete_initial_inline_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_craft_outputs_decode_complete_source_frame_bytes(size_t *bytes) noexcept;
+bool item_transfer_craft_outputs_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept;
+bool item_transfer_craft_outputs_decode_complete_initial_inline_bytes(size_t *bytes) noexcept;
+bool item_transfer_payload_valid_complete_bounded(const item_transfer_payload &payload,
+						  uint16_t version,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept;
+bool item_transfer_payload_valid_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_payload_valid_complete_source_supplement_frame_bytes(size_t *output) noexcept;
+bool item_transfer_payload_valid_complete_initial_inline_bytes(size_t *output) noexcept;
+bool item_transfer_payload_decode_generic_complete_bounded(
+	const critical_command &command, item_transfer_payload *payload,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_payload_heap_bytes) noexcept;
+bool item_transfer_payload_encode_version_complete_bounded(
+	const item_transfer_payload &payload, uint16_t version, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes) noexcept;
+bool item_transfer_payload_encode_version_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_payload_encode_version_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_payload_encode_version_complete_initial_inline_bytes(size_t *output) noexcept;
+bool item_transfer_payload_decode_generic_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_payload_decode_generic_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_payload_decode_generic_complete_initial_inline_bytes(size_t *output) noexcept;
+bool item_transfer_command_decode_payload_complete_bounded(const critical_command &command,
+							   item_transfer_payload *payload,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept;
+bool item_transfer_command_encode_native_mobile_complete_bounded(
+	const item_transfer_payload &payload, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_complete_bounded(
+	const item_transfer_payload &payload, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+bool item_transfer_native_cost_encode_complete_bounded(const item_transfer_payload &payload,
+						       bool acknowledged,
+						       std::vector<uint8_t> *encoded,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept;
+bool item_transfer_native_cost_encode_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_native_cost_encode_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_native_cost_encode_complete_initial_inline_bytes(size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_complete_initial_inline_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery_complete_initial_inline_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_decode_payload_complete_source_frame_bytes(size_t *output) noexcept;
+bool item_transfer_command_decode_payload_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_transfer_command_decode_payload_complete_initial_inline_bytes(size_t *output) noexcept;
+constexpr size_t item_transfer_corpse_context_encode_complete_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t item_transfer_corpse_context_decode_complete_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t item_transfer_collector_context_encode_complete_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t item_transfer_collector_context_decode_complete_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+constexpr size_t
+item_transfer_duplicate_promotion_continuation_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Genuine full getter declaration/local/policy + actual child/add scopes;
+	// supplement and INITIAL paths are smaller. Output scalar is caller-owned.
+	return sizeof(void *) + 2 * sizeof(bool);
+}
+constexpr size_t item_transfer_craft_outputs_decode_complete_source_query_frame_bytes() noexcept
+{
+	// Genuine full getter declaration/local/policy + actual child/add scopes;
+	// supplement and INITIAL paths are smaller. Output scalar is caller-owned.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+}
+constexpr size_t item_transfer_payload_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Exact owning getter/query union expanded here because recipe and pouch
+	// owning headers themselves include Item H. No circular include needed.
+	return 41 * sizeof(void *) + 45 * sizeof(size_t) + 60 * sizeof(bool);
+}
+constexpr size_t item_transfer_payload_encode_version_complete_source_query_frame_bytes() noexcept
+{
+	// Exact owning getter/query union expanded here because recipe and pouch
+	// owning headers themselves include Item H. No circular include needed.
+	return 52 * sizeof(void *) + 55 * sizeof(size_t) + 78 * sizeof(bool);
+}
+constexpr size_t item_transfer_payload_decode_generic_complete_source_query_frame_bytes() noexcept
+{
+	// Exact owning getter/query union expanded here because recipe and pouch
+	// owning headers themselves include Item H. No circular include needed.
+	return 58 * sizeof(void *) + 61 * sizeof(size_t) + 87 * sizeof(bool);
+}
+constexpr size_t item_transfer_native_cost_encode_complete_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_cost_value_valid_complete_source_query_frame_bytes() +
+	       item_transfer_native_fee_encode_complete_source_query_frame_bytes() +
+	       item_transfer_payload_encode_version_complete_source_query_frame_bytes() +
+	       native_quest_cost_projection_encode_source_query_frame_bytes();
+}
+constexpr size_t
+item_transfer_command_encode_native_mobile_complete_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_money_encode_complete_source_query_frame_bytes() +
+	       item_transfer_native_cost_encode_complete_source_query_frame_bytes() +
+	       item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+}
+constexpr size_t
+item_transfer_command_encode_native_mobile_recovery_complete_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_money_encode_complete_source_query_frame_bytes() +
+	       item_transfer_native_cost_encode_complete_source_query_frame_bytes() +
+	       item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+}
+constexpr size_t item_transfer_command_decode_payload_complete_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_native_money_decode_complete_source_query_frame_bytes() +
+	       item_transfer_native_fee_decode_complete_source_query_frame_bytes() +
+	       item_transfer_payload_decode_generic_complete_source_query_frame_bytes() +
+	       ((2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) +
+		item_transfer_payload_decode_generic_complete_source_query_frame_bytes() +
+		2 * ((2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) +
+		     item_transfer_payload_encode_version_complete_source_query_frame_bytes())) +
+	       native_quest_cost_projection_decode_source_query_frame_bytes() +
+	       item_transfer_native_cost_value_valid_complete_source_query_frame_bytes() +
+	       item_transfer_native_cost_encode_complete_source_query_frame_bytes() +
+	       ((2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) +
+		item_transfer_payload_encode_version_complete_source_query_frame_bytes()) +
+	       ((2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) +
+		item_transfer_payload_encode_version_complete_source_query_frame_bytes());
+}
 #endif

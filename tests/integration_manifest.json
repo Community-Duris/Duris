@@ -2064,13 +2064,19 @@
       "id": "flatfile_restore_economic_authority",
       "path": "tests/async/test_flatfile_restore_economic_authority.py",
       "provider": "offline",
-      "engines": ["once"],
+      "engines": [
+        "once"
+      ],
       "mode": "script",
-      "required_cases": ["script"],
+      "required_cases": [
+        "script"
+      ],
       "arguments": [],
       "environment": {},
       "timeout_seconds": 900,
-      "covers": ["test_flatfile_restore_economic_authority.py"],
+      "covers": [
+        "test_flatfile_restore_economic_authority.py"
+      ],
       "required_markers": [
         "\"economic_bytes_unchanged\": true",
         "\"native_metadata_comparisons\": 1058",
@@ -2888,6 +2894,53 @@
         "test_reconcile_economy_accounting.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "held_retirement_publication_policy",
+      "path": "tests/async/test_held_retirement_publication_policy.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script",
+        "main"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "held_retirement_publication_policy_harness.cpp"
+      ],
+      "required_markers": [
+        "held-retirement publication policy sql: PASS",
+        "held-retirement publication policy flat: PASS"
+      ]
+    },
+    {
+      "id": "item_transfer_complete_bounded",
+      "path": "tests/async/test_item_transfer_complete_bounded.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script",
+        "main"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 5400,
+      "covers": [
+        "item_transfer_complete_bounded_test.cpp"
+      ],
+      "required_markers": [
+        "ITEM_TRANSFER_COMPLETE_CASES",
+        "item-transfer complete bounded sql ordinary: PASS",
+        "item-transfer complete bounded flat ordinary: PASS"
+      ]
     }
   ]
 }
