@@ -118,6 +118,13 @@ class economic_sql_accounting_lifecycle_transaction
 					   const economic_sql_lifecycle_request &,
 					   const economic_sql_activation_evidence &,
 					   economic_sql_initialized_activation_verifier) noexcept;
+	// Reconstruct original request and decision context from retained SQL.
+	// Same-session verification only; historical missing admission time refuses.
+	// This private bridge neither activates accounting nor grants a later permit.
+	static unsigned int
+	verify_initialized_runtime_sources(MYSQL *, economic_sql_cutover_transaction_owner &,
+					   const economic_sql_runtime_boot_selection &,
+					   economic_sql_initialized_activation_verifier) noexcept;
 	// Known pre-COMMIT abort only. Authenticate current SQL selection/mappings
 	// against the still-installed regular projection under the retained owner.
 	// Success does not release exclusion, reopen admission or install authority.
