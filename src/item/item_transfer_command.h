@@ -1068,4 +1068,26 @@ constexpr size_t item_transfer_command_decode_payload_complete_source_query_fram
 	       ((2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool)) +
 		item_transfer_payload_encode_version_complete_source_query_frame_bytes());
 }
+// Complete strong-output original native-mobile builder; caller owns payload,
+// prior command and all other live storage. Full child admission precedes work.
+bool item_transfer_command_build_native_mobile_complete_bounded(
+	critical_command *, critical_operation_id, const item_transfer_payload &,
+	critical_source_site, critical_deadline_class, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool item_transfer_command_build_native_mobile_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool item_transfer_command_build_native_mobile_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+item_transfer_command_build_native_mobile_complete_source_query_frame_bytes() noexcept
+{
+	// Full getter owns output/result/child, policy/result, checked-add. Entities
+	// owning expansion is header-safe; no private implementation symbol escapes.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_command_encode_native_mobile_complete_source_query_frame_bytes() +
+	       2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_owner_key_source_query_frame_bytes() +
+	       item_transfer_craft_outputs_decode_complete_source_query_frame_bytes();
+}
+
 #endif
