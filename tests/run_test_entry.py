@@ -163,7 +163,7 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
             code = 1
         records.append({"id": "script", "status": "passed" if code == 0 else "failed",
                         "elapsed": time.monotonic() - started, "evidence": "entry"})
-        for name in sorted(set(functions) & called):
+        for name in sorted((set(functions) | ({entry} if entry else set())) & called):
             records.append({"id": name, "status": "passed" if code == 0 else "unresolved",
                             "evidence": "function invocation"})
     complete = True

@@ -5246,3 +5246,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Integration manifest source-pin repair - 2026-10-11
 
 [Provenance repair](INTEGRATION_MANIFEST_SOURCE_PIN_REPAIR_2026-10-11.md) fixes the one actual stale manifest hash in both maps:497 pins,496 preserved, all931 policies/2911 census/2853 sites unchanged. Root checks every pin including mechanical LF aliases; original nonrelease validator success alone did not verify hashes. The independent registered Item missing-main refusal remains a separate repair. No qualification promotion: inactive/CLOSED, incomplete coverage, release BLOCKED, goal ACTIVE.
+
+
+## Registered main outcome repair - 2026-10-11
+
+[Entry reporting repair](REGISTERED_MAIN_OUTCOME_REPAIR_2026-10-11.md) emits an actually called main under existing success/refusal semantics. Original-adapter red/fixed eight-method regression green; real registered Item gate and unchanged outcome contract pass both native header backends. Install/register eight-case regression; all497 previous pins preserved, three actual pins added. No case/marker/deadline weakening or production change. Whole Plans1-4/R1-R8/release remain open; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
