@@ -275,4 +275,26 @@ constexpr size_t critical_operation_id_derive_source_query_frame_bytes() noexcep
 	return sizeof(size_t *) + sizeof(bool);
 }
 
+// Distinct normalization Source contract. Full Source plus initial is transient
+// preentry; retain only the missing supplement in the unchanged child's outer.
+// Input/old output heaps remain caller-owned. Pure queries preserve output on
+// unsupported source selection; runtime/emitted/native qualification is separate.
+bool critical_command_normalize_source_frame_bytes(size_t *) noexcept;
+bool critical_command_normalize_source_supplement_frame_bytes(size_t *) noexcept;
+bool critical_command_normalize_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t critical_command_normalize_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+// Full-source preentry is transient. These unchanged codecs own inline/heap
+// reservations, but do not own SOURCE internally: retain the complete source
+// supplement through their real call. Prior output/input storage stays outer.
+bool critical_command_startup_codec_complete_source_frame_bytes(size_t *) noexcept;
+bool critical_command_startup_codec_source_supplement_frame_bytes(size_t *) noexcept;
+bool critical_command_startup_codec_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t critical_command_startup_codec_complete_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif

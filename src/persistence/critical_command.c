@@ -1462,3 +1462,230 @@ bool critical_operation_id_derive_source_supplement_frame_bytes(size_t *bytes) n
 	return false;
 #endif
 }
+
+// Additive contracts for critical_command_normalize_bounded only. Existing
+// startup encode/decode and original CURRENT profiles remain separate.
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+template <class T> constexpr size_t critical_normalize_move_missing_source()
+{
+	// _M_move_assign(true) actually constructs vector __tmp(get_allocator()).
+	// The old move subtotal owns __tmp inline, swaps/copy-data, destruction,
+	// deallocation and the public move receiver. These distinct allocator
+	// descendants have no named credit in that subtotal.
+	using allocator = std::allocator<T>;
+	constexpr size_t get_allocator = 7 * sizeof(void *) + sizeof(allocator);
+	constexpr size_t const_allocator_constructor = 11 * sizeof(void *);
+	// C++20 __alloc_on_move: two allocator references, std::move's reference
+	// argument/return, generated allocator assignment this/source/return and
+	// generated base assignment this/source/return. No old tag dispatch.
+	constexpr size_t direct_allocator_move = 10 * sizeof(void *);
+	// One existing allocator-return pair is named in the old subtotal;
+	// the second argument getter is a distinct reached invocation.
+	constexpr size_t allocator_arguments = 2 * sizeof(void *);
+	// Actual internal std::move(__x)2P and swap-temp data default receiver P.
+	// Existing inline3P and swap/copy signatures do not own these scopes.
+	return get_allocator + const_allocator_constructor + direct_allocator_move +
+	       allocator_arguments + 3 * sizeof(void *);
+}
+constexpr size_t critical_normalize_missing_source =
+	critical_normalize_move_missing_source<critical_entity_key>() +
+	critical_normalize_move_missing_source<critical_expected_revision>() +
+	2 * critical_normalize_move_missing_source<uint8_t>() +
+	// Actual std::move(normalized), distinct from generated member assignment.
+	2 * sizeof(void *) +
+	// allocator allocate/deallocate each reaches __is_constant_evaluated();
+	// old allocation/deallocation signature subtotal has no bool result.
+	2 * sizeof(bool) +
+	// Actual runtime copy_a/copy_move_a2/trivial_Destroy constant queries3B.
+	// Old memmove/assignable bools are different; normalize does not relocate.
+	3 * sizeof(bool) +
+	// Public constexpr frames and sort_frame constexpr recursion scalars; the
+	// sort leaf getter's returned size_t and __lg argument/result -> clzl.
+	3 * sizeof(size_t) + 2 * sizeof(std::ptrdiff_t) + sizeof(long) + sizeof(int);
+
+template <class Comparator> constexpr size_t critical_normalize_recursive_source()
+{
+	size_t levels = 0;
+	for (size_t remaining = CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS; remaining > 1;
+	     remaining >>= 1)
+		++levels;
+	// Both actual vectors pass the original envelope limit before sorting;
+	// 4099 is the genuine larger accepted native-auction key/revision limit.
+	// __introsort_loop: first/last/cut, depth_limit and real comparator.
+	return (2 * levels + 1) *
+	       (3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(Comparator));
+}
+constexpr size_t critical_normalize_existing_public_source =
+	6 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) + sizeof(size_t) +
+	sizeof(size_t) + sizeof(void *);
+constexpr size_t critical_normalize_existing_sort_source =
+	critical_normalize_sort_leaf_frames<critical_entity_key,
+					    decltype(&critical_entity_key_less)>() +
+	critical_normalize_sort_leaf_frames<critical_entity_key,
+					    decltype(&critical_entity_key_equal)>() +
+	critical_normalize_sort_leaf_frames<critical_expected_revision, char>() +
+	critical_normalize_recursive_source<decltype(&critical_entity_key_less)>() +
+	critical_normalize_recursive_source<char>() +
+	// Two actual sort_frame signatures: this/count/levels/remaining/request/B.
+	2 * (sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool));
+constexpr size_t critical_normalize_complete_source =
+	critical_normalize_existing_public_source + critical_normalize_observation_frames +
+	critical_normalize_valid_frames + critical_normalize_command_copy_frames +
+	critical_normalize_move_frames_total + critical_normalize_existing_sort_source +
+	critical_normalize_missing_source;
+constexpr bool critical_normalize_source_layout =
+	sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	sizeof(long) == 8 && sizeof(bool) == 1 && sizeof(std::allocator<uint8_t>) == 1 &&
+	sizeof(std::allocator<critical_entity_key>) == 1 &&
+	sizeof(std::allocator<critical_expected_revision>) == 1 &&
+	sizeof(std::vector<critical_entity_key>::iterator) == sizeof(void *) &&
+	sizeof(std::vector<critical_expected_revision>::iterator) == sizeof(void *) &&
+	std::is_trivially_copyable_v<critical_entity_key> &&
+	std::is_trivially_copyable_v<critical_expected_revision> &&
+	std::is_nothrow_move_assignable_v<critical_command>;
+#endif
+}
+bool critical_command_normalize_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = critical_normalize_complete_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool critical_command_normalize_source_supplement_frame_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = critical_normalize_missing_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool critical_command_normalize_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = sizeof(critical_normalize_budget); // Constructed before the first peak.
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+
+// Complete source companions for the actual unchanged bounded wire codecs.
+// The preserved historical startup getter lacks the named move descendants.
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+constexpr size_t critical_startup_codec_move_missing_source =
+	// Decoded command's four real members plus encoded result byte vector.
+	critical_normalize_move_missing_source<critical_entity_key>() +
+	critical_normalize_move_missing_source<critical_expected_revision>() +
+	3 * critical_normalize_move_missing_source<uint8_t>() +
+	// Both real original final std::move expressions: decoded and result.
+	2 * (2 * sizeof(void *)) +
+	// Actual allocator allocate/deallocate constant-evaluation returns,
+	// outside the unchanged allocator signature subtotal.
+	2 * sizeof(bool) +
+	// Copy_a/copy_move_a2/trivial_Destroy query3B, plus actual nonempty
+	// relocate_a_1 queryB during repeated startup key/revision push growth.
+	// Never project this relocation into exact-copy normalization.
+	4 * sizeof(bool) +
+	// Original encoder and actual bounded decoder each catch const bad_alloc&.
+	// Neither real reference is named in the old startup scalar subtotal.
+	2 * sizeof(void *) +
+	// Original memcpy's returned destination is distinct from its three
+	// argument pointers already owned by critical_startup_codec_c_callers.
+	sizeof(void *);
+constexpr size_t critical_startup_codec_complete_corrected_source =
+	critical_startup_codec_complete_source + critical_startup_codec_move_missing_source;
+#endif
+} // namespace
+bool critical_command_startup_codec_complete_source_frame_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = critical_startup_codec_complete_corrected_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool critical_command_startup_codec_source_supplement_frame_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = critical_startup_codec_complete_corrected_source;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
+bool critical_command_startup_codec_initial_inline_bytes(size_t *out) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if (!out || !critical_normalize_source_layout)
+		return false;
+	*out = 0;
+	return true;
+#else
+	(void)out;
+	return false;
+#endif
+}
