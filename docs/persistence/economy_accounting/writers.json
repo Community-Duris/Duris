@@ -66758,7 +66758,7 @@
       "src/world/economic_initialized_world_snapshot.c": "fbc3ed55b7ff3be943997ddad7977f6435f5bfe9873948f2343017c725d01b07",
       "src/economy/smith_native_producer.c": "fbba97fb794c435aaefc7fd5ae6d973f3e1a4841e99a0b68f9d8ebd98267b1e2",
       "tests/async/auction_transaction_mysql_harness.cpp": "599ac00a253497ddeab609bfc5a12189a1bc4a8d38f1cb89923a792aef8fb4d1",
-      "tests/integration_manifest.json": "78b7fc1fc4342d7708e3e87bc944588ca0c40677c9e8efc08043df67103aeb27",
+      "tests/integration_manifest.json": "5fe32bcf2c9195ffe3085cd33bee91569c53e5a6d29dbffb5473acdf8c6a002c",
       "src/flatfile/flatfile_accounting_zone_reset_item_transaction.h": "586a7224701eee6606c3567f6ca48faa40fb1497b1a56e1d5e3195b36d72f418",
       "src/persistence/sql_room_creation_correspondence.h": "294430cc6d97023f0e36db560cadee313227d11ca41c4850ed0fc0719ff55116",
       "src/economy/auction_player_forest_detail.h": "1a8d764ae5b50b62f3f9f38118876b3560d7cf195727b9c48f185724bf79d0a2",

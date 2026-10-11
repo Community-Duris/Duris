@@ -2015,7 +2015,8 @@
       "mode": "unittest",
       "required_cases": [
         "NativeSQLOriginTests.test_native_origins_mysql_8",
-        "NativeSQLOriginTests.test_native_origins_mariadb"
+        "NativeSQLOriginTests.test_native_origins_mariadb",
+        "NativeSQLOriginTests.test_native_captured_source_bindings_both_engines"
       ],
       "arguments": [
         "NativeSQLOriginTests",
@@ -2826,6 +2827,57 @@
       "required_markers": [
         "flatfile shopkeeper INITIAL checkpoint regression passed"
       ]
+    },
+    {
+      "id": "plan5_captured_item_bindings_pure",
+      "path": "tests/async/test_economic_sql_audit_origins.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "CapturedItemBindingTests.test_captured_item_bindings_exact_preimages_zero_slot_and_empty_compatibility",
+        "CapturedItemBindingTests.test_captured_item_bindings_refuse_changed_or_missing_original_inputs",
+        "CapturedItemBindingTests.test_captured_source_transport_exact_types_registry_bounds_and_binary_cells",
+        "CapturedItemBindingTests.test_captured_opening_operator_read_boundary_and_protected_input",
+        "CapturedItemBindingTests.test_captured_raw_cells_historical_equipment_and_selection_limits"
+      ],
+      "arguments": [
+        "CapturedItemBindingTests",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_audit_origins.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_audit_budget_linux",
+      "path": "tests/async/test_reconcile_economy_accounting.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "AuditBudgetTests.test_near_limit_price_view_cli_budget_and_limit_invariance",
+        "AuditBudgetTests.test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance"
+      ],
+      "arguments": [
+        "AuditBudgetTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_RUN_AUDIT_BUDGET": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_reconcile_economy_accounting.py"
+      ],
+      "required_markers": []
     }
   ]
 }
