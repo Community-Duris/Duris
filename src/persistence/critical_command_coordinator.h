@@ -835,12 +835,16 @@ class critical_zone_reset_item_publication_owner final
 	// Do not call the locking observer under the coordinator loan; borrowed
 	// path retains its parent's same-lock scan Source instead, exactly once.
 	// External pthread/system-error bodies remain caller/Root qualification.
+    public:
+	// Passive size queries only; no observation, admission or execution authority.
 	static bool current_storage_header_source_frames(size_t *) noexcept;
 	static bool current_storage_initial_inline_bytes(size_t *) noexcept;
 	static constexpr size_t current_storage_source_query_frames() noexcept
 	{
 		return sizeof(void *) + sizeof(bool);
 	}
+
+    private:
 	// ROOM-only complete support proof through the bounded callback paired with
 	// the actually selected original admission callback. Pure same-lock proof;
 	// no admission, source, delivery, execution or activation authority.
