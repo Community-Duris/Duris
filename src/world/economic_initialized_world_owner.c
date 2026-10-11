@@ -240,3 +240,20 @@ bool economic_initialized_world_owner::before_world_callbacks() noexcept
 		       !economic_gameplay_authority::active_regular_sql();
 	}
 }
+unsigned int economic_initialized_world_owner::verify_cutover_sources(
+	economic_sql_initialized_activation_verifier verify) noexcept
+{
+	try
+	{
+		auto &s = state();
+		if (s.borrowed || s.state != implementation::phase::cutover_owned || s.capability ||
+		    s.process != getpid() || s.thread != std::this_thread::get_id() ||
+		    !nevent_is_game_thread())
+			return EPERM;
+		return sql_verify_cutover_sources(verify);
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}

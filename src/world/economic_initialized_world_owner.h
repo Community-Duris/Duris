@@ -77,11 +77,17 @@ class economic_initialized_world_owner final
 					  void *) noexcept;
 	static bool with_cutover_cut(economic_sql_cutover_transaction_owner &, cutover_consumer,
 				     void *) noexcept;
+	// Verify with original request/decision context reconstructed by the held SQL
+	// owner. No caller-supplied request, detached evidence or later cut permit.
+	static unsigned int
+		verify_cutover_sources(economic_sql_initialized_activation_verifier) noexcept;
 	static unsigned int
 	verify_cutover_sources(const economic_sql_lifecycle_request &,
 			       const economic_sql_activation_evidence &,
 			       economic_sql_initialized_activation_verifier) noexcept;
 	static bool sql_cutover_valid(economic_sql_cutover_transaction_owner &) noexcept;
+	static unsigned int
+		sql_verify_cutover_sources(economic_sql_initialized_activation_verifier) noexcept;
 	static unsigned int
 	sql_verify_cutover_sources(const economic_sql_lifecycle_request &,
 				   const economic_sql_activation_evidence &,
