@@ -17,8 +17,10 @@ frozen candidate `a60f5dcce0c6496e687a0806ee7d0c559579e4fb` remained unchanged;
 owned inventory succeeded and was empty. Failure sealed and lease released;
 reviewed report imported from Plan 5 `774d4422f`:
 `PLAN5_ACC02_MYSQL_READINESS_FAILURE_2026-10-11.md`. Foreground commissioning
-01 now captured the startup error below; a one-variable comparison is being
-prepared, with no matrix retry or proven filesystem attribution yet. This follows the exclusive
+01 captured the startup error below; one-variable commissioning02 PASSED
+actual TCP readiness/version8.0.46 and clean shutdown. Restoring original image
+Linux `/tmp` is verified for this exact profile. Full unchanged two-engine matrix
+retry is being prepared, separately granted after sealing/release. This follows the exclusive
 01:22 MDT grant of at most two 512MiB databases and one serial 2GiB QA worker.
 No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
 orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
@@ -36,7 +38,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure sealed; commissioning01 concrete error captured, comparison preparation; established audit/restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure preserved; commissioning02 PASS; full matrix retry preparation and established audit/restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
@@ -102,7 +104,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED before migrations; commissioning logs next, no measurements or pass |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified transport repair; full matrix retry next, no schema measurements/pass |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
@@ -203,6 +205,23 @@ bounded comparison removes only the added WindowsD `/tmp` bind, restoring
 the original image Linux `/tmp` on Docker's registered D virtual disk. Keep
 the same direct D datadir, image, args and resource caps; preserve failed scratch.
 Full matrix retry remains separate, after commissioning proof and transport review.
+
+ACC-02-COMMISSION-02 PASSED, with only the added WindowsD `/tmp` bind removed
+and fresh task identity/scratch. Actual TCP `SELECT VERSION()` returned8.0.46,
+31 readiness attempts, total42.515s including owned graceful shutdown, exit0.
+Same pinned image512MiB/CPU1/default entrypoint/args/directD datadir; Linux
+temporary filesystem uses Docker's registered D disk. Exact CID
+`70a4c34ab8ff1c7b8a5c89b476b42a3f48b145979911b78dbb5c389bbb71615d` inspected
+with matching image/owner/job before stop; foregroundexit0, final inventoryexit0
+and empty. Result SHA256
+`de5ec9b0f19a07a481503a10dfde3ee49088ef540679163c25a8fada76742cfb`, output
+`D:/Dev/Tests/Duris/accounting-plan5/ACC-02-COMMISSION-02`. Paired reproduction
+establishes the added `/tmp` bind as the startup-failure trigger for this tested
+profile; schema65/MariaDB/native startup/release remain unqualified. Preserve
+both failed and successful scratch/logs. Retry transport will restore original
+Linux `/tmp` and remove the added detachedDB `--rm`, so original guarded finally
+captures stopped daemon logs before exact-owned removal. No maintained predicates,
+server config/defaults, resource caps or source behavior will change.
 
 ## Preserved retirement and handoffs
 
