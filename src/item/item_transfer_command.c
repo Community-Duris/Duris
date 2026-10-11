@@ -8277,3 +8277,275 @@ bool item_owner_key_initial_inline_bytes(size_t *output) noexcept
 	return false;
 #endif
 }
+
+namespace
+{
+struct item_native_validation_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<player_item_snapshot> *items = nullptr;
+	const std::vector<uint8_t> *canonical = nullptr;
+	const std::vector<uint64_t> *roots = nullptr, *uids = nullptr;
+	const quest_reward_continuation *terms = nullptr;
+	const std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH> *path = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		// Real scan/add/multiply/current-row observer source frames; the shared
+		// row provider reports capacity storage, not item-encoded size.
+
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames))
+			return false;
+		if (items)
+		{
+			if (!payload_clone_add(total, sizeof(*items)) ||
+			    !payload_clone_vector_heap(*items, false, total))
+				return false;
+			for (const auto &item : *items)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if ((canonical && (!payload_clone_add(total, sizeof(*canonical)) ||
+				   !payload_clone_vector_heap(*canonical, false, total))) ||
+		    (roots && (!payload_clone_add(total, sizeof(*roots)) ||
+			       !payload_clone_vector_heap(*roots, false, total))) ||
+		    (uids && (!payload_clone_add(total, sizeof(*uids)) ||
+			      !payload_clone_vector_heap(*uids, false, total))) ||
+		    (terms && (!payload_clone_add(total, sizeof(*terms)) ||
+			       !payload_clone_string_heap(terms->character_name, false, total) ||
+			       !payload_clone_string_heap(terms->definition_id, false, total))) ||
+		    (path && !payload_clone_add(total, sizeof(*path))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+struct item_complete_payload_uid_less
+{
+	bool operator()(const item_transfer_entry &entry, uint64_t uid) const noexcept
+	{
+		return entry.item_uid < uid;
+	}
+};
+
+constexpr size_t item_complete_offering_terms_default_string_local_source = 4 * 2 * sizeof(void *);
+constexpr size_t item_complete_offering_terms_default_string_init_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(bool);
+constexpr size_t item_complete_offering_terms_default_string_set_length_source =
+	2 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(char) + sizeof(bool);
+constexpr size_t item_complete_offering_terms_default_string_source =
+	// String receiver; hider receiver/data/default-allocator reference; genuine
+	// temporary allocator; allocator/new_allocator default and const-copy;
+	// move reference/result; real temporary allocator cleanup receiver.
+	// The new_allocator destructor declaration is PP-excluded in C++20.
+	sizeof(void *) + 3 * sizeof(void *) + sizeof(std::allocator<char>) + 2 * sizeof(void *) +
+	4 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	item_complete_offering_terms_default_string_local_source +
+	item_complete_offering_terms_default_string_init_source +
+	item_complete_offering_terms_default_string_set_length_source;
+constexpr size_t item_complete_offering_terms_cleanup_string_source =
+	// String/dispose/is-local/destroy receivers, destroy size and locality bool.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Actual const data and local_data/pointer_to/addressof/__addressof.
+	2 * sizeof(void *) + 4 * 2 * sizeof(void *) +
+	// _M_get_allocator receiver/reference result. String destroy directly
+	// calls traits deallocate: it does not call vector _M_deallocate.
+	2 * sizeof(void *) + 3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) +
+	// Actual hider/allocator destruction receivers. new_allocator destructor
+	// is PP-excluded in selected C++20; allocator predicate has one result.
+	2 * sizeof(void *);
+
+using item_complete_offering_L = item_complete_payload_uid_less;
+using item_complete_offering_A =
+	decltype(__gnu_cxx::__ops::__iter_comp_val(item_complete_offering_L{}));
+constexpr size_t item_complete_offering_lower_bound_source =
+	// Actual std::lower_bound first/last/value/return + by-value comparator.
+	4 * sizeof(void *) + sizeof(item_complete_offering_L) +
+	// __lower_bound first/last/value/middle/return, len/half and adapter.
+	5 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + sizeof(item_complete_offering_A) +
+	// __iter_comp_val comparator; returned adapter is downstream parameter.
+	sizeof(item_complete_offering_L) +
+	// Explicit adapter constructor this/comparator, two distinct std::move<L>
+	// occurrences; operator iterator/value/this + bool, named comparator.
+	sizeof(void *) + sizeof(item_complete_offering_L) + 4 * sizeof(void *) +
+	3 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(uint64_t) + sizeof(bool) +
+	// Raw-pointer distance/category/RA distance and raw advance/category/RA.
+	2 * sizeof(void *) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(void *) +
+	2 * sizeof(std::ptrdiff_t) + sizeof(void *) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *);
+constexpr size_t item_complete_offering_find_source =
+	// Exact helper payload/found/return + UID. Three actual const array begin
+	// call occurrences each own this/return and nested data this/return.
+	3 * sizeof(void *) + sizeof(uint64_t) + 3 * (4 * sizeof(void *)) +
+	item_complete_offering_lower_bound_source;
+constexpr size_t item_complete_offering_direct_access_source =
+	// data(): receiver/pointer result and typed _M_data_ptr own3P; size().
+	5 * sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	// Distinct const entry and mutable continuation-root array subscripts.
+	2 * (2 * sizeof(void *) + sizeof(size_t));
+constexpr size_t item_complete_offering_terms_lifetime_source =
+	// Plain enclosing nontrivial default and destructor families. Arrays{}
+	// and scalar aggregates in DMIs do not manufacture callable operations.
+	2 * sizeof(void *) + item_complete_offering_terms_default_string_source +
+	item_complete_offering_terms_cleanup_string_source;
+constexpr size_t item_complete_offering_terms_current_source =
+	// Unchanged payload_clone_string_heap(value/fresh/bytes/count/return),
+	// actual false branch capacity plus const islocal/data/local pointer chain.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	11 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_offering_controller_selected_source =
+	// Actual terms-only prefix: this/output2P, extra/total/row3N and bool.
+	// Other observer pointers remain null throughout this endpoint; no range.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	// Peak this/extra/total/result; checked-add and reserve declared interface.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	item_complete_offering_terms_current_source;
+constexpr size_t item_complete_offering_continuation_adapter_source =
+	// Adapter own exact three object pointers,F and eight scalar locals/formals.
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 8 * sizeof(size_t) +
+	sizeof(bool) +
+	// Full getter real50 Source; two simpler initial/supp getters P+B each (9 LP64).
+	quest_reward_continuation_decode_source_query_frame_bytes() +
+	2 * (sizeof(void *) + sizeof(bool));
+constexpr size_t item_complete_offering_retained_source =
+	// Wrapper3P+F2N+B; owned4P4N+uid+B. Policy result is genuine runtime.
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool) + 4 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(uint64_t) + sizeof(bool) +
+	sizeof(bool) + item_complete_offering_find_source +
+	item_complete_offering_direct_access_source + item_complete_offering_terms_lifetime_source +
+	item_complete_offering_controller_selected_source +
+	item_complete_offering_continuation_adapter_source;
+
+bool item_complete_generic_reward_continuation_decode_child(
+	const uint8_t *data, size_t size, quest_reward_continuation *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * quest_reward_continuation_decode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !quest_reward_continuation_decode_source_frame_bytes(&source) ||
+	    !quest_reward_continuation_decode_initial_inline_bytes(&initial) ||
+	    !quest_reward_continuation_decode_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// The selecting parent retains its output terms and both string heaps.
+	// Full Source and INITIAL are transient; only the old child's uncovered
+	// Source remains in outer while its original owner admits its own fields.
+	return quest_reward_continuation_decode_bounded(data, size, output, reserve, context,
+							child_outer);
+}
+
+const item_transfer_entry *item_complete_find_payload_item(const item_transfer_payload &payload,
+							   uint64_t item_uid)
+{
+	auto found = std::lower_bound(payload.items.begin(),
+				      payload.items.begin() + payload.item_count, item_uid,
+				      item_complete_payload_uid_less{});
+	return found != payload.items.begin() + payload.item_count && found->item_uid == item_uid ?
+		       &*found :
+		       nullptr;
+}
+bool item_continuation_quest_valid_complete_owned(const item_transfer_payload &payload,
+						  item_native_validation_complete_budget &owner)
+{
+	const std::vector<uint8_t> &data = payload.continuation.data;
+	if (!owner.peak(sizeof(quest_reward_continuation)))
+		return false;
+	quest_reward_continuation continuation;
+	owner.terms = &continuation;
+	size_t prefix = 0;
+	if (!owner.prefix(prefix))
+		return false;
+	if (!item_complete_generic_reward_continuation_decode_child(data.data(), data.size(),
+								    &continuation, owner.reserve,
+								    owner.context, prefix) ||
+	    continuation.player_pid != (payload.native_mobile.present ?
+						payload.native_mobile.final_giver_pid :
+						payload.from_owner.id) ||
+	    continuation.mobile_vnum != static_cast<uint64_t>(payload.reason_id))
+		return false;
+	if (continuation.root_count > payload.item_count)
+		return false;
+	size_t selected_roots = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+		selected_roots += payload.items[index].parent_item_uid == 0;
+	if (selected_roots != continuation.root_count)
+		return false;
+	for (size_t index = 0; index < continuation.root_count; ++index)
+	{
+		const uint64_t uid = continuation.roots[index];
+		const item_transfer_entry *root = item_complete_find_payload_item(payload, uid);
+		if (!root || root->parent_item_uid || root->root_item_uid != uid)
+			return false;
+	}
+	return true;
+}
+} // namespace
+bool item_transfer_quest_offering_continuation_valid_complete_bounded(
+	const item_transfer_payload &payload, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_offering_retained_source;
+	item_native_validation_complete_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		return item_continuation_quest_valid_complete_owned(payload, owner);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_quest_offering_continuation_valid_complete_source_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_offering_retained_source;
+	size_t child = 0;
+	if (!quest_reward_continuation_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*bytes = result;
+	return true;
+}
+bool item_transfer_quest_offering_continuation_valid_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_quest_offering_continuation_valid_complete_initial_inline_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_native_validation_complete_budget);
+	return true;
+}
