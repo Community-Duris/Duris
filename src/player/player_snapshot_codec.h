@@ -232,4 +232,15 @@ constexpr size_t player_item_snapshot_list_current_heap_source_query_frame_bytes
 	return sizeof(size_t *) + 2 * sizeof(bool);
 }
 
+// The distinct actual bounded list decoder: full Source+initial is transient
+// preentry, retain ONLY supplement across its unchanged body. This is separate
+// from the ORIGINAL unbounded decoder contract above. Strong scalar queries;
+// caller owns input/prior output/siblings; emitted/native qualification separate.
+bool player_item_snapshot_list_decode_bounded_source_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_decode_bounded_source_supplement_frame_bytes(size_t *) noexcept;
+bool player_item_snapshot_list_decode_bounded_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t player_item_snapshot_list_decode_bounded_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
 #endif
