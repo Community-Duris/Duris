@@ -20,10 +20,19 @@ reviewed report imported from Plan 5 `774d4422f`:
 01 captured the startup error below; one-variable commissioning02 PASSED
 actual TCP readiness/version8.0.46 and clean shutdown. Restoring original image
 Linux `/tmp` is verified for this exact profile. Full unchanged two-engine matrix
-RETRY-02 RUNNING since 01:48 MDT after the 01:47 grant, comparison sealing/release
-and successful empty owner inventory. Actual MySQL8.0.46 TCP readiness succeeded;
-the original real canonical migration runner has started. No full matrix or
-schema65 acceptance claimed. This follows the exclusive
+RETRY-02 FAILED at 02:00 MDT: MySQL8.0.46 completed canonical/staging/master65
+convergence and native session faults; MariaDB10.11.19 completed canonical65,
+then staging upgrade failed applying `0060_native_mobile_item_owner`. Retained
+daemon log reports an InnoDB rename with missing `item_owner_revision.ibd`.
+Both daemons were running and OOMKilled=false before guarded cleanup; this is
+not a proved migration-logic or storage root cause. Native schema65 accepting
+boot/tamper and final two-engine contract update were NOT_RUN. All 6901 source
+files and private contracts remained unchanged. Final owned inventory exit0/
+empty; evidence sealed and matching global lock RELEASED at02:09 MDT.
+Reviewed delivery `d7571a7e1`, detailed report
+`PLAN5_ACC02_MARIADB_STAGING_FAILURE_2026-10-11.md`; independent verification
+passed all6967 sealed members/550329309bytes and fresh owned absence.
+No full matrix or schema65 acceptance claimed. This follows the exclusive
 01:22 MDT grant of at most two 512MiB databases and one serial 2GiB QA worker.
 No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
 orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
@@ -41,8 +50,8 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 full matrix RETRY-02 RUNNING on frozen a60; failed attempts preserved, established audit/restore queue retained |
-| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean d7571a7e1; ACC-02 RETRY-02 FAILED/sealed/RELEASED; prepare paired MariaDB staging comparison without resources; established audit/restore queue retained |
+| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean 2f33f32c2; exact ACC-03-RC launcher preparation, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
@@ -57,7 +66,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 ## Exclusive file leases
 
-PRIMARY_ACK PENDING at published `5418d88ca`; charter unchanged from
+PRIMARY_ACK PENDING at published `2206f446c`; charter unchanged from
 `9d88a4668`, protected WIP/exclusions undisclosed.
 No elapsed-time or local observation substitutes for primary-authored published acknowledgment.
 The primary's `757c3f6fe` explicitly retains proposed leases pending direct
@@ -108,7 +117,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified transport repair; full matrix RETRY-02 RUNNING, no final schema measurements/pass yet |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified temporary-filesystem repair; RETRY-02 FAILED at MariaDB staging0060, MySQL measurement unqualified; paired staging/storage reproduction preparation only |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
@@ -251,13 +260,33 @@ guarded finally; persistent data/build/evidence directD. Measured writes allowed
 only to the two private contract files; PRIMARY owns maintained constants/pins.
 Release requires sealed terminal evidence and successful empty owned inventory;
 other workers have no heavy grant. Later primary5418 bytes remain outside freeze.
-Live session69068 remains Plan 5-owned; actual MySQL CID
+Session69068 terminal exit1; actual MySQL CID
 `3e12e22f8ee41aef7114d6879ac45de1d321dfe2c9cf08915cc608f212c809af`,
 generated `duris_268_66809a13c6_canonicaltest` and serial foreground QA steps
-execute the original runner. Owner/source/job/image and final preparation hash
-recorded in its live receipt. Continue the same process to authoritative terminal
-result; no replacement job or lease release while live. ACC-01 and both
-commissioning allocations are released; only this explicit cohort remains active.
+executed the original runner. Owner/source/job/image and final preparation hash
+recorded in its receipt. Retained raw MySQL convergence fingerprint
+`0cb5c5bdbf0862e115a933dc03b84e46a4a0855edb83cdd2c791ed66b42469a1`
+is measured history/metadata evidence, not an accepted schema65 runtime contract.
+The last QA migration command exited2 after 4.906s; daemon stderr records the
+rename error at07:59:54Z. Docker transport journal has603 calls. Both databases
+were removed by guarded finally, source_changes={} and final inventoryexit0/
+empty. Plan5 sealed retained client/daemon/transport/source evidence and released
+the matching global lock after rechecking owned absence. Evidence manifest
+SHA256 `4d0e5992f40dc1f8277154c0bf5268574ca96f02aed22c68aca98e6eacd415a7`;
+delivery result SHA256
+`c8d18e59dfc7c3786feaa5b2e22a008c80c8458e7f1c04d869468041ede34367`.
+Orchestrator independently hashed all6967 members/550329309bytes, matched released
+lease and fresh owned `docker ps -a` exit0/empty with global lock absent:
+`D:/Dev/Tests/Duris/accounting-accel-integration/ACC-02-RETRY-02-review/review.json`,
+SHA256 `5e8d7a7b75f89e52984a8f0459b616af7e7fccd25b9169dd862bba88ea8d992b`.
+Import only the reviewed124-line failure report from clean published Plan5
+`d7571a7e11459695f0e5e68cdef0bbc3388e2c35`; additive curator follow-up remains
+on Plan5 branch. ACC-01, both commissioning and RETRY-02 allocations are released.
+No new job granted. Prepare the smallest
+paired original MariaDB staging upgrade with fresh isolated Linux data storage
+on Docker's registered D: disk; Windows data-bind interaction is a hypothesis
+until executable comparison. Preserve immutable0060, original histories/checks,
+resource caps, SQL defaults and failed data. Do not restart the failed database.
 
 ## Preserved retirement and handoffs
 
@@ -336,10 +365,13 @@ Observation JSON: `D:/Dev/Tests/Duris/accounting-accel-integration/primary-obser
 SHA256 `c65cffc27c796c475c4bf180def1f6df2619841e4095d79a1131b88a3e3c5152`.
 No native source was imported or relabeled into frozen ACC-01/ACC-02. Follow-up
 combined build/boot is queued on the newer candidate after the schema boundary.
-Newest fetched primary `5418d88ca` adds native mobile validation providers in
-`src/item/item_transfer_command.c/.h` and docs/pins. Charter has no new
-acknowledgment. That additional native delta remains unreviewed/unqualified here;
-maintained schema/runner/compiled SQL contract are unchanged from frozen a60.
+Published primary `5418d88ca` adds native mobile validation providers in
+`src/item/item_transfer_command.c/.h` and docs/pins. Newest `2206f446c` adds native
+recovery encoding/decoding/validation Source providers to those same two files
+and docs/pins. Charter has no new acknowledgment. Those additional native deltas
+remain unreviewed/unqualified here; maintained migrations and matrix are
+unchanged from frozen a60. The primary's published object-compile reports do not
+qualify whole Item/ROOT selection, runtime/ABI, architecture or release.
 
 No primary acknowledgment accepted. No runtime worker implementation active.
 Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
