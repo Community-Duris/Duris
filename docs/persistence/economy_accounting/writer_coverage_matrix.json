@@ -55,6 +55,28 @@
       ]
     },
     "base_commit": "9665df324ab9751408d2cb9b735797f2d13b3ef8",
+    "broader_persistence_source_reference_refresh_20261011": {
+      "merged_base_source_pins_refreshed": [
+        "tests/run_test_entry.py",
+        "tests/regression_manifest.json"
+      ],
+      "release_qualification_changed": false,
+      "relocated_census_occurrences": 140,
+      "relocated_declared_sites": 136,
+      "runtime_qualification_changed": false,
+      "scope": "Current lexical locations and source hashes after broader persistence fixes. All 2911 lexical occurrences, writer policies, historical evidence and backend/release qualification states are preserved. Current test-entry and regression-manifest hashes also follow the merged experimental-accounting base.",
+      "source_commit": "050956d87666ff7aa082550b78f420a2e1c24a69",
+      "updated_source_pins": [
+        "src/cmd/actobj.c",
+        "src/core/prototypes.h",
+        "src/core/structs.h",
+        "src/net/comm.c",
+        "src/player/player_save_pipeline.c",
+        "src/player/player_snapshot_capture.c",
+        "src/player/player_snapshot_codec.c",
+        "src/world/properties.c"
+      ]
+    },
     "claim_consumption_schema_0062": {
       "full_release_qualification": false,
       "historical_origin_marker_remains_null": true,
@@ -176,16 +198,16 @@
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/classes/salchemist.c": "b4230b88b2b638d1a6dcf083742a5fa168856974b019f7fb410138c77e1a81df",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
-      "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
+      "src/cmd/actobj.c": "111c47cab88822b66e370dfefb80148c640a85a0af0564dedfb15732fafc8110",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/combat/chaos_pouch_ledger.c": "2b1fd137a85089f4ce6e7f9e92e81b3d5c245aae7442ceca0e4fee66c9e52f07",
       "src/combat/chaos_pouch_ledger.h": "5904acd99e91dc21254a06005a06266f1ac3cc09274d93919dfb7fd13fc852b5",
-      "src/core/prototypes.h": "081adcce171c2b738172be89fcce38381a02d59e1820ed098ef390c229886e64",
+      "src/core/prototypes.h": "b057c0d0664b5f14e18d5ccce317a0e25da050c62dde682e6e755894050a9041",
       "src/core/random.c": "16e9bb0673b665e0c8fc06f4e3dba8795d8b664cc3bb7ba3fdbb394dd8cd3564",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
-      "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
+      "src/core/structs.h": "028596f2d2d5dabe895f4cf964f6b2d0e5033beba63a4fec82599b373f6fdf5a",
       "src/core/utility.c": "73182463eebd06a54a41ab7eddb43b7c4bc884e313df5c2b83156034c94abd54",
       "src/core/utility.h": "51553ee47aae026cd856d61a7d55e7fb9ea33f17ebea0c57b9e0a8997b89e2ae",
       "src/economy/auction_accounting.c": "5514a5a90355662859c60843c1d01d215a503621838d81b15cce423e67b292e8",
@@ -436,7 +458,7 @@
       "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c",
       "src/mob/studioproclib.c": "520807d5bb08f62cb279f5c1d6d77860efd928f59831654436f0dd1fb396a61f",
       "src/mob/studioproclib.h": "dace9fad93efdcd24c8775a10fa766aec1282b79da40bd81e71e6c5ecabd3858",
-      "src/net/comm.c": "9c6a45969934f33b31bba2fd7f9b3c8e15da224c71761cead24464e517c4d9ce",
+      "src/net/comm.c": "42fec134df5c30b8719475ae1760242cac3ccdfe8d32b13e0cb7afa2e2289529",
       "src/net/comm.h": "f7d70e14e2c44badc0cb008548652299ccd0c2baede65ec3e2d83ceafbffe643",
       "src/persistence/critical_command.c": "a9d8e5043ac9210139beda7c1737752cc4850d38b7adb6983cc39691f8e36b9e",
       "src/persistence/critical_command.h": "9e0a75915a72f2dec2554a8194a0ade3500b3c5fc640f3d64c8a6bb8d411b65c",
@@ -514,12 +536,12 @@
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_retained_deque.h": "5f24188338b50185cf536665f75df9b0c886dbaa006231a6dfa5da3bd9d159ed",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "cbf1d1b016aaf0f7af5ee08daef843acb939a806e6538b71bdd312ac780ebab2",
+      "src/player/player_save_pipeline.c": "170d2d891c1199486958573c1988fe543a316938666caa0a2f8ca82896252ce8",
       "src/player/player_save_pipeline.h": "35e41e7408fc730c8c14488f9e8527a5ba22584ae581e1e39e84dc4718fbc97f",
       "src/player/player_save_worker.c": "8643b1f188ea96134eee1920b4a02f27cde97129d3f8771d3ed07dd0600309d9",
-      "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
+      "src/player/player_snapshot_capture.c": "06c685cc981ca20b88617a8d36d70e4e65a2c6e372498fa4d8e95049d6c65690",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
-      "src/player/player_snapshot_codec.c": "61d6bf7e7981f70984ac71bc45b80e51d92d68f1854d01e875bf81740b3688a3",
+      "src/player/player_snapshot_codec.c": "95153a51b8a1e46fc36db6cd1d1df94c67daf7f9f07fdb19d5aa3f71abd5ce66",
       "src/player/player_snapshot_codec.h": "0837110a98385f1419bf9eb92fe874403532dbd49b11590e1111af32cc2e078d",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
@@ -559,7 +581,7 @@
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
       "src/world/new_events.c": "d2e380a15479823f47a2709f5060cebe85aaa0b1dd4caa0daf97e606449981f8",
       "src/world/object_template.h": "d9ffc85894b08eeb13e1a626fc4f3beb9d35dc041758c660de4cff0cd92f54be",
-      "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
+      "src/world/properties.c": "0652f1867c729acc0daad1d5adc20d860e7575f872ba56d4147da1d56c7845e1",
       "src/world/quest.c": "11707b182503809560299e0228f3bdce0bcd8123536cd8faa36a0e4ae081a883",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
       "src/world/quest_mobile_native.h": "1db1575e5f27f476198bbb909c6303c03d43496ebff96e85907d0c646a9684f7",
@@ -646,8 +668,8 @@
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
       "tests/integration_manifest.json": "2a35ab74e55e30bfce5d086be7e3619a27984db88e3c3721770ea798c629457d",
-      "tests/regression_manifest.json": "2be87c95bb6eac3a43c99493649865ab7aa35bfefedb1138ed02571f842668dc",
-      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
+      "tests/regression_manifest.json": "2442412d25f2fdce3e69c791e10719994fd22912d9480cf8c2ed6360c4285ce2",
+      "tests/run_test_entry.py": "31739c3dd193c48b1656f83c72208df66bf3453ee42c9578bdbc660639c07e4b"
     },
     "stability_source_reference_refresh_20261011": {
       "release_qualification_changed": false,
@@ -6479,7 +6501,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3697
+          3709
         ],
         "file": "src/cmd/actobj.c",
         "function": "refund_committed_coin_debit",
@@ -6544,7 +6566,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4210
+          4222
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -6672,7 +6694,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4903
+          4915
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
@@ -6736,7 +6758,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3871
+          3883
         ],
         "file": "src/cmd/actobj.c",
         "function": "begin_coin_give_credit",
@@ -6783,7 +6805,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3946
+          3958
         ],
         "file": "src/cmd/actobj.c",
         "function": "prepare_coin_pile",
@@ -6848,7 +6870,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4479
+          4491
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
@@ -6915,7 +6937,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3810
+          3822
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_give",
@@ -17301,7 +17323,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2436
+          2448
         ],
         "file": "src/cmd/actobj.c",
         "function": "start_bulk_get",
@@ -17362,7 +17384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3480
+          3492
         ],
         "file": "src/cmd/actobj.c",
         "function": "drop_transient_object",
@@ -17550,7 +17572,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          881
+          893
         ],
         "file": "src/cmd/actobj.c",
         "function": "defer_durable_put",
@@ -17612,7 +17634,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          457
+          468
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_container_get",
@@ -18747,7 +18769,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6741
+          6751
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -18809,7 +18831,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10427
+          10437
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -19500,7 +19522,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8110
+          8120
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -19562,7 +19584,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8044
+          8054
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -19979,7 +20001,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6939
+          6949
         ],
         "file": "src/cmd/actobj.c",
         "function": "apply_eaten_item",
@@ -20947,7 +20969,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3178
+          3190
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_junk",
@@ -21008,7 +21030,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4946
+          4958
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -21130,7 +21152,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5063
+          5075
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -21191,7 +21213,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1406
+          1418
         ],
         "file": "src/cmd/actobj.c",
         "function": "get",
@@ -21252,7 +21274,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6233
+          6243
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -21313,7 +21335,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6228
+          6238
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -21495,7 +21517,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10147
+          10157
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -22178,7 +22200,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          781
+          792
         ],
         "file": "src/cmd/actobj.c",
         "function": "pet_give_completion",
@@ -22364,7 +22386,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10051
+          10061
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -24652,7 +24674,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6570
+          6580
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -48179,7 +48201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2593
+          2605
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_get",

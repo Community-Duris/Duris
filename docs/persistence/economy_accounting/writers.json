@@ -310,7 +310,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance changes.",
-        "custody_effect": "Direct child item custody is moved to the duplicate rootÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
+        "custody_effect": "Direct child item custody is moved to the duplicate root\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
         "native_state_targets": [
           "direct child item UIDs and player_items parent links",
           "duplicate reward UID and player_items projection"
@@ -1548,7 +1548,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The periodic monolith proc adds a duplicate room monolithÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s charge count to the survivor and extracts the duplicate.",
+      "classification": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
       "authority_boundary": "Bind both UIDs, source charge payload, resulting charge count and duplicate retirement atomically; avoid charge duplication on replay.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -1579,7 +1579,7 @@
       "reachability_evidence": "Registered object vnum 354 scans its room on CMD_PERIODIC for another object of the same template.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolithÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
         "native_state_targets": [
           "surviving monolith payload",
           "duplicate monolith UID/tombstone"
@@ -4882,12 +4882,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          3705,
+          3717,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          3715,
+          3727,
           "money_helper"
         ]
       ],
@@ -4924,62 +4924,62 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          4122,
+          4134,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4132,
+          4144,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4174,
+          4186,
           "coin_bulk_mutation"
         ],
         [
           "src/cmd/actobj.c",
-          4176,
+          4188,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          4196,
+          4208,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4238,
+          4250,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4255,
+          4267,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          4263,
+          4275,
           "item_lifecycle"
-        ],
-        [
-          "src/cmd/actobj.c",
-          4620,
-          "coin_bulk_mutation"
-        ],
-        [
-          "src/cmd/actobj.c",
-          4625,
-          "item_lifecycle"
-        ],
-        [
-          "src/cmd/actobj.c",
-          4629,
-          "item_publication"
         ],
         [
           "src/cmd/actobj.c",
           4632,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/cmd/actobj.c",
+          4637,
+          "item_lifecycle"
+        ],
+        [
+          "src/cmd/actobj.c",
+          4641,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          4644,
           "item_lifecycle"
         ]
       ],
@@ -5048,42 +5048,42 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          4727,
+          4739,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4737,
+          4749,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          4793,
+          4805,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4817,
+          4829,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4833,
+          4845,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          4842,
+          4854,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4933,
+          4945,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          4938,
+          4950,
           "money_helper"
         ]
       ],
@@ -5118,12 +5118,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          3888,
+          3900,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          3897,
+          3909,
           "money_helper"
         ]
       ],
@@ -5160,17 +5160,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          4031,
+          4043,
           "coin_bulk_mutation"
         ],
         [
           "src/cmd/actobj.c",
-          4045,
+          4057,
           "coin_bulk_mutation"
         ],
         [
           "src/cmd/actobj.c",
-          4067,
+          4079,
           "economic_submit"
         ]
       ],
@@ -5209,37 +5209,37 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          1210,
+          1222,
           "money_helper"
         ],
         [
           "src/cmd/actobj.c",
-          1298,
+          1310,
           "coin_bulk_mutation"
         ],
         [
           "src/cmd/actobj.c",
-          1316,
+          1328,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          1335,
+          1347,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          1341,
+          1353,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          4532,
+          4544,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          4599,
+          4611,
           "economic_submit"
         ]
       ],
@@ -5278,7 +5278,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          3829,
+          3841,
           "economic_submit"
         ]
       ],
@@ -6336,7 +6336,7 @@
       "id": "combat.disarm_slot_relink",
       "symbol": "do_disarm",
       "reason": "item_move",
-      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list; its owner UID stays with that character.",
+      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
       "authority_boundary": "Verify exact weapon UID, same player/NPC owner and non-stale equipment slot before live relink; do not create a second ownership event.",
       "reachability_evidence": "Registered do_disarm selects a worn weapon on victim or actor and both branches use obj_to_char(unequip_char(...)).",
       "sites": [
@@ -6353,7 +6353,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
           "selected item UID/owner"
@@ -7020,13 +7020,13 @@
       "id": "craft.make_lock_payload",
       "symbol": "make_lock",
       "reason": "item_move",
-      "classification": "A successful make lock changes an existing containerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock flags/value or a door pairÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "classification": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "authority_boundary": "Bind exact target item UID/revision or door identity with the consumed template UID and source operation; reject before altering either state.",
       "reachability_evidence": "do_make dispatches make_lock; lines 3136-3138 and 3154-3171 mutate the target immediately before yank_make_item.",
       "sites": [],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "A successful make lock changes an existing containerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock flags/value or a door pairÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "native_state_targets": [
           "live container payload or door state",
           "item payload/revision if admitted"
@@ -14301,27 +14301,27 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          2310,
+          2322,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          2325,
+          2337,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          3678,
+          3690,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          5663,
+          5674,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          10800,
+          10808,
           "economic_submit"
         ]
       ],
@@ -14356,12 +14356,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          3516,
+          3528,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          3517,
+          3529,
           "item_publication"
         ]
       ],
@@ -14512,32 +14512,32 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          908,
+          920,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          941,
+          953,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          1114,
+          1126,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          1149,
+          1161,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          6485,
+          6495,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          6511,
+          6521,
           "economic_submit"
         ]
       ],
@@ -14572,32 +14572,32 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          460,
+          471,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          483,
+          494,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          590,
+          601,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          591,
+          602,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          758,
+          769,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          762,
+          773,
           "item_publication"
         ]
       ],
@@ -15496,12 +15496,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6925,
+          6935,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6926,
+          6936,
           "item_lifecycle"
         ]
       ],
@@ -15545,27 +15545,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10446,
+          10456,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10449,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          10462,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          10463,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          10470,
+          10459,
           "item_publication"
         ],
         [
@@ -15575,12 +15560,27 @@
         ],
         [
           "src/cmd/actobj.c",
-          10474,
+          10473,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10475,
+          10480,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          10482,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          10484,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          10485,
           "item_publication"
         ]
       ],
@@ -16231,27 +16231,27 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          8130,
+          8140,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8134,
+          8144,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8138,
+          8148,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8152,
+          8162,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8218,
+          8228,
           "economic_submit"
         ]
       ],
@@ -16295,37 +16295,32 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          7994,
+          8004,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7997,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          8060,
-          "economic_submit"
-        ],
-        [
-          "src/cmd/actobj.c",
-          8069,
+          8007,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
           8070,
+          "economic_submit"
+        ],
+        [
+          "src/cmd/actobj.c",
+          8079,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8863,
+          8080,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8871,
+          8873,
           "item_publication"
         ],
         [
@@ -16345,22 +16340,27 @@
         ],
         [
           "src/cmd/actobj.c",
-          9254,
+          8911,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9258,
+          9264,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9262,
+          9268,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9266,
+          9272,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          9276,
           "item_publication"
         ]
       ],
@@ -16696,17 +16696,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6959,
+          6969,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          7070,
+          7080,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          7124,
+          7134,
           "economic_submit"
         ]
       ],
@@ -17886,42 +17886,42 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          3278,
+          3290,
           "money_helper"
         ],
         [
           "src/cmd/actobj.c",
-          3299,
+          3311,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          3307,
+          3319,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          3308,
+          3320,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          3312,
+          3324,
           "money_helper"
         ],
         [
           "src/cmd/actobj.c",
-          3352,
+          3364,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          3356,
+          3368,
           "money_helper"
         ],
         [
           "src/cmd/actobj.c",
-          3370,
+          3382,
           "item_lifecycle"
         ]
       ],
@@ -17968,12 +17968,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          4997,
+          5009,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          4998,
+          5010,
           "item_publication"
         ]
       ],
@@ -18106,22 +18106,22 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          5197,
+          5209,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          5222,
+          5234,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          5290,
+          5302,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          5315,
+          5327,
           "item_publication"
         ]
       ],
@@ -18165,12 +18165,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          1390,
+          1402,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          1394,
+          1406,
           "item_publication"
         ]
       ],
@@ -18214,12 +18214,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6518,
+          6528,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6522,
+          6532,
           "item_publication"
         ]
       ],
@@ -18263,42 +18263,42 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6034,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          6035,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          6040,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
           6044,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6143,
+          6045,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6144,
+          6050,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6155,
+          6054,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6156,
+          6153,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          6154,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          6165,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          6166,
           "item_publication"
         ]
       ],
@@ -18445,7 +18445,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10151,
+          10161,
           "item_lifecycle"
         ]
       ],
@@ -18552,7 +18552,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source itemÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s description.",
+      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
       "current_support": "Actual production-function sanitizers qualify missing-template refusal before payment/item/material mutation, exact probe release on rejected debit, ordinary description rebuilding and the encrusted path without a template. Compound retained-item durability remains unverified.",
       "backends": {
@@ -18593,7 +18593,7 @@
       "reachability_evidence": "modenhance is called from enhancement command, NPC death/reset hook or boot index construction as described.",
       "native_effects": {
         "holding_effect": "Enhancement fee and material-generated usage change only where the named route includes them.",
-        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source itemÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s description.",
+        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s description.",
         "native_state_targets": [
           "player/NPC inventory and item payload",
           "item_current_owner and item_ownership_ledger for admitted UID",
@@ -19026,17 +19026,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          812,
+          823,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          817,
+          828,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          821,
+          832,
           "item_publication"
         ]
       ],
@@ -19183,12 +19183,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10140,
+          10150,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10141,
+          10151,
           "item_lifecycle"
         ]
       ],
@@ -20349,17 +20349,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          999,
+          1011,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          2095,
+          2107,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          8346,
+          8356,
           "item_lifecycle"
         ],
         [
@@ -21306,32 +21306,32 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6583,
+          6593,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6585,
+          6595,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6658,
+          6668,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6660,
+          6670,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6665,
+          6675,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6667,
+          6677,
           "item_publication"
         ]
       ],
@@ -26553,7 +26553,7 @@
       "id": "movement.drag_room_relink",
       "symbol": "do_drag",
       "reason": "item_move",
-      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actorÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s new room with the same UID.",
+      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
       "authority_boundary": "Require selected old room and new room identities, exact item UID, source movement receipt and non-stale corpse ownership before publishing the room relink.",
       "reachability_evidence": "do_drag calls command_interpreter to move the actor, then checks the object is still in the old room before direct obj_from_room/obj_to_room.",
       "sites": [
@@ -26570,7 +26570,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these call sites.",
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actorÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
         "native_state_targets": [
           "old and new live room contents",
           "item_current_owner room identity and corpse location"
@@ -27837,7 +27837,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The second confiscation branchÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "classification": "The second confiscation branch\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "authority_boundary": "Keep the disabled branch unreachable or source-classify it anew if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -27871,7 +27871,7 @@
       "reachability_evidence": "confiscate_item source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "The second confiscation branchÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+        "custody_effect": "The second confiscation branch\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -28189,16 +28189,6 @@
       "sites": [
         [
           "src/player/player_load_materialize.c",
-          558,
-          "coin_assignment"
-        ],
-        [
-          "src/player/player_load_materialize.c",
-          559,
-          "coin_assignment"
-        ],
-        [
-          "src/player/player_load_materialize.c",
           560,
           "coin_assignment"
         ],
@@ -28225,6 +28215,16 @@
         [
           "src/player/player_load_materialize.c",
           565,
+          "coin_assignment"
+        ],
+        [
+          "src/player/player_load_materialize.c",
+          566,
+          "coin_assignment"
+        ],
+        [
+          "src/player/player_load_materialize.c",
+          567,
           "coin_assignment"
         ]
       ],
@@ -29656,7 +29656,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Catalog restore frees staged objects after collection allocation or partial publication failure, without retiring saved UID authority.",
-      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -29757,7 +29757,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Corpse materialization frees a detached candidate graph when prototype, money or lifecycle hydration fails; saved custody is not retired.",
-      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -29862,7 +29862,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "discard_staged frees candidate corpse/room objects and money piles after a failed flat-file restore attempt; saved custody stays authoritative.",
-      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -29962,7 +29962,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Room-item materialization frees detached item candidates when coin-pile allocation fails; saved room custody is not retired.",
-      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -30405,7 +30405,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Pet saveÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "classification": "Pet save\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "authority_boundary": "Keep the disabled extraction unreachable or require a typed retirement root if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -30439,7 +30439,7 @@
       "reachability_evidence": "writePet source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "Pet saveÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+        "custody_effect": "Pet save\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -31340,7 +31340,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Malformed rich runtime state discards only this load attemptâ€™s materialized object graph; durable player item rows remain unchanged.",
+      "classification": "Malformed rich runtime state discards only this load attempt\u00e2\u20ac\u2122s materialized object graph; durable player item rows remain unchanged.",
       "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
       "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
       "backends": {
@@ -36098,7 +36098,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The gloves proc unequips the struck characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list.",
+      "classification": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
       "authority_boundary": "Match the weapon UID, owner and slot before and after the live relink; do not mint or retire the item.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -36134,7 +36134,7 @@
       "reachability_evidence": "Registered object vnum 192 handles CMD_GOTHIT and can reach the non-NODROP weapon branch.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The gloves proc unequips the struck characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
         "native_state_targets": [
           "victim equipment slot",
           "victim carrying list",
@@ -37236,7 +37236,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "IoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "classification": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "authority_boundary": "Issue the new rose UID once and link both NPC grant and intended recipient handoff to a source-qualified root; verify do_give result.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -37272,7 +37272,7 @@
       "reachability_evidence": "Registered mob vnum 444 reaches this idle room-presence branch when Vareena is found.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "IoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "native_state_targets": [
           "fresh rose UID",
           "assistant inventory",
@@ -39496,7 +39496,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the openerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s inventory.",
+      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
       "authority_boundary": "Bind chest UID, random reward count, each new potion UID and player custody to one source-qualified root.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -39532,7 +39532,7 @@
       "reachability_evidence": "Registered chest vnum 1270 and an explicit do_open caller reach the CMD_OPEN reward loop.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the openerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
         "native_state_targets": [
           "chest UID",
           "new potion UIDs",
@@ -41715,7 +41715,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          2894,
+          2906,
           "item_publication"
         ]
       ],
@@ -50546,793 +50546,793 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1210,
+      "line": 1222,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, total_value);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3278,
+      "line": 3290,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, 10);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3312,
+      "line": 3324,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, 10);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3356,
+      "line": 3368,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, 10);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3715,
+      "line": 3727,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(actor, static_cast<int>(value));"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3897,
+      "line": 3909,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(recipient, static_cast<int>(value));"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4938,
+      "line": 4950,
       "family": "money_helper",
       "excerpt": "if (value > INT_MAX || SUB_MONEY(actor, static_cast<int>(value), 0) != 0)"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 908,
+      "line": 920,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(actor, object, destination.target_container, source,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 941,
+      "line": 953,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(ch, object, NULL, source, destination, reason,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1114,
+      "line": 1126,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1149,
+      "line": 1161,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 2310,
+      "line": 2322,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 2325,
+      "line": 2337,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3678,
+      "line": 3690,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3705,
+      "line": 3717,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3829,
+      "line": 3841,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_coin(sender, payload, coin_give_completion, &context,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3888,
+      "line": 3900,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4067,
+      "line": 4079,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&candidate.change, id, pile, critical_source_site::command,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4255,
+      "line": 4267,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_coin(actor, payload,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4532,
+      "line": 4544,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, money, parent, source, source,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4599,
+      "line": 4611,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_coin("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4833,
+      "line": 4845,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_coin("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4933,
+      "line": 4945,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 5663,
+      "line": 5674,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6485,
+      "line": 6495,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(owner, obj, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6511,
+      "line": 6521,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, obj, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7124,
+      "line": 7134,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8060,
+      "line": 8070,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8218,
+      "line": 8228,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, object, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10800,
+      "line": 10808,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1298,
+      "line": 1310,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(o_obj, 0, 0, 0, 0); /* change pile descs */"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4031,
+      "line": 4043,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(&rendered.object, 0, 0, 0, 0);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4045,
+      "line": 4057,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(&rendered.object, 0, 0, 0, 0);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4174,
+      "line": 4186,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(money, 0, 0, 0, 0);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4620,
+      "line": 4632,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(old_money, context.amount[0], context.amount[1], context.amount[2],"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 812,
+      "line": 823,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 999,
+      "line": 1011,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(ch, o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1341,
+      "line": 1353,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 2095,
+      "line": 2107,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(actor, object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3299,
+      "line": 3311,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3308,
+      "line": 3320,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3352,
+      "line": 3364,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3370,
+      "line": 3382,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4122,
+      "line": 4134,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4132,
+      "line": 4144,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4196,
+      "line": 4208,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4238,
+      "line": 4250,
       "family": "item_lifecycle",
       "excerpt": "money = create_money(after[0], after[1], after[2], after[3]);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4263,
+      "line": 4275,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4625,
+      "line": 4637,
       "family": "item_lifecycle",
       "excerpt": "P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4632,
+      "line": 4644,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4727,
+      "line": 4739,
       "family": "item_lifecycle",
       "excerpt": "P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4793,
+      "line": 4805,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(staged, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4817,
+      "line": 4829,
       "family": "item_lifecycle",
       "excerpt": "P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4842,
+      "line": 4854,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6926,
+      "line": 6936,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6959,
+      "line": 6969,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7070,
+      "line": 7080,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8346,
+      "line": 8356,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(ch, obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10141,
+      "line": 10151,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison, TRUE); // Transient artifact poison?"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10151,
+      "line": 10161,
       "family": "item_lifecycle",
       "excerpt": "if (P_obj obj = read_object(i, VIRTUAL))"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 460,
+      "line": 471,
       "family": "item_publication",
       "excerpt": "obj_from_obj(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 483,
+      "line": 494,
       "family": "item_publication",
       "excerpt": "const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 590,
+      "line": 601,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 591,
+      "line": 602,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, room);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 758,
+      "line": 769,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 762,
+      "line": 773,
       "family": "item_publication",
       "excerpt": "const obj_to_char_result placement = obj_to_char_checked(object, recipient);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 817,
+      "line": 828,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 821,
+      "line": 832,
       "family": "item_publication",
       "excerpt": "const obj_to_char_result placement = obj_to_char_checked(object, destination);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1316,
+      "line": 1328,
       "family": "item_publication",
       "excerpt": "obj_from_obj(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1335,
+      "line": 1347,
       "family": "item_publication",
       "excerpt": "obj_from_room(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1390,
+      "line": 1402,
       "family": "item_publication",
       "excerpt": "obj_from_room(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 1394,
+      "line": 1406,
       "family": "item_publication",
       "excerpt": "outcome = get_placement_outcome(obj_to_char_checked(o_obj, ch));"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 2894,
+      "line": 2906,
       "family": "item_publication",
       "excerpt": "obj_to_char(s_obj, ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3307,
+      "line": 3319,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3516,
+      "line": 3528,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 3517,
+      "line": 3529,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, room);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4176,
+      "line": 4188,
       "family": "item_publication",
       "excerpt": "obj_to_obj(money, container);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4629,
+      "line": 4641,
       "family": "item_publication",
       "excerpt": "obj_to_char(money, actor);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4737,
+      "line": 4749,
       "family": "item_publication",
       "excerpt": "obj_to_room(money, context.room);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4997,
+      "line": 5009,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 4998,
+      "line": 5010,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_object, ch->in_room);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 5197,
+      "line": 5209,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 5222,
+      "line": 5234,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_object, ch->in_room);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 5290,
+      "line": 5302,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 5315,
+      "line": 5327,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_object, ch->in_room);"
-    },
-    {
-      "path": "src/cmd/actobj.c",
-      "line": 6034,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(o_obj);"
-    },
-    {
-      "path": "src/cmd/actobj.c",
-      "line": 6035,
-      "family": "item_publication",
-      "excerpt": "obj_to_obj(o_obj, s_obj);"
-    },
-    {
-      "path": "src/cmd/actobj.c",
-      "line": 6040,
-      "family": "item_publication",
-      "excerpt": "obj_from_room(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
       "line": 6044,
       "family": "item_publication",
-      "excerpt": "obj_to_obj(o_obj, s_obj);"
-    },
-    {
-      "path": "src/cmd/actobj.c",
-      "line": 6143,
-      "family": "item_publication",
       "excerpt": "obj_from_char(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6144,
+      "line": 6045,
       "family": "item_publication",
       "excerpt": "obj_to_obj(o_obj, s_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6155,
+      "line": 6050,
       "family": "item_publication",
       "excerpt": "obj_from_room(o_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6156,
+      "line": 6054,
       "family": "item_publication",
       "excerpt": "obj_to_obj(o_obj, s_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6518,
+      "line": 6153,
+      "family": "item_publication",
+      "excerpt": "obj_from_char(o_obj);"
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 6154,
+      "family": "item_publication",
+      "excerpt": "obj_to_obj(o_obj, s_obj);"
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 6165,
+      "family": "item_publication",
+      "excerpt": "obj_from_room(o_obj);"
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 6166,
+      "family": "item_publication",
+      "excerpt": "obj_to_obj(o_obj, s_obj);"
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 6528,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6522,
+      "line": 6532,
       "family": "item_publication",
       "excerpt": "const obj_to_char_result placement = obj_to_char_checked(obj, vict);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6583,
+      "line": 6593,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6585,
+      "line": 6595,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, tmp_ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6658,
+      "line": 6668,
       "family": "item_publication",
       "excerpt": "unequip_char(tmp_ch, pos);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6660,
+      "line": 6670,
       "family": "item_publication",
       "excerpt": "equip_char(tmp_ch, obj, pos, TRUE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6665,
+      "line": 6675,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6667,
+      "line": 6677,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, tmp_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6925,
+      "line": 6935,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7994,
+      "line": 8004,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7997,
+      "line": 8007,
       "family": "item_publication",
       "excerpt": "equip_char(actor, object, context.slot, !context.showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8069,
+      "line": 8079,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8070,
+      "line": 8080,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, position, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8130,
+      "line": 8140,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8130,
+      "line": 8140,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8134,
+      "line": 8144,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8134,
+      "line": 8144,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8138,
+      "line": 8148,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8138,
+      "line": 8148,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8152,
+      "line": 8162,
       "family": "item_publication",
       "excerpt": "obj_to_char_checked(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8152,
+      "line": 8162,
       "family": "item_publication",
       "excerpt": "obj_to_char_checked(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8863,
+      "line": 8873,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
-    },
-    {
-      "path": "src/cmd/actobj.c",
-      "line": 8871,
-      "family": "item_publication",
-      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_L, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
       "line": 8881,
       "family": "item_publication",
-      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_R, !showit);"
+      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_L, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
       "line": 8891,
       "family": "item_publication",
-      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);"
+      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_R, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
       "line": 8901,
       "family": "item_publication",
+      "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);"
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 8911,
+      "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9254,
+      "line": 9264,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9258,
+      "line": 9268,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9262,
+      "line": 9272,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9266,
+      "line": 9276,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10140,
+      "line": 10150,
       "family": "item_publication",
       "excerpt": "obj_from_char(poison);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10446,
+      "line": 10456,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10449,
+      "line": 10459,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, target);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10462,
+      "line": 10472,
       "family": "item_publication",
       "excerpt": "obj_from_obj(*moved_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10463,
+      "line": 10473,
       "family": "item_publication",
       "excerpt": "obj_to_obj(*moved_object, source);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10470,
+      "line": 10480,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10472,
+      "line": 10482,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10474,
+      "line": 10484,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10475,
+      "line": 10485,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, source);"
     },
@@ -59882,49 +59882,49 @@
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 558,
+      "line": 560,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = result.domains.wallet[0];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 559,
+      "line": 561,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = result.domains.wallet[1];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 560,
+      "line": 562,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = result.domains.wallet[2];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 561,
+      "line": 563,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = result.domains.wallet[3];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 562,
+      "line": 564,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = result.domains.bank[0];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 563,
+      "line": 565,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = result.domains.bank[1];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 564,
+      "line": 566,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = result.domains.bank[2];"
     },
     {
       "path": "src/player/player_load_materialize.c",
-      "line": 565,
+      "line": 567,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = result.domains.bank[3];"
     },
@@ -66439,7 +66439,7 @@
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/core/random.c": "16e9bb0673b665e0c8fc06f4e3dba8795d8b664cc3bb7ba3fdbb394dd8cd3564",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
-      "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
+      "src/core/structs.h": "028596f2d2d5dabe895f4cf964f6b2d0e5033beba63a4fec82599b373f6fdf5a",
       "src/economy/coin_physical_recovery.c": "615ab746cf95d94f41c797f5e48547f55e14b3faf564aab34b85b6f6989e6cb2",
       "src/economy/coin_physical_recovery.h": "e3e2acdabad529575cd9fbe0dd13c694f0a6481bd22512f760da7c08e6ebafce",
       "src/economy/collector_purchase_publication.c": "0a1375c62db5e782d2b873dce0eb11f56c1559f53900205899dc104a944f179e",
@@ -66522,7 +66522,7 @@
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "520807d5bb08f62cb279f5c1d6d77860efd928f59831654436f0dd1fb396a61f",
       "src/mob/studioproclib.h": "dace9fad93efdcd24c8775a10fa766aec1282b79da40bd81e71e6c5ecabd3858",
-      "src/net/comm.c": "9c6a45969934f33b31bba2fd7f9b3c8e15da224c71761cead24464e517c4d9ce",
+      "src/net/comm.c": "42fec134df5c30b8719475ae1760242cac3ccdfe8d32b13e0cb7afa2e2289529",
       "src/persistence/critical_command.c": "a9d8e5043ac9210139beda7c1737752cc4850d38b7adb6983cc39691f8e36b9e",
       "src/persistence/critical_command.h": "9e0a75915a72f2dec2554a8194a0ade3500b3c5fc640f3d64c8a6bb8d411b65c",
       "src/persistence/critical_command_coordinator.c": "112a778368efccf450eab82136ad45b52c0ba2bf9025d07d3e88489d63b51fc3",
@@ -66543,9 +66543,9 @@
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
-      "src/player/player_save_pipeline.c": "cbf1d1b016aaf0f7af5ee08daef843acb939a806e6538b71bdd312ac780ebab2",
+      "src/player/player_save_pipeline.c": "170d2d891c1199486958573c1988fe543a316938666caa0a2f8ca82896252ce8",
       "src/player/player_save_pipeline.h": "35e41e7408fc730c8c14488f9e8527a5ba22584ae581e1e39e84dc4718fbc97f",
-      "src/player/player_snapshot_codec.c": "61d6bf7e7981f70984ac71bc45b80e51d92d68f1854d01e875bf81740b3688a3",
+      "src/player/player_snapshot_codec.c": "95153a51b8a1e46fc36db6cd1d1df94c67daf7f9f07fdb19d5aa3f71abd5ce66",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
       "src/specs/specs.library.c": "87d4ec73ea64b883700679098bfcdbeb8b35e8d7bfdf5735ab2f5b8ac6ea6299",
@@ -66595,7 +66595,7 @@
       "migrations/verify_runtime_compatibility.sh": "0a803d5e3afd9b0af6c3de5a25dfa48a765fcecacdc4dbff3a1346051ae3474d",
       "scripts/validate_runtime_compatibility.py": "d37537443fc920c3b49b61efa9e6b4d2629e0eb4b51902d1daf5d82158ce46de",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
-      "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
+      "src/cmd/actobj.c": "111c47cab88822b66e370dfefb80148c640a85a0af0564dedfb15732fafc8110",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
@@ -66646,7 +66646,7 @@
       "src/persistence/quest_reward_obligation_pipeline.c": "64d8223ad9a45f1a7beebabdf059d9efa5a9ff8ba0d505105ff1f4a59ad582ca",
       "src/persistence/quest_reward_obligation_repository.c": "6b788d76f257636202c63d468a0ccd7b893151bdd6ee4e7d68f967a8b467cebd",
       "src/persistence/quest_reward_obligation_repository.h": "c5bf00750f33ad2bc2c93e976e27226a9ce0cba795f39de83accee10f7a1c293",
-      "src/player/player_snapshot_capture.c": "b25e3f2d2c3f8d255270477dfee2df8565b65f959737b265435ce8790f39c24c",
+      "src/player/player_snapshot_capture.c": "06c685cc981ca20b88617a8d36d70e4e65a2c6e372498fa4d8e95049d6c65690",
       "src/player/player_snapshot_capture.h": "8bd24c81e9a9506790e05663c68ce05da5586b7a3afa0fc1c2631bc0f29e6e47",
       "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
       "src/sql/sql.c": "57ee2e0fdbd7eede6e1c7e43f88013c76602fefcc068c5a4e90cdf56996ab70c",
@@ -66889,7 +66889,7 @@
       "src/mob/studioproc.c": "0bf886302eab9f8ac57b0eac9d03dfd9d2d7d2daf8fd60e08324d57b2286ac25",
       "src/mob/studioproc.h": "925d773f9ef88996fce616f0c1cd5de56983cf39d5de5ec4891a23ec44dd1f4c",
       "src/classes/memorize.c": "6b05f31332d935276e3421598ee0cb5d8b9e41e4089f1985360c1dd99ef9105b",
-      "src/core/prototypes.h": "081adcce171c2b738172be89fcce38381a02d59e1820ed098ef390c229886e64",
+      "src/core/prototypes.h": "b057c0d0664b5f14e18d5ccce317a0e25da050c62dde682e6e755894050a9041",
       "src/magic/spell_item_lifecycle.c": "ef1e584035c5e314201fbdcebd6910e6bd567e5ce1d8e9fc44dd7a0f079ad565",
       "src/magic/spell_item_lifecycle.h": "3907673c6f702b0ff0839108b5de26c86a2cd6416b09606aa8679681b6ab0d66",
       "src/magic/magic.c": "08ee4ddb1004f8b7c56fb8f0de506d4418c26b2f9ae4ebccdceec53cc84cc3a4",
@@ -66899,7 +66899,7 @@
       "src/economy/collector_command.h": "f42000d74e42bce549229448e3b154c59f2afd3649600b04641c0c098c318895",
       "src/item/item_actions.c": "b1c7a68f53c9260fb738586d63df43115ed54120f87a5a3945ced5091d23180c",
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
-      "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
+      "src/world/properties.c": "0652f1867c729acc0daad1d5adc20d860e7575f872ba56d4147da1d56c7845e1",
       "src/economy/auction_accounting.c": "5514a5a90355662859c60843c1d01d215a503621838d81b15cce423e67b292e8",
       "src/economy/auction_accounting.h": "963ca7baf6956ac049abd3a9e68e54871911015a26142919212d4d01902daf34",
       "src/economy/auction_settlement_accounting.c": "188f476c69fed1e7559bf131aa02e0808fee18ce9949e54a190e4375f2746af6",
@@ -66927,9 +66927,9 @@
       "tests/async/item_transfer_complete_bounded_test.cpp": "176c8644449f19c450799b0bc4c7a3df9a4d145e2234c949a1dd60f13b1b24b2",
       "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367",
       "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878",
-      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d",
+      "tests/run_test_entry.py": "31739c3dd193c48b1656f83c72208df66bf3453ee42c9578bdbc660639c07e4b",
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
-      "tests/regression_manifest.json": "2be87c95bb6eac3a43c99493649865ab7aa35bfefedb1138ed02571f842668dc",
+      "tests/regression_manifest.json": "2442412d25f2fdce3e69c791e10719994fd22912d9480cf8c2ed6360c4285ce2",
       "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
       "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
       "tests/async/test_native_birth_zone_source_profile.py": "ed8e51359ca1cad73ad1cdc99faa7782d7636c047dbb30a4d7eaa70384047b2a",
@@ -67057,7 +67057,7 @@
       "runtime_qualification_promoted": false,
       "canonical_source_alias_record": "bin/tests/combined-accounting-candidate-primary-20261009/SOURCE-CANONICALIZATION.json",
       "canonical_source_alias_record_sha256": "2d4b8313b4d039698376e46afe087057e598321c36a74d8c8aa8cabb1322db4f",
-      "qualification_note": "Current candidate source pins and lexical registration only. Original historical component evidence is preserved without qualifying new or changed native routes. Original 926 policy rows/backend evidence/gates remain intact; full Plans1–5/R1–R8 acceptance remains required.",
+      "qualification_note": "Current candidate source pins and lexical registration only. Original historical component evidence is preserved without qualifying new or changed native routes. Original 926 policy rows/backend evidence/gates remain intact; full Plans1\u20135/R1\u2013R8 acceptance remains required.",
       "unchanged_committed_input_newline_aliases": {
         "count": 17,
         "record": "bin/tests/combined-accounting-candidate-primary-20261009/UNCHANGED-INPUT-ALIASES.json",
@@ -67083,6 +67083,28 @@
       ],
       "runtime_qualification_changed": false,
       "release_qualification_changed": false
+    },
+    "broader_persistence_source_reference_refresh_20261011": {
+      "source_commit": "050956d87666ff7aa082550b78f420a2e1c24a69",
+      "scope": "Current lexical locations and source hashes after broader persistence fixes. All 2911 lexical occurrences, writer policies, historical evidence and backend/release qualification states are preserved. Current test-entry and regression-manifest hashes also follow the merged experimental-accounting base.",
+      "relocated_census_occurrences": 140,
+      "relocated_declared_sites": 136,
+      "updated_source_pins": [
+        "src/cmd/actobj.c",
+        "src/core/prototypes.h",
+        "src/core/structs.h",
+        "src/net/comm.c",
+        "src/player/player_save_pipeline.c",
+        "src/player/player_snapshot_capture.c",
+        "src/player/player_snapshot_codec.c",
+        "src/world/properties.c"
+      ],
+      "runtime_qualification_changed": false,
+      "release_qualification_changed": false,
+      "merged_base_source_pins_refreshed": [
+        "tests/run_test_entry.py",
+        "tests/regression_manifest.json"
+      ]
     }
   },
   "pending_source_integration": {
