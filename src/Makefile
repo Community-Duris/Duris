@@ -483,6 +483,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_command_parser.o \
 				 item/forced_weapon_drop.o \
 				 item/item_movement_transaction.o \
+				 item/held_retirement_publication.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
 				 economy/shop_trade_world_witness.o \

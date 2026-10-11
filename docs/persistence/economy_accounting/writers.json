@@ -14650,12 +14650,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1014,
+          964,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1022,
+          972,
           "item_publication"
         ]
       ],
@@ -14712,7 +14712,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1041,
+          991,
           "item_lifecycle"
         ]
       ],
@@ -14770,12 +14770,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3651,
+          3601,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3879,
+          3829,
           "economic_submit"
         ]
       ],
@@ -15077,42 +15077,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1657,
+          1607,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1675,
+          1625,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4002,
+          3952,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4010,
+          3960,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4022,
+          3972,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4148,
+          4098,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4166,
+          4116,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          4224,
+          4174,
           "economic_submit"
         ],
         [
@@ -15181,7 +15181,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1592,
+          1542,
           "item_publication"
         ]
       ],
@@ -15224,7 +15224,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1488,
+          1438,
           "item_lifecycle"
         ]
       ],
@@ -15344,7 +15344,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1343,
+          1293,
           "item_lifecycle"
         ]
       ],
@@ -16458,7 +16458,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1183,
+          1133,
           "item_lifecycle"
         ]
       ],
@@ -16495,7 +16495,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1196,
+          1146,
           "item_lifecycle"
         ]
       ],
@@ -17812,7 +17812,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4275,
+          4225,
           "item_lifecycle"
         ]
       ],
@@ -17849,7 +17849,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4126,
+          4076,
           "item_lifecycle"
         ]
       ],
@@ -18733,37 +18733,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          2526,
+          2476,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2781,
+          2731,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2907,
+          2857,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3356,
+          3306,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3563,
+          3513,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3636,
+          3586,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3644,
+          3594,
           "economic_submit"
         ],
         [
@@ -18783,7 +18783,7 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          3031,
+          2981,
           "economic_submit"
         ]
       ],
@@ -19433,12 +19433,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1840,
+          1790,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1841,
+          1791,
           "item_publication"
         ]
       ],
@@ -19481,22 +19481,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1400,
+          1350,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1437,
+          1387,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1443,
+          1393,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1447,
+          1397,
           "item_publication"
         ]
       ],
@@ -19821,7 +19821,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1292,
+          1242,
           "item_publication"
         ]
       ],
@@ -29097,7 +29097,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          4156,
+          4106,
           "economic_submit"
         ],
         [
@@ -48277,17 +48277,17 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          8119,
+          8069,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          8006,
+          7956,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          8061,
+          8011,
           "item_publication"
         ]
       ],
@@ -57314,235 +57314,235 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1657,
+      "line": 1607,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1675,
+      "line": 1625,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2526,
+      "line": 2476,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2781,
+      "line": 2731,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2907,
+      "line": 2857,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3031,
+      "line": 2981,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3356,
+      "line": 3306,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3563,
+      "line": 3513,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3636,
+      "line": 3586,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3644,
+      "line": 3594,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3651,
+      "line": 3601,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3879,
+      "line": 3829,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4002,
+      "line": 3952,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4010,
+      "line": 3960,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4022,
+      "line": 3972,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4148,
+      "line": 4098,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4156,
+      "line": 4106,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4166,
+      "line": 4116,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4224,
+      "line": 4174,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1014,
+      "line": 964,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1041,
+      "line": 991,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1183,
+      "line": 1133,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1196,
+      "line": 1146,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1343,
+      "line": 1293,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1488,
+      "line": 1438,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4126,
+      "line": 4076,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 4275,
+      "line": 4225,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8119,
+      "line": 8069,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, TRUE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1022,
+      "line": 972,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1292,
+      "line": 1242,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1400,
+      "line": 1350,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1437,
+      "line": 1387,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1443,
+      "line": 1393,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1447,
+      "line": 1397,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1592,
+      "line": 1542,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1840,
+      "line": 1790,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1841,
+      "line": 1791,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8006,
+      "line": 7956,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 8061,
+      "line": 8011,
       "family": "item_publication",
       "excerpt": "const auto placed = obj_to_char_checked(root, mobile);"
     },
@@ -66434,7 +66434,7 @@
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/validate_data_lifecycle.py": "3a294a1a9d7ee432558d916859706932c3541fe74e99d4b297d5c150dbdced38",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "src/Makefile": "5fd2a18e3ea5c2730a2f166a8882b8db005e266a8ec00f72f7212946f86eb6be",
+      "src/Makefile": "b6c448b635f4a3671a36e6e9c3d553808d051cd07e9fe861972444f04218bb8c",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
@@ -66511,7 +66511,7 @@
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "ada2ca800f348556265d571e1bdce3ca88aafaad3fb1cd51e668c91bb2206ce3",
+      "src/item/item_movement_transaction.c": "d364528af832ffcda36d8c7cf23a7cd9a87a6fcbdd2f870f136d2bca2ebf96a6",
       "src/item/item_movement_transaction.h": "7bc490625f82791421be800b326ffd4c7240ecc2171d6d7de2664194d667ccca",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
@@ -66758,7 +66758,7 @@
       "src/world/economic_initialized_world_snapshot.c": "fbc3ed55b7ff3be943997ddad7977f6435f5bfe9873948f2343017c725d01b07",
       "src/economy/smith_native_producer.c": "fbba97fb794c435aaefc7fd5ae6d973f3e1a4841e99a0b68f9d8ebd98267b1e2",
       "tests/async/auction_transaction_mysql_harness.cpp": "599ac00a253497ddeab609bfc5a12189a1bc4a8d38f1cb89923a792aef8fb4d1",
-      "tests/integration_manifest.json": "f55167389e3778fa17fc55ba43bec2fe5709333ef33b73b5dfbf134ddc1e5c10",
+      "tests/integration_manifest.json": "a1c78d916a646baf5e668365a877dc5bd83f5f9bec205237c4dfd9a63cc68741",
       "src/flatfile/flatfile_accounting_zone_reset_item_transaction.h": "586a7224701eee6606c3567f6ca48faa40fb1497b1a56e1d5e3195b36d72f418",
       "src/persistence/sql_room_creation_correspondence.h": "294430cc6d97023f0e36db560cadee313227d11ca41c4850ed0fc0719ff55116",
       "src/economy/auction_player_forest_detail.h": "1a8d764ae5b50b62f3f9f38118876b3560d7cf195727b9c48f185724bf79d0a2",
@@ -66913,7 +66913,17 @@
       "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
       "scripts/economic_sql_audit_origins.py": "de5c14f519d1f0bfb8d8ded1edb0ae45cdedb654891edd1dc7317d947e5464a3",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
-      "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8"
+      "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
+      "src/item/held_retirement_publication.c": "5c777b221ec8736133d7363370565548eecd82826f43582dbb618aa7200a1426",
+      "src/item/held_retirement_publication_internal.h": "c78061004cfeabc125235c0999f1f1bbbd091bbd50b99f5e86400c017fbb6453",
+      "src/item/item_movement_state_internal.h": "48582b82577bddb801749bd46df6f201adde09f935e69aa762f0f081a279ea74",
+      "tests/async/held_retirement_publication_policy_harness.cpp": "634ccfc5cb4ed427e3a722a189653e2f8d52132895fd680eb795ec6bcc12d6a7",
+      "tests/async/test_craft_publication_ack_retention.py": "e69eed0caca3e9ad09511a9bc3bcf2737d8d80e9023628e26d1bdfb4a32d4f47",
+      "tests/async/test_held_retirement_publication_policy.py": "f2ad079f6a8fcda953f32af6a6cdb3fe41832f7ae4ab04d382f91fa15fcd024d",
+      "tests/async/test_publication_retention_runtime.py": "6b6582f9511e4b375caef046c9f8b1321fa8debcbabe65ef768f07e14645367b",
+      "tests/async/test_item_movement_input_queue.py": "09f36720de4b9de76260cd5f42d4c79076bf0c62a888ac979514678ec1509381",
+      "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
+      "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
