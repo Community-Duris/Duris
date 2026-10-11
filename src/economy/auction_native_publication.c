@@ -3434,11 +3434,11 @@ struct auction_forest_workspace
 	bool (*reserve)(size_t, void *) noexcept;
 	void *context;
 	size_t outer, frames;
-	auction_forest_rows a, b, c, d;
-	std::vector<uint8_t> x, y;
-	auction_forest_ranges ranges;
-	std::vector<uint64_t> roots;
-	auction_forest_set identities;
+	auction_forest_rows a = {}, b = {}, c = {}, d = {};
+	std::vector<uint8_t> x = {}, y = {};
+	auction_forest_ranges ranges = {};
+	std::vector<uint64_t> roots = {};
+	auction_forest_set identities = {};
 	player_item_snapshot row{};
 
 	static bool forward(size_t amount, void *opaque) noexcept

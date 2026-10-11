@@ -1027,7 +1027,7 @@ economic_accounting_error intent_fixed_freeze_owned(const critical_command &comm
 		return economic_accounting_error::payload_conflict;
 	try
 	{
-		size_t admission_prefix = 0, admission_request = 0;
+		size_t admission_prefix = 0, admission_request [[maybe_unused]] = 0;
 		if (!budget.peak(sizeof(economic_frozen_intent) +
 				 intent_fixed_intent_default_frames))
 			return economic_accounting_error::capacity;
