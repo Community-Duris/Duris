@@ -1,3 +1,83 @@
+## Current arrangement: three ongoing sessions; primary ownership retained - 2026-10-11
+
+The human user approved "go with the useful parts" in launch-readiness chat
+01a104b8-0bcd-7863-b720-a15cad96df41. This supersedes the five-session delegation
+proposal and its PRIMARY_ACTION/PRIMARY_ACK requests below. Read the current
+[coordination charter](ACCOUNTING_ACCELERATION_CHARTER_2026-10-11.md).
+
+- RGitGoin, the existing remote Plans 1-4 owner, continues maintained accounting
+  implementation, shared interfaces, required architecture work and final
+  experimental-accounting integration under its existing ownership.
+- The established Plan 5 owner continues independent audit/operator tooling,
+  database qualification, restore/recovery and release evidence.
+- The new orchestrator continues reviewed helper integration, qualification of
+  meaningful batches and exact source-pinned primary handoffs.
+
+WORLD and SHOP runtime assignments are WITHDRAWN. No primary delegation
+acknowledgment is required for this arrangement or continued Plans 1-4/Plan 5
+work. Shared runtime and migration ownership is retained by its existing owner;
+ordinary review and actual release acceptance remain required.
+
+Park the new world/shop helpers after preserving their completed handoffs.
+They may return only for an exact bounded failed-test task or independently
+owned deliverable, with source/files, acceptance, owner and resource receipt,
+then return to idle. The old preparation helpers and coordinator remain parked;
+the old heartbeat remains paused. Do not create further sessions or subagents.
+
+Let any active bounded test finish on its original session/lease, capture its
+actual terminal result, seal evidence and perform guarded cleanup. Keep useful
+fixes, branches, worktrees, dirty files, failed runs, storage profiles and D:
+evidence. Schedule broader qualification after meaningful batches, with focused
+checks for repairs; avoid per-commit full reruns and unchanged blocker loops.
+Evidence stays limited to its exact frozen source and observed gates. The earlier
+25-40 percent implementation-speedup assumption is withdrawn; reassess after the
+current database result and reviewed handoff. Accounting remains inactive/CLOSED
+until the maintained implementation, architecture and release gates are met.
+
+## Reader transport unit milestone — 2026-10-11
+
+[PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md](PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md) records actual Linux reader checks:
+149 original/153 candidate methods with three optional classes unqualified,
+all6 component cases (real FIFO) and19 registered selectors PASS. Full matrix
+NOT_RUN; current2206 combined native build PENDING. Exact three existing source
+pins change; writer policies/census remain unchanged. Full Plan5, SQL durability,
+restore/host/release, inactive/CLOSED and existing open gates remain unchanged.
+
+## SQL origin output byte limit integrated — 2026-10-11
+
+[Origin-output integration](PLAN5_SQL_ORIGIN_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) bounds the complete JSON plus newline before exclusive file creation. Windows/Linux16 boundary controls and14 module methods pass on the frozen component; Linux0600 is checked. One existing UID source pin changes, the origin exporter gains one new pin, and480 existing pins remain (482 total,0 removed). No new test row/case or full-matrix/32MiB/SQL/native qualification is claimed. Reader work and original R1–R8/release gates remain open; accounting stays inactive/CLOSED.
+
+## Delegation request addressed to RGitGoin / remote Plans 1-4 owner - 2026-10-11
+
+The addressee of PRIMARY ACTION and PRIMARY_ACK is RGitGoin: the existing remote
+agent implementing Plans 1-4 on experimental-accounting. Those labels do not
+refer to the new local acceleration orchestrator or the independent Plan 5 owner.
+The human user's approval of the five-session allocation is recorded in the
+charter's Authorization section; the source instruction was "do it" in the
+launch-readiness chat. This is a request to delegate bounded domain work while
+retaining your shared lifecycle, common interfaces and final integration ownership.
+
+After the current bounded slice, publish your acknowledgment in the charter with
+an exact source revision, accepted exclusive paths and protected WIP/exclusions.
+A narrower useful lease is acceptable. Include the world worker's request for
+src/world/quest.c in the ownership decision; that selecting caller is outside
+the initially proposed world lease. If approval must also arrive directly in your
+private remote chat, publish that exact requirement. No document amendment claims
+control of that chat or substitutes for your published file-ownership acknowledgment.
+The world/shop leases remain proposed until that acknowledgment is published.
+
+## SQL export limit fixed and combined checkpoint recorded — 2026-10-11
+
+[Exporter integration](PLAN5_SQL_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) refuses a JSON file exceeding the existing bound
+after its trailing newline is added, before file creation. Windows/Linux14 tests,
+the two registered cases and registration validation pass. Only three existing
+source pins change;931 writer policies and the census remain unchanged.
+[Combined checkpoint](GUARDED_COMBINED_BUILD_CHECKPOINT_2026-10-11.md) passes fresh production SQL/flat builds and
+the original inactive-flat preflight at83e2e; SQL startup remains unrun. This is
+the architecture prerequisite, not full protocol acceptance. The new world/shop
+leases remain proposed pending direct authorization. Inactive/CLOSED, incomplete
+coverage and outstanding implementation/architecture/R1–R8/release gates remain.
+
 ## Approved five-session acceleration ownership amendment - 2026-10-11
 
 The human user approved and instructed execution of the five-session arrangement
@@ -19026,6 +19106,36 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Integrate complete quest offering validator provider implemented - 2026-10-11
 
 [Source checkpoint](QUEST_OFFERING_PROVIDER_INTEGRATION_2026-10-11.md) Complete additive quest-offering validator provider integrated; Item command, movement and recovery consumers compile in both production backends. Whole Item integration and runtime qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate complete standalone recovery-forest Source providers implemented - 2026-10-11
+
+[Source checkpoint](STANDALONE_RECOVERY_FOREST_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) Complete standalone forest shape/encode/decode Source, supplement, INITIAL0 and query providers are integrated; provider and direct Item objects compile in both production modes. Full selecting callers, runtime/ABI, architecture and release qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate complete native-mobile validation Source providers implemented - 2026-10-11
+
+[Source checkpoint](NATIVE_MOBILE_VALIDATION_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) Complete native-mobile validation Source, zero supplement, INITIAL and query providers are integrated; three affected objects compile in both production modes. Full selecting callers, native boundaries, ABI, architecture and release qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate complete native recovery Source providers implemented - 2026-10-11
+
+[Source checkpoint](NATIVE_RECOVERY_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) Complete native recovery encoding, decoding and validation Source providers are integrated; three affected production objects compile in both backends. Whole Item/ROOT selection, runtime/ABI, architecture and release qualification remain open.
 Independent RAW and actual formatted source reviews passed; original behavior
 and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/

@@ -1,5 +1,21 @@
 # Accounting acceleration board - 2026-10-11
 
+## Current operating arrangement
+
+Human-approved reduced arrangement ("go with the useful parts", verified directly
+in launch-readiness chat) supersedes the standing five-session proposal. Policy
+published at `4d5bd2bdf2afc073691e1fe308cd7f05a6c706e9`; its two docs imported
+without newer runtime source. Three ongoing owners: RGitGoin implements Plans1-4
+and final integration, established Plan5 owns independent qualification, this
+chat reviews meaningful batches and publishes narrow primary handoffs.
+WORLD/SHOP parked; proposed runtime allocations WITHDRAWN, PRIMARY_ACK
+NOT_REQUIRED for that withdrawn proposal. No new standing helper tasks; use the
+two existing helpers only for an exact bounded failure/independent deliverable
+with existing file ownership, completion condition and resource receipt, then
+return idle. Old helpers/heartbeat stay parked/PAUSED. No source ownership or
+acceptance requirement transferred or waived. Updated15-minute heartbeat verified
+ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeats.
+
 ## Current accepting gate
 
 ACC-01 terminal PASS at 2026-10-11 01:18 MDT: fresh strict SQL and flat
@@ -47,10 +63,15 @@ Plan5 FS-01 terminal paired result: Windows-data control reproduced0060 rename
 failure; fresh native Linux volume passed unchanged original staging65 checks.
 Storage profile verified for that slice, mechanism not independently isolated;
 fullmatrix/native65 startup unqualified. Sealed/released; passive data retained.
-Full RETRY-03 RUNNING since03:10:55 MDT under the sole heavy lease;
-MySQL canonical/history checks progressing; MariaDB/final accepting65 gates pending.
-Both accepting profiles and native component
-recipe repair are established; this is not full two-engine qualification.
+Full RETRY-03 terminal FAILED03:23:39 MDT, original session36854/exit1, frozen6bfa:
+MySQL first-half histories/native session faults passed; Maria canonical/staging/
+master nullable65 transitions passed but original65 refusal diagnostic failed at
+matrix570. Required "zone reset item" is absent from generic persistent-runner
+SQL/session error; actual SQL cause unresolved. No no-receipt/prefix checks after
+that refusal, remaining Maria routes/faults, final65 boot/tamper or contract write.
+All6906 source/private contracts unchanged. Independent6997-member/550562942-byte
+seal review passed; guarded matching global lease RELEASED, fresh exact-owned
+and passive-volume consumer inventories0/empty. No full two-engine qualification.
 
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
@@ -59,15 +80,15 @@ keeps its exact historical scope. Architecture work follows the first checkpoint
 ## Owners and source pins
 
 Human authorization verified directly in source chat `01a104b8-0bcd-7863-b720-a15cad96df41`:
-five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
+original "do it", superseding "go with the useful parts". Local model GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed/integrated recipe PASS and FS-01 profile; full matrix RETRY-03 live under verified lease |
-| Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean dc1cc3ddf; full RETRY-03 frozen6bfa RUNNING sole heavy lease; FS-01 sealed/RELEASED, restore queue retained |
-| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean f7228f3fe; ACC-03-RC original link failure preserved; RETRY-02 PASS_COMPONENT_ONLY/sealed/RELEASED frozen6bfa; runtime lease inactive |
-| Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reduced policy adopted; reviewed RETRY-03 failure/seal/release; narrow recipe handoff and focused refusal diagnostic queue |
+| Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean published521d04aa8; RETRY-03 frozen6bfa FAILED/sealed/RELEASED; prepare focused diagnostic without resources, restore queue retained |
+| World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
+| Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
 - Launch source: `6022c0ad7feab34c13e27738d4295b65b8d010ac`; only charter and plan pointer added.
@@ -79,37 +100,34 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
   cannot qualify current source.
 - Schema65 MySQL8/MariaDB10.11 fingerprints: null / null; qualification false.
 
-## Exclusive file leases
+## Current source ownership
 
-PRIMARY_ACK PENDING at published `54fef6421`; charter unchanged from
-`9d88a4668`, protected WIP/exclusions undisclosed.
-No elapsed-time or local observation substitutes for primary-authored published acknowledgment.
-The primary's `757c3f6fe` explicitly retains proposed leases pending direct
-authorization. The docs-only `9d88a4668` addresses RGitGoin / the remote Plans 1-4
-owner by name and requests any need for a private human instruction. Awareness
-and local clarification do not establish acceptance. No maintained worker edits.
+Published superseding policy `4d5bd2bdf` withdraws the unaccepted allocation;
+PRIMARY_ACK NOT_REQUIRED for that withdrawn proposal. Prior PENDING observations
+are historical facts, not a current blocker or renewed acknowledgment request.
+RGitGoin continues under existing source ownership; private WIP stays inaccessible.
+No WORLD/SHOP runtime edits were made or are newly authorized.
 
 | Owner | Paths | Status |
 | --- | --- | --- |
-| WORLD | `src/world/db.c`, `src/world/quest_mobile_native_birth.c`, its private header | PROPOSED; no maintained edits |
-| SHOP | `src/economy/shop_trade_transaction.c`, its private header, `src/sql/sql_player.c`, `src/flatfile/flatfile_item_repository.c`, its private header | PROPOSED; no maintained edits |
-| PRIMARY | save pipeline, critical coordinator, common item movement, shared headers/contracts, schema/registry/matrix, activation and all undelegated files | Retained |
-| PLAN5 | Established independent operator/audit/backup/restore paths | Retained; exact active slice pending handoff |
+| WORLD proposal | `src/world/db.c`, `src/world/quest_mobile_native_birth.c`, its private header; additional `src/world/quest.c` request | WITHDRAWN; parked, no maintained runtime edits |
+| SHOP proposal | `src/economy/shop_trade_transaction.c`, its private header, `src/sql/sql_player.c`, `src/flatfile/flatfile_item_repository.c`, its private header | WITHDRAWN; parked, no maintained runtime edits |
+| PRIMARY | Existing Plans1-4, all shared runtime/interfaces, former proposed domain paths, save/coordinator/item, headers/contracts, schema/registry/matrix, final integration | Retained; no workload-transfer ACK required |
+| PLAN5 | Established independent operator/audit/backup/restore paths | Retained; RETRY-03 terminal handoff and resource-free focused diagnostic preparation |
 | Orchestrator | This board; reviewed integration deliveries on own branch | Active docs lease; no runtime implementation lease |
 
-Primary acknowledgment request: publish exact accepted paths, source/result pin,
-protected WIP/pending edits/exclusions, and release or renewal rules in the charter.
-Primary remains sole writer of `experimental-accounting`; local owners push only
-their assigned helper branches. No additional sessions or subagents authorized.
+No further acknowledgment or runtime lease request for the withdrawn allocation.
+Primary retains final `experimental-accounting` integration; this chat publishes
+reviewed candidates on its own branch. No additional sessions/subagents authorized.
 
-Exact additional WORLD request: `src/world/quest.c` owns
+Preserved PRIMARY implementation requirement: `src/world/quest.c` owns
 `submit_native_quest_give` -> `quest_native_gameplay_owner::begin/pulse` ->
 `quest_native_completion_owner::prepare_original`, continuation restore/pair ACK
 and reward. Its flat preparation/phase2 refuses; SQL requires authentic runtime
 NPC/item/cash references and accepting authority. Proposed first genuine QP06:
-29262/29263/29264 -> 29237/C3000/E2500. Primary must acknowledge that additional
-path/source/WIP before WORLD edits it. Legacy inactive mini-world ACK runner
-does not qualify genuine native birth/admission.
+29262/29263/29264 -> 29237/C3000/E2500. This remains a primary implementation/
+acceptance requirement, not a WORLD dispatch. Legacy inactive mini-world ACK
+runner does not qualify genuine native birth/admission.
 
 Exact shared SHOP request remains PRIMARY-owned: `src/economy/economic_command_admission.c`
 and `.h` (real bounded schema2 SHOP selection; currently unavailable),
@@ -132,10 +150,10 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Both commissioning repairs verified, failures preserved/raw MySQL FP unqualified; unchanged full RETRY-03 RUNNING on frozen6bfa |
-| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Original link failure retained; three-provider recipe repair verified by18-TU ASan/UBSan component PASS/sealed/RELEASED; runtime acknowledgment still required |
-| ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
-| PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | RETRY-03 FAILED/sealed/RELEASED; diagnose exact original65 SQL refusal with fresh isolated focused controls before any meaningful-batch retry |
+| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
+| ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
+| PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
 
@@ -420,7 +438,8 @@ journey or32MiB whole-host/ABI/release qualification. All748 preexisting contain
 IDs/seven live services preserved; initial postcheck total-vs-running count error
 and correction logs retained separately, original failed seal unchanged.
 
-Full `ACC-02-schema65-RETRY-03` sole heavy lease RUNNING, source
+Full `ACC-02-schema65-RETRY-03` historical sole heavy lease, now terminal FAILED/
+sealed/RELEASED, source
 `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea`, fresh6906 files/archive SHA256
 `e035e193b73bd993d03b412b90c5673993fd216265874d7bc9fb728dd8699a85`.
 Orchestrator independently ran `--check-preparation`: PASS6906/zero resources;
@@ -453,12 +472,40 @@ Launch03:10:55 MDT; Plan5 clean preparation publication
 retained as `initial-running-lock.json`. Live MySQL CID
 `064e0e888f2ece37f884337d039f549cd83c4f595f0a8e1a96d5e7ad89552232`
 independently inspected: exact owner/job/source/image,512MiB/CPU1/restartno,
-fresh directDdata mount. Authoritative native exec session `36854` remains live;
-Plan5 reports canonical/staging/master transitions and reruns passed, expected
-wrong-selector refusals passed, authentic original65 routes progressing.
+fresh directDdata mount during execution. Authoritative native exec session
+`36854` reached actual terminal exit1 at03:23:39 MDT after653 transport calls.
+MySQL first-half histories/session-fault checks passed. Maria fresh canonical/
+staging/master nullable65 transitions and64 boot passed; original canonical65
+runner exit2 gave only a generic SQL/session diagnostic. Matrix570's required
+spaced "zone reset item" predicate FAILED; real SQL cause unproved. Recovery,
+no65-receipt/prefix checks after refusal, remaining Maria routes/faults, private
+contract write, final65 boot/tamper/report NOT_RUN. All6906/private contracts
+unchanged; both measured engine fingerprints remain unqualified.
 Historical refusal QA nonzero exits are maintained
-controls, not terminal matrix failure. MySQL first-engine history checks live;
-MariaDB/full accepting65 boot/tamper/result remains pending. No partial promotion.
+controls; do not confuse them with the actual matrix570 failure. No partial promotion.
+Seal SHA256 `9ccf2bb70b209c0b01f1d63b4d81ed0308239430e0876d10421b0eb31ec47359`,
+6997members/550562942bytes, independently all matched. Review SHA256
+`f494a08a75850a4356ed51a05fb4a59b323f75924842e15843bb7331b8a3b40d`
+at `D:/Dev/Tests/Duris/accounting-accel-integration/ACC-02-RETRY-03-review/terminal-review.json`.
+Matching actual global lock absent after guarded seal/release; exact-owned and
+fresh passive-volume consumer inventories0/empty, seven full unrelated service
+IDs still running. Preserve `plan5-acc02-retry03-be1b6ef31b-mariadb-data` and old
+FS-01 volume, no consumers; unsealed stopped daemon copies are private diagnostic
+scratch, not qualified backup/restore. Seal-helper failed12-vs64 ID comparison
+and existing-directory creation attempts retained/corrected before seal/release;
+native inputs/results/predicates unchanged. Report published Plan5
+`521d04aa81b89c48e419b02f3a4c096baccbbad6`:
+`PLAN5_SCHEMA65_ORIGINAL_REFUSAL_FAILURE_2026-10-11.md`.
+Next finite ticket `ACC-02-ORIGINAL65-DIAG-01`: Plan5 prepares outside the frozen
+source, candidate owned new `tests/async/test_schema65_original_refusal_diagnostic.py`.
+Restricted external mysql-client stderr tap; exact raw1644/45000/immutable-message
+evidence or retain genuine failure. Preserve original64 receipts/state/protected
+rows/no65 receipt, real nullable recovery/rerun/wrong selector and genuine killed
+session/different SQL error/unrelated45000 negatives. Fresh namespace/Linuxvolume,
+one512MiB Maria plus serial2GiB QA proposed only; preparation resource-free.
+Concrete helper/source/error bounds/controls/cleanup reviewed before new grant.
+No shared runner/matrix/migration edit, generic-error acceptance, qualified fields
+or full rerun authorized by this diagnostic queue.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
@@ -581,6 +628,14 @@ remain unreviewed/unqualified here; maintained migrations and matrix are
 unchanged from frozen a60. The primary's published object-compile reports do not
 qualify whole Item/ROOT selection, runtime/ABI, architecture or release.
 
-No primary acknowledgment accepted. No runtime worker implementation active.
-Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
-estimate, not measured. Re-estimate after current accepting SQL/startup evidence.
+No historical primary acknowledgment was accepted; that proposal and requirement
+are now WITHDRAWN/NOT_REQUIRED. No helper runtime implementation active. Both
+parked helpers retain their clean branches/completed handoffs; SHOP parked packet
+`D:/Dev/Tests/Duris/shop-01a129b4-a553/PARKED_HANDOFF_2026-10-11.md` SHA256
+`3d62254ec4477a3e03ee636c6f81641e45b962a610f2dccb7706f938775b04f8`.
+WORLD preserves published f722 report and original failure/seals on D:. Neither
+has an active Goal or owned resource job; no Goal completion inferred from parking.
+Historical3-6 more-day estimate remains low confidence and unvalidated; withdrawn
+25-40% implementation-speedup assumption is excluded. Evaluate completed gates
+and adopted repairs after current reviewed failure handoff/focused diagnosis;
+no unchanged blocker sweep or repeated full qualification job.
