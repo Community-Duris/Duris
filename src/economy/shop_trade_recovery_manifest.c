@@ -1569,3 +1569,566 @@ bool shop_trade_recovery_manifest_is_empty_source_frame_bytes(size_t *output) no
 	return false;
 #endif
 }
+
+#include "item/craft_recipe_continuation.h"
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+// PRIVATE exact standalone Forest3 descendants. Original algorithms unchanged.
+// Named current recipe primitives describe only matching selected declarations;
+// no recipe codec or manifest union is imported. Distinct actual occurrences
+// are conservative sums; no assertion of simultaneous physical peak.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+namespace forest_primitive = duris_craft_recipe_bounded_detail;
+using forest_byte_I = std::vector<uint8_t>::iterator;
+using forest_byte_CI = std::vector<uint8_t>::const_iterator;
+using forest_byte_J = const uint8_t *;
+using forest_byte_M = std::move_iterator<uint8_t *>;
+
+template <class T> constexpr size_t forest_default_source = 6 * sizeof(void *);
+template <class T> constexpr size_t forest_cleanup_source =
+	22 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool);
+template <class T> constexpr size_t forest_move_source =
+	40 * sizeof(void *) + sizeof(bool) + sizeof(std::true_type) + sizeof(std::vector<T>) +
+	sizeof(std::allocator<T>);
+template <class T> constexpr size_t forest_tail_source =
+	forest_move_source<T> + forest_cleanup_source<T> - 2 * sizeof(void *);
+
+template <class T> constexpr size_t forest_fresh_reserve_source =
+	forest_primitive::complete_recipe_vector_reserve_own_source<T> +
+	forest_primitive::complete_recipe_vector_max_size_source<T> +
+	forest_primitive::complete_recipe_vector_capacity_source<T> +
+	forest_primitive::complete_recipe_vector_size_source<T> +
+	forest_primitive::complete_recipe_vector_allocate_source<T> +
+	forest_primitive::complete_recipe_vector_mutable_allocator_source<T> +
+	// Fresh empty relocation: three4P+pointer-result bodies and three actual
+	// raw niter2P calls; countD0 excludes query/memmove branch. Old-null
+	// deallocate still has this,p,n, never descends to free.
+	21 * sizeof(void *) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t forest_fitting_byte_push_source =
+	forest_primitive::complete_recipe_vector_push_own_source<uint8_t> +
+	forest_primitive::complete_recipe_scalar_move_source<uint8_t> +
+	forest_primitive::complete_recipe_vector_emplace_own_source<uint8_t> +
+	forest_primitive::complete_recipe_scalar_forward_source<uint8_t> +
+	forest_primitive::complete_recipe_vector_single_construct_source<uint8_t> + sizeof(void *) +
+	sizeof(forest_byte_I) +
+	forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I> +
+	forest_primitive::complete_recipe_vector_back_own_source<uint8_t> +
+	forest_primitive::complete_recipe_normal_offset_own_source<forest_byte_I> +
+	forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I> +
+	forest_primitive::complete_recipe_normal_dereference_source<forest_byte_I>;
+
+template <class Output> constexpr size_t forest_digest_copy_source =
+	forest_primitive::complete_recipe_copy_projected_source<forest_byte_J, Output> +
+	2 * forest_primitive::complete_recipe_miter_argument_source<forest_byte_J> +
+	forest_primitive::complete_recipe_copy_projected_source<forest_byte_J, Output> +
+	2 * forest_primitive::complete_recipe_niter_graph_source<forest_byte_J> +
+	forest_primitive::complete_recipe_niter_graph_source<Output> +
+	forest_primitive::complete_recipe_raw_copy_a1_source<forest_byte_J, uint8_t *> +
+	forest_primitive::complete_recipe_raw_copy_a2_source<forest_byte_J, uint8_t *> +
+	forest_primitive::complete_recipe_byte_simple_copy_m_source +
+	forest_primitive::complete_recipe_std_constant_evaluated_source +
+	(std::is_pointer_v<Output> ?
+		 forest_primitive::complete_recipe_raw_niter_wrap_source :
+		 forest_primitive::complete_recipe_normal_niter_wrap_own_source<Output> +
+			 forest_primitive::complete_recipe_niter_graph_source<Output> +
+			 forest_primitive::complete_recipe_normal_offset_argument_source<Output> +
+			 forest_primitive::complete_recipe_normal_pointer_constructor_source<Output>);
+constexpr size_t forest_digest_uninitialized_copy_source =
+	forest_primitive::complete_recipe_uninitialized_copy_a_source<forest_byte_J, uint8_t *> +
+	forest_primitive::complete_recipe_std_internal_constant_evaluated_source +
+	forest_primitive::complete_recipe_uninitialized_copy_source<forest_byte_J, uint8_t *> +
+	forest_primitive::complete_recipe_uninitialized_copy_true_source<forest_byte_J, uint8_t *> +
+	forest_digest_copy_source<uint8_t *>;
+constexpr size_t forest_zero_move_copy_source =
+	forest_primitive::complete_recipe_copy_own_source<forest_byte_M, uint8_t *> +
+	2 * (forest_primitive::complete_recipe_move_miter_own_source<uint8_t> +
+	     forest_primitive::complete_recipe_move_iterator_base_source<uint8_t> +
+	     forest_primitive::complete_recipe_generic_miter_source<uint8_t *>)+forest_primitive::
+			complete_recipe_copy_move_a_own_source<uint8_t *, uint8_t *> +
+	3 * forest_primitive::complete_recipe_raw_niter_source<uint8_t> +
+	forest_primitive::complete_recipe_raw_copy_a1_source<uint8_t *, uint8_t *> +
+	forest_primitive::complete_recipe_raw_copy_a2_source<uint8_t *, uint8_t *> +
+	forest_primitive::complete_recipe_byte_simple_copy_m_source +
+	forest_primitive::complete_recipe_std_constant_evaluated_source +
+	forest_primitive::complete_recipe_raw_niter_wrap_source;
+constexpr size_t forest_zero_uninitialized_move_source =
+	forest_primitive::complete_recipe_uninitialized_move_own_source<uint8_t> +
+	2 * forest_primitive::complete_recipe_make_move_iterator_graph_source +
+	forest_primitive::complete_recipe_uninitialized_copy_a_source<forest_byte_M, uint8_t *> +
+	forest_primitive::complete_recipe_std_internal_constant_evaluated_source +
+	forest_primitive::complete_recipe_uninitialized_copy_source<forest_byte_M, uint8_t *> +
+	forest_primitive::complete_recipe_uninitialized_copy_true_source<forest_byte_M, uint8_t *> +
+	forest_zero_move_copy_source;
+constexpr size_t forest_digest_fitting_insert_source =
+	forest_primitive::complete_recipe_byte_insert_own_source<forest_byte_J> +
+	// range_insert this/oldfinish2P, position I, first/last/mid3J,n/after2N,F.
+	2 * sizeof(void *) + sizeof(forest_byte_I) + 3 * sizeof(forest_byte_J) +
+	2 * sizeof(size_t) + sizeof(std::forward_iterator_tag) +
+	forest_primitive::complete_recipe_byte_const_iterator_conversion_source +
+	forest_primitive::complete_recipe_normal_base_source<forest_byte_I> +
+	forest_primitive::complete_recipe_byte_cbegin_own_source +
+	forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_CI> +
+	forest_primitive::complete_recipe_normal_subtract_own_source<forest_byte_CI> +
+	2 * forest_primitive::complete_recipe_normal_base_source<forest_byte_CI> +
+	2 * (forest_primitive::complete_recipe_wire_begin_own_source +
+	     forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I> +
+	     forest_primitive::complete_recipe_normal_offset_argument_source<forest_byte_I> +
+	     forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I>)+
+		// Category returns RA, distinct from range_insert's sliced F parameter.
+		// No implicit trivial slicing callee; both real tag objects remain.
+		forest_primitive::complete_recipe_iterator_category_source<forest_byte_J> +
+	forest_primitive::complete_recipe_distance_own_source<forest_byte_J> +
+	forest_primitive::complete_recipe_ra_distance_own_source<forest_byte_J> + sizeof(void *) +
+	forest_primitive::complete_recipe_zero_advance_own_source<forest_byte_J> + sizeof(void *) +
+	forest_primitive::complete_recipe_ra_advance_own_source<forest_byte_J> +
+	// Raw pointer arithmetic has no iterator += callee. first!=last likewise
+	// primitive; digest32 positive, old-element move0 and final false-copy0.
+	forest_digest_uninitialized_copy_source + forest_zero_uninitialized_move_source +
+	forest_digest_copy_source<forest_byte_I> +
+	2 * forest_primitive::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	forest_primitive::complete_recipe_wire_end_own_source +
+	forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I> +
+	forest_primitive::complete_recipe_normal_subtract_own_source<forest_byte_I> +
+	3 * forest_primitive::complete_recipe_normal_base_source<forest_byte_I> +
+	// Caller end class survives I->CI conversion; digest begin/end are scalar
+	// declared array results, separately mapped by the enclosing codec.
+	forest_primitive::complete_recipe_wire_end_own_source +
+	forest_primitive::complete_recipe_normal_pointer_constructor_source<forest_byte_I>;
+
+constexpr size_t forest_uid_default_n_source =
+	// Actual standard allocator specialization ignores allocator, but owns
+	// allocator refP,first/result2P,nN. default_n owns first/result2P,nN,
+	// declared can_fillB and std::is_constant_evaluated resultB.
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) +
+	// addressof2P; runtime _Construct locationP/queryB/placement2P+N.
+	5 * sizeof(void *) + sizeof(bool) + sizeof(size_t) +
+	// fill_n3P+N,size_to_integer2N,fill_n_a3P+N+RA; category returned tag
+	// is that exact RA formal. fill_a3P, scalar fill_a1 three refs+pointees
+	// first/last/value3P plus genuine uint64 __tmp. No byte memset/query.
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(size_t) + 3 * sizeof(void *) +
+	sizeof(size_t) + sizeof(std::random_access_iterator_tag) + sizeof(void *) +
+	3 * sizeof(void *) + 3 * sizeof(void *) + sizeof(uint64_t);
+constexpr size_t forest_uid_empty_resize_source =
+	sizeof(void *) + sizeof(size_t) +
+	2 * forest_primitive::complete_recipe_vector_size_source<uint64_t> +
+	// Selected _M_default_append this/oldstart/oldfinish/newstart4P,n/size/
+	// navail/len4N. Nonrelocate __destroy_from and erase_at_end not selected.
+	4 * sizeof(void *) + 4 * sizeof(size_t) +
+	forest_primitive::complete_recipe_vector_size_source<uint64_t> +
+	2 * forest_primitive::complete_recipe_vector_max_size_source<uint64_t> +
+	forest_uid_default_n_source +
+	forest_primitive::complete_recipe_vector_check_len_own_source<uint64_t> +
+	4 * forest_primitive::complete_recipe_vector_size_source<uint64_t> +
+	2 * forest_primitive::complete_recipe_vector_max_size_source<uint64_t> +
+	forest_primitive::complete_recipe_size_max_source +
+	forest_primitive::complete_recipe_vector_allocate_source<uint64_t> +
+	forest_primitive::complete_recipe_vector_mutable_allocator_source<uint64_t> +
+	21 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	// Old allocation is null, so only _M_deallocate's actual2P+N.
+	2 * sizeof(void *) + sizeof(size_t);
+#endif
+} // namespace
+// PRIVATE exact binding_valid_bounded subtree. Conservative sums of distinct
+// selected occurrences are Source bounds, not simultaneous physical peaks.
+// Original fixed workspace/zero-array INLINE is admitted before construction;
+// no original partial library/sort/crypto margin is claimed as credit.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+using forest_sort_C = __gnu_cxx::__ops::_Iter_less_iter;
+using forest_sort_V = __gnu_cxx::__ops::_Val_less_iter;
+using forest_sort_IV = __gnu_cxx::__ops::_Iter_less_val;
+using forest_equal_E = __gnu_cxx::__ops::_Iter_equal_to_iter;
+using forest_uid_CI = std::vector<uint64_t>::const_iterator;
+constexpr size_t forest_array32_equal_source =
+	// array==,three begin/end+data,equal/aux/aux1,three raw niter,
+	// equal<true>,declared __memcmp and actual constant-evaluated query.
+	// Bare builtin memcmp contributes no invented declaration carriers.
+	34 * sizeof(void *) + 2 * sizeof(size_t) + 7 * sizeof(bool) + sizeof(int);
+constexpr size_t forest_binding_empty_source =
+	sizeof(void *) + sizeof(bool) +
+	// vector.empty and its two actual const iterator expression objects.
+	13 * sizeof(void *) + 2 * sizeof(forest_uid_CI) + 2 * sizeof(bool) +
+	forest_array32_equal_source;
+constexpr size_t forest_uid_copy_source =
+	// Actual const-normal input and raw-array output: count1 assign_one
+	// remains reachable. Class result destinations are actual parameters.
+	// Source begin/end and destination begin/data are included here.
+	8 * sizeof(forest_uid_CI) + 39 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(bool);
+constexpr size_t forest_uid_sort_source =
+	// Original4096 guard implies original depth2*floor(log2(count))+1<=25.
+	// No new runtime limit or raw-iterator wrapper is introduced.
+	25 * (3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(forest_sort_C)) +
+	// Public wrappers; genuine nonrecursive own scopes; bit depth-query;
+	// selected comparator/conversion scopes; eighteen scalar move sites;
+	// actual raw move_backward (including its reachable assign_one).
+	136 * sizeof(void *) + 12 * sizeof(std::ptrdiff_t) + 12 * sizeof(forest_sort_C) +
+	sizeof(forest_sort_V) + sizeof(forest_sort_IV) + 7 * sizeof(uint64_t) +
+	2 * sizeof(unsigned long) + 8 * sizeof(int) + 4 * sizeof(bool);
+constexpr size_t forest_uid_adjacent_source =
+	10 * sizeof(void *) + sizeof(forest_equal_E) + sizeof(bool);
+constexpr size_t forest_binding_array_access_source =
+	// Sort two raw begin/data occurrences; adjacent three; two genuine
+	// mutable subscripts. Copy destination begin/data is already above.
+	20 * sizeof(void *) + 2 * (2 * sizeof(void *) + sizeof(size_t));
+
+constexpr size_t forest_fixed_sha_init_source = sizeof(void *) + sizeof(int);
+constexpr size_t forest_fixed_sha_update_source =
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(uint32_t) + sizeof(int);
+constexpr size_t forest_fixed_sha_final_source = 3 * sizeof(void *) + sizeof(size_t) +
+						 sizeof(unsigned long) + sizeof(uint32_t) +
+						 sizeof(int);
+constexpr size_t forest_fixed_sha_assembly_envelope =
+	// Authenticated OpenSSL3.0.13 Linux AVX2 schedule/alignment/saved
+	// registers, temporary/red-zone pointer slot and incoming-return slot.
+	// Explicit assembly storage, not invented C helper signatures.
+	2 * 4 * 64 + 4 * sizeof(void *) + 6 * sizeof(uint64_t) + (1024 - 1) + 2 * sizeof(void *);
+constexpr size_t forest_fixed_sha_c_small_body =
+	29 * sizeof(uint32_t) + sizeof(int) + sizeof(void *);
+constexpr size_t forest_fixed_sha_c_normal_body =
+	27 * sizeof(uint32_t) + 2 * sizeof(int) + sizeof(void *);
+constexpr size_t forest_fixed_sha_block_source =
+	// Genuine declared block signature, independently of its body variant.
+	2 * sizeof(void *) + sizeof(size_t) +
+	std::max(forest_fixed_sha_assembly_envelope,
+		 std::max(forest_fixed_sha_c_small_body, forest_fixed_sha_c_normal_body));
+constexpr size_t forest_fixed_sha_source =
+	// Domain30 (including NUL),header11,list4: updates never process block.
+	// Final alone processes one block, then cleansing and eight-word output.
+	forest_fixed_sha_init_source + 3 * forest_fixed_sha_update_source +
+	forest_fixed_sha_final_source + forest_fixed_sha_block_source +
+	// Three real C memcpy declarations, Init/Final memset declarations,
+	// one cleanse declaration. External implementation/linked ABI OPEN.
+	3 * (3 * sizeof(void *) + sizeof(size_t)) +
+	2 * (2 * sizeof(void *) + sizeof(size_t) + sizeof(int)) + sizeof(void *) + sizeof(size_t);
+constexpr size_t forest_fixed_digest_own_source =
+	// span/role/count/out/reserve/context/outer/return plus constexpr
+	// parametersN and generated nontrivial plain workspace receiverP.
+	sizeof(std::span<const uint8_t>) + sizeof(shop_trade_recovery_forest_role) +
+	sizeof(uint32_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(size_t) +
+	sizeof(void *);
+constexpr size_t forest_fixed_digest_matched_source =
+	// Exactly original parameters literal; workspace stays child INLINE.
+	sizeof(std::span<const uint8_t>) + sizeof(shop_trade_recovery_forest_role) +
+	sizeof(uint32_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t forest_fixed_digest_source =
+	forest_fixed_digest_own_source +
+	// Genuine valid_role and array4->dynamic-span conversion; resulting
+	// span is the actual by-value digest parameter, not another S object.
+	sizeof(shop_trade_recovery_forest_role) + sizeof(bool) + 11 * sizeof(void *) +
+	2 * sizeof(size_t) +
+	// Five header subscripts,array data/size,three span size/extent,data.
+	23 * sizeof(void *) + 12 * sizeof(size_t) + forest_fixed_sha_source +
+	// Explicitly declared span destructor; no implicit extent destructor.
+	sizeof(void *);
+constexpr size_t forest_binding_own_source =
+	3 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) + sizeof(size_t) +
+	sizeof(bool) + sizeof(size_t) + sizeof(void *);
+constexpr size_t forest_binding_own_matched_source = 3 * sizeof(void *) +
+						     sizeof(shop_trade_recovery_forest_role) +
+						     sizeof(size_t) + sizeof(bool);
+constexpr size_t forest_binding_source =
+	forest_binding_own_source + forest_binding_empty_source + forest_array32_equal_source +
+	// Binding size accessor plus three lexical empty-list array size calls.
+	4 * (sizeof(void *) + sizeof(size_t)) + forest_uid_copy_source + forest_uid_sort_source +
+	forest_uid_adjacent_source + forest_binding_array_access_source +
+	forest_fixed_digest_source +
+	// Three actual admit sites: initial workspace,sort,fixed digest.
+	// Each current/request/reserve/context/return and numeric max result.
+	3 * (2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool));
+constexpr size_t forest_binding_matched_source =
+	forest_binding_own_matched_source + forest_fixed_digest_matched_source;
+static_assert(forest_binding_source >= forest_binding_matched_source);
+#endif
+} // namespace
+// PRIVATE exact standalone target composition. Work/candidate owner INLINE
+// remains in the unchanged child admission preceding its construction. None
+// exists before the first callback: standalone INITIAL=0. Genuine library
+// temporaries/parameters/results remain Source; no input/prior-output heap copy.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+constexpr size_t forest_add_admit_source =
+	// add(total-ref,bytes,bool), admit(current,request,reserve,context,bool),
+	// numeric_limits<size_t>::max real returned scalar once, storage bool.
+	3 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool);
+constexpr size_t forest_role_source = sizeof(shop_trade_recovery_forest_role) + sizeof(bool);
+constexpr size_t forest_shape_own_source = 3 * sizeof(void *) +
+					   sizeof(shop_trade_recovery_forest_role) +
+					   3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t forest_shape_own_matched_source =
+	// Original frames matches signature3P,role,outer/base2N,returnedB.
+	// Its own constexpr frames declaration remains genuinely new uncoveredN.
+	3 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t forest_shape_source = forest_shape_own_source + forest_role_source +
+				       forest_add_admit_source + forest_binding_source;
+constexpr size_t forest_shape_matched_source =
+	forest_shape_own_matched_source + forest_binding_matched_source;
+
+template <class T> constexpr size_t forest_append_own_source =
+	sizeof(void *) + 2 * sizeof(T) + sizeof(size_t) + sizeof(uint8_t);
+template <class T> constexpr size_t forest_read_own_source =
+	3 * sizeof(void *) + sizeof(T) + sizeof(size_t) + sizeof(bool);
+constexpr size_t forest_encode_own_source =
+	// binding/out/reserve/context/retained5P,catch-refP, role, outer,
+	// parameters/base/method_frames/requested/current/retained (7N total),
+	// UID range hidden reference/begin/end3P and real copied UID.
+	9 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) + 7 * sizeof(size_t) +
+	sizeof(uint64_t) + sizeof(bool);
+constexpr size_t forest_encode_own_matched_source =
+	// First persistent original parameters+base only. Late method/library
+	// allowances are preserved but deliberately unclaimed as credit.
+	5 * sizeof(void *) + sizeof(shop_trade_recovery_forest_role) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t forest_encode_source =
+	forest_encode_own_source + forest_add_admit_source + forest_shape_source +
+	forest_append_own_source<uint8_t> + forest_append_own_source<uint16_t> +
+	forest_append_own_source<uint32_t> + forest_append_own_source<uint64_t> +
+	forest_fitting_byte_push_source + forest_fresh_reserve_source<uint8_t> +
+	forest_digest_fitting_insert_source + forest_default_source<uint8_t> +
+	forest_tail_source<uint8_t> + 2 * sizeof(void *) +
+	// The const UID range methods: begin/end receivers2P, pointer ctor2P,
+	// deref2P,++2P,==2P+B,two actual base() occurrences4P. Their
+	// returned references coexist; hidden iterator objects are own3P above.
+	14 * sizeof(void *) + sizeof(bool) +
+	// UID size accessor P+N, const digest begin/end each begin/data4P.
+	sizeof(void *) + sizeof(size_t) + 8 * sizeof(void *);
+constexpr size_t forest_encode_matched_source =
+	forest_encode_own_matched_source + forest_shape_matched_source;
+
+constexpr size_t forest_decode_own_source =
+	// out/reserve/context/retained4P; cursor/end2P; mutable UID hidden
+	// range/begin/end/reference4P; catchP. span by-value is real parameter.
+	// outer/frames/base/current/retained5N; role/present2u8/countu16.
+	sizeof(std::span<const uint8_t>) + 11 * sizeof(void *) +
+	sizeof(shop_trade_recovery_forest_role) + 5 * sizeof(size_t) + 2 * sizeof(uint8_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t forest_decode_own_matched_source =
+	// Only literal original frames' named public signature and caller fields.
+	// Candidate owner INLINE is not silently renamed Source or subtracted.
+	sizeof(std::span<const uint8_t>) + 7 * sizeof(void *) +
+	sizeof(shop_trade_recovery_forest_role) + 4 * sizeof(size_t) + 2 * sizeof(uint8_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t forest_decode_source =
+	forest_decode_own_source + forest_add_admit_source + forest_role_source +
+	forest_shape_source + forest_read_own_source<uint8_t> + forest_read_own_source<uint16_t> +
+	forest_read_own_source<uint32_t> + forest_read_own_source<uint64_t> +
+	forest_uid_empty_resize_source +
+	// Actual UID capacity observations before/after resize and final result;
+	// this typed getter is not the byte encoder's reserve specialization.
+	forest_primitive::complete_recipe_vector_capacity_source<uint64_t> +
+	// Real plain forest default receiverP, nontrivial move3P,stdmove2P,
+	// cleanupP. Digest/scalar/array operations have no implicit trivial body.
+	7 * sizeof(void *) + forest_default_source<uint64_t> + forest_tail_source<uint64_t> +
+	// Mutable UID range methods14P+B: both actual base() returns coexist.
+	14 * sizeof(void *) + sizeof(bool) +
+	// span data2P, size/extent2P+2N; mutable digest sizeP+N and begin/data4P;
+	// fixed32 raw const-byte copy, no Num==1 or bare builtin callee frame.
+	9 * sizeof(void *) + 3 * sizeof(size_t) + forest_digest_copy_source<uint8_t *> +
+	// The actual by-value span has an explicitly declared defaulted dtor.
+	// Caller lvalue-copy construction remains at the external call site.
+	sizeof(void *);
+constexpr size_t forest_decode_matched_source =
+	forest_decode_own_matched_source + forest_shape_matched_source;
+static_assert(forest_shape_source >= forest_shape_matched_source);
+static_assert(forest_encode_source >= forest_encode_matched_source);
+static_assert(forest_decode_source >= forest_decode_matched_source);
+#endif
+}
+
+#endif
+
+bool shop_trade_recovery_forest_shape_valid_bounded_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_shape_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_shape_valid_bounded_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_shape_source - forest_shape_matched_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_shape_valid_bounded_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = 0;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_encode_bounded_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_encode_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_encode_bounded_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_encode_source - forest_encode_matched_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_encode_bounded_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = 0;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_decode_bounded_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_decode_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_decode_bounded_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = forest_decode_source - forest_decode_matched_source;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool shop_trade_recovery_forest_decode_bounded_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_manifest_source_supported())
+		return false;
+#if __cplusplus == 202002L && defined(__GNUG__) && !defined(__clang__) && defined(__linux__) &&    \
+	defined(__x86_64__) && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&              \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                          \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                               \
+	!defined(_GLIBCXX_PARALLEL) && !defined(__SANITIZE_ADDRESS__) &&                           \
+	!defined(__SANITIZE_THREAD__) && !defined(__SANITIZE_UNDEFINED__) &&                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && OPENSSL_VERSION_MINOR == 0 && OPENSSL_VERSION_PATCH == 13 && \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	*output = 0;
+	return true;
+#else
+	return false;
+#endif
+}
