@@ -3635,3 +3635,28 @@ exact published patch unchanged, no shared interface/schema/runtime/contract req
 Coherent primary schema route/stake/fullrestore/fullretention/erasure/nativeauthority/
 admission/recovery/gameplay/load/host/R1–R8/fullrelease OPEN; inactive/CLOSED/fullgoalACTIVE.
 Additive curator input/no primary/notebook adoption or qualifiedfield claim.
+
+## 2026-10-11 — Current original contract/release gate independently checked
+
+[Current release-gate audit](PLAN5_CURRENT_RELEASE_GATE_AUDIT_2026-10-11.md)
+executes unchanged validator/default and --release on exact primary9c871c875b7d794434e0f636515e3fb7caf44f78.
+Contracts0/14fixtures/931routes/2911occurrences; release1 exact writer-no-executable-
+evidence refusal. Source metadata:2853unique lexicalsites/allmapped, registrydraft/
+censusfalse/matrixfalse;795non-dormant/non-nonwriter rows,772noevidence/788noeligible
+coveragestate/791noall-backend evidence. Counts are declarations, not runtime failures.
+First source-derived row account.item_reward / primary#481 / summon_one: existing
+source/revision/receipt-before-publication invariant, evidence/coverage/backendfields
+and existing test candidates handed off; no shared changes or new schema requested.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/Plan5-current-release-check-9c871c875-20261011;
+result7c4559b504a40e52931f2f56bc6f795faabfc9069da91bccaf2c5276114c79f9;
+seal24235710ad9e000ae45729ca095f3985d7491a4adf39dd14881bdd9a63d47a66,
+3724files/141703264bytes,3709exactGit inputs unchanged. First collector41260
+terminal1/KeyErrorwrongmatrixkey preserved; correctedcollector33679 terminal0,
+one exact originalsource-check repeat to capture previously lost terminalcodes.
+No validator/assertion/input edits, native/DB/game/build/container/lease/production
+operation. Fullscope Work1–5/R6–R8 completion audited without substituting component
+passes; allfullacceptance gatesremainOPEN, inactive/CLOSED/fullgoalACTIVE.
+Producerbase02898093fa20cce30d48f057bce684dab7d9a98c; maintainedowned report+
+additivefollowup only, result/verifiedremote in delivery/publication.json afterpublish.
+Additivecuratorpacket/no primary/notebook adoption or route-relabeling claim.
