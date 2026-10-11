@@ -1,4 +1,5 @@
 {"version": 1, "tests": {
+  "test_ship_retry_budget.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":5,"purpose":"Production ship retry work is bounded and fair under full pools, storage failure and owner erasure."},
   "test_falling_world_exits.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":1,"purpose":"Authored chasm downward exits lead to their next depth and fall loops remain guarded."},
   "test_shop_list_extract_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.1,"purpose":"Shop iteration preserves the successor before extracting invalid stock."},
   "test_ship_save_failure_keeps_db_id.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Ship row identity across update failure and ambiguous insert commit replies."},

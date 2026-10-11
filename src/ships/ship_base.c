@@ -712,6 +712,7 @@ struct ShipData *new_ship(int m_class, bool /*npc*/)
 	CREATE(ship, ShipData, 1, MEM_TAG_SHIPDAT);
 
 	ship->db_id = -1;
+	ship->db_id_unconfirmed = false;
 	ship->shipobj = read_object(VOBJ_ALL_SHIPS, VIRTUAL);
 	if (ship->shipobj == NULL)
 	{
@@ -3551,22 +3552,28 @@ stored_ship_state place_stored_ship(const char *owner)
 void retry_unplaced_ships(void)
 {
 	static time_t next_try = 0;
+	static size_t next_owner = 0;
 	const time_t now = time(NULL);
 	if (unplaced_ship_owners.empty() || now < next_try)
 		return;
 	next_try = now + 60;
+	if (!count_free_ship_rooms())
+		return;
 
-	for (auto owner = unplaced_ship_owners.begin(); owner != unplaced_ship_owners.end();)
+	// Bound synchronous storage work per pulse and rotate past ships that still cannot fit.
+	for (size_t attempts = 0; attempts < 2 && !unplaced_ship_owners.empty(); ++attempts)
 	{
-		const stored_ship_state state = place_stored_ship(owner->c_str());
+		next_owner %= unplaced_ship_owners.size();
+		const std::string &owner = unplaced_ship_owners[next_owner];
+		const stored_ship_state state = place_stored_ship(owner.c_str());
 		if (state == stored_ship_state::placed || state == stored_ship_state::none)
 		{
-			logit(LOG_SHIP, "Unplaced ship of %s is %s.", owner->c_str(),
+			logit(LOG_SHIP, "Unplaced ship of %s is %s.", owner.c_str(),
 			      state == stored_ship_state::placed ? "now in the world" : "gone");
-			owner = unplaced_ship_owners.erase(owner);
+			unplaced_ship_owners.erase(unplaced_ship_owners.begin() + next_owner);
 		}
 		else
-			++owner;
+			++next_owner;
 	}
 }
 
