@@ -2,12 +2,20 @@
 
 ## Current accepting gate
 
-ACC-01 RUNNING: fresh strict SQL and flat production compile/link plus maintained inactive
-flat boot on frozen `6022c0ad7feab34c13e27738d4295b65b8d010ac`. ROSTER_READY
-received; exclusive heavy-job receipt acquired. SQL startup and
-schema/restore jobs must be sequenced with Plan 5; do not duplicate its mutable DB
-matrix. First checkpoint or exact failure/owner handoff target: within 12 hours
-of orchestrator creation (2026-10-11 00:43 MDT).
+ACC-01 terminal PASS at 2026-10-11 01:18 MDT: fresh strict SQL and flat
+production compile/link (789 objects each), maintained inactive flat boot/shutdown,
+and 10/10 runtime source-contract tests on frozen
+`6022c0ad7feab34c13e27738d4295b65b8d010ac`. Source unchanged; owned container
+absent, receipt RELEASED and original heavy lock removed. Detailed evidence:
+`ACC-01_COMBINED_BUILD_2026-10-11.md`. SQL mutable startup remains assigned to
+Plan 5; this checkpoint does not qualify that gate.
+
+ACC-02 GRANTED at 2026-10-11 01:22 MDT: Plan 5 owns the next exclusive heavy
+cohort, the maintained two-engine schema65 matrix on private frozen integration
+candidate `a60f5dcce0c6496e687a0806ee7d0c559579e4fb`. Native/migrations trees
+match ACC-01. At most two 512MiB databases and one serial 2GiB QA worker;
+no WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
+orchestrator creation at 00:43 MDT) met; SQL matrix result remains pending.
 
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
@@ -20,23 +28,30 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 running, frozen launch source |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published parser result `fcefe3a1e54d68694a2a3b573e09a53bb31d914c`; ACC-02 first after ACC-01/boundary receipt |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 schema65 GRANTED on frozen a60f5dcc; established audit/restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
 - Launch source: `6022c0ad7feab34c13e27738d4295b65b8d010ac`; only charter and plan pointer added.
-- Fresh published observation at 2026-10-11 00:44 MDT: launch source unchanged.
+- Fresh published observation after ACC-01 terminal: primary runtime delta
+  `757c3f6fe` plus launch-readiness identity clarification
+  `9d88a46684dfa40538a14a589b35e6a5b79c7abf`; review pending.
+  These newer bytes are outside frozen ACC-01 and ACC-02 evidence.
 - Previous combined executable checkpoint: `3049fb7712de7ccd957c61d5d345d2c8a4cf838d`;
   cannot qualify current source.
 - Schema65 MySQL8/MariaDB10.11 fingerprints: null / null; qualification false.
 
 ## Exclusive file leases
 
-PRIMARY_ACK PENDING at observed launch source; protected WIP/exclusions undisclosed.
+PRIMARY_ACK PENDING at published `9d88a4668`; protected WIP/exclusions undisclosed.
 No elapsed-time or local observation substitutes for primary-authored published acknowledgment.
+The primary's `757c3f6fe` explicitly retains proposed leases pending direct
+authorization. The docs-only `9d88a4668` addresses RGitGoin / the remote Plans 1-4
+owner by name and requests any need for a private human instruction. Awareness
+and local clarification do not establish acceptance. No maintained worker edits.
 
 | Owner | Paths | Status |
 | --- | --- | --- |
@@ -80,15 +95,15 @@ override availability or invent tokens/receipts for accepting tests.
 
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
-| ACC-01 | Both fresh production binaries, inactive flat preflight, applicable existing SQL startup result or exact assigned failure | ROSTER_READY; one exclusive heavy grant; current frozen source |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | PRIORITY after ACC-01 current binaries/boundary receipt; isolated databases; measured pins go to primary |
+| ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | GRANTED private a60f5dcc matrix first; isolated databases; measured pins go to primary, no pass yet |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
 
-Maintained ACC-01 commands (running):
+Maintained ACC-01 commands (terminal PASS):
 
 ```sh
 make -C /source/src -k -j2 PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production \
@@ -128,7 +143,7 @@ Explicit exclusive task receipt `ACC-01-lease.json` and `heavy-job.lock` acquire
 2026-10-11 00:49 MDT. Job `ACC-01-6022c0ad7`, attempt 2, disposable `duris-build-a`
 ID `cee234bd9277fda9fd5874c760509140cd86c754e6b69990ba4dbc105a2dffb7`, exact
 image above, read-only D source plus direct D bin/evidence/cache mounts, restart no,
-network none, CPU2/memory3GiB. GCC13.3.0 observed; strict production SQL compiling.
+network none, CPU2/memory3GiB. GCC13.3.0 observed; both strict production builds PASS.
 Attempt 1 failed before compiler: nested `/source/bin` mountpoint missing under
 read-only export. Failure receipt preserved; empty directory added, no source-byte
 or flag change; first lease released before retry. Scratch `/t` is private 128MiB
@@ -139,8 +154,22 @@ Receipt
 must identify owner chat, job, exact image/container, direct D mounts, purpose,
 start and release condition. Disposable jobs use foreground `--rm`, restart no,
 finally cleanup; release after evidence capture. Preserve unrelated services,
-volumes, recovery containers and all evidence. Active job releases in host finally
-after terminal result and exact-owned-container cleanup; workers have no heavy grant.
+volumes, recovery containers and all evidence. ACC-01 released in host finally
+after terminal result and exact-owned-container cleanup; seven unrelated services
+remain untouched. ACC-02 resource grant and matching exclusive lock bind Plan
+5/source a60f5dcc, reviewed wrapper SHA256
+`dbf53eeb1ddd56423da18b3f0621a5786d254f0a2c7e53ad33f872b6e11d8efb`,
+QA image above, MySQL image
+`sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b`
+and MariaDB image
+`sha256:ce66c7be32a03aabe7241d0a10993a2db827ef652a35d25727d92a832ac8ef73`.
+Grant SHA256 `f1dc01974c4fa592a0f7d5d7e1f1ac1dfc5dd9eada9360018fd669fb11e6afb8`.
+Measured free Windows memory exceeded 5.6GiB before granting the 3GiB cohort.
+Matrix evidence `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-a60f5dcc`; direct
+D build `D:/Dev/Builds/Duris/accounting-plan5/ACC-02-a60f5dcc/bin`, backend
+data/tmp and host scratch isolated under evidence. Release requires terminal
+sealed evidence and successful empty exact-owned container inventory; failed
+inventory keeps lease unresolved. WORLD/SHOP remain queued.
 
 ## Preserved retirement and handoffs
 
@@ -188,7 +217,11 @@ container (one existing named method, 1.359s, no skips); exact source/test hashe
 and result at `ACC-01/reader-posix`. Two explicit near-limit Linux audit-budget
 methods and native two-engine stake method remain NOT_RUN/required in Plan5 queue.
 Original audit definitions and fixtures preserved; no wholesale branch merge.
-PRIMARY registration request: append the four imported reader regression methods
+PRIMARY registration request: append
+`ReconciliationTests.test_cli_refuses_nonregular_snapshot_without_waiting`,
+`ReconciliationTests.test_snapshot_growth_after_size_check_cannot_bypass_byte_limit`,
+`ReconciliationTests.test_cli_rejects_duplicate_snapshot_fields_before_any_view`,
+`ReconciliationTests.test_cli_refuses_excessive_json_nesting_before_any_view`
 to applicable offline audit row without changing its existing controls/pins.
 No primary acknowledgment accepted. No runtime worker implementation active.
 Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
