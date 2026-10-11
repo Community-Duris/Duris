@@ -18,7 +18,33 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
-Latest qualified primary221f9e5ac / treec0ff2a2d68: passive original-logit profile
+Latest qualified primary7ad95475d / treee08adc3353: narrow Zone
+native-thread getter guard/formula repair. ACC-11 original registered run_test0/
+176.534540s, actual script/main passed, zero skips; four whole Coordinator
+production objects compile only and four whole Zone supported/assertions getter
+runs pass across SQL-header/flat. Default contracts0/19.770979s. Complete
+inverse verifies only guard/formula/comments; all931 policies/2911 census remain.
+Seal a79c8f085b3c013fed84e67e219da673ed70471b81093d55f8002b9d2d6b2e5f;
+review 4c471958315f72998e79fb98f9c1ac0a11b07174e31548d14bb9274da3dcd7b5.
+All3997 source inputs unchanged; sole2GiB/CPU1 QA removed/lease RELEASED, seven
+foreign services/four passive volumes preserved and heavy lock ABSENT. Raw Git
+pins503/504 retain the known adapter CRLF alias; current-base two-field patch
+d2d43bf1 gives504/504, apply/reverse0, other503 values preserved, unadopted.
+See `ZONE_NATIVE_THREAD_PROFILE_QUALIFICATION_2026-10-11.md`. Zone getters only;
+Coordinator runtime/callers, actual observers, full declaration/transitive/ABI/
+emitted-stack/32MiB/game/durability/restore/fullmatrix/release remain unproved.
+Two local preparation failures preserved/corrected before candidate or native
+input mutation; no native retry. Primary private packets remain report-only.
+
+Latest observed primary60463c342 / tree20f9ce838e: related Coordinator lending
+guard/formula/comments and one pin only; source-only inverse/policy review
+7e680de1b9ad9062f83c56e4f2f5a6c5fac102676e339272f6c53975076f1975,
+17-member seal dab690f510afd0156535f669fd125306e25d62a9f871c20df5a749c460082376.
+Same d2d43bf1 patch applies/reverses against604 exact metadata, candidate504/504,
+other503 values including newer Coordinator pin preserved. No604 native run,
+private getter/caller qualification or second heavy cohort; ACC11 remains7ad.
+
+Earlier qualified primary221f9e5ac / treec0ff2a2d68: passive original-logit profile
 batch. ACC-10 original registered run_test0/53.833357s, actual script/main passed,
 zero skips; six whole Utility production objects and four genuine supported/
 assertions getter runs pass across SQL-header/flat. Default source contracts0/
@@ -327,8 +353,9 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
 | ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; primaryc812928d2 adoption verified against all497 exact Git hashes, other496 pins preserved; registered main refusal unchanged |
 | ACC-09-REGISTERED-MAIN-01 | Exact published one-line adapter repair, actual eight-case regression plus original held-policy/Item entries and unchanged real TestResult/outcome checker | Parent control1 expected; repaired regression0/eight passed; held0/15.406566s, Item0/124.373742s; actual script/main both passed, original markers/zero skips/checker failures[]; sole1GiB QA removed/sealed/RELEASED; earlier97/7f refusals preserved |
-| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; current221f two-field raw-Git normalization, earlier c72 patch preserved | Current raw hashes501/502; candidate502/502, other501 values/policies/source unchanged, apply/reverse0; primary adoption pending, no behavior defect or acceptance waiver inferred |
+| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; same7ad patch separately qualified on current604 metadata, earlier c72/221f patches preserved | Current raw hashes503/504; candidate504/504, other503 values/policies/source and newer Coordinator pin unchanged, apply/reverse0; primary adoption pending, no behavior defect or acceptance waiver inferred |
 | ACC-10-ORIGINAL-LOGIT-01 | Exact permanent passive Utility regression through original registered run_test: six whole production objects, four genuine supported/assertions getter runs and default source contracts | Entry0/53.833357s, actual script/main passed, zero skips; contracts0/11.492060s; all3994 inputs unchanged, sole2GiB QA removed/sealed/RELEASED; component-only, no full server link/logit invocation/declaration completeness/ABI/host/release proof |
+| ACC-11-ZONE-NATIVE-PROFILE-01 | Exact new registered native-birth/Zone regression through original run_test: four whole Coordinator objects compile only, four whole Zone supported/assertions getter runs, default contracts | Entry0/176.534540s, actual script/main passed, zero skips; contracts0/19.770979s; all3997 inputs unchanged, sole2GiB QA removed/sealed/RELEASED; no Coordinator runtime/original observers/caller/declaration completeness/ABI/host/full accounting proof |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -852,7 +879,7 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-10: primary adoption of the exact current221f two-field
+Finite queue after ACC-11: primary adoption of the exact current604 two-field
 raw-Git adapter-pin normalization; actual same-root
 writer evidence and coherent0062/default65 restore route, with the existing
 source-only restore-coin three-provider packet; caller integration and native

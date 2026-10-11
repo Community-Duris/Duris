@@ -1,0 +1,22 @@
+--- a/docs/persistence/economy_accounting/writers.json
++++ b/docs/persistence/economy_accounting/writers.json
+@@ -66927,7 +66927,7 @@
+       "tests/async/item_transfer_complete_bounded_test.cpp": "176c8644449f19c450799b0bc4c7a3df9a4d145e2234c949a1dd60f13b1b24b2",
+       "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367",
+       "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878",
+-      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d",
++      "tests/run_test_entry.py": "31739c3dd193c48b1656f83c72208df66bf3453ee42c9578bdbc660639c07e4b",
+       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
+       "tests/regression_manifest.json": "cbecb543f0cdd33690cb3ab62fec622990cfd802139fe4e52da0119d938a19a7",
+       "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
+--- a/docs/persistence/economy_accounting/writer_coverage_matrix.json
++++ b/docs/persistence/economy_accounting/writer_coverage_matrix.json
+@@ -642,7 +642,7 @@
+       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
+       "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2",
+       "tests/regression_manifest.json": "cbecb543f0cdd33690cb3ab62fec622990cfd802139fe4e52da0119d938a19a7",
+-      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
++      "tests/run_test_entry.py": "31739c3dd193c48b1656f83c72208df66bf3453ee42c9578bdbc660639c07e4b"
+     },
+     "status": "source_integrated_unqualified"
+   },
