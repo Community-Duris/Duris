@@ -90,7 +90,11 @@ def main() -> None:
     assert "spell_component_retirement_save_effect(" in faerie_publish
     assert "operation_id, victim" in " ".join(faerie_publish.split())
     identity_source = source("character_identity.c").read_text(encoding="utf-8")
-    identity = identity_source[identity_source.index("static uint64_t next_runtime_id = 0;"):]
+    identity_start = identity_source.index("namespace\n{\nstruct runtime_identity_admission")
+    identity_end = identity_source.index('\n#include "core/prototypes.h"', identity_start)
+    identity = identity_source[identity_start:identity_end] + "\n" + identity_source[
+        identity_source.index("static uint64_t next_runtime_id = 0;"):
+    ]
     program = r'''
 #include <array>
 #include <cassert>
@@ -99,6 +103,8 @@ def main() -> None:
 #include <cstring>
 #include <cstdlib>
 #include <new>
+#include <memory>
+#include <type_traits>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -128,6 +134,8 @@ constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 16;
 P_char character_list = nullptr;
 static const auto game_thread = std::this_thread::get_id();
 bool nevent_require_game_thread(const char *) { return std::this_thread::get_id() == game_thread; }
+bool nevent_is_game_thread() { return std::this_thread::get_id() == game_thread; }
+bool character_runtime_identity_storage_bytes(size_t *) noexcept;
 void panic_corruption(const char *, const char *, ...) { std::abort(); }
 @IDENTITY@
 constexpr int LOG_FILE = 1;

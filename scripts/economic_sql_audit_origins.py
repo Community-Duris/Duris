@@ -889,6 +889,8 @@ def main() -> int:
         except pymysql.MySQLError as error:
             raise OriginError(f"SQL read failed with code {error.args[0]}") from error
         encoded = (json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        if len(encoded) > MAX_INPUT_BYTES:
+            raise OriginError("origin export exceeds audit input limit")
         descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "wb") as output:
             output.write(encoded)
