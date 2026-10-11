@@ -172,9 +172,24 @@ PRIMARY registration request: append
 to `plan5_recent_uid_scope` required_cases and arguments before `-v`; preserve
 all existing controls. Registry/matrix refresh remains PRIMARY-owned.
 Native/migration source bytes unchanged, so ACC-01 stays at its original freeze.
-Parser final patch
-depends on earlier bounded stream/duplicate-field reader absent from launch source;
-Plan5 asked for exact minimal dependency bundle. No wholesale branch merge reviewed.
+Reviewed minimal parser integration on `e153862c9`: Plan5 patch SHA256
+`dc40da057902e80ed0cb6a68407abb4c80e7bdc5c927d8e5e1691200446f80d9` ports only
+`os/stat`, main's bounded regular-file reader/duplicate-field decoder/recursion
+refusal, and four original regression methods. Historical dependencies:
+`0a16ba2187ecfc77b6306c0e3f9a3be5d85eeb4e`,
+`f7203b4c438b35da1f1d1fcf3267d3e740a65ada`, final fix `fcefe3a1e`;
+portable handoff published `25f23de1479769c37953c182906529db82eeb972`.
+Current whole module command
+`python -B tests/async/test_reconcile_economy_accounting.py -v` collects 153,
+passes 149, skips 4, zero failures/errors, 113.597s. Windows evidence:
+`D:/Dev/Tests/Duris/accounting-accel-integration/PLAN5-reader-integration`.
+The Windows POSIX FIFO skip passes separately on Linux in the current owned QA
+container (one existing named method, 1.359s, no skips); exact source/test hashes
+and result at `ACC-01/reader-posix`. Two explicit near-limit Linux audit-budget
+methods and native two-engine stake method remain NOT_RUN/required in Plan5 queue.
+Original audit definitions and fixtures preserved; no wholesale branch merge.
+PRIMARY registration request: append the four imported reader regression methods
+to applicable offline audit row without changing its existing controls/pins.
 No primary acknowledgment accepted. No runtime worker implementation active.
 Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
 estimate, not measured. Re-estimate after current accepting SQL/startup evidence.
