@@ -134,4 +134,44 @@ bool auction_command_encode_result_bounded(const auction_command_result &,
 					   bool (*)(size_t, void *) noexcept, void *, size_t,
 					   bool *budget_denied = nullptr) noexcept;
 
+// Additive complete fixed lower codec. Caller owns input, prior output and all
+// other retained state in outer. The unchanged v1/v2 decoder preserves its
+// original partial/strong output and error laws. No execution/admission authority.
+bool auction_command_decode_payload_fixed_bounded(const critical_command &,
+						  auction_command_payload *,
+						  bool (*)(size_t, void *) noexcept, void *, size_t,
+						  bool *budget_denied = nullptr) noexcept;
+bool auction_command_decode_payload_source_frame_bytes(size_t *) noexcept;
+bool auction_command_decode_payload_initial_inline_bytes(size_t *) noexcept;
+bool auction_command_decode_payload_source_supplement_frame_bytes(size_t *) noexcept;
+
+// Narrow pure source handoff for the original v1/base/encoder subgraph. It is
+// separate from the v1/v2 dispatcher to keep the actual profile graph acyclic.
+// Outputs are strong; the original code's uncovered supplement is not zero.
+bool auction_command_base_codec_source_parts(size_t *, size_t *, size_t *) noexcept;
+constexpr size_t auction_command_base_codec_source_query_frame_bytes() noexcept
+{
+	// Public parts3P+B; private parts3P+6N+B and policyB; two canonical
+	// account getters; actual CURRENT getter; checked add; copy getter N.
+	return 6 * sizeof(void *) + 6 * sizeof(size_t) + 3 * sizeof(bool) +
+	       2 * currency_account_key_source_query_frame_bytes() + sizeof(void *) + sizeof(bool) +
+	       sizeof(void *) + sizeof(size_t) + sizeof(bool) + sizeof(size_t);
+}
+constexpr size_t auction_command_native_parts_source_query_frame_bytes() noexcept
+{
+	// Public native parts3P+B; private parts3P+7N+B and policyB;
+	// actual base parts; two list source/entry queries; native checked add;
+	// uid-profile seven constexpr locals/return N, copy N and valid N.
+	return 6 * sizeof(void *) + 7 * sizeof(size_t) + 3 * sizeof(bool) +
+	       auction_command_base_codec_source_query_frame_bytes() +
+	       2 * (sizeof(void *) + 2 * sizeof(bool)) + sizeof(void *) + sizeof(size_t) +
+	       sizeof(bool) + 10 * sizeof(size_t);
+}
+constexpr size_t auction_command_decode_payload_source_query_frame_bytes() noexcept
+{
+	// Public getter P+3N+B; private fixed parts3P+3N+B and policyB;
+	// complete native/base query graph. The query's returned N is caller-owned.
+	return 4 * sizeof(void *) + 6 * sizeof(size_t) + 3 * sizeof(bool) +
+	       auction_command_native_parts_source_query_frame_bytes();
+}
 #endif
