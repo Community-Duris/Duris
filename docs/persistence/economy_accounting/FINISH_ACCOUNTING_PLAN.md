@@ -18740,3 +18740,13 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Schema65 lifecycle source integrated - 2026-10-10
 
 [Source integration](PLAN5_SCHEMA65_LIFECYCLE_PRIMARY_INTEGRATION_2026-10-10.md): completed Plan5 lifecycle3 slice now protects reset birth-origin evidence and includes original0065 in the default inventory. Independent current-delta review and Source metadata validators pass (231 tables, destruction disabled). Default64 remains valid; unmeasured65 correctly refuses. Existing lifecycle fixtures and native/combined qualification remain in the major-plan batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Correct quest cost mandatory constexpr Source allowance implemented - 2026-10-10
+
+[Source checkpoint](QUEST_COST_CONSTEXPR_SOURCE_CORRECTION_2026-10-10.md) Unsupported runtime callee result removed from mandatory constant evaluation; actual local and old allowances retained. Strict object passes both modes; selecting host qualification remains open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory479/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
