@@ -109,6 +109,10 @@ class shop_trade_original_procedure_binding_stage
 	friend class zone_reset_item_owner;
 	friend class quest_mobile_published_saved_forest;
 	friend int proclibObj_add(P_obj, char *, char *);
+	friend bool proclibObj_add_bounded(P_obj, char *, char *, int *, bool *,
+					   bool (*)(size_t *, void *) noexcept,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
 	friend P_obj instantiate_object_template(const object_template &);
 	struct binding
 	{
