@@ -619,7 +619,9 @@
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_reconcile_economy_accounting.py": "ba7cb643673bf445c625c243313ec4e498213d3a52e73d909cbad6ebbca3c9c9",
+      "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
+      "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
       "tests/integration_manifest.json": "f55167389e3778fa17fc55ba43bec2fe5709333ef33b73b5dfbf134ddc1e5c10"
     },
     "status": "source_integrated_unqualified"
