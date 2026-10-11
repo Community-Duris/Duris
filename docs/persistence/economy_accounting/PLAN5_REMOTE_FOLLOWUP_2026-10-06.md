@@ -3660,3 +3660,25 @@ passes; allfullacceptance gatesremainOPEN, inactive/CLOSED/fullgoalACTIVE.
 Producerbase02898093fa20cce30d48f057bce684dab7d9a98c; maintainedowned report+
 additivefollowup only, result/verifiedremote in delivery/publication.json afterpublish.
 Additivecuratorpacket/no primary/notebook adoption or route-relabeling claim.
+
+## 2026-10-11 — Existing restore-coin recipe exported as a narrow source handoff
+
+[Restore-coin recipe handoff](PLAN5_RESTORE_COIN_RECIPE_HANDOFF_2026-10-11.md)
+exports alreadypublished candidate5bc90a239c145d6719baa7b2756d9815cf676179 versus
+currentprimary9c871c875b7d794434e0f636515e3fb7caf44f78:12->15inputs, onlythree real
+provider entries. FullmoduleASTinverse/CPP/nativehelpers/allflags/allmethodassertions/
+bothnative+SQLbranches unchanged. No currentcompilerfailure/runtime/DBpass inferred;
+currentnative and fullmethod NOT_RUN, no newgrant/job/cache/container/source edit.
+Original fullselector RestoreCoinEffectsTests.test_native_coin_effects_both_modes_and_canonical_engines
+and coherent primary schema route remain required; childstillasserts0062/default65.
+No isolated prerequisite substitutes full acceptance, no headsubstitution/waiver.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/Plan5-restore-coin-recipe-handoff-9c871c875-20261011;
+receiptcbd73c7b8ea4fb9908448cb993ddb1a009a059cb127f28f6f148ca4f898f41ca;
+patch9e085d5d50b834e0c1a06ad85cf9c699945f277938c1d7f282843fc36d027ff9;
+candidateblobf46125cca129f6e94e9f8dbf876d9e75f353bd57/original3659eecf7126342d04f21cbc9bd3e1a71ef2a81e.
+Owned report+patch+additivefollowup only; existingtestsource untouched, no shared
+interface/schema/runtime/registry/contract change. Producerbase5bc90a239c145d6719baa7b2756d9815cf676179,
+result/verifiedremote in delivery/publication.json afterpublish. Additivecuratorinput/
+no primary/notebook adoption. FullPlan5/R8/nativeallholding/UID/realjourneys/bothbackend/
+schema/restore/retention/erasure/fault/load/recovery/release OPEN, inactive/CLOSED/fullgoalACTIVE.
