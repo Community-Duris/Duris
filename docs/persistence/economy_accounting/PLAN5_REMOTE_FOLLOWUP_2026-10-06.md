@@ -3704,3 +3704,22 @@ delivery receipt after publication. QA absent, exact image/grant/release/D mount
 verified,7unrelated IDs preserved; reviewer resources0. No SQL service/journal/locks/
 host/coldrestore/fullrelease inference or retrospective acceptance. Additive curator
 input/no primary/notebook adoption; full Plan5/R6–R8 OPEN, inactive/CLOSED/fullgoalACTIVE.
+
+## 2026-10-11 — Retain both named held-policy acceptance cases
+
+Coordinator f280cebb99515cea2bc53ccc9a1a62d349905a93 explicitly requests genuine
+main outcome evidence while retaining required_cases=[script,main]. Corrected
+[independent handoff](PLAN5_HELD_POLICY_ACCEPTANCE_REVIEW_2026-10-11.md) withdraws
+the initial optional [script] metadata suggestion and preserves the complete
+named acceptance contract. Existing receipt case fields/id/status/elapsed/evidence,
+called/complete, both modes/markers/assertions and original negative rejection
+behavior remain required; shared entry adapter and runner tests are primary-owned.
+No fabricated passed-main case, acceptance deletion, shared change or native rerun.
+
+Original native0/outercollector1/independent missing-main rejection, review6f0dee3f,
+sealbae974ab and initial77dec0864 publication stay immutable. Coordinator imported
+only the source-only restore-coin report+patch at f280; test-module adoption/native/
+database qualification not inferred. Corrected handoff base77dec0864f6b16e2178123c61bec06650e1852a4,
+result/remote in separate delivery/handoff-correction-publication.json afterward.
+Curator-ready correction; primary/notebook adoption unconfirmed, resources0,
+full Plan5/R6–R8/release OPEN and accounting inactive/CLOSED/fullgoalACTIVE.

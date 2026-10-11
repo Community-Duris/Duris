@@ -11,8 +11,12 @@ case, shared edit or full durability/release claim is made by this review.
 
 - Plan5 branch/remote: `codex/accounting-plan5`; clean owned worktree
   `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`.
-- Producer base: `e9225b07ba745cc7d73961b9d018f39ad7e723c7`; result/remote
-  identities are bound after publication in the separate delivery receipt.
+- Initial review publication: base `e9225b07ba745cc7d73961b9d018f39ad7e723c7`
+  to result `77dec0864f6b16e2178123c61bec06650e1852a4`.
+- Corrected handoff base: `77dec0864f6b16e2178123c61bec06650e1852a4`;
+  result/remote identities are bound afterward in the separate
+  `delivery/handoff-correction-publication.json`. The original review,
+  publication receipt and native evidence remain immutable.
 - Native source: `97ded8571375f3fdc6168487a13120f65caedbec`, tree
   `0ae109dc0c8daa3f35ebd988f0d35995e089278e`.
 - Original native owner: coordinator chat
@@ -99,19 +103,30 @@ Invariant: every required case must be in the original `cases` receipt with
 status passed. `called=[main]` alone must not be promoted to a passed case.
 
 The original adapter at lines157–168 rejects an uncalled declared `main`, then
-emits `script` and only invoked `test_*` function outcomes. A narrow compatible
-primary decision is to register `required_cases=[script]` for this entry while
-preserving original mode, mandatory actual `main` invocation, both mode
-assertions, and both required markers. This is a request for primary review of
-one existing metadata field, not an independently applied shared change.
-An alternative source decision must preserve the same real acceptance scope.
+emits `script` and only invoked `test_*` function outcomes. The coordinator's
+published `f280cebb99515cea2bc53ccc9a1a62d349905a93` handoff explicitly retains
+both named cases. This corrected request therefore preserves
+`required_cases=[script,main]`, original mode, both mode assertions and markers.
+The initial report's optional `[script]` registration suggestion is withdrawn;
+it is not the source adoption request and must not bypass the named contract.
+
+Primary owns the shared source decision in `tests/run_test_entry.py` and any
+associated runner tests. Existing receipt fields `cases[].id`, `status`,
+`elapsed` and `evidence` must describe genuinely observed `main` invocation and
+outcome under the original registered entry. Retain actual `called`, `complete`,
+the `script` case, native assertions and existing rejection behavior. A raw
+`called=[main]` entry must not be copied into a fabricated passed case. No new
+receipt schema, runtime interface or migration field is requested.
 
 Validation must bind the adopted exact source, unchanged original registered
 entry, actual complete/called receipt, both mode markers and unchanged
 acceptance checker. Check that missing invocation, failing native execution,
-missing mode evidence or skipped required work still rejects acceptance.
+missing mode evidence or skipped required work still rejects acceptance, and
+that both named cases have actual successful outcome evidence. A collector
+adapter must use the real original `TestResult`, including `skipped_checks`;
+fixing the result shape alone does not solve missing `main` evidence.
 The old native pass, collector exception and registration rejection remain
-immutable; a corrected row is not retroactive acceptance of the old row.
+immutable; corrected source is not retroactive acceptance of the old receipt.
 No new schema or runtime interface fields are requested.
 
 ## Resource closure and remaining gates
@@ -125,7 +140,9 @@ cleanup retains all four passive volumes without consumers. Plan5 started0
 containers/jobs/databases and acquired no resource lease for this review.
 
 The independent report is additive curator input; primary/notebook adoption is
-unconfirmed. The restore-coin three-provider packet remains separately pinned;
+unconfirmed. The coordinator has published the source-only restore-coin report
+and patch in `f280cebb99515cea2bc53ccc9a1a62d349905a93`; that does not adopt the
+candidate test module or establish native/DB qualification. That packet remains separately pinned;
 current full native/SQL restore and coherent0062/default65 route remain open.
 Real native holdings/UID authority, all-writer qualification, both-engine
 durability, backup/restore, retention, erasure, gameplay, faults, recovery,
