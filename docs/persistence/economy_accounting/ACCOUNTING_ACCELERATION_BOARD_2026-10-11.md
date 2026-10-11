@@ -114,6 +114,21 @@ live service IDs preserved and matching global lease RELEASED/lock absent.
 Historical skipped budget cases remain historical; this is their first exact
 explicit Linux component qualification, without summing old full-suite counts.
 
+ACC-06-RETENTION-LINK-01 terminal PASS_LINK_STRUCTURAL_COMPONENT_ONLY
+11:41:55Z, original session36030/native/foreground/outer0, frozen primary055
+plus exactly three provider entries. Original11-TU SQL link fails1 with11
+distinct symbols exclusively from the three omitted provider families; original
+flat NOT_RUN after that SQL failure. Candidate14-TU original SQL/flat builds and
+PID7 runtimes pass ASan/UBSan with unchanged C++, flags and assertions. Independent
+decoding verifies four256-byte EAI1/EAP1 blocks/two zero-effect roots per backend,
+actor/source-event/digest/operation chain and identical1040-byte streams;
+foreground412.031s. Independent1472-member/72752094-byte seal and separate build
+artifacts verified; source1427/candidate/helpers unchanged. Exact-owned0, four
+passive volumes unchanged/consumer-free, seven unrelated full live IDs preserved;
+matching lease RELEASED11:42:14Z/global lock absent. Reviewed narrow recipe and
+linked reports imported from Plan5 `02898093fa20cce30d48f057bce684dab7d9a98c`.
+Full retention/schema/deletion/claims/database/game/host/release remain unqualified.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -125,9 +140,9 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed diagnostic and ACC-05 component PASS/seals/releases; exact qualified evidence and diagnostic/recipe handoffs for primary; no active resource grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed ACC-05 and ACC-06 component PASS/seals/releases; exact qualified evidence and narrow recipe handoffs for primary; newer9c871 source observation only, no active grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedbea3c44ee terminal ACC-05 report; original two Linux budget methods PASS/sealed/RELEASED on primary055; ACC-06 retention-fixture link preparation approved resource-free, no new grant; restore/native SQL preconditions retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published02898093f terminal ACC-06 report; original linker defect/exact+3 repair SQL+flat structural fixture PASS on frozen055, sealed/RELEASED; prior ACC-05 preserved; finite wait, no next native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -195,7 +210,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
 | ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
-| ACC-06-RETENTION-LINK-01 | Original current-primary11-TU native_fixture actual link outcome; only after the expected missing-provider failure, exact +3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Established Plan5 resource-free preparation approved on primary055; broad219-insertion/25-deletion owned retention changes excluded; no native grant/result yet; no DB/game/full-retention qualification |
+| ACC-06-RETENTION-LINK-01 | Original11-TU native_fixture actual SQL link failure followed by exact+3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Terminal session36030/exit0 on frozen055+3; originalSQL1/11symbols/originalflat NOT_RUN, both candidate builds/runtimes/decode/bytes PASS_LINK_STRUCTURAL_COMPONENT_ONLY; independently1472-member seal verified/RELEASED; reviewed narrow repair imported, broad Plan5 work excluded; no full retention or newer9c871 proof |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -674,20 +689,34 @@ bin/tests/plan5-price-view-sql; any future build must bind the corresponding
 task-specific D bin directly. No new build/SQL run now, and no full matrix repeat
 on the unchanged failed source. Wait for a meaningful repaired primary batch.
 
-One independent prerequisite is selected while shared schema routes remain
-pending: ACC-06-RETENTION-LINK-01. Freeze the original current-primary retention
-module/native source and actual independent reader/decoder inputs. Establish its
-original11-TU native_fixture link result, then qualify only three real providers
-if that exact missing-definition failure occurs. Candidate diff must add only
-lockpick_retirement_continuation.c/native_quest_cost.c/native_quest_coin_give.c;
-preserve original embedded C++, assertions, compile flags and broader Plan5 WIP.
-Both repaired SQL/flat ASan/UBSan binaries must execute and agree on the original
-four EAI1/EAP1 frames with original actor/digest checks and independent decoding.
-Zero-effect structural prerequisite only: no deletion, database, gameplay,
-claims, full retention journey, current-schema or release-host authority. Full
-original journey also asserts head61 and still needs primary-owned coherent
-schema-route choice. Fresh direct D build mounts and exclusive reviewed QA-only
-receipt required; preparation approved resource-free, no native job/grant yet.
+The independent ACC-06-RETENTION-LINK-01 prerequisite is completed. Preparation
+report `PLAN5_RETENTION_LINK_PREPARATION_2026-10-11.md` preserves its historical
+NOT_RUN and import-helper KeyError/correction. Terminal report
+`PLAN5_RETENTION_LINK_NATIVE_QUALIFICATION_2026-10-11.md` records actual original
+SQLred/candidate SQL+flat positive, original flat NOT_RUN and all proof limits.
+Apply only `patches/PLAN5_RETENTION_FIXTURE_THREE_PROVIDERS_2026-10-11.patch` to
+the matching primary retention module, adding
+lockpick_retirement_continuation.c/native_quest_cost.c/native_quest_coin_give.c.
+Original module SHA52846af18be2d42e43c28509104d225a42c5ee3a67da3b1d23e8c3bf0399e91f;
+reviewed result SHA3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878;
+patch SHA798921bab0d5ace50a01c3cb5afecad027c53223e68ba31951d5f03848a9e6ed.
+Original embedded C++, assertions, compile flags, all other bodies and broader
+Plan5 WIP remain preserved. Producer02898093f publishes reports only; this
+candidate adds just those two source-list lines plus linked reports/board.
+
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/ACC-06-RETENTION-LINK-01`:
+seal70e15b05d9f54ca0c29aca75b376fd0a68aed74af10c75074bfe13509ccc16cd;
+independent review `D:/Dev/Tests/Duris/accounting-accel-integration/ACC-06-RETENTION-LINK-01-review/terminal-review.json`
+SHAf50e5dc5c0182d1c01a506df566ff3eb1bc5afbd8a7f4f95c0163e68aed29e61.
+Sole foreground QA pinned74b6999/2GiB/CPU2 used original180s/candidate360s
+build bounds/20s runtimes/outer600s and eight exact direct D mounts, then was
+removed. Global lock released; no next grant/cohort or parked helper dispatch.
+Zero-effect structural proof only. Full original retention journey asserts
+head61 and still needs a coherent primary-owned route. Registry/matrix source
+pin adoption stays PRIMARY-owned; no head substitution, waiver or current
+combined-checkout qualification. Finite queue is primary adoption/coherent
+schema/stake/restore acceptance and a meaningful owned next executable slice;
+wait while those prerequisites remain unchanged.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
@@ -827,6 +856,22 @@ pending. No broad gameplay/recovery/architecture/32MiB/release acceptance inferr
 Observation `D:/Dev/Tests/Duris/accounting-accel-integration/primary-observation-0555741d7.json`
 SHA256708ae16de790e19ead5d4caca859bb38a7e1e8bdb868b35e8aff9d65c9f29e43
 binds all12 actual current-primary input hashes to the frozen diagnostic.
+
+New published primary `9c871c875b7d794434e0f636515e3fb7caf44f78` appends3181
+C/119 header lines for Cost and six fee/money Source providers. Bounded source
+observation verifies exact original C/header prefixes/closing guard, only two
+updated source hashes and all other writer/matrix fields unchanged. Seven new
+bounded public APIs have source references only within that additive C/H module.
+Primary reports full SQL/flat production links and four unsupported-profile
+objects on a private mixed snapshot including unadopted HRT; private evidence
+not independently qualified here. No selecting-caller/whole Item/transitive
+storage/32MiB/runtime/game/host/release proof inferred or runtime imported.
+All12 diagnostic inputs and the original retention module stay unchanged, but
+item_transfer_command.c changes one of ACC-06's actual native inputs. ACC-06
+therefore remains proof on055+3 only; it does not qualify newer9c871. Observation
+`D:/Dev/Tests/Duris/accounting-accel-integration/primary-observation-9c871c875.json`
+SHA70d28e752b9018a8072b42d608cc1c9aebc2485e3fc3bc1cf66104793b366e47.
+No per-commit full build/matrix repeat or renewed runtime delegation request.
 
 No historical primary acknowledgment was accepted; that proposal and requirement
 are now WITHDRAWN/NOT_REQUIRED. No helper runtime implementation active. Both
