@@ -3607,3 +3607,31 @@ Subsequent distinct coordinator grant SHA1f0685f6639e38e3d1bf5e2f57cc643ab6ed5da
 initialGRANTEDlock eb214047c3fb6379bea122b29083d8060c1b4c0300f49eb2f8dbd750334dd55b;
 review1bc5779484bd6d0c30f5770ec13ed94f24a9b676cea0587fe04d0f3258809d44.
 No native execution yet; preparation publication first, terminal result separate.
+
+## 2026-10-11 — Original retention link red/green component qualified and released
+
+[ACC-06 native qualification](PLAN5_RETENTION_LINK_NATIVE_QUALIFICATION_2026-10-11.md)
+records actual session36030 terminal0 on exact primary0555741d740cf028552fcf63973265bfbcda052c.
+OriginalSQLlink1/11distinct undefined symbols/three real provider families;
+originalflat NOT_RUN after originalSQLfailure. Exact+3candidate both original
+ASan/UBSan SQL/flat builds0/runtimes0/4originalframes perbackend/2zeroeffectroots,
+independent digest/actor/PID/metadata/chain/zero-count decoding PASS, byteagreement.
+No native/source retry or broad owned fixture import. Complete link repair only,
+not fullretention/deletion/claims/DB/game/schema/nativeauthority/release proof.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-06-RETENTION-LINK-01;
+seal70e15b05d9f54ca0c29aca75b376fd0a68aed74af10c75074bfe13509ccc16cd,
+1472files/72752094bytes plus exactDbuildartifacts;
+qualification369b37693b1a2d5e33f292ddada22b1314c4aae9fdcd74fe0b31758e29a52ec8.
+Bothbinaries3c01a9bb7a0d9bc7e2d8d6064b603e8f2b182a81ed33d86c37bb797bd0d710c5;
+1040byteframe streams908254540ef02aad6f815f467deece34b98cc672726de54c19fb071575422963.
+All1427originalinputs/candidate/helpers unchanged, exactowned0/QA--rmgone,
+four passivevolumes unchanged consumers0/all7liveIDs preserved, guarded
+matching leaseRELEASED/globalabsent. No unresolved cleanup/resource blocker.
+Preparation basebea3->published3b863dba809c7064b096b7e293bda98c70cc0ed1;
+terminalreport base3b863dba809c7064b096b7e293bda98c70cc0ed1, result/remote
+in newdelivery/result.json afterpublication. Owned report/additivefollowup only;
+exact published patch unchanged, no shared interface/schema/runtime/contract request.
+Coherent primary schema route/stake/fullrestore/fullretention/erasure/nativeauthority/
+admission/recovery/gameplay/load/host/R1–R8/fullrelease OPEN; inactive/CLOSED/fullgoalACTIVE.
+Additive curator input/no primary/notebook adoption or qualifiedfield claim.
