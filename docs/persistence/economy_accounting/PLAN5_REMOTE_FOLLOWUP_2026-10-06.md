@@ -3528,3 +3528,26 @@ Only report+additive followup maintained, all seven historical ancestors retaine
 Current65 matrix/startup/tamper/contract, restore/retention/erasure, native authority,
 recovery/host/gameplay/load/R1–R8/fullrelease remain OPEN; inactive/CLOSED/fullgoal
 ACTIVE. Additive curator input/no notebook import or release completion claim.
+
+## 2026-10-11 — ACC-05 selected decoder dependency corrected before native grant
+
+[Dependency correction](PLAN5_AUDIT_BUDGET_DEPENDENCY_CORRECTION_2026-10-11.md)
+supersedes initial three-file dependency closure. Actual preserved small price
+audit refuses at reader186 without economic_restore_evidence. Four-file source
+adds exact current-primary055 decoderbb927db1a509d377e9930b264534665f38bd88ebbbee5672075db7267ad6f0bc;
+small price/mapping audits exit0, originalplansverified1 each/input unchanged,
+only reader/decoder loaded/no deferred SQL. These are resource-free dependency
+probes, not budget/CLI/native acceptance. Prior preparation/publication/failure,
+own enumeration-guard failure and metadata count correction are preserved.
+
+Final prep6f5189db7e1bab5c101d4c669cf2b5e997b9c02b86c58c83ec8e6b0c0e9721bb,
+transportb3303bd954ec8d07bd390d3395c67948960bfe400039b28bc0ca14fac8e7985e,
+sealhelper414b71eb0d505900347d46efdfdac5b70368780337e2530a8b293e58542fe502,
+proof3604d849198dbfd95f10842919e354cb6fb1250814f1db6b49dfb997c2316854.
+Check-only reports4/exit0; missinggrantrefuses1; budget methods NOT_RUN/zero resources.
+Original native selectors/assertions/fresh-child measurement/limits/image/mounts
+unchanged; reviewed distinct grant/lease still required. Producer base30ea24a588a5a331bb8a8fb002ae852990f9a779,
+result/remote in delivery/preparation-publication.v2.json. New correction report+
+additive followup only; no shared interface/schema request. Full Plan5/current65/
+restore/retention/erasure/authority/host/recovery/load/R1–R8/release remain OPEN,
+inactive/CLOSED/fullgoalACTIVE. Additive curator input/no notebook import claim.
