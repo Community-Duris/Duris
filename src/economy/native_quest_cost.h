@@ -80,4 +80,63 @@ native_quest_cost_projection_result native_quest_cost_projection_decode_bounded(
 	std::span<const uint8_t>, native_quest_cost_projection *, bool (*)(size_t, void *) noexcept,
 	void *, size_t) noexcept;
 
+// Actual original project/encode/decode call cost_bound_initial before creating
+// their private projection/vector/controller owners. The full SOURCE query
+// separately admits pre-callback scalar/call scopes; initial owner inline is
+// therefore zero, not the mixed original frames allowance or a cached baseline.
+bool native_quest_cost_project_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_project_initial_query_frame_bytes() noexcept
+{
+	// Getter output parameter and returned bool; scalar result is caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_quest_cost_projection_encode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_projection_encode_initial_query_frame_bytes() noexcept
+{
+	// Getter output parameter and returned bool; scalar result is caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_quest_cost_projection_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_projection_decode_initial_query_frame_bytes() noexcept
+{
+	// Getter output parameter and returned bool; scalar result is caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+
+// Complete Source of the matching original *_bounded runtime only.
+// Full is used for transient pre-entry admission. Supplement is the
+// conservative complete retained residual after exact persistent original
+// Source credits in those bounded frames become live. Unknown callback
+// bodies, captures, caller input/prior output and host-library emitted
+// correspondence remain caller/qualification obligations.
+// Initial owner INLINE remains zero before cost_bound_initial. Original
+// initial and prefix already own the real cost_bound_budget INLINE;
+// decode additionally owns its uint32 materialized bit_cast argument.
+// External lvalue-to-value span copying belongs the actual caller Source.
+// Verify constructs its requirement span prvalue directly into the project
+// formal; pointer/count construction is included, no intervening copy.
+// Explicit span destruction is included; no implicit trivial extent dtor.
+// Do not retain full and supplement together or infer callsite selection
+// from these scalar exports. All refusals preserve scalar output.
+bool native_quest_cost_project_source_frame_bytes(size_t *) noexcept;
+bool native_quest_cost_project_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_project_source_query_frame_bytes() noexcept
+{
+	// Direct getter output parameter and bool; returned size_t caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_quest_cost_projection_encode_source_frame_bytes(size_t *) noexcept;
+bool native_quest_cost_projection_encode_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_projection_encode_source_query_frame_bytes() noexcept
+{
+	// Direct getter output parameter and bool; returned size_t caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_quest_cost_projection_decode_source_frame_bytes(size_t *) noexcept;
+bool native_quest_cost_projection_decode_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t native_quest_cost_projection_decode_source_query_frame_bytes() noexcept
+{
+	// Direct getter output parameter and bool; returned size_t caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
 #endif
