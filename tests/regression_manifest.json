@@ -8674,6 +8674,19 @@
         "native-compiler"
       ],
       "purpose": "Three genuine final Quest cost/admission and selected-list profiles, original wire/refusal/cap/capacity/strong-output checks, whole production Quest/Item objects and current selectors. Component only; earlier preparation, builder, full producer and service/release gates remain open."
+    },
+    "test_currency_command_build_bounded.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "timeout_seconds": 5400,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Two ordinary whole currency production objects and four genuine currency/critical provider component runs across supported/assertions and both header backends; original136 wire equivalence, transient Source/INITIAL partition, every actual reserve ordinal denial, old-output/capacity preservation and defensive refusal. Codec prerequisite only; original ATM, shared authority and release remain open.",
+      "seconds": 27.78468362300191
     }
   }
 }
