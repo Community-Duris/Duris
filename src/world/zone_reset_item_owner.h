@@ -2,6 +2,9 @@
 #define ZONE_RESET_ITEM_OWNER_H
 
 #include "economy/zone_reset_item_command.h"
+#include "economy/economic_gameplay_authority.h"
+#include "world/quest_mobile_native_birth.h"
+#include "persistence/critical_command_coordinator.h"
 #include <memory>
 
 struct obj_data;
@@ -196,7 +199,77 @@ class zone_reset_item_owner final
 		return sizeof(void *) + sizeof(bool);
 	}
 
+	// Exact registered callback HEADER Source for original warm/NPC dispatch.
+	// Full includes actual formals/local scopes and accepted transitive children;
+	// existing CURRENT G/C, selected projection heaps and caller objects remain
+	// independently retained. This never executes the registered callback.
+	// The lender family applies only to the authentic same-lock typed lender
+	// whose original observer branch is skipped; its parent retains CURRENT C
+	// and the matching coordinator census Source once. It cannot authorize a
+	// loan or price a different configured callback.
+	// Supplement removes only original callback bytes/context/result and its
+	// checked-add scopes, plus the warm scratch pointer on that exact arm.
+	// Caller must cover full Source through the original pre-credit guards;
+	// supplement applies only with the original callback's named credits live.
+	// External pthread/allocator/clock/throw bodies and native ABI qualification
+	// remain separate. Strong outputs; child getter errors are preserved.
+	static bool flat_common_budget_header_source_frame_bytes(size_t *) noexcept;
+	static bool flat_common_budget_header_source_supplement_frame_bytes(size_t *) noexcept;
+	static bool flat_common_budget_lender_header_source_frame_bytes(size_t *) noexcept;
+	static bool
+	flat_common_budget_lender_header_source_supplement_frame_bytes(size_t *) noexcept;
+	static constexpr size_t flat_common_budget_header_source_query_frame_bytes() noexcept
+	{
+		// Public wrapper output/result; collector output/two mode formals,
+		// four named size_t locals/result; actual pure add and child queries.
+		return 2 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) + sizeof(void *) +
+		       sizeof(size_t) + sizeof(bool) +
+		       economic_gameplay_authority::active_regular_flat_source_query_frame_bytes() +
+		       quest_mobile_native_birth_charge_local_source_query_frame_bytes() +
+		       flat_global_literal_current_header_source_query_frame_bytes() +
+		       quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_query_frame_bytes() +
+		       critical_zone_reset_item_publication_owner::
+			       current_storage_source_query_frames();
+	}
+	static constexpr size_t flat_common_budget_lender_header_source_query_frame_bytes() noexcept
+	{
+		return 2 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(bool) + sizeof(void *) +
+		       sizeof(size_t) + sizeof(bool) +
+		       economic_gameplay_authority::active_regular_flat_source_query_frame_bytes() +
+		       quest_mobile_native_birth_charge_local_source_query_frame_bytes() +
+		       flat_global_literal_current_header_source_query_frame_bytes() +
+		       quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_query_frame_bytes();
+	}
+	// Full INITIAL preserves the first-object getter above. It adds the real
+	// maximum descendant bound to that same surviving work object. In particular
+	// the NPC child's two sequential selected-object bounds are consumed once,
+	// without dividing its contract or claiming simultaneous child storage.
+	static bool flat_common_budget_full_initial_inline_bytes(size_t *) noexcept;
+	static bool flat_common_budget_lender_full_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t flat_common_budget_full_initial_query_frame_bytes() noexcept
+	{
+		// Wrapper output/result; collector output/mode, base/child/peak/result;
+		// pure add and the four actually queried INITIAL child interfaces.
+		return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(void *) +
+		       sizeof(size_t) + sizeof(bool) +
+		       flat_common_budget_initial_query_frame_bytes() +
+		       economic_gameplay_authority::active_regular_flat_initial_query_frame_bytes() +
+		       quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_query_frame_bytes() +
+		       critical_zone_reset_item_publication_owner::
+			       current_storage_source_query_frames();
+	}
+	static constexpr size_t flat_common_budget_lender_full_initial_query_frame_bytes() noexcept
+	{
+		return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(void *) +
+		       sizeof(size_t) + sizeof(bool) +
+		       flat_common_budget_initial_query_frame_bytes() +
+		       economic_gameplay_authority::active_regular_flat_initial_query_frame_bytes() +
+		       quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_query_frame_bytes();
+	}
+
     private:
+	static bool flat_common_budget_collect_header_source(bool, bool, size_t *) noexcept;
+	static bool flat_common_budget_collect_full_initial(bool, size_t *) noexcept;
 	static bool reserve_flat_common_budget(size_t, void *) noexcept;
 	// Only the genuine birth owner may construct this stack guard. Its callback
 	// context outlives it; its actual lifetime encloses the complete submit call,

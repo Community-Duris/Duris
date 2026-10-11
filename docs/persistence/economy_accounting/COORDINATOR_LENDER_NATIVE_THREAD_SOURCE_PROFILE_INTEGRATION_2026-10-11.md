@@ -1,0 +1,11 @@
+# Coordinator lender native thread Source profile integration — 2026-10-11
+
+The Coordinator lender Source gate previously refused the installed native thread macro and counted the unused gthread wrapper. Select Linux/glibc>=2.27 direct pthread_self() and two native handles. Lender Source142 and lock Source56 are finite reviewed typed declarations; inherited exclusions, outputs, limits, other3H rows and submission algorithms are unchanged. Four real ordinary whole Coordinator Make objects and actual provider-TU profile probes pass across SQL-header/flat and supported/assertions configurations. Private getter, accepting submission and real birthcaller runtime remain OPEN; no authority bypass, source hooks or test seam is introduced.
+
+Both finite formatted Source reviews pass. Genuine whole provider/macro checks use pinned GNU13.3/libstdc++13, glibc>=2.27 and original production Make flags; residual compile/link/profile errors fail. The exact permanent runner executes once; no synthetic provider, native macro override, services or full-server rerun is used.
+
+Adopted source `src/persistence/critical_command_coordinator.c` SHA `112a778368efccf450eab82136ad45b52c0ba2bf9025d07d3e88489d63b51fc3`; tested recipe `711a2a68abbc34cdeb6d9f5ef025fe978e26fce5eaf710aab42f0f8f51ee46ed`, base `221f9e5ac159a0a1498222b348d2cdb05f9677da`; Parent `1d8b829cf6821bf14ccff668ad1aab773a9d87db5f77fe39c90d789e0181c5c0`, native `970b698840049b68e23e374e03558a677928970c42c2971cb2c4cdeffd018e9e`, cases `12ae2eaa2deb8752f513137dc004cf20340b5048196a3ef441429a65baa25469`, Root receipt `70740e49b92e03f06f3a14f7fdc9218bf76044faf6250af9a45668e87c686014`. Batch elapsed 493.56200000000536 seconds. Every native artifact is authenticated, including real result/case/input/log receipts.
+
+Coordinator milestone updates only its existing source pin; total504 and every other pin are preserved. Writer policies/census, leased WORLD/SHOP paths and unrelated WIP stay intact. Inventory listing, coverage generation, nonrelease validation and generation check are registration/inventory evidence, not accounting completion.
+
+Plans1–4, R1–R8, architecture, full caller/producer/native/ABI/emitted-stack/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.

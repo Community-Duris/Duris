@@ -181,4 +181,31 @@ constexpr size_t currency_account_key_source_query_frame_bytes() noexcept
 {
 	return sizeof(size_t *) + sizeof(bool);
 }
+
+// Complete additive original currency-command builder, not a fresh producer or
+// accounting/admission authority. Caller retains the authentic payload, prior
+// output command (including all capacities), operation and enclosing owners.
+// Reserve must synchronously admit the complete requested peak under that real
+// owner's existing limit; it must not mutate input/output or reenter this build.
+// Original schema/version, ordered keys/revisions and 136-byte wire are preserved.
+// Denial/unsupported profile/bad_alloc is capacity; original identity/encoding
+// refusal is invalid. Every refusal leaves the prior output unchanged.
+currency_command_bounded_result currency_command_build_bounded_status(
+	critical_command *, critical_operation_id, const currency_command_payload &,
+	uint64_t expected_wallet_revision, uint64_t expected_bank_revision, critical_source_site,
+	critical_deadline_class, bool (*)(size_t, void *) noexcept, void *context,
+	size_t outer_live) noexcept;
+// Pure strong-output queries, no observations/locks/allocation or authorization.
+// Admit the query, then full Source+INITIAL transiently before genuine entry.
+// Only supplement remains in that child outer: it is zero because this builder
+// self-admits its own Source and the real account child's uncovered supplement.
+// All original caller inputs, prior output capacities and other owners remain
+// in outer_live. This Source declaration is separate from native/ABI proof.
+bool currency_command_build_source_frame_bytes(size_t *) noexcept;
+bool currency_command_build_source_supplement_frame_bytes(size_t *) noexcept;
+bool currency_command_build_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t currency_command_build_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
 #endif

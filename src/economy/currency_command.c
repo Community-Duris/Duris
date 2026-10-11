@@ -1323,3 +1323,262 @@ bool currency_account_key_initial_inline_bytes(size_t *output) noexcept
 	return false;
 #endif
 }
+
+namespace
+{
+// Complete selected fresh-vector builder closure. These are declaration Source
+// terms for the authenticated ordinary GNU13 headers, separate from emitted,
+// allocator/libc and ABI qualification. Original algorithm bodies stay unchanged.
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+
+// Three typed move/cleanup families, actual defaults, byte move construction,
+// fresh 136 fill and two count 2 initializer-list constructors. Same declared
+// global new/delete and constant-evaluation predicates count once. Physical
+// temporary vectors/allocators/tags and the aggregate/backing arrays stay explicit;
+// candidate, encoded and the two scalar keys are owned separately by INITIAL.
+constexpr size_t currency_build_vector_source =
+	430 * currency_decode_P + 68 * currency_decode_N + 6 * sizeof(std::ptrdiff_t) +
+	10 * currency_decode_B + 2 * sizeof(uint8_t) +
+	(sizeof(std::vector<critical_entity_key>) + sizeof(std::allocator<critical_entity_key>) +
+	 sizeof(std::true_type)) +
+	(sizeof(std::vector<critical_expected_revision>) +
+	 sizeof(std::allocator<critical_expected_revision>) + sizeof(std::true_type)) +
+	(sizeof(std::vector<uint8_t>) + sizeof(std::allocator<uint8_t>) + sizeof(std::true_type)) +
+	sizeof(std::vector<uint8_t>) + sizeof(std::allocator<uint8_t>) +
+	sizeof(std::random_access_iterator_tag) +
+	(sizeof(std::initializer_list<critical_entity_key>) +
+	 2 * sizeof(std::allocator<critical_entity_key>) + sizeof(std::forward_iterator_tag) +
+	 2 * sizeof(std::random_access_iterator_tag)) +
+	(sizeof(std::initializer_list<critical_expected_revision>) +
+	 2 * sizeof(std::allocator<critical_expected_revision>) +
+	 sizeof(std::forward_iterator_tag) + 2 * sizeof(std::random_access_iterator_tag)) +
+	sizeof(critical_command) + 2 * sizeof(critical_entity_key) +
+	2 * sizeof(critical_expected_revision);
+// Real builder/helper/encoder/scalar/operation-ID and raw all_of families. The
+// selected empty lambda and captured predicate wrappers have these existing
+// structural sizeof layouts; the decoder's older all_of allowance is not reused.
+// Byte capacity is in the fresh-fill family; key/revision capacities are here.
+constexpr size_t currency_build_scalar_source =
+	73 * currency_decode_P + 25 * currency_decode_N + 13 * currency_decode_B + sizeof(uint8_t) +
+	sizeof(std::ptrdiff_t) + sizeof(bool (*)(size_t, void *) noexcept) +
+	sizeof(critical_operation_id) + 2 * sizeof(uint64_t) + sizeof(critical_source_site) +
+	sizeof(critical_deadline_class) + 2 * sizeof(currency_command_bounded_result) +
+	sizeof(currency_reason_type) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint64_t) +
+	2 * sizeof(unsigned int) + 2 * sizeof(int64_t) + 5 * sizeof(currency_decode_predicate) +
+	2 * sizeof(currency_decode_iter_pred) + sizeof(currency_decode_iter_negate) +
+	sizeof(std::random_access_iterator_tag);
+// Account child shares only valid_name/strnlen, codec_admit, declared scalar
+// new/sized-delete and std::__is_constant_evaluated. Its returned enum directly
+// initializes key_result: that physical destination counts once, while the
+// child's named outcome and the builder's final returned enum remain distinct.
+// No char/byte allocator or unlabelled builtin-memory allowance is credited.
+constexpr size_t currency_build_shared_account_source =
+	8 * currency_decode_P + 9 * currency_decode_N + 4 * currency_decode_B +
+	sizeof(currency_command_bounded_result);
+constexpr size_t currency_build_self_source =
+	currency_account_supplement_source + currency_build_vector_source +
+	currency_build_scalar_source - currency_build_shared_account_source;
+constexpr size_t currency_build_full_source = currency_build_self_source +
+					      currency_account_full_source -
+					      currency_account_supplement_source;
+
+bool currency_build_add(size_t &value, size_t extra) noexcept
+{
+	if (extra > SIZE_MAX - value)
+		return false;
+	value += extra;
+	return true;
+}
+
+bool currency_build_current_heap(const critical_command &candidate,
+				 const std::vector<uint8_t> &encoded, size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t total = 0;
+	const size_t keys = candidate.keys.capacity();
+	const size_t revisions = candidate.expected_revisions.capacity();
+	if (keys > SIZE_MAX / sizeof(critical_entity_key) ||
+	    revisions > SIZE_MAX / sizeof(critical_expected_revision) ||
+	    !currency_build_add(total, keys * sizeof(critical_entity_key)) ||
+	    !currency_build_add(total, revisions * sizeof(critical_expected_revision)) ||
+	    !currency_build_add(total, candidate.payload.capacity()) ||
+	    !currency_build_add(total, candidate.accounting_intent.capacity()) ||
+	    !currency_build_add(total, encoded.capacity()))
+		return false;
+	*output = total;
+	return true;
+}
+#endif
+}
+
+currency_command_bounded_result currency_command_build_bounded_status(
+	critical_command *command, critical_operation_id operation_id,
+	const currency_command_payload &payload, uint64_t expected_wallet_revision,
+	uint64_t expected_bank_revision, critical_source_site source_site,
+	critical_deadline_class deadline_class, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	using outcome = currency_command_bounded_result;
+	constexpr size_t initial = sizeof(critical_command) + sizeof(std::vector<uint8_t>) +
+				   2 * sizeof(critical_entity_key);
+	constexpr size_t fixed = currency_build_self_source + initial;
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4 ||
+	    !currency_codec_admit(outer_live, fixed, 0, reserve, context))
+		return outcome::capacity;
+	// Original identity/encoding order follows prospective source admission.
+	if (!command || critical_operation_id_is_zero(operation_id))
+		return outcome::invalid;
+	try
+	{
+		critical_command candidate{};
+		std::vector<uint8_t> encoded;
+		critical_entity_key account_key{};
+		size_t retained = 0, account_peak = 0, child_outer = outer_live;
+		// Genuine fresh assign selects exactly this fixed wire allocation. The
+		// source union includes its real temporary vector and byte-fill value.
+		// CURRENCY_COMMAND_PAYLOAD_BYTES is 136: final 4 zero bytes are preserved.
+		if (!currency_codec_admit(outer_live, fixed, CURRENCY_COMMAND_PAYLOAD_BYTES,
+					  reserve, context))
+			return outcome::capacity;
+		if (!currency_command_encode_payload(payload, &encoded))
+			return outcome::invalid;
+		if (!currency_build_current_heap(candidate, encoded, &retained))
+			return outcome::capacity;
+		account_peak = retained;
+		if (!currency_build_add(account_peak, currency_account_full_source -
+							      currency_account_supplement_source) ||
+		    !currency_build_add(account_peak, sizeof(critical_entity_key)) ||
+		    !currency_codec_admit(outer_live, fixed, account_peak, reserve, context) ||
+		    !currency_build_add(child_outer, fixed) ||
+		    !currency_build_add(child_outer, retained))
+			return outcome::capacity;
+		// Self SOURCE already retains exactly the original key supplement. Its
+		// actual candidate/string/hash storage and SHA frames remain child-owned.
+		const auto key_result = currency_account_key_bounded_status(
+			payload.account_name.data(), payload.racewar, &account_key, reserve,
+			context, child_outer);
+		if (key_result != outcome::ok)
+			return key_result;
+		const critical_entity_key player_key{ critical_entity_type::player, payload.pid };
+		if (!currency_build_current_heap(candidate, encoded, &retained) ||
+		    !currency_build_add(retained, 2 * sizeof(critical_entity_key)) ||
+		    !currency_build_add(retained, 2 * sizeof(critical_expected_revision)) ||
+		    !currency_codec_admit(outer_live, fixed, retained, reserve, context))
+			return outcome::capacity;
+		// Exact original aggregate fields, initializer-list vectors, ordered
+		// fences and payload move. Source owns the real aggregate/const backing
+		// arrays/default allocator temporaries. Candidate's prior vectors empty.
+		candidate = {
+			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+			.operation_id = operation_id,
+			.type = critical_command_type::account_bank,
+			.payload_version = CURRENCY_COMMAND_PAYLOAD_VERSION,
+			.source_site = source_site,
+			.deadline_class = deadline_class,
+			.accepted_at_usec = 0,
+			.keys = { player_key, account_key },
+			.expected_revisions = { { player_key, expected_wallet_revision },
+						{ account_key, expected_bank_revision } },
+			.payload = std::move(encoded),
+		};
+		if (!currency_build_current_heap(candidate, encoded, &retained) ||
+		    !currency_codec_admit(outer_live, fixed, retained, reserve, context))
+			return outcome::capacity;
+		// Final move has no fallible allocator/callback. Caller outer still
+		// includes its original output heaps until their real move cleanup.
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*command = std::move(candidate);
+		return outcome::ok;
+	}
+	catch (...)
+	{
+		return outcome::capacity;
+	}
+#else
+	(void)command;
+	(void)operation_id;
+	(void)payload;
+	(void)expected_wallet_revision;
+	(void)expected_bank_revision;
+	(void)source_site;
+	(void)deadline_class;
+	(void)reserve;
+	(void)context;
+	(void)outer_live;
+	return currency_command_bounded_result::capacity;
+#endif
+}
+
+bool currency_command_build_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = currency_build_full_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool currency_command_build_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	// The builder self-admits its complete named Source and original key
+	// supplement; the key child self-admits remaining hash/source storage.
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool currency_command_build_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&        \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) &&  \
+	defined(__x86_64__) && defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 && \
+	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0 &&                        \
+	defined(OPENSSL_VERSION_PATCH) && OPENSSL_VERSION_PATCH == 13 &&                       \
+	!defined(OPENSSL_NO_DEPRECATED_3_0)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(SHA_LONG) != 4)
+		return false;
+	*output = sizeof(critical_command) + sizeof(std::vector<uint8_t>) +
+		  2 * sizeof(critical_entity_key);
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}

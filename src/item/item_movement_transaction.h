@@ -253,6 +253,34 @@ enum class item_native_quest_gameplay_result : uint8_t
 	rejected,
 	unavailable
 };
+// Private temporary admission for the real original SQL quest completion.
+// The caller keeps its existing active_regular_sql gate. No publication,
+// activation, retained-budget update, observer registration or loan follows.
+// Registered flat/global/coordinator state is explicitly refused, so this
+// Source closes only the original unregistered SQL capacity graph.
+class quest_native_completion_owner;
+class item_native_quest_temporary_budget_owner final
+{
+    private:
+	friend class quest_native_completion_owner;
+	static bool admit(size_t actual_temporary_bytes) noexcept;
+	// No allocation and no Source self-admission: full and supplement agree.
+	// INITIAL is zero; caller owns all callback context/inputs/output/Source
+	// before entry and retains the supplement through the genuine capacity call.
+	static bool source_frame_bytes(size_t *) noexcept;
+	static bool source_supplement_frame_bytes(size_t *) noexcept;
+	static bool initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t source_query_frame_bytes() noexcept
+	{
+		// Output, result and declared errno accessor result on refusal.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+	static constexpr size_t initial_query_frame_bytes() noexcept
+	{
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+};
+
 // Original quest driver can retain and consume only its exact generation's
 // completed guard publication. These facts never grant ACK or native authority.
 // The original birth owner shares the existing preparation cap without replacing

@@ -7291,6 +7291,10 @@ quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, siz
 		using submission_guard = zone_reset_item_owner::ordinary_flat_submission_guard;
 		size_t scope_live = surviving;
 		size_t current_coordinator_bytes = SIZE_MAX;
+		// Scalar profile results survive the guard; prospective full values are
+		// never passed as an extra retained coordinator Source allowance.
+		size_t common_supplement = 0, common_initial = 0, begin_extra = 0;
+		size_t coordinator_source = 0, coordinator_initial = 0, coordinator_supplement = 0;
 		constexpr size_t scope_frames = sizeof(scope_live) +
 						sizeof(current_coordinator_bytes) +
 						sizeof(ordinary_flat_envelope_budget);
@@ -7298,7 +7302,12 @@ quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, siz
 		// canonical/envelope, journal and genuine outside C/G belong to charge,
 		// not to this provider outer. No unavailable-current value becomes zero.
 		if (!birth_passive_add(scope_live, scope_frames) ||
-		    !birth_passive_add(scope_live, submission_guard::inline_bytes()))
+		    !birth_passive_add(scope_live, submission_guard::inline_bytes()) ||
+		    !birth_passive_add(scope_live,
+				       sizeof(common_supplement) + sizeof(common_initial) +
+					       sizeof(begin_extra) + sizeof(coordinator_source) +
+					       sizeof(coordinator_initial) +
+					       sizeof(coordinator_supplement)))
 			return result;
 		constexpr size_t accessor_frames = sizeof(bool (*)(size_t, void *) noexcept) +
 						   sizeof(submission_guard *) + sizeof(void *);
@@ -7310,7 +7319,9 @@ quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, siz
 		size_t call_live = scope_live;
 		if (!birth_passive_add(call_live, sizeof(call_live)) ||
 		    !birth_passive_add(call_live, accessor_frames) ||
-		    !birth_passive_add(call_live, cleanup_frames))
+		    !birth_passive_add(call_live, cleanup_frames) ||
+		    // Actual begin_live and entry_live each coexist with the guard/submit.
+		    !birth_passive_add(call_live, 2 * sizeof(size_t)))
 			return result;
 		{
 			size_t initial = call_live;
@@ -7319,17 +7330,88 @@ quest_mobile_native_birth_owner::submit_ordinary_flat_envelope(size_t index, siz
 				sizeof(bool (*)(size_t, void *) noexcept) + sizeof(void *) +
 				sizeof(submission_guard *) + sizeof(void *) + sizeof(bool) +
 				sizeof(size_t) + sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
-			if (!birth_passive_add(initial, sizeof(initial)) ||
+			size_t common_source = 0, common_normal_supplement = 0,
+			       common_workspace = 0;
+			size_t charge_source = 0;
+			constexpr size_t query_frames =
+				zone_reset_item_owner::
+					flat_common_budget_header_source_query_frame_bytes() +
+				zone_reset_item_owner::
+					flat_common_budget_lender_header_source_query_frame_bytes() +
+				zone_reset_item_owner::
+					flat_common_budget_full_initial_query_frame_bytes() +
+				zone_reset_item_owner::flat_common_budget_initial_query_frame_bytes() +
+				critical_native_mobile_birth_publication_owner::
+					submit_owned_source_query_frames() +
+				quest_mobile_native_birth_charge_local_source_query_frame_bytes();
+			// This pure scalar bootstrap performs no census, callback or allocation.
+			// Its actual query carriers are included in the first request below;
+			// external configured observer bodies remain caller-owned qualification.
+			if (!quest_mobile_native_birth_charge_local_source_frame_bytes(
+				    &charge_source) ||
+			    !birth_passive_add(initial, sizeof(initial)) ||
 			    !birth_passive_add(initial, lifecycle_frames) ||
+			    !birth_passive_add(initial, sizeof(common_source) +
+								sizeof(common_normal_supplement) +
+								sizeof(common_workspace) +
+								sizeof(charge_source) +
+								sizeof(query_frames)) ||
+			    !birth_passive_add(initial, query_frames) ||
+			    !birth_passive_add(initial, charge_source) || !charge(initial))
+				return result;
+			if (!zone_reset_item_owner::flat_common_budget_header_source_frame_bytes(
+				    &common_source) ||
+			    !zone_reset_item_owner::
+				    flat_common_budget_header_source_supplement_frame_bytes(
+					    &common_normal_supplement) ||
+			    !zone_reset_item_owner::
+				    flat_common_budget_lender_header_source_supplement_frame_bytes(
+					    &common_supplement) ||
+			    !zone_reset_item_owner::flat_common_budget_full_initial_inline_bytes(
+				    &common_initial) ||
+			    !zone_reset_item_owner::flat_common_budget_initial_inline_bytes(
+				    &common_workspace) ||
+			    !critical_native_mobile_birth_publication_owner::
+				    submit_owned_source_frames(&coordinator_source) ||
+			    !critical_native_mobile_birth_publication_owner::
+				    submit_owned_initial_inline_bytes(&coordinator_initial) ||
+			    !critical_native_mobile_birth_publication_owner::
+				    submit_owned_source_supplement_frames(
+					    &coordinator_supplement) ||
+			    common_normal_supplement < common_supplement ||
+			    common_initial < common_workspace ||
+			    !birth_passive_add(initial, common_source) ||
+			    !birth_passive_add(initial, common_initial) ||
 			    !birth_passive_add(initial, ordinary_flat_envelope_source_frames()) ||
 			    !charge(initial) || !ordinary_flat_freeze_source_current(index))
 				return result;
+			// Exact normal census exists during begin; a real held-mutex lender
+			// skips it during submit. No cached CURRENT-C bytes or loan is invented.
+			begin_extra = common_normal_supplement - common_supplement;
+			// The SAME work object is added by the original dispatcher body. Only
+			// its descendant bound survives here; two selectedS calls are sequential.
+			common_initial -= common_workspace;
 		}
+		// Full query/preflight scalars have died before either protected object.
+		// The original callback owns its named credits/work; only disjoint
+		// missing Source and child INITIAL enter the real caller prefix.
+		if (!birth_passive_add(call_live, common_supplement) ||
+		    !birth_passive_add(call_live, common_initial) ||
+		    !birth_passive_add(call_live, coordinator_supplement))
+			return result;
 		ordinary_flat_envelope_budget budget{ index,   scope_live, &b,
 						      nullptr, nullptr,	   nullptr };
 		{
 			submission_guard guard(&reserve_ordinary_flat_submission, &budget);
-			if (guard.begin(call_live))
+			size_t begin_live = call_live;
+			size_t entry_live = call_live;
+			if (birth_passive_add(begin_live, begin_extra) && guard.begin(begin_live) &&
+			    birth_passive_add(entry_live, begin_extra) &&
+			    birth_passive_add(entry_live, coordinator_source) &&
+			    birth_passive_add(entry_live, coordinator_initial) &&
+			    // A fresh genuine nonlender request, before room_submit_workspace
+			    // construction/locking. The original ROOT pair/context is unchanged.
+			    guard.callback()(entry_live, guard.context()))
 				result = critical_native_mobile_birth_publication_owner::
 					submit_bounded(b.envelope, guard.callback(),
 						       guard.context(), call_live,

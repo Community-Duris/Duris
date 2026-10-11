@@ -1598,8 +1598,11 @@ bool encode_payload(const item_transfer_payload &payload, uint16_t version,
 			(payload.selected_item_uid ? payload.selected_item_uid :
 						     payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	// Lockpick retirement has no destination tree; keep its validated zero root.
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
-		payload.multi_root ?
+		(payload.multi_root ||
+		 payload.continuation.kind ==
+			 item_transfer_continuation_kind::lockpick_retirement) ?
 			payload.target_root_item_uid :
 			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
 	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
@@ -5941,8 +5944,11 @@ bool item_generic_wire_encode_owned(const item_transfer_payload &payload, uint16
 			(payload.selected_item_uid ? payload.selected_item_uid :
 						     payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	// Lockpick retirement has no destination tree; keep its validated zero root.
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
-		payload.multi_root ?
+		(payload.multi_root ||
+		 payload.continuation.kind ==
+			 item_transfer_continuation_kind::lockpick_retirement) ?
 			payload.target_root_item_uid :
 			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
 	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
@@ -13560,6 +13566,6049 @@ bool item_transfer_native_money_decode_complete_source_supplement_frame_bytes(si
 	return false;
 }
 bool item_transfer_native_money_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+#endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_CONCEPT_CHECKS)
+namespace
+{
+struct item_sidecar_complete_budget;
+struct item_entities_revision_less;
+struct item_general_entities_complete_budget;
+struct item_payload_validation_complete_budget;
+struct item_complete_validation_ancestor_predicate;
+struct item_generic_decode_complete_budget;
+struct item_payload_wire_complete_budget;
+struct item_complete_generic_key_equal;
+struct item_complete_generic_revision_equal;
+struct item_public_dispatch_complete_budget;
+struct item_complete_collector_uid_present;
+struct item_complete_text_printable_predicate;
+bool item_sidecar_complete_append_u32(item_sidecar_complete_budget &owner,
+				      std::vector<uint8_t> *output, uint32_t value);
+bool item_sidecar_complete_append_text(item_sidecar_complete_budget &owner,
+				       std::vector<uint8_t> *output, const std::string &value);
+bool item_sidecar_complete_read_text(item_sidecar_complete_budget &owner, const uint8_t *input,
+				     size_t size, size_t *offset, size_t maximum,
+				     std::string *value);
+bool item_sidecar_complete_encode_corpse_context(const item_corpse_metadata &corpse,
+						 std::vector<uint8_t> *encoded,
+						 item_sidecar_complete_budget &owner);
+bool item_sidecar_complete_decode_corpse_context(const uint8_t *encoded, size_t size,
+						 item_corpse_metadata *corpse,
+						 item_sidecar_complete_budget &owner);
+bool item_sidecar_complete_encode_collector_context(const item_collector_death_enrollment &collector,
+						    std::vector<uint8_t> *encoded,
+						    item_sidecar_complete_budget &owner);
+bool item_sidecar_complete_decode_collector_context(const uint8_t *encoded, size_t size,
+						    item_collector_death_enrollment *collector,
+						    item_sidecar_complete_budget &owner);
+bool item_continuation_duplicate_valid_complete_owned(const item_transfer_payload &payload,
+						      uint16_t payload_version,
+						      item_native_validation_complete_budget &owner);
+bool item_continuation_craft_outputs_complete_owned(const item_transfer_payload &payload,
+						    std::vector<player_item_snapshot> *outputs,
+						    item_native_validation_complete_budget &owner);
+bool item_complete_general_validated_entities_source_frame_bytes(size_t *output) noexcept;
+bool item_complete_general_validated_entities_source_supplement_frame_bytes(size_t *output) noexcept;
+bool item_complete_general_validated_entities_initial_inline_bytes(size_t *output) noexcept;
+bool item_complete_general_craft_outputs_child(const item_transfer_payload &input,
+					       std::vector<player_item_snapshot> *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer,
+					       size_t *retained_heap) noexcept;
+bool item_complete_general_entities_owner_key_child(const item_owner_identity &owner,
+						    critical_entity_key *output,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept;
+bool item_complete_general_validated_entities_bounded(critical_command *command,
+						      const item_transfer_payload &payload,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept;
+bool item_general_entities_populate_complete_owned(critical_command *command,
+						   const item_transfer_payload &payload,
+						   item_general_entities_complete_budget &budget);
+bool item_full_payload_validation_complete_owned(const item_transfer_payload &payload,
+						 uint16_t payload_version,
+						 item_payload_validation_complete_budget &budget);
+bool item_complete_general_mobile_valid_child(const item_transfer_payload &input, uint16_t version,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer) noexcept;
+bool item_complete_general_recovery_valid_child(const item_transfer_payload &input,
+						const item_native_mobile_recovery_context &recovery,
+						uint16_t version,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept;
+bool item_complete_general_offering_valid_child(const item_transfer_payload &input,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept;
+bool item_complete_general_duplicate_valid_child(const item_transfer_payload &input,
+						 uint16_t version,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept;
+bool item_complete_general_lockpick_valid_child(const item_transfer_payload &input,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept;
+bool item_complete_general_pouch_payload_child(const item_transfer_payload &input,
+					       craft_pouch_mutation *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept;
+bool item_complete_general_recipe_decode_child(std::span<const uint8_t> input,
+					       craft_recipe_continuation *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept;
+bool item_complete_general_payload_valid_child(const item_transfer_payload &value, uint16_t version,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept;
+bool item_complete_general_validated_entities_child(critical_command *output,
+						    const item_transfer_payload &value,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept;
+bool item_generic_decode_complete_owned(const critical_command &command,
+					item_transfer_payload *payload,
+					item_generic_decode_complete_budget &budget);
+bool item_generic_wire_encode_complete_owned(const item_transfer_payload &payload, uint16_t version,
+					     std::vector<uint8_t> *encoded,
+					     item_payload_wire_complete_budget &budget);
+bool item_complete_corpse_encode_child(const item_corpse_metadata &input,
+				       std::vector<uint8_t> *output,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer) noexcept;
+bool item_complete_corpse_decode_child(const uint8_t *input, size_t size,
+				       item_corpse_metadata *output,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer) noexcept;
+bool item_complete_collector_encode_child(const item_collector_death_enrollment &input,
+					  std::vector<uint8_t> *output,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer) noexcept;
+bool item_complete_collector_decode_child(const uint8_t *input, size_t size,
+					  item_collector_death_enrollment *output,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer) noexcept;
+bool item_complete_general_payload_encode_child(const item_transfer_payload &value,
+						uint16_t version, std::vector<uint8_t> *output,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer, size_t *heap) noexcept;
+bool item_complete_general_payload_decode_child(const critical_command &value,
+						item_transfer_payload *output,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer, size_t *heap) noexcept;
+bool item_complete_general_native_cost_encode_child(const item_transfer_payload &value,
+						    bool acknowledged, std::vector<uint8_t> *output,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept;
+bool item_complete_general_public_native_encode_child(const item_transfer_payload &value,
+						      std::vector<uint8_t> *output,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer) noexcept;
+bool item_complete_general_public_native_recovery_encode_child(
+	const item_transfer_payload &value, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept;
+bool item_complete_general_public_inner_decode_child(const critical_command &value,
+						     item_transfer_payload *output,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer) noexcept;
+bool item_complete_general_fee_decode_child(const critical_command &value,
+					    item_transfer_payload *output,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer) noexcept;
+bool item_complete_general_money_decode_child(const critical_command &value,
+					      item_transfer_payload *output,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer) noexcept;
+bool item_encode_native_cost_complete_owned(const item_transfer_payload &payload, bool recovery,
+					    std::vector<uint8_t> *encoded,
+					    item_native_wire_encode_complete_budget &budget);
+bool item_public_decode_complete_owned(const critical_command &command,
+				       item_transfer_payload *payload,
+				       item_public_dispatch_complete_budget &budget);
+bool item_public_encode_complete_owned(const item_transfer_payload &payload,
+				       std::vector<uint8_t> *encoded,
+				       item_public_dispatch_complete_budget &budget);
+bool item_public_encode_recovery_complete_owned(const item_transfer_payload &payload,
+						std::vector<uint8_t> *encoded,
+						item_public_dispatch_complete_budget &budget);
+bool item_complete_general_public_encode_native_only_source_frame_bytes(size_t *output) noexcept;
+bool item_complete_general_public_encode_native_only_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_complete_general_public_encode_native_only_initial_inline_bytes(size_t *output) noexcept;
+bool item_complete_general_public_recovery_encode_native_only_source_frame_bytes(
+	size_t *output) noexcept;
+bool item_complete_general_public_recovery_encode_native_only_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_complete_general_public_recovery_encode_native_only_initial_inline_bytes(
+	size_t *output) noexcept;
+bool item_complete_general_public_decode_inner_native_source_frame_bytes(size_t *output) noexcept;
+bool item_complete_general_public_decode_inner_native_source_supplement_frame_bytes(
+	size_t *output) noexcept;
+bool item_complete_general_public_decode_inner_native_initial_inline_bytes(size_t *output) noexcept;
+bool item_complete_valid_collector_context(const item_transfer_payload &payload,
+					   uint16_t payload_version);
+bool item_complete_valid_text(const std::string &value, size_t maximum, bool required);
+bool item_complete_valid_soulbind_continuation(const item_transfer_payload &payload);
+bool item_complete_target_topology_for(const item_transfer_payload &payload, uint64_t item_uid,
+				       uint64_t *root_item_uid, uint64_t *parent_item_uid);
+uint64_t item_complete_selected_root_for(const item_transfer_payload &payload, uint64_t item_uid);
+struct item_sidecar_complete_budget
+{
+	item_sidecar_reserve_fn reserve;
+	void *context;
+	size_t outer, frames;
+	const item_corpse_metadata *corpse = nullptr;
+	const item_collector_death_enrollment *collector = nullptr;
+	const std::vector<uint8_t> *bytes = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (corpse &&
+		     (!payload_clone_string_heap(corpse->owner_name, false, total) ||
+		      !payload_clone_string_heap(corpse->short_description, false, total) ||
+		      !payload_clone_string_heap(corpse->description, false, total) ||
+		      !payload_clone_string_heap(corpse->keywords, false, total))) ||
+		    (collector &&
+		     !payload_clone_vector_heap(collector->eligible_item_uids, false, total)) ||
+		    (bytes && !payload_clone_vector_heap(*bytes, false, total)) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool fresh(size_t count, size_t extra) const noexcept
+	{
+		return count <= SIZE_MAX / sizeof(T) &&
+		       payload_clone_add(extra, count * sizeof(T)) && peak(extra);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count,
+					  size_t caller_frames = 0) const noexcept
+	{
+		size_t request = 0;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (value.size() + count > value.capacity())
+		{
+			size_t next = value.size();
+			if (!payload_clone_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !payload_clone_add(request, next * sizeof(T)))
+				return false;
+		}
+		return payload_clone_add(request, caller_frames) && peak(request);
+	}
+	bool text(std::string &value, const char *source, size_t length, size_t caller_frames) const
+	{
+		size_t request = 0;
+		if (length > value.capacity())
+		{
+			const size_t capacity = value.capacity();
+			size_t next = length;
+			if (capacity > SIZE_MAX / 2)
+				return false;
+			if (next < 2 * capacity)
+				next = 2 * capacity;
+			if (next > value.max_size())
+				next = value.max_size();
+			if (next == SIZE_MAX || !payload_clone_add(request, next + 1))
+				return false;
+		}
+		if (!payload_clone_add(request, caller_frames) || !peak(request))
+			return false;
+		value.assign(source, length);
+		return true;
+	}
+};
+constexpr size_t item_complete_put_u16_own_source = sizeof(void *) + sizeof(uint16_t);
+constexpr size_t item_complete_put_u32_own_source =
+	sizeof(void *) + sizeof(uint32_t) + sizeof(unsigned int);
+constexpr size_t item_complete_put_u64_own_source =
+	sizeof(void *) + sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t item_complete_get_u16_own_source = sizeof(void *) + sizeof(uint16_t);
+constexpr size_t item_complete_get_u32_own_source =
+	sizeof(void *) + 2 * sizeof(uint32_t) + sizeof(unsigned int);
+constexpr size_t item_complete_get_u64_own_source =
+	sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t item_complete_encode_owner_own_source = 2 * sizeof(void *);
+constexpr size_t item_complete_decode_owner_own_source = sizeof(void *);
+constexpr size_t item_complete_decode_owner_result_inline = sizeof(item_owner_identity);
+constexpr size_t item_complete_read_u32_own_source =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_append_u32_own_source =
+	// owner/output + catch3P, valueU32, actual offsetN, bool result.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_append_text_own_source =
+	// owner/output/value + catch4P, bool result. Removed old constexpr ownN.
+	4 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_sidecar_frame_end_destructor_source = sizeof(void *);
+constexpr size_t item_complete_sidecar_read_text_own_source =
+	// owner/input/offset/value + catch5P, size/maximum2N, lengthU32, bool.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_encode_corpse_own_source =
+	// args3P + actual hidden array range/begin/end3P + byvalue field i32.
+	6 * sizeof(void *) + sizeof(int32_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_decode_corpse_own_source =
+	// args3P + range/begin/end/value-ref4P; size/offset2N; four header U32,
+	// actual decoded field U32 and returned bool. Reset {} is separate DTO.
+	7 * sizeof(void *) + 2 * sizeof(size_t) + 5 * sizeof(uint32_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_encode_collector_own_source =
+	// args3P/catch/range2P, fixed_size/count/offset3N, uidU64 + actual2CI.
+	5 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(uint64_t) + sizeof(bool) +
+	2 * sizeof(std::vector<uint64_t>::const_iterator);
+constexpr size_t item_complete_sidecar_decode_collector_own_source =
+	4 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(uint32_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_encode_wrapper_own_source =
+	// Four genuine parameters/catch5P, outer/constexpr frames2N, bool.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_decode_wrapper_own_source =
+	// Four pointer params/catch5P, size/outer/frames3N, bool.
+	5 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+namespace item_sidecar_recipe_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_byte_default_n_a_own_source = 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_byte_default_n_own_source =
+	// first/n/returned first; declared constexpr can_fillB and actual
+	// std::is_constant_evaluated resultB (its constant branch is unselected).
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool);
+constexpr size_t item_complete_byte_default_n_true_own_source = 3 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_byte_default_construct_source =
+	// __addressof(value-ref/pointer)2P; _Construct(p)P and actual internal
+	// predicateB; runtime placement new(count,location,returned pointer).
+	// No scalar ctor or runtime construct_at in the constant-only arm.
+	2 * sizeof(void *) + sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_byte_default_fill_suffix_source =
+	item_sidecar_recipe_source::complete_recipe_byte_fill_n_source +
+	item_sidecar_recipe_source::complete_recipe_size_to_integer_source +
+	item_sidecar_recipe_source::complete_recipe_byte_fill_n_a_source +
+	// Category result aliases actual RA parameter, so only its constrefP.
+	sizeof(void *) + item_sidecar_recipe_source::complete_recipe_byte_fill_a_source +
+	item_sidecar_recipe_source::complete_recipe_byte_fill_a1_source +
+	item_sidecar_recipe_source::complete_recipe_std_constant_evaluated_source;
+constexpr size_t item_complete_byte_default_n_source =
+	item_complete_byte_default_n_a_own_source + item_complete_byte_default_n_own_source +
+	item_complete_byte_default_n_true_own_source + item_complete_byte_default_construct_source +
+	item_complete_byte_default_fill_suffix_source;
+constexpr size_t item_complete_byte_default_append_own_source =
+	// this,n,size,navail,old_start,old_finish,len,new_start. No discarded
+	// __destroy_from nor non-relocate branch controls; catch(...) has no ref.
+	4 * sizeof(void *) + 4 * sizeof(size_t);
+constexpr size_t item_complete_byte_resize_positive_source =
+	// Actual resize(this,new_size), two reached size() occurrences; helper
+	// always calls resize(oldsize+4), so erase/shrink branch is unselected.
+	sizeof(void *) + sizeof(size_t) +
+	2 * item_sidecar_recipe_source::complete_recipe_vector_size_source<uint8_t> +
+	item_complete_byte_default_append_own_source +
+	item_sidecar_recipe_source::complete_recipe_vector_size_source<uint8_t> +
+	// Two runtime max_size occurrences in default_append's valid-size check.
+	2 * item_sidecar_recipe_source::complete_recipe_vector_max_size_source<uint8_t> +
+	item_complete_byte_default_n_source +
+	// Growing path _M_check_len: exact own row, four actual size calls and
+	// two max calls; bounded payload sizes cannot select overflow's third.
+	item_sidecar_recipe_source::complete_recipe_vector_check_len_own_source<uint8_t> +
+	4 * item_sidecar_recipe_source::complete_recipe_vector_size_source<uint8_t> +
+	2 * item_sidecar_recipe_source::complete_recipe_vector_max_size_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_size_max_source +
+	item_sidecar_recipe_source::complete_recipe_vector_allocate_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_vector_relocate_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_vector_deallocate_graph_source<uint8_t>;
+constexpr size_t item_complete_byte_fill_static_max_source =
+	// _S_max_size allocref/diffmax/allocmax/return=P3N, traits max=P+N,
+	// min(two constrefs/returned ref)=3P; no public max/getconstallocator.
+	5 * sizeof(void *) + 4 * sizeof(size_t);
+constexpr size_t item_complete_byte_fill_allocator_reference_constructor_source =
+	// Actual tmp vector(n,value,existing allocator-ref), no default allocator
+	// argument object or its default ctor. Actual zero-byte belongs assign.
+	3 * sizeof(void *) + sizeof(size_t) +
+	item_sidecar_recipe_source::complete_recipe_byte_check_init_len_source +
+	item_sidecar_recipe_source::complete_recipe_allocator_const_copy_source +
+	item_sidecar_recipe_source::complete_recipe_allocator_cleanup_source +
+	item_complete_byte_fill_static_max_source +
+	item_sidecar_recipe_source::complete_recipe_byte_fill_base_source +
+	item_sidecar_recipe_source::complete_recipe_vector_allocate_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_byte_fill_initialize_source +
+	item_sidecar_recipe_source::complete_recipe_byte_uninitialized_fill_a_source +
+	item_sidecar_recipe_source::complete_recipe_byte_uninitialized_fill_source +
+	item_sidecar_recipe_source::complete_recipe_byte_uninitialized_fill_true_source +
+	item_complete_byte_default_fill_suffix_source;
+constexpr size_t item_complete_byte_fill_tmp_null_cleanup_source =
+	// vector/base/impl/allocator4P, actual empty destroy7P+predicateB,
+	// mutable allocator getter2P and _M_deallocate(nullptr,0)=2P+N.
+	// No lower traits/delete body when swapped old allocation is null.
+	15 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_byte_fill_swap_data_source =
+	// Exact this/other2P + real data temporary3P + declared default receiverP
+	// and THREE actual _M_copy_data call occurrences2P each. Conservative
+	// actual-call summation; no implicit trivial data copy/assignment body.
+	12 * sizeof(void *);
+constexpr size_t item_complete_byte_fresh_fill_assign_source =
+	// Public assign(this,n,valref)+real converted zero-byte argument;
+	// _M_fill_assign(this,n,valref). Fresh candidate capacity0,n>0 selects
+	// only its vector tmp allocation/swap/cleanup path, never fitting fill.
+	2 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(uint8_t) +
+	item_sidecar_recipe_source::complete_recipe_vector_capacity_source<uint8_t> +
+	item_sidecar_recipe_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_complete_byte_fill_allocator_reference_constructor_source +
+	item_complete_byte_fill_swap_data_source + item_complete_byte_fill_tmp_null_cleanup_source;
+constexpr size_t item_complete_byte_fill_temporary_inline = sizeof(std::vector<uint8_t>);
+using item_complete_collector_uid = uint64_t;
+using item_complete_collector_uid_vector = std::vector<uint64_t>;
+namespace item_collector_recipe_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_collector_uid_default_source =
+	// Explicit/defaulted vector/base/impl/data/allocator/newallocator
+	// constructor receiver families. Physical vector/subobjects stay in DTO.
+	6 * sizeof(void *);
+constexpr size_t item_complete_collector_uid_cleanup_source =
+	item_collector_recipe_source::member_vector_cleanup_source<item_complete_collector_uid>();
+constexpr size_t item_complete_collector_uid_reserve_source =
+	// Fresh candidate size/capacity0; positive count reaches this lane.
+	// count0 skips reserve allocation and has no subsequent pushes.
+	// Zero-count _S_relocate/a/a1 still owns formals/niter/count, but its
+	// count>0 constant-evaluation predicate call is not reached. Null old
+	// allocation reaches only _M_deallocate(this,p,n), no lower delete chain.
+	item_collector_recipe_source::complete_recipe_vector_reserve_own_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_max_size_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_capacity_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_size_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_allocate_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_mutable_allocator_source<
+		item_complete_collector_uid> +
+	21 * sizeof(void *) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_collector_uid_push_source =
+	// Actual push_back(get_u64(...)) binds that original returned scalar.
+	// No second uint64 argument object or scalar constructor body is invented.
+	// The returned wire scalar is owned by the actual get_u64 source lane.
+	// Reserve(count), then exactly count pushes: each fitting branch is
+	// selected. There is no realloc/check_len/allocation/relocation/delete
+	// at these push occurrences. Actual emplace returns back()->end()->minus.
+	item_collector_recipe_source::complete_recipe_vector_push_own_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_scalar_move_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_emplace_own_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_scalar_forward_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_vector_single_construct_source<
+		item_complete_collector_uid> +
+	sizeof(void *) + sizeof(item_complete_collector_uid_vector::iterator) +
+	item_collector_recipe_source::complete_recipe_normal_pointer_constructor_source<
+		item_complete_collector_uid_vector::iterator> +
+	item_collector_recipe_source::complete_recipe_vector_back_own_source<
+		item_complete_collector_uid> +
+	item_collector_recipe_source::complete_recipe_normal_offset_own_source<
+		item_complete_collector_uid_vector::iterator> +
+	item_collector_recipe_source::complete_recipe_normal_pointer_constructor_source<
+		item_complete_collector_uid_vector::iterator> +
+	item_collector_recipe_source::complete_recipe_normal_dereference_source<
+		item_complete_collector_uid_vector::iterator>;
+constexpr size_t item_complete_collector_uid_move_assignment_source =
+	item_collector_recipe_source::complete_recipe_vector_move_selected_source<
+		item_complete_collector_uid>;
+constexpr size_t item_complete_collector_uid_fitting_growth_query_source =
+	// Actual complete sidecar growth(max_size-size,size+1<=capacity) through
+	// exactly count reserved pushes. No next/reallocation branch is reached.
+	item_collector_recipe_source::complete_recipe_vector_max_size_source<uint64_t> +
+	2 * item_collector_recipe_source::complete_recipe_vector_size_source<uint64_t> +
+	item_collector_recipe_source::complete_recipe_vector_capacity_source<uint64_t>;
+constexpr size_t item_complete_collector_nontrivial_value_source =
+	// Real enclosing collector move assignment this/source/result3P and
+	// generated nontrivial destructorP. The P for the actual PLAIN
+	// wrapper candidate default constructor belongs separately to endpoint
+	// lifetime18; reset{} directly initializes vector member without that
+	// enclosing constructor. No trivial policy/ID/array callable is invented.
+	// Physical candidate/reset DTOs remain separately admitted.
+	4 * sizeof(void *);
+namespace item_sidecar_lifetime_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_sidecar_byte_default_source = 6 * sizeof(void *);
+constexpr size_t item_complete_sidecar_byte_cleanup_source =
+	item_sidecar_lifetime_source::member_vector_cleanup_source<uint8_t>();
+constexpr size_t item_complete_sidecar_byte_move_source =
+	item_sidecar_lifetime_source::complete_recipe_vector_move_selected_source<uint8_t>;
+constexpr size_t item_complete_sidecar_encode_lifetime_source =
+	// Actual local byte candidate default, final move assignment and cleanup.
+	// Caller std::move<byte-vector> is actual ref/result2P. No corpse/collector
+	// input default/COPY/cleanup is reached in either encoder endpoint.
+	item_complete_sidecar_byte_default_source + item_complete_sidecar_byte_move_source +
+	item_complete_sidecar_byte_cleanup_source + 2 * sizeof(void *);
+constexpr size_t item_complete_sidecar_corpse_decode_lifetime_source =
+	// Plain candidate default reaches actual enclosing nontrivial ctorP;
+	// reset{} directly constructs four char string members without that ctor;
+	// exact same completed library family may reuse across sequential fields.
+	// Generated nontrivial corpse move receiver/source/result3P, destructorP;
+	// actual caller std::move<corpse> refs/results2P. No trivial array callee.
+	7 * sizeof(void *) + item_sidecar_lifetime_source::member_string_default_source +
+	item_sidecar_lifetime_source::member_string_move_assignment_source +
+	// Actual sibling mutable allocator getter at alloc_on_move: selected
+	// smaller char-move projection requires its separate second getter2P.
+	item_sidecar_lifetime_source::complete_recipe_string_mutable_allocator_source +
+	item_sidecar_lifetime_source::member_string_destroy_source;
+constexpr size_t item_complete_sidecar_collector_decode_lifetime_source =
+	// Plain enclosing candidate default ctor receiverP; reset{} is aggregate.
+	sizeof(void *) + item_complete_collector_uid_default_source +
+	item_complete_collector_uid_move_assignment_source +
+	item_complete_collector_uid_cleanup_source +
+	item_complete_collector_nontrivial_value_source + 2 * sizeof(void *);
+constexpr size_t item_complete_sidecar_checked_add_source =
+	// Actual unchanged payload_clone_add(total-ref,amount)/bool.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_string_current_heap_source =
+	// payload_clone_string_heap(value-ref,fresh,bytes-ref,count,bool), then
+	// actual capacity and const islocal/data/local pointer_to/addressof chain.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + (sizeof(void *) + sizeof(size_t)) +
+	(11 * sizeof(void *) + sizeof(bool));
+template <class T> constexpr size_t item_complete_sidecar_vector_current_heap_source =
+	// payload_clone_vector_heap<T> own value/bytes refs,fresh/count/result;
+	// only capacity() on actual false branch. No fresh size/query imported.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+	item_sidecar_lifetime_source::complete_recipe_vector_capacity_source<T>;
+constexpr size_t item_complete_sidecar_encode_observation_source =
+	// Encoder owner.bytes only: its corpse/collector selectors stay null.
+	item_complete_sidecar_vector_current_heap_source<uint8_t> +
+	item_complete_sidecar_checked_add_source;
+constexpr size_t item_complete_sidecar_corpse_decode_observation_source =
+	// Decoder owner.corpse points to genuine candidate. Four sequential
+	// string observations reuse identical completed helper/type lanes;
+	// parent DTO keeps all four physical strings/capacities separately.
+	item_complete_sidecar_string_current_heap_source + item_complete_sidecar_checked_add_source;
+constexpr size_t item_complete_sidecar_collector_decode_observation_source =
+	// Decoder owner.collector candidate UID vector only, no byte/string lane.
+	item_complete_sidecar_vector_current_heap_source<uint64_t> +
+	item_complete_sidecar_checked_add_source;
+namespace item_identity_source = duris_craft_recipe_bounded_detail;
+using item_complete_identity_byte_I = std::vector<uint8_t>::iterator;
+template <class Output> constexpr size_t item_complete_identity_selected_copy_source =
+	item_identity_source::complete_recipe_copy_projected_source<const uint8_t *, Output> +
+	2 * item_identity_source::complete_recipe_miter_argument_source<const uint8_t *> +
+	item_identity_source::complete_recipe_copy_projected_source<const uint8_t *, Output> +
+	2 * item_identity_source::complete_recipe_niter_graph_source<const uint8_t *> +
+	item_identity_source::complete_recipe_niter_graph_source<Output> +
+	item_identity_source::complete_recipe_raw_copy_a1_source<const uint8_t *, uint8_t *> +
+	item_identity_source::complete_recipe_raw_copy_a2_source<const uint8_t *, uint8_t *> +
+	// Actual identity width exceeds1: _Num local stays, assign_one is not
+	// reached. Builtin memmove declares no separately priced C++ callee.
+	item_identity_source::complete_recipe_byte_simple_copy_m_source +
+	item_identity_source::complete_recipe_std_constant_evaluated_source +
+	(std::is_pointer_v<Output> ?
+		 item_identity_source::complete_recipe_raw_niter_wrap_source :
+		 item_identity_source::complete_recipe_normal_niter_wrap_own_source<Output> +
+			 item_identity_source::complete_recipe_niter_graph_source<Output> +
+			 item_identity_source::complete_recipe_normal_offset_argument_source<Output> +
+			 item_identity_source::complete_recipe_normal_pointer_constructor_source<
+				 Output>);
+constexpr size_t item_complete_collector_identity_encode_source =
+	// Array const begin/end each(this/returned raw pointer)2P and their
+	// const data(this/returned raw pointer)2P. Conservative distinct calls.
+	8 * sizeof(void *) +
+	// Actual destination begin() iterator survives to operator+; the latter
+	// returned I initializes std::copy's by-value output parameter directly.
+	item_identity_source::complete_recipe_wire_begin_own_source +
+	item_identity_source::complete_recipe_normal_pointer_constructor_source<
+		item_complete_identity_byte_I> +
+	item_identity_source::complete_recipe_normal_offset_argument_source<
+		item_complete_identity_byte_I> +
+	item_identity_source::complete_recipe_normal_pointer_constructor_source<
+		item_complete_identity_byte_I> +
+	item_complete_identity_selected_copy_source<item_complete_identity_byte_I>;
+constexpr size_t item_complete_collector_identity_decode_source =
+	// Actual array size(this/returned N), mutable begin/data each2P.
+	sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	// std::copy_n firstP,nN,resultP,returnedP, const n2N; actual
+	// __size_to_integer(size_t) parameter/return2N remains separate.
+	3 * sizeof(void *) + 4 * sizeof(size_t) +
+	// __copy_n<RA> firstP,nN,resultP,returnedP, by-value RA tag.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(std::random_access_iterator_tag) +
+	// iterator_category const iterator-ref P; RA result is the same direct
+	// by-value tag destination above, not another temporary tag object.
+	sizeof(void *) + item_complete_identity_selected_copy_source<uint8_t *>;
+namespace item_sidecar_operation_source = duris_craft_recipe_bounded_detail;
+using item_complete_sidecar_K = std::string::const_iterator;
+using item_complete_sidecar_u64_CI = std::vector<uint64_t>::const_iterator;
+constexpr size_t item_complete_sidecar_byte_clear_source =
+	// clear thisP, _M_erase_at_end this/pos/n (2P+N), actual _Destroy
+	// first/last/allocator then first/last then trivial aux first/last7P.
+	// Its reached internal predicate is a real declared Boolean. No element
+	// destructor body, no deallocation, no constant-only destroy_at branch.
+	10 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_byte_data_source =
+	// Public mutable data this/returned pointer2P and selected _M_data_ptr
+	// this/pointer/returned pointer3P. Plain byte allocator raw pointer route.
+	5 * sizeof(void *);
+constexpr size_t item_complete_sidecar_byte_growth_query_source =
+	// Four real sequential size occurrences and two max_size occurrences
+	// through valid bounded growth. Actual std::max ref/ref/returnedref.
+	4 * item_sidecar_operation_source::complete_recipe_vector_size_source<uint8_t> +
+	2 * item_sidecar_operation_source::complete_recipe_vector_max_size_source<uint8_t> +
+	item_sidecar_operation_source::complete_recipe_vector_capacity_source<uint8_t> +
+	item_sidecar_operation_source::complete_recipe_size_max_source;
+constexpr size_t item_complete_sidecar_corpse_encode_array_source =
+	// Actual const array<int32_t,8> begin/end and const data scopes.
+	// Hidden raw pointer results are in encode_corpse own range storage;
+	// raw scalar returns remain distinct under existing Source convention.
+	8 * sizeof(void *);
+constexpr size_t item_complete_sidecar_corpse_decode_array_source =
+	// Different mutable array<int32_t,8> begin/end/data specialization.
+	8 * sizeof(void *);
+constexpr size_t item_complete_sidecar_collector_encode_uid_range_source =
+	// Actual hidden const CI results are in encode_collector own storage.
+	2 * (sizeof(void *) +
+	     item_sidecar_operation_source::complete_recipe_normal_pointer_constructor_source<
+		     item_complete_sidecar_u64_CI>)+item_sidecar_operation_source::
+			complete_recipe_normal_equal_own_source<item_complete_sidecar_u64_CI> +
+	2 * item_sidecar_operation_source::complete_recipe_normal_base_source<
+		    item_complete_sidecar_u64_CI> +
+	item_sidecar_operation_source::complete_recipe_normal_preincrement_source<
+		item_complete_sidecar_u64_CI> +
+	item_sidecar_operation_source::complete_recipe_normal_dereference_source<
+		item_complete_sidecar_u64_CI>;
+constexpr size_t item_complete_sidecar_append_text_input_source =
+	// Both string begin/end K prvalues initialize actual insert Input
+	// formals. Actual pointer-return/offset materialization2P each; const
+	// data getters2P and explicit normal constructors2P each are reached.
+	2 * (2 * sizeof(void *) +
+	     item_sidecar_operation_source::complete_recipe_string_const_data_source +
+	     item_sidecar_operation_source::complete_recipe_normal_pointer_constructor_source<
+		     item_complete_sidecar_K>)+item_sidecar_operation_source::
+			complete_recipe_string_size_source +
+	// Actual destination end I survives conversion to public position CI.
+	item_sidecar_operation_source::complete_recipe_wire_end_own_source +
+	item_sidecar_operation_source::complete_recipe_normal_pointer_constructor_source<
+		std::vector<uint8_t>::iterator>;
+constexpr size_t item_complete_sidecar_append_text_insert_source =
+	// Same selected GNU13 end-insert K<const char*,string>→byte as recipe;
+	// fitting zero-old-range and growing branches are both real here.
+	item_sidecar_operation_source::complete_recipe_byte_end_insert_graph_source<
+		item_complete_sidecar_K, const char *> +
+	item_complete_sidecar_append_text_input_source;
+constexpr size_t item_complete_sidecar_fresh_string_operations_source =
+	// Candidate/reset make each actual destination length0 before its one
+	// assign. Empty/disjoint fitting and allocate/mutate routes are reached;
+	// old-content copy is not. No unrelated recipe budget/DTO/lifetime total.
+	item_sidecar_operation_source::complete_recipe_string_assign_entry_source +
+	item_sidecar_operation_source::complete_recipe_string_replace_own_source +
+	item_sidecar_operation_source::complete_recipe_string_check_length_source +
+	item_sidecar_operation_source::complete_recipe_string_disjunct_source +
+	2 * item_sidecar_operation_source::complete_recipe_string_less_source +
+	item_sidecar_operation_source::complete_recipe_string_mutate_own_source +
+	item_sidecar_operation_source::complete_recipe_string_create_own_source +
+	item_sidecar_operation_source::complete_recipe_string_char_allocation_source +
+	// Exact controller queries occur before assign. Their returned carriers
+	// are separate from controller own request/capacity/next declarations.
+	2 * item_sidecar_operation_source::complete_recipe_string_capacity_own_source +
+	item_sidecar_operation_source::complete_recipe_string_max_size_source;
+constexpr size_t item_complete_controller_prefix_source =
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_controller_peak_source =
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_validation_prefix_source =
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(std::vector<player_item_snapshot>::const_iterator);
+constexpr size_t item_complete_sidecar_fresh_source =
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_growth_source =
+	2 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_fitting_growth_source =
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_sidecar_text_source =
+	3 * sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_encode_growth_source =
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_encode_clone_payload_source =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_dispatch_command_copy_source =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+namespace item_complete_sidecar_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_sidecar_common_source =
+	// Actual old policy resultB; complete controller prefix/peak declarations;
+	// selected reserve interface only. Its target Source remains caller-owned.
+	sizeof(bool) + item_complete_controller_prefix_source +
+	item_complete_controller_peak_source +
+	item_complete_sidecar_source::complete_recipe_callback_interface_source;
+constexpr size_t item_complete_sidecar_encode_wrapper_typed_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_sidecar_decode_wrapper_typed_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 3 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_sidecar_corpse_encode_retained_source =
+	item_complete_sidecar_common_source + item_complete_sidecar_encode_wrapper_typed_source +
+	item_complete_sidecar_encode_corpse_own_source +
+	item_complete_sidecar_append_u32_own_source + item_complete_sidecar_append_text_own_source +
+	item_complete_sidecar_frame_end_destructor_source +
+	item_complete_sidecar_encode_lifetime_source +
+	item_complete_sidecar_encode_observation_source + item_complete_sidecar_growth_source +
+	item_complete_sidecar_byte_growth_query_source + item_complete_byte_resize_positive_source +
+	item_complete_put_u32_own_source + item_complete_sidecar_byte_clear_source +
+	item_complete_sidecar_byte_data_source +
+	item_complete_sidecar_source::complete_recipe_vector_size_source<uint8_t> +
+	item_complete_sidecar_append_text_insert_source +
+	item_complete_sidecar_corpse_encode_array_source;
+constexpr size_t item_complete_sidecar_corpse_decode_retained_source =
+	item_complete_sidecar_common_source + item_complete_sidecar_decode_wrapper_typed_source +
+	item_complete_sidecar_decode_corpse_own_source +
+	item_complete_sidecar_read_text_own_source + item_complete_read_u32_own_source +
+	item_complete_get_u32_own_source + item_complete_sidecar_corpse_decode_lifetime_source +
+	item_complete_sidecar_corpse_decode_observation_source + item_complete_sidecar_text_source +
+	item_complete_sidecar_fresh_string_operations_source +
+	item_complete_sidecar_corpse_decode_array_source;
+constexpr size_t item_complete_sidecar_collector_encode_retained_source =
+	item_complete_sidecar_common_source + item_complete_sidecar_encode_wrapper_typed_source +
+	item_complete_sidecar_encode_collector_own_source +
+	item_complete_sidecar_encode_lifetime_source +
+	item_complete_sidecar_encode_observation_source + item_complete_sidecar_fresh_source +
+	item_complete_byte_fresh_fill_assign_source + item_complete_put_u32_own_source +
+	item_complete_put_u64_own_source + item_complete_sidecar_byte_clear_source +
+	item_complete_sidecar_byte_data_source +
+	item_complete_sidecar_source::complete_recipe_vector_size_source<uint8_t> +
+	item_complete_sidecar_source::complete_recipe_vector_size_source<uint64_t> +
+	item_complete_collector_identity_encode_source +
+	item_complete_sidecar_collector_encode_uid_range_source;
+constexpr size_t item_complete_sidecar_collector_decode_retained_source =
+	item_complete_sidecar_common_source + item_complete_sidecar_decode_wrapper_typed_source +
+	item_complete_sidecar_decode_collector_own_source +
+	item_complete_sidecar_collector_decode_lifetime_source +
+	item_complete_sidecar_collector_decode_observation_source +
+	item_complete_sidecar_fresh_source + item_complete_sidecar_fitting_growth_source +
+	item_complete_collector_uid_fitting_growth_query_source +
+	item_complete_collector_uid_reserve_source + item_complete_collector_uid_push_source +
+	item_complete_get_u32_own_source + item_complete_get_u64_own_source +
+	item_complete_collector_identity_decode_source;
+constexpr size_t item_complete_duplicate_public_own_source =
+	// payload/context/catch3P,F,version,outer/frames2N and returned bool.
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + sizeof(uint16_t) +
+	2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_duplicate_owned_own_source =
+	// payload/owner/data/child/catch5P; version,duplicate/target/uid3U64,
+	// direct_countU32, two lexical index and payload_direct_children3N/B.
+	5 * sizeof(void *) + sizeof(uint16_t) + 3 * sizeof(uint64_t) + sizeof(uint32_t) +
+	3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_craft_outputs_public_own_source =
+	// payload/output/context/retained/catch + hidden candidate range/item7P,
+	// F,outer/frames/retained/row4N,B and two mutable hidden row I objects.
+	7 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 4 * sizeof(size_t) +
+	sizeof(bool) + 2 * sizeof(std::vector<player_item_snapshot>::iterator);
+constexpr size_t item_complete_craft_outputs_owned_own_source =
+	// payload/output/owner/output-row/catch5P; prefix/index/levels/remaining4N.
+	5 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_duplicate_controller_source =
+	// Shared actual validation prefix this/output,extra/total/row and B.
+	// Only uids pointer is set; unconditional row local remains a real N.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	// peak this,extra/total,B; actual checked-add and callback signatures.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// Actual false UID heap helper value/bytes,fresh/count/B then capacity.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_craft_outputs_controller_source =
+	// Actual items/uids selectors, const row-range hidden physical CI locals,
+	// prefix range/item refs are distinct from wrapper's mutable I range.
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(std::vector<player_item_snapshot>::const_iterator) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// Separate row and UID false vector heap helper instantiations/capacity.
+	2 * (2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) +
+	     sizeof(size_t)) +
+	// Actual row CURRENT and const row range, no COPY/default/decoder profile.
+	44 * sizeof(void *) + 10 * sizeof(size_t) + 15 * sizeof(bool) + 14 * sizeof(void *) +
+	sizeof(bool);
+using item_duplicate_uid_I = std::vector<uint64_t>::iterator;
+using item_duplicate_equal_E =
+	decltype(__gnu_cxx::__ops::__iter_equals_val(std::declval<const uint64_t &>()));
+constexpr size_t item_complete_duplicate_find_graph_source =
+	// Genuine MUTABLE UID iterator specialization, not recovery const-CI.
+	// Public find 2I+valueP; equals factory/constructor3P; dispatch2I+E;
+	// RA core2I+E+tripD+RA, categoryP; difference6P+D; ++2P;
+	// equality adapter P+I+B and dereference2P. Class return propagates
+	// to one caller comparison operand, owned separately below.
+	7 * sizeof(item_duplicate_uid_I) + 2 * sizeof(item_duplicate_equal_E) +
+	16 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag) +
+	sizeof(bool);
+constexpr size_t item_complete_duplicate_find_caller_source =
+	// Two actual find expression sites: each find result and end operand.
+	// begin/end input results alias public algorithm formal objects. Their
+	// receiver family2P plus completed explicit pointer constructor2P is
+	// shared across both sites; equality/base scopes6P+B finish before reuse.
+	4 * sizeof(item_duplicate_uid_I) + 4 * sizeof(void *) + 6 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_duplicate_lifetime_source =
+	// One plain empty UID vector; no element ctor/default/move is selected.
+	6 * sizeof(void *) + item_complete_native_vector_cleanup_source<uint64_t>;
+constexpr size_t item_complete_duplicate_direct_source =
+	// Genuine put/get helper scope subsets: get32 and get64 only.
+	sizeof(void *) + 2 * sizeof(uint32_t) + sizeof(unsigned) + sizeof(void *) +
+	2 * sizeof(uint64_t) + sizeof(unsigned) +
+	// const continuation-byte data5P, size P+N, const payload array index2P+N.
+	5 * sizeof(void *) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	// Wrapper's actual supported policy returned bool and published named
+	// raw-array lookup/comparator/lower_bound full selected graph.
+	sizeof(bool) + item_complete_offering_find_source;
+constexpr size_t item_complete_craft_outputs_lifetime_source =
+	// Actual empty candidate row and UID vectors, never default row members.
+	2 * (6 * sizeof(void *)) +
+	// Candidate/old-output vector row destruction reaches genuine nontrivial
+	// row and ED destructor receivers inside these exact selected backends.
+	item_complete_native_vector_cleanup_source<player_item_snapshot> +
+	item_complete_native_vector_cleanup_source<uint64_t> +
+	item_complete_native_vector_cleanup_source<player_item_dynamic_affect_snapshot> +
+	item_complete_native_vector_cleanup_source<player_item_extra_description_snapshot> +
+	item_complete_native_vector_cleanup_source<int32_t> +
+	item_complete_native_member_string_cleanup_source +
+	// Genuine equal-allocator vector<Row> assignment entry/temp/allocator/
+	// swap graph. Remove ONLY the exact named trivial cleanup included in
+	// that reviewed generic expression; actual nontrivial row backend is
+	// retained above once. It is not a whole-copy credit or spare subtraction.
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		player_item_snapshot> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<player_item_snapshot>() +
+	// Actual caller std::move<vector<Row>> reference/result.
+	2 * sizeof(void *);
+constexpr size_t item_complete_craft_outputs_direct_source =
+	// Blob fixed-array size/data and mutable output row subscript.
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// Distinct row/UID vector size getters; fresh output clear plus erase
+	// owns this, position and declared n. n==0 excludes Destroy descendants.
+	2 * (sizeof(void *) + sizeof(size_t)) + sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) +
+	// const row empty: this/result B, two real CI result operands, begin/end
+	// and their ctor scopes, comparison/base pair. No implicit trivial copy.
+	13 * sizeof(void *) + 2 * sizeof(std::vector<player_item_snapshot>::const_iterator) +
+	2 * sizeof(bool) +
+	// Wrapper mutable candidate range: begin/end2P, pointer ctor2P, equality
+	// refs/base6P+B, ++2P,deref2P. Hidden mutable I objects stay in own row.
+	14 * sizeof(void *) + sizeof(bool) + sizeof(bool);
+constexpr size_t item_complete_duplicate_retained_source =
+	item_complete_duplicate_public_own_source + item_complete_duplicate_owned_own_source +
+	item_complete_duplicate_controller_source + item_complete_duplicate_lifetime_source +
+	item_complete_duplicate_direct_source + item_complete_duplicate_find_graph_source +
+	item_complete_duplicate_find_caller_source + item_complete_native_uid_fresh_reserve_source +
+	item_complete_native_uid_fitting_const_push_source;
+constexpr size_t item_complete_craft_outputs_retained_source =
+	item_complete_craft_outputs_public_own_source +
+	item_complete_craft_outputs_owned_own_source +
+	item_complete_craft_outputs_controller_source +
+	item_complete_craft_outputs_lifetime_source + item_complete_craft_outputs_direct_source +
+	item_complete_native_uid_fresh_reserve_source +
+	item_complete_native_uid_fitting_const_push_source +
+	// Actual same published mutable UID normal-iterator sort family. Runtime
+	// recursive frames are admitted dynamically by the unchanged level count.
+	item_complete_native_uid_sort_nonrecursive_source +
+	item_complete_native_uid_adjacent_algorithm_source +
+	item_complete_native_uid_iterator_acquisition_source +
+	item_complete_native_uid_adjacent_caller_source +
+	// Adapter declaration/query Source retained while old list child runs.
+	// Child full Source+INITIAL preflight is transient; genuine old-child
+	// supplement alone enters that child's outer. Not self-own0 relabeling.
+	item_complete_snapshot_list_decode_child_own_source +
+	3 * player_item_snapshot_list_decode_bounded_source_query_frame_bytes();
+namespace item_general_entities_selected_recipe = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_general_entities_outputs_range_source =
+	// Mutable row-I range: begin/end receivers2P, completed pointer ctor2P,
+	// comparison2P+B with real base pair4P, ++2P and dereference2P.
+	// The two actual hidden I objects already belong parent own19.
+	14 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_general_entities_direct_source =
+	// Authentic const fixed item-array subscript in input-key loop.
+	2 * sizeof(void *) + sizeof(size_t) +
+	// Original same-owner test and runtime policy query.
+	2 * sizeof(void *) + 2 * sizeof(bool) +
+	item_general_entities_selected_recipe::complete_recipe_vector_size_source<
+		critical_entity_key> +
+	item_general_entities_selected_recipe::complete_recipe_vector_size_source<
+		critical_expected_revision>;
+constexpr size_t item_complete_general_entities_command_default_source =
+	// Actual critical_command candidate{} aggregate initialization. The three
+	// distinct vector specialization families are exactly command10's selected
+	// default source; both byte DTO members are physically candidate-owned.
+	item_complete_command_aggregate_default_source;
+constexpr size_t item_complete_general_entities_unselected_byte_deallocation_source =
+	// Candidate payload/accounting_intent stay empty/null on every normal or
+	// early-return path. _M_deallocate's root still executes; only downstream
+	// traits/allocator/newallocator/delete fields below are truly unselected.
+	7 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_entities_command_cleanup_source =
+	// Keep actual generated destructor receiver and full K/R cleanup. Only
+	// the candidate byte tail is projected to the proven null path15P+N+B.
+	item_complete_command_cleanup_source -
+	item_complete_general_entities_unselected_byte_deallocation_source;
+constexpr size_t item_complete_general_entities_member_move_source =
+	// Exactly two member-vector assignments, to arbitrary old output K/R
+	// vectors. Their internal genuine V/A objects remain in each child Source.
+	// Share only their identical actual typed cleanup methods with the parent
+	// full K/R tail. Parent candidate DTO and caller/prior-output heaps stay out.
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_entity_key> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<critical_entity_key>() +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_expected_revision> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<
+		critical_expected_revision>() +
+	// Two real outer std::move<vector<T>&> reference/formal result declarations.
+	// These are selecting expressions, distinct from each child's inner move.
+	4 * sizeof(void *);
+constexpr size_t item_complete_general_entities_command_lifecycle_source =
+	item_complete_general_entities_command_default_source +
+	item_complete_general_entities_command_cleanup_source +
+	item_complete_general_entities_member_move_source;
+constexpr size_t item_complete_general_entities_owned_declaration_source =
+	// command/payload/budget, actual output range ref and element ref;
+	// admission_prefix and zero-or-positive for initializer index.
+	5 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * sizeof(std::vector<player_item_snapshot>::iterator) + sizeof(bool);
+constexpr size_t item_complete_general_entities_wrapper_declaration_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_entities_prefix_declaration_source =
+	4 * sizeof(void *) + 3 * sizeof(size_t) +
+	2 * sizeof(std::vector<player_item_snapshot>::const_iterator) + sizeof(bool);
+constexpr size_t item_complete_general_entities_peak_declaration_source =
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_entities_growth_declaration_source =
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_entities_fresh_declaration_source =
+	sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_entities_sort_frame_declaration_source =
+	// this, count, levels, remaining, request, real constexpr recursive local.
+	sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_entities_owner_key_child_declaration_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+struct item_entities_revision_less
+{
+	bool operator()(const critical_expected_revision &left,
+			const critical_expected_revision &right) const
+	{
+		return critical_entity_key_less(left.key, right.key);
+	}
+};
+template <class T> using item_general_entities_iterator = typename std::vector<T>::iterator;
+template <class C> using item_general_entities_sort_adapter = __gnu_cxx::__ops::_Iter_comp_iter<C>;
+template <class C> using item_general_entities_val_adapter = __gnu_cxx::__ops::_Val_comp_iter<C>;
+template <class C> using item_general_entities_iter_val_adapter =
+	__gnu_cxx::__ops::_Iter_comp_val<C>;
+template <class T, class C>
+constexpr size_t item_complete_general_entities_sort_nonrecursive_source =
+	// Explicit declaration ledger42I+6P+9D+10A+C+V+W+7T, nine otherwise
+	// unowned arithmetic/discarded resultsI; exact typed helper families
+	// and lexical occurrences yield68I+327P+40D+11A+3C+V+W+7T below.
+	68 * sizeof(item_general_entities_iterator<T>) + 327 * sizeof(void *) +
+	40 * sizeof(typename std::iterator_traits<
+		     item_general_entities_iterator<T>>::difference_type) +
+	11 * sizeof(item_general_entities_sort_adapter<C>) + 3 * sizeof(C) +
+	sizeof(item_general_entities_val_adapter<C>) +
+	sizeof(item_general_entities_iter_val_adapter<C>) + 7 * sizeof(T) +
+	2 * sizeof(std::make_unsigned_t<typename std::iterator_traits<
+			   item_general_entities_iterator<T>>::difference_type>) +
+	8 * sizeof(int) + 10 * sizeof(bool) + 2 * sizeof(std::strong_ordering) +
+	2 * sizeof(std::__cmp_cat::__unspec) +
+	// Actual target: key_less2P+B; named revision op3P+B nesting key_less.
+	(std::is_same_v<T, critical_entity_key> ? 2 * sizeof(void *) + sizeof(bool) :
+						  5 * sizeof(void *) + 2 * sizeof(bool));
+template <class T, class C> constexpr size_t item_complete_general_entities_sort_recursive_source =
+	3 * sizeof(item_general_entities_iterator<T>) +
+	sizeof(typename std::iterator_traits<item_general_entities_iterator<T>>::difference_type) +
+	sizeof(item_general_entities_sort_adapter<C>);
+template <class T, class C> constexpr size_t item_complete_general_entities_sort_full_source =
+	item_complete_general_entities_sort_nonrecursive_source<T, C> +
+	// Validated noncraft <=2owners+3000items+parent+collector=3004;
+	// craft <=3002, recovery explicitly <=3003. floorlog2(3004)=11.
+	// Full prospective retains23; actual runtime controller must admit its
+	// genuine (2*floorlog2(count)+1) recursive rows separately.
+	23 * item_complete_general_entities_sort_recursive_source<T, C>;
+template <class T> constexpr size_t item_complete_general_entities_sort_caller_source =
+	// Actual begin/end two receivers + explicit pointer ctor2P each.
+	// Result class prvalues directly initialize public sort formals.
+	6 * sizeof(void *);
+constexpr size_t item_complete_general_entities_key_adjacent_source =
+	7 * sizeof(item_general_entities_iterator<critical_entity_key>) +
+	3 * sizeof(decltype(&critical_entity_key_equal)) +
+	sizeof(item_general_entities_sort_adapter<decltype(&critical_entity_key_equal)>) +
+	20 * sizeof(void *) + 3 * sizeof(bool);
+constexpr size_t item_complete_general_entities_key_adjacent_caller_source =
+	// Actual begin/end/final end three receivers and pointer ctors9P.
+	// Root result and separately evaluated end comparison operand eachI;
+	// C++20 != rewrites ==6P+B, no independent != callable declaration.
+	9 * sizeof(void *) + 2 * sizeof(item_general_entities_iterator<critical_entity_key>) +
+	6 * sizeof(void *) + sizeof(bool);
+namespace item_general_entity_vector_source_detail
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), D = sizeof(std::ptrdiff_t),
+		 B = sizeof(bool);
+// These are existing trivial DTOs, not surrogate types or new runtime guards.
+static_assert(std::is_trivial_v<critical_entity_key>);
+static_assert(std::is_trivial_v<critical_expected_revision>);
+using namespace duris_craft_recipe_bounded_detail;
+
+template <class T> constexpr size_t single_construct =
+	// Exact selected traits construct(A&,T*,Arg&), two forward scopes,
+	// construct_at(T*,Arg&), real placement-new count/location/result.
+	complete_recipe_vector_single_construct_source<T>;
+template <class T> constexpr size_t push_public = 2 * P;
+template <class T> constexpr size_t check_len =
+	// Genuine valid varied-count path, not old one-size/one-max inventory:
+	// four size results, two max_size results and referenced std::max inputs.
+	complete_recipe_vector_check_len_own_source<T> + 4 * complete_recipe_vector_size_source<T> +
+	2 * complete_recipe_vector_max_size_source<T> + complete_recipe_size_max_source;
+template <class T> constexpr size_t growth_end_argument =
+	// end() returned I is _M_realloc_insert's position by-value destination.
+	P + complete_recipe_normal_pointer_constructor_source<typename std::vector<T>::iterator>;
+template <class T> constexpr size_t growth_position_minus_begin =
+	// Genuine begin() temporary remains distinct from position I. Both base
+	// refs survive through the actual iterator subtraction and its D result.
+	P + complete_recipe_normal_pointer_constructor_source<typename std::vector<T>::iterator> +
+	sizeof(typename std::vector<T>::iterator) +
+	complete_recipe_normal_subtract_own_source<typename std::vector<T>::iterator> +
+	2 * complete_recipe_normal_base_source<typename std::vector<T>::iterator>;
+template <class T> constexpr size_t end_relocations =
+	// Two real _S_relocate/__relocate_a/bitwise-a1 invocations. First old
+	// prefix is nonempty; second end suffix is empty and does not execute
+	// is_constant_evaluated. The declared wrappers/count still execute.
+	complete_recipe_vector_relocate_source<T> + (21 * P + D) +
+	2 * complete_recipe_vector_mutable_allocator_source<T> +
+	2 * complete_recipe_normal_base_source<typename std::vector<T>::iterator>;
+template <class T> constexpr size_t return_back =
+	// back() has this/reference, end() temporary I and returned minus I.
+	// The computed pointer argument of minus is a genuine prvalue; ctor
+	// owns its two references. Dereference and back/reference results differ.
+	complete_recipe_vector_back_own_source<T> + P + sizeof(typename std::vector<T>::iterator) +
+	complete_recipe_normal_pointer_constructor_source<typename std::vector<T>::iterator> +
+	complete_recipe_normal_offset_own_source<typename std::vector<T>::iterator> +
+	complete_recipe_normal_pointer_constructor_source<typename std::vector<T>::iterator> +
+	complete_recipe_normal_dereference_source<typename std::vector<T>::iterator>;
+template <class T> constexpr size_t growth_core =
+	complete_recipe_vector_realloc_insert_own_source<T> + growth_end_argument<T> +
+	growth_position_minus_begin<T> + check_len<T> + complete_recipe_vector_allocate_source<T> +
+	2 * P + single_construct<T> + end_relocations<T> +
+	// Actual realloc tail invokes _M_deallocate directly, without a third
+	// allocator getter. Keep the two genuine relocation getters above.
+	(complete_recipe_vector_deallocate_graph_source<T> - 2 * P);
+}
+constexpr size_t item_complete_general_entities_key_push_fitting_source =
+	item_general_entity_vector_source_detail::push_public<critical_entity_key> +
+	item_general_entity_vector_source_detail::single_construct<critical_entity_key>;
+constexpr size_t item_complete_general_entities_key_push_growing_source =
+	item_general_entity_vector_source_detail::push_public<critical_entity_key> +
+	item_general_entity_vector_source_detail::growth_core<critical_entity_key>;
+constexpr size_t item_complete_general_entities_key_push_shared_source =
+	// Only exact typed public push and traits/construct-at subtree. This
+	// matches all fitting declarations retained by the growing path.
+	item_general_entity_vector_source_detail::push_public<critical_entity_key> +
+	item_general_entity_vector_source_detail::single_construct<critical_entity_key>;
+constexpr size_t item_complete_general_entities_key_push_source =
+	item_complete_general_entities_key_push_fitting_source +
+	item_complete_general_entities_key_push_growing_source -
+	item_complete_general_entities_key_push_shared_source;
+constexpr size_t item_complete_general_entities_revision_push_fitting_source =
+	item_general_entity_vector_source_detail::push_public<critical_expected_revision> +
+	// Actual std::move, emplace(this,arg,reference result), outer forward.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	item_general_entity_vector_source_detail::single_construct<critical_expected_revision> +
+	item_general_entity_vector_source_detail::return_back<critical_expected_revision>;
+constexpr size_t item_complete_general_entities_revision_push_growing_source =
+	item_general_entity_vector_source_detail::push_public<critical_expected_revision> +
+	2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	item_general_entity_vector_source_detail::growth_core<critical_expected_revision> +
+	item_general_entity_vector_source_detail::return_back<critical_expected_revision>;
+constexpr size_t item_complete_general_entities_revision_push_shared_source =
+	// Conservatively share only two genuinely identical typed method families.
+	// Both possible outer move/emplace/back occurrences remain individually
+	// represented; this is not a max of unrelated per-call paths.
+	item_general_entity_vector_source_detail::push_public<critical_expected_revision> +
+	item_general_entity_vector_source_detail::single_construct<critical_expected_revision>;
+constexpr size_t item_complete_general_entities_revision_push_source =
+	item_complete_general_entities_revision_push_fitting_source +
+	item_complete_general_entities_revision_push_growing_source -
+	item_complete_general_entities_revision_push_shared_source;
+template <class T> constexpr size_t item_complete_general_entities_pop_source =
+	// pop receiver; actual traits destroy(A&,T*) and destroy_at(T*) only.
+	// Trivial implicit T destructor has no declared callable Source body.
+	4 * sizeof(void *);
+template <class T> constexpr size_t item_complete_general_entities_fresh_assign_source =
+	// Selected fresh vector initializer-list assignment of exactly two trivial
+	// elements. IL formal/backing array are caller INLINE, excluded here.
+	// Public assignment2P; actual IL pointer/count ctor and begin/end/begin/size.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + 7 * sizeof(void *) +
+	sizeof(size_t) +
+	// forward aux this/first/last/tmp, len,F plus sliced RA; raw distance.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(std::forward_iterator_tag) +
+	sizeof(std::random_access_iterator_tag) + 5 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(size_t) +
+	6 * sizeof(void *) +
+	// check_init converted allocator object, const-copy/cleanup, max/traits/min.
+	10 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(std::allocator<T>) + 5 * sizeof(void *) +
+	sizeof(size_t) + 11 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool) +
+	// raw const T* -> T* uninitialized copy; actual Num2 skips assign_one.
+	46 * sizeof(void *) + sizeof(std::ptrdiff_t) + 4 * sizeof(bool) +
+	// Null old Destroy still reaches its actual runtime predicate; null
+	// deallocate reaches only its root, no allocator/delete child.
+	7 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_validated_entities_source_query_frame_bytes() noexcept
+{
+	// Full getter output/result/child, result+policy and checked-add signature;
+	// child query getter families are genuinely reached before their bodies.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_owner_key_source_query_frame_bytes() +
+	       item_transfer_craft_outputs_decode_complete_source_query_frame_bytes();
+}
+constexpr size_t item_complete_general_entities_craft_child_declaration_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+struct item_general_entities_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *command = nullptr;
+	const std::vector<uint64_t> *roots = nullptr;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames))
+			return false;
+		if (command &&
+		    (!payload_clone_add(total, sizeof(*command)) ||
+		     !payload_clone_vector_heap(command->keys, false, total) ||
+		     !payload_clone_vector_heap(command->expected_revisions, false, total) ||
+		     !payload_clone_vector_heap(command->payload, false, total) ||
+		     !payload_clone_vector_heap(command->accounting_intent, false, total)))
+			return false;
+		if (roots && (!payload_clone_add(total, sizeof(*roots)) ||
+			      !payload_clone_vector_heap(*roots, false, total)))
+			return false;
+		if (outputs)
+		{
+			if (!payload_clone_add(total, sizeof(*outputs)) ||
+			    !payload_clone_vector_heap(*outputs, false, total))
+				return false;
+			for (const auto &item : *outputs)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if (!payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count) const noexcept
+	{
+		size_t request = 0;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!payload_clone_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !payload_clone_add(request, next * sizeof(T)))
+				return false;
+		}
+		return peak(request);
+	}
+	template <typename T> bool fresh(size_t count, size_t extra = 0) const noexcept
+	{
+		size_t request = 0;
+		return count <= SIZE_MAX / sizeof(T) &&
+		       payload_clone_add(request, count * sizeof(T)) &&
+		       payload_clone_add(request, extra) && peak(request);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		size_t levels = 0, remaining = count, request = 0;
+		while (remaining > 1)
+		{
+			remaining >>= 1;
+			++levels;
+		}
+		constexpr size_t recursive =
+			item_complete_general_entities_sort_recursive_source<T, Comparator>;
+		// Nonrecursive genuine Source is already retained in frames. Admit
+		// the actual depth-dependent overlapping introsort declarations here.
+		return 2 * levels + 1 <= SIZE_MAX / recursive &&
+		       payload_clone_add(request, (2 * levels + 1) * recursive) && peak(request);
+	}
+};
+struct item_payload_validation_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	const craft_pouch_mutation *pouch = nullptr;
+	const craft_recipe_continuation *recipe = nullptr;
+	bool prefix(size_t &output, size_t extra = 0) const noexcept
+	{
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames))
+			return false;
+		if (outputs)
+		{
+			if (!payload_clone_add(total, sizeof(*outputs)) ||
+			    !payload_clone_vector_heap(*outputs, false, total))
+				return false;
+			for (const auto &item : *outputs)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if (pouch)
+		{
+			if (!payload_clone_add(total, sizeof(*pouch)) ||
+			    !payload_clone_vector_heap(pouch->usage, false, total) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->before, &row) ||
+			    !payload_clone_add(total, row) ||
+			    !player_item_snapshot_current_heap_bytes(pouch->after, &row) ||
+			    !payload_clone_add(total, row))
+				return false;
+		}
+		if (recipe &&
+		    (!payload_clone_add(total, sizeof(*recipe)) ||
+		     !payload_clone_vector_heap(recipe->pouch_mutation, false, total) ||
+		     !payload_clone_vector_heap(recipe->refine_root_order, false, total) ||
+		     !payload_clone_string_heap(recipe->refine_material_name, false, total)))
+			return false;
+		if (!payload_clone_add(total, extra))
+			return false;
+		output = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+using item_complete_collector_ci = std::vector<uint64_t>::const_iterator;
+using item_complete_collector_difference =
+	typename std::iterator_traits<item_complete_collector_ci>::difference_type;
+using item_complete_collector_less = __gnu_cxx::__ops::_Iter_less_iter;
+using item_complete_collector_equal = __gnu_cxx::__ops::_Iter_equal_to_iter;
+constexpr size_t item_complete_collector_is_sorted_source =
+	13 * sizeof(void *) + 10 * sizeof(item_complete_collector_ci) +
+	sizeof(item_complete_collector_less) + 3 * sizeof(bool);
+constexpr size_t item_complete_collector_adjacent_source =
+	13 * sizeof(void *) + 8 * sizeof(item_complete_collector_ci) +
+	sizeof(item_complete_collector_equal) + 2 * sizeof(bool);
+constexpr size_t item_complete_collector_operation_zero_source =
+	// Original zero predicate: argument/range refs and two raw loop iterators,
+	// copied byte and Boolean return; const array begin/end each own4P.
+	12 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool);
+constexpr size_t item_complete_collector_absent_empty_source =
+	13 * sizeof(void *) + 2 * sizeof(item_complete_collector_ci) + 2 * sizeof(bool);
+constexpr size_t item_complete_collector_present_caller_source =
+	// Seven actual const begin/end calls each own thisP plus explicit pointer
+	// constructor2P. Returned objects alias algorithm formals except the final
+	// adjacent comparison RHS, whose iterator object and comparison remain.
+	21 * sizeof(void *) + sizeof(item_complete_collector_ci) + 6 * sizeof(void *) +
+	sizeof(bool) + sizeof(void *) + sizeof(size_t);
+namespace item_complete_general_control_recipe = duris_craft_recipe_bounded_detail;
+template <class T> constexpr size_t item_complete_general_vector_current_source =
+	// Actual payload_clone_vector_heap(false): value/bytes refs,fresh/count/result,
+	// then selected capacity this/returnedN. size() true branch unselected.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+	item_complete_general_control_recipe::complete_recipe_vector_capacity_source<T>;
+constexpr size_t item_complete_general_string_current_source =
+	// Actual payload_clone_string_heap(false), string capacity/is_local and
+	// const data/local/pointer_to/addressof/__addressof. Same exact published
+	// recovery/current family, no fresh string size() or allocation imported.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	11 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_general_payload_current_source =
+	// Actual payload_clone_heap(false): value/bytes refs,fresh/returnedbool.
+	// Its six strings/six vectors reduce only completed same-type families;
+	// each physical payload and all capacities remain separately in prefix.
+	2 * sizeof(void *) + 2 * sizeof(bool) + item_complete_general_string_current_source +
+	item_complete_general_vector_current_source<uint8_t> +
+	item_complete_general_vector_current_source<uint64_t> +
+	item_complete_general_vector_current_source<native_quest_cost_attempt>;
+constexpr size_t item_complete_general_control_prefix_peak_source =
+	// Actual complete classes remove original observation local only.
+	// Prefix(this,out,extra,total,B), peak(this,extra,total,B), add+callback.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool));
+constexpr size_t item_complete_general_validation_controller_source =
+	// Exact published own/range/current-row/row-byte-u64 false observer union.
+	// Same const row vector range and same current-row getter declarations.
+	item_complete_native_validation_current_controller_source +
+	// Pouch usage adds a distinct actual vector<T> observer; byte and u64
+	// recipe vectors already share published typed observer families.
+	item_complete_general_vector_current_source<chaos_material_pouch_usage> +
+	// Actual payload_clone_string_heap(false) is additionally selected by
+	// recipe material-name. Its declared scope and capacity-chain occurrence
+	// stay separately retained; no opaque row margin is subtracted.
+	item_complete_general_string_current_source;
+constexpr size_t item_complete_general_wire_controller_source =
+	item_complete_general_control_prefix_peak_source +
+	item_complete_general_payload_current_source;
+constexpr size_t item_complete_general_decode_controller_source =
+	item_complete_general_control_prefix_peak_source +
+	item_complete_general_payload_current_source +
+	item_complete_general_vector_current_source<critical_entity_key> +
+	item_complete_general_vector_current_source<critical_expected_revision>;
+constexpr size_t item_complete_general_public_encode_controller_source =
+	// Only actual private canonical byte vector is registered.
+	item_complete_general_control_prefix_peak_source +
+	item_complete_general_vector_current_source<uint8_t>;
+constexpr size_t item_complete_general_public_decode_controller_source =
+	// All real branch registers: copied original command, payload candidate,
+	// canonical. Same completed byte false observer covers command fields.
+	item_complete_general_decode_controller_source +
+	// command_copy this/source/request/result, three actual fresh-size types.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<
+		critical_entity_key> +
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<
+		critical_expected_revision> +
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<uint8_t>;
+constexpr size_t item_complete_general_native_cost_encode_controller_source =
+	// Original payload + first/second/value bytes actually registered;
+	// existing payload false observer owns the same byte typed family.
+	item_complete_general_wire_controller_source +
+	// Actual NQF1 owned encoder never calls controller growth. Its fresh
+	// clone_payload request does genuinely select byte size() below.
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<uint8_t> +
+	// clone_payload(this,source,request,result), fresh public getter own2P,N,B
+	// + actual policy resultB. Heap root and typed heap helper declarations
+	// already retained in false union; fresh selects only new size getters.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) +
+	2 * sizeof(bool) +
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<uint64_t> +
+	item_complete_general_control_recipe::complete_recipe_vector_size_source<
+		native_quest_cost_attempt> +
+	sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_validation_root_count_source =
+	// Same genuine mutable row iterator and exact published root predicate.
+	// Two distinct begin/end receiver+explicit pointer constructor calls3P
+	// each; class results directly initialize count_if by-value formals.
+	item_complete_recovery_count_graph_source + 6 * sizeof(void *);
+struct item_complete_validation_ancestor_predicate
+{
+	uint64_t &ancestor_uid;
+	bool operator()(const item_transfer_entry &candidate) const
+	{
+		return candidate.item_uid == ancestor_uid;
+	}
+};
+namespace item_general_validator_lifetime_source = duris_craft_recipe_bounded_detail;
+template <class T> constexpr size_t item_general_validator_vector_deallocate_source =
+	// _M_deallocate, allocator_traits::deallocate, allocator::deallocate,
+	// new_allocator::deallocate each owns this/alloc, pointer, count.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Actual sized operator delete pointer/count. Const-evaluation alternate
+	// unsized delete is not selected; single helper bool is actual query.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+template <class T> constexpr size_t item_general_validator_vector_cleanup_source =
+	// Actual vector, Vector_base, generated nontrivial Vector_impl and
+	// allocator destructor receivers. Impl_data has no declared destructor;
+	// new_allocator destructor is excluded by the C++20 preprocessor path.
+	// Neither contributes a runtime selected destructor scope.
+	4 * sizeof(void *) +
+	// _Destroy(first,last,allocator), _Destroy(first,last) and selected aux:
+	// no invented cursor local: aux<false> increments its first parameter.
+	3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	// Mutable get_Tp_allocator receiver/reference result.
+	2 * sizeof(void *) + item_general_validator_vector_deallocate_source<T> +
+	(std::is_trivially_destructible_v<T> ?
+		 0 :
+		 // Nontrivial aux reaches __addressof, _Destroy(pointer), destroy_at
+		 // and the genuine T destructor receiver. Member cleanup is separate;
+		 // raw-pointer ++ and == use no iterator object/helper family.
+		 2 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(void *));
+constexpr size_t item_complete_general_validator_pouch_default_cleanup_source =
+	// Plain craft_pouch_mutation contributes enclosing default/dtor2P.
+	// before/after={} directly default row string + DA/ED member vectors,
+	// with no row default receiver. ED default belongs to list child only.
+	2 * sizeof(void *) + 3 * (6 * sizeof(void *)) +
+	item_general_validator_vector_cleanup_source<chaos_material_pouch_usage> +
+	item_general_validator_vector_cleanup_source<player_item_dynamic_affect_snapshot> +
+	item_general_validator_vector_cleanup_source<player_item_extra_description_snapshot> +
+	item_general_validator_vector_cleanup_source<int32_t>;
+constexpr size_t item_complete_general_validator_outputs_default_cleanup_source =
+	// Actual outer outputs vector default and nontrivial row destruction;
+	// this selected graph owns the generated row destructor receiver once.
+	6 * sizeof(void *) + item_general_validator_vector_cleanup_source<player_item_snapshot>;
+constexpr size_t item_complete_general_validator_recipe_default_cleanup_source =
+	// Plain recipe and refine_cost DMI two default receivers, recipe dtorP.
+	// Byte/u64 default and cleanup reached, without recipe COPY/MOVE.
+	3 * sizeof(void *) + 2 * (6 * sizeof(void *)) +
+	item_general_validator_lifetime_source::member_vector_cleanup_source<uint8_t>() +
+	item_general_validator_lifetime_source::member_vector_cleanup_source<uint64_t>();
+constexpr size_t item_complete_general_validator_shared_char_lifetime_source =
+	// Row and nested ED fields plus optional recipe string reach the same
+	// completed char-string default/cleanup method families, retained once.
+	item_general_validator_lifetime_source::member_string_default_source +
+	item_general_validator_lifetime_source::member_string_destroy_source;
+constexpr size_t item_complete_general_validator_empty_cost_rhs_lifetime_source =
+	// Actual native_quest_cost_projection{} temporary has attempts default,
+	// nontrivial enclosing dtorP and real null vector cleanup15P+N+B.
+	// No enclosing aggregate constructor or nonnull delete tail is selected.
+	7 * sizeof(void *) + 15 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_validator_local_lifetime_source =
+	item_complete_general_validator_pouch_default_cleanup_source +
+	item_complete_general_validator_outputs_default_cleanup_source +
+	item_complete_general_validator_recipe_default_cleanup_source +
+	item_complete_general_validator_shared_char_lifetime_source +
+	item_complete_general_validator_empty_cost_rhs_lifetime_source;
+constexpr size_t item_complete_general_validator_own_source =
+	// Four index declaration sites, depth/admission6N, 22 real named bools
+	// plus returned bool; outputs hidden actual mutable I begin/end objects.
+	10 * sizeof(void *) + 6 * sizeof(size_t) + 2 * sizeof(uint32_t) + 10 * sizeof(uint64_t) +
+	sizeof(uint16_t) + 23 * sizeof(bool) +
+	2 * sizeof(std::vector<player_item_snapshot>::iterator);
+constexpr size_t item_complete_general_wire_encode_own_source =
+	6 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(uint16_t) + sizeof(uint64_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_generic_decode_own_source =
+	5 * sizeof(void *) + 10 * sizeof(size_t) + 3 * sizeof(uint32_t) + 3 * sizeof(bool);
+constexpr size_t item_complete_general_vector_range_span_source =
+	// span(Range&&) receiver/ref2P; _Data CPO this/ref/pointer3P;
+	// const vector.data2P and raw _M_data_ptr this/arg/result3P;
+	// _Size CPO this/ref/size2P+N and const vector.size P+N;
+	// delegated raw pointer/count2P+N, to_address/raw __to_address4P,
+	// dynamic extent ctor P+N. CPO globals are not new temporary objects.
+	20 * sizeof(void *) + 4 * sizeof(size_t);
+constexpr size_t item_complete_general_default_subspan_source =
+	// subspan(fixed) default-count route: this/offset/count P+2N;
+	// genuine nonassert internal queryB, actual size/dynamicextent2P+2N,
+	// data2P, downstream pointer/count constructor closure7P+2N.
+	// Assertion RHS size() is short-circuited, but size()-offset executes.
+	12 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_valid_wrapper_own_source =
+	// payload/context/catch refs3P, actual callback F, outer/frames2N.
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_encode_wrapper_own_source =
+	// payload/encoded/context/retained-heap/catch5P plus callback F;
+	// outer/frames/heap3N and actual version/returned Boolean.
+	5 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 3 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_decode_wrapper_own_source =
+	// command/payload/context/retained-heap/catch5P plus callback F;
+	// outer/frames/heap3N and actual Boolean result.
+	5 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 3 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_decoder_reference_span_constructor_source =
+	// Dynamic pointer/count span: receiver/byvalue pointer/count2P+N,
+	// to_address/raw to_address4P, dynamic extent ctorP+N.
+	// Destination S is the existing reference adapter formal, not extra INLINE.
+	7 * sizeof(void *) + 2 * sizeof(size_t);
+constexpr size_t item_complete_general_decoder_recovery_span_source =
+	item_complete_general_vector_range_span_source +
+	item_complete_general_default_subspan_source +
+	// Distinct outer vector-range temporary is a subspan receiver and has
+	// explicit destructorP. Its S storage is retained by actual wrapper.
+	sizeof(void *);
+constexpr size_t item_complete_general_validator_recipe_span_source =
+	// Direct vector-range result initializes recipe adapter's S formal once.
+	// Its onward declared copy/destructor already belong adapter own27.
+	item_complete_general_vector_range_span_source;
+constexpr size_t item_complete_general_policy_query_source = sizeof(bool);
+template <class T> constexpr size_t item_complete_generic_validator_integral_equal_tail_source =
+	// Same selected declared __equal_aux1, __equal<true> and __memcmp scopes
+	// for byte/int64/u64 integer pointers. Actual constant __simple object
+	// exists; its traits initializer introduces no runtime callee.
+	3 * sizeof(void *) + 2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool);
+template <class T, size_t Count>
+constexpr size_t item_complete_generic_validator_integral_array_equal_source =
+	// Actual array<T,Count> == refs/result; three const begin/end/data calls,
+	// raw equal/aux, three raw niter and genuine typed selected true tail.
+	2 * sizeof(void *) + sizeof(bool) + 12 * sizeof(void *) + 6 * sizeof(void *) +
+	2 * sizeof(bool) + 6 * sizeof(void *) +
+	item_complete_generic_validator_integral_equal_tail_source<T>;
+constexpr size_t item_complete_generic_validator_empty_attempt_vector_equal_source =
+	// Native money compares projection against a fresh projection{} whose
+	// attempts size0. Size mismatch short-circuits; only equal-length zero
+	// reaches __equal<false>. Its element loop is unexecuted, so no attempt,
+	// requirement or nested cash comparisons belong to this selected lane.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	9 * sizeof(void *) + 6 * sizeof(std::vector<native_quest_cost_attempt>::const_iterator) +
+	2 * sizeof(bool) + 3 * sizeof(std::vector<native_quest_cost_attempt>::const_iterator) +
+	9 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(bool) + 3 * sizeof(void *) +
+	sizeof(bool);
+constexpr size_t item_complete_generic_validator_coin_projection_equal_source =
+	// Explicit defaulted equality this/other/result. Four same array<int64,4>
+	// members call their exact selected family sequentially; reuse only after
+	// each completed call. All four physical arrays remain input/output DTO.
+	2 * sizeof(void *) + sizeof(bool) +
+	item_complete_generic_validator_integral_array_equal_source<int64_t, 4>;
+constexpr size_t item_complete_generic_validator_empty_cost_projection_equal_source =
+	2 * sizeof(void *) + sizeof(bool) +
+	// Two exact cash-array member calls sequentially reuse their family.
+	item_complete_generic_validator_integral_array_equal_source<int64_t, 4> +
+	item_complete_generic_validator_empty_attempt_vector_equal_source;
+constexpr size_t item_complete_generic_validator_projection_equal_source =
+	item_complete_generic_validator_coin_projection_equal_source +
+	item_complete_generic_validator_empty_cost_projection_equal_source -
+	// Same array<int64_t,4> equality family completes in initial money
+	// comparison before the cost comparison; actual RHS DTOs stay separate.
+	item_complete_generic_validator_integral_array_equal_source<int64_t, 4>;
+constexpr size_t item_complete_generic_validator_recipe_output_selectors_source =
+	// Actual const empty() family with two CI operands, size() and mutable
+	// outputs[] methods; real output object/heap and count-if stay external.
+	13 * sizeof(void *) + 2 * sizeof(std::vector<player_item_snapshot>::const_iterator) +
+	2 * sizeof(bool) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(craft_recipe_discipline) + sizeof(bool);
+namespace item_general_recipe_matches_detail
+{
+using namespace duris_craft_recipe_bounded_detail;
+using complete_recipe_matches_root_ci = std::vector<uint64_t>::const_iterator;
+constexpr size_t complete_recipe_matches_own_source =
+	// terms/payload, entry pointer and hidden range reference; materials,
+	// ores,roots and two separate i declarations; last_ore and actual uid;
+	// hidden begin/end iterators; bool result. The two returned class values
+	// initialize those exact hidden iterator objects by mandatory elision.
+	4 * source_P + 5 * source_N + sizeof(uint32_t) + sizeof(uint64_t) +
+	2 * sizeof(complete_recipe_matches_root_ci) + source_B;
+constexpr size_t complete_recipe_matches_root_iterator_source =
+	// begin/end returned CI storage is already the hidden objects above.
+	// Real getter receivers and explicitly declared pointer ctors remain.
+	2 * (source_P +
+	     complete_recipe_normal_pointer_constructor_source<
+		     complete_recipe_matches_root_ci>)+complete_recipe_normal_equal_own_source<complete_recipe_matches_root_ci> +
+	2 * complete_recipe_normal_base_source<complete_recipe_matches_root_ci> +
+	complete_recipe_normal_preincrement_source<complete_recipe_matches_root_ci> +
+	complete_recipe_normal_dereference_source<complete_recipe_matches_root_ci>;
+constexpr size_t complete_recipe_matches_byte_empty_source =
+	// Actual const empty()->begin/end()->operator==. Unlike the root range,
+	// these returned CIs are separate real temporary comparison operands.
+	complete_recipe_vector_empty_own_source<uint8_t> +
+	complete_recipe_vector_const_begin_own_source<uint8_t> +
+	complete_recipe_vector_const_end_own_source<uint8_t> +
+	2 * complete_recipe_normal_pointer_constructor_source<complete_recipe_byte_const_iterator> +
+	complete_recipe_normal_equal_own_source<complete_recipe_byte_const_iterator> +
+	2 * complete_recipe_normal_base_source<complete_recipe_byte_const_iterator>;
+constexpr size_t complete_recipe_matches_refine_validation_source =
+	// Exactly refine_terms_valid's selected descendants; no is_alchemy,
+	// u64 empty(), recipe/cost default construction or codec call is reached.
+	complete_recipe_refine_succeeded_own_source + complete_recipe_refine_cost_valid_own_source +
+	complete_recipe_refine_terms_valid_own_source +
+	complete_recipe_refine_cost_compare_own_source +
+	complete_recipe_array_const_i32_access_source +
+	complete_recipe_array_const_i64_access_source + complete_recipe_array_i32_equal_source +
+	complete_recipe_matches_byte_empty_source + complete_recipe_vector_size_source<uint64_t> +
+	complete_recipe_vector_const_subscript_source<uint64_t> +
+	complete_recipe_string_size_source + complete_recipe_string_empty_source +
+	complete_recipe_string_find_own_source + complete_recipe_string_const_data_source +
+	complete_recipe_traits_char_find_source;
+constexpr size_t complete_recipe_matches_item_array_source =
+	// Actual std::array<item_transfer_entry,...>::const operator[] direct
+	// this/index/returned-reference; captured GNU13 directly indexes elems.
+	// No old _AT_Type::_S_ref or array ctor/dtor is selected.
+	2 * source_P + source_N;
+constexpr size_t complete_recipe_matches_owner_identity_source =
+	// Original item_owner_identity_equal(left,right): two refs/bool result.
+	// Scalar field comparisons reach no extra C++ callable helper.
+	2 * source_P + source_B;
+constexpr size_t complete_recipe_matches_full_source =
+	complete_recipe_matches_own_source + complete_recipe_matches_root_iterator_source +
+	complete_recipe_matches_refine_validation_source +
+	complete_recipe_matches_item_array_source + complete_recipe_matches_owner_identity_source;
+}
+constexpr size_t item_complete_general_mobile_valid_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_recovery_valid_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_offering_valid_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_duplicate_valid_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_lockpick_valid_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_craft_outputs_child_own_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_pouch_payload_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_recipe_decode_child_own_source =
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(void *) +
+	sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) + sizeof(bool) +
+	3 * sizeof(void *);
+constexpr size_t item_complete_general_byte_size_source = sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_byte_const_index_source =
+	2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_byte_const_data_source = 5 * sizeof(void *);
+constexpr size_t item_complete_general_entry_const_index_source =
+	2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_get_u32_source =
+	sizeof(void *) + 2 * sizeof(uint32_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_get_u64_source =
+	sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_soulbind_source =
+	sizeof(void *) + sizeof(bool) + item_complete_general_byte_size_source +
+	item_complete_general_byte_const_index_source + item_complete_offering_find_source;
+constexpr size_t item_complete_general_spell_source =
+	// Actual payload/data refs, version, effect_offset, effect, legacy/result.
+	// Five size/nine index syntax sites reuse matching completed families.
+	2 * sizeof(void *) + sizeof(uint16_t) + sizeof(size_t) + sizeof(uint32_t) +
+	2 * sizeof(bool) + item_complete_general_byte_size_source +
+	item_complete_general_byte_const_index_source;
+constexpr size_t item_complete_general_account_retirement_source =
+	// Actual payload/data/item refs, payload_version/version/nested_uid/result.
+	3 * sizeof(void *) + sizeof(uint16_t) + sizeof(uint32_t) + 2 * sizeof(bool) +
+	item_complete_general_byte_size_source + item_complete_general_byte_const_data_source +
+	item_complete_general_entry_const_index_source + item_complete_general_get_u32_source +
+	item_complete_general_get_u64_source;
+constexpr size_t item_complete_general_selected_root_own_source =
+	// Payload ref; craft/noncraft distinct entry and parent pointers;
+	// two lexical depth locals; input UID and genuine returned scalar UID.
+	5 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(uint64_t);
+constexpr size_t item_complete_general_selected_root_source =
+	item_complete_general_selected_root_own_source +
+	item_complete_general_entry_const_index_source + item_complete_offering_find_source;
+constexpr size_t item_complete_general_target_topology_source =
+	// Payload/root/parent refs plus entry pointer; input UID+selected_root;
+	// genuine Boolean result. Direct lookup ends before selected-root child.
+	4 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(bool) +
+	item_complete_general_selected_root_source;
+constexpr size_t item_complete_general_reason_source = sizeof(item_transfer_reason) + sizeof(bool);
+constexpr size_t item_complete_general_native_version_source = sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_owner_valid_source = sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_general_owner_equal_source = 2 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_general_forced_drop_source =
+	sizeof(item_transfer_reason) + sizeof(bool);
+constexpr size_t item_complete_general_continuation_limit_source =
+	sizeof(item_transfer_continuation_kind) + sizeof(size_t);
+using item_complete_text_ci = std::string::const_iterator;
+using item_complete_text_difference =
+	typename std::iterator_traits<item_complete_text_ci>::difference_type;
+constexpr size_t item_complete_text_endpoints_source =
+	// Each actual begin/end: thisP, materialized pointer prvalueP,
+	// _M_data this/returned pointer2P, explicit CI pointer ctor2P.
+	// Their CI results are actual public all_of formals, not extra copies.
+	// end's real size() family is held in the shared size row below.
+	2 * (2 * sizeof(void *) +
+	     duris_craft_recipe_bounded_detail::complete_recipe_string_const_data_source +
+	     duris_craft_recipe_bounded_detail::complete_recipe_normal_pointer_constructor_source<
+		     item_complete_text_ci>);
+constexpr size_t item_complete_general_validator_small_helper_union_source =
+	// Genuine same-type completed direct getter families, once each. Scalar
+	// helper declarations remain distinct, with no whole-provider subtraction.
+	item_complete_general_byte_size_source + item_complete_general_byte_const_index_source +
+	item_complete_general_byte_const_data_source +
+	item_complete_general_entry_const_index_source + item_complete_general_get_u32_source +
+	item_complete_general_get_u64_source +
+	// Soulbind own, spell own, account-retirement own, topology helpers own.
+	sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(uint16_t) + sizeof(size_t) +
+	sizeof(uint32_t) + 2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(uint16_t) +
+	sizeof(uint32_t) + 2 * sizeof(bool) + item_complete_general_selected_root_own_source +
+	4 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(bool) +
+	item_complete_general_reason_source + item_complete_general_native_version_source +
+	item_complete_general_owner_valid_source + item_complete_general_owner_equal_source +
+	item_complete_general_forced_drop_source + item_complete_general_continuation_limit_source +
+	// Lookup completes before all subsequent calls; one genuine selected
+	// raw-array/named comparator family serves soulbind/topology/collector.
+	item_complete_offering_find_source;
+constexpr size_t item_complete_general_validator_direct_source =
+	// Actual .none continuation check reaches empty: both real byte CIs plus
+	// endpoint/constructor/comparison/base families. blob.size direct array.
+	13 * sizeof(void *) + 2 * sizeof(std::vector<uint8_t>::const_iterator) + 2 * sizeof(bool) +
+	sizeof(void *) + sizeof(size_t);
+struct item_generic_decode_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *payload = nullptr;
+	const critical_command *expected = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (payload && (!payload_clone_add(total, sizeof(*payload)) ||
+				 !payload_clone_heap(*payload, false, total))) ||
+		    (expected &&
+		     (!payload_clone_add(total, sizeof(*expected)) ||
+		      !payload_clone_vector_heap(expected->keys, false, total) ||
+		      !payload_clone_vector_heap(expected->expected_revisions, false, total) ||
+		      !payload_clone_vector_heap(expected->payload, false, total) ||
+		      !payload_clone_vector_heap(expected->accounting_intent, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+struct item_payload_wire_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *bytes = nullptr, *corpse = nullptr, *collector = nullptr,
+				   *recovery = nullptr;
+	const item_transfer_payload *payload = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames))
+			return false;
+		if ((bytes && (!payload_clone_add(total, sizeof(*bytes)) ||
+			       !payload_clone_vector_heap(*bytes, false, total))) ||
+		    (corpse && (!payload_clone_add(total, sizeof(*corpse)) ||
+				!payload_clone_vector_heap(*corpse, false, total))) ||
+		    (collector && (!payload_clone_add(total, sizeof(*collector)) ||
+				   !payload_clone_vector_heap(*collector, false, total))) ||
+		    (recovery && (!payload_clone_add(total, sizeof(*recovery)) ||
+				  !payload_clone_vector_heap(*recovery, false, total))) ||
+		    (payload && (!payload_clone_add(total, sizeof(*payload)) ||
+				 !payload_clone_heap(*payload, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+constexpr size_t item_complete_general_payload_valid_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_validated_entities_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+static_assert(std::is_trivial_v<critical_entity_key> &&
+	      std::is_trivial_v<critical_expected_revision>);
+static_assert(std::is_trivially_copyable_v<critical_entity_key> &&
+	      std::is_trivially_copyable_v<critical_expected_revision>);
+static_assert(std::is_trivially_destructible_v<critical_entity_key> &&
+	      std::is_trivially_destructible_v<critical_expected_revision>);
+namespace item_complete_wire_copy_recipe = duris_craft_recipe_bounded_detail;
+using item_complete_wire_copy_i = std::vector<uint8_t>::iterator;
+using item_complete_wire_copy_ci = std::vector<uint8_t>::const_iterator;
+template <class Input, class Output, class RawInput>
+constexpr size_t item_complete_wire_copy_n_source =
+	// Public copy_n: first,n,result,n2 and scalar result where applicable.
+	sizeof(Input) + sizeof(Output) + 2 * sizeof(uint32_t) +
+	(std::is_pointer_v<Output> ? sizeof(Output) : 0) +
+	// Selected unsigned __size_to_integer parameter and returned scalar.
+	2 * sizeof(uint32_t) +
+	// iterator_category receiver; RA result aliases __copy_n tag formal.
+	sizeof(void *) +
+	// __copy_n RA: first,n,result,tag and scalar result where applicable.
+	sizeof(Input) + sizeof(uint32_t) + sizeof(Output) +
+	sizeof(std::random_access_iterator_tag) + (std::is_pointer_v<Output> ? sizeof(Output) : 0) +
+	// Normal first+n is real operator+ with a materialized raw pointer
+	// and explicit pointer constructor; its class result is copy's formal.
+	(std::is_pointer_v<Input> ?
+		 0 :
+		 4 * sizeof(void *) +
+			 sizeof(typename std::iterator_traits<Input>::difference_type)) +
+	item_complete_wire_copy_recipe::complete_recipe_copy_graph_source<false, Input, Output,
+									  RawInput>;
+constexpr size_t item_complete_generic_wire_copy_source =
+	item_complete_wire_copy_n_source<const uint8_t *, item_complete_wire_copy_i,
+					 const uint8_t *> +
+	// Corpse and collector: two genuine completed mutable-input calls.
+	2 * (item_complete_wire_copy_recipe::complete_recipe_copy_graph_source<
+		     false, item_complete_wire_copy_i, item_complete_wire_copy_i, uint8_t *> -
+	     item_complete_wire_copy_recipe::complete_recipe_byte_assign_one_source) +
+	item_complete_wire_copy_recipe::complete_recipe_copy_graph_source<
+		false, item_complete_wire_copy_ci, item_complete_wire_copy_i, const uint8_t *> +
+	// Fixed native reference raw range and actual mutable recovery range.
+	(item_complete_wire_copy_recipe::complete_recipe_copy_graph_source<false, uint8_t *,
+									   uint8_t *, uint8_t *> -
+	 item_complete_wire_copy_recipe::complete_recipe_byte_assign_one_source) +
+	(item_complete_wire_copy_recipe::complete_recipe_copy_graph_source<
+		 false, item_complete_wire_copy_i, uint8_t *, uint8_t *> -
+	 item_complete_wire_copy_recipe::complete_recipe_byte_assign_one_source);
+constexpr size_t item_complete_generic_wire_copy_caller_source =
+	// Blob array begin/data4P; output begin/Pctor3P; two4P+D offsets.
+	4 * sizeof(void *) + 3 * sizeof(void *) + 2 * (4 * sizeof(void *) + sizeof(ptrdiff_t)) +
+	// Initial begin and first offset are distinct implicit-object I's;
+	// final offset is public copy_n formal. Discarded root result I real.
+	3 * sizeof(item_complete_wire_copy_i) +
+	// Corpse/collector each input endpoints6P, output begin3P, two offsets,
+	// two implicit-object I's and one discarded public result I.
+	2 * (9 * sizeof(void *) + 2 * (4 * sizeof(void *) + sizeof(ptrdiff_t)) +
+	     3 * sizeof(item_complete_wire_copy_i)) +
+	// Continuation's two CI inputs directly initialize copy formals.
+	9 * sizeof(void *) + 2 * (4 * sizeof(void *) + sizeof(ptrdiff_t)) +
+	3 * sizeof(item_complete_wire_copy_i) +
+	// Reference array begin/end each4P; scalar output already parent-owned.
+	8 * sizeof(void *) +
+	// Recovery two mutable endpoints3P each; scalar output already parent.
+	6 * sizeof(void *);
+constexpr size_t item_complete_generic_decode_blob_copy_source =
+	item_complete_wire_copy_n_source<item_complete_wire_copy_ci, uint8_t *, const uint8_t *>;
+constexpr size_t item_complete_generic_decode_blob_copy_caller_source =
+	// command const begin3P, two offsets4P+D, two CI implicit receivers.
+	// Final CI aliases copy_n formal; raw destination array begin/data4P.
+	3 * sizeof(void *) + 2 * (4 * sizeof(void *) + sizeof(ptrdiff_t)) +
+	2 * sizeof(item_complete_wire_copy_ci) + 4 * sizeof(void *);
+constexpr size_t item_complete_general_wire_put16_source = sizeof(void *) + sizeof(uint16_t);
+constexpr size_t item_complete_general_wire_put32_source =
+	sizeof(void *) + sizeof(uint32_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_wire_put64_source =
+	sizeof(void *) + sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_wire_get16_source = sizeof(void *) + sizeof(uint16_t);
+constexpr size_t item_complete_general_wire_get32_source =
+	sizeof(void *) + 2 * sizeof(uint32_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_wire_get64_source =
+	sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(unsigned int);
+constexpr size_t item_complete_general_encode_owner_source =
+	2 * sizeof(void *) + 2 * item_complete_general_wire_put64_source;
+constexpr size_t item_complete_general_decode_owner_source =
+	sizeof(void *) + 2 * item_complete_general_wire_get64_source;
+constexpr size_t item_complete_general_decode_owner_result_inline = sizeof(item_owner_identity);
+constexpr size_t item_complete_general_byte_data_source = 5 * sizeof(void *);
+constexpr size_t item_complete_general_vector_size_source = sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_subscript_source = 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_general_encode_direct_wire_source =
+	3 * item_complete_general_wire_put16_source + 8 * item_complete_general_wire_put32_source +
+	12 * item_complete_general_wire_put64_source +
+	2 * item_complete_general_encode_owner_source +
+	19 * item_complete_general_byte_data_source +
+	11 * item_complete_general_vector_size_source + 2 * item_complete_general_subscript_source;
+constexpr size_t item_complete_general_decode_direct_wire_source =
+	3 * item_complete_general_wire_get16_source + 10 * item_complete_general_wire_get32_source +
+	12 * item_complete_general_wire_get64_source +
+	2 * item_complete_general_decode_owner_source +
+	22 * item_complete_general_byte_data_source +
+	17 * item_complete_general_vector_size_source +
+	3 * item_complete_general_vector_size_source +
+	3 * item_complete_general_vector_size_source +
+	1 * item_complete_general_vector_size_source + 1 * item_complete_general_subscript_source;
+constexpr size_t item_complete_general_cost_direct_wire_source =
+	2 * item_complete_general_wire_put16_source + 2 * item_complete_general_wire_put32_source +
+	1 * item_complete_general_wire_put64_source + 5 * item_complete_general_byte_data_source +
+	10 * item_complete_general_vector_size_source + 4 * item_complete_general_subscript_source;
+struct item_complete_generic_key_equal
+{
+	bool operator()(const critical_entity_key &left, const critical_entity_key &right) const
+	{
+		return critical_entity_key_equal(left, right);
+	}
+};
+struct item_complete_generic_revision_equal
+{
+	bool operator()(const critical_expected_revision &left,
+			const critical_expected_revision &right) const
+	{
+		return critical_entity_key_equal(left.key, right.key) &&
+		       left.revision == right.revision;
+	}
+};
+constexpr size_t item_complete_generic_predicate_iterators_source =
+	// Caller const begin/end and mutable begin:3 receiverP plus the
+	// selected ctor this/reference6P. Stored pointer lvalues bind
+	// reference-compatibly: no pointer qualification temporary.
+	9 * sizeof(void *) +
+	// Loop != is C++20 rewritten ==: two references+B; its two base calls
+	// each have this/reference2P. No additional operator!= callable scope.
+	6 * sizeof(void *) + sizeof(bool) +
+	// Prefix++ on const/mutable each has this/returned-reference2P;
+	// dereference on each likewise has this/returned-reference2P.
+	8 * sizeof(void *);
+template <class Predicate> constexpr size_t item_complete_generic_revisions_equal_source =
+	item_complete_generic_predicate_iterators_source +
+	// Public equal's actual input formals and genuine empty Predicate object.
+	// Caller Predicate{} initializes this formal directly; no second object.
+	2 * sizeof(std::vector<critical_expected_revision>::const_iterator) +
+	sizeof(std::vector<critical_expected_revision>::iterator) + sizeof(Predicate) +
+	sizeof(bool) +
+	// Actual const Predicate::operator():this/two refs3P/resultB. Nested
+	// key_equal refs2P/resultB. Scalar revision comparison has no callee.
+	5 * sizeof(void *) + 2 * sizeof(bool);
+template <class Predicate> constexpr size_t item_complete_generic_key_predicate_equal_source =
+	item_complete_generic_predicate_iterators_source +
+	// Public equal's actual input formals and genuine empty Predicate object.
+	// Caller Predicate{} initializes this formal directly; no second object.
+	2 * sizeof(std::vector<critical_entity_key>::const_iterator) +
+	sizeof(std::vector<critical_entity_key>::iterator) + sizeof(Predicate) + sizeof(bool) +
+	// Actual const Predicate::operator():this/two refs3P/resultB. Nested
+	// key_equal refs2P/resultB. No scalar arithmetic has a callee.
+	5 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t item_complete_generic_byte_equal_tail_source =
+	// __equal_aux1 raw3P/resultB + actual const local __simpleB. Its traits
+	// initializer is required constant-evaluated (template argument), with
+	// no runtime trait callee. The automatic local object still exists.
+	3 * sizeof(void *) + 2 * sizeof(bool) +
+	// Selected __equal<true>::equal: raw3P/local size_t __len/resultB.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// __memcmp raw2P/countN/int result; genuine runtime public
+	// std::is_constant_evaluated returnedB. No invented builtin callee.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool);
+constexpr size_t item_complete_generic_canonical_equal_source =
+	// C++20 != rewrites vector==:refs2P/resultB only. Const size twice:
+	// two actual thisP/size_t-resultN occurrences (no old root size credit).
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	// Three const begin/end receivers3P and selected pointer-ref ctors6P.
+	// Stored pointer lvalues bind reference-compatibly with no
+	// qualification temporary. Class results are public equal formals.
+	9 * sizeof(void *) +
+	// public equal and __equal_aux: each3 real iterator formals/resultB.
+	6 * sizeof(std::vector<uint8_t>::const_iterator) + 2 * sizeof(bool) +
+	// Three normal-iterator niter calls:by-valueI/raw-pointer resultP,
+	// each real base this/reference2P. Three actual distinct call occurrences.
+	3 * sizeof(std::vector<uint8_t>::const_iterator) + 9 * sizeof(void *) +
+	item_complete_generic_byte_equal_tail_source;
+constexpr size_t item_complete_generic_command_equal_source =
+	item_complete_generic_key_predicate_equal_source<item_complete_generic_key_equal> +
+	item_complete_generic_revisions_equal_source<item_complete_generic_revision_equal>;
+namespace item_complete_generic_fresh_fill_recipe = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_generic_fresh_fill_null_cleanup_source =
+	// Swapped-out __tmp owns the original fresh empty output vector.
+	// Genuine vector/base/Impl/allocator destruction, Destroy wrapper and
+	// null _M_deallocate root; no nonnull allocator/delete tail is reached.
+	15 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_generic_fresh_positive_fill_assign_source =
+	// Actual assign(n,zero): public and _M_fill_assign each this/valref/n.
+	// __add is declared only in the unselected fitting-increase branch.
+	4 * sizeof(void *) + 2 * sizeof(size_t) +
+	item_complete_generic_fresh_fill_recipe::complete_recipe_vector_capacity_source<uint8_t> +
+	item_complete_generic_fresh_fill_recipe::complete_recipe_vector_mutable_allocator_source<
+		uint8_t> +
+	// Growing-only borrowed-allocator fill constructor, then swap_data's
+	// own2P, real _Vector_impl_data __tmp3P/default receiverP and
+	// three genuine copy_data occurrences6P.
+	item_complete_recovery_byte_fill_allocator_reference_constructor_source +
+	12 * sizeof(void *) + item_complete_generic_fresh_fill_null_cleanup_source;
+constexpr size_t item_complete_generic_fresh_fill_tmp_inline = sizeof(std::vector<uint8_t>);
+constexpr size_t item_complete_generic_fresh_fill_zero_inline = sizeof(uint8_t);
+namespace item_generic_fresh_ci_source = duris_craft_recipe_bounded_detail;
+using item_generic_continuation_CI = std::vector<uint8_t>::const_iterator;
+constexpr size_t item_complete_generic_continuation_fresh_assign_source =
+	// Actual C++20 assign(CI,CI) and forward _M_assign_aux on a vector
+	// emptied by the preceding aggregate payload reset. Positive length
+	// allocates from null; zero length reaches copy(0) then erase(n0).
+	item_generic_fresh_ci_source::complete_recipe_byte_assign_own_source<
+		item_generic_continuation_CI> +
+	item_generic_fresh_ci_source::complete_recipe_byte_fresh_assign_aux_own_source<
+		item_generic_continuation_CI> +
+	item_generic_fresh_ci_source::complete_recipe_iterator_category_source<
+		item_generic_continuation_CI> +
+	item_generic_fresh_ci_source::complete_recipe_normal_distance_graph_source<
+		item_generic_continuation_CI> +
+	item_generic_fresh_ci_source::complete_recipe_byte_check_init_len_source +
+	item_generic_fresh_ci_source::complete_recipe_allocator_const_copy_source +
+	item_generic_fresh_ci_source::complete_recipe_allocator_cleanup_source +
+	// _S_max_size static allocref/diffmax/allocmax/return plus traits max
+	// and min refs/result; no public max_size or const allocator getter.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	item_generic_fresh_ci_source::complete_recipe_vector_capacity_source<uint8_t> +
+	item_generic_fresh_ci_source::complete_recipe_byte_allocate_and_copy_own_source<
+		item_generic_continuation_CI> +
+	item_generic_fresh_ci_source::complete_recipe_vector_allocate_source<uint8_t> +
+	// Actual three getters: check_init argument, allocate_and_copy's
+	// uninitialized-copy allocator argument, and old null Destroy argument.
+	3 * item_generic_fresh_ci_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_generic_fresh_ci_source::complete_recipe_uninitialized_copy_graph_source<
+		item_generic_continuation_CI, const uint8_t *> +
+	item_generic_fresh_ci_source::complete_recipe_vector_destroy_range_source<uint8_t> +
+	// Null old deallocation only reaches vector's this/pointer/count root.
+	2 * sizeof(void *) + sizeof(size_t) +
+	// len0 copy preserves all selected wrappers but not count1 assign_one.
+	item_generic_fresh_ci_source::complete_recipe_copy_graph_source<
+		false, item_generic_continuation_CI, uint8_t *, const uint8_t *> -
+	item_generic_fresh_ci_source::complete_recipe_byte_assign_one_source +
+	item_generic_fresh_ci_source::complete_recipe_byte_erase_at_end_own_source +
+	// Fitting len0 calls actual size() before erase; its n0 skips Destroy.
+	item_generic_fresh_ci_source::complete_recipe_vector_size_source<uint8_t>;
+constexpr size_t item_complete_generic_continuation_assign_caller_source =
+	// First input has two left-associative offsets, second has three.
+	// Each intermediate receiver CI exists; final two class results are
+	// assign's by-value formals. Five genuine offsets each include the
+	// arithmetic pointer temporary at explicit const-pointer-ref ctor.
+	5 * sizeof(item_generic_continuation_CI) + 6 * sizeof(void *) +
+	5 * (4 * sizeof(void *) + sizeof(std::ptrdiff_t));
+constexpr size_t item_complete_corpse_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_corpse_encode_child_query_source =
+	3 * item_transfer_corpse_context_encode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_corpse_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 8 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_corpse_decode_child_query_source =
+	3 * item_transfer_corpse_context_decode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_collector_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_collector_encode_child_query_source =
+	3 * item_transfer_collector_context_encode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_collector_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 8 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_collector_decode_child_query_source =
+	3 * item_transfer_collector_context_decode_complete_source_query_frame_bytes();
+namespace item_general_wire_lifetime_recipe = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_general_wire_byte_lifecycle_source =
+	// Four actual vector<byte> objects default sequentially. One typed family
+	// suffices; each physical object/capacity is admitted separately in body41.
+	6 * sizeof(void *) +
+	// Final output member move retains real internal V/A, all byte cleanup
+	// descendants. Same-type outer vector cleanup reuses those declarations.
+	item_general_wire_lifetime_recipe::complete_recipe_vector_move_selected_source<uint8_t> +
+	2 * sizeof(void *);
+constexpr size_t item_complete_general_wire_copy_caller_projected_source =
+	item_complete_generic_wire_copy_caller_source -
+	// Four normal-output calls: blob copy_n, corpse, collector, continuation.
+	// Published graph already owns each propagated niter_wrap root result I.
+	// For blob count zero, the same root I owns copy_n's mutually exclusive
+	// return object; niter_wrap is not claimed to execute on that path.
+	// Remove exactly the duplicate discarded caller result, keeping all begin
+	// and intermediate offset receiver objects. Scalar-output paths unchanged.
+	4 * sizeof(std::vector<uint8_t>::iterator);
+constexpr size_t item_complete_general_wire_encode_retained_source =
+	item_complete_general_wire_encode_own_source +
+	item_complete_general_encode_wrapper_own_source +
+	item_complete_general_policy_query_source +
+	// payload remains null; four observed byte buffers share one typed family.
+	item_complete_general_control_prefix_peak_source +
+	item_complete_general_vector_current_source<uint8_t> +
+	item_complete_general_encode_direct_wire_source +
+	// Actual native_mobile_version(uint16_t) parameter and result.
+	sizeof(uint16_t) + sizeof(bool) + item_complete_general_wire_byte_lifecycle_source +
+	item_complete_generic_fresh_positive_fill_assign_source +
+	item_complete_generic_wire_copy_source +
+	item_complete_general_wire_copy_caller_projected_source +
+	item_complete_general_payload_valid_child_own_source +
+	3 * item_transfer_payload_valid_complete_source_query_frame_bytes() +
+	item_complete_corpse_encode_child_own_source +
+	item_complete_corpse_encode_child_query_source +
+	item_complete_collector_encode_child_own_source +
+	item_complete_collector_encode_child_query_source +
+	item_complete_native_reference_encode_child_own_source +
+	item_complete_native_reference_encode_child_query_source +
+	item_complete_native_recovery_encode_entry_child_own_source +
+	item_complete_native_recovery_encode_entry_child_query_source;
+constexpr size_t item_complete_general_decoder_expected_lifetime_source =
+	// expected{} defaults only K/R plus byte, whose exact completed default
+	// family already belongs payload aggregate default. Expected byte members
+	// never populate and same typed cleanup is reached by payload lifetime/
+	// final MOVE. Keep generated command dtorP and full K/R cleanup only.
+	item_complete_command_aggregate_default_source - 6 * sizeof(void *) +
+	item_complete_command_cleanup_source -
+	item_general_wire_lifetime_recipe::member_vector_cleanup_source<uint8_t>();
+constexpr size_t item_complete_general_generic_decode_retained_source =
+	item_complete_general_generic_decode_own_source +
+	item_complete_general_decode_wrapper_own_source +
+	item_complete_general_policy_query_source + item_complete_general_decode_controller_source +
+	item_complete_general_decode_direct_wire_source +
+	// Genuine direct parent calls; an ended validator child supplies no credit.
+	item_complete_general_native_version_source + item_complete_general_owner_equal_source +
+	item_complete_general_continuation_limit_source +
+	// Aggregate candidate, reset RHS, final payload MOVE and cleanup. The
+	// accepted aggregate stem already owns outer std::move<Payload>2P once.
+	item_complete_payload_aggregate_move_cleanup_source +
+	item_complete_general_decoder_expected_lifetime_source +
+	item_complete_generic_decode_blob_copy_source +
+	item_complete_generic_decode_blob_copy_caller_source +
+	item_complete_generic_continuation_fresh_assign_source +
+	item_complete_generic_continuation_assign_caller_source +
+	item_complete_generic_command_equal_source +
+	item_complete_general_decoder_reference_span_constructor_source +
+	item_complete_general_decoder_recovery_span_source +
+	item_complete_general_payload_valid_child_own_source +
+	3 * item_transfer_payload_valid_complete_source_query_frame_bytes() +
+	item_complete_general_validated_entities_child_own_source +
+	3 * item_complete_general_validated_entities_source_query_frame_bytes() +
+	item_complete_corpse_decode_child_own_source +
+	item_complete_corpse_decode_child_query_source +
+	item_complete_collector_decode_child_own_source +
+	item_complete_collector_decode_child_query_source +
+	item_complete_native_reference_decode_child_own_source +
+	item_complete_native_reference_decode_child_span_call_source +
+	item_complete_native_reference_decode_child_query_source +
+	item_complete_native_recovery_decode_entry_child_own_source +
+	item_complete_native_recovery_decode_entry_child_query_source;
+constexpr size_t item_complete_general_native_cost_owned_source =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(uint16_t) + 2 * sizeof(bool);
+constexpr size_t item_complete_general_native_cost_wrapper_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_general_public_encode_owned_source =
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_public_recovery_encode_owned_source =
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_general_public_encode_wrapper_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_public_recovery_encode_wrapper_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_public_decode_owned_source =
+	8 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(uint16_t) + sizeof(bool);
+constexpr size_t item_complete_general_public_decode_wrapper_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_general_payload_encode_child_own_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(uint16_t) + 1 * sizeof(bool);
+constexpr size_t item_complete_general_payload_decode_child_own_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_general_native_cost_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_general_public_native_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_general_public_native_recovery_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_general_public_inner_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_general_fee_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_general_money_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+namespace item_complete_payload_copy_recipe = duris_craft_recipe_bounded_detail;
+template <class T> constexpr size_t item_complete_payload_copy_vector_source =
+	(19 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::allocator<T>)) +
+	(11 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool)) + 6 * sizeof(void *) +
+	// Trivial uninitialized-copy backend; actual _Num is ptrdiff_t.
+	// No bare builtin memmove callee, implicit trivial T assignment, or
+	// invented normal-iterator copy/move call. Actual wrapper objects stay.
+	46 * sizeof(void *) + sizeof(std::ptrdiff_t) + 4 * sizeof(bool) -
+	// The two begin/end result objects ARE the two by-value parameters.
+	2 * sizeof(void *);
+constexpr size_t item_complete_native_cost_reset_selected_source =
+	// Original native_cost={} directly aggregate-initializes its temporary;
+	// no enclosing default constructor. Its attempts vector defaults6P.
+	6 * sizeof(void *) +
+	// Cost context and projection nontrivial move assignments each3P.
+	2 * 3 * sizeof(void *) +
+	item_complete_payload_copy_recipe::complete_recipe_vector_move_selected_source<
+		native_quest_cost_attempt> -
+	// Exact same typed cleanup already retained above for COPY unwind and
+	// final original cleanup; MOVE's real temporary V/A objects stay intact.
+	item_complete_payload_copy_recipe::member_vector_cleanup_source<native_quest_cost_attempt>();
+constexpr size_t item_complete_payload_string_copy_frontend_source =
+	// copy this/source2P; mutable local-data+pointer/address chain8P;
+	// const allocator getter2P; ext selectP; traits selectP; allocator and
+	// newallocator const-copy constructors4P; rvalue hider3P; stdmove2P.
+	// One selected allocator object aliases the traits/ext prvalue chain.
+	23 * sizeof(void *) + sizeof(std::allocator<char>);
+constexpr size_t item_complete_payload_string_copy_construct_source =
+	// _M_construct<char*> this/beg/end/Guard4P,dnewN,F; guard ctor2P/dtorP;
+	// distance2P+D, categoryP+R,__distance2P+D,char* copy_chars3P.
+	// The category prvalue is __distance's actual by-value R parameter.
+	15 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(std::ptrdiff_t) +
+	sizeof(std::forward_iterator_tag) + sizeof(std::random_access_iterator_tag);
+constexpr size_t item_complete_payload_string_copy_allocation_source =
+	// create3P+N,max_sizeP+N,traits maxP+N,S_allocate3P+N,traits allocate2P+N,
+	// allocator allocate2P+N+B,newallocator allocate3P+N,_M_max_sizeP+N,
+	// actual declared operator new pointer resultP/countN.
+	// Const getter is in frontend; mutable getter is in reached cleanup.
+	17 * sizeof(void *) + 9 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_payload_string_copy_remaining_source =
+	// data setter2P,capacity setterP+N,init-localP+B plus retained conservative
+	// body N/C (not runtime execution evidence); set_length6P+2N+C+B after
+	// only actual data getter2P is shared with cleanup; runtime S_copy/traits
+	// copy5P+2N+B and public lengthP+N. Bare memcpy has no callee Source.
+	16 * sizeof(void *) + 7 * sizeof(size_t) + 2 * sizeof(char) + 3 * sizeof(bool);
+constexpr size_t item_complete_payload_string_copy_cleanup_selected_source =
+	item_complete_payload_string_copy_frontend_source +
+	item_complete_payload_string_copy_construct_source +
+	item_complete_payload_string_copy_allocation_source +
+	item_complete_payload_string_copy_remaining_source +
+	item_complete_native_member_string_cleanup_source;
+static_assert(item_complete_payload_string_copy_cleanup_selected_source ==
+	      96 * sizeof(void *) + 22 * sizeof(size_t) + 2 * sizeof(std::ptrdiff_t) +
+		      sizeof(std::forward_iterator_tag) + sizeof(std::random_access_iterator_tag) +
+		      sizeof(std::allocator<char>) + 2 * sizeof(char) + 6 * sizeof(bool));
+namespace item_complete_general_byte_recipe = duris_craft_recipe_bounded_detail;
+using item_complete_general_byte_i = std::vector<uint8_t>::iterator;
+constexpr size_t item_complete_general_byte_count_failure_cleanup_source = 2 * sizeof(void *);
+constexpr size_t item_complete_general_byte_count_constructor_source =
+	// Actual vector<byte>(positive n,default allocator), NOT fill(n,zero).
+	// Public this/allocatorref/count + real default allocator A.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<uint8_t>) + 3 * sizeof(void *) +
+	// check_init_len count/ref/returned count + converted allocator A,
+	// const-copy+cleanup5P, direct Smax/traits/min5P4N.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(std::allocator<uint8_t>) + 5 * sizeof(void *) +
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// Base/impl/data/default/allocator-copy/create_storage10P2N;
+	// typed allocation11P6N+B; default_initialize P+N/getallocator2P.
+	10 * sizeof(void *) + 2 * sizeof(size_t) +
+	item_complete_general_byte_recipe::complete_recipe_vector_allocate_source<uint8_t> +
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	item_complete_recovery_byte_default_n_source +
+	item_complete_general_byte_count_failure_cleanup_source;
+constexpr size_t item_complete_general_byte_normal_fill_source =
+	// fill2I+valP, fill_a2I+valP, normal fill_a1 2I+valP,
+	// two actual base refs4P, byte raw fill_a1 3P+lenN+tmp byte,
+	// genuine public std::is_constant_evaluated B.
+	6 * sizeof(item_complete_general_byte_i) + 10 * sizeof(void *) + sizeof(size_t) +
+	sizeof(uint8_t) + sizeof(bool) +
+	// Caller begin/end result objects alias public fill formals;
+	// two genuine receivers + explicit pointer constructors3P each.
+	6 * sizeof(void *);
+constexpr size_t item_complete_general_byte_fill_assign_source =
+	// Public assign(this,count,valref), fill_assign(this,count,valref,add).
+	// Internal vector __tmp DTO and caller zero argument are separate INLINE.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + 2 * sizeof(size_t) +
+	item_complete_general_byte_recipe::complete_recipe_vector_capacity_source<uint8_t> +
+	item_complete_general_byte_recipe::complete_recipe_vector_size_source<uint8_t> +
+	item_complete_general_byte_recipe::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	// Growing allocation path uses actual borrowed allocator fill ctor,
+	// data swap2P+tmp3P+defaultP+three copy_data occurrences6P.
+	item_complete_recovery_byte_fill_allocator_reference_constructor_source +
+	12 * sizeof(void *) +
+	// Swap's old output may be nonempty, so full actual byte cleanup;
+	// its Impl/allocator destructor2P also owns ctor-failure unwind family.
+	item_complete_general_byte_recipe::member_vector_cleanup_source<uint8_t>() +
+	// Fitting increase: fill existing normal range then uninit_fill_n_a
+	// positive appended raw suffix. Keep real can_fill B; public query
+	// is retained by accepted raw fill suffix, no constexpr trait callee.
+	item_complete_general_byte_normal_fill_source +
+	item_complete_general_byte_recipe::complete_recipe_byte_uninitialized_fill_a_source +
+	item_complete_general_byte_recipe::complete_recipe_byte_uninitialized_fill_source +
+	item_complete_general_byte_recipe::complete_recipe_byte_uninitialized_fill_true_source +
+	item_complete_recovery_byte_default_fill_suffix_source +
+	// Fitting shrink/equal: raw fill_n then erase. Erase true n>0 and
+	// trivial Destroy wrappers are genuine possible old-output scopes.
+	item_complete_recovery_byte_default_fill_suffix_source +
+	item_complete_general_byte_recipe::complete_recipe_byte_erase_at_end_own_source +
+	item_complete_general_byte_recipe::complete_recipe_vector_destroy_range_source<uint8_t>;
+constexpr size_t item_complete_general_byte_fill_assign_tmp_inline = sizeof(std::vector<uint8_t>);
+constexpr size_t item_complete_general_byte_fill_assign_zero_inline = sizeof(uint8_t);
+namespace item_complete_public_shrink_recipe = duris_craft_recipe_bounded_detail;
+using item_complete_public_shrink_ci = std::vector<uint8_t>::const_iterator;
+using item_complete_public_shrink_difference =
+	typename std::iterator_traits<item_complete_public_shrink_ci>::difference_type;
+constexpr size_t item_complete_public_cost_payload_shrink_caller_source =
+	// The right expression is begin()+24+body_size: three actual offsets.
+	// Two begin() temporaries and the right intermediate +24 result are
+	// three distinct implicit-object CI receivers. Final two results are
+	// the existing assign by-value formal destinations, priced below.
+	2 *
+	(sizeof(void *) +
+	 item_complete_public_shrink_recipe::complete_recipe_normal_pointer_constructor_source<
+		 item_complete_public_shrink_ci>)+3 *
+	(item_complete_public_shrink_recipe::complete_recipe_normal_offset_argument_source<
+		 item_complete_public_shrink_ci> +
+	 item_complete_public_shrink_recipe::complete_recipe_normal_pointer_constructor_source<
+		 item_complete_public_shrink_ci>)+3 *
+	sizeof(item_complete_public_shrink_ci);
+constexpr size_t item_complete_public_cost_payload_shrink_aux_own_source =
+	// Only this/first/last/len/forward-tag. The unselected allocating tmp
+	// and fitting-growing mid/n locals are absent at this actual call.
+	sizeof(void *) + 2 * sizeof(item_complete_public_shrink_ci) + sizeof(size_t) +
+	sizeof(std::forward_iterator_tag);
+constexpr size_t item_complete_public_cost_payload_shrink_assign_source =
+	item_complete_public_cost_payload_shrink_caller_source +
+	item_complete_public_shrink_recipe::complete_recipe_byte_assign_own_source<
+		item_complete_public_shrink_ci> +
+	// Actual public assign category call and RA-to-forward slicing retain
+	// the RA source temporary as well as the target aux forward-tag formal.
+	sizeof(void *) + sizeof(std::random_access_iterator_tag) +
+	item_complete_public_cost_payload_shrink_aux_own_source +
+	item_complete_public_shrink_recipe::complete_recipe_normal_distance_graph_source<
+		item_complete_public_shrink_ci> +
+	item_complete_public_shrink_recipe::complete_recipe_vector_capacity_source<uint8_t> +
+	item_complete_public_shrink_recipe::complete_recipe_vector_size_source<uint8_t> +
+	// body_size==1 is genuinely reachable before recursive validation:
+	// keep false const-byte copy's scalar assign_one specialization.
+	item_complete_public_shrink_recipe::complete_recipe_copy_graph_source<
+		false, item_complete_public_shrink_ci, uint8_t *, const uint8_t *> +
+	item_complete_public_shrink_recipe::complete_recipe_byte_erase_at_end_own_source +
+	item_complete_public_shrink_recipe::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_complete_public_shrink_recipe::complete_recipe_vector_destroy_range_source<uint8_t>;
+using item_native_cost_copy_iterator = std::vector<uint8_t>::iterator;
+using item_native_cost_copy_difference =
+	typename std::iterator_traits<item_native_cost_copy_iterator>::difference_type;
+namespace item_native_cost_copy_recipe = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_native_cost_copy_projected_source =
+	item_native_cost_copy_recipe::complete_recipe_copy_graph_source<
+		false, item_native_cost_copy_iterator, item_native_cost_copy_iterator, uint8_t *> -
+	// Successful body and Cost buffers are each >=96: no count-one assign.
+	item_native_cost_copy_recipe::complete_recipe_byte_assign_one_source -
+	// Project only __niter_wrap's returned I to the explicit discarded result
+	// in caller below. Public/forwarding I formals remain genuine separate DTOs.
+	sizeof(item_native_cost_copy_iterator);
+constexpr size_t item_complete_native_cost_two_copy_caller_source =
+	// First copy: body.begin/end, exact.begin = three genuine endpoints9P;
+	// output offset owns real pointer prvalue4P+D. exact.begin temporary I
+	// is offset receiver; another I is the discarded std::copy result.
+	(9 * sizeof(void *) + 4 * sizeof(void *) + sizeof(item_native_cost_copy_difference) +
+	 2 * sizeof(item_native_cost_copy_iterator)) +
+	// Second copy: same three actual endpoint instances, two offsets. The
+	// first offset I becomes second offset receiver, plus begin receiver and
+	// discarded result. Final offset I initializes public copy output formal.
+	(9 * sizeof(void *) + 2 * (4 * sizeof(void *) + sizeof(item_native_cost_copy_difference)) +
+	 3 * sizeof(item_native_cost_copy_iterator));
+constexpr size_t item_complete_native_cost_two_copy_source =
+	2 * item_complete_native_cost_copy_projected_source +
+	item_complete_native_cost_two_copy_caller_source;
+constexpr size_t item_complete_general_public_encode_native_only_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+}
+constexpr size_t
+item_complete_general_public_recovery_encode_native_only_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+}
+constexpr size_t
+item_complete_general_public_decode_inner_native_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	       item_transfer_payload_decode_generic_complete_source_query_frame_bytes() +
+	       item_complete_general_public_encode_native_only_source_query_frame_bytes() +
+	       item_complete_general_public_recovery_encode_native_only_source_query_frame_bytes();
+}
+namespace item_complete_general_public_recipe = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_general_native_cost_byte_lifetime_source =
+	// Body/cost empty defaults share one typed family; exact count constructor
+	// is distinct. Final MOVE keeps its real V/A and caller std::move2P.
+	6 * sizeof(void *) +
+	item_complete_general_public_recipe::complete_recipe_vector_move_selected_source<uint8_t> -
+	// Actual typed cleanup is already selected by original payload COPY unwind.
+	item_complete_general_public_recipe::member_vector_cleanup_source<uint8_t>() +
+	2 * sizeof(void *);
+constexpr size_t item_complete_general_public_byte_lifetime_source =
+	6 * sizeof(void *) +
+	item_complete_general_public_recipe::complete_recipe_vector_move_selected_source<uint8_t> +
+	2 * sizeof(void *);
+constexpr size_t item_complete_general_public_encode_selected_common_source =
+	item_complete_general_policy_query_source +
+	item_complete_general_public_encode_controller_source +
+	item_complete_general_public_byte_lifetime_source +
+	item_complete_native_money_encode_entry_child_own_source +
+	item_complete_native_money_encode_entry_child_query_source +
+	item_complete_general_native_cost_encode_child_own_source +
+	3 * item_transfer_native_cost_encode_complete_source_query_frame_bytes() +
+	item_complete_general_payload_encode_child_own_source +
+	3 * item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+constexpr size_t item_complete_general_public_encode_retained_source =
+	item_complete_general_public_encode_owned_source +
+	item_complete_general_public_encode_wrapper_source +
+	item_complete_general_public_encode_selected_common_source;
+constexpr size_t item_complete_general_public_recovery_encode_retained_source =
+	item_complete_general_public_recovery_encode_owned_source +
+	item_complete_general_public_recovery_encode_wrapper_source +
+	item_complete_general_public_encode_selected_common_source;
+constexpr size_t item_complete_general_public_decode_direct_source =
+	// Three genuinely distinct same-file version helper definitions.
+	3 * (sizeof(uint16_t) + sizeof(bool)) +
+	// Const byte size/index/data and wire leaves, completed typed calls shared.
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t) + 5 * sizeof(void *) +
+	sizeof(void *) + sizeof(uint16_t) + item_complete_general_get_u32_source +
+	item_complete_general_get_u64_source +
+	// Brace Cost span initializes child by-value formal, not another DTO.
+	7 * sizeof(void *) + 2 * sizeof(size_t);
+constexpr size_t item_complete_general_public_decode_retained_source =
+	// This same unconditional constant is retained by actual outer and inner
+	// dispatcher entries; no branch-reduced retained-own replacement.
+	item_complete_general_public_decode_owned_source +
+	item_complete_general_public_decode_wrapper_source +
+	item_complete_general_policy_query_source +
+	item_complete_general_public_decode_controller_source +
+	item_complete_general_public_decode_direct_source +
+	item_complete_payload_aggregate_move_cleanup_source +
+	// Payload stem owns outer payload std::move2P once. Byte default/cleanup
+	// also serves canonical, while actual command COPY keeps all3 typed lanes.
+	item_complete_command_copy_source + item_complete_command_cleanup_source -
+	item_complete_general_public_recipe::member_vector_cleanup_source<uint8_t>() +
+	item_complete_public_cost_payload_shrink_assign_source +
+	item_complete_generic_canonical_equal_source +
+	item_complete_general_money_decode_child_own_source +
+	3 * item_transfer_native_money_decode_complete_source_query_frame_bytes() +
+	item_complete_general_fee_decode_child_own_source +
+	3 * item_transfer_native_fee_decode_complete_source_query_frame_bytes() +
+	item_complete_general_payload_decode_child_own_source +
+	3 * item_transfer_payload_decode_generic_complete_source_query_frame_bytes() +
+	item_complete_general_public_inner_decode_child_own_source +
+	3 * item_complete_general_public_decode_inner_native_source_query_frame_bytes() +
+	item_complete_native_cost_decode_child_own_source +
+	item_complete_native_cost_decode_child_span_call_source +
+	item_complete_native_cost_decode_child_query_source +
+	item_complete_native_cost_value_entry_child_own_source +
+	item_complete_native_cost_value_entry_child_query_source +
+	item_complete_general_native_cost_encode_child_own_source +
+	3 * item_transfer_native_cost_encode_complete_source_query_frame_bytes() +
+	item_complete_general_public_native_encode_child_own_source +
+	3 * item_complete_general_public_encode_native_only_source_query_frame_bytes() +
+	item_complete_general_public_native_recovery_encode_child_own_source +
+	3 * item_complete_general_public_recovery_encode_native_only_source_query_frame_bytes();
+struct item_public_dispatch_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *original = nullptr;
+	const item_transfer_payload *candidate = nullptr;
+	const std::vector<uint8_t> *canonical = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (original &&
+		     (!payload_clone_add(total, sizeof(*original)) ||
+		      !payload_clone_vector_heap(original->keys, false, total) ||
+		      !payload_clone_vector_heap(original->expected_revisions, false, total) ||
+		      !payload_clone_vector_heap(original->payload, false, total) ||
+		      !payload_clone_vector_heap(original->accounting_intent, false, total))) ||
+		    (candidate && (!payload_clone_add(total, sizeof(*candidate)) ||
+				   !payload_clone_heap(*candidate, false, total))) ||
+		    (canonical && (!payload_clone_add(total, sizeof(*canonical)) ||
+				   !payload_clone_vector_heap(*canonical, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	bool command_copy(const critical_command &source) const noexcept
+	{
+		// Actual generated COPY, all four fresh vector capacities equal SIZE.
+		// No command bytes/canonical length is substituted for member storage.
+		size_t request = sizeof(critical_command);
+		return payload_clone_vector_heap(source.keys, true, request) &&
+		       payload_clone_vector_heap(source.expected_revisions, true, request) &&
+		       payload_clone_vector_heap(source.payload, true, request) &&
+		       payload_clone_vector_heap(source.accounting_intent, true, request) &&
+		       peak(request);
+	}
+};
+struct item_complete_collector_uid_present
+{
+	const item_transfer_payload &payload;
+	bool operator()(uint64_t uid) const
+	{
+		return item_complete_find_payload_item(payload, uid) != nullptr;
+	}
+};
+struct item_complete_text_printable_predicate
+{
+	bool operator()(unsigned char character) const
+	{
+		return character >= 0x20 && character != 0x7f;
+	}
+};
+template <class T> constexpr size_t item_complete_general_entities_growth_controller_source =
+	// Actual typed growth(this,value,count,request,next,B). Both fitting
+	// and growing are reached in the general path; next belongs growing.
+	item_complete_general_entities_growth_declaration_source +
+	item_general_entities_selected_recipe::complete_recipe_vector_max_size_source<T> +
+	item_general_entities_selected_recipe::complete_recipe_vector_size_source<T> +
+	item_general_entities_selected_recipe::complete_recipe_vector_capacity_source<T> +
+	// Genuine std::max<size_t> two const refs and returned const-ref.
+	3 * sizeof(void *);
+constexpr size_t item_complete_general_entities_controller_source =
+	item_complete_general_entities_prefix_declaration_source +
+	item_complete_general_entities_peak_declaration_source +
+	// Common checked add + actual callback declaration signatures.
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	item_complete_general_vector_current_source<critical_entity_key> +
+	item_complete_general_vector_current_source<critical_expected_revision> +
+	item_complete_general_vector_current_source<uint8_t> +
+	item_complete_general_vector_current_source<player_item_snapshot> +
+	// Actual outputs-only CURRENT census and const range. roots is never
+	// registered in these owned bodies; no roots/u64 observer is selected.
+	item_complete_native_validation_current_row_source +
+	item_complete_native_validation_current_range_source +
+	item_complete_general_entities_growth_controller_source<critical_entity_key> +
+	item_complete_general_entities_growth_controller_source<critical_expected_revision> +
+	// Two distinct T-specialized fresh and T,C-specialized sort methods.
+	2 * item_complete_general_entities_fresh_declaration_source +
+	2 * item_complete_general_entities_sort_frame_declaration_source;
+constexpr size_t item_complete_general_entities_output_lifetime_source =
+	item_complete_general_validator_outputs_default_cleanup_source +
+	// Full root cleanup owns row destructor receiver, while actual member
+	// vector destructors and nested ED spell-vector cleanup are separate.
+	item_general_validator_vector_cleanup_source<player_item_dynamic_affect_snapshot> +
+	item_general_validator_vector_cleanup_source<player_item_extra_description_snapshot> +
+	item_general_validator_vector_cleanup_source<int32_t> +
+	// Rows returned by craft child destruct here; the same completed char
+	// cleanup family is shared across row/nested ED fields, never defaulted.
+	item_general_entities_selected_recipe::member_string_destroy_source;
+constexpr size_t item_complete_general_entities_retained_source =
+	item_complete_general_entities_owned_declaration_source +
+	item_complete_general_entities_wrapper_declaration_source +
+	item_complete_general_entities_controller_source +
+	item_complete_general_entities_outputs_range_source +
+	item_complete_general_entities_output_lifetime_source +
+	item_complete_general_entities_direct_source +
+	item_complete_general_entities_command_lifecycle_source +
+	// Fresh candidate vectors select exactly-two initializer-list assignments.
+	// Their IL objects/backing arrays are separately admitted by fresh().
+	item_complete_general_entities_fresh_assign_source<critical_entity_key> +
+	item_complete_general_entities_fresh_assign_source<critical_expected_revision> +
+	item_complete_general_entities_key_push_source +
+	item_complete_general_entities_revision_push_source +
+	item_complete_general_entities_pop_source<critical_entity_key> +
+	item_complete_general_entities_pop_source<critical_expected_revision> +
+	// Genuine nonrecursive declarations stay parent-retained. Recursive rows
+	// are admitted at each actual sort_frame(), not duplicated here.
+	item_complete_general_entities_sort_nonrecursive_source<
+		critical_entity_key, decltype(&critical_entity_key_less)> +
+	item_complete_general_entities_sort_nonrecursive_source<critical_expected_revision,
+								item_entities_revision_less> +
+	item_complete_general_entities_sort_caller_source<critical_entity_key> +
+	item_complete_general_entities_sort_caller_source<critical_expected_revision> +
+	item_complete_general_entities_key_adjacent_source +
+	item_complete_general_entities_key_adjacent_caller_source +
+	item_complete_general_entities_owner_key_child_declaration_source +
+	item_complete_general_entities_craft_child_declaration_source +
+	// Both owner-key calls complete sequentially; one real adapter family.
+	// Only these pure child-query scopes are retained, never full child totals.
+	3 * item_owner_key_source_query_frame_bytes() +
+	3 * item_transfer_craft_outputs_decode_complete_source_query_frame_bytes();
+using item_complete_collector_pred = item_complete_collector_uid_present;
+using item_complete_collector_pred_adapter =
+	__gnu_cxx::__ops::_Iter_pred<item_complete_collector_pred>;
+using item_complete_collector_negate = __gnu_cxx::__ops::_Iter_negate<item_complete_collector_pred>;
+constexpr size_t item_complete_collector_all_of_source =
+	29 * sizeof(void *) + 10 * sizeof(item_complete_collector_ci) +
+	5 * sizeof(item_complete_collector_pred) +
+	2 * sizeof(item_complete_collector_pred_adapter) + sizeof(item_complete_collector_negate) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(item_complete_collector_difference) +
+	sizeof(uint64_t) + 4 * sizeof(bool) + item_complete_offering_find_source;
+constexpr size_t item_complete_collector_context_source =
+	// Union of genuine own declarations and actual selected branch families.
+	// Distinct completed algorithm call occurrences are conservatively summed.
+	2 * sizeof(void *) + sizeof(uint16_t) + sizeof(bool) +
+	item_complete_collector_absent_empty_source +
+	item_complete_collector_operation_zero_source +
+	item_complete_collector_present_caller_source + item_complete_collector_is_sorted_source +
+	item_complete_collector_adjacent_source + item_complete_collector_all_of_source;
+using item_complete_validation_find_pred = item_complete_validation_ancestor_predicate;
+using item_complete_validation_find_adapter =
+	__gnu_cxx::__ops::_Iter_pred<item_complete_validation_find_pred>;
+constexpr size_t item_complete_validation_raw_find_source =
+	// Public first/last/returned pointer3P + C; factory C; explicit adapter
+	// ctor P+C and two actual move<C> calls4P; dispatch3P+A;
+	// RA3P+A+tripD+RA; categoryP; adapter2P+B; named predicate2P+B.
+	// Raw pointer ++/subtraction/dereference introduce no callable scopes.
+	19 * sizeof(void *) + 3 * sizeof(item_complete_validation_find_pred) +
+	2 * sizeof(item_complete_validation_find_adapter) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + 2 * sizeof(bool);
+constexpr size_t item_complete_validation_raw_find_caller_source =
+	// Three actual const array begin() calls: direct this/result2P plus
+	// data this/result2P each. The raw parent pointer declaration remains
+	// separately owned by the validator; scalar raw returns are not elided.
+	item_complete_validation_raw_find_source + 12 * sizeof(void *);
+constexpr size_t item_complete_generic_validator_projection_recipe_source =
+	item_complete_generic_validator_projection_equal_source +
+	item_general_recipe_matches_detail::complete_recipe_matches_full_source +
+	item_complete_generic_validator_recipe_output_selectors_source;
+using item_complete_text_pred = item_complete_text_printable_predicate;
+using item_complete_text_adapter = __gnu_cxx::__ops::_Iter_pred<item_complete_text_pred>;
+using item_complete_text_negate = __gnu_cxx::__ops::_Iter_negate<item_complete_text_pred>;
+constexpr size_t item_complete_text_all_of_source =
+	// Same declared all_of/find_if_not/pred/negate/four-argument RA route
+	// as collector, genuinely instantiated on char-string CI and this type.
+	// Named target is thisP+unsigned-char formal+returned B; no lookup child.
+	29 * sizeof(void *) + 10 * sizeof(item_complete_text_ci) +
+	5 * sizeof(item_complete_text_pred) + 2 * sizeof(item_complete_text_adapter) +
+	sizeof(item_complete_text_negate) + sizeof(std::random_access_iterator_tag) +
+	2 * sizeof(item_complete_text_difference) + sizeof(unsigned char) + 4 * sizeof(bool);
+constexpr size_t item_complete_valid_text_source =
+	// Own value-reference/maximum/required/returned B. String empty owns
+	// thisP+returnedB and uses genuine size(), shared with maximum check
+	// and end() only after each completed matching same-string call.
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) + sizeof(bool) +
+	sizeof(void *) + sizeof(size_t) + item_complete_text_endpoints_source +
+	item_complete_text_all_of_source;
+constexpr size_t item_complete_general_validator_retained_source =
+	item_complete_general_validator_own_source +
+	item_complete_general_valid_wrapper_own_source + item_complete_general_policy_query_source +
+	item_complete_general_validation_controller_source +
+	item_complete_general_validator_local_lifetime_source +
+	item_complete_generic_validator_projection_recipe_source +
+	item_complete_general_validator_small_helper_union_source +
+	item_complete_general_validator_direct_source +
+	// Collector's identical selected lookup was explicitly retained above.
+	// No predicate/capture/iterator fields or complete collector envelope cut.
+	item_complete_collector_context_source - item_complete_offering_find_source +
+	item_complete_valid_text_source + item_complete_validation_root_count_source +
+	item_complete_validation_raw_find_caller_source +
+	// The count graph already reaches the actual mutable output range method
+	// families, including comparison/base, increment and dereference. Hidden
+	// loop iterator objects remain in validator own, no extra result objects.
+	item_complete_general_validator_recipe_span_source +
+	item_complete_general_mobile_valid_child_own_source +
+	item_complete_general_recovery_valid_child_own_source +
+	item_complete_general_offering_valid_child_own_source +
+	item_complete_general_duplicate_valid_child_own_source +
+	item_complete_general_lockpick_valid_child_own_source +
+	item_complete_general_craft_outputs_child_own_source +
+	item_complete_general_pouch_payload_child_own_source +
+	item_complete_general_recipe_decode_child_own_source +
+	3 * (item_transfer_native_mobile_context_valid_complete_source_query_frame_bytes() +
+	     item_transfer_native_recovery_valid_complete_source_query_frame_bytes() +
+	     item_transfer_quest_offering_continuation_valid_complete_source_query_frame_bytes() +
+	     item_transfer_duplicate_promotion_continuation_valid_complete_source_query_frame_bytes() +
+	     lockpick_retirement_payload_valid_complete_source_query_frame_bytes() +
+	     item_transfer_craft_outputs_decode_complete_source_query_frame_bytes() +
+	     craft_pouch_mutation_from_payload_complete_source_query_frame_bytes() +
+	     craft_recipe_continuation_decode_complete_source_query_frame_bytes());
+constexpr size_t item_complete_payload_copy_cleanup_selected_source =
+	// Genuine COPY this/source + dtor this at ten allocating enclosing
+	// sites: payload/corpse/collector/continuation/cost-context/cost-projection/
+	// recovery/two forest bindings/publication. This is NOT the different
+	// ten plain-default DMI receiver map (which includes mobile/reference).
+	10 * (2 * sizeof(void *) + sizeof(void *)) +
+	item_complete_payload_copy_vector_source<uint8_t> +
+	item_complete_payload_copy_vector_source<uint64_t> +
+	item_complete_payload_copy_vector_source<native_quest_cost_attempt> +
+	item_complete_payload_copy_recipe::member_vector_cleanup_source<uint8_t>() +
+	item_complete_payload_copy_recipe::member_vector_cleanup_source<uint64_t>() +
+	item_complete_payload_copy_recipe::member_vector_cleanup_source<native_quest_cost_attempt>() +
+	item_complete_payload_string_copy_cleanup_selected_source;
+constexpr size_t item_complete_general_native_cost_encode_retained_source =
+	item_complete_general_native_cost_owned_source +
+	item_complete_general_native_cost_wrapper_source +
+	item_complete_general_policy_query_source +
+	item_complete_general_native_cost_encode_controller_source +
+	item_complete_general_cost_direct_wire_source +
+	item_complete_payload_copy_cleanup_selected_source +
+	item_complete_native_cost_reset_selected_source +
+	item_complete_general_native_cost_byte_lifetime_source +
+	item_complete_general_byte_count_constructor_source -
+	// Exact generated impl/allocator failure cleanup already selected by byte
+	// COPY/MOVE cleanup; preserve every allocator object and normal ctor row.
+	2 * sizeof(void *) + item_complete_native_cost_two_copy_source +
+	item_complete_native_cost_value_entry_child_own_source +
+	item_complete_native_cost_value_entry_child_query_source +
+	item_complete_native_fee_encode_entry_child_own_source +
+	item_complete_native_fee_encode_entry_child_query_source +
+	item_complete_general_payload_encode_child_own_source +
+	3 * item_transfer_payload_encode_version_complete_source_query_frame_bytes() +
+	item_complete_native_cost_encode_child_own_source +
+	item_complete_native_cost_encode_child_query_source;
+bool item_sidecar_complete_append_u32(item_sidecar_complete_budget &owner,
+				      std::vector<uint8_t> *output, uint32_t value)
+{
+	if (!output)
+		return false;
+
+	try
+	{
+		const size_t offset = output->size();
+		if (!owner.growth(*output, sizeof(value)))
+			return false;
+		output->resize(offset + sizeof(value));
+		put_u32(output->data() + offset, value);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+bool item_sidecar_complete_append_text(item_sidecar_complete_budget &owner,
+				       std::vector<uint8_t> *output, const std::string &value)
+{
+	// Scalar end restores the genuine frame on every original return.
+	struct frame_end
+	{
+		item_sidecar_complete_budget &owner;
+		size_t bytes;
+		~frame_end() { owner.frames -= bytes; }
+	};
+	// Admit actual RAII object before construction. Its destructor Source
+	// is already in the retained parent; frames retain only this live INLINE.
+	if (!owner.peak(sizeof(frame_end)))
+		return false;
+	owner.frames += sizeof(frame_end);
+	frame_end tail{ owner, sizeof(frame_end) };
+	if (!output || value.size() > UINT32_MAX ||
+	    !item_sidecar_complete_append_u32(owner, output, static_cast<uint32_t>(value.size())))
+		return false;
+	try
+	{
+		if (!owner.growth(*output, value.size()))
+			return false;
+		output->insert(output->end(), value.begin(), value.end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+bool item_sidecar_complete_read_text(item_sidecar_complete_budget &owner, const uint8_t *input,
+				     size_t size, size_t *offset, size_t maximum,
+				     std::string *value)
+{
+	uint32_t length = 0;
+	if (!value || !read_u32(input, size, offset, &length) || length > maximum ||
+	    *offset > size || size - *offset < length)
+		return false;
+	try
+	{
+		if (!owner.text(*value, reinterpret_cast<const char *>(input + *offset), length, 0))
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*offset += length;
+	return true;
+}
+bool item_sidecar_complete_encode_corpse_context(const item_corpse_metadata &corpse,
+						 std::vector<uint8_t> *encoded,
+						 item_sidecar_complete_budget &owner)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!corpse.present)
+		return true;
+	if (!item_sidecar_complete_append_u32(owner, encoded, CORPSE_CONTEXT_VERSION) ||
+	    !item_sidecar_complete_append_u32(owner, encoded,
+					      static_cast<uint32_t>(corpse.room_vnum)) ||
+	    !item_sidecar_complete_append_u32(owner, encoded,
+					      static_cast<uint32_t>(corpse.weight)) ||
+	    !item_sidecar_complete_append_u32(owner, encoded, corpse.actor_racewar))
+		return false;
+	for (int32_t value : corpse.values)
+		if (!item_sidecar_complete_append_u32(owner, encoded, static_cast<uint32_t>(value)))
+			return false;
+	return item_sidecar_complete_append_text(owner, encoded, corpse.owner_name) &&
+	       item_sidecar_complete_append_text(owner, encoded, corpse.short_description) &&
+	       item_sidecar_complete_append_text(owner, encoded, corpse.description) &&
+	       item_sidecar_complete_append_text(owner, encoded, corpse.keywords);
+}
+bool item_sidecar_complete_decode_corpse_context(const uint8_t *encoded, size_t size,
+						 item_corpse_metadata *corpse,
+						 item_sidecar_complete_budget &owner)
+{
+	if (!corpse || (!encoded && size))
+		return false;
+	*corpse = {};
+	if (!size)
+		return true;
+	size_t offset = 0;
+	uint32_t version = 0, room_vnum = 0, weight = 0, actor_racewar = 0;
+	if (!read_u32(encoded, size, &offset, &version) || version != CORPSE_CONTEXT_VERSION ||
+	    !read_u32(encoded, size, &offset, &room_vnum) ||
+	    !read_u32(encoded, size, &offset, &weight) ||
+	    !read_u32(encoded, size, &offset, &actor_racewar) || actor_racewar > UINT8_MAX)
+		return false;
+	corpse->present = true;
+	corpse->room_vnum = static_cast<int32_t>(room_vnum);
+	corpse->weight = static_cast<int32_t>(weight);
+	corpse->actor_racewar = static_cast<uint8_t>(actor_racewar);
+	for (int32_t &value : corpse->values)
+	{
+		uint32_t decoded = 0;
+		if (!read_u32(encoded, size, &offset, &decoded))
+			return false;
+		value = static_cast<int32_t>(decoded);
+	}
+	return item_sidecar_complete_read_text(owner, encoded, size, &offset,
+					       ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES,
+					       &corpse->owner_name) &&
+	       item_sidecar_complete_read_text(owner, encoded, size, &offset,
+					       ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES,
+					       &corpse->short_description) &&
+	       item_sidecar_complete_read_text(owner, encoded, size, &offset,
+					       ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES,
+					       &corpse->description) &&
+	       item_sidecar_complete_read_text(owner, encoded, size, &offset,
+					       ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES,
+					       &corpse->keywords) &&
+	       offset == size;
+}
+bool item_sidecar_complete_encode_collector_context(const item_collector_death_enrollment &collector,
+						    std::vector<uint8_t> *encoded,
+						    item_sidecar_complete_budget &owner)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!collector.present)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (collector.eligible_item_uids.size() > UINT32_MAX ||
+	    collector.eligible_item_uids.size() >
+		    (CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - fixed_size) / sizeof(uint64_t))
+		return false;
+	try
+	{
+		const size_t count =
+			fixed_size + collector.eligible_item_uids.size() * sizeof(uint64_t);
+		if (!owner.fresh<uint8_t>(count, sizeof(std::vector<uint8_t>)))
+			return false;
+		encoded->assign(fixed_size + collector.eligible_item_uids.size() * sizeof(uint64_t),
+				0);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t offset = 0;
+	put_u32(encoded->data() + offset, COLLECTOR_CONTEXT_VERSION);
+	offset += sizeof(uint32_t);
+	std::copy(collector.death_operation.bytes.begin(), collector.death_operation.bytes.end(),
+		  encoded->begin() + offset);
+	offset += CRITICAL_COMMAND_ID_BYTES;
+	put_u32(encoded->data() + offset, collector.beneficiary_pid);
+	offset += sizeof(uint32_t);
+	put_u64(encoded->data() + offset, collector.death_time);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.collection_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.sale_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.holding_duration);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.price_percent);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.minimum_value);
+	offset += sizeof(uint64_t);
+	put_u32(encoded->data() + offset,
+		static_cast<uint32_t>(collector.eligible_item_uids.size()));
+	offset += sizeof(uint32_t);
+	for (uint64_t uid : collector.eligible_item_uids)
+	{
+		put_u64(encoded->data() + offset, uid);
+		offset += sizeof(uint64_t);
+	}
+	return offset == encoded->size();
+}
+bool item_sidecar_complete_decode_collector_context(const uint8_t *encoded, size_t size,
+						    item_collector_death_enrollment *collector,
+						    item_sidecar_complete_budget &owner)
+{
+	if (!collector || (!encoded && size))
+		return false;
+	*collector = {};
+	if (!size)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (size < fixed_size || get_u32(encoded) != COLLECTOR_CONTEXT_VERSION)
+		return false;
+	size_t offset = sizeof(uint32_t);
+	std::copy_n(encoded + offset, collector->death_operation.bytes.size(),
+		    collector->death_operation.bytes.begin());
+	offset += collector->death_operation.bytes.size();
+	collector->beneficiary_pid = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	collector->death_time = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.collection_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.sale_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.holding_duration = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.price_percent = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.minimum_value = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	const uint32_t count = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	if (count > ITEM_TRANSFER_MAX_ITEMS ||
+	    size - offset != static_cast<size_t>(count) * sizeof(uint64_t))
+		return false;
+	try
+	{
+		if (!owner.fresh<uint64_t>(count, 0))
+			return false;
+		collector->eligible_item_uids.reserve(count);
+		for (uint32_t index = 0; index < count; ++index)
+		{
+			if (!owner.growth(collector->eligible_item_uids, 1))
+				return false;
+			collector->eligible_item_uids.push_back(get_u64(encoded + offset));
+			offset += sizeof(uint64_t);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	collector->present = true;
+	return offset == size;
+}
+bool item_continuation_duplicate_valid_complete_owned(const item_transfer_payload &payload,
+						      uint16_t payload_version,
+						      item_native_validation_complete_budget &owner)
+{
+	const auto &data = payload.continuation.data;
+	if (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION || !payload.multi_root ||
+	    (payload.reason != item_transfer_reason::player_get &&
+	     payload.reason != item_transfer_reason::player_put) ||
+	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	    payload.from_owner.context_id || payload.from_owner.id != payload.to_owner.id ||
+	    payload.to_owner.type != item_owner_type::player || payload.to_owner.context_id ||
+	    payload.selected_item_uid || data.size() < 48 || get_u32(data.data()) != 1 ||
+	    get_u32(data.data() + 4) > 1 || !get_u64(data.data() + 8) ||
+	    !get_u32(data.data() + 16) || get_u32(data.data() + 16) > INT32_MAX ||
+	    !get_u64(data.data() + 20) ||
+	    get_u64(data.data() + 28) != payload.target_parent_item_uid)
+		return false;
+	const uint64_t duplicate_uid = get_u64(data.data() + 20);
+	const uint64_t target_parent_uid = get_u64(data.data() + 28);
+	const uint32_t direct_child_count = get_u32(data.data() + 36);
+	if (!direct_child_count || direct_child_count > 90 ||
+	    data.size() != 40 + static_cast<size_t>(direct_child_count) * sizeof(uint64_t) ||
+	    duplicate_uid == target_parent_uid ||
+	    (target_parent_uid ?
+		     payload.reason != item_transfer_reason::player_put ||
+			     payload.reason_id != static_cast<int64_t>(target_parent_uid) :
+		     payload.reason != item_transfer_reason::player_get ||
+			     payload.reason_id != static_cast<int64_t>(get_u64(data.data() + 40))))
+		return false;
+	if (!owner.peak(sizeof(std::vector<uint64_t>)))
+		return false;
+	std::vector<uint64_t> child_uids;
+	owner.uids = &child_uids;
+	try
+	{
+		if (!owner.peak(direct_child_count * sizeof(uint64_t)))
+			return false;
+		child_uids.reserve(direct_child_count);
+		for (size_t index = 0; index < direct_child_count; ++index)
+		{
+			const uint64_t uid = get_u64(data.data() + 40 + index * sizeof(uint64_t));
+			const item_transfer_entry *child =
+				item_complete_find_payload_item(payload, uid);
+			if (!uid || !child || child->parent_item_uid != duplicate_uid ||
+			    std::find(child_uids.begin(), child_uids.end(), uid) !=
+				    child_uids.end())
+				return false;
+			if (!owner.peak(0))
+				return false;
+			child_uids.push_back(uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t payload_direct_children = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+		if (payload.items[index].parent_item_uid == duplicate_uid)
+		{
+			++payload_direct_children;
+			if (std::find(child_uids.begin(), child_uids.end(),
+				      payload.items[index].item_uid) == child_uids.end())
+				return false;
+		}
+	return payload_direct_children == direct_child_count;
+}
+bool item_continuation_craft_outputs_complete_owned(const item_transfer_payload &payload,
+						    std::vector<player_item_snapshot> *outputs,
+						    item_native_validation_complete_budget &owner)
+{
+	if (!outputs || payload.reason != item_transfer_reason::craft ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return false;
+	outputs->clear();
+	if (!payload.item_blob_size)
+		return true;
+	size_t prefix = 0;
+	if (!owner.prefix(prefix))
+		return false;
+	if (item_complete_snapshot_list_decode_child(
+		    payload.item_blob.data(), payload.item_blob_size, outputs, owner.reserve,
+		    owner.context, prefix, nullptr) != player_snapshot_codec_result::ok ||
+	    outputs->empty() || outputs->size() > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	if (!owner.peak(sizeof(std::vector<uint64_t>)))
+		return false;
+	std::vector<uint64_t> uids;
+	owner.uids = &uids;
+	try
+	{
+		if (outputs->size() > SIZE_MAX / sizeof(uint64_t) ||
+		    !owner.peak(outputs->size() * sizeof(uint64_t)))
+			return false;
+		uids.reserve(outputs->size());
+		for (size_t index = 0; index < outputs->size(); ++index)
+		{
+			const player_item_snapshot &output = (*outputs)[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    output.parent_index >= static_cast<int32_t>(index) ||
+			    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    (index == 0 && output.object_uid != payload.selected_item_uid) ||
+			    (index && output.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			     output.object_uid == payload.selected_item_uid))
+				return false;
+			if (!owner.peak(0))
+				return false;
+			uids.push_back(output.object_uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t levels = 0, remaining = uids.size();
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	if (!owner.peak((2 * levels + 1) * item_complete_native_uid_sort_recursive_source))
+		return false;
+	std::sort(uids.begin(), uids.end());
+	return std::adjacent_find(uids.begin(), uids.end()) == uids.end();
+}
+bool item_complete_general_validated_entities_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_entities_retained_source, child = 0;
+	// Full prospective maximum covers validated general counts <=3004; real
+	// runtime sort_frame keeps its original actual count/depth arithmetic.
+	if (!payload_clone_add(
+		    result,
+		    23 * item_complete_general_entities_sort_recursive_source<
+				 critical_entity_key, decltype(&critical_entity_key_less)>) ||
+	    !payload_clone_add(
+		    result,
+		    23 * item_complete_general_entities_sort_recursive_source<
+				 critical_expected_revision, item_entities_revision_less>) ||
+	    !item_owner_key_source_frame_bytes(&child) || !payload_clone_add(result, child) ||
+	    !item_transfer_craft_outputs_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_general_validated_entities_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_general_validated_entities_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_general_entities_complete_budget);
+	return true;
+}
+bool item_complete_general_craft_outputs_child(const item_transfer_payload &input,
+					       std::vector<player_item_snapshot> *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer,
+					       size_t *retained_heap) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_craft_outputs_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_craft_outputs_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_craft_outputs_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_craft_outputs_decode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_craft_outputs_decode_complete_bounded(input, output, reserve, context,
+								   child_outer, retained_heap);
+}
+bool item_complete_general_entities_owner_key_child(const item_owner_identity &owner,
+						    critical_entity_key *output,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * item_owner_key_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_owner_key_source_frame_bytes(&source) ||
+	    !item_owner_key_initial_inline_bytes(&initial) ||
+	    !item_owner_key_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_owner_key_bounded(owner, output, reserve, context, child_outer);
+}
+bool item_complete_general_validated_entities_bounded(critical_command *command,
+						      const item_transfer_payload &payload,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_entities_retained_source +
+				  7 * sizeof(critical_entity_key) +
+				  sizeof(critical_expected_revision);
+	item_general_entities_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command)))
+		return false;
+	try
+	{
+		// Only original entity vectors are populated; authentic existing command
+		// payload/accounting/scalars stay untouched and caller-owned throughout.
+		critical_command candidate = {};
+		budget.command = &candidate;
+		if (!item_general_entities_populate_complete_owned(&candidate, payload, budget) ||
+		    !budget.peak())
+			return false;
+		command->keys = std::move(candidate.keys);
+		command->expected_revisions = std::move(candidate.expected_revisions);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_general_entities_populate_complete_owned(critical_command *command,
+						   const item_transfer_payload &payload,
+						   item_general_entities_complete_budget &budget)
+{
+	critical_entity_key from_key = {}, to_key = {};
+	size_t admission_prefix = 0;
+	if (!command ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_general_entities_owner_key_child(payload.from_owner, &from_key,
+							     budget.reserve, budget.context,
+							     admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_general_entities_owner_key_child(
+		      payload.to_owner, &to_key, budget.reserve, budget.context, admission_prefix)))
+		return false;
+	if (!budget.fresh<critical_entity_key>(
+		    2, 2 * sizeof(critical_entity_key) +
+			       sizeof(std::initializer_list<critical_entity_key>)))
+		return false;
+	command->keys = { from_key, to_key };
+	if (!budget.fresh<critical_expected_revision>(
+		    2, 2 * sizeof(critical_expected_revision) +
+			       sizeof(std::initializer_list<critical_expected_revision>)))
+		return false;
+	command->expected_revisions = { { from_key, payload.expected_from_revision },
+					{ to_key, payload.expected_to_revision } };
+	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
+	{
+		if (payload.expected_from_revision != payload.expected_to_revision)
+			return false;
+		command->keys.pop_back();
+		command->expected_revisions.pop_back();
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		critical_entity_key item_key = { critical_entity_type::item,
+						 payload.items[index].item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(item_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ item_key, payload.items[index].expected_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		critical_entity_key parent_key = { critical_entity_type::item,
+						   payload.target_parent_item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(parent_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ parent_key, payload.expected_target_parent_revision });
+	}
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>)))
+			return false;
+		std::vector<player_item_snapshot> outputs;
+		budget.outputs = &outputs;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_complete_general_craft_outputs_child(payload, &outputs, budget.reserve,
+								budget.context, admission_prefix,
+								nullptr)))
+			return false;
+		for (const player_item_snapshot &output : outputs)
+		{
+			const critical_entity_key output_key = { critical_entity_type::item,
+								 output.object_uid };
+			if (!budget.growth(command->keys, 1))
+				return false;
+			command->keys.push_back(output_key);
+			if (!budget.growth(command->expected_revisions, 1))
+				return false;
+			command->expected_revisions.push_back(
+				{ output_key, ITEM_TRANSFER_ABSENT_REVISION });
+		}
+		budget.outputs = nullptr;
+	}
+	if (payload.collector.present)
+	{
+		const critical_entity_key catalog_key = { critical_entity_type::collector,
+							  COLLECTOR_CATALOG_KEY };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(catalog_key);
+		// The SQL repository takes the current catalog row lock before any item
+		// lock; zero is a serialization key, not an optimistic catalog fence.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ catalog_key, 0 });
+	}
+	if (payload.native_recovery.present &&
+	    payload.native_mobile.action == item_native_mobile_action::consumption &&
+	    !payload.native_cost.fee_only)
+	{
+		const critical_entity_key giver_key = { critical_entity_type::player,
+							payload.native_recovery.player_pid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(giver_key);
+		// A serialization key only; the acknowledged save fence remains distinct
+		// from a player custody-owner revision and is checked by the original root.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ giver_key, 0 });
+	}
+	if (payload.native_recovery.present && command->keys.size() > CRITICAL_COMMAND_MAX_KEYS)
+		return false;
+	if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+		    command->keys.size()))
+		return false;
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
+			       critical_entity_key_equal) != command->keys.end())
+		return false;
+	if (!budget.sort_frame<critical_expected_revision, item_entities_revision_less>(
+		    command->expected_revisions.size()))
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  item_entities_revision_less{});
+	return true;
+}
+bool item_full_payload_validation_complete_owned(const item_transfer_payload &payload,
+						 uint16_t payload_version,
+						 item_payload_validation_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!budget.peak(sizeof(native_quest_coin_give_projection)))
+		return false;
+	// Every legacy/generic encoder must refuse rather than silently drop money.
+	if (payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{})
+		return false;
+	if (!budget.peak(sizeof(native_quest_cost_projection)))
+		return false;
+	// Every legacy/generic encoder must refuse rather than silently drop cost.
+	if (payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{})
+		return false;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_general_mobile_valid_child(payload, payload_version, budget.reserve,
+						       budget.context, admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_general_recovery_valid_child(payload, payload.native_recovery,
+							 payload_version, budget.reserve,
+							 budget.context, admission_prefix)))
+		return false;
+	const bool native_consumption = native_mobile_version(payload_version) &&
+					payload.native_mobile.action ==
+						item_native_mobile_action::consumption;
+	if (!item_owner_identity_valid(payload.from_owner) ||
+	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+	     payload.item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS) ||
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    payload.from_owner.type == item_owner_type::collector ||
+	    payload.to_owner.type == item_owner_type::collector ||
+	    !item_complete_valid_collector_context(payload, payload_version) ||
+	    (payload.logical_source_id && (payload_version < ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION ||
+					   payload.reason != item_transfer_reason::creation)) ||
+	    payload.continuation.data.size() >
+		    item_transfer_continuation_limit(payload.continuation.kind) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::none &&
+	     !payload.continuation.data.empty()) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::quest_offering &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      payload.reason != item_transfer_reason::quest_turnin ||
+	      (!native_consumption && payload.from_owner.type != item_owner_type::player) ||
+	      payload.to_owner.type != item_owner_type::destruction || !payload.multi_root ||
+	      (!native_consumption && payload.reason_id <= 0) ||
+	      !(budget.prefix(admission_prefix) &&
+		item_complete_general_offering_valid_child(payload, budget.reserve, budget.context,
+							   admission_prefix)))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::soulbind_transfer &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      !item_complete_valid_soulbind_continuation(payload))) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::spell_component_retirement &&
+	     !valid_spell_component_continuation(payload, payload_version)) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::account_reward_retirement &&
+	     !valid_account_reward_retirement_continuation(payload, payload_version)) ||
+	    (payload.continuation.kind ==
+		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
+	     !(budget.prefix(admission_prefix) &&
+	       item_complete_general_duplicate_valid_child(payload, payload_version, budget.reserve,
+							   budget.context, admission_prefix))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage &&
+	     payload_version < ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::lockpick_retirement &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      !(budget.prefix(admission_prefix) &&
+		item_complete_general_lockpick_valid_child(payload, budget.reserve, budget.context,
+							   admission_prefix)))) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe &&
+	     (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	      payload.reason != item_transfer_reason::craft)) ||
+	    (payload.continuation.kind != item_transfer_continuation_kind::none &&
+	     payload.continuation.kind != item_transfer_continuation_kind::quest_offering &&
+	     payload.continuation.kind != item_transfer_continuation_kind::soulbind_transfer &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::spell_component_retirement &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::account_reward_retirement &&
+	     payload.continuation.kind !=
+		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage &&
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_recipe &&
+	     payload.continuation.kind != item_transfer_continuation_kind::lockpick_retirement))
+		return false;
+	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
+	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
+	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool world_corpse_raise_pet =
+		corpse_raise_pet && payload.from_owner.type == item_owner_type::room &&
+		payload.from_owner.id && payload.from_owner.id <= INT32_MAX &&
+		!payload.from_owner.context_id && payload.to_owner.type == item_owner_type::pet &&
+		payload.to_owner.id && payload.to_owner.context_id &&
+		payload.to_owner.context_id <= INT32_MAX && payload.multi_root &&
+		!payload.target_root_item_uid && !payload.target_parent_item_uid &&
+		static_cast<uint64_t>(payload.reason_id) == payload.to_owner.id;
+	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
+	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
+	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
+	const bool craft = payload.reason == item_transfer_reason::craft;
+	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
+	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool equipment = payload.reason == item_transfer_reason::player_wear ||
+			       payload.reason == item_transfer_reason::player_remove;
+	const bool forced_drop = item_transfer_forced_weapon_drop(payload.reason);
+	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (forced_drop &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::room || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !item_complete_find_payload_item(payload, payload.selected_item_uid) ||
+	     item_complete_find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (equipment &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	     payload.from_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.selected_item_uid != payload.items[0].root_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !item_complete_find_payload_item(payload, payload.selected_item_uid) ||
+	     item_complete_find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (player_transfer &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
+	     payload.to_owner.id > INT32_MAX || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.from_owner.id == payload.to_owner.id ||
+	     payload.multi_root || payload.target_parent_item_uid ||
+	     payload.reason_id != static_cast<int64_t>(payload.from_owner.id)))
+		return false;
+	if (craft)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>) +
+				 sizeof(craft_pouch_mutation)))
+			return false;
+		std::vector<player_item_snapshot> outputs;
+		craft_pouch_mutation pouch;
+		budget.outputs = &outputs;
+		budget.pouch = &pouch;
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    payload.from_owner.type != item_owner_type::player ||
+		    payload.to_owner.type != item_owner_type::player ||
+		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+		    !payload.from_owner.id || payload.from_owner.context_id ||
+		    payload.to_owner.context_id || !payload.multi_root ||
+		    !payload.selected_item_uid || payload.target_root_item_uid ||
+		    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+		    !(budget.prefix(admission_prefix) &&
+		      item_complete_general_craft_outputs_child(payload, &outputs, budget.reserve,
+								budget.context, admission_prefix,
+								nullptr)) ||
+		    !(budget.prefix(admission_prefix) &&
+		      item_complete_general_pouch_payload_child(
+			      payload, &pouch, budget.reserve, budget.context, admission_prefix)) ||
+		    (outputs.empty() &&
+		     !item_complete_find_payload_item(payload, payload.selected_item_uid)) ||
+		    payload.item_count + outputs.size() > CRITICAL_COMMAND_MAX_KEYS - 2)
+			return false;
+		if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+		{
+			if (!budget.peak(sizeof(craft_recipe_continuation)))
+				return false;
+			craft_recipe_continuation recipe;
+			budget.recipe = &recipe;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_complete_general_recipe_decode_child(
+				      payload.continuation.data, &recipe, budget.reserve,
+				      budget.context, admission_prefix)) ||
+			    (!budget.peak() ||
+			     !craft_recipe_continuation_matches(recipe, payload)) ||
+			    (craft_recipe_is_alchemy(recipe.discipline) ||
+					     recipe.discipline == craft_recipe_discipline::refine ?
+				     static_cast<uint32_t>(std::count_if(
+					     outputs.begin(), outputs.end(),
+					     item_complete_native_recovery_root_count_predicate{})) !=
+						     recipe.output_count ||
+					     (!outputs.empty() &&
+					      outputs[0].object_uid != recipe.output_uid) :
+				     outputs.size() != 1 ||
+					     outputs[0].object_uid != recipe.output_uid ||
+					     outputs[0].vnum !=
+						     static_cast<int32_t>(recipe.recipe_vnum)) ||
+			    (recipe.discipline == craft_recipe_discipline::refine &&
+			     (!outputs.empty() &&
+			      (outputs.size() != 1 ||
+			       outputs[0].vnum != static_cast<int32_t>(recipe.recipe_vnum)))))
+				return false;
+			budget.recipe = nullptr;
+		}
+		for (const player_item_snapshot &output : outputs)
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (output.object_uid == payload.items[index].item_uid)
+					return false;
+		// Original locals die at this brace; later census must not read them.
+		budget.outputs = nullptr;
+		budget.pouch = nullptr;
+	}
+	// Other commands do not update the pet's physical item projection.
+	if ((payload.from_owner.type == item_owner_type::pet ||
+	     payload.to_owner.type == item_owner_type::pet) &&
+	    !pet_give && !pet_return && !corpse_raise_pet)
+		return false;
+	if ((pet_give && (payload.from_owner.type != item_owner_type::player ||
+			  payload.to_owner.type != item_owner_type::pet ||
+			  payload.from_owner.id != payload.to_owner.context_id ||
+			  payload.reason_id != static_cast<int64_t>(payload.to_owner.id))) ||
+	    (pet_return && (payload.from_owner.type != item_owner_type::pet ||
+			    payload.to_owner.type != item_owner_type::player ||
+			    payload.from_owner.context_id != payload.to_owner.id ||
+			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
+	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
+		return false;
+	const bool corpse_context_required =
+		payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+		(corpse_create || corpse_loot || (corpse_raise_pet && !world_corpse_raise_pet));
+	if (corpse_context_required != payload.corpse.present ||
+	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
+			       payload.to_owner.type != item_owner_type::corpse)) ||
+	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
+			     payload.to_owner.type != item_owner_type::player)) ||
+	    (corpse_raise_pet && !world_corpse_raise_pet &&
+	     (payload.from_owner.type != item_owner_type::corpse ||
+	      payload.to_owner.type != item_owner_type::pet)))
+		return false;
+	if (payload.corpse.present)
+	{
+		const item_owner_identity &owner = corpse_create ? payload.to_owner :
+								   payload.from_owner;
+		const uint32_t owner_pid = static_cast<uint32_t>(owner.id >> 32);
+		const uint32_t save_id = static_cast<uint32_t>(owner.id);
+		if (!owner_pid || owner_pid > INT32_MAX || !save_id || save_id > INT32_MAX ||
+		    owner.context_id || payload.corpse.room_vnum < 0 ||
+		    payload.corpse.actor_racewar > 4 ||
+		    payload.corpse.values[CORPSE_PID_VALUE_INDEX] !=
+			    static_cast<int32_t>(owner_pid) ||
+		    payload.corpse.values[CORPSE_SAVE_ID_VALUE_INDEX] !=
+			    static_cast<int32_t>(save_id) ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] < 0 ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] > 4 ||
+		    !item_complete_valid_text(payload.corpse.owner_name,
+					      ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES, true) ||
+		    !item_complete_valid_text(payload.corpse.short_description,
+					      ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES,
+					      false) ||
+		    !item_complete_valid_text(payload.corpse.description,
+					      ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES, false) ||
+		    !item_complete_valid_text(payload.corpse.keywords,
+					      ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES, false))
+			return false;
+	}
+	const bool creation = payload.from_owner.type == item_owner_type::system;
+	const bool destruction = payload.to_owner.type == item_owner_type::destruction;
+	const bool quest_turnin = payload.reason == item_transfer_reason::quest_turnin;
+	if (payload.to_owner.type == item_owner_type::system ||
+	    payload.from_owner.type == item_owner_type::destruction ||
+	    (payload.reason == item_transfer_reason::creation) != creation ||
+	    ((payload.reason == item_transfer_reason::destruction || quest_turnin) !=
+	     destruction) ||
+	    (quest_turnin && !native_consumption &&
+	     (payload.from_owner.type != item_owner_type::player || !payload.multi_root ||
+	      payload.reason_id <= 0 ||
+	      payload.continuation.kind != item_transfer_continuation_kind::quest_offering)) ||
+	    ((creation || destruction) &&
+	     item_owner_identity_equal(payload.from_owner, payload.to_owner)))
+		return false;
+	if (payload.multi_root)
+	{
+		const bool batch_reason = payload.reason == item_transfer_reason::player_get ||
+					  payload.reason == item_transfer_reason::player_drop ||
+					  payload.reason == item_transfer_reason::player_put ||
+					  payload.reason == item_transfer_reason::locker_deposit ||
+					  payload.reason == item_transfer_reason::locker_withdraw ||
+					  payload.reason == item_transfer_reason::corpse_loot ||
+					  payload.reason ==
+						  item_transfer_reason::corpse_raise_pet ||
+					  payload.reason == item_transfer_reason::corpse_create ||
+					  payload.reason == item_transfer_reason::destruction ||
+					  quest_turnin || craft;
+		const bool creation_batch = creation &&
+					    payload.reason == item_transfer_reason::creation;
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    (!craft && payload.selected_item_uid) || (!creation_batch && !batch_reason) ||
+		    (craft && (!payload.selected_item_uid || !payload.multi_root)) ||
+		    (creation_batch &&
+		     (payload.to_owner.type != item_owner_type::player ||
+		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
+		    (payload.target_parent_item_uid ? !payload.target_root_item_uid :
+						      payload.target_root_item_uid != 0))
+			return false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &entry = payload.items[index];
+			if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
+			    (creation_batch ? (entry.expected_item_revision !=
+						       ITEM_TRANSFER_ABSENT_REVISION ||
+					       entry.expected_state != item_custody_state::absent) :
+					      entry.expected_state != item_custody_state::active) ||
+			    (index && payload.items[index - 1].item_uid >= entry.item_uid) ||
+			    entry.item_uid == payload.target_parent_item_uid)
+				return false;
+			if (creation_batch)
+			{
+				const uint64_t selected_root =
+					item_complete_selected_root_for(payload, entry.item_uid);
+				const item_transfer_entry *root =
+					item_complete_find_payload_item(payload, selected_root);
+				uint64_t target_root = 0, target_parent = 0;
+				if (!root || selected_root != entry.root_item_uid ||
+				    root->root_item_uid != root->item_uid ||
+				    root->parent_item_uid ||
+				    !item_complete_target_topology_for(payload, entry.item_uid,
+								       &target_root,
+								       &target_parent) ||
+				    target_root != entry.root_item_uid ||
+				    target_parent != entry.parent_item_uid)
+					return false;
+				continue;
+			}
+			const uint64_t selected_root =
+				item_complete_selected_root_for(payload, entry.item_uid);
+			const item_transfer_entry *selected =
+				item_complete_find_payload_item(payload, selected_root);
+			if (!selected || selected->root_item_uid != entry.root_item_uid)
+				return false;
+			uint64_t target_root = 0, target_parent = 0;
+			if (!item_complete_target_topology_for(payload, entry.item_uid,
+							       &target_root, &target_parent))
+				return false;
+		}
+		return true;
+	}
+	const uint64_t source_root = payload.items[0].root_item_uid;
+	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
+							      source_root;
+	const uint64_t target_root = payload.target_root_item_uid ? payload.target_root_item_uid :
+								    selected;
+	if (!source_root || !selected || !target_root ||
+	    (!payload.target_parent_item_uid && target_root != selected))
+		return false;
+	bool found_selected = false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const item_transfer_entry &entry = payload.items[index];
+		if (!entry.item_uid || entry.root_item_uid != source_root || entry.vnum <= 0 ||
+		    entry.expected_state !=
+			    (creation ? item_custody_state::absent : item_custody_state::active) ||
+		    (creation && entry.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION))
+			return false;
+		if (index && payload.items[index - 1].item_uid >= entry.item_uid)
+			return false;
+		if (entry.item_uid == payload.target_parent_item_uid)
+			return false;
+		if (entry.item_uid == selected)
+		{
+			if (found_selected)
+				return false;
+			found_selected = true;
+		}
+		else if (!entry.parent_item_uid)
+			return false;
+	}
+	if (!found_selected || (creation && selected != source_root))
+		return false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		if (payload.items[index].item_uid == selected)
+			continue;
+		uint64_t ancestor_uid = payload.items[index].parent_item_uid;
+		bool reaches_root = false;
+		for (size_t depth = 0; depth < payload.item_count; ++depth)
+		{
+			if (ancestor_uid == selected)
+			{
+				reaches_root = true;
+				break;
+			}
+			auto parent = std::find_if(
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				item_complete_validation_ancestor_predicate{ ancestor_uid });
+			if (parent == payload.items.begin() + payload.item_count)
+				break;
+			ancestor_uid = parent->parent_item_uid;
+		}
+		if (!reaches_root)
+			return false;
+	}
+	return true;
+}
+bool item_complete_general_mobile_valid_child(const item_transfer_payload &input, uint16_t version,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_mobile_context_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_mobile_context_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_mobile_context_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_mobile_context_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_mobile_context_valid_complete_bounded(input, version, reserve,
+									  context, child_outer);
+}
+bool item_complete_general_recovery_valid_child(const item_transfer_payload &input,
+						const item_native_mobile_recovery_context &recovery,
+						uint16_t version,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_recovery_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_recovery_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_recovery_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_recovery_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_recovery_valid_complete_bounded(input, recovery, version,
+								    reserve, context, child_outer);
+}
+bool item_complete_general_offering_valid_child(const item_transfer_payload &input,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 *
+		item_transfer_quest_offering_continuation_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_quest_offering_continuation_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_quest_offering_continuation_valid_complete_initial_inline_bytes(
+		    &initial) ||
+	    !item_transfer_quest_offering_continuation_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_quest_offering_continuation_valid_complete_bounded(
+		input, reserve, context, child_outer);
+}
+bool item_complete_general_duplicate_valid_child(const item_transfer_payload &input,
+						 uint16_t version,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 *
+		item_transfer_duplicate_promotion_continuation_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_duplicate_promotion_continuation_valid_complete_source_frame_bytes(
+		    &source) ||
+	    !item_transfer_duplicate_promotion_continuation_valid_complete_initial_inline_bytes(
+		    &initial) ||
+	    !item_transfer_duplicate_promotion_continuation_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_duplicate_promotion_continuation_valid_complete_bounded(
+		input, version, reserve, context, child_outer);
+}
+bool item_complete_general_lockpick_valid_child(const item_transfer_payload &input,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * lockpick_retirement_payload_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !lockpick_retirement_payload_valid_complete_source_frame_bytes(&source) ||
+	    !lockpick_retirement_payload_valid_complete_initial_inline_bytes(&initial) ||
+	    !lockpick_retirement_payload_valid_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return lockpick_retirement_payload_valid_complete_bounded(input, reserve, context,
+								  child_outer);
+}
+bool item_complete_general_pouch_payload_child(const item_transfer_payload &input,
+					       craft_pouch_mutation *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * craft_pouch_mutation_from_payload_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !craft_pouch_mutation_from_payload_complete_source_frame_bytes(&source) ||
+	    !craft_pouch_mutation_from_payload_complete_initial_inline_bytes(&initial) ||
+	    !craft_pouch_mutation_from_payload_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return craft_pouch_mutation_from_payload_complete_bounded(input, output, reserve, context,
+								  child_outer);
+}
+bool item_complete_general_recipe_decode_child(std::span<const uint8_t> input,
+					       craft_recipe_continuation *output,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * craft_recipe_continuation_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !craft_recipe_continuation_decode_complete_source_frame_bytes(&source) ||
+	    !craft_recipe_continuation_decode_complete_initial_inline_bytes(&initial) ||
+	    !craft_recipe_continuation_decode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return craft_recipe_continuation_decode_complete_bounded(input, output, reserve, context,
+								 child_outer);
+}
+bool item_complete_general_payload_valid_child(const item_transfer_payload &value, uint16_t version,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_payload_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_payload_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_payload_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_payload_valid_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_payload_valid_complete_bounded(value, version, reserve, context,
+							    child_outer);
+}
+bool item_complete_general_validated_entities_child(critical_command *output,
+						    const item_transfer_payload &value,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_complete_general_validated_entities_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_general_validated_entities_source_frame_bytes(&source) ||
+	    !item_complete_general_validated_entities_initial_inline_bytes(&initial) ||
+	    !item_complete_general_validated_entities_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_complete_general_validated_entities_bounded(output, value, reserve, context,
+								child_outer);
+}
+bool item_generic_decode_complete_owned(const critical_command &command,
+					item_transfer_payload *payload,
+					item_generic_decode_complete_budget &budget)
+{
+	if (command.payload_version == ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!payload || command.type != critical_command_type::item_transfer ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION) ||
+	    (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION ?
+		     command.payload.size() < ITEM_TRANSFER_HEADER_BYTES +
+						      ITEM_TRANSFER_ENTRY_BYTES + sizeof(uint32_t) :
+		     command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES))
+		return false;
+	if (!budget.peak(sizeof(item_transfer_payload)))
+		return false;
+	*payload = {};
+	size_t admission_prefix = 0;
+	payload->from_owner = decode_owner(command.payload.data() + FROM_OFFSET);
+	payload->to_owner = decode_owner(command.payload.data() + TO_OFFSET);
+	payload->reason =
+		static_cast<item_transfer_reason>(get_u16(command.payload.data() + REASON_OFFSET));
+	payload->item_count = get_u16(command.payload.data() + COUNT_OFFSET);
+	payload->reason_id =
+		static_cast<int64_t>(get_u64(command.payload.data() + REASON_ID_OFFSET));
+	payload->expected_from_revision = get_u64(command.payload.data() + FROM_REVISION_OFFSET);
+	payload->expected_to_revision = get_u64(command.payload.data() + TO_REVISION_OFFSET);
+	payload->selected_item_uid = get_u64(command.payload.data() + SELECTED_ITEM_OFFSET);
+	payload->target_root_item_uid = get_u64(command.payload.data() + TARGET_ROOT_OFFSET);
+	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
+	payload->expected_target_parent_revision =
+		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
+	// Master v7 craft used 29 (the unpublished draft used 27). This branch
+	// already owns 29 for wear, so normalize only the old same-player craft
+	// shape. Wear targets its selected root; craft has no destination root.
+	if (command.payload_version == 7 &&
+	    (payload->reason == item_transfer_reason::soulbind ||
+	     payload->reason == item_transfer_reason::player_wear) &&
+	    payload->from_owner.type == item_owner_type::player &&
+	    item_owner_identity_equal(payload->from_owner, payload->to_owner) &&
+	    payload->selected_item_uid && !payload->target_root_item_uid &&
+	    !payload->target_parent_item_uid)
+		payload->reason = item_transfer_reason::craft;
+	payload->multi_root =
+		command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+		(payload->selected_item_uid == 0 || payload->reason == item_transfer_reason::craft);
+	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	const bool variable_items = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
+	if (!variable_items && payload->item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS)
+		return false;
+	const size_t encoded_item_count = variable_items ? payload->item_count :
+							   ITEM_TRANSFER_LEGACY_MAX_ITEMS;
+	const size_t item_section_size =
+		ITEM_TRANSFER_HEADER_BYTES + encoded_item_count * ITEM_TRANSFER_ENTRY_BYTES;
+	if (command.payload.size() < item_section_size)
+		return false;
+	for (size_t index = 0; index < encoded_item_count; ++index)
+	{
+		const uint8_t *input = command.payload.data() + ITEM_TRANSFER_HEADER_BYTES +
+				       index * ITEM_TRANSFER_ENTRY_BYTES;
+		if (index < payload->item_count)
+			payload->items[index] = { get_u64(input),
+						  get_u64(input + 8),
+						  get_u64(input + 16),
+						  get_u64(input + 24),
+						  static_cast<int32_t>(get_u32(input + 32)),
+						  static_cast<item_custody_state>(input[36]) };
+		else
+			for (size_t byte = 0; byte < ITEM_TRANSFER_ENTRY_BYTES; ++byte)
+				if (input[byte])
+					return false;
+		if (input[37] || input[38] || input[39])
+			return false;
+	}
+	if (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+	{
+		if (command.payload.size() < item_section_size + sizeof(uint32_t))
+			return false;
+		payload->item_blob_size = get_u32(command.payload.data() + item_section_size);
+		const size_t item_end =
+			item_section_size + sizeof(uint32_t) + payload->item_blob_size;
+		if (payload->item_blob_size > payload->item_blob.size() ||
+		    item_end > command.payload.size())
+			return false;
+		std::copy_n(command.payload.begin() + item_section_size + sizeof(uint32_t),
+			    payload->item_blob_size, payload->item_blob.begin());
+		if (command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+		{
+			if (command.payload.size() != item_end)
+				return false;
+		}
+		else
+		{
+			if (command.payload.size() < item_end + sizeof(uint32_t))
+				return false;
+			const uint32_t corpse_size = get_u32(command.payload.data() + item_end);
+			const size_t corpse_end = item_end + sizeof(uint32_t) + corpse_size;
+			if (corpse_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+			    corpse_end > command.payload.size() ||
+			    !(budget.prefix(admission_prefix) &&
+			      item_complete_corpse_decode_child(
+				      command.payload.data() + item_end + sizeof(uint32_t),
+				      corpse_size, &payload->corpse, budget.reserve, budget.context,
+				      admission_prefix)))
+				return false;
+			if (command.payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION)
+			{
+				if (command.payload.size() != corpse_end)
+					return false;
+			}
+			else
+			{
+				if (command.payload.size() < corpse_end + sizeof(uint32_t))
+					return false;
+				const uint32_t collector_size =
+					get_u32(command.payload.data() + corpse_end);
+				const size_t collector_end =
+					corpse_end + sizeof(uint32_t) + collector_size;
+				if (collector_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+				    collector_end > command.payload.size() ||
+				    !(budget.prefix(admission_prefix) &&
+				      item_complete_collector_decode_child(
+					      command.payload.data() + corpse_end + sizeof(uint32_t),
+					      collector_size, &payload->collector, budget.reserve,
+					      budget.context, admission_prefix)))
+					return false;
+				const size_t source_end =
+					collector_end +
+					(command.payload_version >=
+							 ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION ?
+						 sizeof(payload->logical_source_id) :
+						 0);
+				if (source_end > command.payload.size())
+					return false;
+				if (command.payload_version >= ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION)
+					payload->logical_source_id =
+						get_u64(command.payload.data() + collector_end);
+				if (command.payload_version <
+				    ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION)
+				{
+					if (command.payload.size() != source_end)
+						return false;
+				}
+				else
+				{
+					if (command.payload.size() <
+					    source_end + sizeof(uint32_t) * 2)
+						return false;
+					payload->continuation.kind =
+						static_cast<item_transfer_continuation_kind>(
+							get_u32(command.payload.data() +
+								source_end));
+					const uint32_t continuation_size =
+						get_u32(command.payload.data() + source_end +
+							sizeof(uint32_t));
+					if (continuation_size >
+						    item_transfer_continuation_limit(
+							    payload->continuation.kind) ||
+					    command.payload.size() <
+						    source_end + sizeof(uint32_t) * 2 +
+							    continuation_size +
+							    (native_mobile_version(
+								     command.payload_version) ?
+								     ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+								     0) ||
+					    (command.payload_version !=
+						     ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+					     command.payload.size() !=
+						     source_end + sizeof(uint32_t) * 2 +
+							     continuation_size +
+							     (native_mobile_version(
+								      command.payload_version) ?
+								      ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+								      0)))
+						return false;
+					if (!budget.peak(continuation_size))
+						return false;
+					payload->continuation.data.assign(
+						command.payload.begin() + source_end +
+							sizeof(uint32_t) * 2,
+						command.payload.begin() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size);
+					if (native_mobile_version(command.payload_version))
+					{
+						if (!budget.prefix(admission_prefix))
+							return false;
+						const uint8_t *tail =
+							command.payload.data() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size;
+						if (get_u16(tail) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION ||
+						    tail[3] ||
+						    get_u32(tail + 4) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES ||
+						    get_u32(tail + 12) || get_u32(tail + 164) ||
+						    item_complete_native_reference_decode_child(
+							    std::span<const uint8_t>(
+								    tail + 16,
+								    QUEST_MOBILE_NATIVE_REFERENCE_BYTES),
+							    &payload->native_mobile.reference,
+							    budget.reserve, budget.context,
+							    admission_prefix) !=
+							    player_snapshot_codec_result::ok)
+							return false;
+						payload->native_mobile.present = true;
+						payload->native_mobile.action =
+							static_cast<item_native_mobile_action>(
+								tail[2]);
+						payload->native_mobile.final_giver_pid =
+							get_u32(tail + 8);
+						if (command.payload_version ==
+						    ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION)
+						{
+							const size_t offset =
+								static_cast<size_t>(
+									tail -
+									command.payload.data()) +
+								ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES;
+							if (!(budget.prefix(admission_prefix) &&
+							      item_complete_native_recovery_decode_entry_child(
+								      std::span<const uint8_t>(
+									      command.payload)
+									      .subspan(offset),
+								      &payload->native_recovery,
+								      budget.reserve,
+								      budget.context,
+								      admission_prefix, nullptr)))
+								return false;
+						}
+					}
+				}
+			}
+		}
+	}
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_general_payload_valid_child(*payload, command.payload_version,
+							budget.reserve, budget.context,
+							admission_prefix)) ||
+	    (command.payload_version == ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION &&
+	     payload->reason > item_transfer_reason::auction_claim) ||
+	    command.expected_revisions.size() != command.keys.size())
+		return false;
+	if (!budget.peak(sizeof(critical_command)))
+		return false;
+	critical_command expected = {};
+	budget.expected = &expected;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_general_validated_entities_child(&expected, *payload, budget.reserve,
+							     budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak())
+		return false;
+	const bool matched =
+		command.keys.size() == expected.keys.size() &&
+		command.expected_revisions.size() == expected.expected_revisions.size() &&
+		std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			   item_complete_generic_key_equal{}) &&
+		std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			   expected.expected_revisions.begin(),
+			   item_complete_generic_revision_equal{});
+	budget.expected = nullptr;
+	return matched;
+}
+bool item_generic_wire_encode_complete_owned(const item_transfer_payload &payload, uint16_t version,
+					     std::vector<uint8_t> *encoded,
+					     item_payload_wire_complete_budget &budget)
+{
+	if (!budget.peak(3 * sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> corpse_context;
+	std::vector<uint8_t> collector_context;
+	std::vector<uint8_t> recovery_context;
+	budget.corpse = &corpse_context;
+	budget.collector = &collector_context;
+	budget.recovery = &recovery_context;
+	size_t admission_prefix = 0;
+	if (!encoded ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_general_payload_valid_child(payload, version, budget.reserve,
+							budget.context, admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_corpse_encode_child(payload.corpse, &corpse_context, budget.reserve,
+						budget.context, admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_collector_encode_child(payload.collector, &collector_context,
+						   budget.reserve, budget.context,
+						   admission_prefix)))
+		return false;
+	if (version == ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_recovery_encode_entry_child(
+		      payload.native_recovery, &recovery_context, budget.reserve, budget.context,
+		      admission_prefix, nullptr)))
+		return false;
+	const size_t item_section_size =
+		ITEM_TRANSFER_HEADER_BYTES + payload.item_count * ITEM_TRANSFER_ENTRY_BYTES;
+	const size_t payload_size =
+		item_section_size + sizeof(uint32_t) + payload.item_blob_size + sizeof(uint32_t) +
+		corpse_context.size() + sizeof(uint32_t) + collector_context.size() +
+		sizeof(payload.logical_source_id) + sizeof(uint32_t) * 2 +
+		payload.continuation.data.size() +
+		(native_mobile_version(version) ? ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES : 0) +
+		recovery_context.size();
+	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(payload_size + item_complete_generic_fresh_fill_tmp_inline +
+			 item_complete_generic_fresh_fill_zero_inline))
+		return false;
+	encoded->assign(payload_size, 0);
+	encode_owner(encoded->data() + FROM_OFFSET, payload.from_owner);
+	encode_owner(encoded->data() + TO_OFFSET, payload.to_owner);
+	put_u16(encoded->data() + REASON_OFFSET, static_cast<uint16_t>(payload.reason));
+	put_u16(encoded->data() + COUNT_OFFSET, payload.item_count);
+	put_u64(encoded->data() + REASON_ID_OFFSET, static_cast<uint64_t>(payload.reason_id));
+	put_u64(encoded->data() + FROM_REVISION_OFFSET, payload.expected_from_revision);
+	put_u64(encoded->data() + TO_REVISION_OFFSET, payload.expected_to_revision);
+	const uint64_t selected =
+		(payload.multi_root && payload.reason != item_transfer_reason::craft) ?
+			0 :
+			(payload.selected_item_uid ? payload.selected_item_uid :
+						     payload.items[0].root_item_uid);
+	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	// Lockpick retirement has no destination tree; keep its validated zero root.
+	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
+		(payload.multi_root ||
+		 payload.continuation.kind ==
+			 item_transfer_continuation_kind::lockpick_retirement) ?
+			payload.target_root_item_uid :
+			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
+	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
+	put_u64(encoded->data() + TARGET_PARENT_REVISION_OFFSET,
+		payload.expected_target_parent_revision);
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const item_transfer_entry &entry = payload.items[index];
+		uint8_t *output = encoded->data() + ITEM_TRANSFER_HEADER_BYTES +
+				  index * ITEM_TRANSFER_ENTRY_BYTES;
+		put_u64(output, entry.item_uid);
+		put_u64(output + 8, entry.root_item_uid);
+		put_u64(output + 16, entry.parent_item_uid);
+		put_u64(output + 24, entry.expected_item_revision);
+		put_u32(output + 32, static_cast<uint32_t>(entry.vnum));
+		output[36] = static_cast<uint8_t>(entry.expected_state);
+	}
+	put_u32(encoded->data() + item_section_size, payload.item_blob_size);
+	std::copy_n(payload.item_blob.begin(), payload.item_blob_size,
+		    encoded->begin() + item_section_size + sizeof(uint32_t));
+	const size_t corpse_size_offset =
+		item_section_size + sizeof(uint32_t) + payload.item_blob_size;
+	put_u32(encoded->data() + corpse_size_offset, static_cast<uint32_t>(corpse_context.size()));
+	std::copy(corpse_context.begin(), corpse_context.end(),
+		  encoded->begin() + corpse_size_offset + sizeof(uint32_t));
+	const size_t collector_size_offset =
+		corpse_size_offset + sizeof(uint32_t) + corpse_context.size();
+	put_u32(encoded->data() + collector_size_offset,
+		static_cast<uint32_t>(collector_context.size()));
+	std::copy(collector_context.begin(), collector_context.end(),
+		  encoded->begin() + collector_size_offset + sizeof(uint32_t));
+	put_u64(encoded->data() + collector_size_offset + sizeof(uint32_t) +
+			collector_context.size(),
+		payload.logical_source_id);
+	const size_t continuation_offset = collector_size_offset + sizeof(uint32_t) +
+					   collector_context.size() +
+					   sizeof(payload.logical_source_id);
+	put_u32(encoded->data() + continuation_offset,
+		static_cast<uint32_t>(payload.continuation.kind));
+	put_u32(encoded->data() + continuation_offset + sizeof(uint32_t),
+		static_cast<uint32_t>(payload.continuation.data.size()));
+	std::copy(payload.continuation.data.begin(), payload.continuation.data.end(),
+		  encoded->begin() + continuation_offset + sizeof(uint32_t) * 2);
+	if (native_mobile_version(version))
+	{
+		const size_t tail = continuation_offset + sizeof(uint32_t) * 2 +
+				    payload.continuation.data.size();
+		uint8_t *output = encoded->data() + tail;
+		put_u16(output, ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION);
+		output[2] = static_cast<uint8_t>(payload.native_mobile.action);
+		put_u32(output + 4, ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES);
+		put_u32(output + 8, payload.native_mobile.final_giver_pid);
+		if (!budget.peak(sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>)))
+			return false;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference = {};
+		if (!budget.prefix(admission_prefix, sizeof(reference)))
+			return false;
+		if (item_complete_native_reference_encode_child(
+			    payload.native_mobile.reference, &reference, budget.reserve,
+			    budget.context, admission_prefix) != player_snapshot_codec_result::ok)
+			return false;
+		std::copy(reference.begin(), reference.end(), output + 16);
+		std::copy(recovery_context.begin(), recovery_context.end(),
+			  output + ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES);
+	}
+	budget.corpse = nullptr;
+	budget.collector = nullptr;
+	budget.recovery = nullptr;
+	return true;
+}
+bool item_complete_corpse_encode_child(const item_corpse_metadata &input,
+				       std::vector<uint8_t> *output,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_corpse_context_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_corpse_context_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_corpse_context_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_corpse_context_encode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// Parent storage and old/foreign heaps stay in outer. The actual child
+	// now self-owns Source/controller once; full transient never retained.
+	return item_transfer_corpse_context_encode_complete_bounded(input, output, reserve, context,
+								    child_outer);
+}
+bool item_complete_corpse_decode_child(const uint8_t *input, size_t size,
+				       item_corpse_metadata *output,
+				       bool (*reserve)(size_t, void *) noexcept, void *context,
+				       size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_corpse_context_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_corpse_context_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_corpse_context_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_corpse_context_decode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// Parent storage and old/foreign heaps stay in outer. The actual child
+	// now self-owns Source/controller once; full transient never retained.
+	return item_transfer_corpse_context_decode_complete_bounded(input, size, output, reserve,
+								    context, child_outer);
+}
+bool item_complete_collector_encode_child(const item_collector_death_enrollment &input,
+					  std::vector<uint8_t> *output,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_collector_context_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_collector_context_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_collector_context_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_collector_context_encode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// Parent storage and old/foreign heaps stay in outer. The actual child
+	// now self-owns Source/controller once; full transient never retained.
+	return item_transfer_collector_context_encode_complete_bounded(input, output, reserve,
+								       context, child_outer);
+}
+bool item_complete_collector_decode_child(const uint8_t *input, size_t size,
+					  item_collector_death_enrollment *output,
+					  bool (*reserve)(size_t, void *) noexcept, void *context,
+					  size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_collector_context_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_collector_context_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_collector_context_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_collector_context_decode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// Parent storage and old/foreign heaps stay in outer. The actual child
+	// now self-owns Source/controller once; full transient never retained.
+	return item_transfer_collector_context_decode_complete_bounded(input, size, output, reserve,
+								       context, child_outer);
+}
+bool item_complete_general_payload_encode_child(const item_transfer_payload &value,
+						uint16_t version, std::vector<uint8_t> *output,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer, size_t *heap) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_payload_encode_version_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_payload_encode_version_complete_source_frame_bytes(&source) ||
+	    !item_transfer_payload_encode_version_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_payload_encode_version_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_payload_encode_version_complete_bounded(
+		value, version, output, reserve, context, child_outer, heap);
+}
+bool item_complete_general_payload_decode_child(const critical_command &value,
+						item_transfer_payload *output,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer, size_t *heap) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_payload_decode_generic_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_payload_decode_generic_complete_source_frame_bytes(&source) ||
+	    !item_transfer_payload_decode_generic_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_payload_decode_generic_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_payload_decode_generic_complete_bounded(value, output, reserve,
+								     context, child_outer, heap);
+}
+bool item_complete_general_native_cost_encode_child(const item_transfer_payload &value,
+						    bool acknowledged, std::vector<uint8_t> *output,
+						    bool (*reserve)(size_t, void *) noexcept,
+						    void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_cost_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_cost_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_cost_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_cost_encode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_cost_encode_complete_bounded(value, acknowledged, output,
+								 reserve, context, child_outer);
+}
+bool item_complete_general_public_native_encode_child(const item_transfer_payload &value,
+						      std::vector<uint8_t> *output,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_complete_general_public_encode_native_only_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_general_public_encode_native_only_source_frame_bytes(&source) ||
+	    !item_complete_general_public_encode_native_only_initial_inline_bytes(&initial) ||
+	    !item_complete_general_public_encode_native_only_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_command_encode_native_mobile_complete_bounded(value, output, reserve,
+									   context, child_outer);
+}
+bool item_complete_general_public_native_recovery_encode_child(
+	const item_transfer_payload &value, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 *
+		item_complete_general_public_recovery_encode_native_only_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_general_public_recovery_encode_native_only_source_frame_bytes(&source) ||
+	    !item_complete_general_public_recovery_encode_native_only_initial_inline_bytes(
+		    &initial) ||
+	    !item_complete_general_public_recovery_encode_native_only_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_command_encode_native_mobile_recovery_complete_bounded(
+		value, output, reserve, context, child_outer);
+}
+bool item_complete_general_public_inner_decode_child(const critical_command &value,
+						     item_transfer_payload *output,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_complete_general_public_decode_inner_native_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_general_public_decode_inner_native_source_frame_bytes(&source) ||
+	    !item_complete_general_public_decode_inner_native_initial_inline_bytes(&initial) ||
+	    !item_complete_general_public_decode_inner_native_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_command_decode_payload_complete_bounded(value, output, reserve,
+								     context, child_outer);
+}
+bool item_complete_general_fee_decode_child(const critical_command &value,
+					    item_transfer_payload *output,
+					    bool (*reserve)(size_t, void *) noexcept, void *context,
+					    size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_fee_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_fee_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_fee_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_fee_decode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_fee_decode_complete_bounded(value, output, reserve, context,
+								child_outer);
+}
+bool item_complete_general_money_decode_child(const critical_command &value,
+					      item_transfer_payload *output,
+					      bool (*reserve)(size_t, void *) noexcept,
+					      void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_money_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_money_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_money_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_money_decode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_money_decode_complete_bounded(value, output, reserve, context,
+								  child_outer);
+}
+bool item_encode_native_cost_complete_owned(const item_transfer_payload &payload, bool recovery,
+					    std::vector<uint8_t> *encoded,
+					    item_native_wire_encode_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!encoded || !(budget.prefix(admission_prefix) &&
+			  item_complete_native_cost_value_entry_child(
+				  payload, budget.reserve, budget.context, admission_prefix)))
+		return false;
+	if (payload.native_cost.fee_only)
+		return (budget.prefix(admission_prefix) &&
+			item_complete_native_fee_encode_entry_child(payload, recovery, encoded,
+								    budget.reserve, budget.context,
+								    admission_prefix));
+	if (payload.native_cost.completion_slot)
+		return false;
+	if (!budget.clone_payload(payload))
+		return false;
+	auto original = payload;
+	budget.original = &original;
+	if (!budget.peak(sizeof(item_native_mobile_cost_context)))
+		return false;
+	original.native_cost = {};
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> body, cost;
+	budget.first = &body;
+	budget.second = &cost;
+	const uint16_t original_version =
+		recovery ? ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION :
+			   ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_general_payload_encode_child(original, original_version, &body,
+							 budget.reserve, budget.context,
+							 admission_prefix, nullptr)) ||
+	    (!budget.prefix(admission_prefix) ?
+		     native_quest_cost_projection_result::invalid :
+		     item_complete_native_cost_encode_child(
+			     payload.native_cost.projection, &cost, budget.reserve, budget.context,
+			     admission_prefix)) != native_quest_cost_projection_result::ok ||
+	    body.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES ||
+	    cost.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES - body.size())
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) +
+			 ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size() + cost.size()))
+		return false;
+	std::vector<uint8_t> exact(ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size() +
+				   cost.size());
+	budget.value = &exact;
+	exact[0] = 'N';
+	exact[1] = 'Q';
+	exact[2] = 'F';
+	exact[3] = '1';
+	put_u16(exact.data() + 4, 1);
+	put_u16(exact.data() + 6, original_version);
+	put_u32(exact.data() + 8, static_cast<uint32_t>(body.size()));
+	put_u32(exact.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u64(exact.data() + 16, payload.native_cost.wallet_mapping_id);
+	std::copy(body.begin(), body.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES);
+	std::copy(cost.begin(), cost.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size());
+	if (!budget.peak())
+		return false;
+	*encoded = std::move(exact);
+	return true;
+}
+bool item_public_decode_complete_owned(const critical_command &command,
+				       item_transfer_payload *payload,
+				       item_public_dispatch_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (native_money_version(command.payload_version))
+	{
+		try
+		{
+			return (budget.prefix(admission_prefix) &&
+				item_complete_general_money_decode_child(
+					command, payload, budget.reserve, budget.context,
+					admission_prefix));
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	if (native_cost_version(command.payload_version))
+	{
+		if (command.payload.size() >= 4 && command.payload[0] == 'N' &&
+		    command.payload[1] == 'Q' && command.payload[2] == 'F' &&
+		    command.payload[3] == '2')
+			try
+			{
+				return (budget.prefix(admission_prefix) &&
+					item_complete_general_fee_decode_child(
+						command, payload, budget.reserve, budget.context,
+						admission_prefix));
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
+		if (!payload || command.type != critical_command_type::item_transfer ||
+		    command.payload.size() < ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES ||
+		    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+			return false;
+		try
+		{
+			const auto *wire = command.payload.data();
+			const uint16_t inner_version =
+				command.payload_version ==
+						ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ?
+					ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION;
+			if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'F' || wire[3] != '1' ||
+			    get_u16(wire + 4) != 1 || get_u16(wire + 6) != inner_version ||
+			    !get_u64(wire + 16))
+				return false;
+			const size_t body_size = get_u32(wire + 8), cost_size = get_u32(wire + 12);
+			const size_t available = command.payload.size() -
+						 ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES;
+			if (body_size > available || cost_size != available - body_size)
+				return false;
+			if (!budget.command_copy(command))
+				return false;
+			auto original = command;
+			budget.original = &original;
+			original.payload_version = inner_version;
+			if (!budget.peak())
+				return false;
+			original.payload.assign(
+				command.payload.begin() +
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES,
+				command.payload.begin() +
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body_size);
+			if (!budget.peak(sizeof(item_transfer_payload)))
+				return false;
+			item_transfer_payload candidate{};
+			budget.candidate = &candidate;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_complete_general_public_inner_decode_child(
+				      original, &candidate, budget.reserve, budget.context,
+				      admission_prefix)))
+				return false;
+			candidate.native_cost.present = true;
+			candidate.native_cost.wallet_mapping_id = get_u64(wire + 16);
+			if ((!budget.prefix(admission_prefix) ?
+				     native_quest_cost_projection_result::invalid :
+				     item_complete_native_cost_decode_child(
+					     { wire + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES +
+						       body_size,
+					       cost_size },
+					     &candidate.native_cost.projection, budget.reserve,
+					     budget.context, admission_prefix)) !=
+				    native_quest_cost_projection_result::ok ||
+			    !(budget.prefix(admission_prefix) &&
+			      item_complete_native_cost_value_entry_child(
+				      candidate, budget.reserve, budget.context, admission_prefix)))
+				return false;
+			if (!budget.peak(sizeof(std::vector<uint8_t>)))
+				return false;
+			std::vector<uint8_t> canonical;
+			budget.canonical = &canonical;
+			if (!(budget.prefix(admission_prefix) &&
+			      item_complete_general_native_cost_encode_child(
+				      candidate,
+				      inner_version ==
+					      ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+				      &canonical, budget.reserve, budget.context,
+				      admission_prefix)) ||
+			    (!budget.peak() || canonical != command.payload))
+				return false;
+			if (!budget.peak())
+				return false;
+			*payload = std::move(candidate);
+			return true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	if (!native_mobile_version(command.payload_version))
+		return (budget.prefix(admission_prefix) &&
+			item_complete_general_payload_decode_child(command, payload, budget.reserve,
+								   budget.context, admission_prefix,
+								   nullptr));
+	if (!payload)
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(item_transfer_payload)))
+			return false;
+		item_transfer_payload candidate = {};
+		budget.candidate = &candidate;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_complete_general_payload_decode_child(command, &candidate,
+								 budget.reserve, budget.context,
+								 admission_prefix, nullptr)))
+			return false;
+		if (!budget.peak(sizeof(std::vector<uint8_t>)))
+			return false;
+		std::vector<uint8_t> canonical;
+		budget.canonical = &canonical;
+		if (!(command.payload_version ==
+				      ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION ?
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_public_native_recovery_encode_child(
+				       candidate, &canonical, budget.reserve, budget.context,
+				       admission_prefix)) :
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_public_native_encode_child(
+				       candidate, &canonical, budget.reserve, budget.context,
+				       admission_prefix))) ||
+		    (!budget.peak() || canonical != command.payload))
+			return false;
+		if (!budget.peak())
+			return false;
+		*payload = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_public_encode_complete_owned(const item_transfer_payload &payload,
+				       std::vector<uint8_t> *encoded,
+				       item_public_dispatch_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!encoded)
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(std::vector<uint8_t>)))
+			return false;
+		std::vector<uint8_t> candidate;
+		budget.canonical = &candidate;
+		if (!(payload.native_money.present ?
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_native_money_encode_entry_child(
+				       payload, false, &candidate, budget.reserve, budget.context,
+				       admission_prefix)) :
+		      payload.native_cost.present ?
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_native_cost_encode_child(
+				       payload, false, &candidate, budget.reserve, budget.context,
+				       admission_prefix)) :
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_payload_encode_child(
+				       payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+				       &candidate, budget.reserve, budget.context, admission_prefix,
+				       nullptr))))
+			return false;
+		if (!budget.peak())
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_public_encode_recovery_complete_owned(const item_transfer_payload &payload,
+						std::vector<uint8_t> *encoded,
+						item_public_dispatch_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!encoded)
+		return false;
+	try
+	{
+		if (!budget.peak(sizeof(std::vector<uint8_t>)))
+			return false;
+		std::vector<uint8_t> candidate;
+		budget.canonical = &candidate;
+		if (!(payload.native_money.present ?
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_native_money_encode_entry_child(
+				       payload, true, &candidate, budget.reserve, budget.context,
+				       admission_prefix)) :
+		      payload.native_cost.present ?
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_native_cost_encode_child(
+				       payload, true, &candidate, budget.reserve, budget.context,
+				       admission_prefix)) :
+			      (budget.prefix(admission_prefix) &&
+			       item_complete_general_payload_encode_child(
+				       payload, ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+				       &candidate, budget.reserve, budget.context, admission_prefix,
+				       nullptr))))
+			return false;
+		if (!budget.peak())
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_complete_general_public_encode_native_only_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_encode_retained_source, child = 0;
+	if (!item_transfer_payload_encode_version_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_general_public_encode_native_only_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_general_public_encode_native_only_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+bool item_complete_general_public_recovery_encode_native_only_source_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_recovery_encode_retained_source, child = 0;
+	if (!item_transfer_payload_encode_version_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_general_public_recovery_encode_native_only_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_general_public_recovery_encode_native_only_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+bool item_complete_general_public_decode_inner_native_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_decode_retained_source, child = 0;
+	if (!item_transfer_payload_decode_generic_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_public_encode_native_only_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_public_recovery_encode_native_only_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_general_public_decode_inner_native_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_general_public_decode_inner_native_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+bool item_complete_valid_collector_context(const item_transfer_payload &payload,
+					   uint16_t payload_version)
+{
+	const item_collector_death_enrollment &collector = payload.collector;
+	if (!collector.present)
+		return collector.eligible_item_uids.empty();
+	if (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	    payload.reason != item_transfer_reason::corpse_create || !payload.corpse.present ||
+	    critical_operation_id_is_zero(collector.death_operation) ||
+	    !collector.beneficiary_pid || !collector.death_time ||
+	    collector.beneficiary_pid != static_cast<uint32_t>(payload.to_owner.id >> 32) ||
+	    collector.death_time != static_cast<uint32_t>(payload.to_owner.id) ||
+	    !collector.policy.collection_delay ||
+	    collector.policy.sale_delay < collector.policy.collection_delay ||
+	    !collector.policy.holding_duration || !collector.policy.price_percent ||
+	    !collector.policy.minimum_value ||
+	    collector.eligible_item_uids.size() > payload.item_count ||
+	    !std::is_sorted(collector.eligible_item_uids.begin(),
+			    collector.eligible_item_uids.end()) ||
+	    std::adjacent_find(collector.eligible_item_uids.begin(),
+			       collector.eligible_item_uids.end()) !=
+		    collector.eligible_item_uids.end())
+		return false;
+	return std::all_of(collector.eligible_item_uids.begin(), collector.eligible_item_uids.end(),
+			   item_complete_collector_uid_present{ payload });
+}
+bool item_complete_valid_text(const std::string &value, size_t maximum, bool required)
+{
+	if ((required && value.empty()) || value.size() > maximum)
+		return false;
+	return std::all_of(value.begin(), value.end(), item_complete_text_printable_predicate{});
+}
+bool item_complete_valid_soulbind_continuation(const item_transfer_payload &payload)
+{
+	return payload.continuation.data.size() == 1 && payload.continuation.data[0] <= 1 &&
+	       payload.reason == item_transfer_reason::soulbind && !payload.multi_root &&
+	       payload.from_owner.type == item_owner_type::player &&
+	       payload.to_owner.type == item_owner_type::player && payload.selected_item_uid &&
+	       payload.item_count > 0 &&
+	       item_complete_find_payload_item(payload, payload.selected_item_uid) != nullptr;
+}
+bool item_complete_target_topology_for(const item_transfer_payload &payload, uint64_t item_uid,
+				       uint64_t *root_item_uid, uint64_t *parent_item_uid)
+{
+	const item_transfer_entry *entry = item_complete_find_payload_item(payload, item_uid);
+	const uint64_t selected_root = item_complete_selected_root_for(payload, item_uid);
+	if (!entry || !selected_root || !root_item_uid || !parent_item_uid)
+		return false;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		*root_item_uid = entry->root_item_uid;
+		*parent_item_uid = entry->parent_item_uid;
+		return true;
+	}
+	*root_item_uid = payload.target_parent_item_uid ? payload.target_root_item_uid :
+							  selected_root;
+	*parent_item_uid = item_uid == selected_root ? payload.target_parent_item_uid :
+						       entry->parent_item_uid;
+	return *root_item_uid != 0;
+}
+uint64_t item_complete_selected_root_for(const item_transfer_payload &payload, uint64_t item_uid)
+{
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		const item_transfer_entry *entry =
+			item_complete_find_payload_item(payload, item_uid);
+		for (size_t depth = 0; entry && depth <= payload.item_count; ++depth)
+		{
+			const item_transfer_entry *parent =
+				item_complete_find_payload_item(payload, entry->parent_item_uid);
+			if (!parent)
+				return entry->item_uid;
+			entry = parent;
+		}
+		return 0;
+	}
+	if (!payload.multi_root)
+		return payload.selected_item_uid ? payload.selected_item_uid :
+						   payload.items[0].root_item_uid;
+	const item_transfer_entry *entry = item_complete_find_payload_item(payload, item_uid);
+	for (size_t depth = 0; entry && depth <= payload.item_count; ++depth)
+	{
+		const item_transfer_entry *parent =
+			item_complete_find_payload_item(payload, entry->parent_item_uid);
+		if (!parent)
+			return entry->item_uid;
+		entry = parent;
+	}
+	return 0;
+}
+} // namespace
+bool item_transfer_corpse_context_encode_complete_bounded(const item_corpse_metadata &corpse,
+							  std::vector<uint8_t> *encoded,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept
+{
+	if (!encoded || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		item_complete_sidecar_corpse_encode_retained_source + sizeof(std::vector<uint8_t>);
+	item_sidecar_complete_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		owner.bytes = &candidate;
+		if (!item_sidecar_complete_encode_corpse_context(corpse, &candidate, owner) ||
+		    !owner.peak())
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_corpse_context_decode_complete_bounded(const uint8_t *encoded, size_t size,
+							  item_corpse_metadata *corpse,
+							  bool (*reserve)(size_t, void *) noexcept,
+							  void *context, size_t outer) noexcept
+{
+	if (!corpse || (!encoded && size) || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_sidecar_corpse_decode_retained_source +
+				  2 * sizeof(item_corpse_metadata);
+	item_sidecar_complete_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		item_corpse_metadata candidate;
+		owner.corpse = &candidate;
+		if (!item_sidecar_complete_decode_corpse_context(encoded, size, &candidate,
+								 owner) ||
+		    !owner.peak())
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_corpse_metadata>);
+		*corpse = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_collector_context_encode_complete_bounded(
+	const item_collector_death_enrollment &collector, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!encoded || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_sidecar_collector_encode_retained_source +
+				  sizeof(std::vector<uint8_t>);
+	item_sidecar_complete_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		owner.bytes = &candidate;
+		if (!item_sidecar_complete_encode_collector_context(collector, &candidate, owner) ||
+		    !owner.peak())
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_collector_context_decode_complete_bounded(
+	const uint8_t *encoded, size_t size, item_collector_death_enrollment *collector,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	if (!collector || (!encoded && size) || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_sidecar_collector_decode_retained_source +
+				  2 * sizeof(item_collector_death_enrollment);
+	item_sidecar_complete_budget owner{ reserve, context, outer, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		item_collector_death_enrollment candidate;
+		owner.collector = &candidate;
+		if (!item_sidecar_complete_decode_collector_context(encoded, size, &candidate,
+								    owner) ||
+		    !owner.peak())
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_collector_death_enrollment>);
+		*collector = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_corpse_context_encode_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = item_complete_sidecar_corpse_encode_retained_source;
+	return true;
+}
+bool item_transfer_corpse_context_encode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_corpse_context_encode_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_sidecar_complete_budget);
+	return true;
+}
+bool item_transfer_corpse_context_decode_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = item_complete_sidecar_corpse_decode_retained_source;
+	return true;
+}
+bool item_transfer_corpse_context_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_corpse_context_decode_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_sidecar_complete_budget);
+	return true;
+}
+bool item_transfer_collector_context_encode_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = item_complete_sidecar_collector_encode_retained_source;
+	return true;
+}
+bool item_transfer_collector_context_encode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_collector_context_encode_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_sidecar_complete_budget);
+	return true;
+}
+bool item_transfer_collector_context_decode_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = item_complete_sidecar_collector_decode_retained_source;
+	return true;
+}
+bool item_transfer_collector_context_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_collector_context_decode_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_sidecar_complete_budget);
+	return true;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_bounded(
+	const item_transfer_payload &payload, uint16_t version,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_duplicate_retained_source;
+	item_native_validation_complete_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak())
+		return false;
+	try
+	{
+		return item_continuation_duplicate_valid_complete_owned(payload, version, owner);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_craft_outputs_decode_complete_bounded(const item_transfer_payload &payload,
+							 std::vector<player_item_snapshot> *outputs,
+							 bool (*reserve)(size_t, void *) noexcept,
+							 void *context, size_t outer_live,
+							 size_t *retained_item_heap_bytes) noexcept
+{
+	if (!outputs || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_craft_outputs_retained_source;
+	item_native_validation_complete_budget owner{ reserve, context, outer_live, frames };
+	if (!owner.peak(sizeof(std::vector<player_item_snapshot>)))
+		return false;
+	std::vector<player_item_snapshot> candidate;
+	owner.items = &candidate;
+	static_assert(std::is_nothrow_move_assignable_v<std::vector<player_item_snapshot>>);
+	try
+	{
+		if (!item_continuation_craft_outputs_complete_owned(payload, &candidate, owner))
+			return false;
+		// Private UID scratch has died; stop observing that expired local.
+		owner.uids = nullptr;
+		if (!owner.peak(0))
+			return false;
+		size_t retained = 0, row = 0;
+		if (!payload_clone_vector_heap(candidate, false, retained))
+			return false;
+		for (const auto &item : candidate)
+			if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+			    !payload_clone_add(retained, row))
+				return false;
+		*outputs = std::move(candidate);
+		if (retained_item_heap_bytes)
+			*retained_item_heap_bytes = retained;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = item_complete_duplicate_retained_source;
+	return true;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_initial_inline_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_native_validation_complete_budget);
+	return true;
+}
+bool item_transfer_craft_outputs_decode_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_craft_outputs_retained_source +
+			item_complete_native_uid_sort_max_recursive_calls *
+				item_complete_native_uid_sort_recursive_source,
+	       child = 0;
+	if (!player_item_snapshot_list_decode_bounded_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*bytes = result;
+	return true;
+}
+bool item_transfer_craft_outputs_decode_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_craft_outputs_decode_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_native_validation_complete_budget);
+	return true;
+}
+bool item_transfer_payload_valid_complete_bounded(const item_transfer_payload &payload,
+						  uint16_t version,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_validator_retained_source;
+	item_payload_validation_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_full_payload_validation_complete_owned(payload, version, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_payload_valid_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_validator_retained_source, child = 0;
+	if (!item_transfer_native_mobile_context_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_recovery_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_quest_offering_continuation_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_duplicate_promotion_continuation_valid_complete_source_frame_bytes(
+		    &child) ||
+	    !payload_clone_add(result, child) ||
+	    !lockpick_retirement_payload_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_craft_outputs_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !craft_pouch_mutation_from_payload_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !craft_recipe_continuation_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_payload_valid_complete_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_payload_valid_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_payload_validation_complete_budget);
+	return true;
+}
+bool item_transfer_payload_decode_generic_complete_bounded(
+	const critical_command &command, item_transfer_payload *payload,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_payload_heap_bytes) noexcept
+{
+	if (!payload || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_generic_decode_retained_source +
+				  sizeof(item_owner_identity) + sizeof(item_transfer_entry) +
+				  sizeof(std::span<const uint8_t>);
+	item_generic_decode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(item_transfer_payload)))
+		return false;
+	try
+	{
+		item_transfer_payload candidate = {};
+		budget.payload = &candidate;
+		if (!item_generic_decode_complete_owned(command, &candidate, budget) ||
+		    !budget.peak())
+			return false;
+		size_t heap = 0;
+		if (!payload_clone_heap(candidate, false, heap))
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<item_transfer_payload>);
+		*payload = std::move(candidate);
+		if (retained_payload_heap_bytes)
+			*retained_payload_heap_bytes = heap;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_payload_encode_version_complete_bounded(
+	const item_transfer_payload &payload, uint16_t version, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
+	size_t *retained_encoded_heap_bytes) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_wire_encode_retained_source;
+	item_payload_wire_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(std::vector<uint8_t>)))
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		budget.bytes = &candidate;
+		if (!item_generic_wire_encode_complete_owned(payload, version, &candidate,
+							     budget) ||
+		    !budget.peak())
+			return false;
+		const size_t heap = candidate.capacity();
+		*encoded = std::move(candidate);
+		if (retained_encoded_heap_bytes)
+			*retained_encoded_heap_bytes = heap;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_payload_encode_version_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_wire_encode_retained_source, child = 0;
+	if (!item_transfer_payload_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_corpse_context_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_collector_context_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_recovery_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_payload_encode_version_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_payload_encode_version_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_payload_wire_complete_budget);
+	return true;
+}
+bool item_transfer_payload_decode_generic_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_generic_decode_retained_source, child = 0;
+	if (!item_transfer_payload_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_validated_entities_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_corpse_context_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_collector_context_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !quest_mobile_native_reference_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_recovery_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_payload_decode_generic_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_payload_decode_generic_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_generic_decode_complete_budget);
+	return true;
+}
+bool item_transfer_command_decode_payload_complete_bounded(const critical_command &command,
+							   item_transfer_payload *payload,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept
+{
+	if (!payload || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_public_decode_retained_source;
+	item_public_dispatch_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_public_decode_complete_owned(command, payload, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_command_encode_native_mobile_complete_bounded(
+	const item_transfer_payload &payload, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_public_encode_retained_source;
+	item_public_dispatch_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_public_encode_complete_owned(payload, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_bounded(
+	const item_transfer_payload &payload, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_public_recovery_encode_retained_source;
+	item_public_dispatch_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_public_encode_recovery_complete_owned(payload, encoded, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_cost_encode_complete_bounded(const item_transfer_payload &payload,
+						       bool acknowledged,
+						       std::vector<uint8_t> *encoded,
+						       bool (*reserve)(size_t, void *) noexcept,
+						       void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_general_native_cost_encode_retained_source;
+	item_native_wire_encode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_cost_complete_owned(payload, acknowledged, encoded,
+							      budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_cost_encode_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_native_cost_encode_retained_source, child = 0;
+	if (!item_transfer_native_cost_value_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_fee_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_payload_encode_version_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !native_quest_cost_projection_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_cost_encode_complete_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_cost_encode_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_wire_encode_complete_budget);
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_encode_retained_source, child = 0;
+	if (!item_transfer_native_money_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_cost_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_payload_encode_version_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_complete_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_recovery_encode_retained_source, child = 0;
+	if (!item_transfer_native_money_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_cost_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_payload_encode_version_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+bool item_transfer_command_decode_payload_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_general_public_decode_retained_source, child = 0;
+	if (!item_transfer_native_money_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_fee_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_payload_decode_generic_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_public_decode_inner_native_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !native_quest_cost_projection_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_cost_value_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_transfer_native_cost_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_public_encode_native_only_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_public_recovery_encode_native_only_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_command_decode_payload_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_command_decode_payload_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_public_dispatch_complete_budget);
+	return true;
+}
+#else
+bool item_transfer_corpse_context_encode_complete_bounded(const item_corpse_metadata &,
+							  std::vector<uint8_t> *,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_decode_complete_bounded(const uint8_t *, size_t,
+							  item_corpse_metadata *,
+							  bool (*)(size_t, void *) noexcept, void *,
+							  size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_encode_complete_bounded(
+	const item_collector_death_enrollment &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_decode_complete_bounded(const uint8_t *, size_t,
+							     item_collector_death_enrollment *,
+							     bool (*)(size_t, void *) noexcept,
+							     void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_encode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_encode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_encode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_decode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_decode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_corpse_context_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_encode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_encode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_encode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_decode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_decode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_collector_context_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_bounded(
+	const item_transfer_payload &, uint16_t, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_craft_outputs_decode_complete_bounded(const item_transfer_payload &,
+							 std::vector<player_item_snapshot> *,
+							 bool (*)(size_t, void *) noexcept, void *,
+							 size_t, size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_source_supplement_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_duplicate_promotion_continuation_valid_complete_initial_inline_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_craft_outputs_decode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_craft_outputs_decode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_craft_outputs_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_valid_complete_bounded(const item_transfer_payload &, uint16_t,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_valid_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_valid_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_valid_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_decode_generic_complete_bounded(const critical_command &,
+							   item_transfer_payload *,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t, size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_encode_version_complete_bounded(const item_transfer_payload &, uint16_t,
+							   std::vector<uint8_t> *,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t, size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_encode_version_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_encode_version_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_encode_version_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_decode_generic_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_decode_generic_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_payload_decode_generic_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_decode_payload_complete_bounded(const critical_command &,
+							   item_transfer_payload *,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_complete_bounded(const item_transfer_payload &,
+								 std::vector<uint8_t> *,
+								 bool (*)(size_t, void *) noexcept,
+								 void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_bounded(
+	const item_transfer_payload &, std::vector<uint8_t> *, bool (*)(size_t, void *) noexcept,
+	void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_encode_complete_bounded(const item_transfer_payload &, bool,
+						       std::vector<uint8_t> *,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_encode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_encode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_encode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_source_supplement_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_encode_native_mobile_recovery_complete_initial_inline_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_decode_payload_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_decode_payload_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_decode_payload_complete_initial_inline_bytes(size_t *) noexcept
 {
 	return false;
 }

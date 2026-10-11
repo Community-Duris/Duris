@@ -186,8 +186,8 @@
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
       "src/core/runtime_compatibility_contract.h": "844cd54afe11981afd07839882f732a92e1e35f1cb106c48354a2ed35fce0233",
       "src/core/structs.h": "472d4b0d6b368392624cc0791b6b8b796d62915c2894277d79865e8e1377d4d6",
-      "src/core/utility.c": "42a057b1f46bebcd3c80b85fd689352455102d18503a7526600f58c46e9f9ba2",
-      "src/core/utility.h": "0d5e840171023d0413b4ae132af2f5fc01772b281c2b97498e5ef0177455627d",
+      "src/core/utility.c": "73182463eebd06a54a41ab7eddb43b7c4bc884e313df5c2b83156034c94abd54",
+      "src/core/utility.h": "51553ee47aae026cd856d61a7d55e7fb9ea33f17ebea0c57b9e0a8997b89e2ae",
       "src/economy/auction_accounting.c": "5514a5a90355662859c60843c1d01d215a503621838d81b15cce423e67b292e8",
       "src/economy/auction_accounting.h": "963ca7baf6956ac049abd3a9e68e54871911015a26142919212d4d01902daf34",
       "src/economy/auction_command.c": "8caafd0e56c3696e08a29a412713a41c599bbbcc532c0718a12cfd4a75b55ac3",
@@ -231,8 +231,8 @@
       "src/economy/collector_transaction.h": "cb289620919694f56322276514ebda098c3f0d9ad234f354b31268274c2cc253",
       "src/economy/craft_progression.c": "0139473706341e12d46fbc1c7c4c9b3a1c79cb7ce115ae454373a5a41b88ec15",
       "src/economy/crafting.c": "5979d2d68e5ce0f90502521f8506b3b909650792854a0da752da01d0ccaa225e",
-      "src/economy/currency_command.c": "95de3b851208d4a69b2427231d0a3dfd9ef41f2a0a930805ba3a777ad54f37d2",
-      "src/economy/currency_command.h": "f831c7a1cbc40ed4c26401ceef343345dbd12d549040f743a6e8ce29034f9caf",
+      "src/economy/currency_command.c": "e333e47cc33c4b3b05616b1ac621999b0270cae3b699935ba6ac011fd5fec40d",
+      "src/economy/currency_command.h": "1f64f80c19052c5f22b2b50615c512ff38902b3dfb92e9fd0c5cc2315700239e",
       "src/economy/currency_transaction.c": "d0be7c7ae95f58269f27f321b4b924f5ed7db2073ff9c4f59f08da728f2ab12f",
       "src/economy/currency_transaction.h": "9a8aa04aa0322f1024ee90f1b05f731ac4428b0a72d759a726c98bc9fd80290d",
       "src/economy/economic_accounting_intent.c": "7b6ce00e52fefc95521e4cdbcfbfe2497b5f8137844bc58270900c4ce8b0de22",
@@ -409,16 +409,16 @@
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
       "src/item/item_movement_state_internal.h": "48582b82577bddb801749bd46df6f201adde09f935e69aa762f0f081a279ea74",
-      "src/item/item_movement_transaction.c": "d364528af832ffcda36d8c7cf23a7cd9a87a6fcbdd2f870f136d2bca2ebf96a6",
-      "src/item/item_movement_transaction.h": "7bc490625f82791421be800b326ffd4c7240ecc2171d6d7de2664194d667ccca",
+      "src/item/item_movement_transaction.c": "b438ec892f10b1f1b7e5370685a4ecba5504f978b654be596b34dc24d803c4a0",
+      "src/item/item_movement_transaction.h": "e020c4ef0235bfc732cf5876008daa643ccf84fcc17e0335f36dc593e6a2a136",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
-      "src/item/item_transfer_command.c": "5abc282ceff864c9c7a176981135ea1bcd4d551e07009b7b38080fc842c44098",
-      "src/item/item_transfer_command.h": "324222ed375e0537002c870aad8e972121af3c4ef09c6d3394874330b5812cde",
+      "src/item/item_transfer_command.c": "44680bcc866da68bab361c40fdb25b6cd32335f5f3690547fbc365e7de615b2f",
+      "src/item/item_transfer_command.h": "696348501010aa8a03df0e96375383c855a18df2e2c066f09b28567fe91b1bc2",
       "src/item/item_transfer_repository.c": "e005e1a2b5460f01939026072f4c226b770841c1a03382bc59bea62ff99cd6ff",
       "src/item/item_transfer_repository.h": "922e2141dedc3621c1a55986846b40016ee72fb11cb6c445ea0a19f7f0e182d7",
-      "src/item/lockpick_retirement_continuation.c": "8d7815710d0a231909c23fe41707cd509e323f26bdcfed8db8a046ca87d8e22b",
-      "src/item/lockpick_retirement_continuation.h": "f420bdd8ac732aa298c931e09dad285ecaa4be2b62a15e2a8c7e6cf408180e54",
+      "src/item/lockpick_retirement_continuation.c": "e93345ead726bdf62f2b5c63824d03ca16cdcdf4d42e0dadef9a40256cfd1908",
+      "src/item/lockpick_retirement_continuation.h": "6137393545c45a44c155c52477d824d86844ac1a6ed908574eeaa1546ff4ef9f",
       "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
       "src/item/ordinary_drop_recovery.c": "d879d78608e4c8914582d50b3e0e657affe756fca0a817877452bff0aa8856d4",
       "src/item/quest_reward_continuation.h": "f5b994c3a0cbe5d053b725b15527bc856e2869cd85466d20fc3f637e225610d0",
@@ -441,8 +441,8 @@
       "src/persistence/critical_command.c": "a9d8e5043ac9210139beda7c1737752cc4850d38b7adb6983cc39691f8e36b9e",
       "src/persistence/critical_command.h": "9e0a75915a72f2dec2554a8194a0ade3500b3c5fc640f3d64c8a6bb8d411b65c",
       "src/persistence/critical_command_completion.h": "8dbacd59c00c75801ffd1aebe15b3d48ec26cfc73bd9f400c28fceb818a720c7",
-      "src/persistence/critical_command_coordinator.c": "034b33f96802e4d8b32bff8f78f995458542f647c1548b8b6ba38b37701d6eeb",
-      "src/persistence/critical_command_coordinator.h": "a0400049bd9411efd84ce6ee521619329a97859ad093d7e5ca8e46de8793d700",
+      "src/persistence/critical_command_coordinator.c": "112a778368efccf450eab82136ad45b52c0ba2bf9025d07d3e88489d63b51fc3",
+      "src/persistence/critical_command_coordinator.h": "a1488c4985b8e97eaeeb5ffa1509f0e59af9f78d797c42d65bad24403131a941",
       "src/persistence/critical_command_journal.c": "f01217153dd1da0e9018638a42660c469e49cdec9249e1dac86c39f09e823c76",
       "src/persistence/critical_command_journal.h": "8178d9e4627ff94e0745909db4bd382804b023c3a39255ec6c109650820d1a41",
       "src/persistence/critical_command_repository.c": "ab990ffa7854a8beaf002dc26fe8fcddecd4e347f102b5757be0243669f9f38e",
@@ -560,12 +560,12 @@
       "src/world/new_events.c": "d2e380a15479823f47a2709f5060cebe85aaa0b1dd4caa0daf97e606449981f8",
       "src/world/object_template.h": "d9ffc85894b08eeb13e1a626fc4f3beb9d35dc041758c660de4cff0cd92f54be",
       "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
-      "src/world/quest.c": "4887b36475dd639c7bca78babb1fa8f44313f193bb6b262044eebe7a4d8fcf7d",
+      "src/world/quest.c": "11707b182503809560299e0228f3bdce0bcd8123536cd8faa36a0e4ae081a883",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
       "src/world/quest_mobile_native.h": "1db1575e5f27f476198bbb909c6303c03d43496ebff96e85907d0c646a9684f7",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
       "src/world/quest_mobile_native_binding.h": "77c4b60254b6f0642c19000934d083b4fe4f94997c9079504cef312494c76f9d",
-      "src/world/quest_mobile_native_birth.c": "e68c7f48c8e8a8ba8c778af7cc304bd251ddd1db454d7d0474e09a8faf3329c4",
+      "src/world/quest_mobile_native_birth.c": "2ccd06e664d13d4ba99fee561e8841eab5b9d6f093997ab875e247c8f75a1ed1",
       "src/world/quest_mobile_native_birth.h": "0dc4dcc275463f75a1da55861e28828060b85e7f5d26b28401edf490a294e345",
       "src/world/quest_mobile_native_reference.c": "b12d47277965f858f2c9e3c7bd8dd432421c5197e201b1f79bc5a8bd08d02694",
       "src/world/quest_mobile_native_reference.h": "526dd67615cb302229b6119b17778e35810f3faf702a64f427329668ce0b3045",
@@ -576,8 +576,8 @@
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "12cff01d1e178c7cf1de2b0412ca4ae6476cd299c5ae9d938f63749354e4a095",
       "src/world/world_activity.h": "f0ddefcce591f13ed52663150d56bade49e802d171ab36d9583ba94207201a8b",
-      "src/world/zone_reset_item_owner.c": "2718a980673708b3354dae3857a41db5d92d2679c1e7ca2c30b2649980d5e1aa",
-      "src/world/zone_reset_item_owner.h": "6680c868ca9122423c8181d03f1372f44ed7b4f45f27a73d7a1b1989d5d6219c",
+      "src/world/zone_reset_item_owner.c": "fbccb16533f3d0c142d9d2cd8842a2389bc47bdfc3a9fe070d1820449b1fd39e",
+      "src/world/zone_reset_item_owner.h": "420cc2a60cb447ab2db63daad61b235ffb8c9be6dd0c4e4400d8ba752fb47d6e",
       "src/world/zone_reset_room_nesting.h": "1fc91a523d8c00f7a04eb29f51312abdd578360fffae1d3f14ed8a2bca6b39d7",
       "src/world/zone_reset_room_publication.c": "43c9d6def63b3ad30d55208423bfbff854f3ea2e3bf21d4dc13a77c6a68b0795",
       "src/world/zone_reset_room_publication.h": "ddbdfc8b34f93f664994d75cda77b119a5fbf8d9ed88d5d83090e55b58ac2595",
@@ -591,25 +591,33 @@
       "tests/async/collector_physical_component_cases.inc": "5501477bed36e49bacc18f4593cd84199244308f8fddefd910b097090603d9f7",
       "tests/async/collector_physical_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
       "tests/async/component_registry.inc": "1796a1d55765d404f8abf38811add36c6c31b7705a6e92767f0823f0f58b1b7b",
+      "tests/async/currency_command_build_bounded_test.cpp": "337c44f9ecc88c784dc8a4b5ac8de198672d9fdfc6b2dac8b474ec05d6eb1407",
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "115f2a9c5eb7a368194d1b35f8182ea9cefde3466afd645ff3f49df2201e4be3",
       "tests/async/flatfile_collector_native_unavailable.cpp": "cb14d724a011867f42f4a6ee9a3804a7756d1d27aca20f20a2ecb8900884ffeb",
       "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
       "tests/async/held_retirement_publication_policy_harness.cpp": "634ccfc5cb4ed427e3a722a189653e2f8d52132895fd680eb795ec6bcc12d6a7",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
+      "tests/async/item_transfer_complete_bounded_test.cpp": "176c8644449f19c450799b0bc4c7a3df9a4d145e2234c949a1dd60f13b1b24b2",
       "tests/async/lifecycle_persisted_union_cases.inc": "f20c45d924a506826d659bd52e371c5afc83e624f64c7733d796aac960d40050",
       "tests/async/modern_room_component_cases.inc": "47a6edfbade0cee7df14d11cd268519a961ba3b927bede5322dbe93eef45190b",
       "tests/async/modern_room_explicit_boundary_cases.inc": "e2bbb28b2f417ca23eb13075097cb6feb33d0fe75dc5b5fb8c8792dbd85e4d8e",
       "tests/async/modern_room_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
+      "tests/async/native_birth_zone_source_profile_test.cpp": "eed22b327b7f837adb502c4e436f43a8c126c1e8ede7c1e22f0df6c0e72fe1ef",
       "tests/async/native_quest_publication_mysql_harness.cpp": "4d057cb6d61a7c389156a82ab8160970a7bcd19a36a61008c00e559f38c2fabb",
+      "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
       "tests/async/physical_provider_union_cases.inc": "ee051a6cd3797de2752e4c5c5e0468fab27eaa31d17373ec3b52ddf4b26b72a7",
+      "tests/async/quest_accounting_prep/test_native_selectors.py": "0a5b25cbddd639a969affd37f1a97fc00f80d41eb06db7e5667a0f3559f78191",
+      "tests/async/quest_cost_admission_cases.cpp.in": "961f037371009ccbcc2a122733c575e2ea35404be02e730c136552aba5791fb9",
       "tests/async/run_economic_sql_audit_snapshot_mysql.py": "f59e9f70e73b4a579bc46f8181c762b951bcf22ef0765383a2cef6c7091487e0",
       "tests/async/run_economic_sql_lifecycle_owner_mysql.sh": "b263e73a3bb64cde0fcd797a33fccb626e53d89a68a22e36f1f379959e41b460",
       "tests/async/run_native_quest_publication_mysql.sh": "e40f4872184927c3f1818b506183b4e44000d55195c74cddca808f4ec9578fc3",
+      "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878",
       "tests/async/runtime_cache_correspondence_cases.inc": "217dcbce7a58ac04a0d3205c4b19eb43c067045cbf1311e929f581d447456495",
       "tests/async/sql_room_item_payload_test.cpp": "3a04e5ca7e347314bb032baa2f50ab8056571d8b0978c8d4dc808f3ee0386f60",
       "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/test_craft_publication_ack_retention.py": "e69eed0caca3e9ad09511a9bc3bcf2737d8d80e9023628e26d1bdfb4a32d4f47",
+      "tests/async/test_currency_command_build_bounded.py": "59c7a174fea46274fc9ad68a28e872d68ce38e612a8ea6254b34c03f9c67c0a7",
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "186f0327fa342eb3b6a6833177b449eb9728e3907e86e1acd03c93e1f85c1e44",
       "tests/async/test_economic_sql_uid_scope.py": "901242f7d071d57041740195c7d06dd53cf2181852ace4dc7e14a48b20d343b7",
@@ -622,17 +630,24 @@
       "tests/async/test_item_movement_input_queue.py": "09f36720de4b9de76260cd5f42d4c79076bf0c62a888ac979514678ec1509381",
       "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
       "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",
+      "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367",
+      "tests/async/test_native_birth_zone_source_profile.py": "ed8e51359ca1cad73ad1cdc99faa7782d7636c047dbb30a4d7eaa70384047b2a",
+      "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
       "tests/async/test_persistence_backup.py": "7a330310230f808c7a840709f1af5a551637f10c14df7c904c286ea6bc5b3c81",
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef",
       "tests/async/test_publication_retention_runtime.py": "6b6582f9511e4b375caef046c9f8b1321fa8debcbabe65ef768f07e14645367b",
+      "tests/async/test_quest_cost_admission.py": "65517d8d9c3e4cddd861fcaf9c891eea83e9a3b2b816848ab751f2259893ae0c",
       "tests/async/test_reconcile_economy_accounting.py": "ba7cb643673bf445c625c243313ec4e498213d3a52e73d909cbad6ebbca3c9c9",
       "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
+      "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
-      "tests/integration_manifest.json": "a1c78d916a646baf5e668365a877dc5bd83f5f9bec205237c4dfd9a63cc68741"
+      "tests/integration_manifest.json": "2a35ab74e55e30bfce5d086be7e3619a27984db88e3c3721770ea798c629457d",
+      "tests/regression_manifest.json": "2be87c95bb6eac3a43c99493649865ab7aa35bfefedb1138ed02571f842668dc",
+      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
     },
     "stability_source_reference_refresh_20261011": {
       "release_qualification_changed": false,
@@ -17455,7 +17470,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2736
+          2739
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17663,7 +17678,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          914
+          915
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17713,7 +17728,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          979
+          980
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17801,7 +17816,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3601
+          3602
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -18239,8 +18254,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3960,
-          3972
+          3961,
+          3973
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -18302,7 +18317,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1507
+          1508
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18364,7 +18379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1407
+          1408
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18549,7 +18564,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1288
+          1289
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19671,7 +19686,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1129
+          1130
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19733,7 +19748,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1136
+          1137
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -20806,7 +20821,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4208
+          4209
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20868,7 +20883,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4020
+          4021
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -21854,7 +21869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2857
+          2858
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -22632,7 +22647,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1783
+          1784
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22694,7 +22709,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1339
+          1340
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -23062,7 +23077,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1194
+          1195
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -54928,7 +54943,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7828
+          7829
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",

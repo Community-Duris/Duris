@@ -13945,9 +13945,9 @@ constexpr size_t H = sizeof(std::thread::native_handle_type);
 // is the get_id return and thread::id construction output (one object). The
 // stored-id left comparison argument is distinct. No implicit id copy/dtor
 // Source is invented. The explicit native-handle constructor owns this P/H.
-// Scalar returns of __gthread_self and declared pthread_self remain separate
-// from that H formal; no scalar emitted-elimination assumption is made.
-constexpr size_t thread_identity = 2 * sizeof(std::thread::id) + P + 3 * H + 2 * B;
+// Captured Linux/glibc >= 2.27 get_id constructs directly from pthread_self.
+// That declared H return and the constructor H formal remain distinct.
+constexpr size_t thread_identity = 2 * sizeof(std::thread::id) + P + 2 * H + 2 * B;
 // reserve(actual_lock,callback,guard,exclusive,current_output)->bool.
 // callback_borrow_frame is actual existing inline ownership, not Source here.
 constexpr size_t lender_own = 4 * P + N + B;
@@ -13961,7 +13961,9 @@ constexpr size_t registered = B;
 constexpr size_t loan = 3 * P + N + B;
 static_assert(loan >= P + B);
 constexpr size_t selected = lender_own + lock_identity + registered + loan + thread_identity;
-#if defined(_GLIBCXX_HAS_GTHREADS) && !defined(_GLIBCXX_NATIVE_THREAD_ID)
+#if defined(__linux__) && defined(__GLIBC__) && defined(__GLIBC_MINOR__) && \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&     \
+	defined(_GLIBCXX_HAS_GTHREADS) && defined(_GLIBCXX_NATIVE_THREAD_ID)
 constexpr bool supported = mixed_replay_state_construction_source::supported &&
 			   sizeof(std::thread::id) == 8 && H == 8;
 #else
@@ -13971,7 +13973,7 @@ constexpr bool supported = false;
 // its exact sequential scope through these lender calls; no second child or
 // physical C is added here. The loan parent's carriers coexist with thread
 // descendants; registered/lock scopes are explicit conservative occurrences.
-// get_id/gthread/pthread declarations authenticate the selected header graph,
+// Direct get_id/pthread declarations authenticate the selected header graph,
 // not the external pthread_self implementation or runtime ABI qualification.
 }
 

@@ -1,3 +1,19 @@
+## Latest currency bounded builder prerequisite status — 2026-10-11
+
+Latest human approval authorizes WORLD/SHOP leases; Root retains unleased Zone/shared contracts. [CURRENCY_BOUNDED_BUILDER_COMPONENT_INTEGRATION_2026-10-11](CURRENCY_BOUNDED_BUILDER_COMPONENT_INTEGRATION_2026-10-11.md) records10 whole objects/four genuine component runs and strong-output136-byte equivalence. 509 Source pins preserve all931 policies/2911 census/2853 sites. Original ATM/fresh authority and full producer, gameplay/persistence/recovery/emitted32MiB/release gates remain OPEN. Plan1 retains its accepted historical completion. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.
+
+## Latest shared ownership and coordinator lender native thread source correction — 2026-10-11
+
+The latest human approval authorizes the separate WORLD and SHOP file leases. Those owners retain their leased paths; Root owns the unleased Zone and shared Coordinator files. Historical charter text below does not revoke that later approval.
+
+[Coordinator lender native thread Source correction](COORDINATOR_LENDER_NATIVE_THREAD_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) corrects the captured direct pthread_self() profile and its two native-handle declaration count. Four ordinary Coordinator whole production objects and actual profile probes pass across both backends and supported/assertions profiles; private getter/caller runtime remains OPEN. Zone public-getter regression remains qualified. 504 Source pins: only the Coordinator source pin updates in this milestone. All other pins, writer policies/census and unrelated WIP are preserved. Plans1–4, R1–R8, architecture, complete caller/producer/native/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+## Latest shared ownership and zone native thread source correction — 2026-10-11
+
+The latest human approval authorizes the separate WORLD and SHOP file leases. Those owners retain their leased paths; Root owns the unleased Zone and shared Coordinator files. Historical charter text below does not revoke that later approval.
+
+[Zone native thread Source correction](ZONE_NATIVE_THREAD_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) corrects the captured direct pthread_self() profile and its two native-handle declaration count. Four genuine Zone public-getter runs pass across both backends and supported/assertions profiles; exact permanent regression installed. Coordinator object checks pass, while private getter/caller runtime remains OPEN. 504 Source pins: only Zone/source/test/registration pins update; Coordinator source pin remains at its actual unadopted preimage. All other pins, writer policies/census and unrelated WIP are preserved. Plans1–4, R1–R8, architecture, complete caller/producer/native/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
 ## Native-birth sanitizer warning repair — 2026-10-11
 
 [Warning repair](NATIVE_BIRTH_SANITIZER_WARNING_FIX_2026-10-11.md) fixes two
@@ -4667,3 +4683,38 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Held retirement publication policy responsibility - 2026-10-11
 
 [Extraction candidate and evidence](HELD_RETIREMENT_POLICY_EXTRACTION_2026-10-11.md) records five production/build paths and seven fixtures/runners with original stages, tokens, locks and algorithms preserved. Adoption requires genuine registered-policy execution bound to the final 20-file freeze and received format/metadata reviews. The historical nine-case index is separate from the current Item snapshot; two combined raw production links and four profile objects are separate build evidence. Preserve the published Cost/native6 milestone, all 931 policies, 481 unowned pins and census 2,911. Architecture, whole-host/runtime/SQL durability/cold restoration/shutdown/release qualification remains open; accounting inactive/CLOSED, coverage incomplete, release BLOCKED.
+
+
+## Lockpick retirement wire correctness - 2026-10-11
+
+[Issue report](LOCKPICK_RETIREMENT_WIRE_CORRECTNESS_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Existing zero-root encoder fix;1 existing pin and exact2736 to2739 coordinates. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.
+
+
+## Generic Item complete Source counterparts - 2026-10-11
+
+[Issue report](GENERIC_ITEM_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Source4 plus permanent C++/v3 runner and2 central entries;494 to496 pins,490 existing preserved. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.
+
+
+## NPC common-submit preentry Source join - 2026-10-11
+
+[Issue report](NPC_COMMON_SUBMIT_SOURCE_INTEGRATION_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Source4; current496 pins,492 preserved; callbacks/locks/passive authority intact. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.
+
+
+## Retention native fixture dependency repair - 2026-10-11
+
+[Issue report](RETENTION_NATIVE_FIXTURE_DEPENDENCY_REPAIR_2026-10-11.md) records the original ASan/UBSan SQL-header and flat native fixture PASS against published7f1 source, two original1040-byte streams agreeing, and unchanged1424 production inputs/protected3. Add only three real linked providers to the existing compile list; add its genuine source pin (497 total, all496 existing preserved) and preserve all931 policies/2911 census/2853 sites. Full retention journeys/schema61/database/gameplay/recovery/architecture/R1-R8/release remain open. Inactive/CLOSED, incomplete coverage, BLOCKED release; goal ACTIVE.
+
+
+## Integration manifest source-pin repair - 2026-10-11
+
+[Provenance repair](INTEGRATION_MANIFEST_SOURCE_PIN_REPAIR_2026-10-11.md) fixes the one actual stale manifest hash in both maps:497 pins,496 preserved, all931 policies/2911 census/2853 sites unchanged. Root checks every pin including mechanical LF aliases; original nonrelease validator success alone did not verify hashes. The independent registered Item missing-main refusal remains a separate repair. No qualification promotion: inactive/CLOSED, incomplete coverage, release BLOCKED, goal ACTIVE.
+
+
+## Registered main outcome repair - 2026-10-11
+
+[Entry reporting repair](REGISTERED_MAIN_OUTCOME_REPAIR_2026-10-11.md) emits an actually called main under existing success/refusal semantics. Original-adapter red/fixed eight-method regression green; real registered Item gate and unchanged outcome contract pass both native header backends. Install/register eight-case regression; all497 previous pins preserved, three actual pins added. No case/marker/deadline weakening or production change. Whole Plans1-4/R1-R8/release remain open; inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Original logit Source profile integration - 2026-10-11
+
+[Diagnostic contract integration](ORIGINAL_LOGIT_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) adds passive Source getters while retaining original logging bytes. The first real supported-profile failure is preserved; corrected direct pthread_self/glibc guard and two-handle count pass six genuine whole Utility objects and four actual getter runs across both header backends. Register exact permanent regression; replace three existing pins, add two, preserve all other pins/policies/census/sites. Reader/World caller integration, full producer/native/gameplay/SQL/recovery/architecture/R1-R8/release remain open. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

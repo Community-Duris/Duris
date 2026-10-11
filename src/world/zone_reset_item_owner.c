@@ -6509,12 +6509,12 @@ constexpr size_t literal_without_thread =
 
 namespace flat_root_complete_global_header_source
 {
-// Actual ordinary GNU13 get_id -> explicit id(native_handle) -> gthread_self
-// -> pthread_self. get_id's class prvalue directly initializes equality's
+// Actual Linux/glibc >= 2.27 GNU13 get_id -> explicit id(native_handle)
+// -> native pthread_self. get_id's class prvalue directly initializes equality's
 // right by-value parameter; no third id or undeclared copy/dtor is invented.
-// The two declared native scalar returns are distinct from ctor's formal.
+// The pthread_self return and ctor formal are the two native handle carriers.
 constexpr size_t thread = 2 * sizeof(std::thread::id) + sizeof(void *) +
-			  3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+			  2 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
 // Sequential game-thread calls reuse the same selected declaration graph.
 constexpr size_t base = flat_root_global_graph_source::base_without_thread + thread;
 constexpr size_t literal = flat_root_global_graph_source::literal_without_thread + thread;
@@ -6526,7 +6526,8 @@ bool zone_reset_item_owner::flat_global_current_header_source_frame_bytes(size_t
 	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
 	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
 	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
-	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) || !defined(__GLIBC_MINOR__) ||                \
+	(__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27))
 	(void)output;
 	return false;
 #else
@@ -6547,7 +6548,8 @@ bool zone_reset_item_owner::flat_global_literal_current_header_source_frame_byte
 	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
 	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
 	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
-	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) || !defined(__GLIBC_MINOR__) ||                \
+	(__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27))
 	(void)output;
 	return false;
 #else
@@ -6575,4 +6577,168 @@ bool zone_reset_item_owner::flat_global_literal_current_initial_inline_bytes(siz
 		return false;
 	*output = 0;
 	return true;
+}
+
+// PRIVATE exact local ROOT dispatcher/warm-rebase declarations. The genuine
+// named dispatch workspace is separately admitted by the accepted INITIAL
+// getter, before its construction and before any original guard/callback.
+// Authority/charge/NPC reserve/coordinator children are explicit dependencies;
+// no incomplete local row is exposed as the full registered callback Source.
+namespace flat_root_local_graph_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+using reserve_signature = bool (*)(size_t, void *) noexcept;
+constexpr size_t F = sizeof(reserve_signature);
+
+// Actual callback bytes/context/result; its named work aggregate belongs to
+// INITIAL, not another nominal struct or newly duplicated persistent charge.
+constexpr size_t dispatcher_formals = N + P + B;
+// Only the warm branch declares scratch; both genuine branches are selected
+// within the one unchanged registered callback, with their own exact cuts.
+constexpr size_t dispatcher_warm_pointer = P;
+// Actual external Item exclusive_prefix: actual_guard/exclusive pointers,
+// actual_reserve function pointer, full/result size_t and returned bool.
+constexpr size_t exclusive_prefix_own = 2 * P + F + 2 * N + B;
+// Both functions directly return bool and have no automatic locals/formals.
+// literal_pool_owned also reaches the separately named game-thread child.
+constexpr size_t mysql_guard_own = B;
+constexpr size_t literal_owned_own = B;
+// Genuine max<size_t> two const references and returned const reference. Both
+// bind original live members; no materialized size_t temporary is created.
+constexpr size_t warm_max = 3 * P;
+// scratch reference, bytes, previous and bool; previous remains live through
+// charge and is restored on the exact existing false return path.
+constexpr size_t warm_rebase_own = P + 2 * N + B;
+// inline_bytes and active_regular_flat_working_bytes each return size_t.
+// The latter only returns sizeof(shared_ptr); no current.load/destructor runs.
+constexpr size_t warm_inline_scalar_returns = 2 * N;
+constexpr size_t checked_add = P + N + B;
+// Exact registered ROOM observer wrapper: output parameter and bool result.
+// The genuine lender skips this callback; its scope is normal-path only.
+constexpr size_t registered_coordinator_wrapper = P + B;
+
+// Distinct original local declaration union only. Shared thread/authority and
+// real transitive charge/global/coordinator graphs must be joined separately.
+constexpr size_t local_without_children =
+	dispatcher_formals + dispatcher_warm_pointer + exclusive_prefix_own + mysql_guard_own +
+	literal_owned_own + warm_max + warm_rebase_own + warm_inline_scalar_returns + checked_add;
+} // namespace flat_root_local_graph_source
+
+namespace
+{
+// Pure profile arithmetic only; this never invokes admission or observation.
+bool flat_root_profile_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+}
+
+bool zone_reset_item_owner::flat_common_budget_collect_header_source(bool lender, bool supplement,
+								     size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	using namespace flat_root_local_graph_source;
+	size_t common = exclusive_prefix_own + mysql_guard_own +
+			flat_root_complete_global_header_source::thread;
+	size_t warm = warm_max + warm_rebase_own + warm_inline_scalar_returns;
+	size_t npc = literal_owned_own;
+	size_t child = 0;
+	// Only these exact original callback carriers are charged by the old body.
+	// Pre-entry full Source is required until that body has installed its credit.
+	if (!supplement)
+	{
+		if (!flat_root_profile_add(common, dispatcher_formals + checked_add) ||
+		    !flat_root_profile_add(warm, dispatcher_warm_pointer))
+			return false;
+	}
+	if (!economic_gameplay_authority::active_regular_flat_source_frame_bytes(&child) ||
+	    !flat_root_profile_add(common, child) ||
+	    !quest_mobile_native_birth_charge_local_source_frame_bytes(&child) ||
+	    !flat_root_profile_add(warm, child) ||
+	    !flat_global_literal_current_header_source_frame_bytes(&child) ||
+	    !flat_root_profile_add(npc, child) ||
+	    !quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_frame_bytes(
+		    &child) ||
+	    !flat_root_profile_add(npc, child))
+		return false;
+	// Each arm has its own real descendants. Warm and NPC never coexist.
+	if (!flat_root_profile_add(common, warm > npc ? warm : npc))
+		return false;
+	// A genuine same-lock lender skips this exact original observer callback.
+	// Its caller retains the coordinator census Source and CURRENT C once.
+	if (!lender &&
+	    (!critical_zone_reset_item_publication_owner::current_storage_header_source_frames(
+		     &child) ||
+	     !flat_root_profile_add(common, child) ||
+	     !flat_root_profile_add(common, registered_coordinator_wrapper)))
+		return false;
+	*output = common;
+	return true;
+}
+
+bool zone_reset_item_owner::flat_common_budget_header_source_frame_bytes(size_t *output) noexcept
+{
+	return flat_common_budget_collect_header_source(false, false, output);
+}
+bool zone_reset_item_owner::flat_common_budget_header_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	return flat_common_budget_collect_header_source(false, true, output);
+}
+bool zone_reset_item_owner::flat_common_budget_lender_header_source_frame_bytes(
+	size_t *output) noexcept
+{
+	return flat_common_budget_collect_header_source(true, false, output);
+}
+bool zone_reset_item_owner::flat_common_budget_lender_header_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	return flat_common_budget_collect_header_source(true, true, output);
+}
+
+bool zone_reset_item_owner::flat_common_budget_collect_full_initial(bool lender,
+								    size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t base = 0;
+	size_t child = 0;
+	size_t peak = 0;
+	if (!flat_common_budget_initial_inline_bytes(&base) ||
+	    !economic_gameplay_authority::active_regular_flat_initial_inline_bytes(&child))
+		return false;
+	peak = child;
+	if (!quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_inline_bytes(
+		    &child))
+		return false;
+	// Preserve this child's authentic conservative two-occurrence bound once.
+	// The two selected objects are sequential, not simultaneous ROOT survivors.
+	if (child > peak)
+		peak = child;
+	if (!lender)
+	{
+		if (!critical_zone_reset_item_publication_owner::current_storage_initial_inline_bytes(
+			    &child))
+			return false;
+		if (child > peak)
+			peak = child;
+	}
+	if (!flat_root_profile_add(base, peak))
+		return false;
+	*output = base;
+	return true;
+}
+
+bool zone_reset_item_owner::flat_common_budget_full_initial_inline_bytes(size_t *output) noexcept
+{
+	return flat_common_budget_collect_full_initial(false, output);
+}
+bool zone_reset_item_owner::flat_common_budget_lender_full_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	return flat_common_budget_collect_full_initial(true, output);
 }
