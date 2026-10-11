@@ -20,7 +20,8 @@ reviewed report imported from Plan 5 `774d4422f`:
 01 captured the startup error below; one-variable commissioning02 PASSED
 actual TCP readiness/version8.0.46 and clean shutdown. Restoring original image
 Linux `/tmp` is verified for this exact profile. Full unchanged two-engine matrix
-retry is being prepared, separately granted after sealing/release. This follows the exclusive
+RETRY-02 GRANTED at 01:47 MDT after comparison sealing/release and successful
+empty owner inventory; no matrix acceptance claimed. This follows the exclusive
 01:22 MDT grant of at most two 512MiB databases and one serial 2GiB QA worker.
 No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
 orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
@@ -38,7 +39,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure preserved; commissioning02 PASS; full matrix retry preparation and established audit/restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 full matrix RETRY-02 GRANTED on frozen a60; failed attempts preserved, established audit/restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
@@ -104,7 +105,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified transport repair; full matrix retry next, no schema measurements/pass |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified transport repair; full matrix RETRY-02 GRANTED, no schema measurements/pass yet |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
@@ -222,6 +223,31 @@ both failed and successful scratch/logs. Retry transport will restore original
 Linux `/tmp` and remove the added detachedDB `--rm`, so original guarded finally
 captures stopped daemon logs before exact-owned removal. No maintained predicates,
 server config/defaults, resource caps or source behavior will change.
+
+Reviewed paired report imported from Plan 5 `4516f495e`:
+`PLAN5_MYSQL_TEMPORARY_FILESYSTEM_REPAIR_2026-10-11.md`. Positive seal SHA256
+`38d3c6092f1d8c3a07ad141f1155f23f12c2b7a04d294117bff8259986209203`;
+negative seal `3f5da42d3f9297ac13fc455f9acf2e69ded3cc45db3899c23d2d14cfb979e643`.
+Both diagnoses' matching leases released after exact-owned cleanup and sealing.
+
+RETRY-02 exclusive job `ACC-02-schema65-RETRY-02` retains sourcea60,
+6901 source files/inventory `b2f03f7c9042eb4d5f48f7d33330a7b7e6b909f0db3a01d155f31d37cf8c4ff6`,
+unchanged runner `908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d`.
+Fresh evidence/source `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-a60f5dcc-retry02`,
+build `D:/Dev/Builds/Duris/accounting-plan5/ACC-02-a60f5dcc-retry02/bin`.
+Reviewed wrapper SHA256
+`3221900217ab0ef54a64613d3c50ffce8a7bf59a396a67b7ce456d3d88e475a4`;
+actual final preparation SHA256
+`6f9993608635d996a4a13e73292e867143118465d8553b9b512baae9f1667b1f`.
+Preparation annotation replaced obsolete pending bootstrap text after initial
+hash `775e08f9`; no source/dependency bytes changed. Resource grant SHA256
+`cae20131b920a12e78b6d62e94c95039b2d39d8322dbb0faab61323d670ed752`,
+free Windows memory 9.79GiB; unchanged two512MiB DB plus one serial2GiB QA cap.
+DB default Linux `/tmp`; exact stopped daemon logs captured before original
+guarded finally; persistent data/build/evidence directD. Measured writes allowed
+only to the two private contract files; PRIMARY owns maintained constants/pins.
+Release requires sealed terminal evidence and successful empty owned inventory;
+other workers have no heavy grant. Later primary5418 bytes remain outside freeze.
 
 ## Preserved retirement and handoffs
 
