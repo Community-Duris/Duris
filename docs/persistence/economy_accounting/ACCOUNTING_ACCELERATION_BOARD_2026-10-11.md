@@ -14,9 +14,11 @@ ACC-02 attempt 1 FAILED before migrations at 2026-10-11 01:25 MDT. The
 maintained readiness loop exhausted after MySQL exited with code 1; no successful
 version query, schema history, measurement, MariaDB or QA execution. Private
 frozen candidate `a60f5dcce0c6496e687a0806ee7d0c559579e4fb` remained unchanged;
-owned inventory succeeded and was empty. Plan 5 is sealing the failure and
-preparing one bounded foreground commissioning diagnostic to capture the actual
-startup error; no retry or cause assertion yet. This follows the exclusive
+owned inventory succeeded and was empty. Failure sealed and lease released;
+reviewed report imported from Plan 5 `774d4422f`:
+`PLAN5_ACC02_MYSQL_READINESS_FAILURE_2026-10-11.md`. Foreground commissioning
+01 now captured the startup error below; a one-variable comparison is being
+prepared, with no matrix retry or proven filesystem attribution yet. This follows the exclusive
 01:22 MDT grant of at most two 512MiB databases and one serial 2GiB QA worker.
 No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
 orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
@@ -34,7 +36,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure sealed; commissioning diagnostic preparation, established audit/restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure sealed; commissioning01 concrete error captured, comparison preparation; established audit/restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
@@ -178,6 +180,29 @@ DB auto-removal erased its server log before maintained finally; Docker die/
 destroy events survive but do not attribute the cause. Preserve the failed
 private datadir/source/transport logs; diagnostic must capture foreground server
 output before an evidence-driven retry. No runner predicate is weakened.
+
+Attempt1 immutable evidence manifest SHA256
+`8efacec5bc181b68a3fe9b8a86d20d0338c4a0ac2a1decca06bd581aa041c77e` binds
+6919 files/549560141 bytes; generated daemon data/keys remain private outside
+the published manifest. Independent ownership inventory was successful/empty;
+matching lease was released only after sealing and recheck.
+
+ACC-02-COMMISSION-01 (fresh foreground diagnostic, same pinned MySQL512MiB/CPU1,
+network none/restart no/default image entrypoint and args) reproduced exit1 in
+31.609s. Temporary mysqld8.0.46 reached Unixsocket/port0; timezone-table import
+then emitted `Unable to resize binlog IOCACHE auxiliary file` and
+`ERROR 14 (HY000): Can't change size of file (OS errno 2 - No such file or directory)`.
+No successful TCP readiness, schema or migration. Exact CID
+`8d421be82de5c040f901942a8ef1d08f1babe88f05104127eca14bb63c91093d` automatically
+removed; final owner/job inventory succeeded/empty. Diagnostic output
+`D:/Dev/Tests/Duris/accounting-plan5/ACC-02-COMMISSION-01`; result SHA256
+`e29eea10319dabd4d86901a15b11987ad6d7a6eea2f6021d9b0e2eacc595c750`,
+daemon stderr SHA256 `2f74682bb6104f4ae672711c4ad0b5fabbc1e30d9697866e6ee16d720da9a9bf`.
+This establishes the startup error, not a proven filesystem cause. The next
+bounded comparison removes only the added WindowsD `/tmp` bind, restoring
+the original image Linux `/tmp` on Docker's registered D virtual disk. Keep
+the same direct D datadir, image, args and resource caps; preserve failed scratch.
+Full matrix retry remains separate, after commissioning proof and transport review.
 
 ## Preserved retirement and handoffs
 
