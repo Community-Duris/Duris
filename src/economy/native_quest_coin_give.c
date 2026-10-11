@@ -489,8 +489,9 @@ constexpr size_t give_source_decode_value_supplement = 28 * give_source_P;
 // value and aliases but no instance fields or declared constructor/destructor;
 // its true_type aggregate tag{} adds no callable construction/cleanup Source.
 // The unchanged original tag-value allowance remains its original credit.
-// __fill_a1<byte>'s actual len and declared
-// memset arguments/result add2N+2P+int; its byte __tmp is already credited.
+// __fill_a1<byte>'s actual __len adds N; byte __tmp remains originally credited.
+// The selected GNU13 body calls bare __builtin_memset, which adds no separate
+// declared callee formals/result under the Source contract.
 // Move's actual allocator-taking temporary constructor is11P; get_allocator's
 // own this/allocator-copy/base-copy is5P plus its returned allocator object.
 // Both vector std::move callsites and allocator std::move add6P; generated
@@ -500,10 +501,9 @@ constexpr size_t give_source_decode_value_supplement = 28 * give_source_P;
 // Same nonrecursive _M_get_Tp_allocator, swap/copy and cleanup lanes are reused
 // only after a prior call returns; real caller objects remain in old fixed.
 constexpr size_t give_source_vector_supplement =
-	5 * give_source_P + 6 * give_source_B + 2 * give_source_N + 2 * give_source_P +
-	sizeof(int) + 11 * give_source_P + 5 * give_source_P + sizeof(std::allocator<uint8_t>) +
-	6 * give_source_P + 6 * give_source_P + 2 * give_source_P + 2 * give_source_P +
-	5 * give_source_P;
+	5 * give_source_P + 6 * give_source_B + give_source_N + 11 * give_source_P +
+	5 * give_source_P + sizeof(std::allocator<uint8_t>) + 6 * give_source_P +
+	6 * give_source_P + 2 * give_source_P + 2 * give_source_P + 5 * give_source_P;
 
 // give_bound_peak's original own has its actual helper reserve/context, outer/
 // fixed/extra, add reference/extra/result and reserve context/bool. The actual

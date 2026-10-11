@@ -66614,7 +66614,7 @@
       "src/economy/auction_repository.c": "26d0a36705c3ef8915b89247f1da3b71793cd881a6d37c61867ec7980ac808af",
       "src/economy/auction_repository.h": "32f4adbca349e3a627ec39e751319cf35ac52d8874414b0d2d2df2a038db6233",
       "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
-      "src/economy/native_quest_coin_give.c": "bc85bf93baf3b1e859ce7e50e968132c072570505e6497ab3c78007c869bb54d",
+      "src/economy/native_quest_coin_give.c": "97c680555c3e0adec1440a3a1c5da92a635b825cd48c1eae551018807ce38213",
       "src/economy/native_quest_coin_give.h": "f9d3b8b679bbb86f87295e0fe7a49cb3eb0cf287df870cce882d9d53a24c2b2b",
       "src/economy/native_quest_cost.c": "e19d1c35f140d69115831fc7957aba2b7c265022acf91be9173b2185664efba3",
       "src/economy/native_quest_cost.h": "fb088358bf4d0c32528c89b121d31f5511bcf5dd3640ae5baf86fadf5151cb12",

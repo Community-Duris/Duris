@@ -276,7 +276,7 @@
       "src/economy/native_mobile_birth_recovery.h": "1bf02ef329294ff58b6ffd71f73395c8c3193eefa4ee7d409265ff703ee348f9",
       "src/economy/native_mobile_birth_result.c": "02a6f31475b3c1279961980167d2193a87b28779f3b81a5261194bd5e74176c7",
       "src/economy/native_mobile_birth_result.h": "5e5b96749683eb9eab291b9de50944afa070132ca4767629812fea4c921e8baf",
-      "src/economy/native_quest_coin_give.c": "bc85bf93baf3b1e859ce7e50e968132c072570505e6497ab3c78007c869bb54d",
+      "src/economy/native_quest_coin_give.c": "97c680555c3e0adec1440a3a1c5da92a635b825cd48c1eae551018807ce38213",
       "src/economy/native_quest_coin_give.h": "f9d3b8b679bbb86f87295e0fe7a49cb3eb0cf287df870cce882d9d53a24c2b2b",
       "src/economy/native_quest_consumption_capture.h": "7f204f5c8dfa3ae7b5d4568944a48ac34803cabf42e5a09331c27060b1f00852",
       "src/economy/native_quest_cost.c": "e19d1c35f140d69115831fc7957aba2b7c265022acf91be9173b2185664efba3",
