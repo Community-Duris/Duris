@@ -3389,3 +3389,32 @@ integration and independentPlan5; proposed WORLD/SHOP runtime ACK withdrawn.
 Broader65/restore/authority/retention/erasure/recovery/load/release OPEN;
 accountinginactive/admissionCLOSED/fullgoalACTIVE. Additivecuratorinput; no
 notebook import, measuredcontract adoption or combined release claim.
+
+## 2026-10-11 — Focused original65 diagnostic prepared without resources
+
+[Diagnostic preparation](PLAN5_SCHEMA65_REFUSAL_DIAGNOSTIC_PREPARATION_2026-10-11.md)
+binds fresh6906-file6bfa0f7e export, unchanged original runner/immutable65 inputs,
+external stderr-only tap and four separate proposed native namespaces. Classifier
+3/3pass; source/helper/file-set preparation0 and missinggrant refusal1 before
+Docker/job/build. No nativeexecution/resources or cause/qualification claim.
+Preparation2 a611c24ad8db6c19e1a101142be38ec9cfc0c58b76bc3e9bb46f5d62b1f4845d,
+fixture f7d878da0af3ce4cdfeb37a5227401d6a9de96d61d93edddf96e8dd8580f05f9,
+transport 20356a2059e769bb75eee13eba7adbd8f92aac86d58673945d6ee8d4198f6732,
+validation a858b4441a97c7826b7b0d160de70f3c27c480e8d9abad33762f57149b492dfe.
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-02-ORIGINAL65-DIAG-01;
+base521d04aa81b89c48e419b02f3a4c096baccbbad6, result/remote in delivery/preparation-result.json.
+
+Independent coordinator reviewed classifier/ownership and requested narrower
+volume-freshness and cleanup/terminal guards; revision2 preserves priorprep/
+helper/diff/checkhistory and adds exactnewvolume proof beforeDBstart, independent
+cleanup/inventory/source receipt guards and timeoutpartials. Source/bin is real,
+newDbuildroot absent. Native stderr exclusive0600 Linux/tmp with <=64KiB bound,
+exact1644/45000 schema message required; genericEOF/differentSQL/unrelated45000
+remain negatives. Proposed real killed-session/1146/false45000 controls retain
+64history/state/protectedrows/no65receipt/closed-no-reconnect; positive requires
+actualerror plus real nullable recovery/rerun/wrongselector preservation.
+Distinct bound resourcegrant/lock required: oneMaria512mCPU1+serialQA2gCPU2/300s,
+readonlysource/freshLinuxDBvolume/directDoutputs, ownedgracefulcleanup/seal/
+inventories beforeguardedglobalrelease. No sharededit/Cpp/fullmatrix/contractwrite
+or olddata reuse. Pendingnative/full65/restore/authority/retention/erasure/
+recovery/load/release; inactive/CLOSED/fullgoalACTIVE. Additivecuratorinput only.
