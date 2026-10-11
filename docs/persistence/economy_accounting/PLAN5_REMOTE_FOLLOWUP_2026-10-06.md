@@ -3503,3 +3503,28 @@ controls. No mutationAPI/schema request. Fulltwo-engine65 histories/finalboot/
 tamper, currentrestore/backup/retention/erasure, wallet/roomauthority, recovery/
 load/R1-R8release OPEN; inactive/CLOSED/fullgoalACTIVE. No furthercohort started.
 Additivecuratorinput/no notebookimport/sharedcontract/combinedqualificationclaim.
+
+## 2026-10-11 — Current-primary original Linux audit-budget gate prepared
+
+[ACC-05 preparation](PLAN5_AUDIT_BUDGET_PREPARATION_2026-10-11.md) freezes current
+primary0555741d740cf028552fcf63973265bfbcda052c reader, original tests and actual
+read-only registry dependency (three exact Git blobs). Two original Linux
+AuditBudgetTests selectors run directly; no observer or changed assertion,
+measure_audit_cli, fresh-child timing/RUSAGE, CLI or fixture. All12 budget records
+and both original oversized checks required; synthetic offline component only.
+Windows resource-free preparation/hash/AST/selectors and missing-grant refusal
+pass. Native tests NOT_RUN; zero resources started. Distinct reviewed grant and
+exclusive600s/2GiB/CPU2 foreground pinned QA required before execution. No DB,
+server, C++, fullsuite, network or shared source/interface/schema/contract changes.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-05-AUDIT-BUDGET-01; preparation
+9fc68d0ea747907eb8391aac9239746f463b2302468353433a4b8b652b2f9786,
+transport251ce10dd5c7c0d9913273a260b33cff35c876ad3af53aeed18a16dfedef11ef.
+Proposed native finally cleanup/seal/release requires exact owned inventoryempty,
+sourceunchanged, four passive volumes retained/consumers0, seven unrelated live
+IDs preserved and guarded matching global release. Producer baseb8505d97bc6e4bccbe03ce73085416f1345d7951,
+result/remote bound in delivery/preparation-publication.json after publication.
+Only report+additive followup maintained, all seven historical ancestors retained.
+Current65 matrix/startup/tamper/contract, restore/retention/erasure, native authority,
+recovery/host/gameplay/load/R1–R8/fullrelease remain OPEN; inactive/CLOSED/fullgoal
+ACTIVE. Additive curator input/no notebook import or release completion claim.
