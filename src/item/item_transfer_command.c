@@ -8549,3 +8549,615 @@ bool item_transfer_quest_offering_continuation_valid_complete_initial_inline_byt
 	*bytes = sizeof(item_native_validation_complete_budget);
 	return true;
 }
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
+template <class T> constexpr size_t item_complete_native_vector_deallocate_source =
+	// _M_deallocate, allocator_traits::deallocate, allocator::deallocate,
+	// new_allocator::deallocate each owns this/alloc, pointer, count.
+	4 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Actual sized operator delete pointer/count. Const-evaluation alternate
+	// unsized delete is not selected; single helper bool is actual query.
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+template <class T> constexpr size_t item_complete_native_vector_cleanup_source =
+	// Actual vector, Vector_base, generated nontrivial Vector_impl and
+	// allocator destructor receivers. Impl_data has no declared destructor;
+	// new_allocator destructor is excluded by the C++20 preprocessor path.
+	// Neither contributes a runtime selected destructor scope.
+	4 * sizeof(void *) +
+	// _Destroy(first,last,allocator), _Destroy(first,last) and selected aux:
+	// no invented cursor local: aux<false> increments its first parameter.
+	3 * sizeof(void *) + 2 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) +
+	// Mutable get_Tp_allocator receiver/reference result.
+	2 * sizeof(void *) + item_complete_native_vector_deallocate_source<T> +
+	(std::is_trivially_destructible_v<T> ?
+		 0 :
+		 // Nontrivial aux reaches __addressof, _Destroy(pointer), destroy_at
+		 // and the genuine T destructor receiver. Member cleanup is separate;
+		 // raw-pointer ++ and == use no iterator object/helper family.
+		 2 * sizeof(void *) + sizeof(void *) + sizeof(void *) + sizeof(void *));
+constexpr size_t item_complete_native_member_string_cleanup_source =
+	// String/dispose/is-local/destroy receivers, destroy size and locality bool.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Actual const data and local_data/pointer_to/addressof/__addressof.
+	2 * sizeof(void *) + 4 * 2 * sizeof(void *) +
+	// _M_get_allocator receiver/reference result. String destroy directly
+	// calls traits deallocate: it does not call vector _M_deallocate.
+	2 * sizeof(void *) + 3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) +
+	// Actual hider/allocator destruction receivers. new_allocator destructor
+	// is PP-excluded in selected C++20; allocator predicate has one result.
+	2 * sizeof(void *);
+
+namespace
+{
+constexpr size_t item_complete_native_validation_empty_vectors_source =
+	// Parent constructs only empty row/byte/u64 vectors, not any row/ED/string.
+	// roots(count) selected constructor is a separate authentic subtree.
+	3 * (6 * sizeof(void *));
+constexpr size_t item_complete_native_validation_cleanup_source =
+	// Outer Item vector destruction reaches generated nontrivial row dtorP
+	// in its selected nontrivial cleanup backend; ED dtorP is similarly inside
+	// its typed vector cleanup. No new row COPY/move/default or ED COPY lane.
+	item_complete_native_vector_cleanup_source<player_item_snapshot> +
+	item_complete_native_vector_cleanup_source<uint8_t> +
+	item_complete_native_vector_cleanup_source<uint64_t> +
+	// Genuine row and nested ED member vectors; DA/i32 are trivial elements.
+	item_complete_native_vector_cleanup_source<player_item_dynamic_affect_snapshot> +
+	item_complete_native_vector_cleanup_source<player_item_extra_description_snapshot> +
+	item_complete_native_vector_cleanup_source<int32_t> +
+	// Same declared char-string cleanup lane shared after return across real
+	// row/ED fields; every physical string and nested capacity stays external.
+	item_complete_native_member_string_cleanup_source;
+constexpr size_t item_complete_native_validation_current_row_source =
+	// Exact accepted selected CURRENT-only projection, no unused FRESH root
+	// or size query. Public current + heap/request/string/ED-range scopes.
+	44 * sizeof(void *) + 10 * sizeof(size_t) + 15 * sizeof(bool);
+constexpr size_t item_complete_native_validation_current_vector_source =
+	// Three distinct parent vector<T> false heap observers: row/byte/u64;
+	// roots/uids share the completed same-type scope, physical heaps separate.
+	3 * (3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool));
+constexpr size_t item_complete_native_validation_current_range_source =
+	// const outer Item begin/end receivers2P; explicit same CI pointer ctor2P;
+	// rewritten != through == refs2P+B plus both actual base() receivers and
+	// returned references4P, ++2P, dereference2P. CI result objects belong to
+	// controller hidden-range own storage separately; no implicit copy callee.
+	14 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_native_validation_current_controller_source =
+	// New prefix this/out+hiddenrange/elementrefs4P; extra/total/row3N;
+	// hidden begin/end CIs and returned B. No removed observation local.
+	4 * sizeof(void *) + 3 * sizeof(size_t) +
+	2 * sizeof(std::vector<player_item_snapshot>::const_iterator) + sizeof(bool) +
+	// Actual peak this/extra/total/B, checked add, selected callback interface.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	item_complete_native_validation_current_row_source +
+	item_complete_native_validation_current_vector_source +
+	item_complete_native_validation_current_range_source;
+} // namespace
+
+namespace
+{
+using item_complete_native_equal_I = std::vector<uint8_t>::iterator;
+constexpr size_t item_complete_native_canonical_equal_source =
+	// Three-iterator equal(I,I,constbyte*) and equal_aux's genuine copied
+	// by-value I parameters. Implicit trivial I copies have no callable body.
+	2 * (2 * sizeof(item_complete_native_equal_I) + sizeof(void *) + sizeof(bool)) +
+	// Two actual niter_base(I) occurrences: by-value I, raw pointer return,
+	// base() receiver/reference result. Pointers return by scalar value.
+	2 * (sizeof(item_complete_native_equal_I) + 3 * sizeof(void *)) +
+	// Raw constbyte* niter_base parameter/result, typed separately.
+	2 * sizeof(void *) +
+	// equal_aux1 raw first/last/first2, declared __simple and bool return.
+	3 * sizeof(void *) + 2 * sizeof(bool) +
+	// equal<true> takes three const byte pointers, named size_t __len and bool.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Genuine std::__memcmp(first1,first2,num)->int, actual public
+	// std::is_constant_evaluated resultB. Bare builtin has no Source callee.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool) +
+	// Caller mutable begin/end each has receiverP and real pointer ctor2P.
+	// Their returned I objects ARE the equal() argument destinations above;
+	// no second I storage or undeclared implicit move constructor is added.
+	2 * (3 * sizeof(void *)) +
+	// Actual payload.item_blob const array begin/data this/returned-pointer
+	// scopes. This raw scalar pointer has no guaranteed class result alias.
+	4 * sizeof(void *);
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_uid_fitting_const_push_source =
+	// vector<uint64_t>::push_back(const value_type&): this/x2P.
+	2 * sizeof(void *) +
+	// allocator_traits<allocator<u64>>::construct allocator/location/arg3P.
+	3 * sizeof(void *) +
+	// construct_at<u64,constu64&> location/arg/returned pointer3P.
+	3 * sizeof(void *) +
+	// Two actual std::forward<constu64&> occurrences; each arg/returnedref2P.
+	4 * sizeof(void *) +
+	// Declared global placement new(size,place): sizeN/placeP/resultP.
+	2 * sizeof(void *) + sizeof(size_t);
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_mobile_local_predicates_source =
+	// native_mobile_version u16 parameter/B return; identity constref/B return.
+	sizeof(uint16_t) + sizeof(bool) + sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_native_mobile_array_access_source =
+	// const array<entry,MAX> operator[]; const byte-array size and data.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	// mutable array<int32_t,DEPTH> operator[] and its const size method.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_native_mobile_vector_access_source =
+	// Mutable Item/u64 operator[]: this/ref-result2P+indexN, separate types.
+	2 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Genuine parent row/byte/u64 size receivers and returned scalar N.
+	// These direct caller invocations are separately retained from lower
+	// constructor/reserve/provider queries; no unrelated profile subtraction.
+	3 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t item_complete_native_mobile_find_source =
+	// Actual published named same helper/type scopes. No duplicate definition
+	// or relabelled old partial lower-bound margin in this successor.
+	item_complete_offering_find_source;
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_uid_iterator_acquisition_source =
+	// Mutable vector<u64> begin/end each receiverP, same explicit pointer-CI
+	// constructor family this/reference2P reused only after completed call.
+	4 * sizeof(void *);
+constexpr size_t item_complete_native_uid_adjacent_caller_source =
+	// Adjacent returned iterator and separate uids.end() comparison operand
+	// are two real caller objects, not counted in algorithm parameter rows.
+	2 * sizeof(std::vector<uint64_t>::iterator) +
+	// C++20 rewritten != uses == refs2P+B and both base methods4P.
+	6 * sizeof(void *) + sizeof(bool);
+} // namespace
+
+namespace
+{
+using item_complete_native_uid_iterator = std::vector<uint64_t>::iterator;
+using item_complete_native_uid_iter_less = __gnu_cxx::__ops::_Iter_less_iter;
+using item_complete_native_uid_val_less = __gnu_cxx::__ops::_Val_less_iter;
+using item_complete_native_uid_iter_val_less = __gnu_cxx::__ops::_Iter_less_val;
+using item_complete_native_uid_iter_equal = __gnu_cxx::__ops::_Iter_equal_to_iter;
+constexpr size_t item_complete_native_uid_sort_recursive_source =
+	// Actual introsort first/last/cut I objects, depth D and comparator C.
+	3 * sizeof(item_complete_native_uid_iterator) + sizeof(std::ptrdiff_t) +
+	sizeof(item_complete_native_uid_iter_less);
+constexpr size_t item_complete_native_uid_sort_nonrecursive_source =
+	// Explicit normal-iterator own/operator occurrence and child table;
+	// no raw-pointer substitution, legacy iterator< or implicit trivial call.
+	68 * sizeof(item_complete_native_uid_iterator) + 314 * sizeof(void *) +
+	40 * sizeof(std::ptrdiff_t) + 12 * sizeof(item_complete_native_uid_iter_less) +
+	sizeof(item_complete_native_uid_val_less) + sizeof(item_complete_native_uid_iter_val_less) +
+	7 * sizeof(uint64_t) + 2 * sizeof(unsigned long) + 8 * sizeof(int) + 10 * sizeof(bool) +
+	2 * sizeof(std::strong_ordering) + 2 * sizeof(std::__cmp_cat::__unspec);
+constexpr size_t item_complete_native_uid_adjacent_algorithm_source =
+	// Public/core actual byvalue iterator and predicate objects. Real returned
+	// class result is owned once by caller comparison, not another core local.
+	7 * sizeof(item_complete_native_uid_iterator) + 19 * sizeof(void *) +
+	sizeof(item_complete_native_uid_iter_equal) + 3 * sizeof(bool);
+constexpr size_t item_complete_native_uid_sort_max_recursive_calls = []
+{
+	size_t levels = 0, remaining = ITEM_TRANSFER_MAX_ITEMS;
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	return 2 * levels + 1;
+}();
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_roots_default_n_source =
+	// Selected u64 scalar default_n: no byte-specific __len, predicate or
+	// intrinsic. Actual first allocated u64 is the scalar fill source.
+	26 * sizeof(void *) + 8 * sizeof(size_t) + 3 * sizeof(bool) +
+	sizeof(std::random_access_iterator_tag) + sizeof(uint64_t);
+constexpr size_t item_complete_native_roots_count_failure_cleanup_source =
+	// Actual generated nontrivial Vector_impl and allocator destructor,
+	// selected allocation-failure member unwind (named shared family only).
+	2 * sizeof(void *);
+constexpr size_t item_complete_native_roots_count_constructor_source =
+	// Public vector(n, allocator default), actual allocator object A.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(std::allocator<uint64_t>) +
+	// Default allocator/newallocator ctors and actual allocator dtor.
+	3 * sizeof(void *) +
+	// check_init count/ref/return, real converted allocator object A.
+	sizeof(void *) + 2 * sizeof(size_t) + sizeof(std::allocator<uint64_t>) +
+	// Actual const allocator/newallocator copy constructors and cleanup.
+	5 * sizeof(void *) +
+	// Smax own+direct C++20 allocator_traits max+actual min<size_t>.
+	5 * sizeof(void *) + 4 * sizeof(size_t) +
+	// Base/impl/allocator copy/data-default/create_storage genuine scopes.
+	10 * sizeof(void *) + 2 * sizeof(size_t) +
+	// allocate typed helper + standard allocator/newallocator/max/new.
+	11 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool) +
+	// default_initialize this/count and mutable allocator getter.
+	sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) +
+	item_complete_native_roots_default_n_source +
+	item_complete_native_roots_count_failure_cleanup_source;
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_uid_fresh_reserve_source =
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_reserve_own_source<uint64_t> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_max_size_source<uint64_t> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_capacity_source<uint64_t> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_size_source<uint64_t> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_allocate_source<uint64_t> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_mutable_allocator_source<uint64_t> +
+	// Actual fresh size/capacity0: three relocation helpers and raw niter
+	// calls have zero count and no reached count>0 predicate or element move.
+	21 * sizeof(void *) + sizeof(std::ptrdiff_t) +
+	// Null old storage reaches _M_deallocate only, no lower delete chain.
+	2 * sizeof(void *) + sizeof(size_t);
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_snapshot_list_decode_child_own_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 8 * sizeof(size_t) +
+	sizeof(player_snapshot_codec_result);
+constexpr size_t item_complete_snapshot_list_encode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 6 * sizeof(size_t) +
+	sizeof(player_snapshot_codec_result);
+} // namespace
+
+namespace
+{
+player_snapshot_codec_result
+item_complete_snapshot_list_decode_child(const uint8_t *data, size_t size,
+					 std::vector<player_item_snapshot> *output,
+					 bool (*reserve)(size_t, void *) noexcept, void *context,
+					 size_t outer, size_t *retained_item_heap_bytes) noexcept
+{
+	constexpr size_t query =
+		3 * player_item_snapshot_list_decode_bounded_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !player_item_snapshot_list_decode_bounded_source_frame_bytes(&source) ||
+	    !player_item_snapshot_list_decode_bounded_initial_inline_bytes(&initial) ||
+	    !player_item_snapshot_list_decode_bounded_source_supplement_frame_bytes(&supplement))
+		return player_snapshot_codec_result::limit_exceeded;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return player_snapshot_codec_result::limit_exceeded;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return player_snapshot_codec_result::limit_exceeded;
+	return player_item_snapshot_list_decode_bounded(data, size, output, reserve, context,
+							child_outer, retained_item_heap_bytes);
+}
+
+player_snapshot_codec_result item_complete_snapshot_list_encode_child(
+	const std::vector<player_item_snapshot> &input, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 2 * player_item_snapshot_list_encode_source_query_frame_bytes();
+	size_t source = 0, initial = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&source) ||
+	    !player_item_snapshot_list_encode_initial_inline_bytes(&initial))
+		return player_snapshot_codec_result::limit_exceeded;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return player_snapshot_codec_result::limit_exceeded;
+	size_t child_outer = outer;
+	// This published encoder's complete Source is genuinely caller-retained,
+	// not self-owned. INITIAL alone is transient. No invented supplement API.
+	if (!payload_clone_add(child_outer, source))
+		return player_snapshot_codec_result::limit_exceeded;
+	return player_item_snapshot_list_encode_bounded(input, output, reserve, context,
+							child_outer);
+}
+
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_reference_encode_child_own_source =
+	// input reference, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) +
+	7 * sizeof(size_t) + sizeof(player_snapshot_codec_result);
+player_snapshot_codec_result item_complete_native_reference_encode_child(
+	const quest_mobile_native_reference &input,
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * quest_mobile_native_reference_encode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !quest_mobile_native_reference_encode_source_frame_bytes(&source) ||
+	    !quest_mobile_native_reference_encode_initial_inline_bytes(&initial) ||
+	    !quest_mobile_native_reference_encode_source_supplement_frame_bytes(&supplement))
+		return player_snapshot_codec_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return player_snapshot_codec_result::allocation_failure;
+	return quest_mobile_native_reference_encode_bounded(input, output, reserve, context,
+							    child_outer);
+}
+
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_mobile_valid_retained_source =
+	// Exact original-compatible wrapper Source and validator named own.
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + sizeof(uint16_t) +
+	2 * sizeof(size_t) + sizeof(bool) + 7 * sizeof(void *) + 8 * sizeof(size_t) +
+	2 * sizeof(uint64_t) + sizeof(uint16_t) + 6 * sizeof(bool) +
+	// Actual runtime policy result, no mandatory-constant policy callee.
+	sizeof(bool) + item_complete_native_validation_empty_vectors_source +
+	item_complete_native_validation_cleanup_source +
+	item_complete_native_validation_current_controller_source +
+	item_complete_native_mobile_local_predicates_source +
+	item_complete_native_mobile_array_access_source +
+	item_complete_native_mobile_vector_access_source + item_complete_native_mobile_find_source +
+	item_complete_native_canonical_equal_source +
+	item_complete_native_roots_count_constructor_source +
+	item_complete_native_uid_fresh_reserve_source +
+	item_complete_native_uid_fitting_const_push_source +
+	item_complete_native_uid_iterator_acquisition_source +
+	item_complete_native_uid_adjacent_caller_source +
+	item_complete_native_uid_sort_nonrecursive_source +
+	item_complete_native_uid_adjacent_algorithm_source +
+	item_complete_snapshot_list_decode_child_own_source +
+	item_complete_snapshot_list_encode_child_own_source +
+	item_complete_native_reference_encode_child_own_source +
+	// Genuine three/three/two selected scalar getter call occurrences.
+	3 * quest_mobile_native_reference_encode_source_query_frame_bytes() +
+	3 * player_item_snapshot_list_decode_bounded_source_query_frame_bytes() +
+	2 * player_item_snapshot_list_encode_source_query_frame_bytes();
+} // namespace
+
+namespace
+{
+bool item_native_mobile_validation_complete_owned(const item_transfer_payload &payload,
+						  uint16_t version,
+						  item_native_validation_complete_budget &budget)
+{
+	const bool from_native = payload.from_owner.type == item_owner_type::native_mobile;
+	const bool to_native = payload.to_owner.type == item_owner_type::native_mobile;
+	if (!native_mobile_version(version))
+		return !from_native && !to_native && !payload.native_mobile.present &&
+		       payload.reason != item_transfer_reason::quest_offering;
+	const auto &context = payload.native_mobile;
+	if (!context.present || from_native == to_native || !context.final_giver_pid ||
+	    payload.corpse.present || payload.collector.present || payload.logical_source_id ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision)
+		return false;
+	const auto &owner = from_native ? payload.from_owner : payload.to_owner;
+	// The actual fixed reference survives every later child call. Admit it
+	// before construction, then retain this physical INLINE once in frames;
+	// the public Source constant excludes it. No later callback after unwind.
+	if (!budget.peak(sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>)) ||
+	    !payload_clone_add(budget.frames,
+			       sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>)))
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference = {};
+	size_t reference_prefix = 0;
+	if (!budget.prefix(reference_prefix))
+		return false;
+	if (!item_owner_identity_valid(owner) || owner.id != context.reference.mobile_instance_id ||
+	    item_complete_native_reference_encode_child(
+		    context.reference, &reference, budget.reserve, budget.context,
+		    reference_prefix) != player_snapshot_codec_result::ok ||
+	    payload.reason_id != context.reference.mobile_vnum)
+		return false;
+	const bool acceptance = context.action == item_native_mobile_action::acceptance;
+	const bool consumption = context.action == item_native_mobile_action::consumption;
+	if ((!acceptance && !consumption) ||
+	    (acceptance &&
+	     (from_native || payload.from_owner.type != item_owner_type::player ||
+	      payload.from_owner.context_id || payload.from_owner.id > UINT32_MAX ||
+	      context.final_giver_pid != payload.from_owner.id ||
+	      payload.reason != item_transfer_reason::quest_offering || payload.multi_root ||
+	      payload.continuation.kind != item_transfer_continuation_kind::none)) ||
+	    (consumption &&
+	     (!from_native || payload.to_owner.type != item_owner_type::destruction ||
+	      payload.reason != item_transfer_reason::quest_turnin || !payload.multi_root ||
+	      payload.selected_item_uid || payload.target_root_item_uid ||
+	      (payload.continuation.kind != item_transfer_continuation_kind::none &&
+	       payload.continuation.kind != item_transfer_continuation_kind::quest_offering))))
+		return false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		if (!entry.item_uid || entry.item_uid == UINT64_MAX || !entry.root_item_uid ||
+		    entry.root_item_uid == UINT64_MAX || entry.parent_item_uid == UINT64_MAX ||
+		    !entry.expected_item_revision || entry.expected_item_revision == UINT64_MAX ||
+		    entry.expected_state != item_custody_state::active ||
+		    (index && payload.items[index - 1].item_uid >= entry.item_uid))
+			return false;
+	}
+	if (!budget.peak(sizeof(std::vector<player_item_snapshot>)))
+		return false;
+	std::vector<player_item_snapshot> items;
+	budget.items = &items;
+	size_t prefix = 0;
+	if (!budget.prefix(prefix))
+		return false;
+	if (item_complete_snapshot_list_decode_child(
+		    payload.item_blob.data(), payload.item_blob_size, &items, budget.reserve,
+		    budget.context, prefix, nullptr) != player_snapshot_codec_result::ok ||
+	    items.size() != payload.item_count)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> canonical;
+	budget.canonical = &canonical;
+	if (!budget.prefix(prefix))
+		return false;
+	if (item_complete_snapshot_list_encode_child(items, &canonical, budget.reserve,
+						     budget.context,
+						     prefix) != player_snapshot_codec_result::ok ||
+	    canonical.size() != payload.item_blob_size || !budget.peak() ||
+	    !std::equal(canonical.begin(), canonical.end(), payload.item_blob.begin()))
+		return false;
+	if (items.size() > SIZE_MAX / sizeof(uint64_t) ||
+	    !budget.peak(2 * sizeof(std::vector<uint64_t>) + items.size() * sizeof(uint64_t)))
+		return false;
+	std::vector<uint64_t> roots(items.size()), uids;
+	budget.roots = &roots;
+	budget.uids = &uids;
+	if (!budget.peak(sizeof(std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH>)))
+		return false;
+	std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH> path = {};
+	budget.path = &path;
+	size_t depth = 0;
+	if (!budget.peak(items.size() * sizeof(uint64_t)))
+		return false;
+	uids.reserve(items.size());
+	size_t root_count = 0;
+	uint64_t current_root = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &item = items[index];
+		if (!item.object_uid || item.object_uid == UINT64_MAX ||
+		    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    item.parent_index >= static_cast<int32_t>(index) || item.string_mask != 15 ||
+		    item.equipment_slot < 0 ||
+		    item.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
+			return false;
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		const uint64_t parent = root ? 0 : items[item.parent_index].object_uid;
+		roots[index] = root ? item.object_uid : roots[item.parent_index];
+		if (root)
+		{
+			++root_count;
+			current_root = item.object_uid;
+			depth = 1;
+			path[0] = static_cast<int32_t>(index);
+		}
+		else
+		{
+			if (roots[index] != current_root || item.equipment_slot)
+				return false;
+			while (depth && path[depth - 1] != item.parent_index)
+				--depth;
+			if (!depth || depth == path.size())
+				return false;
+			path[depth++] = static_cast<int32_t>(index);
+		}
+		const auto *entry = item_complete_find_payload_item(payload, item.object_uid);
+		if (!entry || entry->vnum != item.vnum || entry->parent_item_uid != parent ||
+		    entry->root_item_uid != roots[index])
+			return false;
+		if (!budget.peak())
+			return false;
+		uids.push_back(item.object_uid);
+	}
+	size_t levels = 0, remaining = uids.size();
+	while (remaining > 1)
+	{
+		remaining >>= 1;
+		++levels;
+	}
+	if (!budget.peak((2 * levels + 1) * item_complete_native_uid_sort_recursive_source))
+		return false;
+	std::sort(uids.begin(), uids.end());
+	if (std::adjacent_find(uids.begin(), uids.end()) != uids.end())
+		return false;
+	if (acceptance &&
+	    (root_count != 1 ||
+	     (payload.selected_item_uid && payload.selected_item_uid != items[0].object_uid) ||
+	     (payload.target_root_item_uid && payload.target_root_item_uid != items[0].object_uid)))
+		return false;
+	return true;
+}
+} // namespace
+
+bool item_transfer_native_mobile_context_valid_complete_bounded(
+	const item_transfer_payload &payload, uint16_t version,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_mobile_valid_retained_source;
+	item_native_validation_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_mobile_validation_complete_owned(payload, version, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_mobile_context_valid_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_mobile_valid_retained_source, child = 0;
+	if (!payload_clone_add(result, item_complete_native_uid_sort_max_recursive_calls *
+					       item_complete_native_uid_sort_recursive_source) ||
+	    !quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !player_item_snapshot_list_decode_bounded_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*bytes = result;
+	return true;
+}
+bool item_transfer_native_mobile_context_valid_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_native_mobile_context_valid_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_native_validation_complete_budget);
+	return true;
+}
+
+#else
+bool item_transfer_native_mobile_context_valid_complete_bounded(const item_transfer_payload &,
+								uint16_t,
+								bool (*)(size_t, void *) noexcept,
+								void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_mobile_context_valid_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_mobile_context_valid_complete_source_supplement_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_mobile_context_valid_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+#endif
